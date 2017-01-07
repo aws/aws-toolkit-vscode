@@ -1,0 +1,40 @@
+//group 'com.amazonaws'
+//version '1.0-SNAPSHOT'
+
+buildscript {
+    ext.kotlin_version = "$kotlinVersion"
+
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+plugins {
+    id 'org.jetbrains.intellij' version "0.2.0"
+}
+
+repositories {
+    mavenCentral()
+}
+apply plugin: 'java'
+apply plugin: 'kotlin'
+sourceCompatibility = javaVersion
+targetCompatibility = javaVersion
+
+apply plugin: 'org.jetbrains.intellij'
+
+intellij {
+    version ideaVersion
+    pluginName 'AWS IntelliJ Toolkit'
+    updateSinceUntilBuild false
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compile "com.amazonaws:aws-java-sdk:$awsSdkVersion"
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
