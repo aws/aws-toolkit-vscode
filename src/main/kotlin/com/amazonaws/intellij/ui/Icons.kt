@@ -5,6 +5,7 @@ import com.intellij.openapi.util.IconLoader
 val AWS_ICON = IconLoader.getIcon("/icons/aws-box.gif")
 val S3_BUCKET_ICON = IconLoader.getIcon("/icons/bucket.png")
 val S3_SERVICE_ICON = IconLoader.getIcon("/icons/s3-service.png")
+val LAMBDA_SERVICE_ICON = IconLoader.getIcon("/icons/lambda-service.png")
 val INFO_ICON = IconLoader.getIcon("/icons/information.png")
 val SQS_SERVICE_ICON = IconLoader.getIcon("/icons/sqs-service.png")
 val SQS_QUEUE_ICON = IconLoader.getIcon("/icons/index.png")

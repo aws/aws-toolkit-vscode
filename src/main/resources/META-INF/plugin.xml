@@ -23,11 +23,15 @@
   -->
 
   <extensions defaultExtensionNs="com.intellij">
-    <toolWindow id="AWS Explorer" anchor="bottom" factoryClass="com.amazonaws.intellij.ui.explorer.AwsExplorerToolWindow" icon="/icons/aws-box.gif"/>
+    <toolWindow id="AWS.Toolkit.Explorer" anchor="bottom" factoryClass="com.amazonaws.intellij.ui.explorer.AwsExplorerToolWindow" icon="/icons/aws-box.gif"/>
   </extensions>
 
   <actions>
-    <!-- Add your actions here -->
+    <group id="AWS.Toolkit.ActionGroup" icon="/icons/aws-box.gif" text="AWS" popup="true">
+      <action id="AWS.Toolkit.UploadLambdaFunction" class="com.amazonaws.intellij.actions.UploadLambdaFunction" text="Upload to AWS _Lambda..." icon="/icons/lambda-service.png"/>
+      <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+    </group>
   </actions>
+
 
 </idea-plugin>
