@@ -19,6 +19,7 @@ plugins {
 repositories {
     mavenCentral()
 }
+
 apply plugin: 'java'
 apply plugin: 'kotlin'
 sourceCompatibility = javaVersion
@@ -28,13 +29,13 @@ apply plugin: 'org.jetbrains.intellij'
 
 intellij {
     version ideaVersion
-    pluginName 'AWS IntelliJ Toolkit'
+    pluginName 'aws-intellij-toolkit'
     updateSinceUntilBuild false
 }
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    compile "com.amazonaws:aws-java-sdk:$awsSdkVersion"
+    compile "com.amazonaws:aws-java-sdk-s3:$awsSdkVersion"
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
 
