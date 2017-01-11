@@ -1,7 +1,9 @@
 package com.amazonaws.intellij.ui.explorer
 
-import com.amazonaws.intellij.ui.*
-import com.amazonaws.services.s3.AmazonS3
+import com.amazonaws.intellij.aws.S3ClientProvider
+import com.amazonaws.intellij.ui.AWS_ICON
+import com.amazonaws.intellij.ui.S3_BUCKET_ICON
+import com.amazonaws.intellij.ui.S3_SERVICE_ICON
 import com.amazonaws.services.s3.model.Bucket
 import java.awt.Dimension
 import java.awt.GridLayout
@@ -23,7 +25,7 @@ class AwsExplorerMainEventHandler(private val s3DetailsController: S3BucketDetai
     }
 }
 
-class AwsExplorerMainController(private val s3Client: AmazonS3, private val view: AwsExplorerMainView) {
+class AwsExplorerMainController(private val s3Provider: S3ClientProvider, private val view: AwsExplorerMainView) {
     fun load() {
         view.updateResources(createResourcesTree())
     }
@@ -31,7 +33,7 @@ class AwsExplorerMainController(private val s3Client: AmazonS3, private val view
     private fun createResourcesTree(): TreeNode {
         val root = DefaultMutableTreeNode(AwsTreeNode(AWS_ICON, "Resources"))
         val s3Node = AwsTreeNode(S3_SERVICE_ICON, "S3")
-        s3Client.listBuckets().forEach { s3Node.add(AwsTreeNode(S3_BUCKET_ICON, it, Bucket::getName)) }
+        s3Provider.s3Client().listBuckets().forEach { s3Node.add(AwsTreeNode(S3_BUCKET_ICON, it, Bucket::getName)) }
         root.add(s3Node)
         return root
     }

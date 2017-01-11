@@ -1,6 +1,6 @@
 package com.amazonaws.intellij.ui.explorer
 
-import com.amazonaws.services.s3.AmazonS3Client
+import com.amazonaws.intellij.aws.AwsResourceManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
@@ -12,12 +12,12 @@ import javax.swing.tree.DefaultTreeCellRenderer
 
 class AwsExplorerToolWindow : ToolWindowFactory {
     override fun createToolWindowContent(project: Project, window: ToolWindow) {
-        val s3Client = AmazonS3Client()
+        val resources = AwsResourceManager.getInstance(project)
         val s3DetailsView = S3BucketDetailView()
-        val s3DetailsController = S3BucketDetailController(s3Client, s3DetailsView)
+        val s3DetailsController = S3BucketDetailController(resources, s3DetailsView)
         val mainEventHandler = AwsExplorerMainEventHandler(s3DetailsController)
         val mainView = AwsExplorerMainView(mainEventHandler, s3DetailsView)
-        val mainController = AwsExplorerMainController(s3Client, mainView)
+        val mainController = AwsExplorerMainController(resources, mainView)
         mainController.load()
         window.component.parent.add(mainView)
     }

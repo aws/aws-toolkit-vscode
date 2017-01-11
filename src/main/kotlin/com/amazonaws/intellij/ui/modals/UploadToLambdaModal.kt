@@ -1,5 +1,8 @@
 package com.amazonaws.intellij.ui.modals
 
+import com.amazonaws.intellij.aws.AwsResourceManager
+import com.amazonaws.intellij.aws.IamClientProvider
+import com.amazonaws.intellij.aws.S3ClientProvider
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClient
 import com.amazonaws.services.identitymanagement.model.CreateRoleRequest
@@ -21,16 +24,13 @@ class UploadToLambdaModal(private val project: Project, private val psi: PsiFile
     }
 
     override fun createCenterPanel(): JComponent? {
-
-
-        val eventHandler = UploadToLambdaModalEventHandler(AmazonS3Client(), AmazonIdentityManagementClient())
+        val resources = AwsResourceManager.getInstance(project)
+        val eventHandler = UploadToLambdaModalEventHandler(resources, resources)
         val view = UploadToLambdaModalView(eventHandler)
         val controller = UploadToLambdaController(view, psi)
         controller.load()
         return view
     }
-
-
 }
 
 class UploadToLambdaController(private val view: UploadToLambdaModalView, private val psi: PsiFile) {
@@ -52,18 +52,18 @@ class UploadToLambdaController(private val view: UploadToLambdaModalView, privat
     }
 }
 
-class UploadToLambdaModalEventHandler(private val s3: AmazonS3, private val iam: AmazonIdentityManagement) {
+class UploadToLambdaModalEventHandler(private val s3Provider: S3ClientProvider, private val iamProvider: IamClientProvider) {
     fun createS3BucketClicked(source: UploadToLambdaModalView) {
         val bucketName = JOptionPane.showInputDialog(source, "S3 Bucket Name:", "Create S3 Bucket", JOptionPane.PLAIN_MESSAGE)
         if (bucketName != null) run {
-            s3.createBucket(bucketName)
+            s3Provider.s3Client().createBucket(bucketName)
         }
     }
 
     fun createIamRoleClicked(source: UploadToLambdaModalView) {
         val iamRole = JOptionPane.showInputDialog(source, "Role Name:", "Create IAM Role", JOptionPane.PLAIN_MESSAGE)
         if (iamRole != null) run {
-            iam.createRole(CreateRoleRequest().withRoleName(iamRole))
+            iamProvider.iamClient().createRole(CreateRoleRequest().withRoleName(iamRole))
         }
     }
 }

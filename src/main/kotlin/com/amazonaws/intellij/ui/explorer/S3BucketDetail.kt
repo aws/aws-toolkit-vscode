@@ -1,6 +1,6 @@
 package com.amazonaws.intellij.ui.explorer
 
-import com.amazonaws.services.s3.AmazonS3
+import com.amazonaws.intellij.aws.S3ClientProvider
 import com.amazonaws.services.s3.model.Bucket
 import com.amazonaws.services.s3.model.ListObjectsV2Request
 import com.amazonaws.services.s3.model.Owner
@@ -14,7 +14,7 @@ import javax.swing.JTable
 import javax.swing.table.DefaultTableModel
 import javax.swing.table.TableModel
 
-class S3BucketDetailController(private val s3: AmazonS3, private val view: S3BucketDetailView) {
+class S3BucketDetailController(private val s3Provider: S3ClientProvider, private val view: S3BucketDetailView) {
     private val format = SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z")
     private val columns = listOf("Key", "Etag", "Size", "Owner", "Modified", "Storage Class")
 
@@ -24,7 +24,7 @@ class S3BucketDetailController(private val s3: AmazonS3, private val view: S3Buc
 
         ApplicationManager.getApplication().invokeLater {
             val req = ListObjectsV2Request().withBucketName(bucket.name).withMaxKeys(50)
-            val objArray = s3.listObjectsV2(req).objectSummaries.filter{it.key != null}.map { obj ->
+            val objArray = s3Provider.s3Client().listObjectsV2(req).objectSummaries.filter{it.key != null}.map { obj ->
                 val modified = if (obj.lastModified != null) format.format(obj.lastModified) else ""
                 val size = obj.size.toString()
                 val etag = obj.eTag ?: ""
