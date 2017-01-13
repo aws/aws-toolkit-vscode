@@ -1,12 +1,7 @@
 package com.amazonaws.intellij.ui.modals
 
-import com.amazonaws.intellij.aws.AwsResourceBundle
-import com.amazonaws.intellij.aws.AwsResourceManager
-import com.amazonaws.intellij.aws.IamClientProvider
-import com.amazonaws.intellij.aws.S3ClientProvider
+import com.amazonaws.intellij.aws.*
 import com.amazonaws.intellij.aws.lambda.LambdaFunction
-import com.amazonaws.intellij.aws.IamRole
-import com.amazonaws.intellij.aws.S3Bucket
 import com.amazonaws.services.identitymanagement.model.CreateRoleRequest
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
@@ -39,8 +34,8 @@ class UploadToLambdaModal(private val project: Project, private val psi: PsiFile
         if (view.handler() == null) return ValidationInfo("Handler must be specified", view.handlerPicker)
         if (view.iamRole() == null) return ValidationInfo("Iam role must be specified", view.iamRolePicker)
         if (view.s3Bucket() == null) return ValidationInfo("S3 bucket must be specified", view.s3BucketPicker)
-        val bucketRegion = view.s3Bucket()!!.region(resources)
-        if (bucketRegion != resources.region()) return ValidationInfo("Bucket must be in same region as Lambda function (${resources.region()}) but was ($bucketRegion)", view.s3BucketPicker)
+        val s3Bucket = view.s3Bucket()!!
+        if (s3Bucket.region != resources.region()) return ValidationInfo("Bucket must be in same region as Lambda function (${resources.region()}) but was (${s3Bucket.region})", view.s3BucketPicker)
         return super.doValidate()
     }
 
