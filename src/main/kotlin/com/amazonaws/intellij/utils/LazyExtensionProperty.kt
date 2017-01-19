@@ -1,6 +1,6 @@
 package com.amazonaws.intellij.utils
 
-import java.util.*
+import java.util.WeakHashMap
 import kotlin.reflect.KProperty
 
 /**

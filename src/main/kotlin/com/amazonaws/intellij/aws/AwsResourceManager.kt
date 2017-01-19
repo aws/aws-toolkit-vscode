@@ -5,6 +5,7 @@ import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientB
 import com.amazonaws.services.lambda.AWSLambda
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder
 import com.amazonaws.services.s3.AmazonS3
+import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.intellij.openapi.project.Project
 import java.util.concurrent.ConcurrentHashMap
@@ -39,7 +40,7 @@ class AwsResourceBundle internal constructor() : S3ClientProvider, LambdaClientP
 }
 
 private class AwsResources(val region: String) {
-    val s3Client: AmazonS3 = AmazonS3ClientBuilder.standard().withRegion(region).build()
+    val s3Client: AmazonS3 = AmazonS3Client() //AmazonS3ClientBuilder.standard().withRegion(region).build()
     val lambdaClient: AWSLambda = AWSLambdaClientBuilder.standard().withRegion(region).build()
     val iamClient: AmazonIdentityManagement = AmazonIdentityManagementClientBuilder.standard().withRegion(region).build()
 }

@@ -23,7 +23,7 @@
   -->
 
   <extensions defaultExtensionNs="com.intellij">
-    <toolWindow id="AWS.Toolkit.Explorer" anchor="bottom" factoryClass="com.amazonaws.intellij.ui.explorer.AwsExplorerToolWindow" icon="/icons/aws-box.gif"/>
+    <toolWindow id="AWS Explorer" anchor="bottom" factoryClass="com.amazonaws.intellij.ui.explorer.AwsExplorerToolWindow" icon="/icons/aws-box.gif"/>
   </extensions>
 
   <actions>

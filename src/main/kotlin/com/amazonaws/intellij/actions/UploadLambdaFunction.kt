@@ -2,14 +2,19 @@ package com.amazonaws.intellij.actions
 
 import com.amazonaws.intellij.aws.AwsResourceManager
 import com.amazonaws.intellij.aws.lambda.LambdaCreatorFactory
+import com.amazonaws.intellij.ui.LAMBDA_SERVICE_ICON_LARGE
 import com.amazonaws.intellij.ui.modals.UploadToLambdaModal
+import com.amazonaws.services.lambda.model.InvokeRequest
 import com.intellij.lang.Language
 import com.intellij.notification.Notification
+import com.intellij.notification.NotificationListener
 import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
+import java.nio.ByteBuffer
+import javax.swing.JOptionPane
 
 class UploadLambdaFunction : AnAction() {
     override fun actionPerformed(event: AnActionEvent?) {
@@ -28,7 +33,13 @@ class UploadLambdaFunction : AnAction() {
 
         val uploadModal = UploadToLambdaModal(project, psi) { functionDetails ->
             LambdaCreatorFactory.create(AwsResourceManager.getInstance(project)).createLambda(functionDetails, project) {
-                Notifications.Bus.notify(Notification("AWS Toolkit", "AWS Lambda Function Created", "AWS Lambda Function '${functionDetails.name}' ($it)", NotificationType.INFORMATION))
+                val notificationListener = NotificationListener { notification, event ->
+                    val input = JOptionPane.showInputDialog(null, "Input", "Run ${functionDetails.name}", JOptionPane.PLAIN_MESSAGE, LAMBDA_SERVICE_ICON_LARGE, null, null)
+                    val invoke = InvokeRequest().withFunctionName(functionDetails.name).withPayload(ByteBuffer.wrap("\"$input\"".toByteArray()))
+                    val res = AwsResourceManager.getInstance(project).lambdaClient().invoke(invoke)
+                    JOptionPane.showMessageDialog(null, String(res.payload.array()), null, JOptionPane.PLAIN_MESSAGE, LAMBDA_SERVICE_ICON_LARGE)
+                }
+                Notifications.Bus.notify(Notification("AWS Toolkit", "AWS Lambda Created", "${functionDetails.name} created <a href=\"$it\">run it</a>", NotificationType.INFORMATION, notificationListener))
             }
         }
         uploadModal.show()
@@ -36,6 +47,5 @@ class UploadLambdaFunction : AnAction() {
 
     private fun handleError(msg: String) {
         Notifications.Bus.notify(Notification("AWS Tookit", "Upload Lambda Failed", msg, NotificationType.ERROR))
-
     }
 }

@@ -30,8 +30,8 @@ class UploadToLambdaModal(private val project: Project, private val psi: PsiFile
     }
 
     override fun doValidate(): ValidationInfo? {
-        if (view.functionName() == null) return ValidationInfo("Function Name must be specified", view.functionName)
-        if (view.handler() == null) return ValidationInfo("Handler must be specified", view.handlerPicker)
+        if (view.functionName().isNullOrBlank()) return ValidationInfo("Function Name must be specified", view.functionName)
+        if (view.handler().isNullOrBlank()) return ValidationInfo("Handler must be specified", view.handlerPicker)
         if (view.iamRole() == null) return ValidationInfo("Iam role must be specified", view.iamRolePicker)
         if (view.s3Bucket() == null) return ValidationInfo("S3 bucket must be specified", view.s3BucketPicker)
         val s3Bucket = view.s3Bucket()!!
