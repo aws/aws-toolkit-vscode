@@ -1,4 +1,4 @@
-<idea-plugin version="2">
+<idea-plugin>
   <id>com.amazonaws.intellij</id>
   <name>AWS Toolkit</name>
   <version>1.0</version>

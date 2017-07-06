@@ -1,6 +1,7 @@
 package com.amazonaws.intellij.ui.explorer
 
 import com.amazonaws.intellij.aws.AwsResourceManager
+import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
@@ -10,7 +11,7 @@ import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeCellRenderer
 
-class AwsExplorerToolWindow : ToolWindowFactory {
+class AwsExplorerToolWindow : ToolWindowFactory, DumbAware {
     override fun createToolWindowContent(project: Project, window: ToolWindow) {
         val resources = AwsResourceManager.getInstance(project)
         val s3DetailsView = S3BucketDetailView()
