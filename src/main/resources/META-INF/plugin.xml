@@ -24,21 +24,21 @@
 
   <extensionPoints>
     <extensionPoint qualifiedName="com.amazonaws.intellij.credentialProviderFactory"
-                    interface="com.amazonaws.intellij.credentials.CredentialProviderFactory"/>
+                    interface="com.amazonaws.intellij.credentials.CredentialProfileFactory"/>
   </extensionPoints>
 
   <extensions defaultExtensionNs="com.intellij">
-    <projectConfigurable groupId="aws" displayName="AWS" id="aws"
-                         instance="com.amazonaws.intellij.ui.options.AWSOptionsConfigurable"/>
-    <projectService serviceImplementation="com.amazonaws.intellij.options.AWSOptionsProvider"/>
+    <!-- Credential Management -->
+    <projectConfigurable displayName="AWS" id="aws"
+                         instance="com.amazonaws.intellij.ui.options.AWSCredentialsConfigurable"/>
+    <projectService serviceImplementation="com.amazonaws.intellij.credentials.AWSCredentialsProfileProvider"/>
 
     <toolWindow id="AWS Explorer" anchor="bottom"
                 factoryClass="com.amazonaws.intellij.ui.explorer.AwsExplorerToolWindow" icon="/icons/aws-box.gif"/>
   </extensions>
 
   <extensions defaultExtensionNs="com.amazonaws.intellij">
-    <credentialProviderFactory implementation="com.amazonaws.intellij.credentials.DefaultChainCredentialProviderFactory"/>
-    <credentialProviderFactory implementation="com.amazonaws.intellij.credentials.BasicCredentialProviderFactory"/>
+    <credentialProviderFactory implementation="com.amazonaws.intellij.credentials.CredentialFileBasedProfileFactory"/>
   </extensions>
 
   <actions>
