@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="com.amazonaws.intellij.ui.ui.widgets.AwsRegionPanel">
+  <grid id="27dc6" binding="regionPanel" layout-manager="FlowLayout" hgap="5" vgap="5" flow-align="1">
+    <constraints>
+      <xy x="20" y="20" width="175" height="36"/>
+    </constraints>
+    <properties/>
+    <border type="none"/>
+    <children>
+      <component id="cd39d" class="javax.swing.JLabel">
+        <constraints/>
+        <properties>
+          <labelFor value="7d249"/>
+          <text value="Region"/>
+        </properties>
+      </component>
+      <component id="7d249" class="com.intellij.openapi.ui.ComboBox" binding="regionCombo">
+        <constraints/>
+        <properties/>
+      </component>
+    </children>
+  </grid>
+</form>

@@ -2,3 +2,6 @@
 out/
 target/
 /.idea/
+build/
+.DS_Store
+.iml
