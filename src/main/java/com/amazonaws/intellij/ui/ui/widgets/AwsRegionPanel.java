@@ -2,17 +2,19 @@ package com.amazonaws.intellij.ui.ui.widgets;
 
 import com.amazonaws.intellij.core.region.AwsRegion;
 import com.amazonaws.intellij.core.region.AwsRegionManager;
+import com.intellij.openapi.ui.ComboBox;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.util.Optional;
 
 /**
  * Created by zhaoxiz on 7/28/17.
  */
 public class AwsRegionPanel {
     private JPanel regionPanel;
-    private com.intellij.openapi.ui.ComboBox<AwsRegion> regionCombo;
+    private ComboBox<AwsRegion> regionCombo;
 
     public AwsRegionPanel(String defaultRegion) {
 
@@ -25,9 +27,7 @@ public class AwsRegionPanel {
             }
         });
 
-        for (AwsRegion region : AwsRegionManager.INSTANCE.getRegions()) {
-            regionCombo.addItem(region);
-        }
+        AwsRegionManager.INSTANCE.getRegions().forEach((region)-> {regionCombo.addItem(region);});
         selectRegion(defaultRegion);
     }
 
@@ -40,15 +40,14 @@ public class AwsRegionPanel {
     }
 
     private void selectRegion(String regionId) {
-        for (AwsRegion region : AwsRegionManager.INSTANCE.getRegions()) {
-            if (region.getId().equals(regionId)) {
-                regionCombo.setSelectedItem(region);
-                break;
-            }
-        }
+
+        AwsRegionManager.INSTANCE.getRegions().stream().filter((region) -> region.getId().equals(regionId))
+                .findFirst().ifPresent((region) -> {regionCombo.setSelectedItem(region);});
+
     }
 
     public String getSelectedRegion() {
+        assert ((AwsRegion) regionCombo.getSelectedItem()) != null;
         return ((AwsRegion) regionCombo.getSelectedItem()).getId();
     }
 

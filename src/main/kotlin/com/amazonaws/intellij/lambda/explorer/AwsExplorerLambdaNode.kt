@@ -17,7 +17,7 @@ import com.intellij.openapi.project.Project
 class AwsExplorerLambdaRootNode(project: Project?, region: String):
         AwsExplorerServiceRootNode<FunctionConfiguration>(project, "AWS Lambda", region, LAMBDA_SERVICE_ICON) {
 
-    private var client: AWSLambda = AWSLambdaClientBuilder.standard()
+    private val client: AWSLambda = AWSLambdaClientBuilder.standard()
             .withRegion(region)
             .build()
 

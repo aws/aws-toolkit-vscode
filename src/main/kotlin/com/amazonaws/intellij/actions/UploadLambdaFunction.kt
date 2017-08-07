@@ -39,13 +39,13 @@ class UploadLambdaFunction : AnAction() {
                     val res = AwsResourceManager.getInstance(project).lambdaClient().invoke(invoke)
                     JOptionPane.showMessageDialog(null, String(res.payload.array()), null, JOptionPane.PLAIN_MESSAGE, LAMBDA_SERVICE_ICON_LARGE)
                 }
-                Notifications.Bus.notify(Notification("AWS Toolkit", "AWS LAMBDA Created", "${functionDetails.name} created <a href=\"$it\">run it</a>", NotificationType.INFORMATION, notificationListener))
+                Notifications.Bus.notify(Notification("AWS Toolkit", "AWS Lambda Created", "${functionDetails.name} created <a href=\"$it\">run it</a>", NotificationType.INFORMATION, notificationListener))
             }
         }
         uploadModal.show()
     }
 
     private fun handleError(msg: String) {
-        Notifications.Bus.notify(Notification("AWS Tookit", "Upload LAMBDA Failed", msg, NotificationType.ERROR))
+        Notifications.Bus.notify(Notification("AWS Tookit", "Upload Lambda Failed", msg, NotificationType.ERROR))
     }
 }

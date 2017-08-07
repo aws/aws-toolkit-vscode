@@ -2,6 +2,8 @@ package com.amazonaws.intellij.ui.explorer
 
 import com.amazonaws.intellij.core.region.AwsRegionManager
 import com.amazonaws.intellij.ui.AWS_ICON
+import com.google.common.collect.ImmutableCollection
+import com.google.common.collect.ImmutableList
 import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.project.Project
@@ -27,12 +29,13 @@ abstract class AwsExplorerNode<T>(project: Project?, value: T, val region: Strin
 class AwsExplorerRootNode(project: Project?, region: String):
         AwsExplorerNode<String>(project, "ROOT", region, AWS_ICON) {
 
-    override fun getChildren(): MutableCollection<out AbstractTreeNode<String>> {
+    override fun getChildren(): ImmutableCollection<AbstractTreeNode<String>> {
         val childrenList = mutableListOf<AbstractTreeNode<String>>()
         AwsExplorerService.values()
                 .filter { AwsRegionManager.isServiceSupported(region, it.serviceId) }
-                .mapTo(childrenList) { it.buildServiceRoodNode(project, region) }
-        return childrenList
+                .mapTo(childrenList) { it.buildServiceRootNode(project, region) }
+
+        return ImmutableList.copyOf(childrenList)
     }
 }
 

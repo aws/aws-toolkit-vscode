@@ -12,7 +12,6 @@ import com.intellij.ui.treeStructure.Tree;
 import com.intellij.util.ui.UIUtil;
 import org.jetbrains.annotations.NonNls;
 
-import javax.annotation.Nonnull;
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
@@ -27,7 +26,7 @@ public class ExplorerToolbar {
     private JPanel mainPanel;
     private Wrapper wrapper;
 
-    public ExplorerToolbar(@Nonnull Project project, @NonNls Wrapper wrapper) {
+    public ExplorerToolbar(@NonNls Project project, @NonNls Wrapper wrapper) {
         this.project = project;
         this.regionProvider = AwsDefaultRegionProvider.getInstance(project);
         this.wrapper = wrapper;
