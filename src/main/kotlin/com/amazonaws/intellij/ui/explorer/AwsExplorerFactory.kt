@@ -16,7 +16,7 @@ class AwsExplorerFactory : ToolWindowFactory, DumbAware {
         val simpleToolWindowPanel = SimpleToolWindowPanel(true, false)
         val wrapperPane = Wrapper()
 
-        simpleToolWindowPanel.setToolbar(ExplorerToolbar(project, wrapperPane).mainPanel)
+        simpleToolWindowPanel.setToolbar(ExplorerToolWindow(project, wrapperPane).mainPanel)
         simpleToolWindowPanel.setContent(wrapperPane)
         toolWindow.component.parent.add(simpleToolWindowPanel)
     }

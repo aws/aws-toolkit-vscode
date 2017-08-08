@@ -3,6 +3,7 @@ package com.amazonaws.intellij.ui.ui.widgets;
 import com.amazonaws.intellij.core.region.AwsRegion;
 import com.amazonaws.intellij.core.region.AwsRegionManager;
 import com.intellij.openapi.ui.ComboBox;
+import com.intellij.ui.CollectionComboBoxModel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -15,9 +16,9 @@ import java.util.Optional;
 public class AwsRegionPanel {
     private JPanel regionPanel;
     private ComboBox<AwsRegion> regionCombo;
+    private final CollectionComboBoxModel<AwsRegion> regionModel = new CollectionComboBoxModel<>();
 
     public AwsRegionPanel(String defaultRegion) {
-
         regionCombo.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
@@ -27,7 +28,9 @@ public class AwsRegionPanel {
             }
         });
 
-        AwsRegionManager.INSTANCE.getRegions().forEach((region)-> {regionCombo.addItem(region);});
+        regionCombo.setModel(regionModel);
+
+        AwsRegionManager.INSTANCE.getRegions().forEach(regionModel::add);
         selectRegion(defaultRegion);
     }
 
@@ -40,15 +43,12 @@ public class AwsRegionPanel {
     }
 
     private void selectRegion(String regionId) {
-
         AwsRegionManager.INSTANCE.getRegions().stream().filter((region) -> region.getId().equals(regionId))
-                .findFirst().ifPresent((region) -> {regionCombo.setSelectedItem(region);});
-
+                .findFirst().ifPresent(regionModel::setSelectedItem);
     }
 
     public String getSelectedRegion() {
-        assert ((AwsRegion) regionCombo.getSelectedItem()) != null;
-        return ((AwsRegion) regionCombo.getSelectedItem()).getId();
+        assert regionModel.getSelected() != null;
+        return regionModel.getSelected().getId();
     }
-
 }

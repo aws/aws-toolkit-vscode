@@ -2,8 +2,6 @@ package com.amazonaws.intellij.ui.explorer
 
 import com.amazonaws.intellij.core.region.AwsRegionManager
 import com.amazonaws.intellij.ui.AWS_ICON
-import com.google.common.collect.ImmutableCollection
-import com.google.common.collect.ImmutableList
 import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.project.Project
@@ -14,7 +12,6 @@ import javax.swing.Icon
 /**
  * Created by zhaoxiz on 7/27/17.
  */
-
 abstract class AwsExplorerNode<T>(project: Project?, value: T, val region: String, val awsIcon: Icon?):
         AbstractTreeNode<T>(project, value) {
 
@@ -25,55 +22,56 @@ abstract class AwsExplorerNode<T>(project: Project?, value: T, val region: Strin
     override fun toString() = value.toString()
 }
 
-
 class AwsExplorerRootNode(project: Project?, region: String):
         AwsExplorerNode<String>(project, "ROOT", region, AWS_ICON) {
 
-    override fun getChildren(): ImmutableCollection<AbstractTreeNode<String>> {
+    override fun getChildren(): Collection<AbstractTreeNode<String>> {
         val childrenList = mutableListOf<AbstractTreeNode<String>>()
         AwsExplorerService.values()
                 .filter { AwsRegionManager.isServiceSupported(region, it.serviceId) }
                 .mapTo(childrenList) { it.buildServiceRootNode(project, region) }
 
-        return ImmutableList.copyOf(childrenList)
+        return childrenList
     }
 }
 
 abstract class AwsExplorerServiceRootNode<Resource>(project: Project?, value: String, region: String, awsIcon: Icon):
         AwsExplorerNode<String>(project, value, region, awsIcon) {
-    val cache: ClearableLazyValue<MutableCollection<AwsExplorerNode<*>>>
+    val cache: ClearableLazyValue<Collection<AwsExplorerNode<*>>>
 
     init {
-        cache = object : ClearableLazyValue<MutableCollection<AwsExplorerNode<*>>>() {
-            override fun compute(): MutableCollection<AwsExplorerNode<*>> {
+        cache = object : ClearableLazyValue<Collection<AwsExplorerNode<*>>>() {
+            override fun compute(): Collection<AwsExplorerNode<*>> {
                 return try {
                     val resources = loadResources()
                     if (resources.isEmpty())
                         // Return EmptyNode as the single node of the list
-                        mutableListOf<AwsExplorerEmptyNode>(AwsExplorerEmptyNode(project, region)).toMutableList()
+                        listOf<AwsExplorerEmptyNode>(AwsExplorerEmptyNode(project, region))
                     else
-                        resources.map { mapResourceToNode(it) }.toMutableList()
+                        resources.map { mapResourceToNode(it) }
                 } catch (e: Exception) {
                     // Return the ErrorNode as the single Node of the list
-                    mutableListOf<AwsExplorerErrorNode>(AwsExplorerErrorNode(project, e, region)).toMutableList()
+                    listOf<AwsExplorerErrorNode>(AwsExplorerErrorNode(project, e, region))
                 }
             }
         }
     }
 
-    override fun getChildren(): MutableCollection<AwsExplorerNode<*>> {
+    override fun getChildren(): Collection<AwsExplorerNode<*>> {
         return cache.value
     }
 
     // This method may throw RuntimeException, must handle it
-    abstract fun loadResources(): MutableList<Resource>
+    abstract fun loadResources(): Collection<Resource>
 
     abstract fun mapResourceToNode(resource: Resource): AwsExplorerNode<Resource>
 }
 
-class AwsExplorerErrorNode(project: Project?, exception: Exception, region: String): AwsExplorerNode<Exception>(project, exception, region, null) {
-    override fun getChildren(): MutableCollection<out AbstractTreeNode<Any>> {
-        return mutableListOf()
+class AwsExplorerErrorNode(project: Project?, exception: Exception, region: String):
+        AwsExplorerNode<Exception>(project, exception, region, null) {
+
+    override fun getChildren(): Collection<out AbstractTreeNode<Any>> {
+        return emptyList()
     }
 
     override fun toString(): String {
@@ -88,8 +86,9 @@ class AwsExplorerErrorNode(project: Project?, exception: Exception, region: Stri
 }
 
 class AwsExplorerEmptyNode(project: Project?, region: String): AwsExplorerNode<String>(project, "empty", region, null) {
-    override fun getChildren(): MutableCollection<out AbstractTreeNode<Any>> {
-        return mutableListOf()
+
+    override fun getChildren(): Collection<out AbstractTreeNode<Any>> {
+        return emptyList()
     }
 
     override fun update(presentation: PresentationData?) {

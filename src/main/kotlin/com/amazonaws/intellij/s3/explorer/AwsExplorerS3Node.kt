@@ -16,11 +16,13 @@ import com.intellij.openapi.project.Project
 class AwsExplorerS3RootNode(project: Project?, region: String):
         AwsExplorerServiceRootNode<Bucket>(project, "Amazon S3", region, S3_SERVICE_ICON) {
 
+    //TODO use a ClientFactory instead
     private var client: AmazonS3 = AmazonS3ClientBuilder.standard()
             .withRegion(region)
             .build()
 
-    override fun loadResources(): MutableList<Bucket> {
+    //TODO we need to load all the buckets
+    override fun loadResources(): Collection<Bucket> {
         return client.listBuckets()
     }
 
@@ -30,8 +32,8 @@ class AwsExplorerS3RootNode(project: Project?, region: String):
 class AwsExplorerBucketNode(project: Project?, private val bucket: Bucket, region: String):
         AwsExplorerNode<Bucket>(project, bucket, region, S3_BUCKET_ICON) {
 
-    override fun getChildren(): MutableCollection<out AbstractTreeNode<Any>> {
-        return mutableListOf()
+    override fun getChildren(): Collection<out AbstractTreeNode<Any>> {
+        return emptyList()
     }
 
     override fun toString(): String {

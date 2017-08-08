@@ -13,9 +13,7 @@ import com.intellij.util.xmlb.XmlSerializerUtil
 @State(name = "AwsDefaultRegionProvider", storages = arrayOf(Storage("aws.xml")))
 class AwsDefaultRegionProvider():
         PersistentStateComponent<AwsDefaultRegionProvider> {
-
     var currentRegion: String = DEFAULT_REGION
-        get() = field ?: DEFAULT_REGION
 
     override fun loadState(state: AwsDefaultRegionProvider) {
         XmlSerializerUtil.copyBean(state, this)
@@ -26,8 +24,8 @@ class AwsDefaultRegionProvider():
     }
 
     companion object {
-
         private const val DEFAULT_REGION = "us-west-2"
+
         @JvmStatic
         fun getInstance(project: Project): AwsDefaultRegionProvider {
             return ServiceManager.getService(project, AwsDefaultRegionProvider::class.java)

@@ -9,10 +9,10 @@ import javax.swing.Icon
 /**
  * Created by zhaoxiz on 7/20/17.
  */
-data class AwsRegion(val id: String, val name: String, val icon: Icon) {
+data class AwsRegion private constructor(val id: String, val name: String, val icon: Icon) {
     private companion object {
          val UNKNOWN_REGION_FLAG = "/icons/aws-box.gif"
-         val REGION_FLAG_MAPPING = hashMapOf<String, String>(
+         val REGION_FLAG_MAPPING = mapOf(
                  "us-east-1" to "/icons/flags/us.png",
                  "us-east-2" to "/icons/flags/us.png",
                  "us-west-1" to "/icons/flags/us.png",
@@ -27,7 +27,7 @@ data class AwsRegion(val id: String, val name: String, val icon: Icon) {
     }
 
     constructor(id: String, name: String):
-            this(id, name, IconLoader.getIcon (if (REGION_FLAG_MAPPING.get(id) == null) UNKNOWN_REGION_FLAG else REGION_FLAG_MAPPING.get(id) as String))
+            this(id, name, IconLoader.getIcon (REGION_FLAG_MAPPING.getOrDefault(id, UNKNOWN_REGION_FLAG)))
 
     override fun toString(): String {
         return name
