@@ -13,7 +13,7 @@ import com.intellij.openapi.project.Project
 /**
  * Created by zhaoxiz on 7/28/17.
  */
-class AwsExplorerLambdaRootNode(project: Project?, region: String):
+class AwsExplorerLambdaRootNode(project: Project, region: String):
         AwsExplorerServiceRootNode<FunctionConfiguration>(project, "AWS Lambda", region, LAMBDA_SERVICE_ICON) {
 
     //TODO we need to move to ClientFactory for initializing service client
@@ -26,13 +26,13 @@ class AwsExplorerLambdaRootNode(project: Project?, region: String):
         return client.listFunctions().functions
     }
 
-    override fun mapResourceToNode(resource: FunctionConfiguration) = AwsExplorerFunctionNode(project, resource, region)
+    override fun mapResourceToNode(resource: FunctionConfiguration) = AwsExplorerFunctionNode(project!!, resource, region)
 }
 
-class AwsExplorerFunctionNode(project: Project?, private val function: FunctionConfiguration, region: String):
+class AwsExplorerFunctionNode(project: Project, private val function: FunctionConfiguration, region: String):
         AwsExplorerNode<FunctionConfiguration>(project, function, region, SQS_QUEUE_ICON) { //TODO replace to Function icon
 
-    override fun getChildren(): Collection<out AbstractTreeNode<Any>> {
+    override fun getChildren(): Collection<AbstractTreeNode<Any>> {
         return emptyList()
     }
 

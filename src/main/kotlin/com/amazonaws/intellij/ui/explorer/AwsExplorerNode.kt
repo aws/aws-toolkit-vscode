@@ -12,7 +12,7 @@ import javax.swing.Icon
 /**
  * Created by zhaoxiz on 7/27/17.
  */
-abstract class AwsExplorerNode<T>(project: Project?, value: T, val region: String, val awsIcon: Icon?):
+abstract class AwsExplorerNode<T>(project: Project, value: T, val region: String, val awsIcon: Icon?):
         AbstractTreeNode<T>(project, value) {
 
     override fun update(presentation: PresentationData?) {
@@ -22,20 +22,20 @@ abstract class AwsExplorerNode<T>(project: Project?, value: T, val region: Strin
     override fun toString() = value.toString()
 }
 
-class AwsExplorerRootNode(project: Project?, region: String):
+class AwsExplorerRootNode(project: Project, region: String):
         AwsExplorerNode<String>(project, "ROOT", region, AWS_ICON) {
 
     override fun getChildren(): Collection<AbstractTreeNode<String>> {
         val childrenList = mutableListOf<AbstractTreeNode<String>>()
         AwsExplorerService.values()
                 .filter { AwsRegionManager.isServiceSupported(region, it.serviceId) }
-                .mapTo(childrenList) { it.buildServiceRootNode(project, region) }
+                .mapTo(childrenList) { it.buildServiceRootNode(project!!, region) }
 
         return childrenList
     }
 }
 
-abstract class AwsExplorerServiceRootNode<Resource>(project: Project?, value: String, region: String, awsIcon: Icon):
+abstract class AwsExplorerServiceRootNode<Resource>(project: Project, value: String, region: String, awsIcon: Icon):
         AwsExplorerNode<String>(project, value, region, awsIcon) {
     val cache: ClearableLazyValue<Collection<AwsExplorerNode<*>>>
 
@@ -44,14 +44,15 @@ abstract class AwsExplorerServiceRootNode<Resource>(project: Project?, value: St
             override fun compute(): Collection<AwsExplorerNode<*>> {
                 return try {
                     val resources = loadResources()
-                    if (resources.isEmpty())
+                    if (resources.isEmpty()) {
                         // Return EmptyNode as the single node of the list
-                        listOf<AwsExplorerEmptyNode>(AwsExplorerEmptyNode(project, region))
-                    else
+                        listOf(AwsExplorerEmptyNode(project, region))
+                    } else {
                         resources.map { mapResourceToNode(it) }
+                    }
                 } catch (e: Exception) {
                     // Return the ErrorNode as the single Node of the list
-                    listOf<AwsExplorerErrorNode>(AwsExplorerErrorNode(project, e, region))
+                    listOf(AwsExplorerErrorNode(project, e, region))
                 }
             }
         }
@@ -67,10 +68,10 @@ abstract class AwsExplorerServiceRootNode<Resource>(project: Project?, value: St
     abstract fun mapResourceToNode(resource: Resource): AwsExplorerNode<Resource>
 }
 
-class AwsExplorerErrorNode(project: Project?, exception: Exception, region: String):
+class AwsExplorerErrorNode(project: Project, exception: Exception, region: String):
         AwsExplorerNode<Exception>(project, exception, region, null) {
 
-    override fun getChildren(): Collection<out AbstractTreeNode<Any>> {
+    override fun getChildren(): Collection<AbstractTreeNode<Any>> {
         return emptyList()
     }
 
@@ -85,9 +86,9 @@ class AwsExplorerErrorNode(project: Project?, exception: Exception, region: Stri
     }
 }
 
-class AwsExplorerEmptyNode(project: Project?, region: String): AwsExplorerNode<String>(project, "empty", region, null) {
+class AwsExplorerEmptyNode(project: Project, region: String): AwsExplorerNode<String>(project, "empty", region, null) {
 
-    override fun getChildren(): Collection<out AbstractTreeNode<Any>> {
+    override fun getChildren(): Collection<AbstractTreeNode<Any>> {
         return emptyList()
     }
 

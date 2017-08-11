@@ -13,7 +13,7 @@ import com.intellij.openapi.project.Project
 /**
  * Created by zhaoxiz on 7/28/17.
  */
-class AwsExplorerS3RootNode(project: Project?, region: String):
+class AwsExplorerS3RootNode(project: Project, region: String):
         AwsExplorerServiceRootNode<Bucket>(project, "Amazon S3", region, S3_SERVICE_ICON) {
 
     //TODO use a ClientFactory instead
@@ -26,13 +26,13 @@ class AwsExplorerS3RootNode(project: Project?, region: String):
         return client.listBuckets()
     }
 
-    override fun mapResourceToNode(resource: Bucket) = AwsExplorerBucketNode(project, resource, region)
+    override fun mapResourceToNode(resource: Bucket) = AwsExplorerBucketNode(project!!, resource, region)
 }
 
-class AwsExplorerBucketNode(project: Project?, private val bucket: Bucket, region: String):
+class AwsExplorerBucketNode(project: Project, private val bucket: Bucket, region: String):
         AwsExplorerNode<Bucket>(project, bucket, region, S3_BUCKET_ICON) {
 
-    override fun getChildren(): Collection<out AbstractTreeNode<Any>> {
+    override fun getChildren(): Collection<AbstractTreeNode<Any>> {
         return emptyList()
     }
 

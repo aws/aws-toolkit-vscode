@@ -13,12 +13,6 @@ import com.intellij.ui.components.panels.Wrapper
 class AwsExplorerFactory : ToolWindowFactory, DumbAware {
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        val simpleToolWindowPanel = SimpleToolWindowPanel(true, false)
-        val wrapperPane = Wrapper()
-
-        simpleToolWindowPanel.setToolbar(ExplorerToolWindow(project, wrapperPane).mainPanel)
-        simpleToolWindowPanel.setContent(wrapperPane)
-        toolWindow.component.parent.add(simpleToolWindowPanel)
+        toolWindow.component.parent.add(ExplorerToolWindow(project))
     }
-
 }

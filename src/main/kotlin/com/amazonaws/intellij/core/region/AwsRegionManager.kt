@@ -1,5 +1,6 @@
 package com.amazonaws.intellij.core.region
 
+import com.amazonaws.intellij.utils.notifyException
 import com.amazonaws.partitions.model.Partitions
 import com.amazonaws.regions.RegionUtils
 import com.amazonaws.util.IOUtils
@@ -7,6 +8,7 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.common.collect.ImmutableMap
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications
@@ -18,15 +20,25 @@ import java.io.InputStream
  * Created by zhaoxiz on 7/20/17.
  */
 object AwsRegionManager {
-    var regions: List<AwsRegion>
+    private const val DEFAULT_REGION = "us-west-2"
+    val regions: Map<String, AwsRegion>
+    val defaultRegion: AwsRegion
 
     init {
         val partitions = PartitionLoader.parse()
-        val loadedRegions = mutableListOf<AwsRegion>()
+
+        val mutableRegionMap = mutableMapOf<String, AwsRegion>()
         partitions?.partitions?.forEach {
-            it.regions?.forEach { key, value -> loadedRegions.add(AwsRegion(key, value.description))}
+            it.regions?.forEach { key, region -> mutableRegionMap.put(key, AwsRegion(key, region.description))}
         }
-        regions = loadedRegions
+
+        regions = ImmutableMap.copyOf(mutableRegionMap)
+        //TODO Is there a better way to notify the customer and report the error to us instead of just crash?
+        defaultRegion = regions.get(DEFAULT_REGION)!!
+    }
+
+    fun lookupRegionById(regionId: String): AwsRegion {
+        return regions[regionId]?: defaultRegion
     }
 
     fun isServiceSupported(region: String, serviceName: String): Boolean {
@@ -51,7 +63,7 @@ private object PartitionLoader {
                 mapper.readValue<Partitions>(it, Partitions::class.java)
             } catch (e: IOException) {
                 LOG.error("Error: failed to load file from $JAVA_SDK_PARTITION_RESOURCE_PATH !", e)
-                Notifications.Bus.notify(Notification("AWS Tookit", "Failed to load region endpoint file", e.message?:e.javaClass.name, NotificationType.ERROR))
+                notifyException("Failed to load region endpoint file", e)
                 null
             }
         }
