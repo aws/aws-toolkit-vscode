@@ -22,13 +22,29 @@
   <depends>com.intellij.modules.lang</depends>
   -->
 
+  <extensionPoints>
+    <extensionPoint qualifiedName="com.amazonaws.intellij.credentialProviderFactory"
+                    interface="com.amazonaws.intellij.credentials.CredentialProfileFactory"/>
+  </extensionPoints>
+
   <extensions defaultExtensionNs="com.intellij">
-    <toolWindow id="AWS Explorer" anchor="bottom" factoryClass="com.amazonaws.intellij.ui.explorer.AwsExplorerToolWindow" icon="/icons/aws-box.gif"/>
+    <!-- Credential Management -->
+    <projectConfigurable displayName="AWS" id="aws"
+                         instance="com.amazonaws.intellij.ui.options.AWSCredentialsConfigurable"/>
+    <projectService serviceImplementation="com.amazonaws.intellij.credentials.AWSCredentialsProfileProvider"/>
+
+    <toolWindow id="AWS Explorer" anchor="bottom"
+                factoryClass="com.amazonaws.intellij.ui.explorer.AwsExplorerToolWindow" icon="/icons/aws-box.gif"/>
+  </extensions>
+
+  <extensions defaultExtensionNs="com.amazonaws.intellij">
+    <credentialProviderFactory implementation="com.amazonaws.intellij.credentials.CredentialFileBasedProfileFactory"/>
   </extensions>
 
   <actions>
     <group id="AWS.Toolkit.ActionGroup" icon="/icons/aws-box.gif" text="AWS" popup="true">
-      <action id="AWS.Toolkit.UploadLambdaFunction" class="com.amazonaws.intellij.actions.UploadLambdaFunction" text="Upload to AWS _Lambda..." icon="/icons/lambda-service.png"/>
+      <action id="AWS.Toolkit.UploadLambdaFunction" class="com.amazonaws.intellij.actions.UploadLambdaFunction"
+              text="Upload to AWS _Lambda..." icon="/icons/lambda-service.png"/>
       <add-to-group group-id="EditorPopupMenu" anchor="last"/>
     </group>
   </actions>
