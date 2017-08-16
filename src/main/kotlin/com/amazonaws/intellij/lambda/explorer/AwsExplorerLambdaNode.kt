@@ -10,9 +10,6 @@ import com.amazonaws.services.lambda.model.FunctionConfiguration
 import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.project.Project
 
-/**
- * Created by zhaoxiz on 7/28/17.
- */
 class AwsExplorerLambdaRootNode(project: Project, region: String):
         AwsExplorerServiceRootNode<FunctionConfiguration>(project, "AWS Lambda", region, LAMBDA_SERVICE_ICON) {
 

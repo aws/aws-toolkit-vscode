@@ -6,9 +6,6 @@ import com.amazonaws.regions.Regions
 import com.intellij.openapi.util.IconLoader
 import javax.swing.Icon
 
-/**
- * Created by zhaoxiz on 7/20/17.
- */
 data class AwsRegion private constructor(val id: String, val name: String, val icon: Icon) {
     private companion object {
          val UNKNOWN_REGION_FLAG = "/icons/aws-box.gif"

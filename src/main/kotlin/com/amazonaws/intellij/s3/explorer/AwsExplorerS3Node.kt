@@ -10,9 +10,6 @@ import com.amazonaws.services.s3.model.Bucket
 import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.project.Project
 
-/**
- * Created by zhaoxiz on 7/28/17.
- */
 class AwsExplorerS3RootNode(project: Project, region: String):
         AwsExplorerServiceRootNode<Bucket>(project, "Amazon S3", region, S3_SERVICE_ICON) {
 

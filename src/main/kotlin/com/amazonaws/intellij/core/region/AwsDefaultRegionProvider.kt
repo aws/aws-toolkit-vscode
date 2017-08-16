@@ -6,10 +6,7 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.project.Project
 
-/**
- * Created by zhaoxiz on 7/21/17.
- */
-@State(name = "AwsDefaultRegionProvider", storages = arrayOf(Storage("aws.xml")))
+@State(name = "region", storages = arrayOf(Storage("aws.xml")))
 class AwsDefaultRegionProvider():
         PersistentStateComponent<AwsDefaultRegionProvider.RegionState> {
 

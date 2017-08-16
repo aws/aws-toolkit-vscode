@@ -3,22 +3,14 @@ package com.amazonaws.intellij.core.region
 import com.amazonaws.intellij.utils.notifyException
 import com.amazonaws.partitions.model.Partitions
 import com.amazonaws.regions.RegionUtils
-import com.amazonaws.util.IOUtils
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.collect.ImmutableMap
-import com.intellij.notification.Notification
-import com.intellij.notification.NotificationType
-import com.intellij.notification.Notifications
 import com.intellij.openapi.diagnostic.Logger
 import java.io.IOException
-import java.io.InputStream
 
-/**
- * Created by zhaoxiz on 7/20/17.
- */
 object AwsRegionManager {
     private const val DEFAULT_REGION = "us-west-2"
     val regions: Map<String, AwsRegion>

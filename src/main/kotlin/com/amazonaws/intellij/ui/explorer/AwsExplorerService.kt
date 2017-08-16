@@ -7,9 +7,6 @@ import com.amazonaws.services.s3.AmazonS3
 import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.project.Project
 
-/**
- * Created by zhaoxiz on 7/27/17.
- */
 enum class AwsExplorerService(val serviceId: String) {
     S3(AmazonS3.ENDPOINT_PREFIX) {
         override fun buildServiceRootNode(project: Project, region: String): AwsExplorerS3RootNode {

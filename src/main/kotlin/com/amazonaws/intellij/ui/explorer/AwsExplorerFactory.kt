@@ -7,9 +7,6 @@ import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.components.panels.Wrapper
 
-/**
- * Created by zhaoxiz on 7/19/17.
- */
 class AwsExplorerFactory : ToolWindowFactory, DumbAware {
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {

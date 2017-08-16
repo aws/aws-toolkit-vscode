@@ -4,10 +4,6 @@ import com.intellij.ide.projectView.TreeStructureProvider
 import com.intellij.ide.util.treeView.AbstractTreeStructureBase
 import com.intellij.openapi.project.Project
 
-/**
- * Created by zhaoxiz on 7/27/17.
- */
-
 class AwsExplorerTreeStructure(project: Project, val region: String) : AbstractTreeStructureBase(project) {
 
     override fun getProviders(): List<TreeStructureProvider>? {
