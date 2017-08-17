@@ -9,9 +9,6 @@ import com.intellij.openapi.util.ClearableLazyValue
 import com.intellij.ui.SimpleTextAttributes
 import javax.swing.Icon
 
-/**
- * Created by zhaoxiz on 7/27/17.
- */
 abstract class AwsExplorerNode<T>(project: Project, value: T, val region: String, val awsIcon: Icon?):
         AbstractTreeNode<T>(project, value) {
 
