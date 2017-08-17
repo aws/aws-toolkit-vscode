@@ -2,5 +2,7 @@
 out/
 target/
 /.idea/
+build/
+*.iml
 .DS_Store
 Build/

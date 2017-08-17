@@ -28,7 +28,11 @@ interface HasIcon {
     val icon: Icon
 }
 
-class AwsTreeNode<T>(override val icon: Icon, val value: T, toName: (T) -> String = { it.toString() }) : HasIcon, DefaultMutableTreeNode(toName(value))
+open class AwsTreeNode<T>(
+        override val icon: Icon,
+        val value: T,
+        toName: (T) -> String = { it.toString() }
+) : HasIcon, DefaultMutableTreeNode(toName(value))
 
 class TreeCellRenderer : DefaultTreeCellRenderer() {
     override fun getTreeCellRendererComponent(tree: JTree?, value: Any?, sel: Boolean, expanded: Boolean, leaf: Boolean, row: Int, hasFocus: Boolean): Component {
