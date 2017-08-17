@@ -27,14 +27,12 @@ import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBLabel;
 import java.awt.BorderLayout;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -73,7 +71,7 @@ public class AWSCredentialsConfigurable implements Configurable, Configurable.No
     }
 
     private void createNewProfile(AnActionButton button) {
-        CredentialProfileFactory<CredentialProfile>[] providerFactories = CredentialProfileFactory.credentialProviderTypes();
+        CredentialProfileFactory<? extends CredentialProfile>[] providerFactories = CredentialProfileFactory.credentialProviderTypes();
         // No extensions are registered, go directly to the profile creation, else we will make a pop up menu to give a choice
         if (providerFactories.length == 1) {
             createNewProfile(providerFactories[0]);
@@ -82,10 +80,9 @@ public class AWSCredentialsConfigurable implements Configurable, Configurable.No
         }
     }
 
-    private void createProfileTypePopup(AnActionButton button, CredentialProfileFactory<CredentialProfile>[] providerFactories) {
+    private void createProfileTypePopup(AnActionButton button, CredentialProfileFactory<? extends CredentialProfile>[] providerFactories) {
         BaseListPopupStep<CredentialProfileFactory<? extends CredentialProfile>> step =
             new BaseListPopupStep<CredentialProfileFactory<? extends CredentialProfile>>(null, providerFactories) {
-
                 @NotNull
                 @Override
                 public String getTextFor(CredentialProfileFactory<? extends CredentialProfile> value) {
@@ -115,10 +112,10 @@ public class AWSCredentialsConfigurable implements Configurable, Configurable.No
             return;
         }
 
-        CredentialProfileFactory<CredentialProfile> factory = CredentialProfileFactory.factoryFor(profileToEdit.getId());
+        CredentialProfileFactory factory = CredentialProfileFactory.factoryFor(profileToEdit.getId());
 
         if(factory == null) {
-            throw new IllegalStateException("The factory for " + profileToEdit.getDescription() + " is missing");
+            throw new IllegalStateException("The factory for " + profileToEdit.getId() + " is missing");
         }
 
         String title = "Edit " + factory.getDescription();
@@ -174,30 +171,21 @@ public class AWSCredentialsConfigurable implements Configurable, Configurable.No
 
     @Override
     public boolean isModified() {
-        List<CredentialProfile> profiles = credentialsTable.getModel().getItems();
-        Map<String, CredentialProfile> newProfiles = profiles.stream()
-                                                             .collect(Collectors.toMap(CredentialProfile::getName, Function.identity()));
-
         return !Objects.equals(optionsProvider.getCredentialFileLocation(), currentCredentialFileLocation)
-            || !optionsProvider.getCredentialProfiles().equals(newProfiles);
+            || !optionsProvider.getProfiles().equals(credentialsTable.getModel().getItems());
     }
 
     @Override
     public void apply() throws ConfigurationException {
         optionsProvider.setCredentialFileLocation(currentCredentialFileLocation);
-        Map<String, CredentialProfile> credentialProfiles = optionsProvider.getCredentialProfiles();
-        credentialProfiles.clear();
-
-        credentialsTable.getModel()
-                        .getItems()
-                        .forEach(credentialProfile -> credentialProfiles.put(credentialProfile.getName(), credentialProfile));
+        optionsProvider.setProfiles(credentialsTable.getModel().getItems());
     }
 
     @Override
     public void reset() {
         currentCredentialFileLocation = optionsProvider.getCredentialFileLocation();
         credentialFileChooser.setText(currentCredentialFileLocation);
-        credentialsTable.getModel().setItems(new ArrayList<>(optionsProvider.getCredentialProfiles().values()));
+        credentialsTable.getModel().setItems(optionsProvider.getProfiles());
     }
 
     @Nls

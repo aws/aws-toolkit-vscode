@@ -28,7 +28,6 @@
   </extensionPoints>
 
   <extensions defaultExtensionNs="com.intellij">
-
     <!-- Credential Management -->
     <projectConfigurable displayName="AWS" id="aws"
                          instance="com.amazonaws.intellij.ui.options.AWSCredentialsConfigurable"/>
@@ -40,7 +39,6 @@
 
     <toolWindow id="AWS Explorer V2" anchor="right"
                 factoryClass="com.amazonaws.intellij.ui.explorer.AwsExplorerFactory" icon="/icons/aws-box.gif"/>
-
   </extensions>
 
   <extensions defaultExtensionNs="com.amazonaws.intellij">

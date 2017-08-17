@@ -1,12 +1,12 @@
 package com.amazonaws.intellij.ui.credentials;
 
+import com.intellij.ui.components.JBTextField;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
 
 public class ProfileNameEditor {
     private JPanel panel;
-    private JTextField profileNameInput;
+    private JBTextField profileNameInput;
 
     public ProfileNameEditor(String value) {
         profileNameInput.setText(value);

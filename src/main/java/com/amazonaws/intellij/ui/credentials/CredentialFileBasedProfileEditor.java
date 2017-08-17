@@ -5,16 +5,16 @@ import com.amazonaws.auth.profile.internal.ProfileKeyConstants;
 import com.amazonaws.intellij.credentials.CredentialFileBasedProfile;
 import com.amazonaws.intellij.credentials.ProfileEditor;
 import com.intellij.ui.components.JBPasswordField;
+import com.intellij.ui.components.JBTextField;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
 import org.jetbrains.annotations.NotNull;
 
 public class CredentialFileBasedProfileEditor extends ProfileEditor<CredentialFileBasedProfile> {
     private JPanel component;
-    private JTextField accessKeyInput;
+    private JBTextField accessKeyInput;
     private JBPasswordField secretKeyInput;
 
     public CredentialFileBasedProfileEditor() {

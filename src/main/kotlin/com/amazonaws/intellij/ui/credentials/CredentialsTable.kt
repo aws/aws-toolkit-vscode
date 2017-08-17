@@ -1,6 +1,7 @@
 package com.amazonaws.intellij.ui.credentials
 
 import com.amazonaws.intellij.credentials.CredentialProfile
+import com.amazonaws.intellij.credentials.CredentialProfileFactory
 import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ColumnInfo
 import com.intellij.util.ui.ListTableModel
@@ -43,8 +44,10 @@ class CredentialsTable : TableView<CredentialProfile>(createModel()) {
 
         private fun createColumnInfo(): Array<ColumnInfo<CredentialProfile, String>> {
             val columnInfo = arrayOf<ColumnInfo<CredentialProfile, String>>(
-                    CredentialProfileColumn("Profile Name", Function<CredentialProfile, String> { it.name!! }),
-                    CredentialProfileColumn("Type", Function<CredentialProfile, String> { it.description })
+                    CredentialProfileColumn("Profile Name", Function { it.name }),
+                    CredentialProfileColumn("Type", Function {
+                        CredentialProfileFactory.factoryFor(it.id)!!.description
+                    })
             )
 
             return columnInfo
