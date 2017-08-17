@@ -53,6 +53,7 @@ class AwsExplorerMainView(eventHandler: AwsExplorerMainEventHandler, s3DetailsVi
         main.leftComponent.preferredSize = Dimension(500, 100)
         main.dividerSize = 2
         add(main)
+        add(resources)
     }
 
     fun updateResources(root: TreeNode) {

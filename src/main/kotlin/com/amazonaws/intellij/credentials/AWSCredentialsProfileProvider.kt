@@ -71,7 +71,6 @@ class AWSCredentialsProfileProvider(private val project: Project) : PersistentSt
         })
 
         val serializedProfiles = Element("profiles")
-
         credentialProfiles.values
                 .filterNot { it is CredentialFileBasedProfile }
                 .forEach {

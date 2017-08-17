@@ -40,7 +40,7 @@ class AwsResourceBundle internal constructor() : S3ClientProvider, LambdaClientP
 }
 
 private class AwsResources(val region: String) {
-    val s3Client: AmazonS3 = AmazonS3Client() //AmazonS3ClientBuilder.standard().withRegion(region).build()
+    val s3Client: AmazonS3 = AmazonS3Client() //AmazonS3ClientBuilder.standard().withRegion(region).parse()
     val lambdaClient: AWSLambda = AWSLambdaClientBuilder.standard().withRegion(region).build()
     val iamClient: AmazonIdentityManagement = AmazonIdentityManagementClientBuilder.standard().withRegion(region).build()
 }
