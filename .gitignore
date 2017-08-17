@@ -3,5 +3,6 @@ out/
 target/
 /.idea/
 build/
-.DS_Store
 *.iml
+.DS_Store
+Build/
