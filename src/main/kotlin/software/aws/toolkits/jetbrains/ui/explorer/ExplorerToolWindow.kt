@@ -1,4 +1,5 @@
 package software.aws.toolkits.jetbrains.ui.explorer
+
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ide.util.treeView.NodeRenderer
 import com.intellij.openapi.options.ShowSettingsUtil
@@ -10,6 +11,7 @@ import com.intellij.ui.TreeUIHelper
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.treeStructure.Tree
+import com.intellij.util.ui.JBSwingUtilities
 import com.intellij.util.ui.UIUtil
 import software.aws.toolkits.jetbrains.core.AwsSettingsProvider
 import software.aws.toolkits.jetbrains.credentials.AwsCredentialsProfileProvider
@@ -20,19 +22,21 @@ import software.aws.toolkits.jetbrains.ui.widgets.AwsRegionPanel
 import software.aws.toolkits.jetbrains.utils.MutableMapWithListener
 import java.awt.FlowLayout
 import java.awt.event.ActionListener
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import javax.swing.JPanel
 import javax.swing.JTree
 import javax.swing.event.HyperlinkEvent
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
-class ExplorerToolWindow(val project: Project):
+class ExplorerToolWindow(val project: Project) :
         SimpleToolWindowPanel(true, false), MutableMapWithListener.MapChangeListener<String, CredentialProfile> {
 
     private val settingsProvider: AwsSettingsProvider = AwsSettingsProvider.getInstance(project)
     private val profileProvider: AwsCredentialsProfileProvider = AwsCredentialsProfileProvider.getInstance(project)
 
-    private val treePanelWrapper: Wrapper = Wrapper();
+    private val treePanelWrapper: Wrapper = Wrapper()
     private val profilePanel: AwsProfilePanel
     private val regionPanel: AwsRegionPanel
     private val errorPanel: JPanel
@@ -88,23 +92,32 @@ class ExplorerToolWindow(val project: Project):
         settingsProvider.currentProfile = selectedProfile
 
         val model = DefaultTreeModel(DefaultMutableTreeNode())
-        val awsTree = createTree()
-        val builder = AwsExplorerTreeBuilder(awsTree, model, project, selectedProfile.name, selectedRegion.id)
+        val awsTree = createTree(model)
+        val builder = AwsExplorerTreeBuilder(awsTree, model, project, profile = selectedProfile.name, region = selectedRegion.id)
         Disposer.register(project, builder)
         treePanelWrapper.setContent(JBScrollPane(awsTree))
     }
 
-    private fun createTree(): JTree {
+    private fun createTree(model: DefaultTreeModel): JTree {
         val awsTree = Tree()
         TreeUIHelper.getInstance().installTreeSpeedSearch(awsTree)
         UIUtil.setLineStyleAngled(awsTree)
         awsTree.isRootVisible = false
         awsTree.autoscrolls = true
         awsTree.cellRenderer = AwsTreeCellRenderer()
+        awsTree.addMouseListener(object : MouseAdapter() {
+            override fun mouseClicked(event: MouseEvent) {
+                if (JBSwingUtilities.isLeftMouseButton(event) && event.clickCount == 2) {
+                    val selectedElement = awsTree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode ?: return
+                    val awsExplorerNode = selectedElement.userObject as? AwsExplorerNode<*> ?: return
+                    awsExplorerNode.onDoubleClick(model, selectedElement)
+                }
+            }
+        })
         return awsTree
     }
 
-    private class AwsTreeCellRenderer:NodeRenderer() {
+    private class AwsTreeCellRenderer : NodeRenderer() {
         override fun customizeCellRenderer(tree: JTree, value: Any, selected: Boolean, expanded: Boolean, leaf: Boolean, row: Int, hasFocus: Boolean) {
             super.customizeCellRenderer(tree, value, selected, expanded, leaf, row, hasFocus)
             if (value is DefaultMutableTreeNode && value.userObject is NodeDescriptor<*>) {

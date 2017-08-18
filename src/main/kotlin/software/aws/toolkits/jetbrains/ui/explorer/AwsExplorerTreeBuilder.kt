@@ -7,11 +7,12 @@ import javax.swing.JTree
 import javax.swing.tree.DefaultTreeModel
 
 class AwsExplorerTreeBuilder(tree: JTree, treeModel: DefaultTreeModel, project: Project, profile: String, region: String):
-        AbstractTreeBuilder(tree, treeModel, AwsExplorerTreeStructure(project, profile, region), null, false) {
-
+        AbstractTreeBuilder(tree, treeModel, AwsExplorerTreeStructure(project, profile = profile, region = region), null, false) {
     init {
         initRootNode()
     }
 
-    override fun isAlwaysShowPlus(descriptor: NodeDescriptor<*>?) = descriptor is AwsExplorerServiceRootNode<*>
+    override fun isAlwaysShowPlus(descriptor: NodeDescriptor<*>?): Boolean {
+        return descriptor is AwsExplorerServiceRootNode
+    }
 }

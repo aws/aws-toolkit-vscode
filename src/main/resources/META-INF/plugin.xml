@@ -35,7 +35,6 @@
     <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsSettingsProvider"/>
     <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.region.AwsRegionProvider"/>
     <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientFactory"/>
-
     <toolWindow id="AWS Explorer" anchor="right"
                 factoryClass="software.aws.toolkits.jetbrains.ui.explorer.AwsExplorerFactory" icon="/icons/aws-box.gif"/>
   </extensions>
