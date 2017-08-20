@@ -1,5 +1,6 @@
 package com.amazonaws.intellij.lambda.explorer
 
+import com.amazonaws.intellij.core.AwsClientFactory
 import com.amazonaws.intellij.ui.LAMBDA_SERVICE_ICON
 import com.amazonaws.intellij.ui.SQS_QUEUE_ICON
 import com.amazonaws.intellij.ui.explorer.AwsExplorerNode
@@ -13,10 +14,8 @@ import com.intellij.openapi.project.Project
 class AwsExplorerLambdaRootNode(project: Project, region: String):
         AwsExplorerServiceRootNode<FunctionConfiguration>(project, "AWS Lambda", region, LAMBDA_SERVICE_ICON) {
 
-    //TODO we need to move to ClientFactory for initializing service client
-    private val client: AWSLambda = AWSLambdaClientBuilder.standard()
-            .withRegion(region)
-            .build()
+    //TODO we need to get the current profile name from the selected combo box
+    private val client: AWSLambda = AwsClientFactory.getClientFactory("default").getLambdaClient(region)
 
     override fun loadResources(): Collection<FunctionConfiguration> {
         //TODO We need to list all the functions, not just one page

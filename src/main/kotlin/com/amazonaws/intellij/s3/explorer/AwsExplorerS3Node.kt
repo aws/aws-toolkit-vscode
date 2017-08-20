@@ -1,5 +1,6 @@
 package com.amazonaws.intellij.s3.explorer
 
+import com.amazonaws.intellij.core.AwsClientFactory
 import com.amazonaws.intellij.ui.S3_BUCKET_ICON
 import com.amazonaws.intellij.ui.S3_SERVICE_ICON
 import com.amazonaws.intellij.ui.explorer.AwsExplorerNode
@@ -13,10 +14,8 @@ import com.intellij.openapi.project.Project
 class AwsExplorerS3RootNode(project: Project, region: String):
         AwsExplorerServiceRootNode<Bucket>(project, "Amazon S3", region, S3_SERVICE_ICON) {
 
-    //TODO use a ClientFactory instead
-    private var client: AmazonS3 = AmazonS3ClientBuilder.standard()
-            .withRegion(region)
-            .build()
+    //TODO use the selected profile
+    private var client: AmazonS3 = AwsClientFactory.getClientFactory("default").getS3Client(region)
 
     //TODO we need to load all the buckets
     override fun loadResources(): Collection<Bucket> {
