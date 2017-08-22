@@ -27,12 +27,7 @@ import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBLabel;
 import java.awt.BorderLayout;
 import java.io.File;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -179,13 +174,14 @@ public class AWSCredentialsConfigurable implements Configurable, Configurable.No
     public void apply() throws ConfigurationException {
         optionsProvider.setCredentialFileLocation(currentCredentialFileLocation);
         optionsProvider.setProfiles(credentialsTable.getModel().getItems());
+
     }
 
     @Override
     public void reset() {
         currentCredentialFileLocation = optionsProvider.getCredentialFileLocation();
         credentialFileChooser.setText(currentCredentialFileLocation);
-        credentialsTable.getModel().setItems(optionsProvider.getProfiles());
+        credentialsTable.getModel().setItems(new ArrayList<>(optionsProvider.getProfiles()));
     }
 
     @Nls

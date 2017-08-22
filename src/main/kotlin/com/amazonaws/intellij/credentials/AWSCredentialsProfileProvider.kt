@@ -1,6 +1,7 @@
 package com.amazonaws.intellij.credentials
 
 import com.amazonaws.auth.profile.ProfilesConfigFile
+import com.amazonaws.intellij.utils.MutableMapWithListener
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.components.State
@@ -18,14 +19,14 @@ import java.io.File
 import java.nio.file.Paths
 
 @State(name = "credentialProfiles", storages = arrayOf(Storage("aws.xml")))
-class AWSCredentialsProfileProvider(private val project: Project) : PersistentStateComponent<Element> {
+class AWSCredentialsProfileProvider private constructor(private val project: Project) : PersistentStateComponent<Element> {
     private data class State(
             var credentialFileLocation: String? = defaultCredentialLocation(),
             var selectedProfileName: String? = null
     )
 
     private val state = State()
-    private val credentialProfiles = mutableMapOf<String, CredentialProfile>()
+    private val credentialProfiles = MutableMapWithListener<String, CredentialProfile>()
 
     var credentialFileLocation: String?
         get() = state.credentialFileLocation
@@ -60,6 +61,18 @@ class AWSCredentialsProfileProvider(private val project: Project) : PersistentSt
         credentialProfiles.values.removeIf { it is CredentialFileBasedProfile }
 
         credentialProfiles.putAll(loadFromCredentialProfile(File(state.credentialFileLocation)))
+    }
+
+    fun lookupProfileByName(name: String): CredentialProfile? {
+        return credentialProfiles[name]
+    }
+
+    fun addProfileChangeListener(listener: MutableMapWithListener.MapChangeListener<String, CredentialProfile>) {
+        credentialProfiles.addListener(listener)
+    }
+
+    fun removeProfileChangeListener(listener: MutableMapWithListener.MapChangeListener<String, CredentialProfile>) {
+        credentialProfiles.removeListener(listener)
     }
 
     override fun getState(): Element {

@@ -1,8 +1,5 @@
 package com.amazonaws.intellij.core.region
 
-import com.amazonaws.regions.Region
-import com.amazonaws.regions.RegionUtils
-import com.amazonaws.regions.Regions
 import com.intellij.openapi.util.IconLoader
 import javax.swing.Icon
 
@@ -28,9 +25,5 @@ data class AwsRegion private constructor(val id: String, val name: String, val i
 
     override fun toString(): String {
         return name
-    }
-
-    fun isServiceSupported(serviceId: String): Boolean {
-        return RegionUtils.getRegion(id).isServiceSupported(serviceId)
     }
 }

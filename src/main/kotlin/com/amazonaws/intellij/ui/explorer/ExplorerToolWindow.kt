@@ -1,11 +1,18 @@
 package com.amazonaws.intellij.ui.explorer
-import com.amazonaws.intellij.core.region.AwsDefaultRegionProvider
+import com.amazonaws.intellij.core.AwsExplorerSettingsProvider
+import com.amazonaws.intellij.credentials.AWSCredentialsProfileProvider
+import com.amazonaws.intellij.credentials.CredentialProfile
+import com.amazonaws.intellij.ui.options.AWSCredentialsConfigurable
+import com.amazonaws.intellij.ui.widgets.AwsProfilePanel
 import com.amazonaws.intellij.ui.widgets.AwsRegionPanel
+import com.amazonaws.intellij.utils.MutableMapWithListener
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ide.util.treeView.NodeRenderer
+import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
+import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.treeStructure.Tree
@@ -14,36 +21,76 @@ import java.awt.FlowLayout
 import java.awt.event.ActionListener
 import javax.swing.JPanel
 import javax.swing.JTree
+import javax.swing.event.HyperlinkEvent
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
 class ExplorerToolWindow(val project: Project):
-        SimpleToolWindowPanel(true, false) {
+        SimpleToolWindowPanel(true, false), MutableMapWithListener.MapChangeListener<String, CredentialProfile> {
+
+    private val settingsProvider: AwsExplorerSettingsProvider = AwsExplorerSettingsProvider.getInstance(project)
+    private val profileProvider: AWSCredentialsProfileProvider = AWSCredentialsProfileProvider.getInstance(project)
 
     private val treePanelWrapper: Wrapper = Wrapper();
-    private val regionProvider: AwsDefaultRegionProvider = AwsDefaultRegionProvider.getInstance(project)
+    private val profilePanel: AwsProfilePanel
     private val regionPanel: AwsRegionPanel
+    private val errorPanel: JPanel
     private val mainPanel: JPanel
 
-    init{
-        regionPanel = AwsRegionPanel(regionProvider.currentRegion)
-        regionPanel.addActionListener(ActionListener { onAwsRegionComboSelected() })
+    init {
+
+        profileProvider.addProfileChangeListener(this)
+
+        val link = HyperlinkLabel("Open AWS Configuration to configure your AWS account.")
+        link.addHyperlinkListener { e ->
+            if (e.eventType == HyperlinkEvent.EventType.ACTIVATED) {
+                ShowSettingsUtil.getInstance().showSettingsDialog(project, AWSCredentialsConfigurable::class.java)
+            }
+        }
+
+        errorPanel = JPanel()
+        errorPanel.add(link)
+
+        profilePanel = AwsProfilePanel(project, settingsProvider.currentProfile)
+        profilePanel.addActionListener(ActionListener { onAwsProfileOrRegionComboSelected() })
+
+        regionPanel = AwsRegionPanel(project, settingsProvider.currentRegion)
+        regionPanel.addActionListener(ActionListener { onAwsProfileOrRegionComboSelected() })
 
         mainPanel = JPanel(FlowLayout(FlowLayout.LEADING, 0, 0))
+        mainPanel.add(profilePanel.profilePanel)
         mainPanel.add(regionPanel.regionPanel)
         setToolbar(mainPanel)
         setContent(treePanelWrapper)
-        onAwsRegionComboSelected()
+
+        onAwsProfileOrRegionComboSelected()
     }
 
-    private fun onAwsRegionComboSelected() {
-        val selectedRegion = regionPanel.getSelectedRegion() ?: return
+    /**
+     * Listeners the underlying profile map to keep being synced with the content pane.
+     */
+    override fun onUpdate() {
+        if (AWSCredentialsProfileProvider.getInstance(project).getProfiles().isEmpty()) {
+            treePanelWrapper.setContent(errorPanel)
+        }
+    }
+
+    private fun onAwsProfileOrRegionComboSelected() {
+        val selectedProfile = profilePanel.getSelectedProfile()
+        val selectedRegion = regionPanel.getSelectedRegion()
+
+        if (selectedProfile == null || selectedRegion == null) {
+            treePanelWrapper.setContent(errorPanel)
+            return
+        }
+        settingsProvider.currentRegion = selectedRegion
+        settingsProvider.currentProfile = selectedProfile
+
         val model = DefaultTreeModel(DefaultMutableTreeNode())
         val awsTree = createTree()
-        val builder = AwsExplorerTreeBuilder(awsTree, model, project, selectedRegion.id)
+        val builder = AwsExplorerTreeBuilder(awsTree, model, project, selectedProfile.name, selectedRegion.id)
         Disposer.register(project, builder)
         treePanelWrapper.setContent(JBScrollPane(awsTree))
-        regionProvider.currentRegion = selectedRegion
     }
 
     private fun createTree(): JTree {
