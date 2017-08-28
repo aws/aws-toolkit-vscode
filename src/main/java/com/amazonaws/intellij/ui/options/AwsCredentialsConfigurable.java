@@ -1,6 +1,6 @@
 package com.amazonaws.intellij.ui.options;
 
-import com.amazonaws.intellij.credentials.AWSCredentialsProfileProvider;
+import com.amazonaws.intellij.credentials.AwsCredentialsProfileProvider;
 import com.amazonaws.intellij.credentials.CredentialFileBasedProfile;
 import com.amazonaws.intellij.credentials.CredentialProfile;
 import com.amazonaws.intellij.credentials.CredentialProfileFactory;
@@ -36,8 +36,8 @@ import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class AWSCredentialsConfigurable implements Configurable, Configurable.NoScroll {
-    private final AWSCredentialsProfileProvider optionsProvider;
+public class AwsCredentialsConfigurable implements Configurable, Configurable.NoScroll {
+    private final AwsCredentialsProfileProvider optionsProvider;
     private JPanel credentialsPanel;
     private JPanel tablePanel;
     private TextFieldWithBrowseButton credentialFileChooser;
@@ -47,8 +47,8 @@ public class AWSCredentialsConfigurable implements Configurable, Configurable.No
 
     private String currentCredentialFileLocation;
 
-    public AWSCredentialsConfigurable(Project project) {
-        optionsProvider = AWSCredentialsProfileProvider.getInstance(project);
+    public AwsCredentialsConfigurable(Project project) {
+        optionsProvider = AwsCredentialsProfileProvider.getInstance(project);
 
         credentialFilePanel.setBorder(IdeBorderFactory.createTitledBorder("Credentials", false));
 
@@ -174,7 +174,6 @@ public class AWSCredentialsConfigurable implements Configurable, Configurable.No
     public void apply() throws ConfigurationException {
         optionsProvider.setCredentialFileLocation(currentCredentialFileLocation);
         optionsProvider.setProfiles(credentialsTable.getModel().getItems());
-
     }
 
     @Override
@@ -222,7 +221,7 @@ public class AWSCredentialsConfigurable implements Configurable, Configurable.No
             }
 
             try {
-                Map<String, CredentialProfile> loadedProfiles = AWSCredentialsProfileProvider
+                Map<String, CredentialProfile> loadedProfiles = AwsCredentialsProfileProvider
                     .loadFromCredentialProfile(credentialFile);
 
                 errorLabel.setVisible(false);

@@ -1,8 +1,8 @@
 package com.amazonaws.intellij.ui.explorer
-import com.amazonaws.intellij.core.AwsExplorerSettingsProvider
-import com.amazonaws.intellij.credentials.AWSCredentialsProfileProvider
+import com.amazonaws.intellij.core.AwsSettingsProvider
+import com.amazonaws.intellij.credentials.AwsCredentialsProfileProvider
 import com.amazonaws.intellij.credentials.CredentialProfile
-import com.amazonaws.intellij.ui.options.AWSCredentialsConfigurable
+import com.amazonaws.intellij.ui.options.AwsCredentialsConfigurable
 import com.amazonaws.intellij.ui.widgets.AwsProfilePanel
 import com.amazonaws.intellij.ui.widgets.AwsRegionPanel
 import com.amazonaws.intellij.utils.MutableMapWithListener
@@ -28,8 +28,8 @@ import javax.swing.tree.DefaultTreeModel
 class ExplorerToolWindow(val project: Project):
         SimpleToolWindowPanel(true, false), MutableMapWithListener.MapChangeListener<String, CredentialProfile> {
 
-    private val settingsProvider: AwsExplorerSettingsProvider = AwsExplorerSettingsProvider.getInstance(project)
-    private val profileProvider: AWSCredentialsProfileProvider = AWSCredentialsProfileProvider.getInstance(project)
+    private val settingsProvider: AwsSettingsProvider = AwsSettingsProvider.getInstance(project)
+    private val profileProvider: AwsCredentialsProfileProvider = AwsCredentialsProfileProvider.getInstance(project)
 
     private val treePanelWrapper: Wrapper = Wrapper();
     private val profilePanel: AwsProfilePanel
@@ -44,7 +44,7 @@ class ExplorerToolWindow(val project: Project):
         val link = HyperlinkLabel("Open AWS Configuration to configure your AWS account.")
         link.addHyperlinkListener { e ->
             if (e.eventType == HyperlinkEvent.EventType.ACTIVATED) {
-                ShowSettingsUtil.getInstance().showSettingsDialog(project, AWSCredentialsConfigurable::class.java)
+                ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsCredentialsConfigurable::class.java)
             }
         }
 
@@ -67,10 +67,10 @@ class ExplorerToolWindow(val project: Project):
     }
 
     /**
-     * Listeners the underlying profile map to keep being synced with the content pane.
+     * Listens to the underlying profile map to keep being synced with the content pane.
      */
     override fun onUpdate() {
-        if (AWSCredentialsProfileProvider.getInstance(project).getProfiles().isEmpty()) {
+        if (AwsCredentialsProfileProvider.getInstance(project).getProfiles().isEmpty()) {
             treePanelWrapper.setContent(errorPanel)
         }
     }

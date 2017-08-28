@@ -1,9 +1,8 @@
 package com.amazonaws.intellij.core
 
 import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.auth.profile.ProfileCredentialsProvider
 import com.amazonaws.client.builder.AwsSyncClientBuilder
-import com.amazonaws.intellij.credentials.AWSCredentialsProfileProvider
+import com.amazonaws.intellij.credentials.AwsCredentialsProfileProvider
 import com.amazonaws.services.codecommit.AWSCodeCommit
 import com.amazonaws.services.codecommit.AWSCodeCommitClientBuilder
 import com.amazonaws.services.lambda.AWSLambda
@@ -58,6 +57,6 @@ class AwsClientFactory(private val project: Project) {
 
     private fun getCredentialsProvider(profileName: String): AWSCredentialsProvider {
         //TODO If we cannot find the profile name, we should report internal error
-        return AWSCredentialsProfileProvider.getInstance(project).lookupProfileByName(profileName)!!.awsCredentials
+        return AwsCredentialsProfileProvider.getInstance(project).lookupProfileByName(profileName)!!.awsCredentials
     }
 }

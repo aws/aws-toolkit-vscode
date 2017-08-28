@@ -30,9 +30,9 @@
   <extensions defaultExtensionNs="com.intellij">
     <!-- Credential Management -->
     <projectConfigurable displayName="AWS" id="aws"
-                         instance="com.amazonaws.intellij.ui.options.AWSCredentialsConfigurable"/>
-    <projectService serviceImplementation="com.amazonaws.intellij.credentials.AWSCredentialsProfileProvider"/>
-    <projectService serviceImplementation="com.amazonaws.intellij.core.AwsExplorerSettingsProvider"/>
+                         instance="com.amazonaws.intellij.ui.options.AwsCredentialsConfigurable"/>
+    <projectService serviceImplementation="com.amazonaws.intellij.credentials.AwsCredentialsProfileProvider"/>
+    <projectService serviceImplementation="com.amazonaws.intellij.core.AwsSettingsProvider"/>
     <projectService serviceImplementation="com.amazonaws.intellij.core.region.AwsRegionProvider"/>
     <projectService serviceImplementation="com.amazonaws.intellij.core.AwsClientFactory"/>
 

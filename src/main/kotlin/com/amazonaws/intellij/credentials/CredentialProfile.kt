@@ -31,13 +31,13 @@ abstract class CredentialProfile {
     abstract val id: String
 
     /**
-     * Called by the [AWSCredentialsProfileProvider] to save the credential metadata, secret data should NOT be
+     * Called by the [AwsCredentialsProfileProvider] to save the credential metadata, secret data should NOT be
      * written to any part of the passed in Element.
      */
     open fun save(project: Project, element: Element){}
 
     /**
-     * Called by the AWSCredentialsProfileProvider when it is loading its settings from disk
+     * Called by the AwsCredentialsProfileProvider when it is loading its settings from disk
      */
     open fun load(project: Project, element: Element): Unit {}
 

@@ -1,25 +1,36 @@
 package com.amazonaws.intellij.ui.widgets
 
-import com.amazonaws.intellij.credentials.AWSCredentialsProfileProvider
+import com.amazonaws.intellij.credentials.AwsCredentialsProfileProvider
 import com.amazonaws.intellij.credentials.CredentialProfile
 import com.amazonaws.intellij.utils.MutableMapWithListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.CollectionComboBoxModel
+import com.intellij.ui.ListCellRendererWrapper
 import java.awt.FlowLayout
 import java.awt.event.ActionListener
 import javax.swing.JLabel
+import javax.swing.JList
 import javax.swing.JPanel
 
 class AwsProfilePanel(project: Project, private val defaultProfile: CredentialProfile?) : MutableMapWithListener.MapChangeListener<String, CredentialProfile> {
     val profilePanel: JPanel = JPanel()
     private val profileCombo = ComboBox<CredentialProfile>()
-    private val profileProvider = AWSCredentialsProfileProvider.getInstance(project)
+    private val profileProvider = AwsCredentialsProfileProvider.getInstance(project)
     private val profileModel = CollectionComboBoxModel<CredentialProfile>()
 
     init {
         setupUI()
         profileCombo.model = profileModel
+
+        profileCombo.renderer = object : ListCellRendererWrapper<Any>() {
+            override fun customize(list: JList<*>, value: Any, index: Int, selected: Boolean, hasFocus: Boolean) {
+                if (value is CredentialProfile) {
+                    setText(value.name)
+                }
+            }
+        }
+
         profileProvider.getProfiles().forEach { profileModel.add(it) }
         profileModel.selectedItem = defaultProfile
         profileProvider.addProfileChangeListener(this)

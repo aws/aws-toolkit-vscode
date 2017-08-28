@@ -40,7 +40,7 @@ class AwsRegionProvider private constructor() {
     }
 
     companion object {
-        const val DEFAULT_REGION = "us-west-2"
+        const val DEFAULT_REGION = "us-east-1"
 
         @JvmStatic
         fun getInstance(project: Project): AwsRegionProvider {

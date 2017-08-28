@@ -2,7 +2,7 @@ package com.amazonaws.intellij.core
 
 import com.amazonaws.intellij.core.region.AwsRegion
 import com.amazonaws.intellij.core.region.AwsRegionProvider
-import com.amazonaws.intellij.credentials.AWSCredentialsProfileProvider
+import com.amazonaws.intellij.credentials.AwsCredentialsProfileProvider
 import com.amazonaws.intellij.credentials.CredentialProfile
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.ServiceManager
@@ -10,14 +10,14 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.project.Project
 
-@State(name = "explorerSettings", storages = arrayOf(Storage("aws.xml")))
-class AwsExplorerSettingsProvider(private val project: Project):
-        PersistentStateComponent<AwsExplorerSettingsProvider.SettingsState> {
+@State(name = "settings", storages = arrayOf(Storage("aws.xml")))
+class AwsSettingsProvider(private val project: Project):
+        PersistentStateComponent<AwsSettingsProvider.SettingsState> {
 
-    private val credentialsProfileProvider: AWSCredentialsProfileProvider = AWSCredentialsProfileProvider.getInstance(project)
+    private val credentialsProfileProvider: AwsCredentialsProfileProvider = AwsCredentialsProfileProvider.getInstance(project)
 
     data class SettingsState(
-            var currentProfile: String = "default",
+            var currentProfile: String = AwsCredentialsProfileProvider.DEFAULT_PROFILE,
             var currentRegion: String = AwsRegionProvider.DEFAULT_REGION
     )
     private var settingsState: SettingsState = SettingsState()
@@ -25,10 +25,10 @@ class AwsExplorerSettingsProvider(private val project: Project):
     var currentProfile: CredentialProfile?
         get() {
             return credentialsProfileProvider.lookupProfileByName(settingsState.currentProfile) ?:
-                    credentialsProfileProvider.lookupProfileByName("default") ?:
+                    credentialsProfileProvider.lookupProfileByName(AwsCredentialsProfileProvider.DEFAULT_PROFILE) ?:
                     if (credentialsProfileProvider.getProfiles().isEmpty()) null else credentialsProfileProvider.getProfiles()[0]
         }
-        set(value) {settingsState.currentProfile = value?.name ?: "default"}
+        set(value) {settingsState.currentProfile = value?.name ?: AwsCredentialsProfileProvider.DEFAULT_PROFILE}
 
     var currentRegion: AwsRegion
         get() = AwsRegionProvider.getInstance(project).lookupRegionById(settingsState.currentRegion)
@@ -45,8 +45,8 @@ class AwsExplorerSettingsProvider(private val project: Project):
 
     companion object {
         @JvmStatic
-        fun getInstance(project: Project): AwsExplorerSettingsProvider {
-            return ServiceManager.getService(project, AwsExplorerSettingsProvider::class.java)
+        fun getInstance(project: Project): AwsSettingsProvider {
+            return ServiceManager.getService(project, AwsSettingsProvider::class.java)
         }
     }
 }

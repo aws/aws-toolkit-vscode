@@ -19,7 +19,7 @@ import java.io.File
 import java.nio.file.Paths
 
 @State(name = "credentialProfiles", storages = arrayOf(Storage("aws.xml")))
-class AWSCredentialsProfileProvider private constructor(private val project: Project) : PersistentStateComponent<Element> {
+class AwsCredentialsProfileProvider private constructor(private val project: Project) : PersistentStateComponent<Element> {
     private data class State(
             var credentialFileLocation: String? = defaultCredentialLocation(),
             var selectedProfileName: String? = null
@@ -138,7 +138,9 @@ class AWSCredentialsProfileProvider private constructor(private val project: Pro
     }
 
     companion object {
-        val LOG = Logger.getInstance(AWSCredentialsProfileProvider::class.java)
+        val LOG = Logger.getInstance(AwsCredentialsProfileProvider::class.java)
+
+        const val DEFAULT_PROFILE = "default"
 
         //TODO: The SDK has its credential locators as internal and returns null instead of the File so if it is a brand new
         // install we won't know where to put them.
@@ -147,8 +149,8 @@ class AWSCredentialsProfileProvider private constructor(private val project: Pro
         }
 
         @JvmStatic
-        fun getInstance(project: Project): AWSCredentialsProfileProvider {
-            return ServiceManager.getService(project, AWSCredentialsProfileProvider::class.java)
+        fun getInstance(project: Project): AwsCredentialsProfileProvider {
+            return ServiceManager.getService(project, AwsCredentialsProfileProvider::class.java)
         }
 
         @JvmStatic

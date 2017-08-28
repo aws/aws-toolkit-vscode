@@ -15,10 +15,6 @@ data class CredentialFileBasedProfile(val profile: BasicProfile) : CredentialPro
     // TODO: This requires re-parsing of the profile file...., https://github.com/aws/aws-sdk-java-v2/issues/70
     override val awsCredentials: AWSCredentialsProvider
         get() = ProfileCredentialsProvider(profile.profileName)
-
-    override fun toString(): String {
-        return name
-    }
 }
 
 class CredentialFileBasedProfileFactory : CredentialProfileFactory<CredentialFileBasedProfile>() {
