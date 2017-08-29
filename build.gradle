@@ -16,7 +16,7 @@ buildscript {
 }
 
 plugins {
-    id 'org.jetbrains.intellij' version "0.2.11"
+    id 'org.jetbrains.intellij' version "0.2.17"
 }
 
 repositories {
@@ -52,3 +52,6 @@ dependencies {
     testCompile group: 'org.assertj', name: 'assertj-core', version: '3.8.0'
 }
 
+wrapper {
+    gradleVersion '4.1'
+}
