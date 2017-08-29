@@ -13,6 +13,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.HyperlinkLabel
+import com.intellij.ui.TreeUIHelper
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.treeStructure.Tree
@@ -95,6 +96,7 @@ class ExplorerToolWindow(val project: Project):
 
     private fun createTree(): JTree {
         val awsTree = Tree()
+        TreeUIHelper.getInstance().installTreeSpeedSearch(awsTree)
         UIUtil.setLineStyleAngled(awsTree)
         awsTree.isRootVisible = false
         awsTree.autoscrolls = true
