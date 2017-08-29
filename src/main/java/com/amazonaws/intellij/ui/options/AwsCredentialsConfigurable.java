@@ -1,6 +1,6 @@
 package com.amazonaws.intellij.ui.options;
 
-import com.amazonaws.intellij.credentials.AWSCredentialsProfileProvider;
+import com.amazonaws.intellij.credentials.AwsCredentialsProfileProvider;
 import com.amazonaws.intellij.credentials.CredentialFileBasedProfile;
 import com.amazonaws.intellij.credentials.CredentialProfile;
 import com.amazonaws.intellij.credentials.CredentialProfileFactory;
@@ -27,12 +27,7 @@ import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBLabel;
 import java.awt.BorderLayout;
 import java.io.File;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -41,8 +36,8 @@ import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class AWSCredentialsConfigurable implements Configurable, Configurable.NoScroll {
-    private final AWSCredentialsProfileProvider optionsProvider;
+public class AwsCredentialsConfigurable implements Configurable, Configurable.NoScroll {
+    private final AwsCredentialsProfileProvider optionsProvider;
     private JPanel credentialsPanel;
     private JPanel tablePanel;
     private TextFieldWithBrowseButton credentialFileChooser;
@@ -52,8 +47,8 @@ public class AWSCredentialsConfigurable implements Configurable, Configurable.No
 
     private String currentCredentialFileLocation;
 
-    public AWSCredentialsConfigurable(Project project) {
-        optionsProvider = AWSCredentialsProfileProvider.getInstance(project);
+    public AwsCredentialsConfigurable(Project project) {
+        optionsProvider = AwsCredentialsProfileProvider.getInstance(project);
 
         credentialFilePanel.setBorder(IdeBorderFactory.createTitledBorder("Credentials", false));
 
@@ -185,7 +180,7 @@ public class AWSCredentialsConfigurable implements Configurable, Configurable.No
     public void reset() {
         currentCredentialFileLocation = optionsProvider.getCredentialFileLocation();
         credentialFileChooser.setText(currentCredentialFileLocation);
-        credentialsTable.getModel().setItems(optionsProvider.getProfiles());
+        credentialsTable.getModel().setItems(new ArrayList<>(optionsProvider.getProfiles()));
     }
 
     @Nls
@@ -226,7 +221,7 @@ public class AWSCredentialsConfigurable implements Configurable, Configurable.No
             }
 
             try {
-                Map<String, CredentialProfile> loadedProfiles = AWSCredentialsProfileProvider
+                Map<String, CredentialProfile> loadedProfiles = AwsCredentialsProfileProvider
                     .loadFromCredentialProfile(credentialFile);
 
                 errorLabel.setVisible(false);

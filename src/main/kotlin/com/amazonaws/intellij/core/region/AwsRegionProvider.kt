@@ -8,11 +8,13 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.collect.ImmutableMap
+import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.project.Project
 import java.io.IOException
 
-object AwsRegionManager {
-    private const val DEFAULT_REGION = "us-west-2"
+//TODO we might need to consider supporting unlaunched regions for internal use
+class AwsRegionProvider private constructor() {
     val regions: Map<String, AwsRegion>
     val defaultRegion: AwsRegion
 
@@ -35,6 +37,15 @@ object AwsRegionManager {
 
     fun isServiceSupported(region: String, serviceName: String): Boolean {
         return RegionUtils.getRegion(region).isServiceSupported(serviceName)
+    }
+
+    companion object {
+        const val DEFAULT_REGION = "us-east-1"
+
+        @JvmStatic
+        fun getInstance(project: Project): AwsRegionProvider {
+            return ServiceManager.getService(project, AwsRegionProvider::class.java)
+        }
     }
 }
 

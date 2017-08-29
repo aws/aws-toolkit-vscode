@@ -9,16 +9,16 @@ import com.intellij.openapi.project.Project
 
 enum class AwsExplorerService(val serviceId: String) {
     S3(AmazonS3.ENDPOINT_PREFIX) {
-        override fun buildServiceRootNode(project: Project, region: String): AwsExplorerS3RootNode {
-            return AwsExplorerS3RootNode(project, region)
+        override fun buildServiceRootNode(project: Project, profile: String, region: String): AwsExplorerS3RootNode {
+            return AwsExplorerS3RootNode(project, profile, region)
         }
     },
     LAMBDA(AWSLambda.ENDPOINT_PREFIX) {
-        override fun buildServiceRootNode(project: Project, region: String): AwsExplorerLambdaRootNode {
-            return AwsExplorerLambdaRootNode(project, region)
+        override fun buildServiceRootNode(project: Project, profile: String, region: String): AwsExplorerLambdaRootNode {
+            return AwsExplorerLambdaRootNode(project, profile, region)
         }
     },
     ;
 
-    abstract fun buildServiceRootNode(project: Project, region: String): AbstractTreeNode<String>
+    abstract fun buildServiceRootNode(project: Project, profile: String, region: String): AbstractTreeNode<String>
 }

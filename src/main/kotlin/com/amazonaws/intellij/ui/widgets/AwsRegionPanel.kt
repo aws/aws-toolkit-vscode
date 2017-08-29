@@ -1,7 +1,8 @@
 package com.amazonaws.intellij.ui.widgets
 
 import com.amazonaws.intellij.core.region.AwsRegion
-import com.amazonaws.intellij.core.region.AwsRegionManager
+import com.amazonaws.intellij.core.region.AwsRegionProvider
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.CollectionComboBoxModel
 import com.intellij.ui.ListCellRendererWrapper
@@ -11,10 +12,10 @@ import javax.swing.JLabel
 import javax.swing.JList
 import javax.swing.JPanel
 
-class AwsRegionPanel(private val defaultRegion: AwsRegion) {
+class AwsRegionPanel(private val project: Project, private val defaultRegion: AwsRegion) {
     val regionPanel: JPanel = JPanel()
     private val regionCombo: ComboBox<AwsRegion> = ComboBox<AwsRegion>()
-    private val regionModel = CollectionComboBoxModel<AwsRegion>(AwsRegionManager.regions.values.toList())
+    private val regionModel = CollectionComboBoxModel<AwsRegion>(AwsRegionProvider.getInstance(project).regions.values.toList())
 
     init {
         regionCombo.renderer = object : ListCellRendererWrapper<AwsRegion>() {
