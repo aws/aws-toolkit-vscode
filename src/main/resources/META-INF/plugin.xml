@@ -1,5 +1,5 @@
 <idea-plugin>
-  <id>com.amazonaws.intellij</id>
+  <id>aws.toolkit</id>
   <name>AWS Toolkit</name>
   <version>1.0</version>
 
@@ -23,30 +23,30 @@
   -->
 
   <extensionPoints>
-    <extensionPoint qualifiedName="com.amazonaws.intellij.credentialProviderFactory"
-                    interface="com.amazonaws.intellij.credentials.CredentialProfileFactory"/>
+    <extensionPoint qualifiedName="aws.toolkit.credentialProviderFactory"
+                    interface="software.aws.toolkits.jetbrains.credentials.CredentialProfileFactory"/>
   </extensionPoints>
 
   <extensions defaultExtensionNs="com.intellij">
     <!-- Credential Management -->
     <projectConfigurable displayName="AWS" id="aws"
-                         instance="com.amazonaws.intellij.ui.options.AwsCredentialsConfigurable"/>
-    <projectService serviceImplementation="com.amazonaws.intellij.credentials.AwsCredentialsProfileProvider"/>
-    <projectService serviceImplementation="com.amazonaws.intellij.core.AwsSettingsProvider"/>
-    <projectService serviceImplementation="com.amazonaws.intellij.core.region.AwsRegionProvider"/>
-    <projectService serviceImplementation="com.amazonaws.intellij.core.AwsClientFactory"/>
+                         instance="software.aws.toolkits.jetbrains.ui.options.AwsCredentialsConfigurable"/>
+    <projectService serviceImplementation="software.aws.toolkits.jetbrains.credentials.AwsCredentialsProfileProvider"/>
+    <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsSettingsProvider"/>
+    <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.region.AwsRegionProvider"/>
+    <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientFactory"/>
 
     <toolWindow id="AWS Explorer" anchor="right"
-                factoryClass="com.amazonaws.intellij.ui.explorer.AwsExplorerFactory" icon="/icons/aws-box.gif"/>
+                factoryClass="software.aws.toolkits.jetbrains.ui.explorer.AwsExplorerFactory" icon="/icons/aws-box.gif"/>
   </extensions>
 
-  <extensions defaultExtensionNs="com.amazonaws.intellij">
-    <credentialProviderFactory implementation="com.amazonaws.intellij.credentials.CredentialFileBasedProfileFactory"/>
+  <extensions defaultExtensionNs="aws.toolkit">
+    <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.credentials.CredentialFileBasedProfileFactory"/>
   </extensions>
 
   <actions>
     <group id="AWS.Toolkit.ActionGroup" icon="/icons/aws-box.gif" text="AWS" popup="true">
-      <action id="AWS.Toolkit.UploadLambdaFunction" class="com.amazonaws.intellij.actions.UploadLambdaFunction"
+      <action id="AWS.Toolkit.UploadLambdaFunction" class="software.aws.toolkits.jetbrains.actions.UploadLambdaFunction"
               text="Upload to AWS _Lambda..." icon="/icons/lambda-service.png"/>
       <add-to-group group-id="EditorPopupMenu" anchor="last"/>
     </group>
