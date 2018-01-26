@@ -1,57 +1,46 @@
-//group 'com.amazonaws'
-//version '1.0-SNAPSHOT'
-
 buildscript {
-    ext.kotlin_version = "$kotlinVersion"
-    ext.dokka_version = "$dokkaVersion"
+    ext.kotlinVersion = "$kotlinVersion"
 
     repositories {
         mavenCentral()
         jcenter()
     }
     dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath "org.jetbrains.dokka:dokka-gradle-plugin:$dokka_version"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
+        classpath "org.jetbrains.dokka:dokka-gradle-plugin:$dokkaVersion"
     }
 }
 
-plugins {
-    id 'org.jetbrains.intellij' version "0.2.17"
+group 'software.aws.toolkits'
+version '0.1-SNAPSHOT'
+
+allprojects {
+    repositories {
+        mavenCentral()
+    }
 }
 
-repositories {
-    mavenCentral()
-}
+subprojects {
+    group = parent.group
+    version = parent.version
 
-apply plugin: 'java'
-apply plugin: 'kotlin'
-sourceCompatibility = javaVersion
-targetCompatibility = javaVersion
+    apply plugin: 'java'
+    apply plugin: 'kotlin'
+    apply plugin: 'org.jetbrains.dokka'
 
-apply plugin: 'org.jetbrains.intellij'
+    dependencies {
+        compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+    }
 
-intellij {
-    version ideaVersion
-    pluginName 'aws-intellij-toolkit'
-    updateSinceUntilBuild false
-}
-
-apply plugin: 'org.jetbrains.dokka'
-
-dokka {
-    samples = ['samples/utils.kt']
-}
-
-dependencies {
-    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    compile "com.amazonaws:aws-java-sdk-s3:$awsSdkVersion"
-    compile "com.amazonaws:aws-java-sdk-lambda:$awsSdkVersion"
-    compile "com.amazonaws:aws-java-sdk-iam:$awsSdkVersion"
-    compile "com.amazonaws:aws-java-sdk-codecommit:$awsSdkVersion"
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    testCompile group: 'org.assertj', name: 'assertj-core', version: '3.8.0'
+    compileKotlin {
+        kotlinOptions.jvmTarget = "1.8"
+    }
+    compileTestKotlin {
+        kotlinOptions.jvmTarget = "1.8"
+    }
 }
 
 wrapper {
-    gradleVersion '4.1'
+    gradleVersion '4.5'
 }
+

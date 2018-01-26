@@ -1,0 +1,32 @@
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "gradle.plugin.org.jetbrains.intellij.plugins:gradle-intellij-plugin:$ideaPluginVersion"
+    }
+}
+
+apply plugin: 'org.jetbrains.intellij'
+
+intellij {
+    version ideaVersion
+    pluginName 'aws-intellij-toolkit'
+    updateSinceUntilBuild false
+}
+
+dokka {
+    samples = ['samples/utils.kt']
+}
+
+dependencies {
+    compile "com.amazonaws:aws-java-sdk-s3:$awsSdkVersion"
+    compile "com.amazonaws:aws-java-sdk-lambda:$awsSdkVersion"
+    compile "com.amazonaws:aws-java-sdk-iam:$awsSdkVersion"
+    compile "com.amazonaws:aws-java-sdk-codecommit:$awsSdkVersion"
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile group: 'org.assertj', name: 'assertj-core', version: '3.8.0'
+}
+
