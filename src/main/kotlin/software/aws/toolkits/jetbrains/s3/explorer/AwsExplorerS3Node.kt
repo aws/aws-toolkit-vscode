@@ -5,18 +5,16 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.services.s3.model.Bucket
 import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.project.Project
+import software.aws.toolkits.jetbrains.core.AwsClientFactory
 import software.aws.toolkits.jetbrains.ui.S3_BUCKET_ICON
 import software.aws.toolkits.jetbrains.ui.S3_SERVICE_ICON
 import software.aws.toolkits.jetbrains.ui.explorer.AwsExplorerNode
 import software.aws.toolkits.jetbrains.ui.explorer.AwsExplorerServiceRootNode
 
-class AwsExplorerS3RootNode(project: Project, region: String) :
+class AwsExplorerS3RootNode(project: Project, profile: String, region: String) :
         AwsExplorerServiceRootNode(project, "Amazon S3", S3_SERVICE_ICON) {
 
-    //TODO use a ClientFactory instead
-    private val client: AmazonS3 = AmazonS3ClientBuilder.standard()
-            .withRegion(region)
-            .build()
+    private val client = AwsClientFactory.getInstance(project).getS3Client(profile, region);
 
     override fun loadResources(paginationToken: String?): Collection<AwsExplorerNode<*>> {
         return  client.listBuckets().map { mapResourceToNode(it) }
