@@ -35,8 +35,8 @@ class AwsRegionProvider private constructor() {
         return regions[regionId]?: defaultRegion
     }
 
-    fun isServiceSupported(region: String, serviceName: String): Boolean {
-        return RegionUtils.getRegion(region).isServiceSupported(serviceName)
+    fun isServiceSupported(region: AwsRegion, serviceName: String): Boolean {
+        return RegionUtils.getRegion(region.id).isServiceSupported(serviceName)
     }
 
     companion object {

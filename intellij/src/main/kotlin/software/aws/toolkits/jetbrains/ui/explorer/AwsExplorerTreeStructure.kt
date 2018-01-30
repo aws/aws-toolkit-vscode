@@ -4,24 +4,15 @@ import com.intellij.ide.projectView.TreeStructureProvider
 import com.intellij.ide.util.treeView.AbstractTreeStructureBase
 import com.intellij.openapi.project.Project
 
-class AwsExplorerTreeStructure(project: Project, val profile: String, val region: String) : AbstractTreeStructureBase(project) {
+class AwsExplorerTreeStructure(project: Project) : AbstractTreeStructureBase(project) {
 
-    override fun getProviders(): List<TreeStructureProvider>? {
-        return emptyList()
-    }
+    override fun getProviders(): List<TreeStructureProvider>? = emptyList()
 
-    override fun getRootElement(): AwsExplorerRootNode {
-        return AwsExplorerRootNode(myProject, profile, region)
-    }
+    override fun getRootElement() = AwsExplorerRootNode(myProject)
 
-    override fun commit() {
-    }
+    override fun commit() { }
 
-    override fun hasSomethingToCommit(): Boolean {
-        return false
-    }
+    override fun hasSomethingToCommit() = false
 
-    override fun isToBuildChildrenInBackground(element: Any?): Boolean {
-        return true
-    }
+    override fun isToBuildChildrenInBackground(element: Any?) = true
 }

@@ -93,7 +93,7 @@ class ExplorerToolWindow(val project: Project) :
 
         val model = DefaultTreeModel(DefaultMutableTreeNode())
         val awsTree = createTree(model)
-        val builder = AwsExplorerTreeBuilder(awsTree, model, project, profile = selectedProfile.name, region = selectedRegion.id)
+        val builder = AwsExplorerTreeBuilder(awsTree, model, project)
         Disposer.register(project, builder)
         treePanelWrapper.setContent(JBScrollPane(awsTree))
     }

@@ -5,17 +5,17 @@ import com.amazonaws.services.lambda.model.FunctionConfiguration
 import com.amazonaws.services.lambda.model.ListFunctionsRequest
 import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.project.Project
-import software.aws.toolkits.jetbrains.core.AwsClientFactory
+import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.ui.LAMBDA_SERVICE_ICON
 import software.aws.toolkits.jetbrains.ui.SQS_QUEUE_ICON
 import software.aws.toolkits.jetbrains.ui.explorer.AwsExplorerNode
 import software.aws.toolkits.jetbrains.ui.explorer.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.ui.explorer.AwsTruncatedResultNode
 
-class AwsExplorerLambdaRootNode(project: Project, profile: String, region: String) :
+class AwsExplorerLambdaRootNode(project: Project) :
         AwsExplorerServiceRootNode(project, "AWS Lambda", LAMBDA_SERVICE_ICON) {
 
-    private val client: AWSLambda = AwsClientFactory.getInstance(project).getLambdaClient(profile, region)
+    private val client: AWSLambda = AwsClientManager.getInstance(project).getClient()
 
     override fun loadResources(paginationToken: String?): Collection<AwsExplorerNode<*>> {
         val request = ListFunctionsRequest()

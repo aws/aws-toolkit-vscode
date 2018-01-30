@@ -7,6 +7,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.ui.LoadingNode
 import com.intellij.ui.SimpleTextAttributes
+import software.aws.toolkits.jetbrains.core.AwsSettingsProvider
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.ui.AWS_ICON
 import javax.swing.Icon
@@ -26,14 +27,16 @@ abstract class AwsExplorerNode<T>(project: Project, value: T, private val awsIco
     open fun onDoubleClick(model: DefaultTreeModel, selectedElement: DefaultMutableTreeNode) {}
 }
 
-class AwsExplorerRootNode(project: Project, private val profile: String, private val region: String) :
+class AwsExplorerRootNode(project: Project) :
         AwsExplorerNode<String>(project, "ROOT", AWS_ICON) {
+
+    private val settings = AwsSettingsProvider.getInstance(project)
 
     override fun getChildren(): Collection<AbstractTreeNode<String>> {
         val childrenList = mutableListOf<AbstractTreeNode<String>>()
         AwsExplorerService.values()
-                .filter { AwsRegionProvider.getInstance(project!!).isServiceSupported(region, it.serviceId) }
-                .mapTo(childrenList) { it.buildServiceRootNode(project!!, profile, region) }
+                .filter { AwsRegionProvider.getInstance(project!!).isServiceSupported(settings.currentRegion, it.serviceId) }
+                .mapTo(childrenList) { it.buildServiceRootNode(project!!) }
 
         return childrenList
     }
