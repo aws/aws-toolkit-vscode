@@ -4,6 +4,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.CollectionComboBoxModel
 import com.intellij.ui.ListCellRendererWrapper
+import software.aws.toolkits.jetbrains.core.SettingsChangedListener
 import software.aws.toolkits.jetbrains.credentials.AwsCredentialsProfileProvider
 import software.aws.toolkits.jetbrains.credentials.CredentialProfile
 import software.aws.toolkits.jetbrains.utils.MutableMapWithListener
@@ -13,7 +14,7 @@ import javax.swing.JLabel
 import javax.swing.JList
 import javax.swing.JPanel
 
-class AwsProfilePanel(project: Project, private val defaultProfile: CredentialProfile?) : MutableMapWithListener.MapChangeListener<String, CredentialProfile> {
+class AwsProfilePanel(project: Project, private val defaultProfile: CredentialProfile?) : MutableMapWithListener.MapChangeListener<String, CredentialProfile>, SettingsChangedListener {
     val profilePanel: JPanel = JPanel()
     private val profileCombo = ComboBox<CredentialProfile>()
     private val profileProvider = AwsCredentialsProfileProvider.getInstance(project)
@@ -34,6 +35,10 @@ class AwsProfilePanel(project: Project, private val defaultProfile: CredentialPr
         profileProvider.getProfiles().forEach { profileModel.add(it) }
         profileModel.selectedItem = defaultProfile
         profileProvider.addProfileChangeListener(this)
+    }
+
+    override fun profileChanged() {
+        profileModel.selectedItem = profileProvider.selectedProfile
     }
 
     fun addActionListener(actionListener: ActionListener) {

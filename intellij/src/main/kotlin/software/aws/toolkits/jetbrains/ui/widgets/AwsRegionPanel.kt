@@ -4,6 +4,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.CollectionComboBoxModel
 import com.intellij.ui.ListCellRendererWrapper
+import software.aws.toolkits.jetbrains.core.AwsSettingsProvider
+import software.aws.toolkits.jetbrains.core.SettingsChangedListener
 import software.aws.toolkits.jetbrains.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import java.awt.FlowLayout
@@ -12,7 +14,8 @@ import javax.swing.JLabel
 import javax.swing.JList
 import javax.swing.JPanel
 
-class AwsRegionPanel(private val project: Project, private val defaultRegion: AwsRegion) {
+class AwsRegionPanel(private val project: Project) : SettingsChangedListener {
+    private val settingsProvider = AwsSettingsProvider.getInstance(project).addListener(this)
     val regionPanel: JPanel = JPanel()
     private val regionCombo: ComboBox<AwsRegion> = ComboBox<AwsRegion>()
     private val regionModel = CollectionComboBoxModel<AwsRegion>(AwsRegionProvider.getInstance(project).regions.values.toList())
@@ -25,11 +28,15 @@ class AwsRegionPanel(private val project: Project, private val defaultRegion: Aw
         }
         setupUI()
         regionCombo.model = regionModel
-        regionModel.selectedItem = defaultRegion
+        regionModel.selectedItem = settingsProvider.currentRegion
     }
 
     fun addActionListener(actionListener: ActionListener) {
         regionCombo.addActionListener(actionListener)
+    }
+
+    override fun regionChanged() {
+        regionModel.selectedItem = settingsProvider.currentRegion
     }
 
     fun getSelectedRegion(): AwsRegion? {

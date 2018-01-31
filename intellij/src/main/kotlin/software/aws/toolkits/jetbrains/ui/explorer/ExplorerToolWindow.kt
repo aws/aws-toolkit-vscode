@@ -14,6 +14,7 @@ import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBSwingUtilities
 import com.intellij.util.ui.UIUtil
 import software.aws.toolkits.jetbrains.core.AwsSettingsProvider
+import software.aws.toolkits.jetbrains.core.SettingsChangedListener
 import software.aws.toolkits.jetbrains.credentials.AwsCredentialsProfileProvider
 import software.aws.toolkits.jetbrains.credentials.CredentialProfile
 import software.aws.toolkits.jetbrains.ui.options.AwsCredentialsConfigurable
@@ -31,10 +32,10 @@ import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
 class ExplorerToolWindow(val project: Project) :
-        SimpleToolWindowPanel(true, false), MutableMapWithListener.MapChangeListener<String, CredentialProfile> {
+        SimpleToolWindowPanel(true, false), MutableMapWithListener.MapChangeListener<String, CredentialProfile>, SettingsChangedListener {
 
-    private val settingsProvider: AwsSettingsProvider = AwsSettingsProvider.getInstance(project)
-    private val profileProvider: AwsCredentialsProfileProvider = AwsCredentialsProfileProvider.getInstance(project)
+    private val settingsProvider = AwsSettingsProvider.getInstance(project).addListener(this)
+    private val profileProvider = AwsCredentialsProfileProvider.getInstance(project)
 
     private val treePanelWrapper: Wrapper = Wrapper()
     private val profilePanel: AwsProfilePanel
@@ -59,7 +60,7 @@ class ExplorerToolWindow(val project: Project) :
         profilePanel = AwsProfilePanel(project, settingsProvider.currentProfile)
         profilePanel.addActionListener(ActionListener { onAwsProfileOrRegionComboSelected() })
 
-        regionPanel = AwsRegionPanel(project, settingsProvider.currentRegion)
+        regionPanel = AwsRegionPanel(project)
         regionPanel.addActionListener(ActionListener { onAwsProfileOrRegionComboSelected() })
 
         mainPanel = JPanel(FlowLayout(FlowLayout.LEADING, 0, 0))
@@ -68,7 +69,7 @@ class ExplorerToolWindow(val project: Project) :
         setToolbar(mainPanel)
         setContent(treePanelWrapper)
 
-        onAwsProfileOrRegionComboSelected()
+        updateModel()
     }
 
     /**
@@ -78,6 +79,14 @@ class ExplorerToolWindow(val project: Project) :
         if (AwsCredentialsProfileProvider.getInstance(project).getProfiles().isEmpty()) {
             treePanelWrapper.setContent(errorPanel)
         }
+    }
+
+    override fun profileChanged() {
+        updateModel()
+    }
+
+    override fun regionChanged() {
+        updateModel()
     }
 
     private fun onAwsProfileOrRegionComboSelected() {
@@ -90,7 +99,9 @@ class ExplorerToolWindow(val project: Project) :
         }
         settingsProvider.currentRegion = selectedRegion
         settingsProvider.currentProfile = selectedProfile
+    }
 
+    private fun updateModel() {
         val model = DefaultTreeModel(DefaultMutableTreeNode())
         val awsTree = createTree(model)
         val builder = AwsExplorerTreeBuilder(awsTree, model, project)
