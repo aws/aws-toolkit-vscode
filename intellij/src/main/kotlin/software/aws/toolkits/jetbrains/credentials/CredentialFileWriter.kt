@@ -12,12 +12,7 @@ import java.io.FileOutputStream
 import java.io.OutputStreamWriter
 import java.io.Writer
 import java.nio.charset.StandardCharsets
-import java.util.Collections
-import java.util.HashMap
-import java.util.HashSet
-import java.util.LinkedHashMap
-import java.util.Scanner
-import java.util.UUID
+import java.util.*
 
 /**
  * The class for creating and modifying the credential profiles file.

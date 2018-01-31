@@ -1,15 +1,6 @@
 package software.aws.toolkits.jetbrains.ui.s3;
 
-
 import com.amazonaws.intellij.utils.DateUtils;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.CopyObjectRequest;
-import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
-import com.amazonaws.services.s3.model.GetObjectTaggingResult;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.ObjectTagging;
-import com.amazonaws.services.s3.model.SetObjectTaggingRequest;
-import com.amazonaws.services.s3.model.Tag;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.ide.CopyPasteManager;
 import com.intellij.openapi.util.text.StringUtil;
@@ -19,8 +10,8 @@ import com.intellij.ui.components.JBTabbedPane;
 import com.intellij.util.ui.JBUI;
 import com.intellij.util.ui.TextTransferable;
 import java.awt.Insets;
-import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -28,6 +19,7 @@ import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
 import org.jetbrains.annotations.NotNull;
+import software.amazon.awssdk.services.s3.model.Tag;
 import software.aws.toolkits.jetbrains.aws.s3.S3VirtualFile;
 import software.aws.toolkits.jetbrains.ui.KeyValue;
 import software.aws.toolkits.jetbrains.ui.KeyValueTableEditor;
@@ -56,7 +48,7 @@ public class ObjectDetailsPanel {
 
         this.size.setText(StringUtil.formatFileSize(s3File.getLength()));
         this.modifiedDate.setText(DateUtils.formatDate(s3File.getTimeStamp()));
-        this.eTag.setText(s3File.getETag());
+        this.eTag.setText(s3File.getFile().getEtag());
 
         this.copyArnButton.addActionListener(e -> {
             String arn = "arn:aws:s3:::" + s3File.getPath();
@@ -84,36 +76,18 @@ public class ObjectDetailsPanel {
     }
 
     private List<KeyValue> loadTags() {
-        AmazonS3 s3Client = s3File.getFileSystem().getS3Client();
-        GetObjectTaggingRequest taggingRequest = new GetObjectTaggingRequest(s3File.getBucketName(), s3File.getKey());
-        GetObjectTaggingResult objectTags = s3Client.getObjectTagging(taggingRequest);
-        if (objectTags == null) {
-            return Collections.emptyList();
-        }
-
-        return objectTags.getTagSet()
-                         .stream()
-                         .map(entry -> new KeyValue(entry.getKey(), entry.getValue()))
-                         .collect(Collectors.toList());
-    }
-
-    private void updateTags(List<KeyValue> newTags) {
-        List<Tag> tags = newTags.stream()
-                                .map(keyValue -> new Tag(keyValue.getKey(), keyValue.getValue()))
-                                .collect(Collectors.toList());
-
-        AmazonS3 s3Client = s3File.getFileSystem().getS3Client();
-        s3Client.setObjectTagging(new SetObjectTaggingRequest(s3File.getBucketName(), s3File.getKey(), new ObjectTagging(tags)));
+        return s3File.getFile().tags()
+                     .stream()
+                     .map(entry -> new KeyValue(entry.key(), entry.value()))
+                     .collect(Collectors.toList());
     }
 
     private List<KeyValue> loadMetadata() {
-        AmazonS3 s3Client = s3File.getFileSystem().getS3Client();
-        ObjectMetadata objectMetadata = s3Client.getObjectMetadata(s3File.getBucketName(), s3File.getKey());
-        return objectMetadata.getUserMetadata()
-                             .entrySet()
-                             .stream()
-                             .map(entry -> new KeyValue(entry.getKey(), entry.getValue()))
-                             .collect(Collectors.toList());
+        return s3File.getFile().metadata()
+                     .entrySet()
+                     .stream()
+                     .map(entry -> new KeyValue(entry.getKey(), entry.getValue()))
+                     .collect(Collectors.toList());
     }
 
     private void onValueChanged() {
@@ -133,38 +107,37 @@ public class ObjectDetailsPanel {
         cancelButton.setEnabled(false);
 
         // To update metadata, we need to issue a copy
-        if (metadata.isModified()) {
-            CopyObjectRequest copyObjectRequest = new CopyObjectRequest(s3File.getBucketName(), s3File.getKey(),
-                                                                        s3File.getBucketName(), s3File.getKey());
-            ObjectMetadata newObjectMetadata = new ObjectMetadata();
-            metadata.getItems().forEach(keyValue -> newObjectMetadata.addUserMetadata(keyValue.getKey(), keyValue.getValue()));
-            copyObjectRequest.setNewObjectMetadata(newObjectMetadata);
+        if (metadata.isModified() && tags.isModified()) {
+            Set<Tag> newTags = tags.getItems().stream()
+                                   .map(keyValue -> Tag.builder().key(keyValue.getKey()).value(keyValue.getValue()).build())
+                                   .collect(Collectors.toSet());
 
-            if (tags.isModified()) {
-                copyObjectRequest.setNewObjectTagging(getObjectTagging());
-            }
+            ApplicationManager.getApplication()
+                              .executeOnPooledThread(() -> {
+                                  s3File.getFile().updateMetadataAndTags(metadata.getItems().stream().collect(Collectors.toMap(KeyValue::getKey, KeyValue::getValue)), newTags);
+                                  metadata.refresh();
+                                  tags.refresh();
+                              });
 
-            ApplicationManager.getApplication().executeOnPooledThread(() -> {
-                s3File.getFileSystem().getS3Client().copyObject(copyObjectRequest);
-                metadata.refresh();
-                tags.refresh();
-            });
+        } else if (metadata.isModified()) {
+            ApplicationManager.getApplication()
+                              .executeOnPooledThread(() -> {
+                                  s3File.getFile().updateMetadata(metadata.getItems().stream().collect(Collectors.toMap(KeyValue::getKey, KeyValue::getValue)));
+                                  metadata.refresh();
+                              });
+
         } else {
-            ApplicationManager.getApplication().executeOnPooledThread(() -> {
-                SetObjectTaggingRequest setObjectTaggingRequest = new SetObjectTaggingRequest(s3File.getBucketName(),
-                                                                                              s3File.getKey(),
-                                                                                              getObjectTagging());
-                s3File.getFileSystem().getS3Client().setObjectTagging(setObjectTaggingRequest);
-                tags.refresh();
-            });
-        }
-    }
 
-    private ObjectTagging getObjectTagging() {
-        return new ObjectTagging(tags.getItems()
-                                     .stream()
-                                     .map(keyValue -> new Tag(keyValue.getKey(), keyValue.getValue()))
-                                     .collect(Collectors.toList()));
+            Set<Tag> newTags = tags.getItems().stream()
+                                   .map(keyValue -> Tag.builder().key(keyValue.getKey()).value(keyValue.getValue()).build())
+                                   .collect(Collectors.toSet());
+
+            ApplicationManager.getApplication()
+                              .executeOnPooledThread(() -> {
+                                  s3File.getFile().updateTags(newTags);
+                                  tags.refresh();
+                              });
+        }
     }
 
     private void cancelChanges() {

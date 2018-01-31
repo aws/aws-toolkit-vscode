@@ -1,2 +1,4 @@
 rootProject.name = 'aws-intellij-toolkit'
 include 'intellij'
+include 'core'
+

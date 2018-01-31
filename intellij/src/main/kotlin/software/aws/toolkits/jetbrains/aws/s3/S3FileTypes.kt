@@ -21,7 +21,7 @@ class BucketFileType : FileTypeIdentifiableByVirtualFile {
 
     override fun isBinary() = true
 
-    override fun isMyFileType(file: VirtualFile) = file is S3BucketVirtualFile
+    override fun isMyFileType(file: VirtualFile) = file is S3VirtualBucket
 
     override fun isReadOnly() = true
 }

@@ -30,11 +30,58 @@ subprojects {
 
     apply plugin: 'java'
     apply plugin: 'kotlin'
+    apply plugin: 'idea'
     apply plugin: 'org.jetbrains.dokka'
     apply plugin: 'org.jmailen.kotlinter'
 
+    sourceSets {
+        integrationTest {
+            java.srcDir 'src/it/java'
+            kotlin.srcDir 'src/it/kotlin'
+            resources.srcDir 'src/it/resources'
+        }
+    }
+
     dependencies {
         compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+
+        integrationTestCompile sourceSets.main.output
+        integrationTestCompile sourceSets.test.output
+
+        integrationTestCompile configurations.compile
+        integrationTestCompile configurations.testCompile
+
+        integrationTestRuntime configurations.runtime
+        integrationTestRuntime configurations.testRuntime
+    }
+
+    idea {
+        module {
+            sourceDirs -= file("src/it/kotlin")
+            testSourceDirs += file("src/it/kotlin")
+
+            sourceDirs -= file("src/it/resources")
+            testSourceDirs += file("src/it/resources")
+
+            sourceDirs -= file("src/it/java")
+            testSourceDirs += file("src/it/java")
+        }
+    }
+
+    task integrationTest(type: Test) {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Runs the integration tests."
+        testClassesDirs = sourceSets.integrationTest.output.classesDirs
+        classpath = sourceSets.integrationTest.runtimeClasspath
+
+        binResultsDir = file("$buildDir/integration-test-results/binary/integrationTest")
+
+        reports {
+            html.destination file("$buildDir/reports/integration-test")
+            junitXml.destination file("$buildDir/integration-test-results")
+        }
+
+        mustRunAfter tasks.test
     }
 
     kotlinter {
@@ -46,6 +93,9 @@ subprojects {
         kotlinOptions.jvmTarget = "1.8"
     }
     compileTestKotlin {
+        kotlinOptions.jvmTarget = "1.8"
+    }
+    compileIntegrationTestKotlin {
         kotlinOptions.jvmTarget = "1.8"
     }
 }

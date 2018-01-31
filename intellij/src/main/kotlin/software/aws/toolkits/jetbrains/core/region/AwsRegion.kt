@@ -1,12 +1,13 @@
 package software.aws.toolkits.jetbrains.core.region
 
 import com.intellij.openapi.util.IconLoader
+import software.amazon.awssdk.core.regions.Region
 import javax.swing.Icon
 
 data class AwsRegion private constructor(val id: String, val name: String, val icon: Icon) {
-    private companion object {
-         val UNKNOWN_REGION_FLAG = "/icons/aws-box.gif"
-         val REGION_FLAG_MAPPING = mapOf(
+    companion object {
+         private val UNKNOWN_REGION_FLAG = "/icons/aws-box.gif"
+         private val REGION_FLAG_MAPPING = mapOf(
                  "us-east-1" to "/icons/flags/us.png",
                  "us-east-2" to "/icons/flags/us.png",
                  "us-west-1" to "/icons/flags/us.png",
@@ -18,6 +19,8 @@ data class AwsRegion private constructor(val id: String, val name: String, val i
                  "eu-central-1" to "/icons/flags/eu.png",
                  "eu-west-2" to "/icons/flags/eu.png"
         )
+        //TODO: Need a better way to do this, cos this won't work in air-gapped regions.
+        val GLOBAL = AwsRegion(Region.AWS_GLOBAL.value(), "Global")
     }
 
     constructor(id: String, name: String):

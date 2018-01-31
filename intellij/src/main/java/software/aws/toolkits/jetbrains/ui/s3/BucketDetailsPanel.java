@@ -4,15 +4,7 @@ import static com.intellij.ui.IdeBorderFactory.TITLED_BORDER_LEFT_INSET;
 import static com.intellij.ui.IdeBorderFactory.TITLED_BORDER_RIGHT_INSET;
 import static com.intellij.ui.IdeBorderFactory.TITLED_BORDER_TOP_INSET;
 
-import software.aws.toolkits.jetbrains.aws.s3.S3BucketVirtualFile;
-import software.aws.toolkits.jetbrains.ui.KeyValue;
-import software.aws.toolkits.jetbrains.ui.KeyValueTableEditor;
-import software.aws.toolkits.jetbrains.ui.MessageUtils;
 import com.amazonaws.intellij.utils.DateUtils;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.BucketTaggingConfiguration;
-import com.amazonaws.services.s3.model.Region;
-import com.amazonaws.services.s3.model.TagSet;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.ide.CopyPasteManager;
 import com.intellij.openapi.project.Project;
@@ -23,14 +15,19 @@ import com.intellij.ui.components.JBLabel;
 import com.intellij.util.ui.JBUI;
 import com.intellij.util.ui.TextTransferable;
 import java.awt.Insets;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
+import software.amazon.awssdk.services.s3.model.Tag;
+import software.aws.toolkits.jetbrains.aws.s3.S3VirtualBucket;
+import software.aws.toolkits.jetbrains.ui.KeyValue;
+import software.aws.toolkits.jetbrains.ui.KeyValueTableEditor;
+import software.aws.toolkits.jetbrains.ui.MessageUtils;
 
 public class BucketDetailsPanel {
     private static final int BUCKET_TAG_LIMIT = 50;
@@ -40,7 +37,7 @@ public class BucketDetailsPanel {
     private static final String KEY_VALUE_VALIDATION_ERROR =
         "The string can contain only the set of Unicode letters, digits, whitespace, '_', '.', '/', '=', '+', '-'";
 
-    private final S3BucketVirtualFile bucketVirtualFile;
+    private final S3VirtualBucket bucketVirtualFile;
     private JPanel contentPanel;
     private JPanel tagPanel;
     private JBLabel bucketNameLabel;
@@ -52,7 +49,7 @@ public class BucketDetailsPanel {
     private JButton applyButton;
     private JButton cancelButton;
 
-    public BucketDetailsPanel(Project project, S3BucketVirtualFile bucketVirtualFile) {
+    public BucketDetailsPanel(Project project, S3VirtualBucket bucketVirtualFile) {
         this.bucketVirtualFile = bucketVirtualFile;
 
         this.contentPanel.setBorder(IdeBorderFactory.createTitledBorder("Bucket Details", false));
@@ -60,7 +57,8 @@ public class BucketDetailsPanel {
         this.bucketNameLabel.setText(bucketVirtualFile.getName());
 
         this.region.setText(determineRegion());
-        this.versioning.setText(bucketVirtualFile.getVersioningStatus());
+        BucketVersioningStatus status = bucketVirtualFile.getBucket().versioningStatus();
+        this.versioning.setText(status != null ? status.toString() : "");
         this.creationDate.setText(DateUtils.formatDate(bucketVirtualFile.getTimeStamp()));
 
         Insets insets = JBUI.insets(TITLED_BORDER_TOP_INSET, TITLED_BORDER_LEFT_INSET, 0, TITLED_BORDER_RIGHT_INSET);
@@ -83,19 +81,11 @@ public class BucketDetailsPanel {
     }
 
     private List<KeyValue> loadTags() {
-        AmazonS3 s3Client = bucketVirtualFile.getFileSystem().getS3Client();
-        BucketTaggingConfiguration bucketTags = s3Client.getBucketTaggingConfiguration(
-            bucketVirtualFile.getName());
-        if (bucketTags == null) {
-            return Collections.emptyList();
-        }
-
-        return bucketTags.getTagSet()
-                         .getAllTags()
-                         .entrySet()
-                         .stream()
-                         .map(entry -> new KeyValue(entry.getKey(), entry.getValue()))
-                         .collect(Collectors.toList());
+        return bucketVirtualFile.getBucket()
+                                .tags()
+                                .stream()
+                                .map(tag -> new KeyValue(tag.key(), tag.value()))
+                                .collect(Collectors.toList());
     }
 
     private ValidationInfo validateTag(Pair<String, JComponent> keyPair, Pair<String, JComponent> valuePair) {
@@ -139,10 +129,14 @@ public class BucketDetailsPanel {
     }
 
     private void updateTags() {
-        List<KeyValue> newTags = tags.getItems();
-        Map<String, String> tagMap = newTags.stream().collect(Collectors.toMap(KeyValue::getKey, KeyValue::getValue));
-        BucketTaggingConfiguration config = new BucketTaggingConfiguration(Collections.singleton(new TagSet(tagMap)));
-        bucketVirtualFile.getFileSystem().getS3Client().setBucketTaggingConfiguration(bucketVirtualFile.getName(), config);
+        bucketVirtualFile.getBucket()
+                         .updateTags(tags.getItems()
+                                         .stream()
+                                         .map(t -> Tag.builder()
+                                                      .key(t.getKey())
+                                                      .value(t.getValue())
+                                                      .build())
+                                         .collect(Collectors.toSet()));
         tags.setBusy(false);
     }
 
@@ -156,15 +150,7 @@ public class BucketDetailsPanel {
     }
 
     private String determineRegion() {
-        Region region = bucketVirtualFile.getRegion();
-        if (region != null) {
-            if (region == Region.US_Standard) {
-                return "us-east-1";
-            }
-            return region.getFirstRegionId();
-        } else {
-            return "Unknown";
-        }
+        return Objects.requireNonNull(bucketVirtualFile.getBucket().getRegion());
     }
 
     public JComponent getComponent() {

@@ -5,14 +5,14 @@ import com.intellij.openapi.ui.popup.*
 import com.intellij.openapi.ui.popup.PopupStep.FINAL_CHOICE
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
+import com.intellij.util.Consumer
 import software.aws.toolkits.jetbrains.core.AwsSettingsProvider
+import software.aws.toolkits.jetbrains.core.SettingsChangedListener
 import software.aws.toolkits.jetbrains.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.credentials.AwsCredentialsProfileProvider
 import software.aws.toolkits.jetbrains.credentials.CredentialProfile
 import java.awt.event.MouseEvent
-import com.intellij.util.Consumer
-import software.aws.toolkits.jetbrains.core.SettingsChangedListener
 import javax.swing.Icon
 
 class AwsSettingsPanel(private val project: Project) : StatusBarWidget, StatusBarWidget.MultipleTextValuesPresentation, SettingsChangedListener {

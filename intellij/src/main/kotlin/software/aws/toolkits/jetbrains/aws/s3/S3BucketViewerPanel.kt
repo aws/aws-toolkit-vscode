@@ -1,12 +1,11 @@
 package software.aws.toolkits.jetbrains.aws.s3
 
-import com.intellij.ui.JBSplitter
-
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.fileChooser.FileSystemTree
 import com.intellij.openapi.fileChooser.FileSystemTreeFactory
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
+import com.intellij.ui.JBSplitter
 import com.intellij.ui.ToolbarDecorator
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.panels.Wrapper
@@ -18,7 +17,7 @@ import java.awt.event.MouseEvent
 import javax.swing.JComponent
 import javax.swing.JPanel
 
-class S3BucketViewerPanel(private val project: Project, private val s3bucket: S3BucketVirtualFile) {
+class S3BucketViewerPanel(private val project: Project, private val s3bucket: S3VirtualBucket) {
     private val splitPanel: JBSplitter
     private val s3FileTree: S3FileTree
     private val detailPane: Wrapper
@@ -83,7 +82,7 @@ class S3BucketViewerPanel(private val project: Project, private val s3bucket: S3
 
             val selectedFile = selectedFiles[0]
             details = when (selectedFile) {
-                is S3BucketVirtualFile -> BucketDetailsPanel(project, selectedFile).component
+                is S3VirtualBucket -> BucketDetailsPanel(project, selectedFile).component
                 is S3VirtualFile -> ObjectDetailsPanel(selectedFile).component
                 else -> null
             }
