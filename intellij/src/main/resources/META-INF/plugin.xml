@@ -28,6 +28,9 @@
   </extensionPoints>
 
   <extensions defaultExtensionNs="com.intellij">
+    <fileEditorProvider implementation="software.aws.toolkits.jetbrains.ui.s3.S3BucketViewerProvider"/>
+    <fileTypeFactory implementation="software.aws.toolkits.jetbrains.aws.s3.S3FileTypeFactory"/>
+
     <!-- Credential Management -->
     <projectConfigurable displayName="AWS" id="aws"
                          instance="software.aws.toolkits.jetbrains.ui.options.AwsCredentialsConfigurable"/>
