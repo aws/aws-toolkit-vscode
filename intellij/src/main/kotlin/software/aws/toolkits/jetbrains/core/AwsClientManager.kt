@@ -9,13 +9,14 @@ import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
+import software.aws.toolkits.jetbrains.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.credentials.AwsCredentialsProfileProvider
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
 class AwsClientManager(private val project: Project) {
 
-    private data class AwsClientKey(val profileName: String, val regionId: String, val serviceClass: KClass<*>)
+    private data class AwsClientKey(val profileName: String, val region: AwsRegion, val serviceClass: KClass<*>)
 
     private val settings = AwsSettingsProvider.getInstance(project)
 
@@ -36,7 +37,7 @@ class AwsClientManager(private val project: Project) {
     private val cachedClients = ConcurrentHashMap<AwsClientKey, Any>()
 
     fun <T : Any> getClient(clz: KClass<T>): T {
-        val key = AwsClientKey(profileName = settings.currentProfile!!.name, regionId = settings.currentRegion.name, serviceClass = clz)
+        val key = AwsClientKey(profileName = settings.currentProfile!!.name, region = settings.currentRegion, serviceClass = clz)
 
         //TODO: We probably want to evict least recently used clients from this cache (and/or share the HTTP client so we do don't get a bunch of connection pools hanging around)
         @Suppress("UNCHECKED_CAST")
@@ -49,7 +50,7 @@ class AwsClientManager(private val project: Project) {
         @Suppress("UNCHECKED_CAST")
         return serviceClientBuilder.getValue(key.serviceClass).apply {
             this.credentials = getCredentialsProvider(key.profileName)
-            this.region = key.regionId
+            this.region = key.region.id
         }.build() as T
     }
 
