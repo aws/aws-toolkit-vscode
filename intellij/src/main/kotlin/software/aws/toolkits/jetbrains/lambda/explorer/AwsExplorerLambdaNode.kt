@@ -6,14 +6,16 @@ import com.amazonaws.services.lambda.model.ListFunctionsRequest
 import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.ui.LAMBDA_FUNCTION_ICON
 import software.aws.toolkits.jetbrains.ui.LAMBDA_SERVICE_ICON
-import software.aws.toolkits.jetbrains.ui.SQS_QUEUE_ICON
 import software.aws.toolkits.jetbrains.ui.explorer.AwsExplorerNode
+import software.aws.toolkits.jetbrains.ui.explorer.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.ui.explorer.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.ui.explorer.AwsTruncatedResultNode
 
 class AwsExplorerLambdaRootNode(project: Project) :
         AwsExplorerServiceRootNode(project, "AWS Lambda", LAMBDA_SERVICE_ICON) {
+    override fun serviceName() = "lambda"; // TODO: Get from client in v2
 
     private val client: AWSLambda = AwsClientManager.getInstance(project).getClient()
 
@@ -30,17 +32,16 @@ class AwsExplorerLambdaRootNode(project: Project) :
         return resources
     }
 
-    private fun mapResourceToNode(resource: FunctionConfiguration) = AwsExplorerFunctionNode(project!!, resource)
+    private fun mapResourceToNode(resource: FunctionConfiguration) = AwsExplorerFunctionNode(project!!, this, resource)
 }
 
-class AwsExplorerFunctionNode(project: Project, private val function: FunctionConfiguration) :
-        AwsExplorerNode<FunctionConfiguration>(project, function, SQS_QUEUE_ICON) { //TODO replace to Function icon
+class AwsExplorerFunctionNode(project: Project,
+                              serviceNode: AwsExplorerLambdaRootNode,
+                              private val function: FunctionConfiguration) :
+        AwsExplorerResourceNode<FunctionConfiguration>(project, serviceNode, function, LAMBDA_FUNCTION_ICON) {
 
-    override fun getChildren(): Collection<AbstractTreeNode<Any>> {
-        return emptyList()
-    }
+    override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
+    override fun resourceName(): String = "function"
 
-    override fun toString(): String {
-        return function.functionName
-    }
+    override fun toString(): String = function.functionName
 }

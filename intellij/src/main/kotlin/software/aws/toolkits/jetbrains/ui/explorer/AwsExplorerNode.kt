@@ -65,7 +65,18 @@ abstract class AwsExplorerServiceRootNode(project: Project, value: String, awsIc
         listOf(AwsExplorerErrorNode(project!!, e))
     }
 
+    abstract fun serviceName(): String
+
     protected abstract fun loadResources(paginationToken: String? = null): Collection<AwsExplorerNode<*>>
+}
+
+abstract class AwsExplorerResourceNode<T>(project: Project,
+                                          private val serviceNode: AwsExplorerServiceRootNode,
+                                          value: T,
+                                          awsIcon: Icon) : AwsExplorerNode<T>(project, value, awsIcon) {
+    fun serviceName() = serviceNode.serviceName()
+
+    abstract fun resourceName(): String
 }
 
 class AwsTruncatedResultNode(private val parentNode: AwsExplorerServiceRootNode, val paginationToken: String) :

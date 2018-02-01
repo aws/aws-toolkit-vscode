@@ -1,14 +1,20 @@
 package software.aws.toolkits.jetbrains.ui.explorer
 
+import com.intellij.ide.util.treeView.AbstractTreeBuilder
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ide.util.treeView.NodeRenderer
+import com.intellij.openapi.actionSystem.ActionGroup
+import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.actionSystem.DataKey
+import com.intellij.openapi.actionSystem.ex.ActionManagerEx
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.HyperlinkLabel
+import com.intellij.ui.PopupHandler
+import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TreeUIHelper
-import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBSwingUtilities
@@ -17,10 +23,13 @@ import software.aws.toolkits.jetbrains.core.AwsSettingsProvider
 import software.aws.toolkits.jetbrains.core.SettingsChangedListener
 import software.aws.toolkits.jetbrains.credentials.AwsCredentialsProfileProvider
 import software.aws.toolkits.jetbrains.credentials.CredentialProfile
+import software.aws.toolkits.jetbrains.ui.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
+import software.aws.toolkits.jetbrains.ui.explorer.ExplorerDataKeys.SELECTED_SERVICE_NODE
 import software.aws.toolkits.jetbrains.ui.options.AwsCredentialsConfigurable
 import software.aws.toolkits.jetbrains.ui.widgets.AwsProfilePanel
 import software.aws.toolkits.jetbrains.ui.widgets.AwsRegionPanel
 import software.aws.toolkits.jetbrains.utils.MutableMapWithListener
+import java.awt.Component
 import java.awt.FlowLayout
 import java.awt.event.ActionListener
 import java.awt.event.MouseAdapter
@@ -35,18 +44,16 @@ class ExplorerToolWindow(val project: Project) :
         SimpleToolWindowPanel(true, false), MutableMapWithListener.MapChangeListener<String, CredentialProfile>, SettingsChangedListener {
 
     private val settingsProvider = AwsSettingsProvider.getInstance(project).addListener(this)
-    private val profileProvider = AwsCredentialsProfileProvider.getInstance(project)
+    private val actionManager = ActionManagerEx.getInstanceEx()
 
     private val treePanelWrapper: Wrapper = Wrapper()
     private val profilePanel: AwsProfilePanel
     private val regionPanel: AwsRegionPanel
     private val errorPanel: JPanel
     private val mainPanel: JPanel
+    private var awsTree: Tree? = null
 
     init {
-
-        profileProvider.addProfileChangeListener(this)
-
         val link = HyperlinkLabel("Open AWS Configuration to configure your AWS account.")
         link.addHyperlinkListener { e ->
             if (e.eventType == HyperlinkEvent.EventType.ACTIVATED) {
@@ -103,13 +110,21 @@ class ExplorerToolWindow(val project: Project) :
 
     private fun updateModel() {
         val model = DefaultTreeModel(DefaultMutableTreeNode())
-        val awsTree = createTree(model)
-        val builder = AwsExplorerTreeBuilder(awsTree, model, project)
+        val newTree = createTree(model)
+        val builder = AwsExplorerTreeBuilder(newTree, model, project)
         Disposer.register(project, builder)
-        treePanelWrapper.setContent(JBScrollPane(awsTree))
+        treePanelWrapper.setContent(ScrollPaneFactory.createScrollPane(newTree))
+
+        awsTree?.let {
+            AbstractTreeBuilder.getBuilderFor(it)?.let {
+                Disposer.dispose(it)
+            }
+        }
+
+        awsTree = newTree
     }
 
-    private fun createTree(model: DefaultTreeModel): JTree {
+    private fun createTree(model: DefaultTreeModel): Tree {
         val awsTree = Tree()
         TreeUIHelper.getInstance().installTreeSpeedSearch(awsTree)
         UIUtil.setLineStyleAngled(awsTree)
@@ -125,7 +140,74 @@ class ExplorerToolWindow(val project: Project) :
                 }
             }
         })
+
+        awsTree.addMouseListener(object : PopupHandler() {
+            override fun invokePopup(comp: Component?, x: Int, y: Int) {
+                // Build a right click menu based on the selected first node
+                // All nodes must be the same type (e.g. all S3 buckets, or a service node)
+                val explorerNode = getSelectedNodesSameType<AwsExplorerNode<*>>()?.get(0) ?: return
+                val actionGroupName = when (explorerNode) {
+                    is AwsExplorerServiceRootNode ->
+                        "aws.toolkit.explorer.${explorerNode.serviceName()}"
+                    is AwsExplorerResourceNode<*> ->
+                        "aws.toolkit.explorer.${explorerNode.serviceName()}.${explorerNode.resourceName()}"
+                    else ->
+                        return
+                }
+                val actionGroup = actionManager.getAction(actionGroupName) as? ActionGroup ?: return
+                val popupMenu = actionManager.createActionPopupMenu(ActionPlaces.UNKNOWN, actionGroup)
+                popupMenu.component.show(component, x, y)
+            }
+        })
+
         return awsTree
+    }
+
+    override fun getData(dataId: String?): Any? {
+        if (SELECTED_RESOURCE_NODES.`is`(dataId)) {
+            return getSelectedNodesSameType<AwsExplorerResourceNode<*>>()
+        }
+        if (SELECTED_SERVICE_NODE.`is`(dataId)) {
+            return getSelectedServiceNode()
+        }
+
+        return super.getData(dataId);
+    }
+
+    private fun getSelectedNode(): AwsExplorerNode<*>? {
+        val nodes = getSelectedNodes<AwsExplorerNode<*>>()
+        return if (nodes.size == 1) nodes[0] else null
+    }
+
+    private fun getSelectedServiceNode(): AwsExplorerServiceRootNode? {
+        return getSelectedNode() as? AwsExplorerServiceRootNode
+    }
+
+    /**
+     * Returns the list of selected nodes if they are all of the same type
+     */
+    private inline fun <reified T : AwsExplorerNode<*>> getSelectedNodesSameType(): List<T>? {
+        val selectedNodes = getSelectedNodes<T>()
+        if (selectedNodes.isEmpty()) {
+            return null
+        }
+
+        val firstClass = selectedNodes[0]::class.java
+        return if (selectedNodes.all { firstClass.isInstance(it) }) {
+            selectedNodes
+        } else {
+            null;
+        }
+    }
+
+    private inline fun <reified T : AwsExplorerNode<*>> getSelectedNodes(): List<T> {
+        return awsTree?.selectionPaths?.let {
+            it.map { it.lastPathComponent }
+                    .filterIsInstance<DefaultMutableTreeNode>()
+                    .map { it.userObject }
+                    .filterIsInstance<T>()
+                    .toList()
+        } ?: emptyList<T>()
     }
 
     private class AwsTreeCellRenderer : NodeRenderer() {
@@ -136,4 +218,15 @@ class ExplorerToolWindow(val project: Project) :
             }
         }
     }
+}
+
+object ExplorerDataKeys {
+    /**
+     * Returns all the selected resource nodes. getData() will return null if not all selected items are same type
+     */
+    val SELECTED_RESOURCE_NODES = DataKey.create<List<AwsExplorerResourceNode<*>>>("aws.explorer.resourceNodes")!!
+    /**
+     * Returns the selected Service node. getData() will return null if more than one item is selected
+     */
+    val SELECTED_SERVICE_NODE = DataKey.create<AwsExplorerNode<*>>("aws.explorer.serviceNode")!!
 }
