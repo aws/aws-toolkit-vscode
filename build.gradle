@@ -4,10 +4,14 @@ buildscript {
     repositories {
         mavenCentral()
         jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
         classpath "org.jetbrains.dokka:dokka-gradle-plugin:$dokkaVersion"
+        classpath "gradle.plugin.org.jmailen.gradle:kotlinter-gradle:$kotlinterPluginVersion"
     }
 }
 
@@ -27,9 +31,15 @@ subprojects {
     apply plugin: 'java'
     apply plugin: 'kotlin'
     apply plugin: 'org.jetbrains.dokka'
+    apply plugin: 'org.jmailen.kotlinter'
 
     dependencies {
         compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+    }
+
+    kotlinter {
+        ignoreFailures = true // TODO: Fix errors
+        reporters = ['checkstyle', 'plain']
     }
 
     compileKotlin {
