@@ -1,8 +1,14 @@
 package software.aws.toolkits.jetbrains.ui.widgets
 
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.popup.*
+import com.intellij.openapi.ui.popup.JBPopupFactory
+import com.intellij.openapi.ui.popup.ListPopup
+import com.intellij.openapi.ui.popup.ListPopupStep
+import com.intellij.openapi.ui.popup.ListSeparator
+import com.intellij.openapi.ui.popup.MnemonicNavigationFilter
+import com.intellij.openapi.ui.popup.PopupStep
 import com.intellij.openapi.ui.popup.PopupStep.FINAL_CHOICE
+import com.intellij.openapi.ui.popup.SpeedSearchFilter
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.util.Consumer
@@ -15,7 +21,8 @@ import software.aws.toolkits.jetbrains.credentials.CredentialProfile
 import java.awt.event.MouseEvent
 import javax.swing.Icon
 
-class AwsSettingsPanel(private val project: Project) : StatusBarWidget, StatusBarWidget.MultipleTextValuesPresentation, SettingsChangedListener {
+class AwsSettingsPanel(private val project: Project) : StatusBarWidget, StatusBarWidget.MultipleTextValuesPresentation,
+        SettingsChangedListener {
 
     private val settings = AwsSettingsProvider.getInstance(project).addListener(this)
     private var statusBar: StatusBar? = null
@@ -26,7 +33,8 @@ class AwsSettingsPanel(private val project: Project) : StatusBarWidget, StatusBa
     override fun getTooltipText(): String? = null
 
     //TODO: Need to better handle the case where they have no default profile
-    override fun getSelectedValue(): String? = "AWS:${settings.currentProfile?.name ?: "default"}/${settings.currentRegion.name}"
+    override fun getSelectedValue(): String? =
+            "AWS:${settings.currentProfile?.name ?: "default"}/${settings.currentRegion.name}"
 
     @Suppress("OverridingDeprecatedMember") // No choice, part of interface contract with no default
     override fun getMaxValue(): String {

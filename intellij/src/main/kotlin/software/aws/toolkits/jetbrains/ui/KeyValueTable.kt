@@ -54,8 +54,8 @@ class KeyValueTable(initialItems: List<KeyValue> = mutableListOf()) : TableView<
     }
 }
 
-private class StringColumn(name: String, private val extractor: (KeyValue) -> String)
-    : ColumnInfo<KeyValue, String>(name) {
+private class StringColumn(name: String, private val extractor: (KeyValue) -> String) :
+        ColumnInfo<KeyValue, String>(name) {
     override fun valueOf(keyValue: KeyValue): String {
         return extractor.invoke(keyValue)
     }

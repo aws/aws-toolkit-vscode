@@ -1,6 +1,5 @@
 package software.aws.toolkits.jetbrains.aws.s3
 
-
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileListener
 import com.intellij.openapi.vfs.VirtualFileSystem
@@ -125,16 +124,16 @@ abstract class BaseS3VirtualObjectContainer(
     override fun isDirectory() = true
 
     override fun getChildren(): Array<VirtualFile> =
-        key.children().sortedBy { it.javaClass.simpleName }.sortedBy { it.name }.map {
-            when (it) {
-                is S3Directory -> S3VirtualDirectory(fileSystem, it, this)
-                is S3File -> S3VirtualFile(fileSystem, it, this)
-            }
-        }.toTypedArray()
+            key.children().sortedBy { it.javaClass.simpleName }.sortedBy { it.name }.map {
+                when (it) {
+                    is S3Directory -> S3VirtualDirectory(fileSystem, it, this)
+                    is S3File -> S3VirtualFile(fileSystem, it, this)
+                }
+            }.toTypedArray()
 }
 
 class S3VirtualBucket(fileSystem: S3VirtualFileSystem, override val key: S3Bucket) :
-    BaseS3VirtualObjectContainer(fileSystem, key, parent = null) {
+        BaseS3VirtualObjectContainer(fileSystem, key, parent = null) {
 
     val bucket: S3Bucket = key
 

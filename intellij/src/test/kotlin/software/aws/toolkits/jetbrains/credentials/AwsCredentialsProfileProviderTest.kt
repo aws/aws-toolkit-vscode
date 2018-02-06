@@ -242,7 +242,7 @@ internal class AwsCredentialsProfileProviderTest {
 
     private class TestExtensionFactory : CredentialProfileFactory<TestExtensionProfile>() {
         override fun getKey(): String {
-            return ID;
+            return ID
         }
 
         override fun createProvider(): TestExtensionProfile {

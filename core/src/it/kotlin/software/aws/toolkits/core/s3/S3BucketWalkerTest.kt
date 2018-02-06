@@ -42,14 +42,14 @@ class S3BucketWalkerTest {
     @Test
     fun canWalkATree() {
         val expected = mutableSetOf(
-            bucketName,
-            "top-level",
-            "first-level",
-            "second-level-object",
-            "second-level",
-            "third-level",
-            "forth-level-object",
-            "forth-level-object-2"
+                bucketName,
+                "top-level",
+                "first-level",
+                "second-level-object",
+                "second-level",
+                "third-level",
+                "forth-level-object",
+                "forth-level-object-2"
         )
 
         s3Client.bucket(bucketName).walkTree {
@@ -63,11 +63,11 @@ class S3BucketWalkerTest {
     @Test
     fun canWalkATreeWithAFilter() {
         val expected = mutableSetOf(
-            bucketName,
-            "top-level",
-            "first-level",
-            "second-level-object",
-            "second-level"
+                bucketName,
+                "top-level",
+                "first-level",
+                "second-level-object",
+                "second-level"
         )
 
         s3Client.bucket(bucketName).walkTree(filter = { it.name != "third-level" }) {
@@ -95,8 +95,8 @@ class S3BucketWalkerTest {
 
         private fun putObject(bucket: String, key: String) {
             s3Client.putObject(
-                PutObjectRequest.builder().bucket(bucket).key(key).build(),
-                RequestBody.of("blah")
+                    PutObjectRequest.builder().bucket(bucket).key(key).build(),
+                    RequestBody.of("blah")
             )
         }
     }

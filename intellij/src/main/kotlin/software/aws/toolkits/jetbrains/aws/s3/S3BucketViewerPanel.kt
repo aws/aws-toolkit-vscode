@@ -54,7 +54,7 @@ class S3BucketViewerPanel(private val project: Project, private val s3bucket: S3
             val tree = fileSystemTree.tree
             tree.addMouseListener(object : MouseAdapter() {
                 override fun mouseClicked(e: MouseEvent) {
-                    if(e.clickCount >= 2) {
+                    if (e.clickCount >= 2) {
                         handleDoubleClick()
                     }
                 }
@@ -68,7 +68,7 @@ class S3BucketViewerPanel(private val project: Project, private val s3bucket: S3
 
         private fun handleDoubleClick() {
             val selectedFile = fileSystemTree.selectedFile
-            when(selectedFile) {
+            when (selectedFile) {
                 is S3VirtualFile -> FileEditorManager.getInstance(project).openFile(selectedFile, true)
             }
         }

@@ -1,6 +1,5 @@
 package software.aws.toolkits.jetbrains.ui.modals
 
-
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
@@ -17,7 +16,17 @@ import software.aws.toolkits.jetbrains.aws.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
-import javax.swing.*
+import javax.swing.DefaultComboBoxModel
+import javax.swing.JButton
+import javax.swing.JComboBox
+import javax.swing.JComponent
+import javax.swing.JLabel
+import javax.swing.JOptionPane
+import javax.swing.JPanel
+import javax.swing.JSeparator
+import javax.swing.JTextField
+import javax.swing.SwingConstants
+import javax.swing.SwingUtilities
 
 class UploadToLambdaModal(
     private val project: Project,
@@ -26,7 +35,7 @@ class UploadToLambdaModal(
 ) : DialogWrapper(project) {
     private val clientManager = AwsClientManager.getInstance(project)
     private val view =
-        UploadToLambdaModalView(UploadToLambdaModalEventHandler(clientManager.getClient(), clientManager.getClient()))
+            UploadToLambdaModalView(UploadToLambdaModalEventHandler(clientManager.getClient(), clientManager.getClient()))
 
     init {
         super.init()
@@ -41,8 +50,8 @@ class UploadToLambdaModal(
 
     override fun doValidate(): ValidationInfo? {
         if (view.functionName().isNullOrBlank()) return ValidationInfo(
-            "Function Name must be specified",
-            view.functionName
+                "Function Name must be specified",
+                view.functionName
         )
         if (view.handler().isNullOrBlank()) return ValidationInfo("Handler must be specified", view.handlerPicker)
         if (view.iamRole() == null) return ValidationInfo("Iam role must be specified", view.iamRolePicker)
@@ -54,16 +63,15 @@ class UploadToLambdaModal(
     override fun doOKAction() {
         super.doOKAction()
         okHandler(
-            LambdaFunction(
-                name = view.functionName()!!,
-                handler = view.handler()!!,
-                iamRole = view.iamRole()!!,
-                s3Bucket = view.s3Bucket()!!,
-                description = view.description()!!
-            )
+                LambdaFunction(
+                        name = view.functionName()!!,
+                        handler = view.handler()!!,
+                        iamRole = view.iamRole()!!,
+                        s3Bucket = view.s3Bucket()!!,
+                        description = view.description()!!
+                )
         )
     }
-
 }
 
 class UploadToLambdaController(
@@ -73,20 +81,20 @@ class UploadToLambdaController(
 ) {
     fun load() {
         populatePicker({ findPossibleFunctions() },
-            { handlers -> view.updateAvailableHandlers(handlers) },
-            { enable -> view.enableHandlerPicker(enable) })
+                { handlers -> view.updateAvailableHandlers(handlers) },
+                { enable -> view.enableHandlerPicker(enable) })
 
         populatePicker({
             clientManager.getClient<IAMClient>().listRoles().roles().filterNotNull()
-                .map { IamRole(name = it.roleName(), arn = it.arn()) }
+                    .map { IamRole(name = it.roleName(), arn = it.arn()) }
         },
-            { roles -> view.updateIamRoles(roles) },
-            { enable -> view.enableIamRolesPicker(enable) }
+                { roles -> view.updateIamRoles(roles) },
+                { enable -> view.enableIamRolesPicker(enable) }
         )
 
         populatePicker({ clientManager.getClient<S3Client>().listBuckets().buckets().filterNotNull() },
-            { buckets -> view.updateBuckets(buckets) },
-            { enable -> view.enableBucketPicker(enable) }
+                { buckets -> view.updateBuckets(buckets) },
+                { enable -> view.enableBucketPicker(enable) }
         )
     }
 
@@ -116,7 +124,7 @@ class UploadToLambdaController(
 class UploadToLambdaModalEventHandler(private val s3Client: S3Client, private val iamClient: IAMClient) {
     fun createS3BucketClicked(source: UploadToLambdaModalView) {
         val bucketName =
-            JOptionPane.showInputDialog(source, "S3 Bucket Name:", "Create S3 Bucket", JOptionPane.PLAIN_MESSAGE)
+                JOptionPane.showInputDialog(source, "S3 Bucket Name:", "Create S3 Bucket", JOptionPane.PLAIN_MESSAGE)
         if (bucketName != null) run {
             s3Client.createBucket { it.bucket(bucketName) }
         }
@@ -215,5 +223,4 @@ class UploadToLambdaModalView(private val eventHandler: UploadToLambdaModalEvent
         model.removeAllElements()
         values.forEach { model.addElement(it) }
     }
-
 }

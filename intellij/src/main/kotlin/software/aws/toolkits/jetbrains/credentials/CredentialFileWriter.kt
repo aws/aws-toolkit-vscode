@@ -12,7 +12,12 @@ import java.io.FileOutputStream
 import java.io.OutputStreamWriter
 import java.io.Writer
 import java.nio.charset.StandardCharsets
-import java.util.*
+import java.util.Collections
+import java.util.HashMap
+import java.util.HashSet
+import java.util.LinkedHashMap
+import java.util.Scanner
+import java.util.UUID
 
 /**
  * The class for creating and modifying the credential profiles file.
@@ -37,7 +42,8 @@ object CredentialFileWriter {
         if (destination.exists() && !overwrite) {
             throw IllegalStateException(
                     "The destination file already exists. Set overwrite=true if you want to clobber the existing " +
-                            "content and completely re-write the file.")
+                            "content and completely re-write the file."
+            )
         }
 
         OutputStreamWriter(FileOutputStream(destination, false), StandardCharsets.UTF_8).use { writer ->
@@ -113,7 +119,12 @@ object CredentialFileWriter {
                 throw IllegalStateException("Failed to stash the existing credentials file before applying the changes.")
             } else {
                 if (LOG.isDebugEnabled) {
-                    LOG.debug(String.format("The original credentials file is stashed to location (%s).", stashLocation.absolutePath))
+                    LOG.debug(
+                            String.format(
+                                    "The original credentials file is stashed to location (%s).",
+                                    stashLocation.absolutePath
+                            )
+                    )
                 }
             }
         }
@@ -149,13 +160,17 @@ object CredentialFileWriter {
                 }
 
                 if (!stashLocation.renameTo(destination)) {
-                    throw IllegalStateException("Unable to restore the original credentials file. File content " +
-                            "stashed in ${stashLocation.absolutePath}")
+                    throw IllegalStateException(
+                            "Unable to restore the original credentials file. File content " +
+                                    "stashed in ${stashLocation.absolutePath}"
+                    )
                 }
             }
 
-            throw IllegalStateException("Unable to modify the credentials file. (The original file has been restored.)",
-                    e)
+            throw IllegalStateException(
+                    "Unable to modify the credentials file. (The original file has been restored.)",
+                    e
+            )
         }
     }
 
@@ -169,8 +184,10 @@ object CredentialFileWriter {
      * @param modifications A map of all the new profiles, keyed by the profile name.
      * If a profile name is associated with a null value, it's profile content will be removed.
      */
-    private class ProfilesConfigFileWriterHelper(private val writer: Writer, modifications: Map<String, BasicProfile?>)
-        : AbstractProfilesConfigFileScanner() {
+    private class ProfilesConfigFileWriterHelper(
+        private val writer: Writer,
+        modifications: Map<String, BasicProfile?>
+    ) : AbstractProfilesConfigFileScanner() {
 
         /** Map of all the profiles to be modified, keyed by profile names  */
         private val newProfiles = LinkedHashMap<String, BasicProfile>()
@@ -273,9 +290,11 @@ object CredentialFileWriter {
             flush()
         }
 
-        override fun onProfileProperty(profileName: String,
-                                       propertyKey: String, propertyValue: String,
-                                       isSupportedProperty: Boolean, line: String) {
+        override fun onProfileProperty(
+            profileName: String,
+            propertyKey: String, propertyValue: String,
+            isSupportedProperty: Boolean, line: String
+        ) {
             // Record that this property key has been declared for this profile
             existingProfileProperties.putIfAbsent(profileName, HashSet<String>())
             existingProfileProperties[profileName]!!.add(propertyKey)

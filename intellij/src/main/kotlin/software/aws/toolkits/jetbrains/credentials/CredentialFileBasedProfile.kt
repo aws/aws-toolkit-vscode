@@ -36,6 +36,6 @@ class CredentialFileBasedProfileFactory : CredentialProfileFactory<CredentialFil
 
     companion object {
         const val ID = "credentialFileProfile"
-        const val DESCRIPTION = "Credentials file based profile";
+        const val DESCRIPTION = "Credentials file based profile"
     }
 }

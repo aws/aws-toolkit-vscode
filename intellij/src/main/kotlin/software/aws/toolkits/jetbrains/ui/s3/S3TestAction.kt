@@ -6,7 +6,6 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.ui.Messages
 import software.aws.toolkits.jetbrains.ui.explorer.ExplorerDataKeys
 
-
 class S3TestAction : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
         val data = e.getData(ExplorerDataKeys.SELECTED_RESOURCE_NODES)

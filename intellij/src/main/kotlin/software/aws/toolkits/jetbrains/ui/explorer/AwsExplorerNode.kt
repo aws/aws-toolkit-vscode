@@ -15,8 +15,8 @@ import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.MutableTreeNode
 
-
-abstract class AwsExplorerNode<T>(project: Project, value: T, private val awsIcon: Icon?) : AbstractTreeNode<T>(project, value) {
+abstract class AwsExplorerNode<T>(project: Project, value: T, private val awsIcon: Icon?) :
+        AbstractTreeNode<T>(project, value) {
 
     override fun update(presentation: PresentationData?) {
         presentation?.setIcon(awsIcon)
@@ -35,7 +35,9 @@ class AwsExplorerRootNode(project: Project) :
     override fun getChildren(): Collection<AbstractTreeNode<String>> {
         val childrenList = mutableListOf<AbstractTreeNode<String>>()
         AwsExplorerService.values()
-                .filter { AwsRegionProvider.getInstance(project!!).isServiceSupported(settings.currentRegion, it.serviceId) }
+                .filter {
+                    AwsRegionProvider.getInstance(project!!).isServiceSupported(settings.currentRegion, it.serviceId)
+                }
                 .mapTo(childrenList) { it.buildServiceRootNode(project!!) }
 
         return childrenList
@@ -70,10 +72,12 @@ abstract class AwsExplorerServiceRootNode(project: Project, value: String, awsIc
     protected abstract fun loadResources(paginationToken: String? = null): Collection<AwsExplorerNode<*>>
 }
 
-abstract class AwsExplorerResourceNode<T>(project: Project,
-                                          private val serviceNode: AwsExplorerServiceRootNode,
-                                          value: T,
-                                          awsIcon: Icon) : AwsExplorerNode<T>(project, value, awsIcon) {
+abstract class AwsExplorerResourceNode<T>(
+    project: Project,
+    private val serviceNode: AwsExplorerServiceRootNode,
+    value: T,
+    awsIcon: Icon
+) : AwsExplorerNode<T>(project, value, awsIcon) {
     fun serviceName() = serviceNode.serviceName()
 
     abstract fun resourceName(): String

@@ -19,7 +19,6 @@ class CredentialsTable : TableView<CredentialProfile>(createModel()) {
         model.isSortable = true
         tableHeader.reorderingAllowed = false
 
-
         val sorter = TableRowSorter<ListTableModel<CredentialProfile>>(model)
         sorter.setSortable(0, true)
         sorter.setSortable(1, true)
@@ -39,7 +38,7 @@ class CredentialsTable : TableView<CredentialProfile>(createModel()) {
             val listTableModel = ListTableModel<CredentialProfile>(*createColumnInfo())
             listTableModel.isSortable = true
 
-            return listTableModel;
+            return listTableModel
         }
 
         private fun createColumnInfo(): Array<ColumnInfo<CredentialProfile, String>> {
@@ -54,9 +53,10 @@ class CredentialsTable : TableView<CredentialProfile>(createModel()) {
         }
     }
 
-    private class CredentialProfileColumn constructor(columnName: String,
-                                                      private val valueExtractor: Function<CredentialProfile, String>)
-        : ColumnInfo<CredentialProfile, String>(columnName) {
+    private class CredentialProfileColumn constructor(
+        columnName: String,
+        private val valueExtractor: Function<CredentialProfile, String>
+    ) : ColumnInfo<CredentialProfile, String>(columnName) {
         override fun valueOf(credentialProfile: CredentialProfile): String? {
             return valueExtractor.apply(credentialProfile)
         }

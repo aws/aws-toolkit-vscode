@@ -19,8 +19,8 @@ public class KeyValueEditor extends DialogWrapper {
     private JPanel component;
 
     public KeyValueEditor(Component parent,
-                       KeyValue initialValue,
-                       BiFunction<Pair<String, JComponent>, Pair<String, JComponent>, ValidationInfo> validator) {
+                          KeyValue initialValue,
+                          BiFunction<Pair<String, JComponent>, Pair<String, JComponent>, ValidationInfo> validator) {
         super(parent, false);
         this.validator = validator;
 
@@ -49,7 +49,7 @@ public class KeyValueEditor extends DialogWrapper {
     @Nullable
     @Override
     protected ValidationInfo doValidate() {
-        if(validator != null) {
+        if (validator != null) {
             return validator.apply(Pair.create(getKey(), keyField), Pair.create(getValue(), valueField));
         } else {
             return null;

@@ -24,7 +24,8 @@ class AwsExplorerLambdaRootNode(project: Project) :
         paginationToken?.let { request.marker(paginationToken) }
 
         val response = client.listFunctions(request.build())
-        val resources: MutableList<AwsExplorerNode<*>> = response.functions().map { mapResourceToNode(it) }.toMutableList()
+        val resources: MutableList<AwsExplorerNode<*>> =
+                response.functions().map { mapResourceToNode(it) }.toMutableList()
         response.nextMarker()?.let {
             resources.add(AwsTruncatedResultNode(this, it))
         }
@@ -35,9 +36,11 @@ class AwsExplorerLambdaRootNode(project: Project) :
     private fun mapResourceToNode(resource: FunctionConfiguration) = AwsExplorerFunctionNode(project!!, this, resource)
 }
 
-class AwsExplorerFunctionNode(project: Project,
-                              serviceNode: AwsExplorerLambdaRootNode,
-                              private val function: FunctionConfiguration) :
+class AwsExplorerFunctionNode(
+    project: Project,
+    serviceNode: AwsExplorerLambdaRootNode,
+    private val function: FunctionConfiguration
+) :
         AwsExplorerResourceNode<FunctionConfiguration>(project, serviceNode, function, LAMBDA_FUNCTION_ICON) {
 
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()

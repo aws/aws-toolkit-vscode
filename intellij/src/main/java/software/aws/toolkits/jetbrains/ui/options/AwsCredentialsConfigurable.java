@@ -108,13 +108,13 @@ public class AwsCredentialsConfigurable implements Configurable, Configurable.No
 
     private void editProfile() {
         CredentialProfile profileToEdit = credentialsTable.getSelectedObject();
-        if(profileToEdit == null) {
+        if (profileToEdit == null) {
             return;
         }
 
         CredentialProfileFactory factory = CredentialProfileFactory.factoryFor(profileToEdit.getId());
 
-        if(factory == null) {
+        if (factory == null) {
             throw new IllegalStateException("The factory for " + profileToEdit.getId() + " is missing");
         }
 
@@ -172,7 +172,7 @@ public class AwsCredentialsConfigurable implements Configurable, Configurable.No
     @Override
     public boolean isModified() {
         return !Objects.equals(optionsProvider.getCredentialFileLocation(), currentCredentialFileLocation)
-            || !optionsProvider.getProfiles().equals(credentialsTable.getModel().getItems());
+               || !optionsProvider.getProfiles().equals(credentialsTable.getModel().getItems());
     }
 
     @Override

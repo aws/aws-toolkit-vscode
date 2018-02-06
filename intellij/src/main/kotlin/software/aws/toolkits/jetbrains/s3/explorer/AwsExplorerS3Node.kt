@@ -17,7 +17,6 @@ import software.aws.toolkits.jetbrains.ui.explorer.AwsExplorerServiceRootNode
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
-
 class AwsExplorerS3RootNode(project: Project) :
         AwsExplorerServiceRootNode(project, "Amazon S3", S3_SERVICE_ICON) {
     override fun serviceName() = "s3"; // TODO: Get from client in v2
@@ -25,14 +24,14 @@ class AwsExplorerS3RootNode(project: Project) :
     private val client: S3Client = AwsClientManager.getInstance(project).getClient()
 
     override fun loadResources(paginationToken: String?): Collection<AwsExplorerNode<*>> =
-        client.listS3Buckets().map { mapResourceToNode(it) }
+            client.listS3Buckets().map { mapResourceToNode(it) }
 
     private fun mapResourceToNode(resource: S3Bucket) = AwsExplorerBucketNode(project!!, this, resource)
 }
 
 class AwsExplorerBucketNode(project: Project, serviceNode: AwsExplorerS3RootNode, private val bucket: S3Bucket) :
         AwsExplorerResourceNode<S3Bucket>(project, serviceNode, bucket, S3_BUCKET_ICON) {
-        
+
     private val editorManager = FileEditorManager.getInstance(project)
     private val client: S3Client = AwsClientManager.getInstance(project).getClient()
 

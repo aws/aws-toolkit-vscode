@@ -57,9 +57,20 @@ class MutableMapWithListener<K, V> : MutableMap<K, V> {
     interface MapChangeListener<K, V> {
         fun onUpdate()
 
-        fun onClear() { onUpdate() }
-        fun onPut(key: K, value: V, previousValue: V?) { onUpdate() }
-        fun onPutAll(from: Map<out K, V>) { onUpdate() }
-        fun onRemove(key: K, value: V?) { onUpdate() }
+        fun onClear() {
+            onUpdate()
+        }
+
+        fun onPut(key: K, value: V, previousValue: V?) {
+            onUpdate()
+        }
+
+        fun onPutAll(from: Map<out K, V>) {
+            onUpdate()
+        }
+
+        fun onRemove(key: K, value: V?) {
+            onUpdate()
+        }
     }
 }

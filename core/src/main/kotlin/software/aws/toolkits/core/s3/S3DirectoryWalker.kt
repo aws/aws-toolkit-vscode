@@ -2,7 +2,15 @@ package software.aws.toolkits.core.s3
 
 import software.amazon.awssdk.core.sync.StreamingResponseHandler
 import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.*
+import software.amazon.awssdk.services.s3.model.BucketVersioningStatus
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest
+import software.amazon.awssdk.services.s3.model.GetObjectRequest
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request
+import software.amazon.awssdk.services.s3.model.MetadataDirective
+import software.amazon.awssdk.services.s3.model.ObjectStorageClass
+import software.amazon.awssdk.services.s3.model.S3Exception
+import software.amazon.awssdk.services.s3.model.Tag
+import software.amazon.awssdk.services.s3.model.Tagging
 import java.io.InputStream
 import java.net.URLEncoder
 import java.time.Instant
@@ -13,7 +21,7 @@ import java.time.Instant
 fun S3Client.bucket(name: String) = S3Bucket(name, this)
 
 fun S3Client.listS3Buckets(): List<S3Bucket> =
-    this.listBuckets().buckets().map { S3Bucket(it.name(), this, creationDate = it.creationDate()) }
+        this.listBuckets().buckets().map { S3Bucket(it.name(), this, creationDate = it.creationDate()) }
 
 sealed class S3Key(val bucket: String, val key: String) {
     open val name = if (key.endsWith("/")) {
@@ -63,32 +71,31 @@ sealed class S3Key(val bucket: String, val key: String) {
     }
 }
 
-open class S3Directory internal constructor(bucket: String, key: String, private val client: S3Client) :
-    S3Key(bucket, key) {
+open class S3Directory internal constructor(bucket: String, key: String, private val client: S3Client) : S3Key(bucket, key) {
     fun children(): List<S3Key> {
         val request = ListObjectsV2Request.builder()
-            .bucket(bucket)
-            .delimiter("/")
-            .prefix(key)
-            .build()
+                .bucket(bucket)
+                .delimiter("/")
+                .prefix(key)
+                .build()
         return client.listObjectsV2Iterable(request).flatMap {
             val directories = (it.commonPrefixes() ?: emptyList()).map {
                 S3Directory(
-                    bucket = bucket,
-                    key = it.prefix(),
-                    client = client
+                        bucket = bucket,
+                        key = it.prefix(),
+                        client = client
                 )
             }
 
             val objects = (it.contents() ?: emptyList()).filterNot { it.key() == key }.map {
                 S3File(
-                    bucket = bucket,
-                    key = it.key(),
-                    lastModified = it.lastModified(),
-                    etag = it.eTag(),
-                    storageClass = it.storageClass(),
-                    size = it.size(),
-                    client = client
+                        bucket = bucket,
+                        key = it.key(),
+                        lastModified = it.lastModified(),
+                        etag = it.eTag(),
+                        storageClass = it.storageClass(),
+                        size = it.size(),
+                        client = client
                 )
             }
 
@@ -97,8 +104,7 @@ open class S3Directory internal constructor(bucket: String, key: String, private
     }
 }
 
-class S3Bucket internal constructor(bucket: String, private val client: S3Client, val creationDate: Instant? = null) :
-    S3Directory(bucket, "", client) {
+class S3Bucket internal constructor(bucket: String, private val client: S3Client, val creationDate: Instant? = null) : S3Directory(bucket, "", client) {
     override val name = bucket
     val region: String by lazy { client.regionForBucket(bucket) }
 
@@ -107,7 +113,7 @@ class S3Bucket internal constructor(bucket: String, private val client: S3Client
     fun tags(): Set<Tag> {
         try {
             return client.getBucketTagging { it.bucket(bucket) }?.tagSet()?.filterNotNull().orEmpty().toSet()
-        } catch (e : S3Exception) {
+        } catch (e: S3Exception) {
             if (e.statusCode() == 404) {
                 return emptySet()
             }
@@ -133,7 +139,7 @@ class S3File internal constructor(
 ) : S3Key(bucket, key) {
 
     fun tags(): Set<Tag> =
-        client.getObjectTagging { it.bucket(bucket).key(key) }?.tagSet()?.filterNotNull().orEmpty().toSet()
+            client.getObjectTagging { it.bucket(bucket).key(key) }?.tagSet()?.filterNotNull().orEmpty().toSet()
 
     fun metadata(): Map<String, String> = client.headObject { it.bucket(bucket).key(key) }.metadata()
 
@@ -143,20 +149,14 @@ class S3File internal constructor(
 
     fun updateMetadata(metadata: Map<String, String>) {
         try {
-            val request = baseUpdateMetadataRequest(metadata)
-            client.copyObject {
-                it.bucket(bucket).key(key).copySource(URLEncoder.encode("$bucket/$key", "UTF-8")).metadata(metadata).metadataDirective(MetadataDirective.REPLACE)
-            }
+            client.copyObject (baseUpdateMetadataRequest(metadata).build())
         } catch (e: S3Exception) {
             throw e
         }
     }
 
     fun updateMetadataAndTags(metadata: Map<String, String>, tags: Set<Tag>) {
-        client.copyObject {
-            it.bucket(bucket).key(key).copySource(URLEncoder.encode("$bucket/$key", "UTF-8")).metadata(metadata).metadataDirective(MetadataDirective.REPLACE)
-                .tagging(Tagging.builder().tagSet(tags).build())
-        }
+        client.copyObject (baseUpdateMetadataRequest(metadata).tagging(Tagging.builder().tagSet(tags).build()).build())
     }
 
     fun getInputStream(): InputStream {
@@ -169,10 +169,10 @@ class S3File internal constructor(
     }
 
     private fun baseUpdateMetadataRequest(metadata: Map<String, String>) =
-        CopyObjectRequest.builder().bucket(bucket).key(key).copySource(
-            URLEncoder.encode(
-                "$bucket/$key",
-                "UTF-8"
-            )
-        ).metadata(metadata).metadataDirective(MetadataDirective.REPLACE)
+            CopyObjectRequest.builder().bucket(bucket).key(key).copySource(
+                    URLEncoder.encode(
+                            "$bucket/$key",
+                            "UTF-8"
+                    )
+            ).metadata(metadata).metadataDirective(MetadataDirective.REPLACE)
 }

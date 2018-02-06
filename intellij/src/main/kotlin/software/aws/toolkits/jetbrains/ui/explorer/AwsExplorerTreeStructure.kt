@@ -10,7 +10,7 @@ class AwsExplorerTreeStructure(project: Project) : AbstractTreeStructureBase(pro
 
     override fun getRootElement() = AwsExplorerRootNode(myProject)
 
-    override fun commit() { }
+    override fun commit() {}
 
     override fun hasSomethingToCommit() = false
 

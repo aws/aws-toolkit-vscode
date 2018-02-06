@@ -13,7 +13,7 @@ class BucketFileType : FileTypeIdentifiableByVirtualFile {
 
     override fun getIcon(): Icon = S3_BUCKET_ICON
 
-    override fun getCharset(file: VirtualFile, content: ByteArray)  = null
+    override fun getCharset(file: VirtualFile, content: ByteArray) = null
 
     override fun getName() = "S3 Bucket"
 
@@ -31,7 +31,7 @@ class DirectoryFileType : FileTypeIdentifiableByVirtualFile {
 
     override fun getIcon(): Icon = AllIcons.Nodes.Folder
 
-    override fun getCharset(file: VirtualFile, content: ByteArray)  = null
+    override fun getCharset(file: VirtualFile, content: ByteArray) = null
 
     override fun getName() = "S3 Directory"
 

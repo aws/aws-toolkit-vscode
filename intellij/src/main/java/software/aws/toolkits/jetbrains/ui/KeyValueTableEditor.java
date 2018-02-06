@@ -73,7 +73,7 @@ public class KeyValueTableEditor {
 
     private void verifyAndRefresh() {
         if (table.getModel().equals(initialValues)) {
-            if(!MessageUtils.verifyLossOfChanges(table)) {
+            if (!MessageUtils.verifyLossOfChanges(table)) {
                 return;
             }
         }

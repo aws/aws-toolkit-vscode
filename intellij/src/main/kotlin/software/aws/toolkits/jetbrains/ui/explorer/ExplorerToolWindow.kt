@@ -41,7 +41,8 @@ import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
 class ExplorerToolWindow(val project: Project) :
-        SimpleToolWindowPanel(true, false), MutableMapWithListener.MapChangeListener<String, CredentialProfile>, SettingsChangedListener {
+        SimpleToolWindowPanel(true, false), MutableMapWithListener.MapChangeListener<String, CredentialProfile>,
+        SettingsChangedListener {
 
     private val settingsProvider = AwsSettingsProvider.getInstance(project).addListener(this)
     private val actionManager = ActionManagerEx.getInstanceEx()
@@ -171,7 +172,7 @@ class ExplorerToolWindow(val project: Project) :
             return getSelectedServiceNode()
         }
 
-        return super.getData(dataId);
+        return super.getData(dataId)
     }
 
     private fun getSelectedNode(): AwsExplorerNode<*>? {
@@ -196,7 +197,7 @@ class ExplorerToolWindow(val project: Project) :
         return if (selectedNodes.all { firstClass.isInstance(it) }) {
             selectedNodes
         } else {
-            null;
+            null
         }
     }
 
@@ -211,7 +212,15 @@ class ExplorerToolWindow(val project: Project) :
     }
 
     private class AwsTreeCellRenderer : NodeRenderer() {
-        override fun customizeCellRenderer(tree: JTree, value: Any, selected: Boolean, expanded: Boolean, leaf: Boolean, row: Int, hasFocus: Boolean) {
+        override fun customizeCellRenderer(
+            tree: JTree,
+            value: Any,
+            selected: Boolean,
+            expanded: Boolean,
+            leaf: Boolean,
+            row: Int,
+            hasFocus: Boolean
+        ) {
             super.customizeCellRenderer(tree, value, selected, expanded, leaf, row, hasFocus)
             if (value is DefaultMutableTreeNode && value.userObject is NodeDescriptor<*>) {
                 icon = (value.userObject as NodeDescriptor<*>).icon

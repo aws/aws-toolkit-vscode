@@ -23,7 +23,7 @@ class AwsRegionProvider private constructor() {
 
         val mutableRegionMap = mutableMapOf<String, AwsRegion>()
         partitions?.partitions?.forEach {
-            it.regions?.forEach { key, region -> mutableRegionMap.put(key, AwsRegion(key, region.description))}
+            it.regions?.forEach { key, region -> mutableRegionMap.put(key, AwsRegion(key, region.description)) }
         }
 
         regions = ImmutableMap.copyOf(mutableRegionMap)
@@ -32,7 +32,7 @@ class AwsRegionProvider private constructor() {
     }
 
     fun lookupRegionById(regionId: String): AwsRegion {
-        return regions[regionId]?: defaultRegion
+        return regions[regionId] ?: defaultRegion
     }
 
     fun isServiceSupported(region: AwsRegion, serviceName: String): Boolean {

@@ -6,7 +6,7 @@ import com.intellij.openapi.project.Project
 import javax.swing.JTree
 import javax.swing.tree.DefaultTreeModel
 
-class AwsExplorerTreeBuilder(tree: JTree, treeModel: DefaultTreeModel, project: Project):
+class AwsExplorerTreeBuilder(tree: JTree, treeModel: DefaultTreeModel, project: Project) :
         AbstractTreeBuilder(tree, treeModel, AwsExplorerTreeStructure(project), null, false) {
     init {
         initRootNode()

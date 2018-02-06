@@ -34,12 +34,12 @@ abstract class CredentialProfile {
      * Called by the [AwsCredentialsProfileProvider] to save the credential metadata, secret data should NOT be
      * written to any part of the passed in Element.
      */
-    open fun save(project: Project, element: Element){}
+    open fun save(project: Project, element: Element) {}
 
     /**
      * Called by the AwsCredentialsProfileProvider when it is loading its settings from disk
      */
-    open fun load(project: Project, element: Element): Unit {}
+    open fun load(project: Project, element: Element) {}
 
     override fun toString(): String {
         return "${javaClass.simpleName}($name)"
@@ -52,7 +52,7 @@ abstract class ProfileEditor<out T : CredentialProfile>(name: String = "") {
     abstract val editorComponent: JComponent
 
     fun validateEditor(): ValidationInfo? {
-        return null;
+        return null
     }
 
     abstract fun commit(): T
@@ -62,7 +62,7 @@ abstract class ProfileEditor<out T : CredentialProfile>(name: String = "") {
  * Factory to create a new CredentialProfile whenever we need to construct a blank one. This is the factory that
  * should be implemented and registered when a plugin wishes to add a new credential provider option.
  */
-abstract class CredentialProfileFactory<T : CredentialProfile> :  KeyedLazyInstance<CredentialProfileFactory<T>>{
+abstract class CredentialProfileFactory<T : CredentialProfile> : KeyedLazyInstance<CredentialProfileFactory<T>> {
     abstract override fun getKey(): String
 
     override fun getInstance(): CredentialProfileFactory<T> {
@@ -78,8 +78,10 @@ abstract class CredentialProfileFactory<T : CredentialProfile> :  KeyedLazyInsta
     abstract fun configurationComponent(source: CredentialProfile): ProfileEditor<T>
 
     companion object {
-        val EP_NAME = ExtensionPointName.create<CredentialProfileFactory<out CredentialProfile>>("aws.toolkit.credentialProviderFactory")
-        private val COLLECTOR = KeyedExtensionCollector<CredentialProfileFactory<out CredentialProfile>, String>(EP_NAME.name)
+        val EP_NAME =
+                ExtensionPointName.create<CredentialProfileFactory<out CredentialProfile>>("aws.toolkit.credentialProviderFactory")
+        private val COLLECTOR =
+                KeyedExtensionCollector<CredentialProfileFactory<out CredentialProfile>, String>(EP_NAME.name)
 
         @JvmStatic
         fun credentialProviderTypes(): Array<CredentialProfileFactory<out CredentialProfile>> {
@@ -88,7 +90,7 @@ abstract class CredentialProfileFactory<T : CredentialProfile> :  KeyedLazyInsta
 
         @JvmStatic
         fun factoryFor(id: String): CredentialProfileFactory<out CredentialProfile>? {
-            return COLLECTOR.findSingle(id);
+            return COLLECTOR.findSingle(id)
         }
     }
 }

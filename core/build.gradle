@@ -1,4 +1,3 @@
-
 dependencies {
     compile("software.amazon.awssdk:s3:$awsSdk2Version")
     testCompile("com.willowtreeapps.assertk:assertk:0.9")

@@ -11,9 +11,12 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest
 class S3FileTest {
 
     private val client = S3Client.create()
-    @Rule @JvmField val bucketHelper = S3TemporaryBucketRule(client)
+    @Rule
+    @JvmField
+    val bucketHelper = S3TemporaryBucketRule(client)
 
-    @Test fun canUpdateMetadata() {
+    @Test
+    fun canUpdateMetadata() {
         val bucketName = bucketHelper.createBucket()
         val key = "key"
         client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.of(""))
@@ -24,7 +27,7 @@ class S3FileTest {
 
         val metadata = file.metadata()
 
-        assert(metadata){
+        assert(metadata) {
             contains("hello" to "blah")
         }
     }

@@ -68,6 +68,10 @@ subprojects {
         }
     }
 
+    tasks.withType(JavaCompile).all {
+        options.compilerArgs << "-Werror"
+    }
+
     task integrationTest(type: Test) {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Runs the integration tests."
@@ -84,20 +88,20 @@ subprojects {
         mustRunAfter tasks.test
     }
 
-    kotlinter {
-        ignoreFailures = true // TODO: Fix errors
-        reporters = ['checkstyle', 'plain']
-    }
-
     compileKotlin {
+        kotlinOptions.allWarningsAsErrors = true
         kotlinOptions.jvmTarget = "1.8"
     }
     compileTestKotlin {
+        kotlinOptions.allWarningsAsErrors = true
         kotlinOptions.jvmTarget = "1.8"
     }
     compileIntegrationTestKotlin {
+        kotlinOptions.allWarningsAsErrors = true
         kotlinOptions.jvmTarget = "1.8"
     }
+
+    build.dependsOn(integrationTestClasses)
 }
 
 wrapper {

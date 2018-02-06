@@ -9,12 +9,12 @@ import java.util.function.Function
 import javax.swing.Action
 import javax.swing.JComponent
 
-class CredentialsDialog(private val profileEditor: ProfileEditor<*>, parentComponent: Component)
-    : DialogWrapper(parentComponent, false) {
+class CredentialsDialog(private val profileEditor: ProfileEditor<*>, parentComponent: Component) :
+        DialogWrapper(parentComponent, false) {
     lateinit var validator: Function<CredentialsDialog, ValidationInfo?>
 
     init {
-        setResizable(false);
+        setResizable(false)
     }
 
     override fun createNorthPanel(): JComponent? {
@@ -36,7 +36,7 @@ class CredentialsDialog(private val profileEditor: ProfileEditor<*>, parentCompo
     }
 
     override fun show() {
-        init();
+        init()
         super.show()
     }
 }

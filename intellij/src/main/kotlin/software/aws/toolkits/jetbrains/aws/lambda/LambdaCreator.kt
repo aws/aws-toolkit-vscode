@@ -1,6 +1,5 @@
 package software.aws.toolkits.jetbrains.aws.lambda
 
-
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.compiler.CompilerManager
 import com.intellij.openapi.project.Project
@@ -26,9 +25,9 @@ import java.util.zip.ZipOutputStream
 object LambdaCreatorFactory {
     fun create(clientManager: AwsClientManager): LambdaCreator {
         return LambdaCreator(
-            LambdaPackager(),
-            CodeUploader(clientManager.getClient()),
-            LambdaFunctionCreator(clientManager.getClient())
+                LambdaPackager(),
+                CodeUploader(clientManager.getClient()),
+                LambdaFunctionCreator(clientManager.getClient())
         )
     }
 }
@@ -60,12 +59,12 @@ class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
                 code.s3ObjectVersion(codeObjectVersion)
             }
             val req = CreateFunctionRequest.builder()
-                .handler(details.handler)
-                .functionName(details.name)
-                .role(details.iamRole.arn)
-                .runtime(Runtime.JAVA8)
-                .code(code.build())
-                .build()
+                    .handler(details.handler)
+                    .functionName(details.name)
+                    .role(details.iamRole.arn)
+                    .runtime(Runtime.JAVA8)
+                    .code(code.build())
+                    .build()
             val result = lambdaClient.createFunction(req)
             onComplete(result.functionArn())
         }
@@ -77,8 +76,8 @@ class CodeUploader(private val s3Client: S3Client) {
         ApplicationManager.getApplication().executeOnPooledThread {
             val key = "${functionDetails.name}.zip"
             val por = PutObjectRequest.builder().bucket(functionDetails.s3Bucket.name())
-                .key(key)
-                .build()
+                    .key(key)
+                    .build()
             val result = s3Client.putObject(por, code)
             onComplete(key, result.versionId())
         }
@@ -87,21 +86,21 @@ class CodeUploader(private val s3Client: S3Client) {
 
 class LambdaPackager {
     fun doPackaging(project: Project, onComplete: (Path) -> Unit) {
-        CompilerManager.getInstance(project).rebuild { aborted, errors, warnings, compileContext ->
+        CompilerManager.getInstance(project).rebuild { aborted, errors, _, compileContext ->
             if (!aborted && errors == 0) {
                 val classes = compileContext.projectCompileScope.affectedModules
-                    .map { compileContext.getModuleOutputDirectory(it) }
-                    .flatMap {
-                        val outputDir = it?.toPath()
-                        Files.walk(outputDir)
-                            .filter { it.toString().toLowerCase().endsWith(".class") }
-                            .map { Pair(outputDir?.relativize(it), it) }.collect(Collectors.toList<Pair<Path?, Path>>())
-                    }.filterNotNull()
+                        .map { compileContext.getModuleOutputDirectory(it) }
+                        .flatMap {
+                            val outputDir = it?.toPath()
+                            Files.walk(outputDir)
+                                    .filter { it.toString().toLowerCase().endsWith(".class") }
+                                    .map { Pair(outputDir?.relativize(it), it) }.collect(Collectors.toList<Pair<Path?, Path>>())
+                        }.filterNotNull()
 
                 val dependencies = LibraryTablesRegistrar.getInstance().getLibraryTable(project).libraries
-                    .flatMap { it.getFiles(OrderRootType.CLASSES).toList() }
-                    .map { VfsUtil.getVirtualFileForJar(it) }
-                    .map { it?.toPath() }.filterNotNull()
+                        .flatMap { it.getFiles(OrderRootType.CLASSES).toList() }
+                        .map { VfsUtil.getVirtualFileForJar(it) }
+                        .map { it?.toPath() }.filterNotNull()
 
                 val zipFile = Files.createTempFile("function", ".zip")
                 val zip = ZipOutputStream(Files.newOutputStream(zipFile))

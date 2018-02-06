@@ -14,7 +14,8 @@ import javax.swing.JLabel
 import javax.swing.JList
 import javax.swing.JPanel
 
-class AwsProfilePanel(project: Project, private val defaultProfile: CredentialProfile?) : MutableMapWithListener.MapChangeListener<String, CredentialProfile>, SettingsChangedListener {
+class AwsProfilePanel(project: Project, private val defaultProfile: CredentialProfile?) :
+        MutableMapWithListener.MapChangeListener<String, CredentialProfile>, SettingsChangedListener {
     val profilePanel: JPanel = JPanel()
     private val profileCombo = ComboBox<CredentialProfile>()
     private val profileProvider = AwsCredentialsProfileProvider.getInstance(project)

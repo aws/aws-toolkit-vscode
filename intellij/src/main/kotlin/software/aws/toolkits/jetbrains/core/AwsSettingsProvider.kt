@@ -12,22 +12,23 @@ import software.aws.toolkits.jetbrains.credentials.CredentialProfile
 import java.lang.ref.WeakReference
 
 @State(name = "settings", storages = [(Storage("aws.xml"))])
-class AwsSettingsProvider(private val project: Project): PersistentStateComponent<AwsSettingsProvider.SettingsState> {
+class AwsSettingsProvider(private val project: Project) : PersistentStateComponent<AwsSettingsProvider.SettingsState> {
 
     private val credentialsProfileProvider = AwsCredentialsProfileProvider.getInstance(project)
     private val listeners = mutableListOf<WeakReference<SettingsChangedListener>>()
 
     data class SettingsState(
-            var currentProfile: String = AwsCredentialsProfileProvider.DEFAULT_PROFILE,
-            var currentRegion: String = AwsRegionProvider.DEFAULT_REGION
+        var currentProfile: String = AwsCredentialsProfileProvider.DEFAULT_PROFILE,
+        var currentRegion: String = AwsRegionProvider.DEFAULT_REGION
     )
+
     private var settingsState: SettingsState = SettingsState()
 
     var currentProfile: CredentialProfile?
         get() {
-            return credentialsProfileProvider.lookupProfileByName(settingsState.currentProfile) ?:
-                    credentialsProfileProvider.lookupProfileByName(AwsCredentialsProfileProvider.DEFAULT_PROFILE) ?:
-                    if (credentialsProfileProvider.getProfiles().isEmpty()) null else credentialsProfileProvider.getProfiles()[0]
+            return credentialsProfileProvider.lookupProfileByName(settingsState.currentProfile)
+                    ?: credentialsProfileProvider.lookupProfileByName(AwsCredentialsProfileProvider.DEFAULT_PROFILE)
+                    ?: if (credentialsProfileProvider.getProfiles().isEmpty()) null else credentialsProfileProvider.getProfiles()[0]
         }
         set(value) {
             val newVal = value?.name ?: AwsCredentialsProfileProvider.DEFAULT_PROFILE

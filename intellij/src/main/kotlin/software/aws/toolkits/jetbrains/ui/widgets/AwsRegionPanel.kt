@@ -18,7 +18,8 @@ class AwsRegionPanel(private val project: Project) : SettingsChangedListener {
     private val settingsProvider = AwsSettingsProvider.getInstance(project).addListener(this)
     val regionPanel: JPanel = JPanel()
     private val regionCombo: ComboBox<AwsRegion> = ComboBox<AwsRegion>()
-    private val regionModel = CollectionComboBoxModel<AwsRegion>(AwsRegionProvider.getInstance(project).regions.values.toList())
+    private val regionModel =
+            CollectionComboBoxModel<AwsRegion>(AwsRegionProvider.getInstance(project).regions.values.toList())
 
     init {
         regionCombo.renderer = object : ListCellRendererWrapper<AwsRegion>() {

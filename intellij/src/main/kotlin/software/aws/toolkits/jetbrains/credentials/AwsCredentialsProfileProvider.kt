@@ -19,10 +19,11 @@ import java.io.File
 import java.nio.file.Paths
 
 @State(name = "credentialProfiles", storages = arrayOf(Storage("aws.xml")))
-class AwsCredentialsProfileProvider private constructor(private val project: Project) : PersistentStateComponent<Element> {
+class AwsCredentialsProfileProvider private constructor(private val project: Project) :
+        PersistentStateComponent<Element> {
     private data class State(
-            var credentialFileLocation: String? = defaultCredentialLocation(),
-            var selectedProfileName: String? = null
+        var credentialFileLocation: String? = defaultCredentialLocation(),
+        var selectedProfileName: String? = null
     )
 
     private val state = State()
@@ -30,11 +31,15 @@ class AwsCredentialsProfileProvider private constructor(private val project: Pro
 
     var credentialFileLocation: String?
         get() = state.credentialFileLocation
-        set(value) { state.credentialFileLocation = value }
+        set(value) {
+            state.credentialFileLocation = value
+        }
 
     var selectedProfile: CredentialProfile?
         get() = credentialProfiles[state.selectedProfileName]
-        set(value) { state.selectedProfileName = value?.name }
+        set(value) {
+            state.selectedProfileName = value?.name
+        }
 
     init {
         reloadCredentialFile()
@@ -48,7 +53,7 @@ class AwsCredentialsProfileProvider private constructor(private val project: Pro
         credentialProfiles.clear()
         profiles.forEach { credentialProfiles.put(it.name, it) }
 
-        if(credentialProfiles[state.selectedProfileName] == null) {
+        if (credentialProfiles[state.selectedProfileName] == null) {
             state.selectedProfileName = null
         }
     }

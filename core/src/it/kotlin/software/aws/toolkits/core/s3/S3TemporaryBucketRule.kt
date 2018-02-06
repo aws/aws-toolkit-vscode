@@ -28,7 +28,7 @@ class S3TemporaryBucketRule(private val s3Client: S3Client) : ExternalResource()
     override fun after() {
         val exceptions = buckets.mapNotNull { deleteBucketAndContents(it) }
         if (exceptions.isNotEmpty()) {
-             throw RuntimeException("Failed to delete all buckets. \n\t- ${exceptions.map { it.message }.joinToString("\n\t- ")}")
+            throw RuntimeException("Failed to delete all buckets. \n\t- ${exceptions.map { it.message }.joinToString("\n\t- ")}")
         }
     }
 

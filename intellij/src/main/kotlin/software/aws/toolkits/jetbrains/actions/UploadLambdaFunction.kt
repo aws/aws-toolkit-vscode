@@ -1,6 +1,5 @@
 package software.aws.toolkits.jetbrains.actions
 
-
 import com.intellij.lang.Language
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationListener
@@ -36,38 +35,39 @@ class UploadLambdaFunction : AnAction() {
 
         val uploadModal = UploadToLambdaModal(project, psi) { functionDetails ->
             LambdaCreatorFactory.create(AwsClientManager.getInstance(project)).createLambda(functionDetails, project) {
-                val notificationListener = NotificationListener { notification, event ->
+                val notificationListener = NotificationListener { _, _ ->
                     val input = JOptionPane.showInputDialog(
-                        null,
-                        "Input",
-                        "Run ${functionDetails.name}",
-                        JOptionPane.PLAIN_MESSAGE,
-                        LAMBDA_SERVICE_ICON_LARGE,
-                        null,
-                        null
+                            null,
+                            "Input",
+                            "Run ${functionDetails.name}",
+                            JOptionPane.PLAIN_MESSAGE,
+                            LAMBDA_SERVICE_ICON_LARGE,
+                            null,
+                            null
                     )
-                    val invoke = InvokeRequest.builder().functionName(functionDetails.name).payload(ByteBuffer.wrap("\"$input\"".toByteArray())).build()
+                    val invoke = InvokeRequest.builder().functionName(functionDetails.name)
+                            .payload(ByteBuffer.wrap("\"$input\"".toByteArray())).build()
                     val res = AwsClientManager.getInstance(project).getClient<LambdaClient>().invoke(invoke)
 
                     val bytes = ByteArray(res.payload().remaining())
                     res.payload().get(bytes)
 
                     JOptionPane.showMessageDialog(
-                        null,
-                        String(bytes, StandardCharsets.UTF_8),
-                        null,
-                        JOptionPane.PLAIN_MESSAGE,
-                        LAMBDA_SERVICE_ICON_LARGE
+                            null,
+                            String(bytes, StandardCharsets.UTF_8),
+                            null,
+                            JOptionPane.PLAIN_MESSAGE,
+                            LAMBDA_SERVICE_ICON_LARGE
                     )
                 }
                 Notifications.Bus.notify(
-                    Notification(
-                        "AWS Toolkit",
-                        "AWS Lambda Created",
-                        "${functionDetails.name} created <a href=\"$it\">run it</a>",
-                        NotificationType.INFORMATION,
-                        notificationListener
-                    )
+                        Notification(
+                                "AWS Toolkit",
+                                "AWS Lambda Created",
+                                "${functionDetails.name} created <a href=\"$it\">run it</a>",
+                                NotificationType.INFORMATION,
+                                notificationListener
+                        )
                 )
             }
         }

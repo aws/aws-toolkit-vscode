@@ -19,13 +19,15 @@ class RegionalBucketsTest {
     @JvmField
     val euWest2TempBucket = S3TemporaryBucketRule(euWest2Client)
 
-    @Test fun canGetRegionBucketWithRegionNotSameAsClient() {
+    @Test
+    fun canGetRegionBucketWithRegionNotSameAsClient() {
         val bucket = euWest2TempBucket.createBucket()
 
         assert(usEast2Client.regionForBucket(bucket)).isEqualTo("eu-west-2")
     }
 
-    @Test fun canGetRegionInSameRegionAsClient() {
+    @Test
+    fun canGetRegionInSameRegionAsClient() {
         val bucket = usEast2TempBucket.createBucket()
 
         assert(usEast2Client.regionForBucket(bucket)).isEqualTo("us-east-2")

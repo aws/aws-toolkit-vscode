@@ -38,9 +38,9 @@ class AwsClientManager(private val project: Project) {
 
     fun <T : SdkClient> getClient(clz: KClass<T>): T {
         val key = AwsClientKey(
-            profileName = settings.currentProfile!!.name,
-            region = settings.currentRegion,
-            serviceClass = clz
+                profileName = settings.currentProfile!!.name,
+                region = settings.currentRegion,
+                serviceClass = clz
         )
 
         //TODO: We probably want to evict least recently used clients from this cache (and/or share the HTTP client so we do don't get a bunch of connection pools hanging around)
@@ -59,16 +59,16 @@ class AwsClientManager(private val project: Project) {
         val builder = key.serviceClass.members.find { it.name == "builder" }?.call() as SyncClientBuilder<*, *>
 
         return builder
-            .credentialsProvider(getCredentialsProvider(settings.currentProfile!!.name).toV2())
-            .region(Region.of(key.region.id))
-            .run {
-                if (this is S3ClientBuilder) {
-                    this.advancedConfiguration { it.pathStyleAccessEnabled(true) }
+                .credentialsProvider(getCredentialsProvider(settings.currentProfile!!.name).toV2())
+                .region(Region.of(key.region.id))
+                .run {
+                    if (this is S3ClientBuilder) {
+                        this.advancedConfiguration { it.pathStyleAccessEnabled(true) }
+                    }
+                    this
                 }
-                this
-            }
-            .httpConfiguration(ClientHttpConfiguration.builder().httpClientFactory(ApacheSdkHttpClientFactory.builder().build()).build()) //TODO: might want to share the ApacheClient
-            .build() as T
+                .httpConfiguration(ClientHttpConfiguration.builder().httpClientFactory(ApacheSdkHttpClientFactory.builder().build()).build()) //TODO: might want to share the ApacheClient
+                .build() as T
     }
 
     private fun getCredentialsProvider(profileName: String): AWSCredentialsProvider {
@@ -77,16 +77,15 @@ class AwsClientManager(private val project: Project) {
     }
 
     private fun AWSCredentialsProvider.toV2() =
-        AwsCredentialsProvider {
-            val cred = this@toV2.credentials
-            when (cred) {
-                is AWSSessionCredentials -> AwsSessionCredentials.create(
-                    cred.awsAccessKeyId,
-                    cred.awsSecretKey,
-                    cred.sessionToken
-                )
-                else -> AwsCredentials.create(cred.awsAccessKeyId, cred.awsSecretKey)
+            AwsCredentialsProvider {
+                val cred = this@toV2.credentials
+                when (cred) {
+                    is AWSSessionCredentials -> AwsSessionCredentials.create(
+                            cred.awsAccessKeyId,
+                            cred.awsSecretKey,
+                            cred.sessionToken
+                    )
+                    else -> AwsCredentials.create(cred.awsAccessKeyId, cred.awsSecretKey)
+                }
             }
-        }
-
 }
