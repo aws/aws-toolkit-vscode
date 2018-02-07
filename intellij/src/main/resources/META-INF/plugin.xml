@@ -29,6 +29,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <fileEditorProvider implementation="software.aws.toolkits.jetbrains.ui.s3.S3BucketViewerProvider"/>
+        <fileEditorProvider implementation="software.aws.toolkits.jetbrains.ui.lambda.LambdaViewerProvider"/>
         <fileTypeFactory implementation="software.aws.toolkits.jetbrains.aws.s3.S3FileTypeFactory"/>
 
         <!-- Credential Management -->

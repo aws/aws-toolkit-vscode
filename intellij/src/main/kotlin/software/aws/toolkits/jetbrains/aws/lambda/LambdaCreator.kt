@@ -14,6 +14,8 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.ui.lambda.LambdaFunction
+import software.aws.toolkits.jetbrains.ui.lambda.toDataClass
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -37,7 +39,7 @@ class LambdaCreator(
     private val uploader: CodeUploader,
     private val functionCreator: LambdaFunctionCreator
 ) {
-    fun createLambda(functionDetails: LambdaFunction, project: Project, onComplete: (String) -> Unit) {
+    fun createLambda(functionDetails: FunctionUploadDetails, project: Project, onComplete: (LambdaFunction) -> Unit) {
         packager.doPackaging(project) {
             uploader.upload(functionDetails, it) { key, version ->
                 functionCreator.create(functionDetails, key, version, onComplete)
@@ -48,10 +50,10 @@ class LambdaCreator(
 
 class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
     fun create(
-        details: LambdaFunction,
+        details: FunctionUploadDetails,
         codeObjectKey: String,
         codeObjectVersion: String?,
-        onComplete: (String) -> Unit
+        onComplete: (LambdaFunction) -> Unit
     ) {
         ApplicationManager.getApplication().executeOnPooledThread {
             val code = FunctionCode.builder().s3Bucket(details.s3Bucket.name()).s3Key(codeObjectKey)
@@ -66,13 +68,13 @@ class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
                     .code(code.build())
                     .build()
             val result = lambdaClient.createFunction(req)
-            onComplete(result.functionArn())
+            onComplete(result!!.toDataClass())
         }
     }
 }
 
 class CodeUploader(private val s3Client: S3Client) {
-    fun upload(functionDetails: LambdaFunction, code: Path, onComplete: (String, String?) -> Unit) {
+    fun upload(functionDetails: FunctionUploadDetails, code: Path, onComplete: (String, String?) -> Unit) {
         ApplicationManager.getApplication().executeOnPooledThread {
             val key = "${functionDetails.name}.zip"
             val por = PutObjectRequest.builder().bucket(functionDetails.s3Bucket.name())

@@ -1,6 +1,7 @@
 package software.aws.toolkits.jetbrains.lambda.explorer
 
 import com.intellij.ide.util.treeView.AbstractTreeNode
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
@@ -12,6 +13,10 @@ import software.aws.toolkits.jetbrains.ui.explorer.AwsExplorerNode
 import software.aws.toolkits.jetbrains.ui.explorer.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.ui.explorer.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.ui.explorer.AwsTruncatedResultNode
+import software.aws.toolkits.jetbrains.ui.lambda.LambdaVirtualFile
+import software.aws.toolkits.jetbrains.ui.lambda.toDataClass
+import javax.swing.tree.DefaultMutableTreeNode
+import javax.swing.tree.DefaultTreeModel
 
 class AwsExplorerLambdaRootNode(project: Project) :
         AwsExplorerServiceRootNode(project, "AWS Lambda", LAMBDA_SERVICE_ICON) {
@@ -33,17 +38,24 @@ class AwsExplorerLambdaRootNode(project: Project) :
         return resources
     }
 
-    private fun mapResourceToNode(resource: FunctionConfiguration) = AwsExplorerFunctionNode(project!!, this, resource)
+    private fun mapResourceToNode(resource: FunctionConfiguration) = AwsExplorerFunctionNode(project!!, client, this, resource)
 }
 
 class AwsExplorerFunctionNode(
     project: Project,
+    private val client: LambdaClient,
     serviceNode: AwsExplorerLambdaRootNode,
     private val function: FunctionConfiguration
-) :
-        AwsExplorerResourceNode<FunctionConfiguration>(project, serviceNode, function, LAMBDA_FUNCTION_ICON) {
+) : AwsExplorerResourceNode<FunctionConfiguration>(project, serviceNode, function, LAMBDA_FUNCTION_ICON) {
+
+    private val editorManager = FileEditorManager.getInstance(project)
 
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
+    override fun onDoubleClick(model: DefaultTreeModel, selectedElement: DefaultMutableTreeNode) {
+        val lambdaVirtualFile = LambdaVirtualFile(client, function.toDataClass())
+        editorManager.openFile(lambdaVirtualFile, true)
+    }
     override fun resourceName(): String = "function"
-    override fun toString(): String = function.functionName()
+    override fun toString(): String = functionName()
+    fun functionName(): String = function.functionName()
 }

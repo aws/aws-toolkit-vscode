@@ -12,7 +12,7 @@ import software.amazon.awssdk.services.iam.IAMClient
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.Bucket
 import software.aws.toolkits.jetbrains.aws.IamRole
-import software.aws.toolkits.jetbrains.aws.lambda.LambdaFunction
+import software.aws.toolkits.jetbrains.aws.lambda.FunctionUploadDetails
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
@@ -31,7 +31,7 @@ import javax.swing.SwingUtilities
 class UploadToLambdaModal(
     private val project: Project,
     private val psi: PsiFile,
-    private val okHandler: (LambdaFunction) -> Unit
+    private val okHandler: (FunctionUploadDetails) -> Unit
 ) : DialogWrapper(project) {
     private val clientManager = AwsClientManager.getInstance(project)
     private val view =
@@ -63,7 +63,7 @@ class UploadToLambdaModal(
     override fun doOKAction() {
         super.doOKAction()
         okHandler(
-                LambdaFunction(
+                FunctionUploadDetails(
                         name = view.functionName()!!,
                         handler = view.handler()!!,
                         iamRole = view.iamRole()!!,
