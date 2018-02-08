@@ -10,7 +10,7 @@ import com.google.common.collect.ImmutableMap
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
-import software.aws.toolkits.jetbrains.utils.notifyException
+import software.aws.toolkits.jetbrains.utils.notifyError
 import java.io.IOException
 
 //TODO we might need to consider supporting unlaunched regions for internal use
@@ -66,7 +66,7 @@ private object PartitionLoader {
                 mapper.readValue<Partitions>(it, Partitions::class.java)
             } catch (e: IOException) {
                 LOG.error("Error: failed to load file from $JAVA_SDK_PARTITION_RESOURCE_PATH !", e)
-                notifyException("Failed to load region endpoint file", e)
+                e.notifyError("Failed to load region endpoint file")
                 null
             }
         }

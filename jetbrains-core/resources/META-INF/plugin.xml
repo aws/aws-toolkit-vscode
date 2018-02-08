@@ -60,16 +60,12 @@
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </group>
 
-        <!-- TODO: Delete these, they are just examples to show Proof of Concept -->
-        <group id="aws.toolkit.explorer.s3.bucket" popup="true">
-            <action id="explorer.S3.testAction.resource"
-                    class="software.aws.toolkits.jetbrains.services.s3.S3TestAction"
-                    text="Popup bucket name"/>
-        </group>
-        <group id="aws.toolkit.explorer.s3" popup="true">
-            <action id="explorer.S3.testAction"
-                    class="software.aws.toolkits.jetbrains.services.s3.S3TestAction"
-                    text="Popup bucket name"/>
+        <group id="aws.toolkit.explorer.lambda.function" popup="true" compact="true">
+            <action id="lambda.function.delete"
+                    class="software.aws.toolkits.jetbrains.services.lambda.LambdaDeleteAction"
+                    text="Delete Function"
+                    icon="AllIcons.Actions.Delete"
+            />
         </group>
     </actions>
 

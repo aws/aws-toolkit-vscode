@@ -1,9 +1,6 @@
 package software.aws.toolkits.jetbrains.services.lambda.upload
 
-import com.intellij.notification.Notification
 import com.intellij.notification.NotificationListener
-import com.intellij.notification.NotificationType
-import com.intellij.notification.Notifications
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
@@ -12,11 +9,14 @@ import software.amazon.awssdk.services.s3.model.Bucket
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackagerProvider
 import software.aws.toolkits.jetbrains.services.lambda.LambdaVirtualFile
+import software.aws.toolkits.jetbrains.utils.notifyError
+import software.aws.toolkits.jetbrains.utils.notifyInfo
 
 class UploadLambdaFunction : AnAction() {
 
     override fun update(e: AnActionEvent?) {
-        e?.presentation?.isEnabledAndVisible = e?.getData(LangDataKeys.PSI_FILE)?.language?.let { LambdaPackagerProvider.supportedLanguages().contains(it) } == true
+        e?.presentation?.isEnabledAndVisible =
+                e?.getData(LangDataKeys.PSI_FILE)?.language?.let { LambdaPackagerProvider.supportedLanguages().contains(it) } == true
     }
 
     override fun actionPerformed(event: AnActionEvent?) {
@@ -24,7 +24,7 @@ class UploadLambdaFunction : AnAction() {
         val project = event.project ?: return
         val psi = event.getData(LangDataKeys.PSI_FILE)
         if (psi == null) {
-            handleError("Couldn't determine language")
+            notifyError(title = "AWS Lambda creation failed: couldn't determine language")
             return
         }
 
@@ -35,22 +35,14 @@ class UploadLambdaFunction : AnAction() {
                     val lambdaVirtualFile = LambdaVirtualFile(AwsClientManager.getInstance(project).getClient(), it)
                     editorManager.openFile(lambdaVirtualFile, true)
                 }
-                Notifications.Bus.notify(
-                        Notification(
-                                "AWS Toolkit",
-                                "AWS Lambda Created",
-                                "${functionDetails.name} created <a href=\"$it\">open it</a>",
-                                NotificationType.INFORMATION,
-                                notificationListener
-                        )
+                notifyInfo(
+                        "<a href=\"$it\">AWS Lambda function '${functionDetails.name}' created</a>.",
+                        listener = notificationListener,
+                        project = event.project
                 )
             }
         }
         uploadModal.show()
-    }
-
-    private fun handleError(msg: String) {
-        Notifications.Bus.notify(Notification("AWS Tookit", "Upload Lambda Failed", msg, NotificationType.ERROR))
     }
 }
 

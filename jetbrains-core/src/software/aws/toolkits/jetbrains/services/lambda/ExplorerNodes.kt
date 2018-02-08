@@ -38,7 +38,7 @@ class LambdaServiceNode(project: Project) : AwsExplorerServiceRootNode(project, 
     private fun mapResourceToNode(resource: FunctionConfiguration) = LambdaFunctionNode(project!!, client, this, resource)
 }
 
-class LambdaFunctionNode(project: Project, private val client: LambdaClient, serviceNode: LambdaServiceNode, private val function: FunctionConfiguration) :
+class LambdaFunctionNode(project: Project, val client: LambdaClient, serviceNode: LambdaServiceNode, private val function: FunctionConfiguration) :
         AwsExplorerResourceNode<FunctionConfiguration>(project, serviceNode, function, LAMBDA_FUNCTION_ICON) {
 
     private val editorManager = FileEditorManager.getInstance(project)
