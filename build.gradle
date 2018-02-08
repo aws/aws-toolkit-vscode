@@ -35,10 +35,14 @@ subprojects {
     apply plugin: 'org.jmailen.kotlinter'
 
     sourceSets {
+        main.java.srcDir 'src'
+        main.resources.srcDir 'resources'
+        test.java.srcDir 'tst'
+        test.resources.srcDir 'tst-resources'
         integrationTest {
-            java.srcDir 'src/it/java'
-            kotlin.srcDir 'src/it/kotlin'
-            resources.srcDir 'src/it/resources'
+            java.srcDir 'it'
+            kotlin.srcDir 'it'
+            resources.srcDir 'it-resources'
         }
     }
 
@@ -57,14 +61,11 @@ subprojects {
 
     idea {
         module {
-            sourceDirs -= file("src/it/kotlin")
-            testSourceDirs += file("src/it/kotlin")
+            sourceDirs -= file("it")
+            testSourceDirs += file("it")
 
-            sourceDirs -= file("src/it/resources")
-            testSourceDirs += file("src/it/resources")
-
-            sourceDirs -= file("src/it/java")
-            testSourceDirs += file("src/it/java")
+            sourceDirs -= file("it-resources")
+            testSourceDirs += file("it-resources")
         }
     }
 

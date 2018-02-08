@@ -1,0 +1,73 @@
+<idea-plugin>
+    <id>aws.toolkit</id>
+    <name>AWS Toolkit</name>
+    <version>1.0</version>
+
+    <description><![CDATA[
+      Plugin for interacting with AWS resources.
+    ]]></description>
+
+    <change-notes><![CDATA[
+      Add change notes here.<br>
+      <em>most HTML tags may be used</em>
+    ]]>
+    </change-notes>
+
+    <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->
+    <idea-version since-build="162"/>
+
+    <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
+         on how to target different products -->
+    <!-- uncomment to enable plugin in all products
+    <depends>com.intellij.modules.lang</depends>
+    -->
+
+    <extensionPoints>
+        <extensionPoint qualifiedName="aws.toolkit.credentialProviderFactory"
+                        interface="software.aws.toolkits.jetbrains.core.credentials.CredentialProfileFactory"/>
+    </extensionPoints>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.s3.S3BucketViewerProvider"/>
+        <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.lambda.LambdaViewerProvider"/>
+        <fileTypeFactory implementation="software.aws.toolkits.jetbrains.services.s3.S3FileTypeFactory"/>
+
+        <!-- Credential Management -->
+        <projectConfigurable displayName="AWS" id="aws" instance="software.aws.toolkits.jetbrains.core.credentials.AwsCredentialsConfigurable"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.AwsCredentialsProfileProvider"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsSettingsProvider"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.region.AwsRegionProvider"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientManager"/>
+        <toolWindow id="AWS Explorer" anchor="right"
+                    factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
+                    icon="/icons/aws-box.gif"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="aws.toolkit">
+        <credentialProviderFactory
+                implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialFileBasedProfileFactory"/>
+    </extensions>
+
+    <actions>
+        <group id="AWS.Toolkit.ActionGroup" icon="/icons/aws-box.gif" text="AWS" popup="true">
+            <action id="AWS.Toolkit.UploadLambdaFunction"
+                    class="software.aws.toolkits.jetbrains.services.lambda.upload.UploadLambdaFunction"
+                    text="Upload to AWS _Lambda..." icon="/icons/lambda-service.png"/>
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </group>
+
+        <!-- TODO: Delete these, they are just examples to show Proof of Concept -->
+        <group id="aws.toolkit.explorer.s3.bucket" popup="true">
+            <action id="explorer.S3.testAction.resource"
+                    class="software.aws.toolkits.jetbrains.services.s3.S3TestAction"
+                    text="Popup bucket name"/>
+        </group>
+        <group id="aws.toolkit.explorer.s3" popup="true">
+            <action id="explorer.S3.testAction"
+                    class="software.aws.toolkits.jetbrains.services.s3.S3TestAction"
+                    text="Popup bucket name"/>
+        </group>
+    </actions>
+
+
+</idea-plugin>
