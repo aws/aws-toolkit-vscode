@@ -25,6 +25,9 @@
     <extensionPoints>
         <extensionPoint qualifiedName="aws.toolkit.credentialProviderFactory"
                         interface="software.aws.toolkits.jetbrains.core.credentials.CredentialProfileFactory"/>
+        <extensionPoint qualifiedName="aws.toolkit.lambdaPackager" beanClass="com.intellij.lang.LanguageExtensionPoint">
+            <with attribute="implementationClass" implements="software.aws.toolkits.jetbrains.services.lambda.LambdaPackager"/>
+        </extensionPoint>
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -46,6 +49,7 @@
     <extensions defaultExtensionNs="aws.toolkit">
         <credentialProviderFactory
                 implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialFileBasedProfileFactory"/>
+        <lambdaPackager language="JAVA" implementationClass="software.aws.toolkits.jetbrains.services.lambda.JavaLambdaPackager"/>
     </extensions>
 
     <actions>
