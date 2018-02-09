@@ -3,6 +3,7 @@ apply plugin: 'org.jetbrains.intellij'
 intellij {
     version "IC-" + ideaVersion
     pluginName 'aws-intellij-toolkit'
+    downloadSources = System.getenv("CI") == null
     updateSinceUntilBuild false
 }
 
