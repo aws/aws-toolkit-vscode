@@ -3,8 +3,8 @@ apply plugin: 'org.jetbrains.intellij'
 intellij {
     version "IC-" + ideaVersion
     pluginName 'aws-intellij-toolkit'
-    downloadSources = System.getenv("CI") == null
     updateSinceUntilBuild false
+    downloadSources = System.getenv("CI") == null
 }
 
 jar.baseName = 'aws-intellij-toolkit-core'
