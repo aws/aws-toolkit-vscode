@@ -45,7 +45,7 @@ class LambdaFunctionNode(project: Project, val client: LambdaClient, serviceNode
 
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
     override fun onDoubleClick(model: DefaultTreeModel, selectedElement: DefaultMutableTreeNode) {
-        val lambdaVirtualFile = LambdaVirtualFile(client, function.toDataClass())
+        val lambdaVirtualFile = LambdaVirtualFile(function.toDataClass(client))
         editorManager.openFile(lambdaVirtualFile, true)
     }
 

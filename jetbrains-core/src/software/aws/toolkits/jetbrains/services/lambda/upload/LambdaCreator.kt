@@ -61,7 +61,7 @@ class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
                     .code(code.build())
                     .build()
             val result = lambdaClient.createFunction(req)
-            onComplete(result!!.toDataClass())
+            onComplete(result!!.toDataClass(lambdaClient))
         }
     }
 }

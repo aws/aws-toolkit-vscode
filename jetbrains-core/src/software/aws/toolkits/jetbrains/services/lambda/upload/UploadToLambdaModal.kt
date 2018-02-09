@@ -29,6 +29,7 @@ import javax.swing.SwingUtilities
 class UploadToLambdaModal(
     private val project: Project,
     private val psi: PsiFile,
+    private val handlerName: String,
     private val okHandler: (FunctionUploadDetails) -> Unit
 ) : DialogWrapper(project) {
     private val clientManager = AwsClientManager.getInstance(project)
@@ -46,7 +47,7 @@ class UploadToLambdaModal(
     }
 
     override fun createCenterPanel(): JComponent? {
-        val controller = UploadToLambdaController(view, psi, AwsClientManager.getInstance(project))
+        val controller = UploadToLambdaController(view, psi, handlerName, AwsClientManager.getInstance(project))
         controller.load()
         return view
     }
@@ -80,10 +81,11 @@ class UploadToLambdaModal(
 class UploadToLambdaController(
     private val view: UploadToLambdaModalView,
     private val psi: PsiFile,
+    private val handlerName: String,
     private val clientManager: AwsClientManager
 ) {
     fun load() {
-        populatePicker({ findPossibleFunctions() },
+        populatePicker({ listOf(handlerName) },
                 { handlers -> view.updateAvailableHandlers(handlers) },
                 { enable -> view.enableHandlerPicker(enable) })
 

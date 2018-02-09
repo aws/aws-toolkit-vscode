@@ -69,7 +69,7 @@ class LambdaEditor(private val project: Project, private val model: LambdaVirtua
     private fun makeRequest(block: (String?, String?) -> Unit) {
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
-                val resp = model.lambdaClient.invoke {
+                val resp = model.function.client.invoke {
                     it.functionName(model.function.name).invocationType(InvocationType.REQUEST_RESPONSE).logType(LogType.TAIL)
                             .payload(view.input.text)
                 }
@@ -103,26 +103,28 @@ class LambdaViewerProvider() : FileEditorProvider {
     override fun getPolicy(): FileEditorPolicy = FileEditorPolicy.HIDE_DEFAULT_EDITOR
 }
 
-class LambdaVirtualFile(internal val lambdaClient: LambdaClient, internal val function: LambdaFunction) : LightVirtualFile(function.name) {
+class LambdaVirtualFile(internal val function: LambdaFunction) : LightVirtualFile(function.name) {
     init {
         fileType = LambdaFileType()
     }
 }
 
-data class LambdaFunction(val name: String, val arn: String, val lastModified: String, val handler: String)
+data class LambdaFunction(val name: String, val arn: String, val lastModified: String, val handler: String, val client: LambdaClient)
 
-fun FunctionConfiguration.toDataClass() = LambdaFunction(
+fun FunctionConfiguration.toDataClass(client: LambdaClient) = LambdaFunction(
         name = this.functionName(),
         arn = this.functionArn(),
         lastModified = this.lastModified(),
-        handler = this.handler()
+        handler = this.handler(),
+        client = client
 )
 
-fun CreateFunctionResponse.toDataClass() = LambdaFunction(
+fun CreateFunctionResponse.toDataClass(client: LambdaClient) = LambdaFunction(
         name = this.functionName(),
         arn = this.functionArn(),
         lastModified = this.lastModified(),
-        handler = this.handler()
+        handler = this.handler(),
+        client = client
 )
 
 data class LambdaInputSample(val name: String, val content: String) {

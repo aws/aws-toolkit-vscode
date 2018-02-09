@@ -40,9 +40,11 @@
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsSettingsProvider"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.region.AwsRegionProvider"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientManager"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsResourceCache"/>
         <toolWindow id="AWS Explorer" anchor="right"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
                     icon="/icons/aws-box.gif"/>
+        <codeInsight.lineMarkerProvider language="JAVA" implementationClass="software.aws.toolkits.jetbrains.services.lambda.JavaLambdaLineMarker"/>
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit">
@@ -52,13 +54,6 @@
     </extensions>
 
     <actions>
-        <group id="AWS.Toolkit.ActionGroup" icon="/icons/aws-box.gif" text="AWS" popup="true">
-            <action id="AWS.Toolkit.UploadLambdaFunction"
-                    class="software.aws.toolkits.jetbrains.services.lambda.upload.UploadLambdaFunction"
-                    text="Upload to AWS _Lambda..." icon="/icons/lambda-service.png"/>
-            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
-        </group>
-
         <group id="aws.toolkit.explorer.lambda.function" popup="true" compact="true">
             <action id="lambda.function.delete"
                     class="software.aws.toolkits.jetbrains.services.lambda.LambdaDeleteAction"
