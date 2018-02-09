@@ -1,4 +1,5 @@
 rootProject.name = 'aws-intellij-toolkit'
+include 'jetbrains-ultimate'
 include 'jetbrains-core'
 include 'core'
 

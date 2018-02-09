@@ -1,0 +1,13 @@
+apply plugin: 'org.jetbrains.intellij'
+intellij {
+    version "IU-" + ideaVersion
+    plugins 'org.jetbrains.plugins.go:173.4381.1'
+}
+
+jar.baseName = 'aws-intellij-toolkit-ultimate'
+
+dependencies {
+    compile(project(":jetbrains-core"))
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile group: 'org.assertj', name: 'assertj-core', version: '3.8.0'
+}

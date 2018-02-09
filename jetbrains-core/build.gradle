@@ -1,21 +1,12 @@
-buildscript {
-    repositories {
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-    dependencies {
-        classpath "gradle.plugin.org.jetbrains.intellij.plugins:gradle-intellij-plugin:$ideaPluginVersion"
-    }
-}
-
 apply plugin: 'org.jetbrains.intellij'
 
 intellij {
-    version ideaVersion
+    version "IC-" + ideaVersion
     pluginName 'aws-intellij-toolkit'
     updateSinceUntilBuild false
 }
+
+jar.baseName = 'aws-intellij-toolkit-core'
 
 dependencies {
     compile(project(":core")) {
@@ -34,4 +25,3 @@ dependencies {
     runtime "org.jetbrains.kotlin:kotlin-reflect"
     testCompile group: 'org.assertj', name: 'assertj-core', version: '3.8.0'
 }
-
