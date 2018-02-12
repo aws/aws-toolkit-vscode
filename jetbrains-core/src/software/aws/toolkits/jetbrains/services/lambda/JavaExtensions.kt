@@ -2,13 +2,14 @@ package software.aws.toolkits.jetbrains.services.lambda
 
 import com.intellij.lang.jvm.JvmModifier
 import com.intellij.openapi.compiler.CompilerManager
-import com.intellij.openapi.project.Project
+import com.intellij.openapi.module.Module
 import com.intellij.openapi.roots.OrderRootType
 import com.intellij.openapi.roots.libraries.LibraryTablesRegistrar
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiIdentifier
 import com.intellij.psi.PsiMethod
 import com.intellij.psi.PsiModifierListOwner
@@ -78,8 +79,8 @@ class JavaLambdaLineMarker() : LambdaLineMarker() {
 }
 
 class JavaLambdaPackager : LambdaPackager {
-    override fun createPackage(project: Project, onComplete: (Path) -> Unit) {
-        CompilerManager.getInstance(project).rebuild { aborted, errors, _, compileContext ->
+    override fun createPackage(module: Module, file: PsiFile, onComplete: (Path) -> Unit) {
+        CompilerManager.getInstance(module.project).rebuild { aborted, errors, _, compileContext ->
             if (!aborted && errors == 0) {
                 val classes = compileContext.projectCompileScope.affectedModules
                         .map { compileContext.getModuleOutputDirectory(it) }
@@ -90,7 +91,7 @@ class JavaLambdaPackager : LambdaPackager {
                                     .map { Pair(outputDir?.relativize(it), it) }.collect(Collectors.toList<Pair<Path?, Path>>())
                         }.filterNotNull()
 
-                val dependencies = LibraryTablesRegistrar.getInstance().getLibraryTable(project).libraries
+                val dependencies = LibraryTablesRegistrar.getInstance().getLibraryTable(module.project).libraries
                         .flatMap { it.getFiles(OrderRootType.CLASSES).toList() }
                         .map { VfsUtil.getVirtualFileForJar(it) }
                         .mapNotNull { it?.toPath() }

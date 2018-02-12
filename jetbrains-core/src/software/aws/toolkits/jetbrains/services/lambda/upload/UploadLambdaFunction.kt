@@ -20,10 +20,12 @@ class UploadLambdaFunction(private val handlerName: String, private val element:
     }
 
     override fun actionPerformed(event: AnActionEvent?) {
-        val project = event?.project ?: return
+        val module = event?.getData(LangDataKeys.MODULE) ?: return
+        val psiFile = event.getData(LangDataKeys.PSI_FILE) ?: return
+        val project = module.project
 
         val uploadModal = UploadToLambdaModal(project, element.containingFile, handlerName) { functionDetails ->
-            LambdaCreatorFactory.create(AwsClientManager.getInstance(project), element.language).createLambda(functionDetails, project) {
+            LambdaCreatorFactory.create(AwsClientManager.getInstance(project), element.language).createLambda(functionDetails, module, psiFile) {
                 val notificationListener = NotificationListener { _, _ ->
                     val editorManager = FileEditorManager.getInstance(project)
                     val lambdaVirtualFile = LambdaVirtualFile(it)

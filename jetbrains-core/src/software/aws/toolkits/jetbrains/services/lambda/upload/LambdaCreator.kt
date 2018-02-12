@@ -2,7 +2,8 @@ package software.aws.toolkits.jetbrains.services.lambda.upload
 
 import com.intellij.lang.Language
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.project.Project
+import com.intellij.openapi.module.Module
+import com.intellij.psi.PsiFile
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.CreateFunctionRequest
 import software.amazon.awssdk.services.lambda.model.FunctionCode
@@ -32,8 +33,8 @@ class LambdaCreator(
     private val uploader: CodeUploader,
     private val functionCreator: LambdaFunctionCreator
 ) {
-    fun createLambda(functionDetails: FunctionUploadDetails, project: Project, onComplete: (LambdaFunction) -> Unit) {
-        packager.createPackage(project) {
+    fun createLambda(functionDetails: FunctionUploadDetails, module: Module, file: PsiFile,  onComplete: (LambdaFunction) -> Unit) {
+        packager.createPackage(module, file) {
             uploader.upload(functionDetails, it) { key, version ->
                 functionCreator.create(functionDetails, key, version, onComplete)
             }
