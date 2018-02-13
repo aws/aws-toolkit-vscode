@@ -4,7 +4,8 @@ intellij {
     version "IC-" + ideaVersion
     pluginName 'aws-intellij-toolkit'
     updateSinceUntilBuild false
-    downloadSources = System.getenv("CI") == null
+    downloadSources = false //TODO figure out why setting this to true is causing a problem
+    plugins = ["PythonCore:2017.3.173.4301.35"]
 }
 
 jar.baseName = 'aws-intellij-toolkit-core'

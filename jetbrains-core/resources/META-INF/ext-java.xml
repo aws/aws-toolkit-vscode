@@ -1,0 +1,9 @@
+<idea-plugin>
+    <extensions defaultExtensionNs="com.intellij">
+        <codeInsight.lineMarkerProvider language="JAVA" implementationClass="software.aws.toolkits.jetbrains.services.lambda.JavaLambdaLineMarker"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="aws.toolkit">
+        <lambdaPackager language="JAVA" implementationClass="software.aws.toolkits.jetbrains.services.lambda.JavaLambdaPackager"/>
+    </extensions>
+</idea-plugin>

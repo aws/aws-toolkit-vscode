@@ -7,19 +7,12 @@
       Plugin for interacting with AWS resources.
     ]]></description>
 
-    <change-notes><![CDATA[
-      Add change notes here.<br>
-      <em>most HTML tags may be used</em>
-    ]]>
-    </change-notes>
-
-    <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->
-    <idea-version since-build="162"/>
-
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
     <depends>com.intellij.modules.lang</depends>
     <depends optional="true" config-file="ultimate.xml">com.intellij.modules.ultimate</depends>
+    <depends optional="true" config-file="ext-java.xml">com.intellij.modules.java</depends>
+    <depends optional="true" config-file="ext-python.xml">com.intellij.modules.python</depends>
 
     <extensionPoints>
         <extensionPoint qualifiedName="aws.toolkit.credentialProviderFactory"
@@ -44,13 +37,10 @@
         <toolWindow id="AWS Explorer" anchor="right"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
                     icon="/icons/aws-box.gif"/>
-        <codeInsight.lineMarkerProvider language="JAVA" implementationClass="software.aws.toolkits.jetbrains.services.lambda.JavaLambdaLineMarker"/>
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit">
-        <credentialProviderFactory
-                implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialFileBasedProfileFactory"/>
-        <lambdaPackager language="JAVA" implementationClass="software.aws.toolkits.jetbrains.services.lambda.JavaLambdaPackager"/>
+        <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialFileBasedProfileFactory"/>
     </extensions>
 
     <actions>

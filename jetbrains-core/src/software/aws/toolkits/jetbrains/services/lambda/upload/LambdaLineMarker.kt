@@ -3,7 +3,6 @@ package software.aws.toolkits.jetbrains.services.lambda.upload
 import com.intellij.codeHighlighting.Pass
 import com.intellij.codeInsight.daemon.LineMarkerInfo
 import com.intellij.codeInsight.daemon.LineMarkerProviderDescriptor
-import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -11,10 +10,9 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.psi.PsiElement
-import com.intellij.ui.LayeredIcon
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.Icons
-import software.aws.toolkits.jetbrains.core.Icons.Services.LAMBDA_SERVICE_ICON
+import software.aws.toolkits.jetbrains.core.Icons.Services.LAMBDA_OPEN_FUNCTION
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaVirtualFile
 import javax.swing.Icon
@@ -42,7 +40,7 @@ abstract class LambdaLineMarker : LineMarkerProviderDescriptor() {
 
         actionGroup.add(UploadLambdaFunction(handler, element))
 
-        AwsResourceCache.getInstance(element.project).lambdaFunctions().forEach { actionGroup.add(OpenLambda(it)) }
+        AwsResourceCache.getInstance(element.project).lambdaFunctions().filter { it.handler == handler }.forEach { actionGroup.add(OpenLambda(it)) }
 
         return object : LineMarkerInfo<PsiElement>(element, element.textRange, icon, Pass.LINE_MARKERS,
                 null, null,
@@ -63,7 +61,7 @@ abstract class LambdaLineMarker : LineMarkerProviderDescriptor() {
 
     override fun collectSlowLineMarkers(elements: MutableList<PsiElement>, result: MutableCollection<LineMarkerInfo<PsiElement>>) {}
 
-    class OpenLambda(val function: LambdaFunction) : AnAction("Open function '${function.name}'", null, OPEN_LAMBDA) {
+    class OpenLambda(val function: LambdaFunction) : AnAction("Open function '${function.name}'", null, LAMBDA_OPEN_FUNCTION) {
 
         override fun actionPerformed(e: AnActionEvent?) {
             val event = e ?: return
@@ -71,10 +69,5 @@ abstract class LambdaLineMarker : LineMarkerProviderDescriptor() {
             val lambdaVirtualFile = LambdaVirtualFile(function)
             editorManager.openFile(lambdaVirtualFile, true)
         }
-    }
-
-    private companion object {
-        private val NEW_LAMBDA = LayeredIcon.create(LAMBDA_SERVICE_ICON, AllIcons.Actions.New)
-        private val OPEN_LAMBDA = LayeredIcon.create(LAMBDA_SERVICE_ICON, AllIcons.Nodes.RunnableMark)
     }
 }

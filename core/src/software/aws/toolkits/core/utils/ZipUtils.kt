@@ -1,5 +1,6 @@
 package software.aws.toolkits.core.utils
 
+import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.zip.ZipEntry
@@ -13,4 +14,26 @@ fun ZipOutputStream.putNextEntry(entryName: String, file: Path) {
     val bytes = Files.readAllBytes(file)
     this.write(bytes, 0, bytes.size)
     this.closeEntry()
+}
+
+/**
+ * Adds a new [ZipEntry] with the contents of [inputStream] to the [ZipOutputStream].
+ */
+fun ZipOutputStream.putNextEntry(entryName: String, inputStream: InputStream) {
+    this.putNextEntry(ZipEntry(entryName))
+    inputStream.copyTo(this)
+    this.closeEntry()
+}
+
+/**
+ * Create a zip file in a temporary location.
+ *
+ * Statements included in [block] populate the zip file with entries.
+ *
+ * @return the [Path] of the temporary file
+ */
+fun createTemporaryZipFile(block: (ZipOutputStream) -> Unit): Path {
+    val file = Files.createTempFile(null, ".zip")
+    ZipOutputStream(Files.newOutputStream(file)).use(block)
+    return file
 }

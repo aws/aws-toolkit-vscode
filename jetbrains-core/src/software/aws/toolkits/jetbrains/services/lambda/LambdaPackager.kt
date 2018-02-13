@@ -6,6 +6,7 @@ import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.util.KeyedExtensionCollector
 import com.intellij.psi.PsiFile
+import software.amazon.awssdk.services.lambda.model.Runtime
 import java.nio.file.Path
 
 
@@ -16,6 +17,11 @@ interface LambdaPackager {
      * Calls [onComplete] with the path of the file when finished.
      */
     fun createPackage(module: Module, file: PsiFile, onComplete: (Path) -> Unit)
+
+    /**
+     * For a given [module] and [file] try to infer the Lambda language runtime
+     */
+    fun determineRuntime(module: Module, file: PsiFile): Runtime
 }
 
 object LambdaPackagerProvider {

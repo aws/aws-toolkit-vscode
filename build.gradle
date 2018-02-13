@@ -37,6 +37,9 @@ intellij {
     pluginName 'aws-intellij-toolkit'
     updateSinceUntilBuild false
     downloadSources = System.getenv("CI") == null
+    if (System.env.ALTERNATIVE_IDE) {
+        alternativeIdePath = System.env.ALTERNATIVE_IDE
+    }
 }
 
 dependencies {

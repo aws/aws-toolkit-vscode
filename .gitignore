@@ -6,3 +6,4 @@ build/
 *.iml
 .DS_Store
 Build/
+venv/

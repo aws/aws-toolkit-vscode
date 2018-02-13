@@ -16,6 +16,8 @@ import com.intellij.psi.PsiModifierListOwner
 import com.intellij.psi.PsiParameter
 import com.intellij.psi.util.PsiUtil
 import com.intellij.util.io.exists
+import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.utils.createTemporaryZipFile
 import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker
 import java.io.File
@@ -23,11 +25,12 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.stream.Collectors
-import java.util.zip.ZipOutputStream
 
-class JavaLambdaLineMarker() : LambdaLineMarker() {
+class JavaLambdaLineMarker : LambdaLineMarker() {
+
     override fun getHandlerName(element: PsiElement): String? {
         val parent = (element as? PsiIdentifier)?.parent ?: return null
+
         return when (parent) {
             is PsiClass -> findByClass(parent)
             is PsiMethod -> findByMethod(parent)
@@ -97,21 +100,18 @@ class JavaLambdaPackager : LambdaPackager {
                         .mapNotNull { it?.toPath() }
                         .filter { it.exists() }
 
-                val zipFile = Files.createTempFile("function", ".zip")
-                val zip = ZipOutputStream(Files.newOutputStream(zipFile))
-
-                dependencies.forEach { zip.putNextEntry("lib/${it.fileName}", it) }
-                classes.forEach { zip.putNextEntry(it.first.toString(), it.second) }
-
-                zip.close()
+                val zipFile = createTemporaryZipFile { zip ->
+                    dependencies.forEach { zip.putNextEntry("lib/${it.fileName}", it) }
+                    classes.forEach { zip.putNextEntry(it.first.toString(), it.second) }
+                }
                 onComplete(zipFile)
             }
         }
     }
 
-
     private fun VirtualFile.toPath(): Path {
         return Paths.get(File(this.path).toURI())
     }
 
+    override fun determineRuntime(module: Module, file: PsiFile): Runtime = Runtime.JAVA8
 }

@@ -5,10 +5,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
-import com.intellij.openapi.util.Computable
-import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiFile
 import software.amazon.awssdk.services.iam.IAMClient
+import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.Bucket
 import software.aws.toolkits.jetbrains.core.AwsClientManager
@@ -29,6 +28,7 @@ import javax.swing.SwingUtilities
 class UploadToLambdaModal(
     private val project: Project,
     private val psi: PsiFile,
+    private val runtime: Runtime,
     private val handlerName: String,
     private val okHandler: (FunctionUploadDetails) -> Unit
 ) : DialogWrapper(project) {
@@ -72,6 +72,7 @@ class UploadToLambdaModal(
                         handler = view.handler()!!,
                         iamRole = view.iamRole()!!,
                         s3Bucket = view.s3Bucket()!!,
+                        runtime = runtime,
                         description = view.description()!!
                 )
         )
@@ -97,7 +98,7 @@ class UploadToLambdaController(
                 { enable -> view.enableIamRolesPicker(enable) }
         )
 
-        populatePicker({ clientManager.getClient<S3Client>().listBuckets().buckets().filterNotNull() },
+        populatePicker({ clientManager.getClient<S3Client>().listBuckets().buckets().filterNotNull().mapNotNull { it.name() } },
                 { buckets -> view.updateBuckets(buckets) },
                 { enable -> view.enableBucketPicker(enable) }
         )
@@ -115,14 +116,6 @@ class UploadToLambdaController(
                 }
             }
         }
-    }
-
-    private fun findPossibleFunctions(): List<String> {
-        return ApplicationManager.getApplication().runReadAction(Computable {
-            val clz = psi.children.filter { it is PsiClass }.map { it as PsiClass }.first()
-            val publicMethods = clz.methods.filter { it.modifierList.hasModifierProperty("public") }
-            publicMethods.map { "${clz.qualifiedName}::${it.name}" }
-        })
     }
 }
 
@@ -150,7 +143,7 @@ class UploadToLambdaModalView(private val eventHandler: UploadToLambdaModalEvent
     internal val functionName = JTextField()
     private val functionDescription = JTextField()
     private val createIamRoleButton = JButton("Create")
-    internal val s3BucketPicker = ComboBox<Bucket>()
+    internal val s3BucketPicker = ComboBox<String>()
     private val createS3Bucket = JButton("Create")
 
     init {
@@ -211,7 +204,7 @@ class UploadToLambdaModalView(private val eventHandler: UploadToLambdaModalEvent
         iamRolePicker.isEnabled = enable
     }
 
-    fun updateBuckets(buckets: List<Bucket>) = updatePicker(s3BucketPicker, buckets)
+    fun updateBuckets(buckets: List<String>) = updatePicker(s3BucketPicker, buckets)
 
     fun enableBucketPicker(enable: Boolean) {
         s3BucketPicker.isEnabled = enable
@@ -221,7 +214,7 @@ class UploadToLambdaModalView(private val eventHandler: UploadToLambdaModalEvent
     internal fun iamRole(): IamRole? = iamRolePicker.selectedItem as IamRole?
     internal fun description(): String? = functionDescription.text
     internal fun functionName(): String? = functionName.text
-    internal fun s3Bucket(): Bucket? = s3BucketPicker.selectedItem as Bucket?
+    internal fun s3Bucket(): String? = s3BucketPicker.selectedItem as String?
 
     private fun <T> updatePicker(picker: JComboBox<T>, values: Iterable<T>) {
         val model = (picker.model as DefaultComboBoxModel<T>)
