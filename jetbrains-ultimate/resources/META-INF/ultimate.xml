@@ -1,5 +1,0 @@
-<idea-plugin>
-    <extensions defaultExtensionNs="com.intellij">
-        <postStartupActivity implementation="software.aws.toolkits.jetbrains.TestUlt" />
-    </extensions>
-</idea-plugin>

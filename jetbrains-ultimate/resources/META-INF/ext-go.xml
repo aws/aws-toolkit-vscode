@@ -1,0 +1,9 @@
+<idea-plugin>
+  <extensions defaultExtensionNs="com.intellij">
+    <codeInsight.lineMarkerProvider language="go" implementationClass="software.aws.toolkits.jetbrains.ultimate.services.lambda.GoLambdaLineMarker"/>
+  </extensions>
+
+  <extensions defaultExtensionNs="aws.toolkit">
+    <lambdaPackager language="go" implementationClass="software.aws.toolkits.jetbrains.ultimate.services.lambda.GoLambdaPackager"/>
+  </extensions>
+</idea-plugin>
