@@ -36,7 +36,7 @@ class UploadLambdaFunction(private val handlerName: String, private val element:
                     editorManager.openFile(lambdaVirtualFile, true)
                 }
                 notifyInfo(
-                        "<a href=\"$it\">AWS Lambda function '${functionDetails.name}' created</a>.",
+                        "AWS Lambda function '<a href=\"$it\">${functionDetails.name}</a>' created.",
                         listener = notificationListener,
                         project = event.project
                 )

@@ -4,25 +4,18 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
+import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.psi.PsiFile
 import software.amazon.awssdk.services.iam.IAMClient
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.Bucket
 import software.aws.toolkits.jetbrains.core.AwsClientManager
-import java.awt.GridBagConstraints
-import java.awt.GridBagLayout
+import software.aws.toolkits.jetbrains.core.Icons
 import javax.swing.DefaultComboBoxModel
-import javax.swing.JButton
 import javax.swing.JComboBox
 import javax.swing.JComponent
-import javax.swing.JLabel
-import javax.swing.JOptionPane
-import javax.swing.JPanel
-import javax.swing.JSeparator
 import javax.swing.JTextField
-import javax.swing.SwingConstants
 import javax.swing.SwingUtilities
 
 class UploadToLambdaModal(
@@ -32,14 +25,7 @@ class UploadToLambdaModal(
     private val handlerName: String,
     private val okHandler: (FunctionUploadDetails) -> Unit
 ) : DialogWrapper(project) {
-    private val clientManager = AwsClientManager.getInstance(project)
-    private val view =
-            UploadToLambdaModalView(
-                    UploadToLambdaModalEventHandler(
-                            clientManager.getClient(),
-                            clientManager.getClient()
-                    )
-            )
+    private val view = CreateLambdaPanel()
 
     init {
         super.init()
@@ -47,20 +33,17 @@ class UploadToLambdaModal(
     }
 
     override fun createCenterPanel(): JComponent? {
-        val controller = UploadToLambdaController(view, psi, handlerName, AwsClientManager.getInstance(project))
+        val controller = UploadToLambdaController(view, psi, handlerName, runtime, AwsClientManager.getInstance(project))
         controller.load()
-        return view
+        return view.content
     }
 
     override fun doValidate(): ValidationInfo? {
-        if (view.functionName().isNullOrBlank()) return ValidationInfo(
-                "Function Name must be specified",
-                view.functionName
-        )
-        if (view.handler().isNullOrBlank()) return ValidationInfo("Handler must be specified", view.handlerPicker)
-        if (view.iamRole() == null) return ValidationInfo("Iam role must be specified", view.iamRolePicker)
-        if (view.s3Bucket() == null) return ValidationInfo("S3 bucket must be specified", view.s3BucketPicker)
-        //TODO: Only show buckets that have the correct region
+        view.name.blankAsNull() ?: return ValidationInfo("Function Name must be specified", view.name)
+        view.handler.blankAsNull() ?: return ValidationInfo("Handler must be specified", view.handler)
+        view.runtime.selected() ?: return ValidationInfo("Runtime must be specified", view.runtime)
+        view.iamRole.selected() ?: return ValidationInfo("Iam role must be specified", view.iamRole)
+        view.sourceBucket.selected() ?: return ValidationInfo("Bucket must be specified", view.sourceBucket)
         return super.doValidate()
     }
 
@@ -68,157 +51,83 @@ class UploadToLambdaModal(
         super.doOKAction()
         okHandler(
                 FunctionUploadDetails(
-                        name = view.functionName()!!,
-                        handler = view.handler()!!,
-                        iamRole = view.iamRole()!!,
-                        s3Bucket = view.s3Bucket()!!,
-                        runtime = runtime,
-                        description = view.description()!!
+                        name = view.name.text!!,
+                        handler = view.handler.text!!,
+                        iamRole = view.iamRole.selected()!!,
+                        s3Bucket = view.sourceBucket.selected()!!,
+                        runtime = view.runtime.selected()!!,
+                        description = view.description.text
                 )
         )
     }
+
+    private fun JTextField?.blankAsNull(): String? = if(this?.text?.isNotBlank() == true) { this.text } else { null }
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> JComboBox<T>?.selected(): T? = this?.selectedItem as? T
 }
 
 class UploadToLambdaController(
-    private val view: UploadToLambdaModalView,
+    private val view: CreateLambdaPanel,
     private val psi: PsiFile,
     private val handlerName: String,
-    private val clientManager: AwsClientManager
+    private val runtime: Runtime,
+    clientManager: AwsClientManager
 ) {
+
+    private val s3Client: S3Client = clientManager.getClient()
+    private val iamClient: IAMClient = clientManager.getClient()
+
     fun load() {
-        populatePicker({ listOf(handlerName) },
-                { handlers -> view.updateAvailableHandlers(handlers) },
-                { enable -> view.enableHandlerPicker(enable) })
+        view.handler.text = handlerName
+        view.iamRole.populateValues { iamClient.listRoles().roles().filterNotNull()
+                .map { IamRole(name = it.roleName(), arn = it.arn()) } }
+        view.sourceBucket.populateValues { s3Client.listBuckets().buckets().filterNotNull().mapNotNull { it.name() } }
+        view.runtime.populateValues(selected = runtime) { Runtime.knownValues().toList().sortedBy { it.name } }
 
-        populatePicker({
-            clientManager.getClient<IAMClient>().listRoles().roles().filterNotNull()
-                    .map { IamRole(name = it.roleName(), arn = it.arn()) }
-        },
-                { roles -> view.updateIamRoles(roles) },
-                { enable -> view.enableIamRolesPicker(enable) }
-        )
+        view.createRole.addActionListener{
+            val iamRole = Messages.showInputDialog("Role Name:", "Create IAM Role", Icons.AWS_ICON)
+            iamRole?.run {
+                view.iamRole.addAndSelectValue {
+                    iamClient.createRole { it.roleName(iamRole) }.let { IamRole(name = it.role().roleName(), arn = it.role().arn()) }
+                }
+            }
+        }
 
-        populatePicker({ clientManager.getClient<S3Client>().listBuckets().buckets().filterNotNull().mapNotNull { it.name() } },
-                { buckets -> view.updateBuckets(buckets) },
-                { enable -> view.enableBucketPicker(enable) }
-        )
+        view.createBucket.addActionListener{
+            val bucket = Messages.showInputDialog("S3 Bucket Name:", "Create S3 Bucket", Icons.Services.S3_SERVICE_ICON)
+            bucket?.run {
+                view.sourceBucket.addAndSelectValue {
+                    s3Client.createBucket { it.bucket(bucket) }
+                    bucket
+                }
+            }
+        }
     }
 
-    private fun <T> populatePicker(fetch: () -> List<T>, populate: (List<T>) -> Unit, enable: (Boolean) -> Unit) {
+    private fun <T> ComboBox<T>.populateValues(block: () -> List<T>) = this.populateValues(null, block)
+
+    private fun <T> ComboBox<T>.populateValues(selected: T?, block: () -> List<T>) {
         ApplicationManager.getApplication().executeOnPooledThread {
-            val items = fetch()
+            val values = block()
+            SwingUtilities.invokeLater { //TODO: Figure out how to get this to fire on a modal
+                val model = this.model as DefaultComboBoxModel<T>
+                model.removeAllElements()
+                values.forEach { model.addElement(it) }
+                this.selectedItem = selected
+                this.isEnabled = values.isNotEmpty()
+            }
+        }
+    }
+
+    private fun <T> ComboBox<T>.addAndSelectValue(fetch: () -> T) {
+        ApplicationManager.getApplication().executeOnPooledThread {
+            val value = fetch()
             SwingUtilities.invokeLater {
-                if (items.isNotEmpty()) {
-                    populate(items)
-                    enable(true)
-                } else {
-                    enable(false)
-                }
+                val model = this.model as DefaultComboBoxModel<T>
+                model.addElement(value)
+                model.selectedItem = value
             }
         }
     }
 }
 
-class UploadToLambdaModalEventHandler(private val s3Client: S3Client, private val iamClient: IAMClient) {
-    fun createS3BucketClicked(source: UploadToLambdaModalView) {
-        val bucketName =
-                JOptionPane.showInputDialog(source, "S3 Bucket Name:", "Create S3 Bucket", JOptionPane.PLAIN_MESSAGE)
-        if (bucketName != null) run {
-            s3Client.createBucket { it.bucket(bucketName) }
-        }
-    }
-
-    fun createIamRoleClicked(source: UploadToLambdaModalView) {
-        val iamRole = JOptionPane.showInputDialog(source, "Role Name:", "Create IAM Role", JOptionPane.PLAIN_MESSAGE)
-        if (iamRole != null) run {
-            iamClient.createRole { it.roleName(iamRole) }
-        }
-    }
-}
-
-class UploadToLambdaModalView(private val eventHandler: UploadToLambdaModalEventHandler) : JPanel(GridBagLayout()) {
-
-    internal val handlerPicker = ComboBox<String>()
-    internal val iamRolePicker = ComboBox<IamRole>()
-    internal val functionName = JTextField()
-    private val functionDescription = JTextField()
-    private val createIamRoleButton = JButton("Create")
-    internal val s3BucketPicker = ComboBox<String>()
-    private val createS3Bucket = JButton("Create")
-
-    init {
-        add(JLabel("Name:"), constraint(0, 0))
-        add(functionName, constraint(1, 0, width = 3))
-        add(JLabel("Description:"), constraint(0, 1))
-        add(functionDescription, constraint(1, 1, width = 3))
-
-        add(JSeparator(SwingConstants.HORIZONTAL), constraint(0, 3, width = 4))
-
-        add(JLabel("Handler:"), constraint(0, 4))
-        handlerPicker.isEnabled = false
-        add(handlerPicker, constraint(1, 4, width = 3))
-
-        add(JLabel("IAM Role:"), constraint(0, 5))
-        iamRolePicker.isEnabled = false
-        add(iamRolePicker, constraint(1, 5, width = 2))
-
-        add(createIamRoleButton, constraint(3, 5, width = 1, fillHorizontal = false, alignLeft = false))
-        createIamRoleButton.addActionListener { eventHandler.createIamRoleClicked(this) }
-
-        add(JSeparator(SwingConstants.HORIZONTAL), constraint(0, 6, width = 4))
-
-        add(JLabel("S3 Bucket:"), constraint(0, 7))
-        s3BucketPicker.isEnabled = false
-        add(s3BucketPicker, constraint(1, 7, width = 2))
-        add(createS3Bucket, constraint(3, 7, width = 1, fillHorizontal = false, alignLeft = false))
-        createS3Bucket.addActionListener { eventHandler.createS3BucketClicked(this) }
-    }
-
-    private fun constraint(
-        x: Int,
-        y: Int,
-        width: Int = 1,
-        fillHorizontal: Boolean = true,
-        alignLeft: Boolean = true
-    ): GridBagConstraints {
-        val c = GridBagConstraints()
-        if (fillHorizontal) {
-            c.fill = GridBagConstraints.HORIZONTAL
-        }
-        c.gridx = x
-        c.gridy = y
-        c.gridwidth = width
-        c.anchor = if (alignLeft) GridBagConstraints.WEST else GridBagConstraints.EAST
-        return c
-    }
-
-    fun updateAvailableHandlers(handlers: List<String>) = updatePicker(handlerPicker, handlers)
-
-    fun enableHandlerPicker(enable: Boolean) {
-        handlerPicker.isEnabled = enable
-    }
-
-    fun updateIamRoles(roles: List<IamRole>) = updatePicker(iamRolePicker, roles)
-
-    fun enableIamRolesPicker(enable: Boolean) {
-        iamRolePicker.isEnabled = enable
-    }
-
-    fun updateBuckets(buckets: List<String>) = updatePicker(s3BucketPicker, buckets)
-
-    fun enableBucketPicker(enable: Boolean) {
-        s3BucketPicker.isEnabled = enable
-    }
-
-    internal fun handler(): String? = handlerPicker.selectedItem as String?
-    internal fun iamRole(): IamRole? = iamRolePicker.selectedItem as IamRole?
-    internal fun description(): String? = functionDescription.text
-    internal fun functionName(): String? = functionName.text
-    internal fun s3Bucket(): String? = s3BucketPicker.selectedItem as String?
-
-    private fun <T> updatePicker(picker: JComboBox<T>, values: Iterable<T>) {
-        val model = (picker.model as DefaultComboBoxModel<T>)
-        model.removeAllElements()
-        values.forEach { model.addElement(it) }
-    }
-}
