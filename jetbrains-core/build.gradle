@@ -25,5 +25,6 @@ dependencies {
     }
     compile "com.amazonaws:aws-java-sdk-core:$awsSdkVersion"
     runtime "org.jetbrains.kotlin:kotlin-reflect"
+    testCompile project(":jetbrains-testutils")
     testCompile group: 'org.assertj', name: 'assertj-core', version: '3.8.0'
 }

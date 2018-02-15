@@ -40,29 +40,38 @@ abstract class LambdaLineMarker : LineMarkerProviderDescriptor() {
 
         actionGroup.add(UploadLambdaFunction(handler, element))
 
-        AwsResourceCache.getInstance(element.project).lambdaFunctions().filter { it.handler == handler }.forEach { actionGroup.add(OpenLambda(it)) }
+        AwsResourceCache.getInstance(element.project).lambdaFunctions()
+            .filter { it.handler == handler }
+            .forEach { actionGroup.add(OpenLambda(it)) }
 
-        return object : LineMarkerInfo<PsiElement>(element, element.textRange, icon, Pass.LINE_MARKERS,
-                null, null,
-                GutterIconRenderer.Alignment.CENTER
+        return object : LineMarkerInfo<PsiElement>(
+            element, element.textRange, icon, Pass.LINE_MARKERS,
+            null, null,
+            GutterIconRenderer.Alignment.CENTER
         ) {
             override fun createGutterRenderer(): GutterIconRenderer? {
-                return object : LineMarkerInfo.LineMarkerGutterIconRenderer<PsiElement>(this) {
-                    override fun getClickAction(): AnAction? = null
-
-                    override fun isNavigateAction(): Boolean = true
-
-                    override fun getPopupMenuActions(): ActionGroup? = actionGroup
-                }
+                return LambdaGutterIcon(this, actionGroup)
             }
         }
-
     }
 
-    override fun collectSlowLineMarkers(elements: MutableList<PsiElement>, result: MutableCollection<LineMarkerInfo<PsiElement>>) {}
+    override fun collectSlowLineMarkers(
+        elements: MutableList<PsiElement>,
+        result: MutableCollection<LineMarkerInfo<PsiElement>>
+    ) {
+    }
 
-    class OpenLambda(val function: LambdaFunction) : AnAction("Open function '${function.name}'", null, LAMBDA_OPEN_FUNCTION) {
+    class LambdaGutterIcon(markerInfo: LineMarkerInfo<PsiElement>, private val actionGroup: ActionGroup) :
+        LineMarkerInfo.LineMarkerGutterIconRenderer<PsiElement>(markerInfo) {
+        override fun getClickAction(): AnAction? = null
 
+        override fun isNavigateAction(): Boolean = true
+
+        override fun getPopupMenuActions(): ActionGroup = actionGroup
+    }
+
+    class OpenLambda(val function: LambdaFunction) :
+        AnAction("Open function '${function.name}'", null, LAMBDA_OPEN_FUNCTION) {
         override fun actionPerformed(e: AnActionEvent?) {
             val event = e ?: return
             val editorManager = event.project?.let { FileEditorManager.getInstance(it) } ?: return

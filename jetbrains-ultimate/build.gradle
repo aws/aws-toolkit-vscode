@@ -10,6 +10,5 @@ jar.baseName = 'aws-intellij-toolkit-ultimate'
 
 dependencies {
     compile(project(":jetbrains-core"))
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    testCompile group: 'org.assertj', name: 'assertj-core', version: '3.8.0'
+    testCompile project(":jetbrains-testutils")
 }
