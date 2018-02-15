@@ -1,4 +1,4 @@
-package com.amazonaws.intellij.utils
+package software.aws.toolkits.jetbrains.utils
 
 import java.time.Instant
 import java.time.ZoneOffset

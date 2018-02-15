@@ -4,7 +4,6 @@ import static com.intellij.ui.IdeBorderFactory.TITLED_BORDER_LEFT_INSET;
 import static com.intellij.ui.IdeBorderFactory.TITLED_BORDER_RIGHT_INSET;
 import static com.intellij.ui.IdeBorderFactory.TITLED_BORDER_TOP_INSET;
 
-import com.amazonaws.intellij.utils.DateUtils;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.ide.CopyPasteManager;
 import com.intellij.openapi.project.Project;
@@ -24,6 +23,7 @@ import javax.swing.JComponent;
 import javax.swing.JPanel;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
 import software.amazon.awssdk.services.s3.model.Tag;
+import software.aws.toolkits.jetbrains.utils.DateUtils;
 import software.aws.toolkits.jetbrains.utils.MessageUtils;
 import software.aws.toolkits.jetbrains.utils.keyvalue.KeyValue;
 import software.aws.toolkits.jetbrains.utils.keyvalue.KeyValueTableEditor;

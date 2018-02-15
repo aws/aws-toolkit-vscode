@@ -1,6 +1,5 @@
 package software.aws.toolkits.jetbrains.services.s3;
 
-import com.amazonaws.intellij.utils.DateUtils;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.ide.CopyPasteManager;
 import com.intellij.openapi.util.text.StringUtil;
@@ -20,6 +19,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.s3.model.Tag;
+import software.aws.toolkits.jetbrains.utils.DateUtils;
 import software.aws.toolkits.jetbrains.utils.MessageUtils;
 import software.aws.toolkits.jetbrains.utils.keyvalue.KeyValue;
 import software.aws.toolkits.jetbrains.utils.keyvalue.KeyValueTableEditor;
