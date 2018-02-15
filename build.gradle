@@ -29,34 +29,11 @@ allprojects {
     repositories {
         mavenCentral()
     }
-}
 
-apply plugin: 'org.jetbrains.intellij'
-intellij {
-    version "IC-" + ideaVersion
-    pluginName 'aws-intellij-toolkit'
-    updateSinceUntilBuild false
-    downloadSources = System.getenv("CI") == null
-    if (System.env.ALTERNATIVE_IDE) {
-        alternativeIdePath = System.env.ALTERNATIVE_IDE
-    }
-}
+    apply plugin: 'jacoco'
 
-dependencies {
-    compile project(':jetbrains-core')
-    compile project(':jetbrains-ultimate')
-}
-
-// Workaround for runIde being defined in multiple projects, if we request the root project runIde, all others will
-// be disabled
-if (gradle.startParameter.taskNames.contains("runIde")) {
-    println("Top level runIde selected, excluding sub-projects' runIde")
-    gradle.taskGraph.whenReady { graph ->
-        graph.allTasks.forEach {
-            if (it.name == "runIde" && it.project != gradle.rootProject) {
-                it.enabled = false
-            }
-        }
+    jacoco {
+        toolVersion = "0.8.0" // TODO: Remove in Gradle 4.6
     }
 }
 
@@ -161,3 +138,48 @@ wrapper {
     gradleVersion '4.5'
 }
 
+apply plugin: 'org.jetbrains.intellij'
+
+intellij {
+    version "IC-" + ideaVersion
+    pluginName 'aws-intellij-toolkit'
+    updateSinceUntilBuild false
+    downloadSources = System.getenv("CI") == null
+    if (System.env.ALTERNATIVE_IDE) {
+        alternativeIdePath = System.env.ALTERNATIVE_IDE
+    }
+}
+
+def publishedProjects = subprojects.findAll { !it.name.contains("test")}
+task jacocoReport(type: JacocoReport) {
+    executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
+
+    additionalSourceDirs = files(publishedProjects.sourceSets.main.java.srcDirs)
+    sourceDirectories = files(publishedProjects.sourceSets.main.java.srcDirs)
+    classDirectories = files(publishedProjects.sourceSets.main.output)
+
+    reports {
+        html.enabled true
+    }
+}
+publishedProjects.forEach {
+    jacocoReport.mustRunAfter(it.tasks.withType(Test))
+}
+
+// Workaround for runIde being defined in multiple projects, if we request the root project runIde, all others will
+// be disabled
+if (gradle.startParameter.taskNames.contains("runIde")) {
+    println("Top level runIde selected, excluding sub-projects' runIde")
+    gradle.taskGraph.whenReady { graph ->
+        graph.allTasks.forEach {
+            if (it.name == "runIde" && it.project != gradle.rootProject) {
+                it.enabled = false
+            }
+        }
+    }
+}
+
+dependencies {
+    compile project(':jetbrains-core')
+    compile project(':jetbrains-ultimate')
+}
