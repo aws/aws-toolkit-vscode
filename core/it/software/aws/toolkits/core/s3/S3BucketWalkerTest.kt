@@ -86,6 +86,7 @@ class S3BucketWalkerTest {
         private val bucketName = temporaryBucketRule.createBucket()
 
         @BeforeClass
+        @JvmStatic
         fun populateData() {
             putObject(bucketName, "top-level")
             putObject(bucketName, "first-level/second-level-object")

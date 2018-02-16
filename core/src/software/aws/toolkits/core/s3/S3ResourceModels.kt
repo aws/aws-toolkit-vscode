@@ -7,10 +7,10 @@ import software.amazon.awssdk.services.s3.model.CopyObjectRequest
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request
 import software.amazon.awssdk.services.s3.model.MetadataDirective
-import software.amazon.awssdk.services.s3.model.ObjectStorageClass
 import software.amazon.awssdk.services.s3.model.S3Exception
 import software.amazon.awssdk.services.s3.model.Tag
 import software.amazon.awssdk.services.s3.model.Tagging
+import software.amazon.awssdk.services.s3.model.TaggingDirective
 import java.io.InputStream
 import java.net.URLEncoder
 import java.time.Instant
@@ -19,6 +19,11 @@ import java.time.Instant
  * Extension to an [S3Client] for creating a [S3Bucket] resource.
  */
 fun S3Client.bucket(name: String) = S3Bucket(name, this)
+
+fun S3Client.file(bucket: String, key: String) = this.headObject { it.bucket(bucket).key(key) }.let { obj ->
+    S3File(bucket, key, obj.lastModified(), obj.eTag(), obj.contentLength(), this)
+}
+
 
 fun S3Client.listS3Buckets(): List<S3Bucket> =
         this.listBuckets().buckets().map { S3Bucket(it.name(), this, creationDate = it.creationDate()) }
@@ -93,7 +98,6 @@ open class S3Directory internal constructor(bucket: String, key: String, private
                         key = it.key(),
                         lastModified = it.lastModified(),
                         etag = it.eTag(),
-                        storageClass = it.storageClass(),
                         size = it.size(),
                         client = client
                 )
@@ -133,7 +137,6 @@ class S3File internal constructor(
     key: String,
     val lastModified: Instant,
     val etag: String,
-    val storageClass: ObjectStorageClass,
     val size: Long,
     private val client: S3Client
 ) : S3Key(bucket, key) {
@@ -148,15 +151,13 @@ class S3File internal constructor(
     }
 
     fun updateMetadata(metadata: Map<String, String>) {
-        try {
-            client.copyObject (baseUpdateMetadataRequest(metadata).build())
-        } catch (e: S3Exception) {
-            throw e
-        }
+        client.copyObject(baseUpdateMetadataRequest(metadata).build())
     }
 
     fun updateMetadataAndTags(metadata: Map<String, String>, tags: Set<Tag>) {
-        client.copyObject (baseUpdateMetadataRequest(metadata).tagging(Tagging.builder().tagSet(tags).build()).build())
+        client.copyObject(
+                baseUpdateMetadataRequest(metadata).tagging(Tagging.builder().tagSet(tags).build()).taggingDirective(TaggingDirective.REPLACE).build()
+        )
     }
 
     fun getInputStream(): InputStream {
