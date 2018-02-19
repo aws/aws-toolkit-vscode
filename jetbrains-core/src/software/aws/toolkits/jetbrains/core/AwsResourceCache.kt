@@ -8,18 +8,24 @@ import software.aws.toolkits.jetbrains.services.lambda.toDataClass
 import java.util.concurrent.ConcurrentHashMap
 
 //TODO to be replaced with an actual resource implementation
-class AwsResourceCache(private val project: Project) {
+
+interface AwsResourceCache {
+    fun lambdaFunctions(): List<LambdaFunction>
+
+    companion object {
+        fun getInstance(project: Project): AwsResourceCache = ServiceManager.getService(project, AwsResourceCache::class.java)
+    }
+}
+
+class DefaultAwsResourceCache(private val project: Project) : AwsResourceCache {
 
     private val settings = AwsSettingsProvider.getInstance(project)
     private val cache = ConcurrentHashMap<String, Any>()
 
     @Suppress("UNCHECKED_CAST")
-    fun lambdaFunctions(): List<LambdaFunction> = cache.computeIfAbsent("${settings.currentRegion.id}:${settings.currentProfile?.name}:lambdafunctions", {
-        val client = AwsClientManager.getInstance(project).getClient<LambdaClient>()
-        client.listFunctionsIterable().functions().map { it.toDataClass(client) }.toList()
-    }) as List<LambdaFunction>
-
-    companion object {
-        fun getInstance(project: Project): AwsResourceCache = ServiceManager.getService(project, AwsResourceCache::class.java)
-    }
+    override fun lambdaFunctions(): List<LambdaFunction> =
+            cache.computeIfAbsent("${settings.currentRegion.id}:${settings.currentProfile?.name}:lambdafunctions", {
+                val client = AwsClientManager.getInstance(project).getClient<LambdaClient>()
+                client.listFunctionsIterable().functions().map { it.toDataClass(client) }.toList()
+            }) as List<LambdaFunction>
 }

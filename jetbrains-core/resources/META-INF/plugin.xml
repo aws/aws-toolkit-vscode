@@ -33,7 +33,9 @@
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsSettingsProvider"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.region.AwsRegionProvider"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientManager"/>
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsResourceCache"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.DefaultAwsResourceCache"
+                        serviceInterface="software.aws.toolkits.jetbrains.core.AwsResourceCache"
+                        testServiceImplementation="software.aws.toolkits.jetbrains.core.TestAwsResourceCache"/>
         <toolWindow id="AWS Explorer" anchor="right"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
                     icon="/icons/aws-box.gif"/>
