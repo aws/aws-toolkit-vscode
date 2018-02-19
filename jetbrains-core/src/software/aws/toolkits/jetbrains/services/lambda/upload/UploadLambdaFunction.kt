@@ -28,7 +28,7 @@ class UploadLambdaFunction(private val handlerName: String, private val element:
         val project = module.project
 
         val packager = LambdaPackagerProvider.getInstance(psiFile.language)
-        val uploadModal = UploadToLambdaModal(project, element.containingFile, packager.determineRuntime(module, psiFile), handlerName) { functionDetails ->
+        val uploadModal = UploadToLambdaModal(project, element.containingFile, packager.determineRuntime(module, psiFile), handlerName, UploadToLambdaValidator()) { functionDetails ->
             LambdaCreatorFactory.create(AwsClientManager.getInstance(project), packager).createLambda(functionDetails, module, psiFile) {
                 val notificationListener = NotificationListener { _, _ ->
                     val editorManager = FileEditorManager.getInstance(project)
