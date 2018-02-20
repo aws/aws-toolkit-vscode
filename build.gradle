@@ -22,6 +22,8 @@ buildscript {
     }
 }
 
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 group 'software.aws.toolkits'
 version '0.1-SNAPSHOT'
 
@@ -91,8 +93,13 @@ subprojects {
         }
     }
 
-    tasks.withType(JavaCompile).all {
-        options.compilerArgs << "-Werror"
+    if (gradle.startParameter.taskNames.contains("check")) {
+        tasks.withType(JavaCompile).all {
+            options.compilerArgs << "-Werror"
+        }
+        tasks.withType(KotlinCompile).all {
+            kotlinOptions.allWarningsAsErrors = true
+        }
     }
 
     task integrationTest(type: Test) {
@@ -111,16 +118,7 @@ subprojects {
         mustRunAfter tasks.test
     }
 
-    compileKotlin {
-        kotlinOptions.allWarningsAsErrors = true
-        kotlinOptions.jvmTarget = "1.8"
-    }
-    compileTestKotlin {
-        kotlinOptions.allWarningsAsErrors = true
-        kotlinOptions.jvmTarget = "1.8"
-    }
-    compileIntegrationTestKotlin {
-        kotlinOptions.allWarningsAsErrors = true
+    tasks.withType(KotlinCompile).all {
         kotlinOptions.jvmTarget = "1.8"
     }
 
