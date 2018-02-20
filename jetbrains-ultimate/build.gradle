@@ -9,6 +9,7 @@ intellij {
 jar.baseName = 'aws-intellij-toolkit-ultimate'
 
 dependencies {
-    compile(project(":jetbrains-core"))
+    compile project(":jetbrains-core")
     testCompile project(":jetbrains-testutils")
+    testRuntime project(path: ":jetbrains-core", configuration: 'testArtifacts')
 }

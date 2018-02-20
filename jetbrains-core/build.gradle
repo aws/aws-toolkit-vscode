@@ -10,6 +10,19 @@ intellij {
 
 jar.baseName = 'aws-intellij-toolkit-core'
 
+configurations {
+    testArtifacts
+}
+
+task testJar (type: Jar) {
+    baseName = "${project.name}-test"
+    from sourceSets.test.output
+}
+
+artifacts {
+    testArtifacts testJar
+}
+
 dependencies {
     compile(project(":core")) {
         exclude group: 'org.slf4j'
