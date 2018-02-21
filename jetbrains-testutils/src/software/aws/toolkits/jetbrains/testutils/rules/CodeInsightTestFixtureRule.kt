@@ -20,19 +20,23 @@ import java.nio.file.Paths
  *
  * If you wish to have just a [Project], you may use Intellij's [com.intellij.testFramework.ProjectRule]
  */
-class CodeInsightTestFixtureRule(private val testDescription: LightProjectDescriptor = LightProjectDescriptor.EMPTY_PROJECT_DESCRIPTOR) :
+open class CodeInsightTestFixtureRule(protected val testDescription: LightProjectDescriptor = LightProjectDescriptor.EMPTY_PROJECT_DESCRIPTOR) :
     TestWatcher() {
     private lateinit var description: Description
     private val appRule = ApplicationRule()
-    private val lazyFixture = ClearableLazy {
+    internal val lazyFixture = ClearableLazy {
         invokeAndWait {
-            val fixtureBuilder = IdeaTestFixtureFactory.getFixtureFactory().createLightFixtureBuilder(testDescription)
-            val newFixture = IdeaTestFixtureFactory.getFixtureFactory()
-                .createCodeInsightFixture(fixtureBuilder.fixture, LightTempDirTestFixtureImpl(true));
-            newFixture.setUp()
-            newFixture.testDataPath = testDataPath
-            newFixture
+            createTestFixture()
         }
+    }
+
+    protected open fun createTestFixture(): CodeInsightTestFixture {
+        val fixtureBuilder = IdeaTestFixtureFactory.getFixtureFactory().createLightFixtureBuilder(testDescription)
+        val newFixture = IdeaTestFixtureFactory.getFixtureFactory()
+            .createCodeInsightFixture(fixtureBuilder.fixture, LightTempDirTestFixtureImpl(true));
+        newFixture.setUp()
+        newFixture.testDataPath = testDataPath
+        return newFixture
     }
 
     override fun starting(description: Description) {
@@ -59,14 +63,14 @@ class CodeInsightTestFixtureRule(private val testDescription: LightProjectDescri
     val module: Module
         get() = fixture.module
 
-    val fixture: CodeInsightTestFixture
+    open val fixture: CodeInsightTestFixture
         get() = lazyFixture.value
 
-    private val testDataPath: String
+    protected val testDataPath: String
         get() = Paths.get("testdata", testClass.simpleName, testName).toString()
 }
 
-private class ClearableLazy<out T>(private val initializer: () -> T) {
+internal class ClearableLazy<out T>(private val initializer: () -> T) {
     private var _value: T? = null
     private var isSet = false
 
@@ -95,7 +99,7 @@ private class ClearableLazy<out T>(private val initializer: () -> T) {
     }
 }
 
-private fun <T> invokeAndWait(action: () -> T): T {
+internal fun <T> invokeAndWait(action: () -> T): T {
     val application = ApplicationManager.getApplication()
 
     if (application.isDispatchThread) {

@@ -10,26 +10,47 @@ import assertk.assertions.isNotNull
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiIdentifier
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
-import com.intellij.testFramework.fixtures.DefaultLightProjectDescriptor
 import com.intellij.testFramework.runInEdtAndWait
+import org.junit.Before
 import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker
-import software.aws.toolkits.jetbrains.testutils.rules.CodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.testutils.rules.JavaCodeInsightTestFixtureRule
 
 class JavaLambdaLineMarkerTest {
     @Rule
     @JvmField
-    val projectRule = CodeInsightTestFixtureRule(testDescription = DefaultLightProjectDescriptor())
+    val projectRule = JavaCodeInsightTestFixtureRule()
+
+    @Before
+    fun setUp() {
+        projectRule.fixture.addClass(
+            """
+            package com.amazonaws.services.lambda.runtime;
+            @SuppressWarnings("ALL")
+            public interface Context {}
+            """
+        );
+        projectRule.fixture.addClass(
+            """
+            package com.amazonaws.services.lambda.runtime;
+
+            import com.amazonaws.services.lambda.runtime.Context;
+            public interface RequestHandler<I, O> {
+                O handleRequest(I input, Context context);
+            }
+            """
+        );
+    }
 
     @Test
     fun singleArgumentStaticMethodsAreMarked() {
         val fixture = projectRule.fixture
 
         fixture.configureByText(
-                "SomeClass.java",
-                """
+            "SomeClass.java",
+            """
                 package com.example;
 
                 public class UsefulUtils {
@@ -49,13 +70,13 @@ class JavaLambdaLineMarkerTest {
         }
     }
 
-    @Ignore("Can't figure out how to get the import recognized")
+    @Test
     fun dualArgumentStaticMethodsAreMarkedIfSecondArgIsContext() {
         val fixture = projectRule.fixture
 
         fixture.configureByText(
-                "SomeClass.java",
-                """
+            "SomeClass.java",
+            """
                 package com.example;
 
                 import com.amazonaws.services.lambda.runtime.Context;
@@ -82,8 +103,8 @@ class JavaLambdaLineMarkerTest {
         val fixture = projectRule.fixture
 
         fixture.configureByText(
-                "SomeClass.java",
-                """
+            "SomeClass.java",
+            """
                 package com.example;
 
                 public class UsefulUtils {
@@ -108,8 +129,8 @@ class JavaLambdaLineMarkerTest {
         val fixture = projectRule.fixture
 
         fixture.configureByText(
-                "SomeClass.java",
-                """
+            "SomeClass.java",
+            """
                 package com.example;
 
                 public class UsefulUtils {
@@ -132,8 +153,8 @@ class JavaLambdaLineMarkerTest {
         val fixture = projectRule.fixture
 
         fixture.configureByText(
-                "SomeClass.java",
-                """
+            "SomeClass.java",
+            """
                 package com.example;
 
                 public class UsefulUtils {
@@ -153,8 +174,8 @@ class JavaLambdaLineMarkerTest {
         val fixture = projectRule.fixture
 
         fixture.configureByText(
-                "SomeClass.java",
-                """
+            "SomeClass.java",
+            """
                 package com.example;
 
                 public class UsefulUtils {
@@ -174,8 +195,8 @@ class JavaLambdaLineMarkerTest {
         val fixture = projectRule.fixture
 
         fixture.configureByText(
-                "SomeClass.java",
-                """
+            "SomeClass.java",
+            """
                 package com.example;
 
                 public class UsefulUtils {
@@ -207,14 +228,19 @@ class JavaLambdaLineMarkerTest {
         }
     }
 
-    private fun findAndAssertMarks(fixture: CodeInsightTestFixture, assertion: (List<LambdaLineMarker.LambdaGutterIcon>) -> Unit) {
+    private fun findAndAssertMarks(
+        fixture: CodeInsightTestFixture,
+        assertion: (List<LambdaLineMarker.LambdaGutterIcon>) -> Unit
+    ) {
         runInEdtAndWait {
             val marks = fixture.findAllGutters().filterIsInstance<LambdaLineMarker.LambdaGutterIcon>()
             assertion(marks)
         }
     }
 
-    private fun String.asTestFile() = javaClass.getResource("/software/aws/toolkits/jetbrains/services/lambda/lineMarkerTestFiles/$this")?.file ?: throw IllegalArgumentException("File $this not found")
+    private fun String.asTestFile() =
+        javaClass.getResource("/software/aws/toolkits/jetbrains/services/lambda/lineMarkerTestFiles/$this")?.file
+                ?: throw IllegalArgumentException("File $this not found")
 
     private fun Assert<PsiElement?>.isIdentifierWithName(name: String) {
         this.isNotNull {
