@@ -151,7 +151,7 @@ class ExplorerToolWindow(val project: Project) :
                     is AwsExplorerServiceRootNode ->
                         "aws.toolkit.explorer.${explorerNode.serviceName()}"
                     is AwsExplorerResourceNode<*> ->
-                        "aws.toolkit.explorer.${explorerNode.serviceName()}.${explorerNode.resourceName()}"
+                        "aws.toolkit.explorer.${explorerNode.serviceName()}.${explorerNode.resourceType()}"
                     else ->
                         return
                 }

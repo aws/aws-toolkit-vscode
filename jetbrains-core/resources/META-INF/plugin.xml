@@ -48,10 +48,15 @@
     <actions>
         <group id="aws.toolkit.explorer.lambda.function" popup="true" compact="true">
             <action id="lambda.function.delete"
-                    class="software.aws.toolkits.jetbrains.services.lambda.LambdaDeleteAction"
+                    class="software.aws.toolkits.jetbrains.services.lambda.DeleteFunctionAction"
                     text="Delete Function"
-                    icon="AllIcons.Actions.Delete"
-            />
+                    icon="AllIcons.Actions.Delete"/>
+        </group>
+        <group id="aws.toolkit.explorer.s3.bucket" popup="true" compact="true">
+            <action id="s3.bucket.delete"
+                    class="software.aws.toolkits.jetbrains.services.s3.DeleteBucketAction"
+                    text="Delete Bucket"
+                    icon="AllIcons.Actions.Delete"/>
         </group>
     </actions>
 

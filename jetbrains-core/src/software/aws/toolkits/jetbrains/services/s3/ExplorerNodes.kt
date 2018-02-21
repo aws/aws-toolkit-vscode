@@ -27,15 +27,15 @@ class S3ServiceNode(project: Project) :
     private fun mapResourceToNode(resource: S3Bucket) = S3BucketNode(project!!, this, resource)
 }
 
-class S3BucketNode(project: Project, serviceNode: S3ServiceNode, private val bucket: S3Bucket) :
+class S3BucketNode(project: Project, serviceNode: S3ServiceNode, val bucket: S3Bucket) :
         AwsExplorerResourceNode<S3Bucket>(project, serviceNode, bucket, S3_BUCKET_ICON) {
 
     private val editorManager = FileEditorManager.getInstance(project)
-    private val client: S3Client = AwsClientManager.getInstance(project).getClient()
+    val client: S3Client = AwsClientManager.getInstance(project).getClient()
 
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
-    override fun resourceName(): String = "bucket"
+    override fun resourceType(): String = "bucket"
 
     override fun onDoubleClick(model: DefaultTreeModel, selectedElement: DefaultMutableTreeNode) {
         val bucketVirtualFile = S3VirtualBucket(S3VirtualFileSystem(client), bucket)

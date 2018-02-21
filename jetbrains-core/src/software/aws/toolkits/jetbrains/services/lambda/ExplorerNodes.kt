@@ -49,7 +49,7 @@ class LambdaFunctionNode(project: Project, val client: LambdaClient, serviceNode
         editorManager.openFile(lambdaVirtualFile, true)
     }
 
-    override fun resourceName(): String = "function"
+    override fun resourceType(): String = "function"
     override fun toString(): String = functionName()
     fun functionName(): String = function.functionName()
 }

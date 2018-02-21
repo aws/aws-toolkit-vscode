@@ -80,7 +80,7 @@ abstract class AwsExplorerResourceNode<T>(
 ) : AwsExplorerNode<T>(project, value, awsIcon) {
     fun serviceName() = serviceNode.serviceName()
 
-    abstract fun resourceName(): String
+    abstract fun resourceType(): String
 }
 
 class AwsTruncatedResultNode(private val parentNode: AwsExplorerServiceRootNode, val paginationToken: String) :
