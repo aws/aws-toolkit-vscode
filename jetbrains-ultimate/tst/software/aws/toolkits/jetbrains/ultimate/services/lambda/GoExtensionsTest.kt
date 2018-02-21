@@ -80,10 +80,7 @@ class GoExtensionsTest {
         )
 
         runInEdtAndWait {
-            println(" fixture " + fixture)
-            val findAllGutters = fixture.findAllGutters()
-            println(" WEEE " + findAllGutters)
-            assert(findAllGutters.filterLambdaMarks())
+            assert(fixture.findAllGutters().filterLambdaMarks())
                 .hasSize(1)
         }
     }
