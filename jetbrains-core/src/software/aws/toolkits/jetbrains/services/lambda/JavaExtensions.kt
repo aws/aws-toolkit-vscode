@@ -1,5 +1,6 @@
 package software.aws.toolkits.jetbrains.services.lambda
 
+import com.intellij.execution.JavaExecutionUtil
 import com.intellij.lang.jvm.JvmModifier
 import com.intellij.openapi.compiler.CompilerManager
 import com.intellij.openapi.module.Module
@@ -7,6 +8,7 @@ import com.intellij.openapi.roots.OrderRootType
 import com.intellij.openapi.roots.libraries.LibraryTablesRegistrar
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.JavaPsiFacade
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
@@ -14,6 +16,7 @@ import com.intellij.psi.PsiIdentifier
 import com.intellij.psi.PsiMethod
 import com.intellij.psi.PsiModifierListOwner
 import com.intellij.psi.PsiParameter
+import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.util.PsiUtil
 import com.intellij.util.io.exists
 import software.amazon.awssdk.services.lambda.model.Runtime
@@ -40,19 +43,24 @@ class JavaLambdaLineMarker : LambdaLineMarker() {
 
     private fun findByMethod(method: PsiMethod): String? {
         val parentClass = method.parent as? PsiClass ?: return null
-        if (method.isPublic && (method.isStatic || (parentClass.canBeInstantiatedByLambda() && !parentClass.implementsLambdaHandlerInterface())) && method.hasRequiredParameters()) {
+        if (method.isPublic
+            && (method.isStatic
+                    || (parentClass.canBeInstantiatedByLambda() && !parentClass.implementsLambdaHandlerInterface()))
+            && method.hasRequiredParameters()) {
             return "${parentClass.qualifiedName}::${method.name}"
         }
         return null
     }
 
-    private fun findByClass(clz: PsiClass): String? = if (clz.canBeInstantiatedByLambda() && clz.implementsLambdaHandlerInterface()) {
-        clz.qualifiedName
-    } else {
-        null
-    }
+    private fun findByClass(clz: PsiClass): String? =
+        if (clz.canBeInstantiatedByLambda() && clz.implementsLambdaHandlerInterface()) {
+            clz.qualifiedName
+        } else {
+            null
+        }
 
-    private fun PsiClass.canBeInstantiatedByLambda() = this.isPublic && this.isConcrete && this.hasPublicNoArgsConstructor()
+    private fun PsiClass.canBeInstantiatedByLambda() =
+        this.isPublic && this.isConcrete && this.hasPublicNoArgsConstructor()
 
     private val PsiModifierListOwner.isPublic get() = this.hasModifier(JvmModifier.PUBLIC)
 
@@ -61,21 +69,30 @@ class JavaLambdaLineMarker : LambdaLineMarker() {
     private val PsiClass.isConcrete get() = !this.isInterface && !this.hasModifier(JvmModifier.ABSTRACT)
 
     private fun PsiClass.hasPublicNoArgsConstructor() =
-            this.constructors.isEmpty() || this.constructors.any { it.hasModifier(JvmModifier.PUBLIC) && it.parameters.isEmpty() }
+        this.constructors.isEmpty() || this.constructors.any { it.hasModifier(JvmModifier.PUBLIC) && it.parameters.isEmpty() }
 
-    private fun PsiClass.implementsLambdaHandlerInterface(): Boolean =
-            this.supers.any { LAMBDA_INTERFACES.contains(it.qualifiedName) } || this.supers.any { it.implementsLambdaHandlerInterface() }
+    private fun PsiClass.implementsLambdaHandlerInterface(): Boolean {
+        val module = JavaExecutionUtil.findModule(this);
+        val scope = GlobalSearchScope.moduleRuntimeScope(module, false)
+        val psiFacade = JavaPsiFacade.getInstance(module.project)
+
+        return LAMBDA_INTERFACES.any { interfaceName ->
+            psiFacade.findClass(interfaceName, scope)?.let { interfacePsi ->
+                this.isInheritor(interfacePsi, true)
+            } == true
+        }
+    }
 
     private fun PsiMethod.hasRequiredParameters(): Boolean =
-            this.parameters.size in 1..2 && this.parameterList.parameters.getOrNull(1)?.isContextParameter() ?: true
+        this.parameters.size in 1..2 && this.parameterList.parameters.getOrNull(1)?.isContextParameter() ?: true
 
-    private fun PsiParameter.isContextParameter() = PsiUtil.resolveClassInType(this.type)?.qualifiedName == LAMBDA_CONTEXT
+    private fun PsiParameter.isContextParameter() =
+        PsiUtil.resolveClassInType(this.type)?.qualifiedName == LAMBDA_CONTEXT
 
     private companion object {
-
         val LAMBDA_INTERFACES = setOf(
-                "com.amazonaws.services.lambda.runtime.RequestStreamHandler",
-                "com.amazonaws.services.lambda.runtime.RequestHandler"
+            "com.amazonaws.services.lambda.runtime.RequestStreamHandler",
+            "com.amazonaws.services.lambda.runtime.RequestHandler"
         )
         const val LAMBDA_CONTEXT = "com.amazonaws.services.lambda.runtime.Context"
     }
@@ -86,19 +103,19 @@ class JavaLambdaPackager : LambdaPackager {
         CompilerManager.getInstance(module.project).rebuild { aborted, errors, _, compileContext ->
             if (!aborted && errors == 0) {
                 val classes = compileContext.projectCompileScope.affectedModules
-                        .map { compileContext.getModuleOutputDirectory(it) }
-                        .flatMap {
-                            val outputDir = it?.toPath()
-                            Files.walk(outputDir)
-                                    .filter { it.toString().toLowerCase().endsWith(".class") }
-                                    .map { Pair(outputDir?.relativize(it), it) }.collect(Collectors.toList<Pair<Path?, Path>>())
-                        }.filterNotNull()
+                    .map { compileContext.getModuleOutputDirectory(it) }
+                    .flatMap {
+                        val outputDir = it?.toPath()
+                        Files.walk(outputDir)
+                            .filter { it.toString().toLowerCase().endsWith(".class") }
+                            .map { Pair(outputDir?.relativize(it), it) }.collect(Collectors.toList<Pair<Path?, Path>>())
+                    }.filterNotNull()
 
                 val dependencies = LibraryTablesRegistrar.getInstance().getLibraryTable(module.project).libraries
-                        .flatMap { it.getFiles(OrderRootType.CLASSES).toList() }
-                        .map { VfsUtil.getVirtualFileForJar(it) }
-                        .mapNotNull { it?.toPath() }
-                        .filter { it.exists() }
+                    .flatMap { it.getFiles(OrderRootType.CLASSES).toList() }
+                    .map { VfsUtil.getVirtualFileForJar(it) }
+                    .mapNotNull { it?.toPath() }
+                    .filter { it.exists() }
 
                 val zipFile = createTemporaryZipFile { zip ->
                     dependencies.forEach { zip.putNextEntry("lib/${it.fileName}", it) }

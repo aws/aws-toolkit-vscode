@@ -10,9 +10,10 @@ import assertk.assertions.isNotNull
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiIdentifier
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
+import com.intellij.testFramework.fixtures.JavaCodeInsightTestFixture
 import com.intellij.testFramework.runInEdtAndWait
+import org.intellij.lang.annotations.Language
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker
@@ -31,37 +32,52 @@ class JavaLambdaLineMarkerTest {
             @SuppressWarnings("ALL")
             public interface Context {}
             """
-        );
+        )
+
         projectRule.fixture.addClass(
             """
             package com.amazonaws.services.lambda.runtime;
 
             import com.amazonaws.services.lambda.runtime.Context;
+
             public interface RequestHandler<I, O> {
                 O handleRequest(I input, Context context);
             }
             """
-        );
+        )
+
+        projectRule.fixture.addClass(
+            """
+            package com.amazonaws.services.lambda.runtime;
+
+            import java.io.InputStream;
+            import java.io.OutputStream;
+            import java.io.IOException;
+
+            public interface RequestStreamHandler {
+                void handleRequest(InputStream input, OutputStream output, Context context) throws IOException;
+            }
+            """
+        )
     }
 
     @Test
     fun singleArgumentStaticMethodsAreMarked() {
         val fixture = projectRule.fixture
 
-        fixture.configureByText(
-            "SomeClass.java",
+        fixture.openClass(
             """
-                package com.example;
+            package com.example;
 
-                public class UsefulUtils {
+            public class UsefulUtils {
 
-                    private UsefulUtils() { }
+                private UsefulUtils() { }
 
-                    public static String upperCase(String input) {
-                        return input.toUpperCase();
-                    }
+                public static String upperCase(String input) {
+                    return input.toUpperCase();
                 }
-                """
+            }
+            """
         )
 
         findAndAssertMarks(fixture) { marks ->
@@ -74,22 +90,21 @@ class JavaLambdaLineMarkerTest {
     fun dualArgumentStaticMethodsAreMarkedIfSecondArgIsContext() {
         val fixture = projectRule.fixture
 
-        fixture.configureByText(
-            "SomeClass.java",
+        fixture.openClass(
             """
-                package com.example;
+            package com.example;
 
-                import com.amazonaws.services.lambda.runtime.Context;
+            import com.amazonaws.services.lambda.runtime.Context;
 
-                public class UsefulUtils {
+            public class UsefulUtils {
 
-                    private UsefulUtils() { }
+                private UsefulUtils() { }
 
-                    public static String upperCase(String input, Context context) {
-                        return input.toUpperCase();
-                    }
+                public static String upperCase(String input, Context context) {
+                    return input.toUpperCase();
                 }
-                """
+            }
+            """
         )
 
         findAndAssertMarks(fixture) { marks ->
@@ -102,20 +117,19 @@ class JavaLambdaLineMarkerTest {
     fun singleArgumentPublicMethodsOnClassesWithNoArgConstructorAreMarked() {
         val fixture = projectRule.fixture
 
-        fixture.configureByText(
-            "SomeClass.java",
+        fixture.openClass(
             """
-                package com.example;
+             package com.example;
 
-                public class UsefulUtils {
+             public class UsefulUtils {
 
-                    public UsefulUtils() { }
+                 public UsefulUtils() { }
 
-                    public String upperCase(String input) {
-                        return input.toUpperCase();
-                    }
-                }
-                """
+                 public String upperCase(String input) {
+                     return input.toUpperCase();
+                 }
+             }
+             """
         )
 
         findAndAssertMarks(fixture) { marks ->
@@ -128,18 +142,17 @@ class JavaLambdaLineMarkerTest {
     fun singleArgumentPublicMethodsOnClassesWithNoConstructorAreMarked() {
         val fixture = projectRule.fixture
 
-        fixture.configureByText(
-            "SomeClass.java",
+        fixture.openClass(
             """
-                package com.example;
+             package com.example;
 
-                public class UsefulUtils {
+             public class UsefulUtils {
 
-                    public String upperCase(String input) {
-                        return input.toUpperCase();
-                    }
-                }
-                """
+                 public String upperCase(String input) {
+                     return input.toUpperCase();
+                 }
+             }
+             """
         )
 
         findAndAssertMarks(fixture) { marks ->
@@ -152,18 +165,17 @@ class JavaLambdaLineMarkerTest {
     fun privateMethodsAreNotMarked() {
         val fixture = projectRule.fixture
 
-        fixture.configureByText(
-            "SomeClass.java",
+        fixture.openClass(
             """
-                package com.example;
+             package com.example;
 
-                public class UsefulUtils {
+             public class UsefulUtils {
 
-                    private String upperCase(String input) {
-                        return input.toUpperCase();
-                    }
-                }
-                """
+                 private String upperCase(String input) {
+                     return input.toUpperCase();
+                 }
+             }
+             """
         )
 
         findAndAssertMarks(fixture) { assert(it).isEmpty() }
@@ -173,18 +185,17 @@ class JavaLambdaLineMarkerTest {
     fun privateStaticMethodsAreNotMarked() {
         val fixture = projectRule.fixture
 
-        fixture.configureByText(
-            "SomeClass.java",
+        fixture.openClass(
             """
-                package com.example;
+            package com.example;
 
-                public class UsefulUtils {
+            public class UsefulUtils {
 
-                    private static String upperCase(String input) {
-                        return input.toUpperCase();
-                    }
+                private static String upperCase(String input) {
+                    return input.toUpperCase();
                 }
-                """
+            }
+            """
         )
 
         findAndAssertMarks(fixture) { assert(it).isEmpty() }
@@ -194,33 +205,117 @@ class JavaLambdaLineMarkerTest {
     fun dualArgumentStaticMethodsAreNotMarked() {
         val fixture = projectRule.fixture
 
-        fixture.configureByText(
-            "SomeClass.java",
+        fixture.openClass(
             """
-                package com.example;
+             package com.example;
 
-                public class UsefulUtils {
+             public class UsefulUtils {
 
-                    private UsefulUtils() { }
+                 private UsefulUtils() { }
 
-                    public static String upperCase(String input, String secondArgument) {
-                        return input.toUpperCase();
-                    }
-                }
-                """
+                 public static String upperCase(String input, String secondArgument) {
+                     return input.toUpperCase();
+                 }
+             }
+             """
         )
 
         findAndAssertMarks(fixture) { assert(it).hasSize(0) }
     }
 
-    @Ignore("Can't figure out how to get the import recognized")
+    @Test
     fun classesThatImplementTheRequestHandlerInterfaceAreMarked() {
         val fixture = projectRule.fixture
 
-        val concrete = "ConcreteHandler.java".asTestFile()
-        val abstract = "AbstractHandler.java".asTestFile()
+        fixture.addClass(
+            """
+            package com.example;
 
-        fixture.configureByFiles(concrete, abstract)
+            import com.amazonaws.services.lambda.runtime.RequestHandler;
+
+            public abstract class AbstractHandler implements RequestHandler<String, String> { }
+            """
+        );
+
+        fixture.openClass(
+            """
+            package com.example;
+
+            import com.amazonaws.services.lambda.runtime.Context;
+
+            public class ConcreteHandler extends AbstractHandler {
+                public String handleRequest(String request, Context context) {
+                    return request.toUpperCase();
+                }
+            }
+            """
+        );
+
+        findAndAssertMarks(fixture) {
+            assert(it).hasSize(1)
+            assert(it.first().lineMarkerInfo.element).isIdentifierWithName("ConcreteHandler")
+        }
+    }
+
+    @Test
+    fun classesThatImplementTheRequestHandlerInterfaceAreNotMarkedIfAbstract() {
+        val fixture = projectRule.fixture
+
+        fixture.addClass(
+            """
+            package com.example;
+
+            import com.amazonaws.services.lambda.runtime.RequestHandler;
+
+            public abstract class AbstractHandler implements RequestHandler<String, String> { }
+            """
+        );
+
+        fixture.openClass(
+            """
+            package com.example;
+
+            import com.amazonaws.services.lambda.runtime.Context;
+
+            public abstract class ConcreteHandler extends AbstractHandler {
+                public String handleRequest(String request, Context context) {
+                    return request.toUpperCase();
+                }
+            }
+            """
+        );
+
+        findAndAssertMarks(fixture) { assert(it).hasSize(0) }
+    }
+
+    @Test
+    fun classesThatImplementTheRequestStreamHandlerInterfaceAreMarked() {
+        val fixture = projectRule.fixture
+
+        fixture.addClass(
+            """
+            package com.example;
+
+            import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+
+            public abstract class AbstractHandler implements RequestStreamHandler { }
+            """
+        );
+
+        fixture.openClass(
+            """
+            package com.example;
+
+            import com.amazonaws.services.lambda.runtime.Context;
+            import java.io.InputStream;
+            import java.io.OutputStream;
+
+            public class ConcreteHandler extends AbstractHandler {
+                @Override
+                public void handleRequest(InputStream input, OutputStream output, Context context) { }
+            }
+            """
+        );
 
         findAndAssertMarks(fixture) {
             assert(it).hasSize(1)
@@ -238,14 +333,17 @@ class JavaLambdaLineMarkerTest {
         }
     }
 
-    private fun String.asTestFile() =
-        javaClass.getResource("/software/aws/toolkits/jetbrains/services/lambda/lineMarkerTestFiles/$this")?.file
-                ?: throw IllegalArgumentException("File $this not found")
-
     private fun Assert<PsiElement?>.isIdentifierWithName(name: String) {
         this.isNotNull {
             it.isInstanceOf(PsiIdentifier::class)
             assert(it.actual.text).isEqualTo(name)
+        }
+    }
+
+    private fun JavaCodeInsightTestFixture.openClass(@Language("JAVA") javaClass: String) {
+        val psiClass = this.addClass(javaClass)
+        runInEdtAndWait {
+            projectRule.fixture.openFileInEditor(psiClass.containingFile.virtualFile)
         }
     }
 }
