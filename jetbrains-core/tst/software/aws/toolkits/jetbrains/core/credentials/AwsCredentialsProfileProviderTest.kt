@@ -19,7 +19,7 @@ import org.junit.rules.TemporaryFolder
 import java.io.File
 import java.io.StringReader
 
-internal class AwsCredentialsProfileProviderTest {
+class AwsCredentialsProfileProviderTest {
     @Rule
     @JvmField
     val projectRule = ProjectRule()
@@ -28,9 +28,9 @@ internal class AwsCredentialsProfileProviderTest {
     @JvmField
     val temporaryDirectory = TemporaryFolder()
 
-    val testProfile = BasicProfile("TestProfile", emptyMap())
+    private val testProfile = BasicProfile("TestProfile", emptyMap())
 
-    private lateinit var credentialProvider: AwsCredentialsProfileProvider
+    private lateinit var credentialProvider: DefaultAwsCredentialsProfileProvider
     private lateinit var project: Project
     private lateinit var credentialFile: File
 
@@ -40,7 +40,7 @@ internal class AwsCredentialsProfileProviderTest {
 
         project = projectRule.project
 
-        credentialProvider = AwsCredentialsProfileProvider.getInstance(project)
+        credentialProvider = DefaultAwsCredentialsProfileProvider(project)
         credentialProvider.reset()
         credentialProvider.credentialFileLocation = credentialFile.absolutePath
     }

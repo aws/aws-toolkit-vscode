@@ -11,10 +11,22 @@ import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.core.credentials.CredentialProfile
 import java.lang.ref.WeakReference
 
-@State(name = "settings", storages = [(Storage("aws.xml"))])
-class AwsSettingsProvider(private val project: Project) : PersistentStateComponent<AwsSettingsProvider.SettingsState> {
+interface AwsSettingsProvider {
+    var currentProfile: CredentialProfile?
+    var currentRegion: AwsRegion
+    fun addListener(listener: SettingsChangedListener): AwsSettingsProvider
 
-    private val credentialsProfileProvider = AwsCredentialsProfileProvider.getInstance(project)
+    companion object {
+        fun getInstance(project: Project): AwsSettingsProvider {
+            return ServiceManager.getService(project, AwsSettingsProvider::class.java)
+        }
+    }
+}
+
+@State(name = "settings", storages = [(Storage("aws.xml"))])
+class DefaultAwsSettingsProvider(private val project: Project, private val credentialsProfileProvider: AwsCredentialsProfileProvider) :
+        PersistentStateComponent<DefaultAwsSettingsProvider.SettingsState>, AwsSettingsProvider {
+
     private val listeners = mutableListOf<WeakReference<SettingsChangedListener>>()
 
     data class SettingsState(
@@ -24,7 +36,7 @@ class AwsSettingsProvider(private val project: Project) : PersistentStateCompone
 
     private var settingsState: SettingsState = SettingsState()
 
-    var currentProfile: CredentialProfile?
+    override var currentProfile: CredentialProfile?
         get() {
             return credentialsProfileProvider.lookupProfileByName(settingsState.currentProfile)
                     ?: credentialsProfileProvider.lookupProfileByName(AwsCredentialsProfileProvider.DEFAULT_PROFILE)
@@ -38,7 +50,7 @@ class AwsSettingsProvider(private val project: Project) : PersistentStateCompone
             }
         }
 
-    var currentRegion: AwsRegion
+    override var currentRegion: AwsRegion
         get() = AwsRegionProvider.getInstance(project).lookupRegionById(settingsState.currentRegion)
         set(value) {
             if (settingsState.currentRegion != value.id) {
@@ -54,20 +66,13 @@ class AwsSettingsProvider(private val project: Project) : PersistentStateCompone
 
     override fun getState(): SettingsState = settingsState
 
-    fun addListener(listener: SettingsChangedListener): AwsSettingsProvider {
+    override fun addListener(listener: SettingsChangedListener): AwsSettingsProvider {
         listeners.add(WeakReference(listener))
         return this
     }
 
     private fun notifyListeners(action: (SettingsChangedListener) -> Unit) {
         listeners.forEach { it.get()?.run(action) }
-    }
-
-    companion object {
-        @JvmStatic
-        fun getInstance(project: Project): AwsSettingsProvider {
-            return ServiceManager.getService(project, AwsSettingsProvider::class.java)
-        }
     }
 }
 

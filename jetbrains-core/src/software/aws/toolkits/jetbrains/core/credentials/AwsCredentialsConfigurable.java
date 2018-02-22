@@ -3,7 +3,6 @@ package software.aws.toolkits.jetbrains.core.credentials;
 import com.intellij.icons.AllIcons;
 import com.intellij.ide.util.BrowseFilesListener;
 import com.intellij.openapi.options.Configurable;
-import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.TextBrowseFolderListener;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.openapi.ui.ValidationInfo;
@@ -44,8 +43,8 @@ public class AwsCredentialsConfigurable implements Configurable, Configurable.No
 
     private String currentCredentialFileLocation;
 
-    public AwsCredentialsConfigurable(Project project) {
-        optionsProvider = AwsCredentialsProfileProvider.getInstance(project);
+    public AwsCredentialsConfigurable(AwsCredentialsProfileProvider optionsProvider) {
+        this.optionsProvider = optionsProvider;
 
         credentialFilePanel.setBorder(IdeBorderFactory.createTitledBorder("Credentials", false));
 
@@ -104,7 +103,7 @@ public class AwsCredentialsConfigurable implements Configurable, Configurable.No
             return;
         }
 
-        CredentialProfileFactory factory = CredentialProfileFactory.factoryFor(profileToEdit.getId());
+        CredentialProfileFactory<? extends CredentialProfile> factory = CredentialProfileFactory.factoryFor(profileToEdit.getId());
 
         if (factory == null) {
             throw new IllegalStateException("The factory for " + profileToEdit.getId() + " is missing");
@@ -218,7 +217,7 @@ public class AwsCredentialsConfigurable implements Configurable, Configurable.No
             }
 
             try {
-                Map<String, CredentialProfile> loadedProfiles = AwsCredentialsProfileProvider
+                Map<String, CredentialProfile> loadedProfiles = AwsCredentialsProfileProvider.Companion
                     .loadFromCredentialProfile(credentialFile);
 
                 errorLabel.setVisible(false);

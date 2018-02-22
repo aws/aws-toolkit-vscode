@@ -40,4 +40,5 @@ dependencies {
     runtime "org.jetbrains.kotlin:kotlin-reflect"
     testCompile project(":jetbrains-testutils")
     testCompile group: 'org.assertj', name: 'assertj-core', version: '3.8.0'
+    testCompile "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
 }

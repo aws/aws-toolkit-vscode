@@ -2,8 +2,10 @@ package software.aws.toolkits.jetbrains.core
 
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.auth.AWSSessionCredentials
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import software.amazon.awssdk.core.SdkClient
 import software.amazon.awssdk.core.auth.AwsCredentials
 import software.amazon.awssdk.core.auth.AwsCredentialsProvider
@@ -16,22 +18,31 @@ import software.amazon.awssdk.services.s3.S3ClientBuilder
 import software.aws.toolkits.jetbrains.core.credentials.AwsCredentialsProfileProvider
 import software.aws.toolkits.jetbrains.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.region.AwsRegion.Companion.GLOBAL
+import java.lang.reflect.Modifier
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
-class AwsClientManager(private val project: Project) {
+class AwsClientManager internal constructor(
+    project: Project,
+    private val settings: AwsSettingsProvider,
+    private val credentialsProfileProvider: AwsCredentialsProfileProvider
+) : Disposable {
+    init {
+        Disposer.register(project, this)
+    }
 
     private data class AwsClientKey(val profileName: String, val region: AwsRegion, val serviceClass: KClass<*>)
 
-    private val settings = AwsSettingsProvider.getInstance(project)
+    private val httpClient = ApacheSdkHttpClientFactory.builder().build().createHttpClient()
 
     companion object {
-        private val GLOBAL_SERVICES = setOf("IAMClient")
 
+        private val GLOBAL_SERVICES = setOf("IAMClient")
         @JvmStatic
         fun getInstance(project: Project): AwsClientManager {
             return ServiceManager.getService(project, AwsClientManager::class.java)
         }
+
     }
 
     private val cachedClients = ConcurrentHashMap<AwsClientKey, Any>()
@@ -43,12 +54,16 @@ class AwsClientManager(private val project: Project) {
                 serviceClass = clz
         )
 
-        //TODO: We probably want to evict least recently used clients from this cache (and/or share the HTTP client so we do don't get a bunch of connection pools hanging around)
         @Suppress("UNCHECKED_CAST")
         return cachedClients.computeIfAbsent(key, { createNewClient(it) }) as T
     }
 
     inline fun <reified T : SdkClient> getClient(): T = this.getClient(T::class)
+
+    override fun dispose() {
+        cachedClients.values.mapNotNull { it as? AutoCloseable }.forEach { it.close() }
+        httpClient.close()
+    }
 
     @Suppress("NO_REFLECTION_IN_CLASS_PATH", "UNCHECKED_CAST")
     private fun <T : SdkClient> createNewClient(key: AwsClientKey): T {
@@ -56,7 +71,9 @@ class AwsClientManager(private val project: Project) {
             return cachedClients.computeIfAbsent(key.copy(region = GLOBAL), { createNewClient(it) }) as T
         }
 
-        val builder = key.serviceClass.members.find { it.name == "builder" }?.call() as SyncClientBuilder<*, *>
+        val builderMethod = key.serviceClass.java.methods.find { it.name == "builder" && Modifier.isStatic(it.modifiers) && Modifier.isPublic(it.modifiers) }
+                ?: throw IllegalArgumentException("Expected service interface to have a public static `builder()` method.")
+        val builder = builderMethod.invoke(null) as SyncClientBuilder<*, *>
 
         return builder
                 .credentialsProvider(getCredentialsProvider(settings.currentProfile!!.name).toV2())
@@ -67,18 +84,18 @@ class AwsClientManager(private val project: Project) {
                     }
                     this
                 }
-                .httpConfiguration(ClientHttpConfiguration.builder().httpClientFactory(ApacheSdkHttpClientFactory.builder().build()).build()) //TODO: might want to share the ApacheClient
+                .httpConfiguration(ClientHttpConfiguration.builder().httpClient(httpClient).build())
                 .build() as T
     }
 
     private fun getCredentialsProvider(profileName: String): AWSCredentialsProvider {
         //TODO If we cannot find the profile name, we should report internal error
-        return AwsCredentialsProfileProvider.getInstance(project).lookupProfileByName(profileName)!!.awsCredentials
+        return credentialsProfileProvider.lookupProfileByName(profileName)!!.awsCredentials
     }
 
     private fun AWSCredentialsProvider.toV2() =
             AwsCredentialsProvider {
-                val cred = this@toV2.credentials
+                val cred = this@toV2.credentials ?: throw IllegalStateException("Credentials should not be null")
                 when (cred) {
                     is AWSSessionCredentials -> AwsSessionCredentials.create(
                             cred.awsAccessKeyId,

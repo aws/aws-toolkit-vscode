@@ -29,8 +29,12 @@
 
         <!-- Credential Management -->
         <projectConfigurable displayName="AWS" id="aws" instance="software.aws.toolkits.jetbrains.core.credentials.AwsCredentialsConfigurable"/>
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.AwsCredentialsProfileProvider"/>
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsSettingsProvider"/>
+        <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.AwsCredentialsProfileProvider"
+                        serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultAwsCredentialsProfileProvider"
+                        testServiceImplementation="software.aws.toolkits.jetbrains.core.TestAwsCredentialsProfileProvider"/>
+        <projectService serviceInterface="software.aws.toolkits.jetbrains.core.AwsSettingsProvider"
+                        serviceImplementation="software.aws.toolkits.jetbrains.core.DefaultAwsSettingsProvider"
+                        testServiceImplementation="software.aws.toolkits.jetbrains.core.TestAwsSettingsProvider"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.region.AwsRegionProvider"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientManager"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.DefaultAwsResourceCache"

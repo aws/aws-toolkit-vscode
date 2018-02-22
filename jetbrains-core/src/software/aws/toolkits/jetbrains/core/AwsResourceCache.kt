@@ -17,15 +17,13 @@ interface AwsResourceCache {
     }
 }
 
-class DefaultAwsResourceCache(private val project: Project) : AwsResourceCache {
-
-    private val settings = AwsSettingsProvider.getInstance(project)
+class DefaultAwsResourceCache(private val settings: AwsSettingsProvider, private val clientManager: AwsClientManager) : AwsResourceCache {
     private val cache = ConcurrentHashMap<String, Any>()
 
     @Suppress("UNCHECKED_CAST")
     override fun lambdaFunctions(): List<LambdaFunction> =
             cache.computeIfAbsent("${settings.currentRegion.id}:${settings.currentProfile?.name}:lambdafunctions", {
-                val client = AwsClientManager.getInstance(project).getClient<LambdaClient>()
+                val client = clientManager.getClient<LambdaClient>()
                 client.listFunctionsIterable().functions().map { it.toDataClass(client) }.toList()
             }) as List<LambdaFunction>
 }

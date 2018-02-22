@@ -14,13 +14,44 @@ import com.intellij.util.xmlb.XmlSerializer
 import org.jdom.Element
 import org.jetbrains.annotations.TestOnly
 import org.jetbrains.jps.model.serialization.PathMacroUtil
+import software.aws.toolkits.jetbrains.core.credentials.AwsCredentialsProfileProvider.Companion.loadFromCredentialProfile
+
 import software.aws.toolkits.jetbrains.utils.MutableMapWithListener
 import java.io.File
 import java.nio.file.Paths
 
+interface AwsCredentialsProfileProvider {
+    var selectedProfile: CredentialProfile?
+    var credentialFileLocation: String?
+
+    companion object {
+        const val DEFAULT_PROFILE = "default"
+
+        fun getInstance(project: Project): AwsCredentialsProfileProvider {
+            return ServiceManager.getService(project, AwsCredentialsProfileProvider::class.java)
+        }
+
+        fun loadFromCredentialProfile(fileLocation: File): MutableMap<String, CredentialProfile> {
+            if (!fileLocation.exists()) {
+                return mutableMapOf()
+            }
+
+            val profilesConfigFile = ProfilesConfigFile(fileLocation)
+            profilesConfigFile.refresh()
+
+            return profilesConfigFile.allBasicProfiles.mapValues { CredentialFileBasedProfile(it.value) }.toMutableMap()
+        }
+    }
+
+    fun getProfiles(): List<CredentialProfile>
+    fun lookupProfileByName(name: String): CredentialProfile?
+    fun addProfileChangeListener(listener: MutableMapWithListener.MapChangeListener<String, CredentialProfile>)
+    fun setProfiles(profiles: List<CredentialProfile>)
+}
+
 @State(name = "credentialProfiles", storages = arrayOf(Storage("aws.xml")))
-class AwsCredentialsProfileProvider private constructor(private val project: Project) :
-        PersistentStateComponent<Element> {
+class DefaultAwsCredentialsProfileProvider constructor(private val project: Project) :
+        PersistentStateComponent<Element>, AwsCredentialsProfileProvider {
     private data class State(
         var credentialFileLocation: String? = defaultCredentialLocation(),
         var selectedProfileName: String? = null
@@ -29,13 +60,13 @@ class AwsCredentialsProfileProvider private constructor(private val project: Pro
     private val state = State()
     private val credentialProfiles = MutableMapWithListener<String, CredentialProfile>()
 
-    var credentialFileLocation: String?
+    override var credentialFileLocation: String?
         get() = state.credentialFileLocation
         set(value) {
             state.credentialFileLocation = value
         }
 
-    var selectedProfile: CredentialProfile?
+    override var selectedProfile: CredentialProfile?
         get() = credentialProfiles[state.selectedProfileName]
         set(value) {
             state.selectedProfileName = value?.name
@@ -49,7 +80,7 @@ class AwsCredentialsProfileProvider private constructor(private val project: Pro
         credentialProfiles.put(profile.name, profile)
     }
 
-    fun setProfiles(profiles: List<CredentialProfile>) {
+    override fun setProfiles(profiles: List<CredentialProfile>) {
         credentialProfiles.clear()
         profiles.forEach { credentialProfiles.put(it.name, it) }
 
@@ -58,7 +89,7 @@ class AwsCredentialsProfileProvider private constructor(private val project: Pro
         }
     }
 
-    fun getProfiles(): List<CredentialProfile> {
+    override fun getProfiles(): List<CredentialProfile> {
         return credentialProfiles.values.toList()
     }
 
@@ -68,11 +99,11 @@ class AwsCredentialsProfileProvider private constructor(private val project: Pro
         credentialProfiles.putAll(loadFromCredentialProfile(File(state.credentialFileLocation)))
     }
 
-    fun lookupProfileByName(name: String): CredentialProfile? {
+    override fun lookupProfileByName(name: String): CredentialProfile? {
         return credentialProfiles[name]
     }
 
-    fun addProfileChangeListener(listener: MutableMapWithListener.MapChangeListener<String, CredentialProfile>) {
+    override fun addProfileChangeListener(listener: MutableMapWithListener.MapChangeListener<String, CredentialProfile>) {
         credentialProfiles.addListener(listener)
     }
 
@@ -142,32 +173,13 @@ class AwsCredentialsProfileProvider private constructor(private val project: Pro
         credentialProfiles.clear()
     }
 
-    companion object {
+    private companion object {
         val LOG = Logger.getInstance(AwsCredentialsProfileProvider::class.java)
-
-        const val DEFAULT_PROFILE = "default"
 
         //TODO: The SDK has its credential locators as internal and returns null instead of the File so if it is a brand new
         // install we won't know where to put them.
-        private fun defaultCredentialLocation(): String {
+        fun defaultCredentialLocation(): String {
             return Paths.get(PathMacroUtil.getUserHomePath(), ".aws", "credentials").toString()
-        }
-
-        @JvmStatic
-        fun getInstance(project: Project): AwsCredentialsProfileProvider {
-            return ServiceManager.getService(project, AwsCredentialsProfileProvider::class.java)
-        }
-
-        @JvmStatic
-        fun loadFromCredentialProfile(fileLocation: File): MutableMap<String, CredentialProfile> {
-            if (!fileLocation.exists()) {
-                return mutableMapOf()
-            }
-
-            val profilesConfigFile = ProfilesConfigFile(fileLocation)
-            profilesConfigFile.refresh()
-
-            return profilesConfigFile.allBasicProfiles.mapValues { CredentialFileBasedProfile(it.value) }.toMutableMap()
         }
     }
 }
