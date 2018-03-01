@@ -33,10 +33,6 @@ allprojects {
     }
 
     apply plugin: 'jacoco'
-
-    jacoco {
-        toolVersion = "0.8.0" // TODO: Remove in Gradle 4.6
-    }
 }
 
 subprojects {
@@ -140,7 +136,8 @@ def removeTask(tasks, taskName) {
 }
 
 wrapper {
-    gradleVersion '4.5'
+    distributionType = Wrapper.DistributionType.ALL
+    gradleVersion '4.6'
 }
 
 apply plugin: 'org.jetbrains.intellij'
