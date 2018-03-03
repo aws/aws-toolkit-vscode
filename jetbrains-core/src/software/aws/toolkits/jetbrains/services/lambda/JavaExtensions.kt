@@ -3,11 +3,9 @@ package software.aws.toolkits.jetbrains.services.lambda
 import com.intellij.execution.JavaExecutionUtil
 import com.intellij.lang.jvm.JvmModifier
 import com.intellij.openapi.compiler.CompilerManager
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.module.Module
-import com.intellij.openapi.roots.OrderRootType
-import com.intellij.openapi.roots.libraries.LibraryTablesRegistrar
-import com.intellij.openapi.vfs.VfsUtil
-import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.roots.OrderEnumerator
 import com.intellij.psi.JavaPsiFacade
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
@@ -19,15 +17,17 @@ import com.intellij.psi.PsiParameter
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.util.PsiUtil
 import com.intellij.util.io.exists
+import com.intellij.util.io.isDirectory
+import com.intellij.util.io.isFile
+import com.intellij.util.io.isHidden
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.createTemporaryZipFile
 import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker
-import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.stream.Collectors
+import kotlin.streams.toList
 
 class JavaLambdaLineMarker : LambdaLineMarker() {
 
@@ -72,7 +72,7 @@ class JavaLambdaLineMarker : LambdaLineMarker() {
         this.constructors.isEmpty() || this.constructors.any { it.hasModifier(JvmModifier.PUBLIC) && it.parameters.isEmpty() }
 
     private fun PsiClass.implementsLambdaHandlerInterface(): Boolean {
-        val module = JavaExecutionUtil.findModule(this);
+        val module = JavaExecutionUtil.findModule(this)
         val scope = GlobalSearchScope.moduleRuntimeScope(module, false)
         val psiFacade = JavaPsiFacade.getInstance(module.project)
 
@@ -100,35 +100,43 @@ class JavaLambdaLineMarker : LambdaLineMarker() {
 
 class JavaLambdaPackager : LambdaPackager {
     override fun createPackage(module: Module, file: PsiFile, onComplete: (Path) -> Unit) {
-        CompilerManager.getInstance(module.project).rebuild { aborted, errors, _, compileContext ->
+        CompilerManager.getInstance(module.project).rebuild { aborted, errors, _, _ ->
             if (!aborted && errors == 0) {
-                val classes = compileContext.projectCompileScope.affectedModules
-                    .map { compileContext.getModuleOutputDirectory(it) }
-                    .flatMap {
-                        val outputDir = it?.toPath()
-                        Files.walk(outputDir)
-                            .filter { it.toString().toLowerCase().endsWith(".class") }
-                            .map { Pair(outputDir?.relativize(it), it) }.collect(Collectors.toList<Pair<Path?, Path>>())
-                    }.filterNotNull()
 
-                val dependencies = LibraryTablesRegistrar.getInstance().getLibraryTable(module.project).libraries
-                    .flatMap { it.getFiles(OrderRootType.CLASSES).toList() }
-                    .map { VfsUtil.getVirtualFileForJar(it) }
-                    .mapNotNull { it?.toPath() }
-                    .filter { it.exists() }
+                val zipContents = OrderEnumerator.orderEntries(module).productionOnly()
+                        .runtimeOnly()
+                        .withoutSdk()
+                        .pathsList.pathList
+                        .map { Paths.get(it) }
+                        .filter { it.exists() }
+                        .flatMap {
+                            when {
+                                it.isFile() ->  listOf(ZipEntry("lib/${it.fileName}", it))
+                                it.isDirectory() -> toEntries(it)
+                                else -> throw RuntimeException("Unhandled file type : $it")
+                            }
+                        }
 
-                val zipFile = createTemporaryZipFile { zip ->
-                    dependencies.forEach { zip.putNextEntry("lib/${it.fileName}", it) }
-                    classes.forEach { zip.putNextEntry(it.first.toString(), it.second) }
-                }
+                val zipFile = createTemporaryZipFile { zip -> zipContents.forEach { zip.putNextEntry(it.pathInZip, it.sourceFile) } }
+
+                LOG.debug("Created temporary zip: $zipFile")
+
                 onComplete(zipFile)
             }
         }
     }
 
-    private fun VirtualFile.toPath(): Path {
-        return Paths.get(File(this.path).toURI())
-    }
-
     override fun determineRuntime(module: Module, file: PsiFile): Runtime = Runtime.JAVA8
+
+    private fun toEntries(path: Path): List<ZipEntry> =
+            Files.walk(path).use { files ->
+                files.filter { !it.isDirectory() && !it.isHidden() && it.exists() }.map { ZipEntry(path.relativize(it).toString(), it) }.toList()
+            }
+
+    private data class ZipEntry(val pathInZip: String, val sourceFile: Path)
+
+    companion object {
+        val LOG = Logger.getInstance(JavaLambdaPackager::class.java)
+    }
 }
+

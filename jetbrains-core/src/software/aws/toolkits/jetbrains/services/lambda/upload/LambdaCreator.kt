@@ -12,6 +12,7 @@ import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
+import software.aws.toolkits.jetbrains.utils.tryNotify
 import java.nio.file.Path
 
 object LambdaCreatorFactory {
@@ -29,7 +30,7 @@ class LambdaCreator(
     private val uploader: CodeUploader,
     private val functionCreator: LambdaFunctionCreator
 ) {
-    fun createLambda(functionDetails: FunctionUploadDetails, module: Module, file: PsiFile,  onComplete: (LambdaFunction) -> Unit) {
+    fun createLambda(functionDetails: FunctionUploadDetails, module: Module, file: PsiFile, onComplete: (LambdaFunction) -> Unit) {
         packager.createPackage(module, file) {
             uploader.upload(functionDetails, it) { key, version ->
                 functionCreator.create(functionDetails, key, version, onComplete)
@@ -57,8 +58,9 @@ class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
                     .runtime(details.runtime)
                     .code(code.build())
                     .build()
-            val result = lambdaClient.createFunction(req)
-            onComplete(result!!.toDataClass(lambdaClient))
+
+            val result = tryNotify("Failed to create lambda function") { lambdaClient.createFunction(req) }
+            result?.toDataClass(lambdaClient)?.run(onComplete)
         }
     }
 }
@@ -70,8 +72,8 @@ class CodeUploader(private val s3Client: S3Client) {
             val por = PutObjectRequest.builder().bucket(functionDetails.s3Bucket)
                     .key(key)
                     .build()
-            val result = s3Client.putObject(por, code)
-            onComplete(key, result.versionId())
+            val result = tryNotify("Failed to upload lambda function code to s3") { s3Client.putObject(por, code) }
+            result?.run { onComplete(key, this.versionId()) }
         }
     }
 }

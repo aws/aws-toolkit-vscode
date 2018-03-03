@@ -13,7 +13,7 @@ fun Exception.notifyError(title: String, project: Project? = null) =
                 Notification(
                         GROUP_DISPLAY_ID,
                         title,
-                        this.message ?: this::class.java.name + this.stackTrace?.joinToString("\n", prefix = "\n"),
+                        this.message ?: "${this::class.java.name}${this.stackTrace?.joinToString("\n", prefix = "\n")}",
                         NotificationType.ERROR
                 ), project
         )
@@ -22,3 +22,10 @@ fun notifyError(title: String, project: Project? = null) = notify(Notification(G
 
 fun notifyInfo(title: String, content: String = "", project: Project? = null, listener: NotificationListener? = null) =
         notify(Notification(GROUP_DISPLAY_ID, title, content, NotificationType.INFORMATION, listener), project)
+
+fun <T> tryNotify(message: String, block: () -> T): T? = try {
+    block()
+} catch (e: Exception) {
+    e.notifyError(message)
+    null
+}
