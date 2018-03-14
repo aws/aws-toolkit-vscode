@@ -1,5 +1,6 @@
 package software.aws.toolkits.jetbrains.services.lambda
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.rootManager
 import com.intellij.openapi.vfs.VfsUtilCore
@@ -17,6 +18,8 @@ import software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker
 import software.aws.toolkits.jetbrains.utils.filesystem.walkFiles
 import software.aws.toolkits.jetbrains.utils.notifyError
 import java.nio.file.Path
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
 
 class PythonLambdaLineMarker : LambdaLineMarker() {
     override fun getHandlerName(element: PsiElement): String? {
@@ -32,22 +35,31 @@ class PythonLambdaLineMarker : LambdaLineMarker() {
 }
 
 class PythonLambdaPackager : LambdaPackager {
-    override fun createPackage(module: Module, file: PsiFile, onComplete: (Path) -> Unit) {
-        val virtualFile = file.virtualFile
-        val contentRoot = module.rootManager.contentRoots.find { VfsUtilCore.isAncestor(it, virtualFile, true) }
-        if (contentRoot == null) {
-            notifyError("Unable to determine content root for $file")
-            return
-        }
-        val excludedRoots = module.rootManager.excludeRoots.toSet()
-        val packagedFile = createTemporaryZipFile { zip ->
-            contentRoot.walkFiles(excludedRoots) { file ->
-                file.inputStream.use { fileContents ->
-                    zip.putNextEntry(VfsUtilCore.getRelativeLocation(file, contentRoot)!!, fileContents)
+    override fun createPackage(module: Module, file: PsiFile): CompletionStage<Path> {
+        val future = CompletableFuture<Path>()
+        ApplicationManager.getApplication().executeOnPooledThread {
+            val virtualFile = file.virtualFile
+            val contentRoot = module.rootManager.contentRoots.find { VfsUtilCore.isAncestor(it, virtualFile, true) }
+            if (contentRoot == null) {
+                future.completeExceptionally(RuntimeException("Unable to determine content root for $file"))
+                return@executeOnPooledThread
+            }
+            try {
+                val excludedRoots = module.rootManager.excludeRoots.toSet()
+                val packagedFile = createTemporaryZipFile { zip ->
+                    contentRoot.walkFiles(excludedRoots) { file ->
+                        file.inputStream.use { fileContents ->
+                            zip.putNextEntry(VfsUtilCore.getRelativeLocation(file, contentRoot)!!, fileContents)
+                        }
+                    }
                 }
+                future.complete(packagedFile)
+            } catch (e: Exception) {
+                future.completeExceptionally(e)
             }
         }
-        onComplete(packagedFile)
+
+        return future
     }
 
     override fun determineRuntime(module: Module, file: PsiFile): Runtime = if (PythonSdkType.getLanguageLevelForSdk(module.getSdk()).isPy3K) {

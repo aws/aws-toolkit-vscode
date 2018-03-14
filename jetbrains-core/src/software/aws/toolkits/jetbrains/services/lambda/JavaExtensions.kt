@@ -3,6 +3,7 @@ package software.aws.toolkits.jetbrains.services.lambda
 import com.intellij.execution.JavaExecutionUtil
 import com.intellij.lang.jvm.JvmModifier
 import com.intellij.openapi.compiler.CompilerManager
+import com.intellij.openapi.compiler.CompilerMessageCategory
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.roots.OrderEnumerator
@@ -27,6 +28,9 @@ import software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
+import java.util.zip.ZipEntry
 import kotlin.streams.toList
 
 class JavaLambdaLineMarker : LambdaLineMarker() {
@@ -99,31 +103,41 @@ class JavaLambdaLineMarker : LambdaLineMarker() {
 }
 
 class JavaLambdaPackager : LambdaPackager {
-    override fun createPackage(module: Module, file: PsiFile, onComplete: (Path) -> Unit) {
-        CompilerManager.getInstance(module.project).rebuild { aborted, errors, _, _ ->
+    override fun createPackage(module: Module, file: PsiFile): CompletionStage<Path> {
+        val future = CompletableFuture<Path>()
+        CompilerManager.getInstance(module.project).rebuild { aborted, errors, _, context ->
             if (!aborted && errors == 0) {
-
-                val zipContents = OrderEnumerator.orderEntries(module).productionOnly()
-                        .runtimeOnly()
-                        .withoutSdk()
-                        .pathsList.pathList
-                        .map { Paths.get(it) }
-                        .filter { it.exists() }
-                        .flatMap {
-                            when {
-                                it.isFile() ->  listOf(ZipEntry("lib/${it.fileName}", it))
-                                it.isDirectory() -> toEntries(it)
-                                else -> throw RuntimeException("Unhandled file type : $it")
+                try {
+                    val zipContents = OrderEnumerator.orderEntries(module).productionOnly()
+                            .runtimeOnly()
+                            .withoutSdk()
+                            .pathsList.pathList
+                            .map { Paths.get(it) }
+                            .filter { it.exists() }
+                            .flatMap {
+                                when {
+                                    it.isFile() -> listOf(ZipEntry("lib/${it.fileName}", it))
+                                    it.isDirectory() -> toEntries(it)
+                                    else -> throw RuntimeException("Unhandled file type : $it")
+                                }
                             }
-                        }
 
-                val zipFile = createTemporaryZipFile { zip -> zipContents.forEach { zip.putNextEntry(it.pathInZip, it.sourceFile) } }
+                    val zipFile = createTemporaryZipFile { zip -> zipContents.forEach { zip.putNextEntry(it.pathInZip, it.sourceFile) } }
 
-                LOG.debug("Created temporary zip: $zipFile")
+                    LOG.debug("Created temporary zip: $zipFile")
 
-                onComplete(zipFile)
+                    future.complete(zipFile)
+                } catch (e: Exception) {
+                    future.completeExceptionally(RuntimeException("Failed to package zip.", e))
+                }
+            } else if (aborted) {
+                future.completeExceptionally(RuntimeException("Compilation was aborted."))
+            } else {
+                val errorMessages = context.getMessages(CompilerMessageCategory.ERROR).joinToString("\n")
+                future.completeExceptionally(RuntimeException("Compilation completed with errors.\n$errorMessages"))
             }
         }
+        return future
     }
 
     override fun determineRuntime(module: Module, file: PsiFile): Runtime = Runtime.JAVA8

@@ -8,6 +8,7 @@ import com.intellij.openapi.util.KeyedExtensionCollector
 import com.intellij.psi.PsiFile
 import software.amazon.awssdk.services.lambda.model.Runtime
 import java.nio.file.Path
+import java.util.concurrent.CompletionStage
 
 
 interface LambdaPackager {
@@ -16,7 +17,7 @@ interface LambdaPackager {
      *
      * Calls [onComplete] with the path of the file when finished.
      */
-    fun createPackage(module: Module, file: PsiFile, onComplete: (Path) -> Unit)
+    fun createPackage(module: Module, file: PsiFile): CompletionStage<Path>
 
     /**
      * For a given [module] and [file] try to infer the Lambda language runtime
