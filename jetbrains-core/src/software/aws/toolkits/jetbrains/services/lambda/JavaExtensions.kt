@@ -6,7 +6,11 @@ import com.intellij.openapi.compiler.CompilerManager
 import com.intellij.openapi.compiler.CompilerMessageCategory
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.module.Module
+import com.intellij.openapi.roots.LibraryOrderEntry
+import com.intellij.openapi.roots.ModuleOrderEntry
 import com.intellij.openapi.roots.OrderEnumerator
+import com.intellij.openapi.roots.OrderRootType
+import com.intellij.openapi.roots.libraries.Library
 import com.intellij.psi.JavaPsiFacade
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
@@ -18,13 +22,14 @@ import com.intellij.psi.PsiParameter
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.util.PsiUtil
 import com.intellij.util.io.exists
+import com.intellij.util.io.inputStream
 import com.intellij.util.io.isDirectory
-import com.intellij.util.io.isFile
 import com.intellij.util.io.isHidden
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.createTemporaryZipFile
 import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker
+import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -108,24 +113,10 @@ class JavaLambdaPackager : LambdaPackager {
         CompilerManager.getInstance(module.project).rebuild { aborted, errors, _, context ->
             if (!aborted && errors == 0) {
                 try {
-                    val zipContents = OrderEnumerator.orderEntries(module).productionOnly()
-                            .runtimeOnly()
-                            .withoutSdk()
-                            .pathsList.pathList
-                            .map { Paths.get(it) }
-                            .filter { it.exists() }
-                            .flatMap {
-                                when {
-                                    it.isFile() -> listOf(ZipEntry("lib/${it.fileName}", it))
-                                    it.isDirectory() -> toEntries(it)
-                                    else -> throw RuntimeException("Unhandled file type : $it")
-                                }
-                            }
-
+                    val zipContents = mutableSetOf<ZipEntry>()
+                    entriesForModule(module, zipContents)
                     val zipFile = createTemporaryZipFile { zip -> zipContents.forEach { zip.putNextEntry(it.pathInZip, it.sourceFile) } }
-
                     LOG.debug("Created temporary zip: $zipFile")
-
                     future.complete(zipFile)
                 } catch (e: Exception) {
                     future.completeExceptionally(RuntimeException("Failed to package zip.", e))
@@ -142,12 +133,47 @@ class JavaLambdaPackager : LambdaPackager {
 
     override fun determineRuntime(module: Module, file: PsiFile): Runtime = Runtime.JAVA8
 
-    private fun toEntries(path: Path): List<ZipEntry> =
-            Files.walk(path).use { files ->
-                files.filter { !it.isDirectory() && !it.isHidden() && it.exists() }.map { ZipEntry(path.relativize(it).toString(), it) }.toList()
+    private fun entriesForModule(module: Module, entries: MutableSet<ZipEntry>) {
+        productionRuntimeEntries(module).forEach {
+            when (it) {
+                is ModuleOrderEntry -> it.module?.run { entriesForModule(this, entries) }
+                is LibraryOrderEntry -> it.library?.run { addLibrary(this, entries) }
             }
+            true
+        }
+        addModuleFiles(module, entries)
+    }
 
-    private data class ZipEntry(val pathInZip: String, val sourceFile: Path)
+    private fun addLibrary(library: Library, entries: MutableSet<ZipEntry>) {
+        library.getFiles(OrderRootType.CLASSES).map { Paths.get(it.presentableUrl) }.forEach { entries.add(ZipEntry("lib/${it.fileName}", it)) }
+    }
+
+    private fun addModuleFiles(module: Module, entries: MutableSet<ZipEntry>) {
+        productionRuntimeEntries(module)
+            .withoutDepModules()
+            .withoutLibraries()
+            .pathsList.pathList
+            .map { Paths.get(it) }
+            .filter { it.exists() }
+            .flatMap {
+                when {
+                    it.isDirectory() -> toEntries(it)
+                    else -> throw RuntimeException("Unhandled file type : $it")
+                }
+            }
+            .forEach { entries.add(it) }
+    }
+
+    private fun productionRuntimeEntries(module: Module) = OrderEnumerator.orderEntries(module).productionOnly().runtimeOnly().withoutSdk()
+
+    private fun toEntries(path: Path): List<ZipEntry> =
+        Files.walk(path).use { files ->
+            files.filter { !it.isDirectory() && !it.isHidden() && it.exists() }.map { ZipEntry(path.relativize(it).toString(), it) }.toList()
+        }
+
+    private data class ZipEntry(val pathInZip: String, val sourceFile: InputStream) {
+        constructor(pathInZip: String, sourceFile: Path) : this(pathInZip, sourceFile.inputStream())
+    }
 
     companion object {
         val LOG = Logger.getInstance(JavaLambdaPackager::class.java)
