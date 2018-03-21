@@ -5,7 +5,7 @@ import software.amazon.awssdk.services.s3.model.ListObjectVersionsRequest
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier
 
 fun S3Client.deleteBucketAndContents(bucket: String) {
-    this.listObjectVersionsIterable(ListObjectVersionsRequest.builder().bucket(bucket).build()).forEach { resp ->
+    this.listObjectVersionsPaginator(ListObjectVersionsRequest.builder().bucket(bucket).build()).forEach { resp ->
         val versions = resp.versions()?.map {
             ObjectIdentifier.builder()
                     .key(it.key())

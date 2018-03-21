@@ -24,6 +24,6 @@ class DefaultAwsResourceCache(private val settings: AwsSettingsProvider, private
     override fun lambdaFunctions(): List<LambdaFunction> =
             cache.computeIfAbsent("${settings.currentRegion.id}:${settings.currentProfile?.name}:lambdafunctions", {
                 val client = clientManager.getClient<LambdaClient>()
-                client.listFunctionsIterable().functions().map { it.toDataClass(client) }.toList()
+                client.listFunctionsPaginator().functions().map { it.toDataClass(client) }.toList()
             }) as List<LambdaFunction>
 }

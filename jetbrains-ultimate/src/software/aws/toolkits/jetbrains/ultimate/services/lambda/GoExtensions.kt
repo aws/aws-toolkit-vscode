@@ -115,5 +115,5 @@ class GoLambdaPackager : LambdaPackager {
     }
 
     // TODO change to GO, v2 needs to do a model update
-    override fun determineRuntime(module: Module, file: PsiFile): Runtime = Runtime.JAVA8
+    override fun determineRuntime(module: Module, file: PsiFile): Runtime = Runtime.GO1_X
 }

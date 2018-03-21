@@ -83,7 +83,7 @@ open class S3Directory internal constructor(bucket: String, key: String, private
                 .delimiter("/")
                 .prefix(key)
                 .build()
-        return client.listObjectsV2Iterable(request).flatMap {
+        return client.listObjectsV2Paginator(request).flatMap {
             val directories = (it.commonPrefixes() ?: emptyList()).map {
                 S3Directory(
                         bucket = bucket,
