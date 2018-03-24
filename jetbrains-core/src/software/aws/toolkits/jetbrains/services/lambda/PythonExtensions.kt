@@ -16,7 +16,6 @@ import software.aws.toolkits.core.utils.createTemporaryZipFile
 import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker
 import software.aws.toolkits.jetbrains.utils.filesystem.walkFiles
-import software.aws.toolkits.jetbrains.utils.notifyError
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage

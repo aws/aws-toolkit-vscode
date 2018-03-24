@@ -30,7 +30,6 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
-import java.util.zip.ZipEntry
 import kotlin.streams.toList
 
 class JavaLambdaLineMarker : LambdaLineMarker() {
@@ -47,10 +46,11 @@ class JavaLambdaLineMarker : LambdaLineMarker() {
 
     private fun findByMethod(method: PsiMethod): String? {
         val parentClass = method.parent as? PsiClass ?: return null
-        if (method.isPublic
-            && (method.isStatic
-                    || (parentClass.canBeInstantiatedByLambda() && !parentClass.implementsLambdaHandlerInterface()))
-            && method.hasRequiredParameters()) {
+        if (method.isPublic &&
+            (method.isStatic ||
+                    (parentClass.canBeInstantiatedByLambda() && !parentClass.implementsLambdaHandlerInterface())) &&
+            method.hasRequiredParameters()
+        ) {
             return "${parentClass.qualifiedName}::${method.name}"
         }
         return null
@@ -153,4 +153,3 @@ class JavaLambdaPackager : LambdaPackager {
         val LOG = Logger.getInstance(JavaLambdaPackager::class.java)
     }
 }
-

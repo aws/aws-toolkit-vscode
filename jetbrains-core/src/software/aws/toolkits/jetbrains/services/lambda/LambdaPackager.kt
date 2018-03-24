@@ -10,12 +10,9 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import java.nio.file.Path
 import java.util.concurrent.CompletionStage
 
-
 interface LambdaPackager {
     /**
      * Creates a package for the given lambda including source files archived in the correct format.
-     *
-     * Calls [onComplete] with the path of the file when finished.
      */
     fun createPackage(module: Module, file: PsiFile): CompletionStage<Path>
 
@@ -27,7 +24,7 @@ interface LambdaPackager {
 
 object LambdaPackagerProvider {
     private val EP_NAME = ExtensionPointName<LanguageExtensionPoint<LambdaPackager>>("aws.toolkit.lambdaPackager")
-    private val COLLECTOR = KeyedExtensionCollector<LambdaPackager, String>(EP_NAME.name);
+    private val COLLECTOR = KeyedExtensionCollector<LambdaPackager, String>(EP_NAME.name)
     fun getInstance(language: Language): LambdaPackager = COLLECTOR.findSingle(language.id)
     fun supportedLanguages(): Set<Language> = EP_NAME.extensions.mapNotNull { it?.language?.let { Language.findLanguageByID(it) } }.toSet()
 }

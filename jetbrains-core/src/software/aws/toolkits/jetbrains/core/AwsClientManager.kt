@@ -42,7 +42,6 @@ class AwsClientManager internal constructor(
         fun getInstance(project: Project): AwsClientManager {
             return ServiceManager.getService(project, AwsClientManager::class.java)
         }
-
     }
 
     private val cachedClients = ConcurrentHashMap<AwsClientKey, Any>()

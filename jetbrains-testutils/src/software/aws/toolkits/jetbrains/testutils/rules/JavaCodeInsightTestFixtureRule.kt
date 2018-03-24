@@ -20,7 +20,7 @@ class JavaCodeInsightTestFixtureRule(testDescription: DefaultLightProjectDescrip
     override fun createTestFixture(): CodeInsightTestFixture {
         val fixtureBuilder = IdeaTestFixtureFactory.getFixtureFactory().createLightFixtureBuilder(testDescription)
         val newFixture = JavaTestFixtureFactory.getFixtureFactory()
-            .createCodeInsightFixture(fixtureBuilder.fixture, LightTempDirTestFixtureImpl(true));
+            .createCodeInsightFixture(fixtureBuilder.fixture, LightTempDirTestFixtureImpl(true))
         newFixture.setUp()
         newFixture.testDataPath = testDataPath
         return newFixture

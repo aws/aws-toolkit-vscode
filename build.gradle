@@ -11,7 +11,6 @@ buildscript {
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
         classpath "org.jetbrains.dokka:dokka-gradle-plugin:$dokkaVersion"
-        classpath "gradle.plugin.org.jmailen.gradle:kotlinter-gradle:$kotlinterPluginVersion"
         classpath "gradle.plugin.org.jetbrains.intellij.plugins:gradle-intellij-plugin:$ideaPluginVersion"
     }
 }
@@ -24,6 +23,7 @@ version '0.1-SNAPSHOT'
 allprojects {
     repositories {
         mavenCentral()
+        jcenter()
     }
 
     apply plugin: 'jacoco'
@@ -37,7 +37,6 @@ subprojects {
     apply plugin: 'kotlin'
     apply plugin: 'idea'
     apply plugin: 'org.jetbrains.dokka'
-    apply plugin: 'org.jmailen.kotlinter'
 
     sourceSets {
         main.java.srcDir 'src'
@@ -121,6 +120,10 @@ subprojects {
     }
 }
 
+configurations {
+    ktlint
+}
+
 def removeTask(tasks, taskName) {
     def task = tasks.findByName("$taskName")
 
@@ -145,6 +148,14 @@ intellij {
         alternativeIdePath = System.env.ALTERNATIVE_IDE
     }
 }
+
+task ktlint(type: JavaExec, group: "verification") {
+    description = "Check Kotlin code style."
+    classpath = configurations.ktlint
+    main = "com.github.shyiko.ktlint.Main"
+    args project.rootDir.absolutePath + "/**/*.kt"
+}
+check.dependsOn ktlint
 
 def publishedProjects = subprojects.findAll { !it.name.contains("test")}
 
@@ -179,4 +190,6 @@ if (gradle.startParameter.taskNames.contains("runIde")) {
 dependencies {
     compile project(':jetbrains-core')
     compile project(':jetbrains-ultimate')
+
+    ktlint "com.github.shyiko:ktlint:$ktlintVersion"
 }

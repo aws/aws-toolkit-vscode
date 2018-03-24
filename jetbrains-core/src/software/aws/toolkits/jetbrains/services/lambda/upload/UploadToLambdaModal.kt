@@ -13,7 +13,6 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.Icons
-import java.util.regex.Pattern
 import javax.swing.DefaultComboBoxModel
 import javax.swing.JComboBox
 import javax.swing.JComponent
@@ -67,7 +66,6 @@ class UploadToLambdaValidator {
         view.sourceBucket.selected() ?: return ValidationInfo("Bucket must be specified", view.sourceBucket)
         return null
     }
-
 
     private fun validateFunctionName(name: String): String? {
         if (!FUNCTION_NAME_PATTERN.matches(name)) {

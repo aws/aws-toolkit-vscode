@@ -38,10 +38,7 @@ class GoLambdaLineMarker : LambdaLineMarker() {
         val parent = element.parent as? GoFunctionDeclaration ?: return null
         val goFile = element.containingFile as? GoFile ?: return null
 
-        if (GoConstants.MAIN == parent.name
-            && GoRunUtil.isMainGoFile(goFile)
-            && hasLambdaImport(goFile)
-        ) {
+        if (GoConstants.MAIN == parent.name && GoRunUtil.isMainGoFile(goFile) && hasLambdaImport(goFile)) {
             return StringUtil.trimEnd(goFile.name, ".go")
         }
         return null
@@ -76,7 +73,7 @@ class GoLambdaPackager : LambdaPackager {
                         .withParameters(".")
                         .withProcessListener(object : ProcessAdapter() {
                             override fun processTerminated(event: ProcessEvent) {
-                                super.processTerminated(event);
+                                super.processTerminated(event)
                                 if (event.exitCode == 0) {
                                     createZip(tempFile, future)
                                 }

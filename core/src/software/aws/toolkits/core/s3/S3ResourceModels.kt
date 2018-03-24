@@ -24,7 +24,6 @@ fun S3Client.file(bucket: String, key: String) = this.headObject { it.bucket(buc
     S3File(bucket, key, obj.lastModified(), obj.eTag(), obj.contentLength(), this)
 }
 
-
 fun S3Client.listS3Buckets(): List<S3Bucket> =
         this.listBuckets().buckets().map { S3Bucket(it.name(), this, creationDate = it.creationDate()) }
 

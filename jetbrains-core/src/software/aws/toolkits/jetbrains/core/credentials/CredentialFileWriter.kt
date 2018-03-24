@@ -292,8 +292,10 @@ object CredentialFileWriter {
 
         override fun onProfileProperty(
             profileName: String,
-            propertyKey: String, propertyValue: String,
-            isSupportedProperty: Boolean, line: String
+            propertyKey: String,
+            propertyValue: String,
+            isSupportedProperty: Boolean,
+            line: String
         ) {
             // Record that this property key has been declared for this profile
             existingProfileProperties.putIfAbsent(profileName, HashSet<String>())

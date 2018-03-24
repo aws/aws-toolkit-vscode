@@ -235,7 +235,7 @@ class JavaLambdaLineMarkerTest {
 
             public abstract class AbstractHandler implements RequestHandler<String, String> { }
             """
-        );
+        )
 
         fixture.openClass(
             """
@@ -249,7 +249,7 @@ class JavaLambdaLineMarkerTest {
                 }
             }
             """
-        );
+        )
 
         findAndAssertMarks(fixture) {
             assert(it).hasSize(1)
@@ -269,7 +269,7 @@ class JavaLambdaLineMarkerTest {
 
             public abstract class AbstractHandler implements RequestHandler<String, String> { }
             """
-        );
+        )
 
         fixture.openClass(
             """
@@ -283,7 +283,7 @@ class JavaLambdaLineMarkerTest {
                 }
             }
             """
-        );
+        )
 
         findAndAssertMarks(fixture) { assert(it).hasSize(0) }
     }
@@ -300,7 +300,7 @@ class JavaLambdaLineMarkerTest {
 
             public abstract class AbstractHandler implements RequestStreamHandler { }
             """
-        );
+        )
 
         fixture.openClass(
             """
@@ -315,7 +315,7 @@ class JavaLambdaLineMarkerTest {
                 public void handleRequest(InputStream input, OutputStream output, Context context) { }
             }
             """
-        );
+        )
 
         findAndAssertMarks(fixture) {
             assert(it).hasSize(1)

@@ -33,7 +33,7 @@ open class CodeInsightTestFixtureRule(protected val testDescription: LightProjec
     protected open fun createTestFixture(): CodeInsightTestFixture {
         val fixtureBuilder = IdeaTestFixtureFactory.getFixtureFactory().createLightFixtureBuilder(testDescription)
         val newFixture = IdeaTestFixtureFactory.getFixtureFactory()
-            .createCodeInsightFixture(fixtureBuilder.fixture, LightTempDirTestFixtureImpl(true));
+            .createCodeInsightFixture(fixtureBuilder.fixture, LightTempDirTestFixtureImpl(true))
         newFixture.setUp()
         newFixture.testDataPath = testDataPath
         return newFixture
@@ -55,7 +55,7 @@ open class CodeInsightTestFixtureRule(protected val testDescription: LightProjec
         get() = fixture.project
 
     val testName: String
-        get() = PlatformTestUtil.getTestName(description.methodName, true);
+        get() = PlatformTestUtil.getTestName(description.methodName, true)
 
     val testClass: Class<*>
         get() = description.testClass
