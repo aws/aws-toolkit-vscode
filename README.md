@@ -1,4 +1,4 @@
-## AWS Vscode Toolkit
+## AWS VSCode Toolkit
 
 AWS Toolkit for Visual Studio Code, an extension for working with AWS services including AWS Lambda.
 

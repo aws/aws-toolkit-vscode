@@ -1,0 +1,69 @@
+{
+    "name": "aws-vscode-tools",
+    "displayName": "AWS Tools for Visual Studio Code",
+    "description": "Extensions for working with Amazon Web Services in Visual Studio Code",
+    "version": "0.0.1",
+    "publisher": "amazonwebservices",
+    "engines": {
+        "vscode": "^1.23.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [
+        "onView:lambda",
+        "onView:s3",
+        "onCommand:extension.sayHello"
+    ],
+    "main": "./out/extension",
+    "contributes": {
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "aws-explorer",
+                    "title": "AWS",
+                    "icon": "media/aws-logo.svg"
+                }
+            ]
+        },
+        "views": {
+            "aws-explorer": [
+                {
+                    "id": "cdk",
+                    "name": "CDK"
+                },
+                {
+                    "id": "lambda",
+                    "name": "Lambda"
+                },
+                {
+                    "id": "s3",
+                    "name": "S3"
+                }
+            ]
+        },
+        "commands": [
+            {
+                "command": "extension.sayHello",
+                "title": "Hello World"
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "postinstall": "node ./node_modules/vscode/bin/install",
+        "test": "npm run compile && node ./node_modules/vscode/bin/test"
+    },
+    "devDependencies": {
+        "typescript": "^2.6.1",
+        "vscode": "^1.1.6",
+        "tslint": "^5.8.0",
+        "@types/node": "^7.0.43",
+        "@types/mocha": "^2.2.42"
+    },
+    "dependencies": {
+        "aws-sdk": "^2.227.1"
+    }
+}
