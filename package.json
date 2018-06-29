@@ -13,22 +13,19 @@
     "activationEvents": [
         "onView:lambda",
         "onView:s3",
-        "onCommand:extension.sayHello"
+        "onCommand:aws.getLambdaPolicy"
     ],
     "main": "./out/extension",
     "contributes": {
         "viewsContainers": {
-            "activitybar": [
-                {
-                    "id": "aws-explorer",
-                    "title": "AWS",
-                    "icon": "media/aws-logo.svg"
-                }
-            ]
+            "activitybar": [{
+                "id": "aws-explorer",
+                "title": "AWS",
+                "icon": "media/aws-logo.svg"
+            }]
         },
         "views": {
-            "aws-explorer": [
-                {
+            "aws-explorer": [{
                     "id": "cdk",
                     "name": "CDK"
                 },
@@ -42,10 +39,63 @@
                 }
             ]
         },
-        "commands": [
+        "menus": {
+            "view/title": [{
+                    "command": "aws.selectRegion",
+                    "when": "view == lambda",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "aws.invokeLambda",
+                    "when": "view == lambda",
+                    "group": "navigation@2"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "aws.invokeLambda",
+                    "when": "view == lambda && viewItem == awsLambdaFn",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.getLambdaConfig",
+                    "when": "view == lambda && viewItem == awsLambdaFn",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.getLambdaPolicy",
+                    "when": "view == lambda && viewItem == awsLambdaFn",
+                    "group": "0@3"
+                }
+            ]
+        },
+        "commands": [{
+                "command": "aws.selectRegion",
+                "title": "Select a region",
+                "category": "AWS",
+                "icon": {
+                    "light": "resources/light/select_region.svg",
+                    "dark": "resources/dark/select_region.svg"
+                }
+            },
             {
-                "command": "extension.sayHello",
-                "title": "Hello World"
+                "command": "aws.invokeLambda",
+                "title": "%AWS.invokeLambda%",
+                "category": "AWS",
+                "icon": {
+                    "light": "resources/light/invoke_lambda.svg",
+                    "dark": "resources/dark/invoke_lambda.svg"
+                }
+            },
+            {
+                "command": "aws.getLambdaConfig",
+                "title": "%AWS.getLambdaConfig%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.getLambdaPolicy",
+                "title": "%AWS.getLambdaPolicy%",
+                "category": "AWS"
             }
         ]
     },
@@ -57,13 +107,15 @@
         "test": "npm run compile && node ./node_modules/vscode/bin/test"
     },
     "devDependencies": {
-        "typescript": "^2.6.1",
-        "vscode": "^1.1.6",
-        "tslint": "^5.8.0",
+        "@types/lodash": "^4.14.110",
+        "@types/mocha": "^2.2.42",
         "@types/node": "^7.0.43",
-        "@types/mocha": "^2.2.42"
+        "tslint": "^5.8.0",
+        "typescript": "^2.6.1",
+        "vscode": "^1.1.6"
     },
     "dependencies": {
-        "aws-sdk": "^2.227.1"
+        "aws-sdk": "^2.227.1",
+        "lodash": "^4.17.10"
     }
 }

@@ -1,6 +1,10 @@
 'use strict';
-
+import * as vscode from 'vscode';
 import { Command, Disposable, TreeItem } from 'vscode';
+
+export interface IRefreshTreeProvider {
+    refresh(): void;
+}
 
 export abstract class ExplorerNodeBase extends Disposable {
 
@@ -38,5 +42,17 @@ export abstract class ExplorerNodeBase extends Disposable {
             this.children.forEach(c => c.dispose());
             this.children = undefined;
         }
+    }
+}
+
+export class QuickPickNode implements vscode.QuickPickItem {
+    label: string;
+    description?: string | undefined;
+    detail?: string | undefined;
+    picked?: boolean | undefined;
+    constructor(
+        readonly id: string
+    ) {
+        this.label = id;
     }
 }

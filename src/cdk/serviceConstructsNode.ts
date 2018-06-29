@@ -1,7 +1,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { ExplorerNodeBase } from '../shared/explorerNodeBase';
+import { ExplorerNodeBase } from '../shared/nodes';
 import { ConstructNode } from './constructNode';
 
 export class ServiceConstructsNode extends ExplorerNodeBase {

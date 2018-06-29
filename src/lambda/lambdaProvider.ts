@@ -1,14 +1,15 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { ExplorerNodeBase } from '../shared/explorerNodeBase';
+import { ExplorerNodeBase, IRefreshTreeProvider } from '../shared/nodes';
 import { FunctionsNode } from './functionsNode';
 import { GuidesNode } from './guidesNode';
 import { BlueprintsNode } from './blueprintsNode';
+import { FunctionNode } from './functionNode';
 
-export class LambdaProvider implements vscode.TreeDataProvider<ExplorerNodeBase> {
-
-    onDidChangeTreeData?: vscode.Event<any> | undefined;
+export class LambdaProvider implements vscode.TreeDataProvider<ExplorerNodeBase>, IRefreshTreeProvider {
+    private _onDidChangeTreeData: vscode.EventEmitter<FunctionNode | undefined> = new vscode.EventEmitter<FunctionNode | undefined>();
+    readonly onDidChangeTreeData: vscode.Event<FunctionNode | undefined> = this._onDidChangeTreeData.event;
 
     rootNodes: ExplorerNodeBase[] = [
         new FunctionsNode(),
@@ -28,8 +29,11 @@ export class LambdaProvider implements vscode.TreeDataProvider<ExplorerNodeBase>
         return this.rootNodes;
     }
 
-    constructor() {
+    refresh() {
+        this._onDidChangeTreeData.fire();
     }
 
+    constructor() {
+    }
 }
 

@@ -2,20 +2,19 @@
 
 import * as vscode from 'vscode';
 import awsLambda = require('aws-sdk/clients/lambda');
-import { isNullOrUndefined } from 'util';
-import { ExplorerNodeBase } from '../shared/explorerNodeBase';
-import { FunctionNode } from './functionNode';
+import { ExplorerNodeBase } from '../shared/nodes';
+import { listLambdas } from '../commands/lambda/listLambdas';
 
 export class FunctionsNode extends ExplorerNodeBase {
-
-    getChildren(): ExplorerNodeBase[] | Promise<ExplorerNodeBase[]> {
-        return new Promise(resolve => {
-            this.queryLambdaFunctions().then(v => resolve(v));
-        });
+    public static contextValue: string = 'awsLambdaFns';
+    public readonly contextValue: string = FunctionsNode.contextValue;
+    public readonly label: string = 'Lambda Functions';
+    public async getChildren(): Promise<ExplorerNodeBase[]> {
+        return await listLambdas();
     }
 
     getTreeItem(): vscode.TreeItem | Promise<vscode.TreeItem> {
-        const item = new vscode.TreeItem('Functions', vscode.TreeItemCollapsibleState.Expanded);
+        const item = new vscode.TreeItem('Functions', vscode.TreeItemCollapsibleState.Collapsed);
         item.tooltip = 'My deployed Lambda functions';
 
         return item;
@@ -28,32 +27,5 @@ export class FunctionsNode extends ExplorerNodeBase {
         };
 
         return new awsLambda(opts);
-    }
-
-    async queryLambdaFunctions() : Promise<FunctionNode[]> {
-        let arr: FunctionNode[] = [];
-
-        try {
-            const lambdaClient = this.constructServiceClient();
-
-            const request: awsLambda.ListFunctionsRequest = {};
-            do {
-                await lambdaClient.listFunctions(request)
-                    .promise()
-                    .then(r => {
-                        request.Marker = r.NextMarker;
-                        if (r.Functions) {
-                            r.Functions.forEach(f => {
-                                arr.push(new FunctionNode(f));
-                            });
-                        }
-
-                });
-            } while (!isNullOrUndefined(request.Marker));
-        } catch (error) {
-            // todo
-        }
-
-        return arr;
     }
 }
