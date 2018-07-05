@@ -1,7 +1,8 @@
 'use strict';
+
 import * as path from 'path';
-import awsLambda = require('aws-sdk/clients/lambda');
-import { ExplorerNodeBase } from '../shared/nodes';
+import Lambda = require('aws-sdk/clients/lambda');
+import { ExplorerNodeBase } from '../../shared/nodes';
 import { TreeItem, Uri, ThemeIcon } from 'vscode';
 
 export class FunctionNode extends ExplorerNodeBase implements TreeItem {
@@ -12,7 +13,8 @@ export class FunctionNode extends ExplorerNodeBase implements TreeItem {
     public iconPath?: string | Uri | { light: string | Uri; dark: string | Uri } | ThemeIcon;
 
     constructor(
-        public readonly functionConfiguration: awsLambda.FunctionConfiguration
+        public readonly functionConfiguration: Lambda.FunctionConfiguration,
+        public readonly lambda: Lambda
     ) {
         super();
         this.label = `${this.functionConfiguration.FunctionName!}`;

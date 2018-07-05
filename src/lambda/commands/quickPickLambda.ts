@@ -1,14 +1,15 @@
+'use strict';
+
 import * as vscode from 'vscode';
-import { FunctionNode } from '../../lambda/functionNode';
-import { FunctionConfiguration } from 'aws-sdk/clients/lambda';
+import { FunctionNode } from '../explorer/functionNode';
 
 class QuickPickLambda extends FunctionNode implements vscode.QuickPickItem {
     label: string; description?: string | undefined;
     detail?: string | undefined;
     picked?: boolean | undefined;
-    constructor(fn: FunctionConfiguration) {
-        super(fn);
-        this.label = fn.FunctionName!;
+    constructor(fn: FunctionNode) {
+        super(fn.functionConfiguration, fn.lambda);
+        this.label = fn.functionConfiguration.FunctionName!;
     }
 }
 
@@ -17,7 +18,7 @@ export async function quickPickLambda(lambdas: FunctionNode[]): Promise<Function
         if (!lambdas || lambdas.length === 0) {
             vscode.window.showInformationMessage('There are no lambdas in this region.');
         } else {
-            const qpLambdas = lambdas.map(l => new QuickPickLambda(l.functionConfiguration));
+            const qpLambdas = lambdas.map(l => new QuickPickLambda(l));
             return await vscode.window.showQuickPick(qpLambdas, { placeHolder: 'Choose a lambda' });
         }
         throw new Error('No lambdas to work with.');

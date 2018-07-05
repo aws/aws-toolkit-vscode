@@ -1,9 +1,10 @@
 'use strict';
 import * as vscode from 'vscode';
 import { Command, Disposable, TreeItem } from 'vscode';
+import { AWSContext } from './awsContext';
 
 export interface IRefreshTreeProvider {
-    refresh(): void;
+    refresh(newContext: AWSContext): void;
 }
 
 export abstract class ExplorerNodeBase extends Disposable {
@@ -35,7 +36,7 @@ export abstract class ExplorerNodeBase extends Disposable {
         return undefined;
     }
 
-    refresh(): void { }
+    refresh(newContext: AWSContext): void { }
 
     resetChildren(): void {
         if (this.children !== undefined) {

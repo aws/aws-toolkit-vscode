@@ -2,9 +2,9 @@
 
 import * as vscode from 'vscode';
 import { ExplorerNodeBase } from '../shared/nodes';
-import { ApplicationsNode } from './applicationsNode';
-import { GuidesNode } from './guidesNode';
-import { ConstructsNode } from './constructsNode';
+import { ApplicationsNode } from './explorer/applicationsNode';
+import { GuidesNode } from './explorer/guidesNode';
+import { ConstructsNode } from './explorer/constructsNode';
 
 export class CdkProvider implements vscode.TreeDataProvider<ExplorerNodeBase> {
 

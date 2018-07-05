@@ -2,10 +2,11 @@
 
 import * as vscode from 'vscode';
 import { ExplorerNodeBase, IRefreshTreeProvider } from '../shared/nodes';
-import { FunctionsNode } from './functionsNode';
-import { GuidesNode } from './guidesNode';
-import { BlueprintsNode } from './blueprintsNode';
-import { FunctionNode } from './functionNode';
+import { FunctionsNode } from './explorer/functionsNode';
+import { GuidesNode } from './explorer/guidesNode';
+import { BlueprintsNode } from './explorer/blueprintsNode';
+import { FunctionNode } from './explorer/functionNode';
+import { AWSContext } from '../shared/awsContext';
 
 export class LambdaProvider implements vscode.TreeDataProvider<ExplorerNodeBase>, IRefreshTreeProvider {
     private _onDidChangeTreeData: vscode.EventEmitter<FunctionNode | undefined> = new vscode.EventEmitter<FunctionNode | undefined>();
@@ -29,7 +30,7 @@ export class LambdaProvider implements vscode.TreeDataProvider<ExplorerNodeBase>
         return this.rootNodes;
     }
 
-    refresh() {
+    refresh(context: AWSContext) {
         this._onDidChangeTreeData.fire();
     }
 

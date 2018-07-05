@@ -1,7 +1,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { ExplorerNodeBase } from '../shared/nodes';
+import { ExplorerNodeBase } from '../../shared/nodes';
 import { ServiceConstructsNode } from './serviceConstructsNode';
 import { ConstructNode } from './constructNode';
 
@@ -43,7 +43,7 @@ export class ConstructsNode extends ExplorerNodeBase {
             new ConstructNode('...other constructs...')
         ]
     );
-    
+
     getChildren(): ExplorerNodeBase[] | Promise<ExplorerNodeBase[]> {
         return [
             this.ec2Constructs,

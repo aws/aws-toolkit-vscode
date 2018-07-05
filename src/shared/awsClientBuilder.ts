@@ -1,36 +1,50 @@
-import * as AWS from 'aws-sdk';
 import * as vscode from 'vscode';
 import { REGIONS } from './constants';
 import { ext } from './extensionGlobals';
+import { AWSContext } from './awsContext';
 
 export class AWSClientBuilder {
-    region = "";
-    constructor() {
-        this.region = AWS.config.region ? AWS.config.region : "";
+
+    private awsContext: AWSContext;
+
+    constructor(awsContext: AWSContext) {
+        this.awsContext = awsContext;
+
     }
 
-    async build(): Promise<void> {
-        if (!this.region) {
-            this.region = await this.promptForRegion();
+    // centralized construction of transient AWS service clients, allowing us
+    // to customize requests and/or user agent
+    public async createAndConfigureSdkClient(awsService: any, awsServiceOpts: any) : Promise<any> {
+        if (awsServiceOpts) {
+            if (!awsServiceOpts.credentials) {
+                awsServiceOpts.credentials = await this.awsContext.getCredentials();
+            }
+            if (!awsServiceOpts.region) {
+                awsServiceOpts.region = await this.awsContext.getRegion();
+            }
+
+            return new awsService(awsServiceOpts);
         }
-        this.createGlobalClients();
-    }
 
-    private createGlobalClients(): void {
-        ext.lambdaClient = new AWS.Lambda({ region: this.region });
-        ext.s3Client = new AWS.S3({ region: this.region });
-    }
-
-    async configureRegion() {
-        this.region = await this.promptForRegion();
-        this.build();
-        ext.treesToRefreshOnRegionChange.forEach(t => {
-            t.refresh();
+        return new awsService({
+            credentials: await this.awsContext.getCredentials(),
+            region: await this.awsContext.getRegion()
         });
     }
 
+    async onCommandConfigureRegion() {
+        var newRegion = await this.promptForRegion();
+        if (newRegion) {
+            this.awsContext.setRegion(await this.promptForRegion());
+            //this.createGlobalClients();
+           ext.treesToRefreshOnContextChange.forEach(t => {
+               t.refresh(this.awsContext);
+           });
+        }
+    }
+
     private async promptForRegion(): Promise<string> {
-        const input = await vscode.window.showQuickPick(REGIONS, { placeHolder: 'Select a region' });
+        const input = await vscode.window.showQuickPick(REGIONS, { placeHolder: 'Select an AWS region' });
         return input ? input : "";
     }
 }

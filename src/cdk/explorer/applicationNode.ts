@@ -2,7 +2,7 @@
 
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { ExplorerNodeBase } from '../shared/nodes';
+import { ExplorerNodeBase } from '../../shared/nodes';
 
 export class ApplicationNode extends ExplorerNodeBase {
     constructor(

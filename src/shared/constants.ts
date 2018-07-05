@@ -18,3 +18,7 @@ export const REGIONS = [
     "cn-northwest-1",
     "sa-east-1"
 ];
+
+export const extensionSettingsPrefix = 'aws';
+export const regionSettingKey = 'region';
+export const profileSettingKey = 'profile';

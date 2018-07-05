@@ -1,10 +1,10 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { ExplorerNodeBase } from '../shared/nodes';
-import { ext } from '../shared/extensionGlobals';
+import { ExplorerNodeBase } from '../../shared/nodes';
+import { ext } from '../../shared/extensionGlobals';
 import Lambda = require('aws-sdk/clients/lambda');
-import { listLambdas } from './utils';
+import { listLambdas } from '../utils';
 
 export class FunctionsNode extends ExplorerNodeBase {
     public static contextValue: string = 'awsLambdaFns';

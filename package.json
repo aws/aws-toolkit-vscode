@@ -17,15 +17,34 @@
     ],
     "main": "./out/extension",
     "contributes": {
+        "configuration": {
+            "type": "object",
+            "title": "AWS Configuration",
+            "properties": {
+                "aws.region": {
+                    "type": "string",
+                    "default": "",
+                    "description": "The default region for your AWS resources"
+                },
+                "aws.profile": {
+                    "type": "string",
+                    "default": "",
+                    "description": "The name of the credential profile to obtain credentials from"
+                }
+            }
+        },
         "viewsContainers": {
-            "activitybar": [{
-                "id": "aws-explorer",
-                "title": "AWS",
-                "icon": "media/aws-logo.svg"
-            }]
+            "activitybar": [
+                {
+                    "id": "aws-explorer",
+                    "title": "AWS",
+                    "icon": "media/aws-logo.svg"
+                }
+            ]
         },
         "views": {
-            "aws-explorer": [{
+            "aws-explorer": [
+                {
                     "id": "cdk",
                     "name": "CDK"
                 },
@@ -40,7 +59,8 @@
             ]
         },
         "menus": {
-            "view/title": [{
+            "view/title": [
+                {
                     "command": "aws.selectRegion",
                     "when": "view == lambda",
                     "group": "navigation@1"
@@ -69,7 +89,8 @@
                 }
             ]
         },
-        "commands": [{
+        "commands": [
+            {
                 "command": "aws.selectRegion",
                 "title": "Select a region",
                 "category": "AWS",
@@ -116,6 +137,7 @@
     },
     "dependencies": {
         "aws-sdk": "^2.227.1",
-        "lodash": "^4.17.10"
+        "lodash": "^4.17.10",
+        "npm": "^6.1.0"
     }
 }

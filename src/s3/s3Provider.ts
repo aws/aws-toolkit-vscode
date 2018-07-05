@@ -2,7 +2,7 @@
 
 import * as vscode from 'vscode';
 import awsS3 = require('aws-sdk/clients/s3');
-import { BucketNode } from './bucketNode';
+import { BucketNode } from './explorer/bucketNode';
 import { ExplorerNodeBase } from '../shared/nodes';
 
 export class S3Provider implements vscode.TreeDataProvider<ExplorerNodeBase> {

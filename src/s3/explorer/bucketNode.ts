@@ -3,7 +3,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import awsS3 = require('aws-sdk/clients/s3');
-import { ExplorerNodeBase } from '../shared/nodes';
+import { ExplorerNodeBase } from '../../shared/nodes';
 
 export class BucketNode extends ExplorerNodeBase {
     constructor(
