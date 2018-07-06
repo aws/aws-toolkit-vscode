@@ -32,15 +32,29 @@ export class AWSClientBuilder {
         });
     }
 
+    async onCommandConfigureProfile() {
+        var newProfile = await this.promptForProfileName();
+        if (newProfile) {
+            this.awsContext.setCredentialProfileName(newProfile);
+            ext.treesToRefreshOnContextChange.forEach(t => {
+                t.refresh(this.awsContext);
+           });
+        }
+    }
+
     async onCommandConfigureRegion() {
         var newRegion = await this.promptForRegion();
         if (newRegion) {
-            this.awsContext.setRegion(await this.promptForRegion());
-            //this.createGlobalClients();
-           ext.treesToRefreshOnContextChange.forEach(t => {
-               t.refresh(this.awsContext);
+            this.awsContext.setRegion(newRegion);
+            ext.treesToRefreshOnContextChange.forEach(t => {
+                t.refresh(this.awsContext);
            });
         }
+    }
+
+    private async promptForProfileName(): Promise<string> {
+        const input = await vscode.window.showInputBox({ placeHolder: 'Enter the name of the credential profile to use' });
+        return input ? input : "";
     }
 
     private async promptForRegion(): Promise<string> {

@@ -3,14 +3,19 @@ import * as vscode from 'vscode';
 import { Command, Disposable, TreeItem } from 'vscode';
 import { AWSContext } from './awsContext';
 
-export interface IRefreshTreeProvider {
+export interface IAWSTreeProvider {
+    viewProviderId: string;
+
+    initialize(): void;
+}
+
+export interface IRefreshableAWSTreeProvider extends IAWSTreeProvider {
     refresh(newContext: AWSContext): void;
 }
 
 export abstract class ExplorerNodeBase extends Disposable {
 
-    readonly supportsPaging: boolean = false;
-    maxCount: number | undefined;
+    public readonly supportsPaging: boolean = false;
 
     protected children: ExplorerNodeBase[] | undefined;
     protected disposable: Disposable | undefined;
@@ -29,16 +34,16 @@ export abstract class ExplorerNodeBase extends Disposable {
         this.resetChildren();
     }
 
-    abstract getChildren(): ExplorerNodeBase[] | Promise<ExplorerNodeBase[]>;
-    abstract getTreeItem(): TreeItem | Promise<TreeItem>;
+    public abstract getChildren(): ExplorerNodeBase[] | Promise<ExplorerNodeBase[]>;
+    public abstract getTreeItem(): TreeItem | Promise<TreeItem>;
 
-    getCommand(): Command | undefined {
+    public getCommand(): Command | undefined {
         return undefined;
     }
 
-    refresh(newContext: AWSContext): void { }
+    public refresh(newContext: AWSContext): void { }
 
-    resetChildren(): void {
+    public resetChildren(): void {
         if (this.children !== undefined) {
             this.children.forEach(c => c.dispose());
             this.children = undefined;

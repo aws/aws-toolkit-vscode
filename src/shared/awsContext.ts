@@ -41,8 +41,10 @@ export class AWSContext {
     }
 
     // resets the context to the indicated profile, saving it into settings
-    public setCredentialProfileName(profileName: string) : void {
-        // todo
+    public async setCredentialProfileName(profileName: string) : Promise<void> {
+        this.profileName = profileName;
+        const settings = vscode.workspace.getConfiguration(this.settingsPrefix);
+        await settings.update(profileSettingKey, profileName, vscode.ConfigurationTarget.Global);
     }
 
     // async so that we could *potentially* support other ways of obtaining
@@ -53,7 +55,9 @@ export class AWSContext {
     }
 
     // resets the context to the indicated profile, saving it into settings
-    public setRegion(region: string) : void {
-        // todo
+    public async setRegion(region: string) : Promise<void> {
+        this.region = region;
+        const settings = vscode.workspace.getConfiguration(this.settingsPrefix);
+        await settings.update(regionSettingKey, region, vscode.ConfigurationTarget.Global);
     }
 }

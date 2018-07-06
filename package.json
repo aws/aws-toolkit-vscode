@@ -61,14 +61,19 @@
         "menus": {
             "view/title": [
                 {
-                    "command": "aws.selectRegion",
+                    "command": "aws.selectProfile",
                     "when": "view == lambda",
                     "group": "navigation@1"
                 },
                 {
-                    "command": "aws.invokeLambda",
+                    "command": "aws.selectRegion",
                     "when": "view == lambda",
                     "group": "navigation@2"
+                },
+                {
+                    "command": "aws.invokeLambda",
+                    "when": "view == lambda",
+                    "group": "navigation@3"
                 }
             ],
             "view/item/context": [
@@ -90,6 +95,15 @@
             ]
         },
         "commands": [
+            {
+                "command": "aws.selectProfile",
+                "title": "Select a credential profile",
+                "category": "AWS",
+                "icon": {
+                    "light": "resources/light/select_profile.svg",
+                    "dark": "resources/dark/select_profile.svg"
+                }
+            },
             {
                 "command": "aws.selectRegion",
                 "title": "Select a region",

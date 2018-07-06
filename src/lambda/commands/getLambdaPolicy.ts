@@ -5,7 +5,7 @@ import { getSelectedLambdaNode } from '../utils';
 import * as vscode from 'vscode';
 import _ = require("lodash");
 import { BaseTemplates } from "../../shared/templates/baseTemplates";
-import { LambdaTemplates } from "../../shared/templates/lambdaTemplates";
+import { LambdaTemplates } from "../templates/lambdaTemplates";
 import { AWSError } from "aws-sdk";
 
 export async function getLambdaPolicy(element?: FunctionNode) {

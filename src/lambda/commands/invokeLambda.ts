@@ -6,7 +6,7 @@ import { BaseTemplates } from "../../shared/templates/baseTemplates";
 import * as vscode from 'vscode';
 import _ = require("lodash");
 import { ext } from "../../shared/extensionGlobals";
-import { LambdaTemplates } from "../../shared/templates/lambdaTemplates";
+import { LambdaTemplates } from "../templates/lambdaTemplates";
 import { AWSError } from "aws-sdk";
 import Lambda = require('aws-sdk/clients/lambda');
 

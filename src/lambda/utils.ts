@@ -37,10 +37,10 @@ export async function listLambdas(lambda: Lambda): Promise<FunctionNode[]> {
         do {
             await lambda.listFunctions(request)
                 .promise()
-                .then(r => {
+                .then((r: Lambda.ListFunctionsResponse) => {
                     request.Marker = r.NextMarker;
                     if (r.Functions) {
-                        r.Functions.forEach(f => {
+                        r.Functions.forEach((f: Lambda.FunctionConfiguration) => {
                             const func = new FunctionNode(f, lambda);
                             func.contextValue = 'awsLambdaFn';
                             arr.push(func);

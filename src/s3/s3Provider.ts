@@ -1,13 +1,22 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import awsS3 = require('aws-sdk/clients/s3');
 import { BucketNode } from './explorer/bucketNode';
-import { ExplorerNodeBase } from '../shared/nodes';
+import { ExplorerNodeBase, IRefreshableAWSTreeProvider } from '../shared/nodes';
+import { AWSContext } from '../shared/awsContext';
+import { ext } from '../shared/extensionGlobals';
+import { listBuckets } from './utils';
 
-export class S3Provider implements vscode.TreeDataProvider<ExplorerNodeBase> {
+export class S3Provider implements vscode.TreeDataProvider<ExplorerNodeBase>, IRefreshableAWSTreeProvider {
 
-    onDidChangeTreeData?: vscode.Event<any> | undefined;
+    private _onDidChangeTreeData: vscode.EventEmitter<BucketNode | undefined> = new vscode.EventEmitter<BucketNode | undefined>();
+    readonly onDidChangeTreeData: vscode.Event<BucketNode | undefined> = this._onDidChangeTreeData.event;
+
+    public viewProviderId: string = 's3';
+
+    public initialize(): void {
+        ext.treesToRefreshOnContextChange.push(this);
+    }
 
     getTreeItem(element: any): vscode.TreeItem | Thenable<vscode.TreeItem> {
         return element.getTreeItem();
@@ -16,41 +25,15 @@ export class S3Provider implements vscode.TreeDataProvider<ExplorerNodeBase> {
     getChildren(element?: any): vscode.ProviderResult<any[]> {
 
         return new Promise(resolve => {
-            this.queryS3Buckets().then(v => resolve(v));
+            listBuckets().then(v => resolve(v));
         });
     }
 
+    refresh(context: AWSContext) {
+        this._onDidChangeTreeData.fire();
+    }
+
+
     constructor() {
-    }
-
-    constructServiceClient(): awsS3 {
-        const opts: awsS3.ClientConfiguration = {
-            apiVersion: '2006-03-01',
-            region: 'us-west-2'
-        };
-
-        return new awsS3(opts);
-    }
-
-    async queryS3Buckets() : Promise<BucketNode[]> {
-        const s3Client = this.constructServiceClient();
-
-        let arr: BucketNode[] = [];
-        try {
-            await s3Client.listBuckets()
-            .promise()
-            .then(r => {
-                if (r && r.Buckets) {
-                    r.Buckets.forEach(b => {
-                        arr.push(new BucketNode(b));
-                    });
-                }
-            });
-
-        } catch (error) {
-            // todo
-        }
-
-        return arr;
     }
 }

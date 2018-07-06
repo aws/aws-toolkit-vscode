@@ -1,14 +1,20 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { ExplorerNodeBase } from '../shared/nodes';
+import { ExplorerNodeBase, IAWSTreeProvider } from '../shared/nodes';
 import { ApplicationsNode } from './explorer/applicationsNode';
 import { GuidesNode } from './explorer/guidesNode';
 import { ConstructsNode } from './explorer/constructsNode';
 
-export class CdkProvider implements vscode.TreeDataProvider<ExplorerNodeBase> {
+export class CdkProvider implements vscode.TreeDataProvider<ExplorerNodeBase>, IAWSTreeProvider {
 
     onDidChangeTreeData?: vscode.Event<any> | undefined;
+
+    public viewProviderId: string = 'cdk';
+
+    public initialize(): void {
+
+    }
 
     rootNodes: ExplorerNodeBase[] = [
         new ApplicationsNode(),
