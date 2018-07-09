@@ -2,6 +2,7 @@ import * as AWS from 'aws-sdk';
 import * as vscode from 'vscode';
 import { regionSettingKey, profileSettingKey } from './constants';
 import { ISettingsConfiguration } from './settingsConfiguration';
+import { ext } from './extensionGlobals';
 
 // Wraps an AWS context in terms of credential profile and region. The
 // context listens for configuration updates and resets the context
@@ -41,6 +42,9 @@ export class AWSContext {
     public async setCredentialProfileName(profileName: string) : Promise<void> {
         this.profileName = profileName;
         await this.settingsConfiguration.writeSetting(profileSettingKey, profileName, vscode.ConfigurationTarget.Global);
+
+        // todo: should eventually trigger this as event
+        ext.statusBar.updateContext();
     }
 
     // async so that we could *potentially* support other ways of obtaining
@@ -54,5 +58,8 @@ export class AWSContext {
     public async setRegion(region: string) : Promise<void> {
         this.region = region;
         await this.settingsConfiguration.writeSetting(regionSettingKey, region, vscode.ConfigurationTarget.Global);
+
+        // todo: should eventually trigger this as event
+        ext.statusBar.updateContext();
     }
 }

@@ -1,3 +1,5 @@
+'use strict';
+
 import * as vscode from 'vscode';
 
 // defines helper methods for interacting with VSCode's configuration

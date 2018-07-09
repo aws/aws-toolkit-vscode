@@ -11,11 +11,14 @@ import { ext } from './shared/extensionGlobals';
 import { extensionSettingsPrefix } from './shared/constants';
 import { AWSContext } from './shared/awsContext';
 import { SettingsConfiguration } from './shared/settingsConfiguration';
+import { AWSStatusBar } from './shared/statusBar';
 
 export async function activate(context: vscode.ExtensionContext) {
 
     ext.awsContext = new AWSContext(new SettingsConfiguration(extensionSettingsPrefix));
     ext.sdkClientBuilder = new AWSClientBuilder(ext.awsContext);
+
+    ext.statusBar = new AWSStatusBar(context);
 
     vscode.commands.registerCommand('aws.selectProfile', async () => { await ext.sdkClientBuilder.onCommandConfigureProfile(); });
     vscode.commands.registerCommand('aws.selectRegion', async () => { await ext.sdkClientBuilder.onCommandConfigureRegion(); });
@@ -30,6 +33,8 @@ export async function activate(context: vscode.ExtensionContext) {
         p.initialize();
         context.subscriptions.push(vscode.window.registerTreeDataProvider(p.viewProviderId, p));
     });
+
+    ext.statusBar.updateContext();
 }
 
 export function deactivate() {

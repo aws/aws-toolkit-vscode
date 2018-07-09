@@ -2,6 +2,7 @@ import { ExtensionContext, OutputChannel } from 'vscode';
 import { AWSClientBuilder } from './awsClientBuilder';
 import { AWSContext } from './awsContext';
 import { IRefreshableAWSTreeProvider } from './nodes';
+import { AWSStatusBar } from './statusBar';
 
 /**
  * Namespace for common variables used globally in the extension.
@@ -12,5 +13,6 @@ export namespace ext {
     export let outputChannel: OutputChannel;
     export let awsContext: AWSContext;
     export let sdkClientBuilder: AWSClientBuilder;
+    export let statusBar: AWSStatusBar;
     export let treesToRefreshOnContextChange: IRefreshableAWSTreeProvider[] = [];
 }
