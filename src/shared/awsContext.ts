@@ -1,3 +1,5 @@
+'use strict';
+
 import * as AWS from 'aws-sdk';
 import * as vscode from 'vscode';
 import { regionSettingKey, profileSettingKey } from './constants';

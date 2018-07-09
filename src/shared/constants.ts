@@ -1,3 +1,5 @@
+'use strict';
+
 export const REGIONS = [
     "us-east-1",
     "us-east-2",

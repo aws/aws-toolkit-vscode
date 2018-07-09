@@ -1,3 +1,5 @@
+'use strict';
+
 import { ExtensionContext, OutputChannel } from 'vscode';
 import { AWSClientBuilder } from './awsClientBuilder';
 import { AWSContext } from './awsContext';

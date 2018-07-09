@@ -1,3 +1,5 @@
+'use strict';
+
 import * as vscode from 'vscode';
 import { REGIONS } from './constants';
 import { ext } from './extensionGlobals';

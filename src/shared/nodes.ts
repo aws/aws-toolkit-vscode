@@ -1,4 +1,5 @@
 'use strict';
+
 import * as vscode from 'vscode';
 import { Command, Disposable, TreeItem } from 'vscode';
 import { AWSContext } from './awsContext';
