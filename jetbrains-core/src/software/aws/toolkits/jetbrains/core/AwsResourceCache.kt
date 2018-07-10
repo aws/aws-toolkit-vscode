@@ -7,7 +7,7 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
 import java.util.concurrent.ConcurrentHashMap
 
-//TODO to be replaced with an actual resource implementation
+// TODO to be replaced with an actual resource implementation
 
 interface AwsResourceCache {
     fun lambdaFunctions(): List<LambdaFunction>

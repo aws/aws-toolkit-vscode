@@ -34,7 +34,8 @@ class UploadToLambdaModal(
     }
 
     override fun createCenterPanel(): JComponent? {
-        val controller = UploadToLambdaController(view, psi, handlerName, runtime, AwsClientManager.getInstance(project))
+        val controller =
+            UploadToLambdaController(view, psi, handlerName, runtime, AwsClientManager.getInstance(project))
         controller.load()
         return view.content
     }
@@ -44,14 +45,14 @@ class UploadToLambdaModal(
     override fun doOKAction() {
         super.doOKAction()
         okHandler(
-                FunctionUploadDetails(
-                        name = view.name.text!!,
-                        handler = view.handler.text!!,
-                        iamRole = view.iamRole.selected()!!,
-                        s3Bucket = view.sourceBucket.selected()!!,
-                        runtime = view.runtime.selected()!!,
-                        description = view.description.text
-                )
+            FunctionUploadDetails(
+                name = view.name.text!!,
+                handler = view.handler.text!!,
+                iamRole = view.iamRole.selected()!!,
+                s3Bucket = view.sourceBucket.selected()!!,
+                runtime = view.runtime.selected()!!,
+                description = view.description.text
+            )
         )
     }
 }
@@ -97,7 +98,7 @@ class UploadToLambdaController(
         view.handler.text = handlerName
         view.iamRole.populateValues {
             iamClient.listRoles().roles().filterNotNull()
-                    .map { IamRole(name = it.roleName(), arn = it.arn()) }
+                .map { IamRole(name = it.roleName(), arn = it.arn()) }
         }
         view.sourceBucket.populateValues { s3Client.listBuckets().buckets().filterNotNull().mapNotNull { it.name() } }
         view.runtime.populateValues(selected = runtime) { Runtime.knownValues().toList().sortedBy { it.name } }
@@ -106,7 +107,8 @@ class UploadToLambdaController(
             val iamRole = Messages.showInputDialog("Role Name:", "Create IAM Role", Icons.AWS_ICON)
             iamRole?.run {
                 view.iamRole.addAndSelectValue {
-                    iamClient.createRole { it.roleName(iamRole) }.let { IamRole(name = it.role().roleName(), arn = it.role().arn()) }
+                    iamClient.createRole { it.roleName(iamRole) }
+                        .let { IamRole(name = it.role().roleName(), arn = it.role().arn()) }
                 }
             }
         }
@@ -127,7 +129,7 @@ class UploadToLambdaController(
     private fun <T> ComboBox<T>.populateValues(selected: T?, block: () -> List<T>) {
         ApplicationManager.getApplication().executeOnPooledThread {
             val values = block()
-            ApplicationManager.getApplication().invokeLater ({
+            ApplicationManager.getApplication().invokeLater({
                 val model = this.model as DefaultComboBoxModel<T>
                 model.removeAllElements()
                 values.forEach { model.addElement(it) }
@@ -140,7 +142,7 @@ class UploadToLambdaController(
     private fun <T> ComboBox<T>.addAndSelectValue(fetch: () -> T) {
         ApplicationManager.getApplication().executeOnPooledThread {
             val value = fetch()
-            ApplicationManager.getApplication().invokeLater ({
+            ApplicationManager.getApplication().invokeLater({
                 val model = this.model as DefaultComboBoxModel<T>
                 model.addElement(value)
                 model.selectedItem = value

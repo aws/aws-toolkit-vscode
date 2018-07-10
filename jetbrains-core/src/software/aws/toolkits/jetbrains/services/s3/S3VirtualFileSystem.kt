@@ -12,7 +12,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 
-//TODO: Do we even need this? If we implement LightVirtualFile then we might be able to do away with this (for now)
+// TODO: Do we even need this? If we implement LightVirtualFile then we might be able to do away with this (for now)
 class S3VirtualFileSystem(val s3Client: S3Client) : VirtualFileSystem() {
     override fun deleteFile(requestor: Any?, vFile: VirtualFile) {
         TODO("not implemented")

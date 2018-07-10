@@ -176,7 +176,7 @@ class DefaultAwsCredentialsProfileProvider constructor(private val project: Proj
     private companion object {
         val LOG = Logger.getInstance(AwsCredentialsProfileProvider::class.java)
 
-        //TODO: The SDK has its credential locators as internal and returns null instead of the File so if it is a brand new
+        // TODO: The SDK has its credential locators as internal and returns null instead of the File so if it is a brand new
         // install we won't know where to put them.
         fun defaultCredentialLocation(): String {
             return Paths.get(PathMacroUtil.getUserHomePath(), ".aws", "credentials").toString()

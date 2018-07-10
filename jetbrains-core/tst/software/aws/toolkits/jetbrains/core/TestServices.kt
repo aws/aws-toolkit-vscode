@@ -1,4 +1,4 @@
-@file:Suppress("DEPRECATION") //TODO when StaticCredentialsProvider is removed this can be removed
+@file:Suppress("DEPRECATION") // TODO when StaticCredentialsProvider is removed this can be removed
 
 package software.aws.toolkits.jetbrains.core
 

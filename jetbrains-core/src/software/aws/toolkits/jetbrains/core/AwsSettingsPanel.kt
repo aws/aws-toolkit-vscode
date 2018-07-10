@@ -30,7 +30,7 @@ class AwsSettingsPanel(private val project: Project) : StatusBarWidget, StatusBa
 
     override fun getTooltipText(): String? = null
 
-    //TODO: Need to better handle the case where they have no default profile
+    // TODO: Need to better handle the case where they have no default profile
     override fun getSelectedValue(): String? =
             "AWS:${settings.currentProfile?.name ?: "default"}/${settings.currentRegion.name}"
 

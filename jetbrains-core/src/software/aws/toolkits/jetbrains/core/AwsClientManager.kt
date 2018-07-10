@@ -87,7 +87,7 @@ class AwsClientManager internal constructor(
     }
 
     private fun getCredentialsProvider(profileName: String): AWSCredentialsProvider {
-        //TODO If we cannot find the profile name, we should report internal error
+        // TODO If we cannot find the profile name, we should report internal error
         return credentialsProfileProvider.lookupProfileByName(profileName)!!.awsCredentials
     }
 

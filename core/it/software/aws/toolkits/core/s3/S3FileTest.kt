@@ -71,7 +71,7 @@ class S3FileTest {
         this.contains(Tag.builder().key(key).value(value).build())
     }
 
-    //TODO: could probably move these to a test util module
+    // TODO: could probably move these to a test util module
     @JvmName("hasInputStreamContents")
     fun Assert<InputStream>.hasContents(expected: String) {
         this.actual.use { assert(it.bufferedReader(StandardCharsets.UTF_8).readText()).isEqualTo(expected) }

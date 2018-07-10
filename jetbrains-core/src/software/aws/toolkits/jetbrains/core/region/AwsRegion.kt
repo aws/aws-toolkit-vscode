@@ -19,7 +19,7 @@ data class AwsRegion constructor(val id: String, val name: String, val icon: Ico
                 "eu-central-1" to "/icons/flags/eu.png",
                 "eu-west-2" to "/icons/flags/eu.png"
         )
-        //TODO: Need a better way to do this, cos this won't work in air-gapped regions.
+        // TODO: Need a better way to do this, cos this won't work in air-gapped regions.
         val GLOBAL = AwsRegion(Region.AWS_GLOBAL.value(), "Global")
     }
 

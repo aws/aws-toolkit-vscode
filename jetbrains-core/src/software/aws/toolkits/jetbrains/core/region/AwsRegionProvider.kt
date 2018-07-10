@@ -13,7 +13,7 @@ import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.utils.notifyError
 import java.io.IOException
 
-//TODO we might need to consider supporting unlaunched regions for internal use
+// TODO we might need to consider supporting unlaunched regions for internal use
 class AwsRegionProvider private constructor() {
     val regions: Map<String, AwsRegion>
     val defaultRegion: AwsRegion
@@ -27,7 +27,7 @@ class AwsRegionProvider private constructor() {
         }
 
         regions = ImmutableMap.copyOf(mutableRegionMap)
-        //TODO Is there a better way to notify the customer and report the error to us instead of just crash?
+        // TODO Is there a better way to notify the customer and report the error to us instead of just crash?
         defaultRegion = regions.get(DEFAULT_REGION)!!
     }
 
@@ -50,7 +50,7 @@ class AwsRegionProvider private constructor() {
 }
 
 private object PartitionLoader {
-    //TODO This endpoint file should be update-to-date file
+    // TODO This endpoint file should be update-to-date file
     private const val JAVA_SDK_PARTITION_RESOURCE_PATH = "com/amazonaws/partitions/endpoints.json"
     private val LOG = Logger.getInstance(PartitionLoader::class.java)
 

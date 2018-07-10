@@ -5,7 +5,7 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.amazon.awssdk.testutils.service.S3BucketUtils.temporaryBucketName
 
-//TODO: this should move to either a test util - or the core SDK.
+// TODO: this should move to either a test util - or the core SDK.
 class S3TemporaryBucketRule(private val s3Client: S3Client) : ExternalResource() {
 
     private val buckets = mutableListOf<String>()
