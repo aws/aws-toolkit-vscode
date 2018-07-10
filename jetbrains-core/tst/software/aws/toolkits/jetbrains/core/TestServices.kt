@@ -16,7 +16,6 @@ class TestAwsResourceCache : AwsResourceCache {
 }
 
 class TestAwsSettingsProvider : AwsSettingsProvider {
-
     override var currentProfile: CredentialProfile? = MockCredentialProfile
 
     override var currentRegion: AwsRegion = AwsRegion.GLOBAL
@@ -29,10 +28,10 @@ class TestAwsSettingsProvider : AwsSettingsProvider {
 class TestAwsCredentialsProfileProvider : AwsCredentialsProfileProvider {
     override var selectedProfile: CredentialProfile?
         get() = throw NotImplementedError()
-        set(value) {}
+        set(@Suppress("UNUSED_PARAMETER") value) {}
     override var credentialFileLocation: String?
         get() = throw NotImplementedError()
-        set(value) {}
+        set(@Suppress("UNUSED_PARAMETER") value) {}
 
     override fun getProfiles(): List<CredentialProfile> {
         throw NotImplementedError()

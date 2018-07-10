@@ -58,8 +58,8 @@ class LambdaEditor(private val project: Project, private val model: LambdaVirtua
 
         makeRequest { response, log ->
             ApplicationManager.getApplication().invokeLater {
-                view.response.text = response
-                view.logOutput.text = log
+                view.response.text = response ?: ""
+                view.logOutput.text = log ?: ""
                 formatEditor(view.response)
                 view.setBusy(false)
             }

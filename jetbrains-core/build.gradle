@@ -4,8 +4,8 @@ intellij {
     version "IC-" + ideaVersion
     pluginName 'aws-intellij-toolkit'
     updateSinceUntilBuild false
-    downloadSources = false //TODO figure out why setting this to true is causing a problem
-    plugins = ["PythonCore:2017.3.173.4301.35"]
+    downloadSources = System.getenv("CI") == null
+    plugins = ["PythonCore:2018.1.181.4203.550"]
 }
 
 jar.baseName = 'aws-intellij-toolkit-core'
@@ -39,6 +39,6 @@ dependencies {
     compile "com.amazonaws:aws-java-sdk-core:$awsSdkVersion"
     runtime "org.jetbrains.kotlin:kotlin-reflect"
     testCompile project(":jetbrains-testutils")
-    testCompile group: 'org.assertj', name: 'assertj-core', version: '3.8.0'
+    testCompile "org.assertj:assertj-core:$assertjVersion"
     testCompile "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
 }

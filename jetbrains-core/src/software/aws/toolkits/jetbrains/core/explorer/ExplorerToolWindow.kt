@@ -23,10 +23,10 @@ import software.aws.toolkits.jetbrains.core.AwsSettingsProvider
 import software.aws.toolkits.jetbrains.core.SettingsChangedListener
 import software.aws.toolkits.jetbrains.core.credentials.AwsCredentialsConfigurable
 import software.aws.toolkits.jetbrains.core.credentials.AwsCredentialsProfileProvider
+import software.aws.toolkits.jetbrains.core.credentials.AwsProfilePanel
+import software.aws.toolkits.jetbrains.core.credentials.CredentialProfile
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_SERVICE_NODE
-import software.aws.toolkits.jetbrains.core.credentials.CredentialProfile
-import software.aws.toolkits.jetbrains.core.credentials.AwsProfilePanel
 import software.aws.toolkits.jetbrains.core.region.AwsRegionPanel
 import software.aws.toolkits.jetbrains.utils.MutableMapWithListener
 import java.awt.Component
@@ -233,9 +233,9 @@ object ExplorerDataKeys {
     /**
      * Returns all the selected resource nodes. getData() will return null if not all selected items are same type
      */
-    val SELECTED_RESOURCE_NODES = DataKey.create<List<AwsExplorerResourceNode<*>>>("aws.explorer.resourceNodes")!!
+    val SELECTED_RESOURCE_NODES = DataKey.create<List<AwsExplorerResourceNode<*>>>("aws.explorer.resourceNodes")
     /**
      * Returns the selected Service node. getData() will return null if more than one item is selected
      */
-    val SELECTED_SERVICE_NODE = DataKey.create<AwsExplorerNode<*>>("aws.explorer.serviceNode")!!
+    val SELECTED_SERVICE_NODE = DataKey.create<AwsExplorerNode<*>>("aws.explorer.serviceNode")
 }

@@ -2,9 +2,9 @@ package software.aws.toolkits.jetbrains.ultimate.services.lambda
 
 import com.goide.GoConstants
 import com.goide.GoTypes
+import com.goide.execution.GoRunUtil
 import com.goide.psi.GoFile
 import com.goide.psi.GoFunctionDeclaration
-import com.goide.runconfig.GoRunUtil
 import com.goide.util.GoExecutor
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
@@ -111,6 +111,5 @@ class GoLambdaPackager : LambdaPackager {
         }
     }
 
-    // TODO change to GO, v2 needs to do a model update
     override fun determineRuntime(module: Module, file: PsiFile): Runtime = Runtime.GO1_X
 }
