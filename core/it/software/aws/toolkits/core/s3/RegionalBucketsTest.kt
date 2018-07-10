@@ -4,7 +4,7 @@ import assertk.assert
 import assertk.assertions.isEqualTo
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.core.regions.Region
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 
 class RegionalBucketsTest {

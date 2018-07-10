@@ -1,6 +1,5 @@
 package software.aws.toolkits.core.s3
 
-import software.amazon.awssdk.core.sync.StreamingResponseHandler
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest
@@ -165,7 +164,8 @@ class S3File internal constructor(
 
     fun getByteArray(): ByteArray {
         val request = GetObjectRequest.builder().bucket(bucket).key(key).build()
-        return client.getObject(request, StreamingResponseHandler.toBytes()).asByteArray()
+        val responseInputStream = client.getObject(request)
+        return responseInputStream.readBytes(responseInputStream.response().contentLength().toInt())
     }
 
     private fun baseUpdateMetadataRequest(metadata: Map<String, String>) =

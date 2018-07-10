@@ -26,7 +26,7 @@ class S3FileTest {
     fun canUpdateTagsAndMetadataIndependently() {
         val bucketName = bucketHelper.createBucket()
         val key = "key"
-        client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.of(""))
+        client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString(""))
 
         val file = client.file(bucketName, key)
 
@@ -41,7 +41,7 @@ class S3FileTest {
     fun canUpdateTagsAndMetadataInOneOperation() {
         val bucketName = bucketHelper.createBucket()
         val key = "key"
-        client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.of(""))
+        client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString(""))
 
         val file = client.file(bucketName, key)
 
@@ -55,7 +55,7 @@ class S3FileTest {
     fun canGetDataAboutAFile() {
         val bucketName = bucketHelper.createBucket()
         val key = "key"
-        client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.of("12345"))
+        client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString("12345"))
 
         val file = client.file(bucketName, key)
 

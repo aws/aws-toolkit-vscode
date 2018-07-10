@@ -7,8 +7,8 @@ import assertk.assertions.isInstanceOf
 import org.junit.BeforeClass
 import org.junit.ClassRule
 import org.junit.Test
-import software.amazon.awssdk.core.regions.Region
 import software.amazon.awssdk.core.sync.RequestBody
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 
@@ -97,7 +97,7 @@ class S3BucketWalkerTest {
         private fun putObject(bucket: String, key: String) {
             s3Client.putObject(
                     PutObjectRequest.builder().bucket(bucket).key(key).build(),
-                    RequestBody.of("blah")
+                    RequestBody.fromString("blah")
             )
         }
     }

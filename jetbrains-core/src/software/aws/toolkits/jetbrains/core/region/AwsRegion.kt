@@ -1,12 +1,12 @@
 package software.aws.toolkits.jetbrains.core.region
 
 import com.intellij.openapi.util.IconLoader
-import software.amazon.awssdk.core.regions.Region
+import software.amazon.awssdk.regions.Region
 import javax.swing.Icon
 
-data class AwsRegion private constructor(val id: String, val name: String, val icon: Icon) {
+data class AwsRegion constructor(val id: String, val name: String, val icon: Icon) {
     companion object {
-        private val UNKNOWN_REGION_FLAG = "/icons/aws-box.gif"
+        private const val UNKNOWN_REGION_FLAG = "/icons/aws-box.gif"
         private val REGION_FLAG_MAPPING = mapOf(
                 "us-east-1" to "/icons/flags/us.png",
                 "us-east-2" to "/icons/flags/us.png",

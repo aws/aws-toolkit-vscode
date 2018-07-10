@@ -14,13 +14,11 @@ import com.intellij.testFramework.runInEdtAndWait
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder
+import software.amazon.awssdk.awscore.client.builder.AwsDefaultClientBuilder
 import software.amazon.awssdk.core.SdkClient
-import software.amazon.awssdk.core.auth.Signer
-import software.amazon.awssdk.core.client.builder.ClientBuilder
-import software.amazon.awssdk.core.client.builder.DefaultClientBuilder
-import software.amazon.awssdk.core.client.builder.SyncClientBuilder
-import software.amazon.awssdk.core.config.defaults.ClientConfigurationDefaults
-import software.amazon.awssdk.core.config.defaults.ServiceBuilderConfigurationDefaults
+import software.amazon.awssdk.core.config.SdkAdvancedClientOption
+import software.amazon.awssdk.core.runtime.auth.Signer
 import software.amazon.awssdk.core.runtime.auth.SignerProvider
 import software.amazon.awssdk.core.runtime.auth.SignerProviderContext
 import software.amazon.awssdk.http.SdkHttpClient
@@ -101,66 +99,63 @@ class AwsClientManagerTest {
     }
 
     class DummyServiceClient(val httpClient: SdkHttpClient) : TestClient() {
-
         companion object {
             @Suppress("unused")
             @JvmStatic
-            fun builder(): DummyServiceClientBuilder = DummyServiceClientBuilder()
+            fun builder() = DummyServiceClientBuilder()
         }
     }
 
-    class DummyServiceClientBuilder : TestClientBuilder<DummyServiceClientBuilder, DummyServiceClient>(),
-            SyncClientBuilder<DummyServiceClientBuilder, DummyServiceClient> {
-        override fun buildClient(): DummyServiceClient = DummyServiceClient(syncClientConfiguration().httpClient())
+    class DummyServiceClientBuilder : TestClientBuilder<DummyServiceClientBuilder, DummyServiceClient>() {
+        override fun buildClient() = DummyServiceClient(syncClientConfiguration().httpClient())
     }
 
     class SecondDummyServiceClient(val httpClient: SdkHttpClient) : TestClient() {
-
         companion object {
             @Suppress("unused")
             @JvmStatic
-            fun builder(): SecondDummyServiceClientBuilder = SecondDummyServiceClientBuilder()
+            fun builder() = SecondDummyServiceClientBuilder()
         }
     }
 
-    class SecondDummyServiceClientBuilder : TestClientBuilder<SecondDummyServiceClientBuilder, SecondDummyServiceClient>(),
-            SyncClientBuilder<SecondDummyServiceClientBuilder, SecondDummyServiceClient> {
-        override fun buildClient(): SecondDummyServiceClient = SecondDummyServiceClient(syncClientConfiguration().httpClient())
+    class SecondDummyServiceClientBuilder :
+        TestClientBuilder<SecondDummyServiceClientBuilder, SecondDummyServiceClient>() {
+
+        override fun buildClient() = SecondDummyServiceClient(syncClientConfiguration().httpClient())
     }
 
     class InvalidServiceClient : SdkClient {
-        override fun serviceName(): String = "invalidClient"
+        override fun serviceName() = "invalidClient"
     }
 
     abstract class TestClient : SdkClient, AutoCloseable {
         var closed = false
 
-        override fun serviceName(): String = "dummyClient"
+        override fun serviceName() = "dummyClient"
 
         override fun close() {
             closed = true
         }
     }
 
-    abstract class TestClientBuilder<B : ClientBuilder<B, C>, C> : DefaultClientBuilder<B, C>() {
-        override fun serviceEndpointPrefix(): String = "dummyClient"
-
-        override fun serviceDefaults(): ClientConfigurationDefaults {
-            return ServiceBuilderConfigurationDefaults.builder()
-                    .defaultSignerProvider(
-                            {
-                                object : SignerProvider() {
-                                    override fun getSigner(context: SignerProviderContext?) = Signer { ctx, _ -> ctx.httpRequest() }
-                                }
-                            })
-                    .build()
+    abstract class TestClientBuilder<B : AwsClientBuilder<B, C>, C> : AwsDefaultClientBuilder<B, C>() {
+        init {
+            overrideConfiguration {
+                it.advancedOption(SdkAdvancedClientOption.SIGNER_PROVIDER, object : SignerProvider() {
+                    override fun getSigner(context: SignerProviderContext?): Signer {
+                        throw NotImplementedError()
+                    }
+                })
+            }
         }
+
+        override fun serviceEndpointPrefix() = "dummyClient"
     }
 
     private val SdkHttpClient.delegate: SdkHttpClient
         get() {
             val delegateProperty = this::class.declaredMemberProperties.find { it.name == "delegate" }
-                    ?: throw IllegalArgumentException("Expected instance of software.amazon.awssdk.core.client.builder.DefaultClientBuilder.NonManagedSdkHttpClient")
+                    ?: throw IllegalArgumentException("Expected instance of software.amazon.awssdk.core.client.builder.SdkDefaultClientBuilder.NonManagedSdkHttpClient")
             delegateProperty.isAccessible = true
             return delegateProperty.call(this) as SdkHttpClient
         }
