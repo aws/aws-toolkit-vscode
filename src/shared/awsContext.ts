@@ -45,7 +45,7 @@ export class AWSContext {
         this.profileName = profileName;
         await this.settingsConfiguration.writeSetting(profileSettingKey, profileName, vscode.ConfigurationTarget.Global);
 
-        // todo: should eventually trigger this as event
+        // TODO: should eventually trigger this as event
         ext.statusBar.updateContext();
     }
 
@@ -61,7 +61,7 @@ export class AWSContext {
         this.region = region;
         await this.settingsConfiguration.writeSetting(regionSettingKey, region, vscode.ConfigurationTarget.Global);
 
-        // todo: should eventually trigger this as event
+        // TODO: should eventually trigger this as event
         ext.statusBar.updateContext();
     }
 }

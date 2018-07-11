@@ -7,7 +7,7 @@ import { ConstructNode } from './constructNode';
 
 export class ConstructsNode extends ExplorerNodeBase {
 
-    // todo: these should all be read from a manifest, downloaded at
+    // TODO: these should all be read from a manifest, downloaded at
     // runtime or provided from fall-back resources in case of no
     // connectivity
     ec2Constructs: ServiceConstructsNode = new ServiceConstructsNode(

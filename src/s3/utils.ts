@@ -20,7 +20,7 @@ export async function listBuckets() : Promise<BucketNode[]> {
         });
 
     } catch (error) {
-        // todo
+        // TODO:
     }
 
     return arr;

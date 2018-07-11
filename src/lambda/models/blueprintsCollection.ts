@@ -16,7 +16,7 @@ export class BlueprintsCollection {
     public async loadAllBlueprints(): Promise<void> {
         this.availableBlueprints = [];
         await this.loadVisualStudioBlueprints();
-        // todo: load additional blueprints from SAR?
+        // TODO: load additional blueprints from SAR?
     }
 
     // Evaluates the various tags to determine what languages we have blueprints
@@ -57,12 +57,11 @@ export class BlueprintsCollection {
 
     private async listBlueprintsVSToolkitFromManifest(manifestUrl: string): Promise<Blueprint[]> {
         const resourcePath = path.join(ext.context.extensionPath, 'resources', 'vs-lambda-blueprint-manifest.xml');
-        //const embeddedManifestPath = vscode.Uri.file(resourcePath).toString();
         const manifest = await ResourceFetcher.fetchHostedResource(manifestUrl, resourcePath);
         return new Promise<Blueprint[]>((resolve, reject) => {
             xml2js.parseString(manifest, {explicitArray: false}, function (err, result) {
                 if (err) {
-                    // todo: fall back to resource version before giving up
+                    // TODO: fall back to resource version before giving up
                     reject(err);
                 } else {
                     // this is a short term hack to figure out how to do this!

@@ -50,7 +50,7 @@ export async function listLambdas(lambda: Lambda): Promise<FunctionNode[]> {
                 });
         } while (!isNullOrUndefined(request.Marker));
     } catch (error) {
-        // todo
+        // TODO:
     }
     status.dispose();
     return arr;
