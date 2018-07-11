@@ -1,4 +1,4 @@
-rootProject.name = 'aws-intellij-toolkit'
+rootProject.name = 'aws-jetbrains-toolkit'
 include 'core'
 include 'jetbrains-testutils'
 include 'jetbrains-core'

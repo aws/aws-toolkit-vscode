@@ -141,7 +141,7 @@ apply plugin: 'org.jetbrains.intellij'
 
 intellij {
     version "IC-" + ideaVersion
-    pluginName 'aws-intellij-toolkit'
+    pluginName 'aws-jetbrains-toolkit'
     updateSinceUntilBuild false
     downloadSources = System.getenv("CI") == null
     if (System.env.ALTERNATIVE_IDE) {
