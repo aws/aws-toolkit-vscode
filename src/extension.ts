@@ -35,7 +35,7 @@ export async function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(vscode.window.registerTreeDataProvider(p.viewProviderId, p));
     });
 
-    ext.statusBar.updateContext();
+    ext.statusBar.updateContext(undefined);
 }
 
 export function deactivate() {

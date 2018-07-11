@@ -4,12 +4,14 @@ import * as AWS from 'aws-sdk';
 import * as vscode from 'vscode';
 import { regionSettingKey, profileSettingKey } from './constants';
 import { ISettingsConfiguration } from './settingsConfiguration';
-import { ext } from './extensionGlobals';
 
 // Wraps an AWS context in terms of credential profile and region. The
 // context listens for configuration updates and resets the context
 // accordingly.
 export class AWSContext {
+
+    private _onDidChangeContext: vscode.EventEmitter<AWSContext> = new vscode.EventEmitter<AWSContext>();
+    public readonly onDidChangeContext: vscode.Event<AWSContext> = this._onDidChangeContext.event;
 
     private region: string | undefined;
     private profileName: string | undefined;
@@ -45,8 +47,7 @@ export class AWSContext {
         this.profileName = profileName;
         await this.settingsConfiguration.writeSetting(profileSettingKey, profileName, vscode.ConfigurationTarget.Global);
 
-        // TODO: should eventually trigger this as event
-        ext.statusBar.updateContext();
+        this._onDidChangeContext.fire(this);
     }
 
     // async so that we could *potentially* support other ways of obtaining
@@ -61,7 +62,6 @@ export class AWSContext {
         this.region = region;
         await this.settingsConfiguration.writeSetting(regionSettingKey, region, vscode.ConfigurationTarget.Global);
 
-        // TODO: should eventually trigger this as event
-        ext.statusBar.updateContext();
+        this._onDidChangeContext.fire(this);
     }
 }
