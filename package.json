@@ -142,15 +142,19 @@
         "test": "npm run compile && node ./node_modules/vscode/bin/test"
     },
     "devDependencies": {
+        "@types/fs-extra": "^5.0.4",
         "@types/lodash": "^4.14.110",
         "@types/mocha": "^2.2.42",
         "@types/node": "^7.0.43",
+        "@types/request": "^2.47.1",
+        "@types/xml2js": "^0.4.3",
         "tslint": "^5.8.0",
         "typescript": "^2.6.1",
         "vscode": "^1.1.6"
     },
     "dependencies": {
         "aws-sdk": "^2.227.1",
+        "fs-extra": "^6.0.1",
         "lodash": "^4.17.10",
         "npm": "^6.1.0"
     }

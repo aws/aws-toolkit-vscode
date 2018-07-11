@@ -7,6 +7,9 @@ import { URL } from 'url';
 
 export class GuideNode extends ExplorerNodeBase {
 
+    public static contextValue: string = 'awsLambdaGuide';
+    public contextValue: string = GuideNode.contextValue;
+
     constructor(
         public readonly guideName: string,
         public readonly guideUri: URL
@@ -14,11 +17,11 @@ export class GuideNode extends ExplorerNodeBase {
         super();
     }
 
-    getChildren(): ExplorerNodeBase[] | Promise<ExplorerNodeBase[]> {
+    public getChildren(): ExplorerNodeBase[] | Promise<ExplorerNodeBase[]> {
        return [];
     }
 
-    getTreeItem(): vscode.TreeItem | Promise<vscode.TreeItem> {
+    public getTreeItem(): vscode.TreeItem | Promise<vscode.TreeItem> {
         const item = new vscode.TreeItem(`${this.guideName}`, vscode.TreeItemCollapsibleState.Collapsed);
         item.tooltip = `${this.guideUri}`;
         item.iconPath = {

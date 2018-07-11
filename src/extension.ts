@@ -15,6 +15,7 @@ import { AWSStatusBar } from './shared/statusBar';
 
 export async function activate(context: vscode.ExtensionContext) {
 
+    ext.context = context;
     ext.awsContext = new AWSContext(new SettingsConfiguration(extensionSettingsPrefix));
     ext.sdkClientBuilder = new AWSClientBuilder(ext.awsContext);
 

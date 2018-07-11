@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { ExplorerNodeBase, IRefreshableAWSTreeProvider } from '../shared/nodes';
 import { FunctionsNode } from './explorer/functionsNode';
 import { GuidesNode } from './explorer/guidesNode';
-import { BlueprintsNode } from './explorer/blueprintsNode';
+import { ProjectBlueprintsNode } from './explorer/projectBlueprintsNode';
 import { FunctionNode } from './explorer/functionNode';
 import { getLambdaPolicy } from './commands/getLambdaPolicy';
 import { invokeLambda } from './commands/invokeLambda';
@@ -29,7 +29,7 @@ export class LambdaProvider implements vscode.TreeDataProvider<ExplorerNodeBase>
     rootNodes: ExplorerNodeBase[] = [
         new FunctionsNode(),
         new GuidesNode(),
-        new BlueprintsNode()
+        new ProjectBlueprintsNode()
     ];
 
     getTreeItem(element: any): vscode.TreeItem | Thenable<vscode.TreeItem> {

@@ -15,7 +15,7 @@ export class FunctionsNode extends ExplorerNodeBase {
         return await listLambdas(await ext.sdkClientBuilder.createAndConfigureSdkClient(Lambda, undefined));
     }
 
-    getTreeItem(): vscode.TreeItem | Promise<vscode.TreeItem> {
+    public getTreeItem(): vscode.TreeItem | Promise<vscode.TreeItem> {
         const item = new vscode.TreeItem('Functions', vscode.TreeItemCollapsibleState.Collapsed);
         item.tooltip = 'My deployed Lambda functions';
 

@@ -12,11 +12,11 @@ export class GuidesNode extends ExplorerNodeBase {
         new GuideNode('API Reference', new URL('https://docs.aws.amazon.com/lambda/latest/dg/API_Reference.html'))
     ];
 
-    getChildren(): ExplorerNodeBase[] | Promise<ExplorerNodeBase[]> {
+    public getChildren(): ExplorerNodeBase[] | Promise<ExplorerNodeBase[]> {
         return this.rootNodes;
     }
 
-    getTreeItem(): vscode.TreeItem | Promise<vscode.TreeItem> {
+    public getTreeItem(): vscode.TreeItem | Promise<vscode.TreeItem> {
         const item = new vscode.TreeItem('Reference Guides', vscode.TreeItemCollapsibleState.Collapsed);
         item.tooltip = 'Reference materials for working with AWS Lambda';
 

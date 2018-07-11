@@ -21,6 +21,9 @@ export const REGIONS = [
     "sa-east-1"
 ];
 
-export const extensionSettingsPrefix = 'aws';
-export const regionSettingKey = 'region';
-export const profileSettingKey = 'profile';
+export const extensionSettingsPrefix: string = 'aws';
+export const regionSettingKey: string = 'region';
+export const profileSettingKey: string = 'profile';
+
+export const hostedFilesBaseUrl: string = 'https://d3rrggjwfhwld2.cloudfront.net/';
+

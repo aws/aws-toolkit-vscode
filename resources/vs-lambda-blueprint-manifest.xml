@@ -1,0 +1,374 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BlueprintManifest>
+  <ManifestVersion>1</ManifestVersion>
+  <Blueprints>
+    <Blueprint>
+      <Name>ASP.NET Core Web API</Name>
+      <Description>Serverless ASP.NET Core Web API</Description>
+      <SortOrder>150</SortOrder>
+      <File>AspNetCoreWebAPI.zip</File>
+      <Tags>
+        <Tag>AspNetCore</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>C#</HiddenTag>
+        <HiddenTag>ServerlessProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>ASP.NET Core Web API</Name>
+      <Description>Serverless ASP.NET Core Web API</Description>
+      <SortOrder>150</SortOrder>
+      <File>AspNetCoreWebAPI-FSharp.zip</File>
+      <Tags>
+        <Tag>AspNetCore</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>F#</HiddenTag>
+        <HiddenTag>ServerlessProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>ASP.NET Core Web App</Name>
+      <Description>Serverless ASP.NET Core Web Application with Razor Pages</Description>
+      <SortOrder>150</SortOrder>
+      <File>AspNetCoreWebApp.zip</File>
+      <Tags>
+        <Tag>AspNetCore</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>C#</HiddenTag>
+        <HiddenTag>ServerlessProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Order Flowers Chatbot</Name>
+      <Description>Amazon Lex getting started Order Flowers sample</Description>
+      <SortOrder>101</SortOrder>
+      <File>ChatBotTutorial.zip</File>
+      <Tags>
+        <Tag>Custom</Tag>
+        <Tag>Lex</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>C#</HiddenTag>
+        <HiddenTag>LambdaProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Detect Image Labels</Name>
+      <Description>Use Amazon Rekognition service to tag image files in S3 with detected labels.</Description>
+      <SortOrder>101</SortOrder>
+      <File>DetectImageLabels.zip</File>
+      <Tags>
+        <Tag>S3</Tag>
+        <Tag>Rekognition</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>C#</HiddenTag>
+        <HiddenTag>LambdaProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Detect Image Labels</Name>
+      <Description>Use Amazon Rekognition service to tag image files in S3 with detected labels.</Description>
+      <SortOrder>101</SortOrder>
+      <File>DetectImageLabels-FSharp.zip</File>
+      <Tags>
+        <Tag>S3</Tag>
+        <Tag>Rekognition</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>F#</HiddenTag>
+        <HiddenTag>LambdaProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Detect Image Labels</Name>
+      <Description>Use Amazon Rekognition service to tag image files in S3 with detected labels.</Description>
+      <SortOrder>101</SortOrder>
+      <File>DetectImageLabelsServerless.zip</File>
+      <Tags>
+        <Tag>S3</Tag>
+        <Tag>Rekognition</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>C#</HiddenTag>
+        <HiddenTag>ServerlessProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Detect Image Labels</Name>
+      <Description>Use Amazon Rekognition service to tag image files in S3 with detected labels.</Description>
+      <SortOrder>101</SortOrder>
+      <File>DetectImageLabelsServerless-FSharp.zip</File>
+      <Tags>
+        <Tag>S3</Tag>
+        <Tag>Rekognition</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>F#</HiddenTag>
+        <HiddenTag>ServerlessProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Blog API using DynamoDB</Name>
+      <Description>An AWS Serverless application example Blogging API using Amazon DynamoDB.</Description>
+      <SortOrder>201</SortOrder>
+      <File>DynamoDBBlogAPI.zip</File>
+      <Tags>
+        <Tag>DynamoDB</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>C#</HiddenTag>
+        <HiddenTag>ServerlessProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Empty Function</Name>
+      <Description>Setup the project and test project to create a Lambda function from scratch.</Description>
+      <SortOrder>100</SortOrder>
+      <File>EmptyFunction.zip</File>
+      <Tags>
+        <Tag>Custom</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>C#</HiddenTag>
+        <HiddenTag>LambdaProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Empty Function</Name>
+      <Description>Setup the project and test project to create a Lambda function from scratch.</Description>
+      <SortOrder>100</SortOrder>
+      <File>EmptyFunction-FSharp.zip</File>
+      <Tags>
+        <Tag>Custom</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>F#</HiddenTag>
+        <HiddenTag>LambdaProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Empty Serverless Application</Name>
+      <Description>Setup the project and test project to create a Serverless application from scratch.</Description>
+      <SortOrder>100</SortOrder>
+      <File>EmptyServerless.zip</File>
+      <Tags>
+        <Tag>Custom</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>C#</HiddenTag>
+        <HiddenTag>ServerlessProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Empty Serverless Application</Name>
+      <Description>Setup the project and test project to create a Serverless application from scratch.</Description>
+      <SortOrder>100</SortOrder>
+      <File>EmptyServerless-FSharp.zip</File>
+      <Tags>
+        <Tag>Custom</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>F#</HiddenTag>
+        <HiddenTag>ServerlessProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Giraffe Web App</Name>
+      <Description>A functional ASP.NET Core application using the Giraffe framework</Description>
+      <SortOrder>150</SortOrder>
+      <File>GiraffeWebApp-FSharp.zip</File>
+      <Tags>
+        <Tag>AspNetCore</Tag>
+        <Tag>Giraffe</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>F#</HiddenTag>
+        <HiddenTag>ServerlessProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Lex Book Trip Sample</Name>
+      <Description>Amazon Lex getting started Book Trip sample</Description>
+      <SortOrder>101</SortOrder>
+      <File>LexBookTripSample.zip</File>
+      <Tags>
+        <Tag>Custom</Tag>
+        <Tag>Lex</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>C#</HiddenTag>
+        <HiddenTag>LambdaProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Simple DynamoDB Function</Name>
+      <Description>A skeleton Lambda function to get started responding to Amazon DynamoDB stream events</Description>
+      <SortOrder>101</SortOrder>
+      <File>SimpleDynamoDBFunction.zip</File>
+      <Tags>
+        <Tag>DynamoDB</Tag>
+        <Tag>Simple</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>C#</HiddenTag>
+        <HiddenTag>LambdaProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Simple DynamoDB Function</Name>
+      <Description>A skeleton Lambda function to get started responding to Amazon DynamoDB stream events</Description>
+      <SortOrder>101</SortOrder>
+      <File>SimpleDynamoDBFunction-FSharp.zip</File>
+      <Tags>
+        <Tag>DynamoDB</Tag>
+        <Tag>Simple</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>F#</HiddenTag>
+        <HiddenTag>LambdaProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Simple Kinesis Firehose Function</Name>
+      <Description>A skeleton Lambda function to get started responding to Amazon Kinesis Firehose events</Description>
+      <SortOrder>101</SortOrder>
+      <File>SimpleKinesisFirehoseFunction.zip</File>
+      <Tags>
+        <Tag>KinesisFirehose</Tag>
+        <Tag>Simple</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>C#</HiddenTag>
+        <HiddenTag>LambdaProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Simple Kinesis Function</Name>
+      <Description>A skeleton Lambda function to get started responding to Amazon Kinesis events</Description>
+      <SortOrder>101</SortOrder>
+      <File>SimpleKinesisFunction.zip</File>
+      <Tags>
+        <Tag>Kinesis</Tag>
+        <Tag>Simple</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>C#</HiddenTag>
+        <HiddenTag>LambdaProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Simple Kinesis Function</Name>
+      <Description>A skeleton Lambda function to get started responding to Amazon Kinesis events</Description>
+      <SortOrder>101</SortOrder>
+      <File>SimpleKinesisFunction-FSharp.zip</File>
+      <Tags>
+        <Tag>Kinesis</Tag>
+        <Tag>Simple</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>F#</HiddenTag>
+        <HiddenTag>LambdaProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Simple S3 Function</Name>
+      <Description>A project for responding to S3 Event notifications</Description>
+      <SortOrder>101</SortOrder>
+      <File>SimpleS3Function.zip</File>
+      <Tags>
+        <Tag>S3</Tag>
+        <Tag>Simple</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>C#</HiddenTag>
+        <HiddenTag>LambdaProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Simple S3 Function</Name>
+      <Description>A project for responding to S3 Event notifications</Description>
+      <SortOrder>101</SortOrder>
+      <File>SimpleS3Function-FSharp.zip</File>
+      <Tags>
+        <Tag>S3</Tag>
+        <Tag>Simple</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>F#</HiddenTag>
+        <HiddenTag>LambdaProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Simple S3 Function</Name>
+      <Description>A project for responding to S3 Event notifications</Description>
+      <SortOrder>101</SortOrder>
+      <File>SimpleS3FunctionServerless.zip</File>
+      <Tags>
+        <Tag>S3</Tag>
+        <Tag>Simple</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>C#</HiddenTag>
+        <HiddenTag>ServerlessProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Simple S3 Function</Name>
+      <Description>A project for responding to S3 Event notifications</Description>
+      <SortOrder>101</SortOrder>
+      <File>SimpleS3FunctionServerless-FSharp.zip</File>
+      <Tags>
+        <Tag>S3</Tag>
+        <Tag>Simple</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>F#</HiddenTag>
+        <HiddenTag>ServerlessProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Simple SQS Function</Name>
+      <Description>A project for responding to SQS Event notifications</Description>
+      <SortOrder>101</SortOrder>
+      <File>SimpleSQSFunction.zip</File>
+      <Tags>
+        <Tag>SQS</Tag>
+        <Tag>Simple</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>C#</HiddenTag>
+        <HiddenTag>LambdaProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Step Functions Hello World</Name>
+      <Description>A simple example of how to build a .NET Core Lambda Step Function project.</Description>
+      <SortOrder>101</SortOrder>
+      <File>StepFunctionsHelloWorld.zip</File>
+      <Tags>
+        <Tag>Custom</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>C#</HiddenTag>
+        <HiddenTag>ServerlessProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+    <Blueprint>
+      <Name>Step Functions Hello World</Name>
+      <Description>A simple example of how to build a .NET Core Lambda Step Function project.</Description>
+      <SortOrder>101</SortOrder>
+      <File>StepFunctionsHelloWorld-FSharp.zip</File>
+      <Tags>
+        <Tag>Custom</Tag>
+      </Tags>
+      <HiddenTags>
+        <HiddenTag>F#</HiddenTag>
+        <HiddenTag>ServerlessProject</HiddenTag>
+      </HiddenTags>
+    </Blueprint>
+  </Blueprints>
+</BlueprintManifest>
