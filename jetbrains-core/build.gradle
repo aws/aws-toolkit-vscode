@@ -37,8 +37,5 @@ dependencies {
         exclude group: 'org.slf4j'
     }
     compile "com.amazonaws:aws-java-sdk-core:$awsSdkVersion"
-    runtime "org.jetbrains.kotlin:kotlin-reflect"
     testCompile project(":jetbrains-testutils")
-    testCompile "org.assertj:assertj-core:$assertjVersion"
-    testCompile "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
 }

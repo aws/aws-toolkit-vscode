@@ -64,7 +64,7 @@ class AwsClientManager internal constructor(
         httpClient.close()
     }
 
-    @Suppress("NO_REFLECTION_IN_CLASS_PATH", "UNCHECKED_CAST")
+    @Suppress("UNCHECKED_CAST")
     private fun <T : SdkClient> createNewClient(key: AwsClientKey): T {
         if (key.region != GLOBAL && GLOBAL_SERVICES.contains(key.serviceClass.simpleName)) {
             return cachedClients.computeIfAbsent(key.copy(region = GLOBAL)) { createNewClient(it) } as T

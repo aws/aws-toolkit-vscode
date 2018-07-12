@@ -52,7 +52,10 @@ subprojects {
 
     dependencies {
         compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+        compile "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
+        // TODO: Replace assertk with assertj
         testCompile("com.willowtreeapps.assertk:assertk:0.9")
+        testCompile "org.assertj:assertj-core:$assertjVersion"
         testCompile "junit:junit:$junitVersion"
 
         integrationTestCompile sourceSets.main.output
