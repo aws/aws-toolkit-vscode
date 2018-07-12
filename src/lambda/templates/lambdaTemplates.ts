@@ -1,44 +1,47 @@
 export class LambdaTemplates {
     static readonly InvokeTemplate = `
-    <h1> 
-        Include input payload with <%= FunctionName %>
+    <h1>
+        Invoke function <%= FunctionName %>
     </h1>
     <div id="app">
         <h3>
-            Use an input template:
+            Example request payloads:
         </h3>
         <select v-model="selectedSampleRequest" v-on:change="newSelection">
-            <option disabled value="">Select a sample</option>
+            <option disabled value="">Select an example input</option>
             <% InputSamples.forEach(function(el) { %>
                 <option value="<%= el.filename %>"><%= el.name %></option>
             <% }); %>
         </select>
         <br />
-        <textarea 
+        <textarea
             rows="20"
             cols="90"
             v-model="sampleText"
         ></textarea>
         <br />
-        <input type="submit" v-on:click="sendInput" value="Invoke lambda">
+        <input type="submit" v-on:click="sendInput" value="Invoke">
         <br />
         <h3 v-if="isLoading">Loading response...</h3>
         <div v-if="showResponse">
             <h1>
-            Invoking <%= FunctionName %>...
+            Function output
             </h1>
             <div v-if="error">
             <p>Something went wrong.</p>
             <pre>{{ error }}</pre>
             </div>
             <div v-else>
-                <p>Status Code: {{statusCode}}</p>
-                <p>Response: 
-                    <pre>{{ payload }}</pre>
-                </p>
-                <p>Logs: 
+                <div>
+                    <p>Status Code: {{statusCode}}</p>
+                    <p>Payload:
+                        <pre>{{ payload }}</pre>
+                    </p>
+                </div>
+                <div>
+                    <h2>Logs</h2>
                     <pre>{{ logs }}</pre>
-                </p>
+                </div>
             </div>
         </div>
     </div>
@@ -53,7 +56,7 @@ export class LambdaTemplates {
     <h1>
         Policy for <%= FunctionName %>...
     </h1>
-    <p>Policy: 
+    <p>Policy:
         <pre><%- JSON.stringify(JSON.parse(Policy), null, 4) %></pre>
     </p>
     `;

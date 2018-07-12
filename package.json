@@ -11,9 +11,14 @@
         "Other"
     ],
     "activationEvents": [
+        "onCommand:aws.selectProfile",
+        "onCommand:aws.selectRegion",
         "onView:lambda",
+        "onCommand:aws.invokeLambda",
+        "onCommand:aws.getLambdaConfig",
+        "onCommand:aws.getLambdaPolicy",
         "onView:s3",
-        "onCommand:aws.getLambdaPolicy"
+        "onView:cdk"
     ],
     "main": "./out/extension",
     "contributes": {
@@ -45,12 +50,12 @@
         "views": {
             "aws-explorer": [
                 {
-                    "id": "cdk",
-                    "name": "CDK"
-                },
-                {
                     "id": "lambda",
                     "name": "Lambda"
+                },
+                {
+                    "id": "cdk",
+                    "name": "CDK"
                 },
                 {
                     "id": "s3",

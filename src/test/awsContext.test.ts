@@ -19,7 +19,7 @@ suite("AWSContext Tests", function (): void {
     }
 
 
-    test('context reads and sets profile from config on startup', function() {
+    test('context reads profile from config on startup', function() {
 
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
             readSetting(settingKey: string, defaultValue?: string | undefined): string | undefined {
@@ -36,7 +36,7 @@ suite("AWSContext Tests", function (): void {
         assert.equal(testContext.getCredentialProfileName(), testProfileValue);
     });
 
-    test('context reads and sets region from config on startup', async function() {
+    test('context sets region from config on startup', async function() {
 
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
             readSetting(settingKey: string, defaultValue?: string | undefined): string | undefined {
@@ -53,7 +53,7 @@ suite("AWSContext Tests", function (): void {
         assert.equal(await testContext.getRegion(), testRegionValue);
     });
 
-    test('context updates config on change region', function() {
+    test('context updates config on region change', function() {
 
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
             writeSetting(settingKey: string, value: string, target: ConfigurationTarget): void {
@@ -68,7 +68,7 @@ suite("AWSContext Tests", function (): void {
         testContext.setRegion(testRegionValue);
     });
 
-    test('context updates config on change profile', function() {
+    test('context updates config on profile change', function() {
 
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
             writeSetting(settingKey: string, value: string, target: ConfigurationTarget): void {
@@ -78,21 +78,31 @@ suite("AWSContext Tests", function (): void {
             }
         }
 
-
         const testContext = new AWSContext(new TestConfiguration());
         testContext.setRegion(testRegionValue);
     });
 
-    /* disabled until I can figure out how to test events
-    test('context fires event on region change', async function(done) {
+    test('context fires event on region change', function(done) {
 
         const testContext = new AWSContext(new ContextTestsSettingsConfigurationBase());
 
         testContext.onDidChangeContext((c) => {
             assert.equal(c.region, testRegionValue);
+            done();
         });
 
-        await testContext.setRegion(testRegionValue);
+        testContext.setRegion(testRegionValue);
     });
-    */
+
+    test('context fires event on profile change', function(done) {
+
+        const testContext = new AWSContext(new ContextTestsSettingsConfigurationBase());
+
+        testContext.onDidChangeContext((c) => {
+            assert.equal(c.profileName, testProfileValue);
+            done();
+        });
+
+        testContext.setCredentialProfileName(testProfileValue);
+    });
 });
