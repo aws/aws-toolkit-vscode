@@ -5,21 +5,27 @@ import * as vscode from 'vscode';
 import { regionSettingKey, profileSettingKey } from './constants';
 import { ISettingsConfiguration } from './settingsConfiguration';
 
+// Carries the current context data on events
+export class ContextChangeEventsArgs {
+    constructor(public profileName: string | undefined, public region: string | undefined) {
+    }
+}
+
 // Wraps an AWS context in terms of credential profile and region. The
 // context listens for configuration updates and resets the context
 // accordingly.
 export class AWSContext {
 
-    private _onDidChangeContext: vscode.EventEmitter<AWSContext> = new vscode.EventEmitter<AWSContext>();
-    public readonly onDidChangeContext: vscode.Event<AWSContext> = this._onDidChangeContext.event;
+    private _onDidChangeContext: vscode.EventEmitter<ContextChangeEventsArgs> = new vscode.EventEmitter<ContextChangeEventsArgs>();
+    public readonly onDidChangeContext: vscode.Event<ContextChangeEventsArgs> = this._onDidChangeContext.event;
 
     private region: string | undefined;
     private profileName: string | undefined;
 
     constructor(public settingsConfiguration: ISettingsConfiguration) {
 
-        this.region = settingsConfiguration.readSetting<string>(regionSettingKey, '');
-        this.profileName = settingsConfiguration.readSetting<string>(profileSettingKey, '');
+        this.region = settingsConfiguration.readSetting(regionSettingKey, '');
+        this.profileName = settingsConfiguration.readSetting(profileSettingKey, '');
 
         if (!this.region) {
             this.region = AWS.config.region ? AWS.config.region : '';
@@ -47,7 +53,7 @@ export class AWSContext {
         this.profileName = profileName;
         await this.settingsConfiguration.writeSetting(profileSettingKey, profileName, vscode.ConfigurationTarget.Global);
 
-        this._onDidChangeContext.fire(this);
+        this._onDidChangeContext.fire(new ContextChangeEventsArgs(this.profileName, this.region));
     }
 
     // async so that we could *potentially* support other ways of obtaining
@@ -62,6 +68,6 @@ export class AWSContext {
         this.region = region;
         await this.settingsConfiguration.writeSetting(regionSettingKey, region, vscode.ConfigurationTarget.Global);
 
-        this._onDidChangeContext.fire(this);
+        this._onDidChangeContext.fire(new ContextChangeEventsArgs(this.profileName, this.region));
     }
 }

@@ -2,7 +2,7 @@
 
 import { ExtensionContext, window, StatusBarItem, StatusBarAlignment } from 'vscode';
 import { ext } from './extensionGlobals';
-import { AWSContext } from './awsContext';
+import { ContextChangeEventsArgs } from './awsContext';
 
 // may want to have multiple elements of data on the status bar,
 // so wrapping in a class to allow for per-element update capability
@@ -19,13 +19,22 @@ export class AWSStatusBar {
         });
     }
 
-    public async updateContext(newContext: AWSContext | undefined) {
-        const context = newContext ? newContext : ext.awsContext;
-        const currentProfile = context.getCredentialProfileName();
-        const currentRegion = await context.getRegion();
-        if (currentProfile && currentRegion) {
-                this.credentialAndRegionContext.text = 'AWS: ' + currentProfile + '@' + currentRegion;
-                this.credentialAndRegionContext.show();
+    public async updateContext(eventContext: ContextChangeEventsArgs | undefined) {
+        let profileName: string | undefined;
+        let region: string | undefined;
+
+        if (eventContext) {
+            profileName = eventContext.profileName;
+            region = eventContext.region;
+        }
+        else {
+            profileName = ext.awsContext.getCredentialProfileName();
+            region = await ext.awsContext.getRegion();
+        }
+
+        if (profileName && region) {
+            this.credentialAndRegionContext.text = 'AWS: ' + profileName + '@' + region;
+            this.credentialAndRegionContext.show();
         } else {
             this.credentialAndRegionContext.hide();
         }

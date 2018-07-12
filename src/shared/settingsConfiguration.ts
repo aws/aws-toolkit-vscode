@@ -5,17 +5,17 @@ import * as vscode from 'vscode';
 // defines helper methods for interacting with VSCode's configuration
 // persistence mechanisms, allowing us to test with mocks.
 export interface ISettingsConfiguration {
-    readSetting<T>(settingKey: string, defaultValue?:T) : T | undefined;
+    readSetting(settingKey: string, defaultValue?:string) : string | undefined;
 
-    writeSetting<T>(settingKey: string, value: T, target: vscode.ConfigurationTarget) : void;
+    writeSetting(settingKey: string, value: string, target: vscode.ConfigurationTarget) : void;
 }
 
 // default configuration settings handler for production release
 export class SettingsConfiguration implements ISettingsConfiguration {
-    readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
+    readSetting(settingKey: string, defaultValue?: string): string | undefined {
         const settings = vscode.workspace.getConfiguration(this.extensionSettingsPrefix);
         if (settings) {
-            const val = settings.get<T>(settingKey);
+            const val = settings.get<string>(settingKey);
             if (val) {
                 return val;
             }
@@ -27,7 +27,7 @@ export class SettingsConfiguration implements ISettingsConfiguration {
 
         return undefined;
     }
-    async writeSetting<T>(settingKey: string, value: T, target: vscode.ConfigurationTarget): Promise<void> {
+    async writeSetting(settingKey: string, value: string, target: vscode.ConfigurationTarget): Promise<void> {
         const settings = vscode.workspace.getConfiguration(this.extensionSettingsPrefix);
         await settings.update(settingKey, value, target);
     }
