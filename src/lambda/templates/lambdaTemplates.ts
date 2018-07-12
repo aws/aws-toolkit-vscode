@@ -1,15 +1,52 @@
 export class LambdaTemplates {
+    static readonly InvokeInputTemplate = `
+    <h1> 
+        Include input payload with <%= FunctionName %>
+    </h1>
+    <div id="app">
+        <h3>
+            Use an input template:
+        </h3>
+        <select v-model="selectedSampleRequest" v-on:change="newSelection">
+            <option disabled value="">Select a sample</option>
+            <% InputSamples.forEach(function(el) { %>
+                <option value="<%= el.filename %>"><%= el.name %></option>
+            <% }); %>
+        </select>
+        <br />
+        <textarea 
+            rows="30"
+            cols="90"
+            v-model="sampleText"
+        ></textarea>
+        <br />
+        <input type="submit" v-on:click="sendInput" value="Invoke lambda">
+    </div>
+    <% Libraries.forEach(function(lib) { %>
+        <script nonce="<%= lib.Nonce %>" src="<%= lib.Uri %>"></script>
+    <% }); %>
+    <% Scripts.forEach(function(scr) { %>
+        <script nonce="<%= scr.Nonce %>" src="<%= scr.Uri %>"></script>
+    <% }); %>
+    `;
     static readonly InvokeTemplate = `
     <h1>
         Invoking <%= FunctionName %>...
     </h1>
-    <p>Status Code: <%= StatusCode %></p>
-    <p>Response: 
-        <pre><%- JSON.stringify(JSON.parse(Payload), null, 4) %></pre>
-    </p>
-    <p>Logs: 
-        <pre><%= LogResult %></pre>
-    </p>
+    <% if (Error) { %>
+        <div>
+            <p>Something went wrong.</p>
+            <pre><%= Error %></pre>
+        </div>
+    <% } else { %>
+        <p>Status Code: <%= StatusCode %></p>
+        <p>Response: 
+            <pre><%- JSON.stringify(JSON.parse(Payload), null, 4) %></pre>
+        </p>
+        <p>Logs: 
+            <pre><%= LogResult %></pre>
+        </p>
+    <% } %>
     `;
     static readonly GetPolicyTemplate = `
     <h1>
