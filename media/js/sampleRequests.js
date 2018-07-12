@@ -5,7 +5,13 @@ console.log('Loaded!');
         el: '#app',
         data: {
             selectedSampleRequest: {},
-            sampleText: ""
+            sampleText: "",
+            error: null,
+            payload: {},
+            statusCode: "",
+            logs: "",
+            showResponse: false,
+            isLoading: false
         },
         mounted() {
             this.$nextTick(function () {
@@ -27,13 +33,31 @@ console.log('Loaded!');
                     case 'loadedSample':
                         this.loadSampleText(message.sample);
                         break;
+                    case 'invokedLambda':
+                        this.showResponse = true;
+                        if (message.error) {
+                            this.error = message.error;
+                        } else {
+                            let parsed;
+                            try {
+                                parsed = JSON.parse(message.payload);
+                            } catch(e) {
+                                parsed = message.payload;
+                            }
+                            this.payload = parsed;
+                            this.statusCode = message.statusCode;
+                            this.logs = message.logs;
+                        }
+                        this.isLoading = false;
+                        break;
                 }
             },
             loadSampleText: function (txt) {
                 this.sampleText = txt;
             },
-            sendInput: function() {
+            sendInput: function () {
                 console.log(this.sampleText);
+                this.isLoading = true;
                 vscode.postMessage({
                     command: 'invokeLambda',
                     value: this.sampleText

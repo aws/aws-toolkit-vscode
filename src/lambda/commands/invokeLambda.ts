@@ -37,7 +37,7 @@ export async function invokeLambda(element?: FunctionNode) {
         // ideally need to get the client from the explorer, but the context will do for now
 
         console.log('building template...');
-        const invokeInputTemplateFn = _.template(LambdaTemplates.InvokeInputTemplate);
+        const invokeTemplateFn = _.template(LambdaTemplates.InvokeTemplate);
         const resourcePath = path.join(ext.context.extensionPath, 'resources', 'vs-lambda-sample-request-manifest.xml');
         console.log(sampleRequestManifestPath);
         console.log(resourcePath);
@@ -56,14 +56,11 @@ export async function invokeLambda(element?: FunctionNode) {
             const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js']);
             console.log(loadLibs);
             view.webview.html = baseTemplateFn({
-                content: invokeInputTemplateFn({
+                content: invokeTemplateFn({
                     FunctionName: fn.functionConfiguration.FunctionName,
                     InputSamples: inputs,
                     Scripts: loadScripts,
                     Libraries: loadLibs
-                    // LogResult: logs,
-                    // StatusCode: funcResponse.StatusCode,
-                    // Payload: payload
                 }),
             });
 
@@ -88,28 +85,20 @@ export async function invokeLambda(element?: FunctionNode) {
                             console.log('found a payload');
                             funcRequest.Payload = message.value;
                         }
-                        const invokeTemplateFn = _.template(LambdaTemplates.InvokeTemplate);
                         try {
                             const funcResponse = await lambdaClient.invoke(funcRequest).promise();
-                            const logs = funcResponse.LogResult ? Buffer.from(funcResponse.LogResult, 'base64') : "";
+                            const logs = funcResponse.LogResult ? Buffer.from(funcResponse.LogResult, 'base64').toString() : "";
                             const payload = funcResponse.Payload ? funcResponse.Payload : JSON.stringify({});
-                            view.webview.html = baseTemplateFn({
-                                content: invokeTemplateFn({
-                                    FunctionName: fn.functionConfiguration.FunctionName,
-                                    LogResult: logs,
-                                    StatusCode: funcResponse.StatusCode,
-                                    Payload: payload
-                                }),
+                            view.webview.postMessage({
+                                command: 'invokedLambda',
+                                logs,
+                                payload,
+                                statusCode: funcResponse.StatusCode 
                             });
                         } catch (e) {
-                            view.webview.html = baseTemplateFn({
-                                content: invokeTemplateFn({
-                                    FunctionName: fn.functionConfiguration.FunctionName,
-                                    LogResult: null,
-                                    StatusCode: null,
-                                    Payload: null,
-                                    Error: e
-                                }),
+                            view.webview.postMessage({
+                                command: 'invokedLambda',
+                                error: e
                             });
                         }
                         break;

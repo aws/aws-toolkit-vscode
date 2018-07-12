@@ -1,5 +1,5 @@
 export class LambdaTemplates {
-    static readonly InvokeInputTemplate = `
+    static readonly InvokeTemplate = `
     <h1> 
         Include input payload with <%= FunctionName %>
     </h1>
@@ -15,12 +15,32 @@ export class LambdaTemplates {
         </select>
         <br />
         <textarea 
-            rows="30"
+            rows="20"
             cols="90"
             v-model="sampleText"
         ></textarea>
         <br />
         <input type="submit" v-on:click="sendInput" value="Invoke lambda">
+        <br />
+        <h3 v-if="isLoading">Loading response...</h3>
+        <div v-if="showResponse">
+            <h1>
+            Invoking <%= FunctionName %>...
+            </h1>
+            <div v-if="error">
+            <p>Something went wrong.</p>
+            <pre>{{ error }}</pre>
+            </div>
+            <div v-else>
+                <p>Status Code: {{statusCode}}</p>
+                <p>Response: 
+                    <pre>{{ payload }}</pre>
+                </p>
+                <p>Logs: 
+                    <pre>{{ logs }}</pre>
+                </p>
+            </div>
+        </div>
     </div>
     <% Libraries.forEach(function(lib) { %>
         <script nonce="<%= lib.Nonce %>" src="<%= lib.Uri %>"></script>
@@ -28,25 +48,6 @@ export class LambdaTemplates {
     <% Scripts.forEach(function(scr) { %>
         <script nonce="<%= scr.Nonce %>" src="<%= scr.Uri %>"></script>
     <% }); %>
-    `;
-    static readonly InvokeTemplate = `
-    <h1>
-        Invoking <%= FunctionName %>...
-    </h1>
-    <% if (Error) { %>
-        <div>
-            <p>Something went wrong.</p>
-            <pre><%= Error %></pre>
-        </div>
-    <% } else { %>
-        <p>Status Code: <%= StatusCode %></p>
-        <p>Response: 
-            <pre><%- JSON.stringify(JSON.parse(Payload), null, 4) %></pre>
-        </p>
-        <p>Logs: 
-            <pre><%= LogResult %></pre>
-        </p>
-    <% } %>
     `;
     static readonly GetPolicyTemplate = `
     <h1>
