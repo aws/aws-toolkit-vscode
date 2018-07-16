@@ -7,7 +7,6 @@ import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.DataKey
 import com.intellij.openapi.actionSystem.ex.ActionManagerEx
-import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
@@ -19,97 +18,58 @@ import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBSwingUtilities
 import com.intellij.util.ui.UIUtil
-import software.aws.toolkits.jetbrains.core.AwsSettingsProvider
-import software.aws.toolkits.jetbrains.core.SettingsChangedListener
-import software.aws.toolkits.jetbrains.core.credentials.AwsCredentialsConfigurable
-import software.aws.toolkits.jetbrains.core.credentials.AwsCredentialsProfileProvider
-import software.aws.toolkits.jetbrains.core.credentials.AwsProfilePanel
-import software.aws.toolkits.jetbrains.core.credentials.CredentialProfile
+import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
+import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_SERVICE_NODE
-import software.aws.toolkits.jetbrains.core.region.AwsRegionPanel
-import software.aws.toolkits.jetbrains.utils.MutableMapWithListener
+import software.aws.toolkits.jetbrains.core.region.AwsRegion
 import java.awt.Component
 import java.awt.FlowLayout
-import java.awt.event.ActionListener
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.JPanel
 import javax.swing.JTree
-import javax.swing.event.HyperlinkEvent
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
-class ExplorerToolWindow(val project: Project) :
-        SimpleToolWindowPanel(true, false), MutableMapWithListener.MapChangeListener<String, CredentialProfile>,
-        SettingsChangedListener {
-
-    private val settingsProvider = AwsSettingsProvider.getInstance(project).addListener(this)
+class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, false), AccountSettingsChangedNotifier {
     private val actionManager = ActionManagerEx.getInstanceEx()
 
     private val treePanelWrapper: Wrapper = Wrapper()
-    private val profilePanel: AwsProfilePanel
-    private val regionPanel: AwsRegionPanel
     private val errorPanel: JPanel
     private val mainPanel: JPanel
     private var awsTree: Tree? = null
 
     init {
-        val link = HyperlinkLabel("Open AWS Configuration to configure your AWS account.")
-        link.addHyperlinkListener { e ->
-            if (e.eventType == HyperlinkEvent.EventType.ACTIVATED) {
-                ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsCredentialsConfigurable::class.java)
-            }
-        }
+        val link = HyperlinkLabel("TODO: Add links to the getting started pages")
 
         errorPanel = JPanel()
         errorPanel.add(link)
 
-        profilePanel = AwsProfilePanel(project, settingsProvider.currentProfile)
-        profilePanel.addActionListener(ActionListener { onAwsProfileOrRegionComboSelected() })
-
-        regionPanel = AwsRegionPanel(project)
-        regionPanel.addActionListener(ActionListener { onAwsProfileOrRegionComboSelected() })
-
         mainPanel = JPanel(FlowLayout(FlowLayout.LEADING, 0, 0))
-        mainPanel.add(profilePanel.profilePanel)
-        mainPanel.add(regionPanel.regionPanel)
         setToolbar(mainPanel)
         setContent(treePanelWrapper)
 
+        project.messageBus.connect().subscribe(ProjectAccountSettingsManager.ACCOUNT_SETTINGS_CHANGED, this)
+
         updateModel()
     }
 
-    /**
-     * Listens to the underlying profile map to keep being synced with the content pane.
-     */
-    override fun onUpdate() {
-        if (AwsCredentialsProfileProvider.getInstance(project).getProfiles().isEmpty()) {
-            treePanelWrapper.setContent(errorPanel)
-        }
-    }
-
-    override fun profileChanged() {
+    override fun activeCredentialsChanged(credentialsProvider: ToolkitCredentialsProvider) {
         updateModel()
     }
 
-    override fun regionChanged() {
+    override fun activeRegionChanged(value: AwsRegion) {
         updateModel()
-    }
-
-    private fun onAwsProfileOrRegionComboSelected() {
-        val selectedProfile = profilePanel.getSelectedProfile()
-        val selectedRegion = regionPanel.getSelectedRegion()
-
-        if (selectedProfile == null || selectedRegion == null) {
-            treePanelWrapper.setContent(errorPanel)
-            return
-        }
-        settingsProvider.currentRegion = selectedRegion
-        settingsProvider.currentProfile = selectedProfile
     }
 
     private fun updateModel() {
+        if (!ProjectAccountSettingsManager.getInstance(project).hasActiveCredentials()) {
+            treePanelWrapper.setContent(errorPanel)
+            return
+        }
+
         val model = DefaultTreeModel(DefaultMutableTreeNode())
         val newTree = createTree(model)
         val builder = AwsExplorerTreeBuilder(newTree, model, project)
@@ -204,10 +164,10 @@ class ExplorerToolWindow(val project: Project) :
     private inline fun <reified T : AwsExplorerNode<*>> getSelectedNodes(): List<T> {
         return awsTree?.selectionPaths?.let {
             it.map { it.lastPathComponent }
-                    .filterIsInstance<DefaultMutableTreeNode>()
-                    .map { it.userObject }
-                    .filterIsInstance<T>()
-                    .toList()
+                .filterIsInstance<DefaultMutableTreeNode>()
+                .map { it.userObject }
+                .filterIsInstance<T>()
+                .toList()
         } ?: emptyList<T>()
     }
 

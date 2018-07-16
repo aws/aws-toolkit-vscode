@@ -7,7 +7,6 @@ import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotSameAs
 import assertk.assertions.isSameAs
 import assertk.assertions.isTrue
-import com.intellij.openapi.components.ServiceManager
 import com.intellij.testFramework.PlatformTestCase
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.runInEdtAndWait
@@ -22,6 +21,7 @@ import software.amazon.awssdk.core.runtime.auth.Signer
 import software.amazon.awssdk.core.runtime.auth.SignerProvider
 import software.amazon.awssdk.core.runtime.auth.SignerProviderContext
 import software.amazon.awssdk.http.SdkHttpClient
+import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegion
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.jvm.isAccessible
@@ -89,9 +89,9 @@ class AwsClientManagerTest {
         val sut = AwsClientManager.getInstance(projectRule.project)
         val first = sut.getClient<DummyServiceClient>()
 
-        val testSettings = ServiceManager.getService(projectRule.project, AwsSettingsProvider::class.java)
+        val testSettings = ProjectAccountSettingsManager.getInstance(projectRule.project)
 
-        testSettings.currentRegion = AwsRegion("us-east-1", "US-east-1")
+        testSettings.activeRegion = AwsRegion("us-east-1", "US-east-1")
 
         val afterRegionUpdate = sut.getClient<DummyServiceClient>()
 

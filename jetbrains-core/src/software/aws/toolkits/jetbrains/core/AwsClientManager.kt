@@ -1,35 +1,33 @@
 package software.aws.toolkits.jetbrains.core
 
-import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.auth.AWSSessionCredentials
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
-import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.awscore.client.builder.AwsDefaultClientBuilder
 import software.amazon.awssdk.core.SdkClient
 import software.amazon.awssdk.core.client.builder.ClientHttpConfiguration
 import software.amazon.awssdk.http.apache.ApacheSdkHttpClientFactory
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3ClientBuilder
-import software.aws.toolkits.jetbrains.core.credentials.AwsCredentialsProfileProvider
+import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.region.AwsRegion.Companion.GLOBAL
 import java.lang.reflect.Modifier
 import java.util.concurrent.ConcurrentHashMap
+import javax.security.auth.login.CredentialNotFoundException
 import kotlin.reflect.KClass
 
 class AwsClientManager internal constructor(
-    project: Project,
-    private val settings: AwsSettingsProvider,
-    private val credentialsProfileProvider: AwsCredentialsProfileProvider
+    project: Project
 ) : Disposable {
     init {
         Disposer.register(project, this)
     }
+
+    private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
 
     private data class AwsClientKey(val profileName: String, val region: AwsRegion, val serviceClass: KClass<out SdkClient>)
 
@@ -48,8 +46,8 @@ class AwsClientManager internal constructor(
 
     fun <T : SdkClient> getClient(clz: KClass<T>): T {
         val key = AwsClientKey(
-                profileName = settings.currentProfile!!.name,
-                region = settings.currentRegion,
+                profileName = accountSettingsManager.activeCredentialProvider.id,
+                region = accountSettingsManager.activeRegion,
                 serviceClass = clz
         )
 
@@ -76,7 +74,7 @@ class AwsClientManager internal constructor(
 
         return builder
             .httpConfiguration(ClientHttpConfiguration.builder().httpClient(httpClient).build())
-            .credentialsProvider(getCredentialsProvider(settings.currentProfile!!.name).toV2())
+            .credentialsProvider(getCredentialsProvider())
             .region(Region.of(key.region.id))
             .also {
                 if (it is S3ClientBuilder) {
@@ -86,21 +84,14 @@ class AwsClientManager internal constructor(
             .build() as T
     }
 
-    private fun getCredentialsProvider(profileName: String): AWSCredentialsProvider {
-        // TODO If we cannot find the profile name, we should report internal error
-        return credentialsProfileProvider.lookupProfileByName(profileName)!!.awsCredentials
-    }
+    private fun getCredentialsProvider(): AwsCredentialsProvider {
+        try {
+            return accountSettingsManager.activeCredentialProvider
+        } catch (e: CredentialNotFoundException) {
+            // TODO: Notify user
 
-    private fun AWSCredentialsProvider.toV2() =
-            AwsCredentialsProvider {
-                val cred = this@toV2.credentials ?: throw IllegalStateException("Credentials should not be null")
-                when (cred) {
-                    is AWSSessionCredentials -> AwsSessionCredentials.create(
-                            cred.awsAccessKeyId,
-                            cred.awsSecretKey,
-                            cred.sessionToken
-                    )
-                    else -> AwsCredentials.create(cred.awsAccessKeyId, cred.awsSecretKey)
-                }
-            }
+            // Throw canceled exception to stop any task relying on this call
+            throw ProcessCanceledException(e)
+        }
+    }
 }

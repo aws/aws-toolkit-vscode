@@ -53,11 +53,6 @@ class ProfileToolkitCredentialsProvider(
 
 class ProfileToolkitCredentialsProviderFactory(private val credentialLocationOverride: Path? = null) :
     ToolkitCredentialsProviderFactory(TYPE) {
-    /**
-     * All the AWS profiles loaded/merged from the default profile locations
-     */
-    private var profiles = emptyMap<String, Profile>()
-
     init {
         loadFromProfileFile()
         // TODO: Start file watchers
@@ -68,7 +63,7 @@ class ProfileToolkitCredentialsProviderFactory(private val credentialLocationOve
      */
     private fun loadFromProfileFile() {
         try {
-            profiles = credentialLocationOverride?.let {
+            val profiles = credentialLocationOverride?.let {
                 ProfileFile.builder()
                     .content(credentialLocationOverride)
                     .type(ProfileFile.Type.CONFIGURATION)

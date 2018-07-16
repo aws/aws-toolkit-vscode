@@ -67,13 +67,9 @@ class ToolkitCredentialsProviderManagerTest {
     }
 
     private inner class MockToolkitCredentialsProviderRegistry : ToolkitCredentialsProviderRegistry {
-        private val factories = listOf(
+        override fun listFactories() = listOf(
             MockToolkitCredentialProviderFactory(),
             MockToolkitCredentialProviderFactory2()
-        ).associateBy { it.type }
-
-        override fun listFactories() = factories.values
-
-        override fun getFactory(id: String) = factories[id]
+        )
     }
 }

@@ -5,9 +5,14 @@ import org.slf4j.LoggerFactory
 class ToolkitCredentialsProviderManager(
     private val registry: ToolkitCredentialsProviderRegistry
 ) {
+    @Throws(CredentialProviderNotFound::class)
     fun getCredentialProvider(id: String): ToolkitCredentialsProvider {
         return registry.listFactories().mapNotNull { it.get(id) }.firstOrNull()
             ?: throw CredentialProviderNotFound("No ToolkitCredentialsProvider found represented by $id")
+    }
+
+    fun getCredentialProviders(): List<ToolkitCredentialsProvider> {
+        return registry.listFactories().flatMap { it.listCredentialProviders() }.toList()
     }
 
     /**
@@ -36,6 +41,4 @@ class CredentialProviderNotFound(msg: String) : RuntimeException(msg)
  */
 interface ToolkitCredentialsProviderRegistry {
     fun listFactories(): Collection<ToolkitCredentialsProviderFactory>
-
-    fun getFactory(id: String): ToolkitCredentialsProviderFactory?
 }

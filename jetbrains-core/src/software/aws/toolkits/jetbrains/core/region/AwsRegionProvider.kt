@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.collect.ImmutableMap
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.utils.notifyError
 import java.io.IOException
 
@@ -40,11 +39,11 @@ class AwsRegionProvider private constructor() {
     }
 
     companion object {
-        const val DEFAULT_REGION = "us-east-1"
+        private const val DEFAULT_REGION = "us-east-1"
 
         @JvmStatic
-        fun getInstance(project: Project): AwsRegionProvider {
-            return ServiceManager.getService(project, AwsRegionProvider::class.java)
+        fun getInstance(): AwsRegionProvider {
+            return ServiceManager.getService(AwsRegionProvider::class.java)
         }
     }
 }
