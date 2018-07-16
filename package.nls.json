@@ -1,4 +1,6 @@
 {
+    "AWS.newLambda": "New Lambda Function or Serverless App",
+    "AWS.deployLambda": "Deploy Lambda Function",
     "AWS.invokeLambda": "Invoke Lambda Function",
     "AWS.getLambdaConfig": "Get Lambda Function Configuration",
     "AWS.getLambdaPolicy": "Get Lambda Function Policy"

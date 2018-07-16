@@ -8,6 +8,8 @@ import { ProjectBlueprintsNode } from './explorer/projectBlueprintsNode';
 import { FunctionNode } from './explorer/functionNode';
 import { getLambdaPolicy } from './commands/getLambdaPolicy';
 import { invokeLambda } from './commands/invokeLambda';
+import { newLambda } from './commands/newLambda';
+import { deployLambda }from './commands/deployLambda';
 import { getLambdaConfig } from './commands/getLambdaConfig';
 import { AWSContext } from '../shared/awsContext';
 import { ext } from '../shared/extensionGlobals';
@@ -19,6 +21,8 @@ export class LambdaProvider implements vscode.TreeDataProvider<ExplorerNodeBase>
     public viewProviderId: string = 'lambda';
 
     public initialize(): void {
+        vscode.commands.registerCommand('aws.newLambda', async () => await newLambda());
+        vscode.commands.registerCommand('aws.deployLambda', async (node: FunctionNode) => await deployLambda(node));
         vscode.commands.registerCommand('aws.invokeLambda', async (node: FunctionNode) => await invokeLambda(node));
         vscode.commands.registerCommand('aws.getLambdaConfig', async (node: FunctionNode) => await getLambdaConfig(node));
         vscode.commands.registerCommand('aws.getLambdaPolicy', async (node: FunctionNode) => await getLambdaPolicy(node));

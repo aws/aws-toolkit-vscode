@@ -14,7 +14,9 @@
         "onCommand:aws.selectProfile",
         "onCommand:aws.selectRegion",
         "onView:lambda",
+        "onCommand:aws.newLambda",
         "onCommand:aws.invokeLambda",
+        "onCommand:aws.deployLambda",
         "onCommand:aws.getLambdaConfig",
         "onCommand:aws.getLambdaPolicy",
         "onView:s3",
@@ -76,9 +78,19 @@
                     "group": "navigation@2"
                 },
                 {
-                    "command": "aws.invokeLambda",
+                    "command": "aws.newLambda",
                     "when": "view == lambda",
                     "group": "navigation@3"
+                },
+                {
+                    "command": "aws.deployLambda",
+                    "when": "view == lambda",
+                    "group": "navigation@4"
+                },
+                {
+                    "command": "aws.invokeLambda",
+                    "when": "view == lambda",
+                    "group": "navigation@5"
                 }
             ],
             "view/item/context": [
@@ -88,14 +100,19 @@
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.getLambdaConfig",
+                    "command": "aws.deployLambda",
                     "when": "view == lambda && viewItem == awsLambdaFn",
                     "group": "0@2"
                 },
                 {
-                    "command": "aws.getLambdaPolicy",
+                    "command": "aws.getLambdaConfig",
                     "when": "view == lambda && viewItem == awsLambdaFn",
                     "group": "0@3"
+                },
+                {
+                    "command": "aws.getLambdaPolicy",
+                    "when": "view == lambda && viewItem == awsLambdaFn",
+                    "group": "0@4"
                 }
             ]
         },
@@ -116,6 +133,24 @@
                 "icon": {
                     "light": "resources/light/select_region.svg",
                     "dark": "resources/dark/select_region.svg"
+                }
+            },
+            {
+                "command": "aws.newLambda",
+                "title": "%AWS.newLambda%",
+                "category": "AWS",
+                "icon": {
+                    "light": "resources/light/new_lambda.svg",
+                    "dark": "resources/dark/new_lambda.svg"
+                }
+            },
+            {
+                "command": "aws.deployLambda",
+                "title": "%AWS.deployLambda%",
+                "category": "AWS",
+                "icon": {
+                    "light": "resources/light/deploy_lambda.svg",
+                    "dark": "resources/dark/deploy_lambda.svg"
                 }
             },
             {
