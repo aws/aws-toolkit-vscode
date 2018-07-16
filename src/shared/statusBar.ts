@@ -33,7 +33,7 @@ export class AWSStatusBar {
         }
 
         if (profileName && region) {
-            this.credentialAndRegionContext.text = 'AWS: ' + profileName + '@' + region;
+            this.credentialAndRegionContext.text = 'AWS: ' + profileName + '/' + region;
             this.credentialAndRegionContext.show();
         } else {
             this.credentialAndRegionContext.hide();
