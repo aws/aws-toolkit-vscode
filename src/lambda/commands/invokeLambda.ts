@@ -52,7 +52,7 @@ export async function invokeLambda(element?: FunctionNode) {
                     inputs.push({ name: r.name, filename: r.filename });
                 });
             });
-            const loadScripts = ExtensionUtilities.getScriptsForHtml(['sampleRequests.js']);
+            const loadScripts = ExtensionUtilities.getScriptsForHtml(['invokeLambdaVue.js']);
             const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js']);
             console.log(loadLibs);
             view.webview.html = baseTemplateFn({

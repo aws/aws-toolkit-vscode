@@ -25,6 +25,22 @@ console.log('Loaded!');
                     value: this.selectedSampleRequest
                 })
             },
+            processFile: function ($event) {
+                console.log($event);
+                console.log($event.target);
+                const inputFile = $event.target;
+                const self = this;
+                if ('files' in inputFile && inputFile.files.length > 0) {
+                    const reader = new FileReader()
+                    reader.onload = event => {
+                        console.log(event.target.result);
+                        self.sampleText = '';
+                        self.sampleText = event.target.result;
+                    } // desired file content
+                    reader.onerror = error => reject(error)
+                    reader.readAsText(inputFile.files[0])
+                }
+            },
             handleMessageReceived: function (e) {
                 const message = event.data;
                 console.log(message.command);
@@ -35,13 +51,17 @@ console.log('Loaded!');
                         break;
                     case 'invokedLambda':
                         this.showResponse = true;
+                        this.error = '';
+                        this.payload = '';
+                        this.statusCode = '';
+                        this.logs = '';
                         if (message.error) {
                             this.error = message.error;
                         } else {
                             let parsed;
                             try {
                                 parsed = JSON.parse(message.payload);
-                            } catch(e) {
+                            } catch (e) {
                                 parsed = message.payload;
                             }
                             this.payload = parsed;

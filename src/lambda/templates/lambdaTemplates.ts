@@ -5,7 +5,12 @@ export class LambdaTemplates {
     </h1>
     <div id="app">
         <h3>
-            Example request payloads:
+            Select a file to use as payload:
+        </h3>
+        <input type="file" @change="processFile($event)">
+        <br />
+        <h3>
+            Or, use a sample request payload from a template:
         </h3>
         <select v-model="selectedSampleRequest" v-on:change="newSelection">
             <option disabled value="">Select an example input</option>
@@ -13,6 +18,7 @@ export class LambdaTemplates {
                 <option value="<%= el.filename %>"><%= el.name %></option>
             <% }); %>
         </select>
+        <br />
         <br />
         <textarea
             rows="20"
