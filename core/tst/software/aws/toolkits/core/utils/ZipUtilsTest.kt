@@ -56,11 +56,12 @@ class ZipUtilsTest {
     }
 
     private fun assertZipContainsHelloWorldFile(zipFile: Path) {
-        val actualZip = ZipFile(zipFile.toFile())
-        val actualEntry = actualZip.entries().toList().find { it.name == "file.txt" }
+        ZipFile(zipFile.toFile()).use { actualZip ->
+            val actualEntry = actualZip.entries().toList().find { it.name == "file.txt" }
 
-        assert(actualEntry).isNotNull()
-        val contents = actualZip.getInputStream(actualEntry).bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-        assert(contents).isEqualTo("hello world")
+            assert(actualEntry).isNotNull()
+            val contents = actualZip.getInputStream(actualEntry).bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+            assert(contents).isEqualTo("hello world")
+        }
     }
 }

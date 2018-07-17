@@ -21,7 +21,7 @@ class EnvironmentVariableHelper : ExternalResource() {
         })
 
         @Suppress("UNCHECKED_CAST")
-        modifiableMap = field.get(System.getenv()) as MutableMap<String, String>
+        modifiableMap = getProcessEnvMap() ?: getEnvMap()
     }
 
     fun remove(vararg keys: String) {
@@ -32,6 +32,28 @@ class EnvironmentVariableHelper : ExternalResource() {
     operator fun set(key: String, value: String) {
         mutated = true
         modifiableMap[key] = value
+    }
+
+    private fun getEnvMap(): MutableMap<String, String> {
+        return getField(System.getenv().javaClass, System.getenv(), "m")!!
+    }
+
+    private fun getProcessEnvMap(): MutableMap<String, String>? {
+        val processEnvironment = Class.forName("java.lang.ProcessEnvironment")
+        return getField(processEnvironment, null, "theCaseInsensitiveEnvironment")
+    }
+
+    private fun getField(processEnvironment: Class<*>, obj: Any?, fieldName: String): MutableMap<String, String>? {
+        return try {
+            val declaredField = processEnvironment.getDeclaredField(fieldName)
+            AccessController.doPrivileged(PrivilegedAction<Unit> {
+                declaredField.isAccessible = true
+            })
+            @Suppress("UNCHECKED_CAST")
+            declaredField.get(obj) as MutableMap<String, String>
+        } catch (_: NoSuchFieldException) {
+            null
+        }
     }
 
     private fun reset() {

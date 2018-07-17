@@ -99,7 +99,7 @@ fun JavaCodeInsightTestFixture.addModule(moduleName: String): Module {
  */
 fun JavaCodeInsightTestFixture.addClass(module: Module, @Language("JAVA") classText: String): PsiClass {
     val qName = determineQualifiedName(module.project, classText)
-    val fileName = qName.replace('.', '/') + ".java"
+    val fileName = qName.replace('.', File.separatorChar) + ".java"
     val psiFile = addFile(module, JavaSourceRootType.SOURCE, fileName, classText) as PsiJavaFile
     return ReadAction.compute<PsiClass, RuntimeException> { psiFile.classes[0] }
 }
@@ -112,7 +112,7 @@ fun JavaCodeInsightTestFixture.addClass(module: Module, @Language("JAVA") classT
  */
 fun JavaCodeInsightTestFixture.addTestClass(module: Module, @Language("JAVA") classText: String): PsiClass {
     val qName = determineQualifiedName(module.project, classText)
-    val fileName = qName.replace('.', '/') + ".java"
+    val fileName = qName.replace('.', File.separatorChar) + ".java"
     val psiFile = addFile(module, JavaSourceRootType.TEST_SOURCE, fileName, classText) as PsiJavaFile
     return ReadAction.compute<PsiClass, RuntimeException> { psiFile.classes[0] }
 }
@@ -128,7 +128,7 @@ private fun JavaCodeInsightTestFixture.addFile(module: Module, type: JpsModuleSo
     val sourceRoot = ModuleRootManager.getInstance(module).getSourceRoots(type).first()
     val fullPath = Paths.get(sourceRoot.path, fileName).toString()
     val projectRelativePath = FileUtil.getRelativePath(tempDirPath, fullPath, File.separatorChar) ?: throw RuntimeException("Cannot determine relative path")
-    return addFileToProject(projectRelativePath, content)
+    return addFileToProject(projectRelativePath.replace('\\', '/'), content)
 }
 
 private fun determineQualifiedName(project: Project, classText: String): String = ReadAction.compute<String, RuntimeException> {

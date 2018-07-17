@@ -168,7 +168,7 @@ class JavaLambdaPackager : LambdaPackager {
 
     private fun toEntries(path: Path): List<ZipEntry> =
         Files.walk(path).use { files ->
-            files.filter { !it.isDirectory() && !it.isHidden() && it.exists() }.map { ZipEntry(path.relativize(it).toString(), it) }.toList()
+            files.filter { !it.isDirectory() && !it.isHidden() && it.exists() }.map { ZipEntry(path.relativize(it).toString().replace('\\', '/'), it) }.toList()
         }
 
     private data class ZipEntry(val pathInZip: String, val sourceFile: InputStream) {

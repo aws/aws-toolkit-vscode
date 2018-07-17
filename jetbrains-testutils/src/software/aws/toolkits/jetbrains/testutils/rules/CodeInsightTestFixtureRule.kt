@@ -2,6 +2,7 @@ package software.aws.toolkits.jetbrains.testutils.rules
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.testFramework.ApplicationRule
@@ -46,7 +47,11 @@ open class CodeInsightTestFixtureRule(protected val testDescription: LightProjec
 
     override fun finished(description: Description?) {
         lazyFixture.ifSet {
-            fixture.tearDown()
+            try {
+                fixture.tearDown()
+            } catch (e: Exception) {
+                LOG.warn("Exception during tear-down", e)
+            }
             lazyFixture.clear()
         }
     }
@@ -68,6 +73,10 @@ open class CodeInsightTestFixtureRule(protected val testDescription: LightProjec
 
     protected val testDataPath: String
         get() = Paths.get("testdata", testClass.simpleName, testName).toString()
+
+    private companion object {
+        val LOG = Logger.getInstance(CodeInsightTestFixtureRule::class.java)
+    }
 }
 
 internal class ClearableLazy<out T>(private val initializer: () -> T) {
