@@ -9,20 +9,10 @@ import java.security.PrivilegedAction
  * then allows resetting them to the original values.
  */
 class EnvironmentVariableHelper : ExternalResource() {
-    private val originalEnvironmentVariables: Map<String, String> = System.getenv().toMap()
-    private val modifiableMap: MutableMap<String, String>
+    private val originalEnvironmentVariables = System.getenv().toMap()
+    private val modifiableMap = getProcessEnvMap() ?: getEnvMap()
     @Volatile
     private var mutated = false
-
-    init {
-        val field = System.getenv().javaClass.getDeclaredField("m")
-        AccessController.doPrivileged(PrivilegedAction<Unit> {
-            field.isAccessible = true
-        })
-
-        @Suppress("UNCHECKED_CAST")
-        modifiableMap = getProcessEnvMap() ?: getEnvMap()
-    }
 
     fun remove(vararg keys: String) {
         mutated = true
