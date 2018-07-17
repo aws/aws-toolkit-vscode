@@ -1,6 +1,8 @@
 package software.aws.toolkits.jetbrains.core
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.startup.StartupActivity
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.openapi.ui.popup.ListPopup
 import com.intellij.openapi.ui.popup.ListPopupStep
@@ -11,6 +13,7 @@ import com.intellij.openapi.ui.popup.PopupStep.FINAL_CHOICE
 import com.intellij.openapi.ui.popup.SpeedSearchFilter
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
+import com.intellij.openapi.wm.WindowManager
 import com.intellij.util.Consumer
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
@@ -24,7 +27,7 @@ import javax.swing.Icon
 class AwsSettingsPanel(private val project: Project) : StatusBarWidget, StatusBarWidget.MultipleTextValuesPresentation,
     AccountSettingsChangedNotifier {
     private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
-    private lateinit var statusBar: StatusBar
+    private var statusBar: StatusBar? = null
 
     @Suppress("FunctionName")
     override fun ID(): String = "AwsSettingsPanel"
@@ -67,11 +70,17 @@ class AwsSettingsPanel(private val project: Project) : StatusBarWidget, StatusBa
     }
 
     private fun updateWidget() {
-        statusBar.updateWidget(ID())
+        statusBar?.updateWidget(ID())
     }
 
     override fun dispose() {
-        statusBar.removeWidget(ID())
+        ApplicationManager.getApplication().invokeLater({ statusBar?.removeWidget(ID()) }, { project.isDisposed })
+    }
+}
+
+class AwsSettingsPanelInstaller : StartupActivity {
+    override fun runActivity(project: Project) {
+        WindowManager.getInstance().getStatusBar(project).addWidget(AwsSettingsPanel(project), project)
     }
 }
 
