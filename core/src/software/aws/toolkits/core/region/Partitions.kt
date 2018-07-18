@@ -1,0 +1,48 @@
+package software.aws.toolkits.core.region
+
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.MapperFeature
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import org.slf4j.LoggerFactory
+import software.amazon.awssdk.regions.internal.model.Endpoint
+import software.amazon.awssdk.regions.internal.model.Service
+import software.aws.toolkits.core.utils.RemoteResource
+import software.aws.toolkits.resources.BundledResources
+import java.io.IOException
+import java.io.InputStream
+import java.time.Duration
+
+data class Partitions(val partitions: List<Partition>)
+
+data class Partition(val partition: String, val regions: Map<String, PartitionRegion>, val services: Map<String, Service>)
+
+data class PartitionRegion(val description: String)
+
+data class Service(val endpoints: Map<String, Endpoint>)
+
+object Endpoint
+
+object PartitionParser {
+    private val LOG = LoggerFactory.getLogger(PartitionParser::class.java)
+
+    private val mapper = jacksonObjectMapper()
+        .disable(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS)
+        .disable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS)
+        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        .enable(JsonParser.Feature.ALLOW_COMMENTS)
+
+    fun parse(inputStream: InputStream): Partitions? = try {
+        mapper.readValue<Partitions>(inputStream, Partitions::class.java)
+    } catch (e: IOException) {
+        LOG.error("Error: failed to parse Partitions", e)
+        null
+    }
+}
+
+object ServiceEndpointResource: RemoteResource {
+    override val urls: List<String> = listOf("https://aws-toolkit-endpoints.s3.amazonaws.com/endpoints.json")
+    override val name: String = "service-endpoints.json"
+    override val ttl: Duration? = Duration.ofHours(24)
+    override val initialValue: (() -> InputStream)? = { BundledResources.ENDPOINTS_FILE }
+}

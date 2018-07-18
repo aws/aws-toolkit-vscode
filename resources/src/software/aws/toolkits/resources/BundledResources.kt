@@ -1,7 +1,7 @@
 package software.aws.toolkits.resources
 
-import java.net.URL
+import java.io.InputStream
 
 object BundledResources {
-    val ENDPOINTS_FILE: URL = javaClass.getResource("endpoints.json")
+    val ENDPOINTS_FILE: InputStream get() = javaClass.getResourceAsStream("endpoints.json")
 }

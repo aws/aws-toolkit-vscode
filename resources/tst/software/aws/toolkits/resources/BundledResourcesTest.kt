@@ -6,10 +6,11 @@ import org.hamcrest.core.IsNull.notNullValue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import java.io.InputStream
 import java.net.URL
 
 @RunWith(Parameterized::class)
-class BundledResourcesTest(private val file: URL?) {
+class BundledResourcesTest(private val file: InputStream) {
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
@@ -20,7 +21,8 @@ class BundledResourcesTest(private val file: URL?) {
 
     @Test
     fun fileExistsAndHasContent() {
-        assertThat(file, notNullValue())
-        file?.openStream()?.use { assertThat(it.read() > 0, equalTo(true)) }
+        file.use {
+            assertThat(it.read() > 0, equalTo(true))
+        }
     }
 }

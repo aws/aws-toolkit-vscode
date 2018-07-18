@@ -26,7 +26,10 @@
         <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.lambda.LambdaViewerProvider"/>
 
         <!-- Credential Management -->
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.region.AwsRegionProvider"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.RemoteResourceManager"/>
+        <applicationService serviceInterface="software.aws.toolkits.core.region.ToolkitRegionProvider"
+                            serviceImplementation="software.aws.toolkits.jetbrains.core.region.AwsRegionProvider"
+                            testServiceImplementation="software.aws.toolkits.jetbrains.core.region.MockRegionProvider"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.ApplicationCredentialManager"/>
         <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager"
                         serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultProjectAccountSettingsManager"
