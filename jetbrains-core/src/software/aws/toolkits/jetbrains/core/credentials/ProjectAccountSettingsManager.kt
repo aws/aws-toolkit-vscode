@@ -9,8 +9,8 @@ import com.intellij.util.messages.MessageBus
 import com.intellij.util.messages.Topic
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
+import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.Companion.ACCOUNT_SETTINGS_CHANGED
-import software.aws.toolkits.jetbrains.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 
 interface ProjectAccountSettingsManager {
@@ -57,7 +57,7 @@ interface ProjectAccountSettingsManager {
 
 data class AccountState(
     var activeProfile: String? = null,
-    var activeRegion: String = AwsRegionProvider.getInstance().defaultRegion.id
+    var activeRegion: String = AwsRegionProvider.getInstance().defaultRegion().id
 )
 
 @State(name = "accountSettings", storages = [Storage("aws.xml")])

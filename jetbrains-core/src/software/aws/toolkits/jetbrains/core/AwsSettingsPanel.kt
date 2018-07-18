@@ -17,9 +17,9 @@ import com.intellij.openapi.wm.WindowManager
 import com.intellij.util.Consumer
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
+import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier
-import software.aws.toolkits.jetbrains.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import java.awt.event.MouseEvent
 import javax.swing.Icon
@@ -86,7 +86,7 @@ class AwsSettingsPanelInstaller : StartupActivity {
 
 class AwsSettingSelection(private val project: Project) : AwsListPopupStep<Any>() {
     private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
-    private val regions = AwsRegionProvider.getInstance().regions.values.toMutableList()
+    private val regions = AwsRegionProvider.getInstance().regions().values.toMutableList()
     private val credentialProfileSubMenu = "Credential Profile"
 
     override fun getValues() = regions + credentialProfileSubMenu
@@ -105,11 +105,6 @@ class AwsSettingSelection(private val project: Project) : AwsListPopupStep<Any>(
     override fun getTextFor(value: Any?) = when (value) {
         is AwsRegion -> value.name
         else -> value.toString()
-    }
-
-    override fun getIconFor(aValue: Any?) = when (aValue) {
-        is AwsRegion -> aValue.icon
-        else -> null
     }
 
     override fun hasSubstep(selectedValue: Any?) = selectedValue == credentialProfileSubMenu

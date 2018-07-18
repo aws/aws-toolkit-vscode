@@ -21,8 +21,8 @@ import software.amazon.awssdk.core.runtime.auth.Signer
 import software.amazon.awssdk.core.runtime.auth.SignerProvider
 import software.amazon.awssdk.core.runtime.auth.SignerProviderContext
 import software.amazon.awssdk.http.SdkHttpClient
+import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
-import software.aws.toolkits.jetbrains.core.region.AwsRegion
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.jvm.isAccessible
 

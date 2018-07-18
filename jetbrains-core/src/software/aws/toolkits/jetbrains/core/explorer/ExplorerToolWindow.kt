@@ -23,7 +23,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsMa
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_SERVICE_NODE
-import software.aws.toolkits.jetbrains.core.region.AwsRegion
+import software.aws.toolkits.core.region.AwsRegion
 import java.awt.Component
 import java.awt.FlowLayout
 import java.awt.event.MouseAdapter

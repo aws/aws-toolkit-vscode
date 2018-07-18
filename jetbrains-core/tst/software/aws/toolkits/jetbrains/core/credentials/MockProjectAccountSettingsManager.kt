@@ -7,7 +7,7 @@ import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 class MockProjectAccountSettingsManager : ProjectAccountSettingsManager {
     override fun credentialProviders(): List<ToolkitCredentialsProvider> = emptyList()
 
-    override var activeRegion = AwsRegionProvider.getInstance().defaultRegion
+    override var activeRegion = AwsRegionProvider.getInstance().defaultRegion()
 
     override var activeCredentialProvider = object : ToolkitCredentialsProvider {
         override val id = "MockCredentials"
