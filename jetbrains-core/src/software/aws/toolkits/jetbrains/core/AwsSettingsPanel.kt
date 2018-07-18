@@ -86,7 +86,7 @@ class AwsSettingsPanelInstaller : StartupActivity {
 
 class AwsSettingSelection(private val project: Project) : AwsListPopupStep<Any>() {
     private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
-    private val regions = AwsRegionProvider.getInstance().regions().values.toMutableList()
+    private val regions = AwsRegionProvider.getInstance().regions().values.sortedBy { it.category }
     private val credentialProfileSubMenu = "Credential Profile"
 
     override fun getValues() = regions + credentialProfileSubMenu
@@ -103,15 +103,16 @@ class AwsSettingSelection(private val project: Project) : AwsListPopupStep<Any>(
     override fun getTitle() = "AWS Account Settings"
 
     override fun getTextFor(value: Any?) = when (value) {
-        is AwsRegion -> value.name
+        is AwsRegion -> value.displayName
         else -> value.toString()
     }
 
     override fun hasSubstep(selectedValue: Any?) = selectedValue == credentialProfileSubMenu
 
-    override fun getSeparatorAbove(value: Any?) = when (value) {
-        regions.first() -> ListSeparator("Region")
-        credentialProfileSubMenu -> ListSeparator("Other Settings")
+    override fun getSeparatorAbove(value: Any?) = when {
+        value is AwsRegion && value == regions.first() -> ListSeparator(value.category)
+        value is AwsRegion && regions[regions.indexOf(value) - 1].category != value.category -> ListSeparator(value.category)
+        value == credentialProfileSubMenu -> ListSeparator("Other Settings")
         else -> null
     }
 }
