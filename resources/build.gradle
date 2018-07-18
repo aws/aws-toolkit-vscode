@@ -1,0 +1,23 @@
+plugins {
+    id "de.undercouch.download"
+}
+
+sourceSets {
+    main.resources.srcDir "$buildDir/downloaded-resources"
+}
+
+task downloadResources(type: Download) {
+    dest "$buildDir/downloaded-resources/software/aws/toolkits/resources/"
+
+    src([
+        "https://aws-toolkit-endpoints.s3.amazonaws.com/endpoints.json"
+    ])
+
+    onlyIfModified true
+
+    doFirst {
+        mkdir "$buildDir/downloaded-resources/software/aws/toolkits/resources/"
+    }
+}
+
+processResources.dependsOn(downloadResources)
