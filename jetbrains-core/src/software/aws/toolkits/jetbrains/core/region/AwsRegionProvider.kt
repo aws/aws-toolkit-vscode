@@ -1,6 +1,5 @@
 package software.aws.toolkits.jetbrains.core.region
 
-import com.google.common.collect.ImmutableMap
 import com.intellij.openapi.components.ServiceManager
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.PartitionLoader
@@ -13,12 +12,10 @@ class AwsRegionProvider private constructor() : ToolkitRegionProvider {
     init {
         val partitions = PartitionLoader.parse()
 
-        val mutableRegionMap = mutableMapOf<String, AwsRegion>()
-        partitions?.partitions?.forEach {
-            it.regions?.forEach { key, region -> mutableRegionMap.put(key, AwsRegion(key, region.description)) }
-        }
-
-        regions = ImmutableMap.copyOf(mutableRegionMap)
+        //TODO: handle non-standard AWS partitions based on account type
+        regions = partitions?.partitions?.find { it.partition == "aws" }?.regions?.map { (key, region) ->
+            key to AwsRegion(key, region.description)
+        }?.toMap() ?: emptyMap()
     }
 
     override fun regions() = regions
