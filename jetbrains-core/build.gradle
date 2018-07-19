@@ -27,13 +27,13 @@ dependencies {
     compile(project(":core")) {
         exclude group: 'org.slf4j'
     }
-    compile("software.amazon.awssdk:s3:$awsSdk2Version") {
+    compile("software.amazon.awssdk:s3:$awsSdkVersion") {
         exclude group: 'org.slf4j'
     }
-    compile("software.amazon.awssdk:lambda:$awsSdk2Version") {
+    compile("software.amazon.awssdk:lambda:$awsSdkVersion") {
         exclude group: 'org.slf4j'
     }
-    compile("software.amazon.awssdk:iam:$awsSdk2Version") {
+    compile("software.amazon.awssdk:iam:$awsSdkVersion") {
         exclude group: 'org.slf4j'
     }
     testCompile project(":jetbrains-testutils")

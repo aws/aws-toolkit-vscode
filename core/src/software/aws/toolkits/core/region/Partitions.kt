@@ -5,23 +5,25 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.slf4j.LoggerFactory
-import software.amazon.awssdk.regions.internal.model.Endpoint
-import software.amazon.awssdk.regions.internal.model.Service
 import software.aws.toolkits.core.utils.RemoteResource
 import software.aws.toolkits.resources.BundledResources
 import java.io.IOException
 import java.io.InputStream
 import java.time.Duration
 
-data class Partitions(val partitions: List<Partition>)
+data class Partitions(val partitions: List<Partition>) {
+    fun getPartition(name: String): Partition = partitions.find { it.partition == name } ?: throw RuntimeException("Partition named '$name' not found")
+}
 
 data class Partition(val partition: String, val regions: Map<String, PartitionRegion>, val services: Map<String, Service>)
 
 data class PartitionRegion(val description: String)
 
-data class Service(val endpoints: Map<String, Endpoint>)
+data class Service(val endpoints: Map<String, Endpoint>, val isRegionalized: Boolean?) {
+    val isGlobal = isRegionalized == false
+}
 
-object Endpoint
+class Endpoint
 
 object PartitionParser {
     private val LOG = LoggerFactory.getLogger(PartitionParser::class.java)

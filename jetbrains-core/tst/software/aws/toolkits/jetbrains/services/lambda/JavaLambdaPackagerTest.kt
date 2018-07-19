@@ -1,5 +1,6 @@
 package software.aws.toolkits.jetbrains.services.lambda
 
+import com.fasterxml.jackson.annotation.JacksonAnnotation
 import com.intellij.compiler.CompilerTestUtil
 import com.intellij.openapi.application.Result
 import com.intellij.openapi.application.runInEdt
@@ -16,7 +17,6 @@ import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.util.PathUtil
 import org.assertj.core.api.Assertions.assertThat
-import org.joda.time.LocalDate
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit
 import java.util.zip.ZipFile
 
 class JavaLambdaPackagerTest {
-    private val dependentJarPath = PathUtil.getJarPathForClass(LocalDate::class.java)
+    private val dependentJarPath = PathUtil.getJarPathForClass(JacksonAnnotation::class.java)
     private val testDependencyJarPath = PathUtil.getJarPathForClass(Test::class.java)
     private val testDependencyJarName = File(testDependencyJarPath).name
     private val dependentJarName = File(dependentJarPath).name
