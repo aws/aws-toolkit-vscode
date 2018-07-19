@@ -23,9 +23,7 @@
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
-        <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.s3.S3BucketViewerProvider"/>
         <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.lambda.LambdaViewerProvider"/>
-        <fileTypeFactory implementation="software.aws.toolkits.jetbrains.services.s3.S3FileTypeFactory"/>
 
         <!-- Credential Management -->
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.region.AwsRegionProvider"/>
@@ -53,12 +51,6 @@
             <action id="lambda.function.delete"
                     class="software.aws.toolkits.jetbrains.services.lambda.DeleteFunctionAction"
                     text="Delete Function"
-                    icon="AllIcons.Actions.Delete"/>
-        </group>
-        <group id="aws.toolkit.explorer.s3.bucket" popup="true" compact="true">
-            <action id="s3.bucket.delete"
-                    class="software.aws.toolkits.jetbrains.services.s3.DeleteBucketAction"
-                    text="Delete Bucket"
                     icon="AllIcons.Actions.Delete"/>
         </group>
     </actions>
