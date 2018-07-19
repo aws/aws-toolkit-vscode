@@ -57,6 +57,7 @@ class RemoteResourceResolverTest {
         val resource = resource(ttl = Duration.ofMillis(1))
 
         val firstCall = sut.resolve(resource)
+        Thread.sleep(100)
         val secondCall = sut.resolve(resource)
 
         assertThat(firstCall, equalTo(secondCall))
