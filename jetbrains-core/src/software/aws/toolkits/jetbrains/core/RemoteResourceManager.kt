@@ -10,7 +10,6 @@ import java.io.InputStream
 import java.nio.file.Path
 import java.nio.file.Paths
 
-
 class RemoteResourceManager @JvmOverloads constructor(private val resolver: RemoteResourceResolver = MANAGER_INSTANCE) {
 
     fun resolvePath(resource: RemoteResource): Path = resolver.resolve(resource)

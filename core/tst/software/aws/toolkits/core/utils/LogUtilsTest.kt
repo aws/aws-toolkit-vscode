@@ -71,7 +71,6 @@ class LogUtilsTest {
     fun conditionalLazyLoggingInfo() {
         val exception = RuntimeException("Boom")
 
-
         log.info(exception) { "message" }
 
         whenever(log.isInfoEnabled).thenReturn(false)

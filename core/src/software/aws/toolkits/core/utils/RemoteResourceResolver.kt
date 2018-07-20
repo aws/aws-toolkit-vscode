@@ -1,6 +1,5 @@
 package software.aws.toolkits.core.utils
 
-import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
@@ -9,13 +8,12 @@ import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
-
 class RemoteResourceResolver(private val urlFetcher: UrlFetcher, private val cacheBasePath: Path) {
     fun resolve(resource: RemoteResource): Path {
         val expectedLocation = cacheBasePath.resolve(resource.name)
         val current = expectedLocation.existsOrNull()
         if (current?.toFile()?.exists() == true && !isExpired(current, resource)) {
-            LOG.debug { "Existing file ($current) for ${resource.name} is present and not expired - using it."}
+            LOG.debug { "Existing file ($current) for ${resource.name} is present and not expired - using it." }
             return current
         }
 
@@ -40,7 +38,6 @@ class RemoteResourceResolver(private val urlFetcher: UrlFetcher, private val cac
                 return@mapNotNull null
             }
             tmpFile
-
         }.firstOrNull()
 
         val initialValue = resource.initialValue
@@ -70,7 +67,10 @@ class RemoteResourceResolver(private val urlFetcher: UrlFetcher, private val cac
 
         fun isExpired(file: Path, resource: RemoteResource): Boolean {
             val ttl = resource.ttl ?: return false
-            return (Duration.between(Instant.ofEpochMilli(file.toFile().lastModified()), Instant.now()).toMillis() > ttl.toMillis()).also {
+            return (Duration.between(
+                Instant.ofEpochMilli(file.toFile().lastModified()),
+                Instant.now()
+            ).toMillis() > ttl.toMillis()).also {
                 if (it) {
                     LOG.debug { "TTL for file $file has expired." }
                 }

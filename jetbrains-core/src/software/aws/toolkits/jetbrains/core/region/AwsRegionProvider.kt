@@ -5,7 +5,6 @@ import com.intellij.openapi.components.ServiceManager
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.Partition
 import software.aws.toolkits.core.region.PartitionParser
-import software.aws.toolkits.core.region.Service
 import software.aws.toolkits.core.region.ServiceEndpointResource
 import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.jetbrains.core.RemoteResourceManager
@@ -20,7 +19,7 @@ class AwsRegionProvider private constructor(remoteResourceManager: RemoteResourc
             PartitionParser.parse(remoteResourceManager.resolveStream(ServiceEndpointResource))
         })
 
-        //TODO: handle non-standard AWS partitions based on account type
+        // TODO: handle non-standard AWS partitions based on account type
         partition = result.get()?.partitions?.find { it.partition == "aws" }
 
         regions = partition?.regions?.map { (key, region) ->

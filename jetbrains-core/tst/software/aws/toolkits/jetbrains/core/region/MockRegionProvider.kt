@@ -3,7 +3,7 @@ package software.aws.toolkits.jetbrains.core.region
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.ToolkitRegionProvider
 
-class MockRegionProvider: ToolkitRegionProvider {
+class MockRegionProvider : ToolkitRegionProvider {
     override fun defaultRegion(): AwsRegion = regions.getValue(defaultRegionKey)
 
     override fun regions(): Map<String, AwsRegion> = regions

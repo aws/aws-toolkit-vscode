@@ -12,10 +12,15 @@ import java.io.InputStream
 import java.time.Duration
 
 data class Partitions(val partitions: List<Partition>) {
-    fun getPartition(name: String): Partition = partitions.find { it.partition == name } ?: throw RuntimeException("Partition named '$name' not found")
+    fun getPartition(name: String): Partition =
+        partitions.find { it.partition == name } ?: throw RuntimeException("Partition named '$name' not found")
 }
 
-data class Partition(val partition: String, val regions: Map<String, PartitionRegion>, val services: Map<String, Service>)
+data class Partition(
+    val partition: String,
+    val regions: Map<String, PartitionRegion>,
+    val services: Map<String, Service>
+)
 
 data class PartitionRegion(val description: String)
 
@@ -42,7 +47,7 @@ object PartitionParser {
     }
 }
 
-object ServiceEndpointResource: RemoteResource {
+object ServiceEndpointResource : RemoteResource {
     override val urls: List<String> = listOf("https://aws-toolkit-endpoints.s3.amazonaws.com/endpoints.json")
     override val name: String = "service-endpoints.json"
     override val ttl: Duration? = Duration.ofHours(24)

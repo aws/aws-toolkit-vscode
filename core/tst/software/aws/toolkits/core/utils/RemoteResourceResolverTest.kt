@@ -155,7 +155,6 @@ class RemoteResourceResolverTest {
                         mismatchDescription?.appendText("file $item doesn't exist")
                     }
                 }
-
             }
         }
 
@@ -166,5 +165,4 @@ class RemoteResourceResolverTest {
         const val PRIMARY_URL = "http://example.com"
         const val SECONDARY_URL = "http://example2.com"
     }
-
 }
