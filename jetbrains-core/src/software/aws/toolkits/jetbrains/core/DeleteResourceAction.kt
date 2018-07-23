@@ -8,6 +8,7 @@ import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
+import software.aws.toolkits.resources.message
 
 abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>> : SingleResourceNodeAction<T>() {
     final override fun actionPerformed(selected: T, e: AnActionEvent?) {
@@ -15,8 +16,8 @@ abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>> : SingleR
         val resourceType = selected.resourceType()
         ApplicationManager.getApplication().invokeLater {
             val response = Messages.showInputDialog(selected.project,
-                    "Are you sure you want to delete $resourceType '$resourceName'?\n\nType the $resourceType name below to confirm.",
-                    "Delete $resourceType $resourceName",
+                    message("delete_resource.message", resourceType, resourceName),
+                    message("delete_resource.title", resourceType, resourceName),
                     Messages.getWarningIcon(),
                     null,
                     object : InputValidator {
@@ -30,9 +31,9 @@ abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>> : SingleR
                 ApplicationManager.getApplication().executeOnPooledThread {
                     try {
                         performDelete(selected)
-                        notifyInfo("Deleted $resourceType '$response'")
+                        notifyInfo(message("delete_resource.deleted", resourceType, resourceName))
                     } catch (e: Exception) {
-                        e.notifyError("Failed to delete $resourceType '$response'", selected.project)
+                        e.notifyError(message("delete_resource.delete_failed", resourceType, resourceName), selected.project)
                     }
                 }
             }

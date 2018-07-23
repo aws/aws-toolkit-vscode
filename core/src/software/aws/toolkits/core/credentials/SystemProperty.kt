@@ -3,20 +3,15 @@ package software.aws.toolkits.core.credentials
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.SystemPropertyCredentialsProvider
 import software.aws.toolkits.core.credentials.SystemPropertyToolkitCredentialsProviderFactory.Companion.TYPE
+import software.aws.toolkits.resources.message
 
 class SystemPropertyToolkitCredentialsProvider() : ToolkitCredentialsProvider {
     private val awsCredentialsProvider = SystemPropertyCredentialsProvider.create()
 
-    override val id: String
-        get() = TYPE
-    override val displayName: String
-        get() = DISPLAY_NAME
+    override val id = TYPE
+    override val displayName get() = message("credentials.system_props.name")
 
     override fun getCredentials(): AwsCredentials = awsCredentialsProvider.credentials
-
-    companion object {
-        const val DISPLAY_NAME = "System Properties"
-    }
 }
 
 class SystemPropertyToolkitCredentialsProviderFactory() : ToolkitCredentialsProviderFactory(TYPE) {

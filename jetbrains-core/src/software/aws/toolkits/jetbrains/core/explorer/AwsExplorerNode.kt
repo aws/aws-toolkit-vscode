@@ -10,6 +10,7 @@ import com.intellij.ui.SimpleTextAttributes
 import software.aws.toolkits.jetbrains.core.Icons.AWS_ICON
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
+import software.aws.toolkits.resources.message
 import javax.swing.Icon
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
@@ -146,7 +147,7 @@ class AwsTruncatedResultNode(private val parentNode: AwsExplorerServiceRootNode,
     }
 
     companion object {
-        val MESSAGE = "Results truncated, double click to load more"
+        val MESSAGE get() = message("explorer.results_truncated")
     }
 }
 
@@ -179,11 +180,11 @@ class AwsExplorerErrorNode(project: Project, exception: Exception) :
     }
 
     companion object {
-        val MSG = "Error Loading Resources..."
+        val MSG get() = message("explorer.error_loading_resources")
     }
 }
 
-class AwsExplorerEmptyNode(project: Project) : AwsExplorerNode<String>(project, "empty", awsIcon = null) {
+class AwsExplorerEmptyNode(project: Project) : AwsExplorerNode<String>(project, message("explorer.empty_node"), awsIcon = null) {
     override fun getChildren(): Collection<AbstractTreeNode<Any>> {
         return emptyList()
     }

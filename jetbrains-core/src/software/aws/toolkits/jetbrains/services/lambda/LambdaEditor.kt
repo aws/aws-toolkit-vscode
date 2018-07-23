@@ -28,6 +28,7 @@ import software.aws.toolkits.core.lambda.LambdaSampleEventProvider
 import software.aws.toolkits.jetbrains.core.Icons.Services.LAMBDA_FUNCTION_ICON
 import software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider
 import software.aws.toolkits.jetbrains.utils.filesystem.LightFileEditor
+import software.aws.toolkits.resources.message
 import java.nio.charset.StandardCharsets
 import javax.swing.DefaultComboBoxModel
 import javax.swing.Icon
@@ -37,7 +38,7 @@ class LambdaEditor(private val project: Project, private val model: LambdaVirtua
     private val view = LambdaEditorPanel(project)
 
     init {
-        view.title.text = "Function: ${model.function.name}"
+        view.title.text = message("lambda.function_name", model.function.name)
         view.lastModified.text = model.function.lastModified
         view.handler.text = model.function.handler
         view.arn.text = model.function.arn
@@ -98,7 +99,7 @@ class LambdaEditor(private val project: Project, private val model: LambdaVirtua
         }
     }
 
-    override fun getName(): String = "Lambda Viewer"
+    override fun getName(): String = message("lambda.viewer")
 
     override fun getComponent(): JComponent = view.contentPanel
 }
@@ -136,8 +137,8 @@ fun CreateFunctionResponse.toDataClass(client: LambdaClient) = LambdaFunction(
 )
 
 class LambdaFileType : FakeFileType() {
-    override fun getName(): String = "AWS Lambda"
+    override fun getName(): String = message("lambda.service_name")
     override fun getIcon(): Icon? = LAMBDA_FUNCTION_ICON
-    override fun getDescription(): String = "AWS Lambda"
+    override fun getDescription(): String = message("lambda.service_name")
     override fun isMyFileType(file: VirtualFile): Boolean = file is LambdaVirtualFile
 }

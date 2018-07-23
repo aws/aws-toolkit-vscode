@@ -7,12 +7,12 @@ import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.ValidationInfo
-import com.intellij.psi.PsiFile
 import software.amazon.awssdk.services.iam.IAMClient
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.Icons
+import software.aws.toolkits.resources.message
 import javax.swing.DefaultComboBoxModel
 import javax.swing.JComboBox
 import javax.swing.JComponent
@@ -20,7 +20,6 @@ import javax.swing.JTextField
 
 class UploadToLambdaModal(
     private val project: Project,
-    private val psi: PsiFile,
     private val runtime: Runtime,
     private val handlerName: String,
     private val validator: UploadToLambdaValidator,
@@ -30,12 +29,12 @@ class UploadToLambdaModal(
 
     init {
         super.init()
-        title = "Uploading to Lambda"
+        title = message("lambda.uploading.title")
     }
 
     override fun createCenterPanel(): JComponent? {
         val controller =
-            UploadToLambdaController(view, psi, handlerName, runtime, AwsClientManager.getInstance(project))
+            UploadToLambdaController(view, handlerName, runtime, AwsClientManager.getInstance(project))
         controller.load()
         return view.content
     }
@@ -59,21 +58,21 @@ class UploadToLambdaModal(
 
 class UploadToLambdaValidator {
     fun doValidate(view: CreateLambdaPanel): ValidationInfo? {
-        val name = view.name.blankAsNull() ?: return ValidationInfo("Function Name must be specified", view.name)
+        val name = view.name.blankAsNull() ?: return ValidationInfo(message("lambda.upload_validation.function_name"), view.name)
         validateFunctionName(name)?.run { return@doValidate ValidationInfo(this, view.name) }
-        view.handler.blankAsNull() ?: return ValidationInfo("Handler must be specified", view.handler)
-        view.runtime.selected() ?: return ValidationInfo("Runtime must be specified", view.runtime)
-        view.iamRole.selected() ?: return ValidationInfo("IAM role must be specified", view.iamRole)
-        view.sourceBucket.selected() ?: return ValidationInfo("Bucket must be specified", view.sourceBucket)
+        view.handler.blankAsNull() ?: return ValidationInfo(message("lambda.upload_validation.handler"), view.handler)
+        view.runtime.selected() ?: return ValidationInfo(message("lambda.upload_validation.runtime"), view.runtime)
+        view.iamRole.selected() ?: return ValidationInfo(message("lambda.upload_validation.iam_role"), view.iamRole)
+        view.sourceBucket.selected() ?: return ValidationInfo(message("lambda.upload_validation.source_bucket"), view.sourceBucket)
         return null
     }
 
     private fun validateFunctionName(name: String): String? {
         if (!FUNCTION_NAME_PATTERN.matches(name)) {
-            return "Function names can only contain alphanumerics, hyphen (-) and underscore (_)"
+            return message("lambda.upload_validation.function_name_invalid")
         }
         if (name.length > 64) {
-            return "Function names must not exceed 64 characters in length"
+            return message("lambda.upload_validation.function_name_too_long", 64)
         }
         return null
     }
@@ -85,7 +84,6 @@ class UploadToLambdaValidator {
 
 class UploadToLambdaController(
     private val view: CreateLambdaPanel,
-    private val psi: PsiFile,
     private val handlerName: String,
     private val runtime: Runtime,
     clientManager: AwsClientManager
@@ -104,7 +102,7 @@ class UploadToLambdaController(
         view.runtime.populateValues(selected = runtime) { Runtime.knownValues().toList().sortedBy { it.name } }
 
         view.createRole.addActionListener {
-            val iamRole = Messages.showInputDialog("Role Name:", "Create IAM Role", Icons.AWS_ICON)
+            val iamRole = Messages.showInputDialog(message("lambda.upload.create_iam_dialog.input"), message("lambda.upload.create_iam_dialog.title"), Icons.AWS_ICON)
             iamRole?.run {
                 view.iamRole.addAndSelectValue {
                     iamClient.createRole { it.roleName(iamRole) }
@@ -114,7 +112,7 @@ class UploadToLambdaController(
         }
 
         view.createBucket.addActionListener {
-            val bucket = Messages.showInputDialog("S3 Bucket Name:", "Create S3 Bucket", Icons.Services.S3_SERVICE_ICON)
+            val bucket = Messages.showInputDialog(message("lambda.upload.create_s3_dialog.input"), message("lambda.upload.create_s3_dialog.title"), Icons.Services.S3_SERVICE_ICON)
             bucket?.run {
                 view.sourceBucket.addAndSelectValue {
                     s3Client.createBucket { it.bucket(bucket) }

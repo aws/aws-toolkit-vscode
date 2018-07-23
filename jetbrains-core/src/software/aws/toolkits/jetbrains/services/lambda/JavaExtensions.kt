@@ -29,6 +29,7 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.createTemporaryZipFile
 import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker
+import software.aws.toolkits.resources.message
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
@@ -119,13 +120,13 @@ class JavaLambdaPackager : LambdaPackager {
                     LOG.debug("Created temporary zip: $zipFile")
                     future.complete(zipFile)
                 } catch (e: Exception) {
-                    future.completeExceptionally(RuntimeException("Failed to package zip.", e))
+                    future.completeExceptionally(RuntimeException(message("lambda.package.zip_fail"), e))
                 }
             } else if (aborted) {
-                future.completeExceptionally(RuntimeException("Compilation was aborted."))
+                future.completeExceptionally(RuntimeException(message("lambda.package.compilation_aborted")))
             } else {
                 val errorMessages = context.getMessages(CompilerMessageCategory.ERROR).joinToString("\n")
-                future.completeExceptionally(RuntimeException("Compilation completed with errors.\n$errorMessages"))
+                future.completeExceptionally(RuntimeException(message("lambda.package.compilation_errors", errorMessages)))
             }
         }
         return future
@@ -158,7 +159,7 @@ class JavaLambdaPackager : LambdaPackager {
             .flatMap {
                 when {
                     it.isDirectory() -> toEntries(it)
-                    else -> throw RuntimeException("Unhandled file type : $it")
+                    else -> throw RuntimeException(message("lambda.package.unhandled_file_type", it))
                 }
             }
             .forEach { entries.add(it) }

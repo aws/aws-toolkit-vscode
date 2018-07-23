@@ -13,10 +13,11 @@ import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsTruncatedResultNode
+import software.aws.toolkits.resources.message
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
-class LambdaServiceNode(project: Project) : AwsExplorerServiceRootNode(project, "AWS Lambda", LAMBDA_SERVICE_ICON) {
+class LambdaServiceNode(project: Project) : AwsExplorerServiceRootNode(project, message("lambda.service_name"), LAMBDA_SERVICE_ICON) {
     override fun serviceName() = LambdaClient.SERVICE_NAME
 
     private val client: LambdaClient = AwsClientManager.getInstance(project).getClient()

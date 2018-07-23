@@ -8,12 +8,14 @@ import com.intellij.ui.EditorCustomization;
 import com.intellij.ui.EditorTextField;
 import com.intellij.ui.EditorTextFieldProvider;
 import java.util.Collections;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.border.BevelBorder;
 import org.jetbrains.annotations.NotNull;
 
 public final class LambdaEditorPanel {
@@ -39,6 +41,8 @@ public final class LambdaEditorPanel {
         EditorTextFieldProvider textFieldProvider = ServiceManager.getService(project, EditorTextFieldProvider.class);
         input = textFieldProvider.getEditorField(JsonLanguage.INSTANCE, project, Collections.emptyList());
         response = textFieldProvider.getEditorField(JsonLanguage.INSTANCE, project, Collections.singletonList(new IsViewerCustomization()));
+        input.setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
+        response.setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
     }
 
     public void setBusy(Boolean busy) {

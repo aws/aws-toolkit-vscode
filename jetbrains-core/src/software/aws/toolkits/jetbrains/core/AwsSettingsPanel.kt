@@ -22,6 +22,7 @@ import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
+import software.aws.toolkits.resources.message
 import java.awt.event.MouseEvent
 import javax.swing.Icon
 
@@ -40,7 +41,7 @@ class AwsSettingsPanel(private val project: Project) : StatusBarWidget, StatusBa
             accountSettingsManager.activeCredentialProvider.displayName
         } catch (_: CredentialProviderNotFound) {
             // TODO: Need to better handle the case where they have no valid profile selected
-            "No credentials selected"
+            message("settings.credentials.none_selected")
         }
         return "AWS: $credProviderName@${accountSettingsManager.activeRegion.name}"
     }
@@ -88,7 +89,7 @@ class AwsSettingsPanelInstaller : StartupActivity {
 class AwsSettingSelection(private val project: Project) : AwsListPopupStep<Any>() {
     private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
     private val regions = AwsRegionProvider.getInstance().regions().values.sortedBy { it.category }
-    private val credentialProfileSubMenu = "Credential Profile"
+    private val credentialProfileSubMenu = message("settings.credentials.profile_sub_menu")
 
     override fun getValues() = regions + credentialProfileSubMenu
 
@@ -101,7 +102,7 @@ class AwsSettingSelection(private val project: Project) : AwsListPopupStep<Any>(
         else -> FINAL_CHOICE
     }
 
-    override fun getTitle() = "AWS Account Settings"
+    override fun getTitle() = message("settings.title")
 
     override fun getTextFor(value: Any?) = when (value) {
         is AwsRegion -> value.displayName
@@ -113,7 +114,7 @@ class AwsSettingSelection(private val project: Project) : AwsListPopupStep<Any>(
     override fun getSeparatorAbove(value: Any?) = when {
         value is AwsRegion && value == regions.first() -> ListSeparator(value.category)
         value is AwsRegion && regions[regions.indexOf(value) - 1].category != value.category -> ListSeparator(value.category)
-        value == credentialProfileSubMenu -> ListSeparator("Other Settings")
+        value == credentialProfileSubMenu -> ListSeparator(message("settings.other"))
         else -> null
     }
 }

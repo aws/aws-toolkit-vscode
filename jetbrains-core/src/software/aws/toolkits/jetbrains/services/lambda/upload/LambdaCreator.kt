@@ -12,6 +12,7 @@ import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
+import software.aws.toolkits.resources.message
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
@@ -76,7 +77,7 @@ internal class CodeUploader(private val s3Client: S3Client) {
                 val result = s3Client.putObject(por, code)
                 future.complete(UploadedCode(key, result.versionId()))
             } catch (e: Exception) {
-                future.completeExceptionally(RuntimeException("Unable to upload code to S3", e))
+                future.completeExceptionally(RuntimeException(message("lambda.create.failed_to_upload"), e))
             }
         }
         return future

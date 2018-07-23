@@ -21,10 +21,10 @@ import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain
 import software.amazon.awssdk.services.sts.STSClient
 import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider
 import software.amazon.awssdk.services.sts.model.AssumeRoleRequest
-import software.aws.toolkits.core.credentials.ProfileToolkitCredentialsProviderFactory.Companion.NAME
 import software.aws.toolkits.core.credentials.ProfileToolkitCredentialsProviderFactory.Companion.TYPE
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.ToolkitRegionProvider
+import software.aws.toolkits.resources.message
 import java.nio.file.Path
 
 class ProfileToolkitCredentialsProvider(
@@ -34,12 +34,8 @@ class ProfileToolkitCredentialsProvider(
     private val regionProvider: ToolkitRegionProvider
 ) : ToolkitCredentialsProvider {
     private val internalCredentialsProvider = createInternalCredentialProvider()
-
-    override val id: String
-        get() = "$TYPE:${profile.name()}"
-
-    override val displayName: String
-        get() = "$NAME: ${profile.name()}"
+    override val id = "$TYPE:${profile.name()}"
+    override val displayName get() = message("credentials.profile.name", profile.name())
 
     override fun getCredentials(): AwsCredentials {
         return internalCredentialsProvider.credentials
@@ -132,7 +128,7 @@ class ProfileToolkitCredentialsProvider(
 
     private fun requiredProperty(property: String): String {
         return profile.property(property)
-            .orElseThrow { IllegalArgumentException("Profile `${profile.name()}` is missing required property $property") }
+            .orElseThrow { IllegalArgumentException(message("credentials.profile.missing_property", profile.name(), property)) }
     }
 
     override fun toString(): String {
@@ -169,7 +165,7 @@ class ProfileToolkitCredentialsProviderFactory(
             }
         } catch (e: Exception) {
             // TODO: Need a better way to report this, a notification SPI?
-            LOG.warn("Failed to load AWS profiles", e)
+            LOG.warn(message("credentials.profile.failed_load"), e)
         }
     }
 
@@ -181,6 +177,5 @@ class ProfileToolkitCredentialsProviderFactory(
         private val LOG = LoggerFactory.getLogger(ProfileToolkitCredentialsProviderFactory::class.java)
 
         const val TYPE = "profile"
-        const val NAME = "AWS Profile"
     }
 }

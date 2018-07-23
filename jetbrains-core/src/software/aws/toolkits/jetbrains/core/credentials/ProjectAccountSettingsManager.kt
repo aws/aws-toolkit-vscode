@@ -12,6 +12,7 @@ import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.Companion.ACCOUNT_SETTINGS_CHANGED
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
+import software.aws.toolkits.resources.message
 
 interface ProjectAccountSettingsManager {
     /**
@@ -75,7 +76,7 @@ class DefaultProjectAccountSettingsManager internal constructor(private val proj
         get() {
             return state.activeProfile?.let {
                 return credentialManager.getCredentialProvider(it)
-            } ?: throw CredentialProviderNotFound("No active credential provider configured")
+            } ?: throw CredentialProviderNotFound(message("credentials.profile.not_configured"))
         }
         set(value) {
             state.activeProfile = value.id

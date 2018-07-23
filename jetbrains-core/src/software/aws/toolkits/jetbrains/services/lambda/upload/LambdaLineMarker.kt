@@ -15,6 +15,7 @@ import software.aws.toolkits.jetbrains.core.Icons
 import software.aws.toolkits.jetbrains.core.Icons.Services.LAMBDA_OPEN_FUNCTION
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaVirtualFile
+import software.aws.toolkits.resources.message
 import javax.swing.Icon
 
 abstract class LambdaLineMarker : LineMarkerProviderDescriptor() {
@@ -29,7 +30,7 @@ abstract class LambdaLineMarker : LineMarkerProviderDescriptor() {
      */
     abstract fun getHandlerName(element: PsiElement): String?
 
-    override fun getName(): String? = "AWS Lambda"
+    override fun getName(): String? = message("lambda.service_name")
 
     override fun getIcon(): Icon? = Icons.Services.LAMBDA_SERVICE_ICON
 
@@ -38,7 +39,7 @@ abstract class LambdaLineMarker : LineMarkerProviderDescriptor() {
 
         val actionGroup = DefaultActionGroup()
 
-        actionGroup.add(UploadLambdaFunction(handler, element))
+        actionGroup.add(UploadLambdaFunction(handler))
 
         AwsResourceCache.getInstance(element.project).lambdaFunctions()
             .filter { it.handler == handler }
@@ -71,7 +72,7 @@ abstract class LambdaLineMarker : LineMarkerProviderDescriptor() {
     }
 
     class OpenLambda(val function: LambdaFunction) :
-        AnAction("Open function '${function.name}'", null, LAMBDA_OPEN_FUNCTION) {
+        AnAction(message("lambda.open_function", function.name), null, LAMBDA_OPEN_FUNCTION) {
         override fun actionPerformed(e: AnActionEvent?) {
             val event = e ?: return
             val editorManager = event.project?.let { FileEditorManager.getInstance(it) } ?: return

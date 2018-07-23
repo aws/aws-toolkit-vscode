@@ -6,7 +6,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.module.Module
-import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.AwsClientManager
@@ -15,8 +14,9 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaPackagerProvider
 import software.aws.toolkits.jetbrains.services.lambda.LambdaVirtualFile
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
+import software.aws.toolkits.resources.message
 
-class UploadLambdaFunction(private val handlerName: String, private val element: PsiElement) : AnAction("Create new AWS Lambda...", null, LAMBDA_NEW_FUNCTION) {
+class UploadLambdaFunction(private val handlerName: String) : AnAction(message("lambda.create_new"), null, LAMBDA_NEW_FUNCTION) {
 
     override fun update(e: AnActionEvent?) {
         e?.presentation?.isEnabledAndVisible =
@@ -31,11 +31,10 @@ class UploadLambdaFunction(private val handlerName: String, private val element:
         val packager = LambdaPackagerProvider.getInstance(psiFile.language)
         val lambdaCreator = LambdaCreatorFactory.create(AwsClientManager.getInstance(project), packager)
         UploadToLambdaModal(project,
-                psiFile,
-                packager.determineRuntime(module, psiFile),
-                handlerName,
-                UploadToLambdaValidator(),
-                { performUpload(module, psiFile, lambdaCreator, it) }).show()
+            packager.determineRuntime(module, psiFile),
+            handlerName,
+            UploadToLambdaValidator(),
+            { performUpload(module, psiFile, lambdaCreator, it) }).show()
     }
 
     private fun performUpload(module: Module, psiFile: PsiFile, creator: LambdaCreator, functionDetails: FunctionUploadDetails) {
@@ -49,7 +48,7 @@ class UploadLambdaFunction(private val handlerName: String, private val element:
                                 editorManager.openFile(lambdaVirtualFile, true)
                             }
                             notifyInfo(
-                                    "AWS Lambda function '<a href=\"$function\">${functionDetails.name}</a>' created.",
+                                    message("lambda.function_created.notification", "<a href=\"$function\">${functionDetails.name}</a>"),
                                     listener = notificationListener,
                                     project = module.project
                             )

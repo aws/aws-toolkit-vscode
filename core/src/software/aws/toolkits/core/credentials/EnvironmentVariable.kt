@@ -3,6 +3,7 @@ package software.aws.toolkits.core.credentials
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider
 import software.aws.toolkits.core.credentials.EnvironmentVariableToolkitCredentialsProviderFactory.Companion.TYPE
+import software.aws.toolkits.resources.message
 
 class EnvironmentVariableToolkitCredentialsProvider : ToolkitCredentialsProvider {
     private val awsCredentialsProvider = EnvironmentVariableCredentialsProvider.create()
@@ -10,16 +11,10 @@ class EnvironmentVariableToolkitCredentialsProvider : ToolkitCredentialsProvider
     /**
      * Uses the factory ID as the ID for the provider as there is only one instance for Environment Variable Credentials Provider
      */
-    override val id: String
-        get() = TYPE
-    override val displayName: String
-        get() = DISPLAY_NAME
+    override val id = TYPE
+    override val displayName get() = message("credentials.env_vars.name")
 
     override fun getCredentials(): AwsCredentials = awsCredentialsProvider.credentials
-
-    companion object {
-        const val DISPLAY_NAME = "Environment Variables"
-    }
 }
 
 class EnvironmentVariableToolkitCredentialsProviderFactory : ToolkitCredentialsProviderFactory(TYPE) {
