@@ -8,8 +8,9 @@ import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProviderManager
 
-class ApplicationCredentialManager : Disposable {
-    private val toolkitCredentialManager = ToolkitCredentialsProviderManager(ExtensionPointCredentialsProviderRegistry())
+class CredentialManager : Disposable {
+    private val toolkitCredentialManager =
+        ToolkitCredentialsProviderManager(ExtensionPointCredentialsProviderRegistry())
 
     init {
         Disposer.register(ApplicationManager.getApplication(), this)
@@ -29,6 +30,7 @@ class ApplicationCredentialManager : Disposable {
     }
 
     companion object {
-        fun getInstance(): ApplicationCredentialManager = ServiceManager.getService(ApplicationCredentialManager::class.java)
+        fun getInstance(): CredentialManager =
+            ServiceManager.getService(CredentialManager::class.java)
     }
 }

@@ -12,8 +12,9 @@ import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsMa
 import javax.security.auth.login.CredentialNotFoundException
 
 class AwsClientManager internal constructor(
-    project: Project
-) : ToolkitClientManager(), Disposable {
+    project: Project,
+    sdkClient: AwsSdkClient
+) : ToolkitClientManager(sdkClient.sdkHttpClient), Disposable {
     private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
 
     init {

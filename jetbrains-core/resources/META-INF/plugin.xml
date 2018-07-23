@@ -16,7 +16,9 @@
 
     <extensionPoints>
         <extensionPoint qualifiedName="aws.toolkit.credentialProviderFactory"
-                        interface="software.aws.toolkits.core.credentials.ToolkitCredentialsProviderFactory"/>
+                        beanClass="software.aws.toolkits.jetbrains.core.credentials.CredentialProviderFactoryEP">
+            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.core.credentials.CredentialProviderFactory"/>
+        </extensionPoint>
         <extensionPoint qualifiedName="aws.toolkit.lambdaPackager" beanClass="com.intellij.lang.LanguageExtensionPoint">
             <with attribute="implementationClass" implements="software.aws.toolkits.jetbrains.services.lambda.LambdaPackager"/>
         </extensionPoint>
@@ -31,12 +33,13 @@
         <applicationService serviceInterface="software.aws.toolkits.core.region.ToolkitRegionProvider"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.region.AwsRegionProvider"
                             testServiceImplementation="software.aws.toolkits.jetbrains.core.region.MockRegionProvider"/>
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.ApplicationCredentialManager"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.CredentialManager"/>
         <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager"
                         serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultProjectAccountSettingsManager"
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsSettingsPanelInstaller"/>
 
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsSdkClient"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientManager"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.DefaultAwsResourceCache"
                         serviceInterface="software.aws.toolkits.jetbrains.core.AwsResourceCache"
@@ -47,7 +50,9 @@
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit">
-        <credentialProviderFactory implementation="software.aws.toolkits.core.credentials.ProfileToolkitCredentialsProviderFactory"/>
+        <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.ProfileCredentialProviderFactory"/>
+        <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.EnvironmentCredentialProviderFactory"/>
+        <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.SystemPropertyCredentialProviderFactory"/>
     </extensions>
 
     <actions>

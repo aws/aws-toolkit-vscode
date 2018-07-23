@@ -3,7 +3,7 @@ package software.aws.toolkits.core
 import software.amazon.awssdk.awscore.client.builder.AwsDefaultClientBuilder
 import software.amazon.awssdk.core.SdkClient
 import software.amazon.awssdk.core.client.builder.ClientHttpConfiguration
-import software.amazon.awssdk.http.apache.ApacheSdkHttpClientFactory
+import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3ClientBuilder
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
@@ -15,20 +15,19 @@ import kotlin.reflect.KClass
 /**
  * An SPI for caching of AWS clients inside of a toolkit
  */
-abstract class ToolkitClientManager {
+abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
     protected data class AwsClientKey(
-        val profileName: String,
+        val credentialProviderId: String,
         val region: AwsRegion,
         val serviceClass: KClass<out SdkClient>
     )
 
     private val cachedClients = ConcurrentHashMap<AwsClientKey, SdkClient>()
-    private val httpClient = ApacheSdkHttpClientFactory.builder().build().createHttpClient()
 
     @Suppress("UNCHECKED_CAST")
     fun <T : SdkClient> getClient(clz: KClass<T>): T {
         val key = AwsClientKey(
-            profileName = getCredentialsProvider().id,
+            credentialProviderId = getCredentialsProvider().id,
             region = getRegion(),
             serviceClass = clz
         )
@@ -58,7 +57,6 @@ abstract class ToolkitClientManager {
      */
     protected fun shutdown() {
         cachedClients.values.mapNotNull { it as? AutoCloseable }.forEach { it.close() }
-        httpClient.close()
     }
 
     /**
@@ -72,7 +70,7 @@ abstract class ToolkitClientManager {
         val builder = builderMethod.invoke(null) as AwsDefaultClientBuilder<*, *>
 
         return builder
-            .httpConfiguration(ClientHttpConfiguration.builder().httpClient(httpClient).build())
+            .httpConfiguration(ClientHttpConfiguration.builder().httpClient(sdkHttpClient).build())
             .credentialsProvider(getCredentialsProvider())
             .region(Region.of(key.region.id))
             .also {

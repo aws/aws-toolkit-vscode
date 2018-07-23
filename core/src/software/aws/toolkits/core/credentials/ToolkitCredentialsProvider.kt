@@ -22,19 +22,19 @@ interface ToolkitCredentialsProvider : AwsCredentialsProvider {
 abstract class ToolkitCredentialsProviderFactory(
     val type: String
 ) {
-    private val tcps = mutableMapOf<String, ToolkitCredentialsProvider>()
+    private val providers = mutableMapOf<String, ToolkitCredentialsProvider>()
 
     protected fun add(provider: ToolkitCredentialsProvider) {
-        tcps[provider.id] = provider
+        providers[provider.id] = provider
     }
 
     protected fun clear() {
-        tcps.clear()
+        providers.clear()
     }
 
-    fun listCredentialProviders() = tcps.values
+    fun listCredentialProviders() = providers.values
 
-    fun get(id: String) = tcps[id]
+    fun get(id: String) = providers[id]
 
     /**
      * Called when the [ToolkitCredentialsProviderManager] is shutting down to allow for resource clean up

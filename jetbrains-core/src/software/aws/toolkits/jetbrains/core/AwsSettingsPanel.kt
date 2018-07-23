@@ -18,6 +18,7 @@ import com.intellij.util.Consumer
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
@@ -119,6 +120,7 @@ class AwsSettingSelection(private val project: Project) : AwsListPopupStep<Any>(
 
 class AwsCredentialSelection(project: Project) : AwsListPopupStep<ToolkitCredentialsProvider>() {
     private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
+    private val credentialManager = CredentialManager.getInstance()
 
     override fun onChosen(selectedValue: ToolkitCredentialsProvider, finalChoice: Boolean): PopupStep<*>? {
         accountSettingsManager.activeCredentialProvider = selectedValue
@@ -129,7 +131,7 @@ class AwsCredentialSelection(project: Project) : AwsListPopupStep<ToolkitCredent
 
     override fun getTextFor(value: ToolkitCredentialsProvider) = value.displayName
 
-    override fun getValues() = accountSettingsManager.credentialProviders()
+    override fun getValues() = credentialManager.getCredentialProviders()
 }
 
 abstract class AwsListPopupStep<T> : ListPopupStep<T> {

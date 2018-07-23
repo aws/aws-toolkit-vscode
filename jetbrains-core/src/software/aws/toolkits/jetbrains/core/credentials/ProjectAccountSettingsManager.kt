@@ -35,11 +35,6 @@ interface ProjectAccountSettingsManager {
         }
     }
 
-    /**
-     * Returns the list of all valid [ToolkitCredentialsProvider]
-     */
-    fun credentialProviders(): List<ToolkitCredentialsProvider>
-
     companion object {
         /***
          * [MessageBus] topic for when the active credential profile or region is changed
@@ -64,7 +59,7 @@ data class AccountState(
 class DefaultProjectAccountSettingsManager internal constructor(private val project: Project) :
     ProjectAccountSettingsManager, PersistentStateComponent<AccountState> {
 
-    private val applicationCredentialManager = ApplicationCredentialManager.getInstance()
+    private val credentialManager = CredentialManager.getInstance()
     private val regionProvider = AwsRegionProvider.getInstance()
     private var state = AccountState()
 
@@ -79,7 +74,7 @@ class DefaultProjectAccountSettingsManager internal constructor(private val proj
         @Throws(CredentialProviderNotFound::class)
         get() {
             return state.activeProfile?.let {
-                return applicationCredentialManager.getCredentialProvider(it)
+                return credentialManager.getCredentialProvider(it)
             } ?: throw CredentialProviderNotFound("No active credential provider configured")
         }
         set(value) {
@@ -91,12 +86,5 @@ class DefaultProjectAccountSettingsManager internal constructor(private val proj
 
     override fun loadState(state: AccountState) {
         this.state = state
-    }
-
-    /**
-     * Returns the list of all valid [ToolkitCredentialsProvider]
-     */
-    override fun credentialProviders(): List<ToolkitCredentialsProvider> {
-        return applicationCredentialManager.getCredentialProviders()
     }
 }
