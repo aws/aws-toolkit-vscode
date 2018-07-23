@@ -7,12 +7,27 @@ import java.nio.file.StandardCopyOption
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.Callable
+import java.util.concurrent.CompletionStage
 
-class RemoteResourceResolver(private val urlFetcher: UrlFetcher, private val cacheBasePath: Path) {
-    fun resolve(resource: RemoteResource): Path {
+interface RemoteResourceResolver {
+    fun resolve(resource: RemoteResource): CompletionStage<Path>
+}
+
+class DefaultRemoteResourceResolver(
+    private val urlFetcher: UrlFetcher,
+    private val cacheBasePath: Path,
+    private val executor: (Callable<Path>) -> CompletionStage<Path>
+) : RemoteResourceResolver {
+
+    override fun resolve(resource: RemoteResource): CompletionStage<Path> {
+        return executor(Callable { internalResolve(resource) })
+    }
+
+    private fun internalResolve(resource: RemoteResource): Path {
         val expectedLocation = cacheBasePath.resolve(resource.name)
         val current = expectedLocation.existsOrNull()
-        if (current?.toFile()?.exists() == true && !isExpired(current, resource)) {
+        if (current != null && !isExpired(current, resource)) {
             LOG.debug { "Existing file ($current) for ${resource.name} is present and not expired - using it." }
             return current
         }
@@ -34,7 +49,7 @@ class RemoteResourceResolver(private val urlFetcher: UrlFetcher, private val cac
             } catch (e: Exception) {
                 LOG.error(e) { "Exception occurred downloading" }
                 lastException = e
-                tmpFile.toFile().delete()
+                tmpFile.delete()
                 return@mapNotNull null
             }
             tmpFile
@@ -59,7 +74,7 @@ class RemoteResourceResolver(private val urlFetcher: UrlFetcher, private val cac
 
     private companion object {
         val LOG = getLogger<RemoteResourceResolver>()
-        fun Path.existsOrNull() = if (this.toFile().exists()) {
+        fun Path.existsOrNull() = if (this.exists()) {
             this
         } else {
             null
@@ -67,10 +82,7 @@ class RemoteResourceResolver(private val urlFetcher: UrlFetcher, private val cac
 
         fun isExpired(file: Path, resource: RemoteResource): Boolean {
             val ttl = resource.ttl ?: return false
-            return (Duration.between(
-                Instant.ofEpochMilli(file.toFile().lastModified()),
-                Instant.now()
-            ).toMillis() > ttl.toMillis()).also {
+            return (Duration.between(file.lastModified().toInstant(), Instant.now()) > ttl).also {
                 if (it) {
                     LOG.debug { "TTL for file $file has expired." }
                 }

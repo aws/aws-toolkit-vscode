@@ -10,6 +10,7 @@ import com.intellij.openapi.fileEditor.FileEditorPolicy
 import com.intellij.openapi.fileEditor.FileEditorProvider
 import com.intellij.openapi.fileTypes.ex.FakeFileType
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.testFramework.LightVirtualFile
@@ -22,14 +23,17 @@ import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.amazon.awssdk.services.lambda.model.InvocationType
 import software.amazon.awssdk.services.lambda.model.LambdaException
 import software.amazon.awssdk.services.lambda.model.LogType
+import software.aws.toolkits.core.lambda.LambdaSampleEvent
+import software.aws.toolkits.core.lambda.LambdaSampleEventProvider
 import software.aws.toolkits.jetbrains.core.Icons.Services.LAMBDA_FUNCTION_ICON
+import software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider
 import software.aws.toolkits.jetbrains.utils.filesystem.LightFileEditor
 import java.nio.charset.StandardCharsets
 import javax.swing.DefaultComboBoxModel
 import javax.swing.Icon
 import javax.swing.JComponent
 
-class LambdaEditor(private val project: Project, private val model: LambdaVirtualFile) : LightFileEditor() {
+class LambdaEditor(private val project: Project, private val model: LambdaVirtualFile, provider: LambdaSampleEventProvider) : LightFileEditor() {
     private val view = LambdaEditorPanel(project)
 
     init {
@@ -38,17 +42,22 @@ class LambdaEditor(private val project: Project, private val model: LambdaVirtua
         view.handler.text = model.function.handler
         view.arn.text = model.function.arn
         view.invoke.addActionListener { invokeFunction() }
-        view.exampleRequests.model = DefaultComboBoxModel(
-                arrayOf(
-                        LambdaInputSample("First Sample", """{"hello":"world"}"""),
-                        LambdaInputSample("Second sample", """["hello"]""")
-                )
-        )
-        view.exampleRequests.selectedItem = null
+
+        provider.get().thenAccept { events ->
+            ApplicationManager.getApplication().invokeLater {
+                view.exampleRequests.model = DefaultComboBoxModel(events.toTypedArray())
+                view.exampleRequests.selectedItem = null
+            }
+        }
+
         view.exampleRequests.addActionListener {
-            (view.exampleRequests.selectedItem as? LambdaInputSample)?.run {
-                view.input.text = this.content
-                formatEditor(view.input)
+            (view.exampleRequests.selectedItem as? LambdaSampleEvent)?.run {
+                this.content.thenApply {
+                    ApplicationManager.getApplication().invokeLater {
+                        view.input.text = StringUtil.convertLineSeparators(it)
+                        formatEditor(view.input)
+                    }
+                }
             }
         }
     }
@@ -94,12 +103,11 @@ class LambdaEditor(private val project: Project, private val model: LambdaVirtua
     override fun getComponent(): JComponent = view.contentPanel
 }
 
-class LambdaViewerProvider() : FileEditorProvider {
+class LambdaViewerProvider(remoteResourceResolverProvider: RemoteResourceResolverProvider) : FileEditorProvider {
+    private val lambdaSampleEventProvider = LambdaSampleEventProvider(remoteResourceResolverProvider.get())
     override fun getEditorTypeId(): String = "lambdaInvoker"
     override fun accept(project: Project, file: VirtualFile): Boolean = file is LambdaVirtualFile
-    override fun createEditor(project: Project, file: VirtualFile): FileEditor =
-            LambdaEditor(project, file as LambdaVirtualFile)
-
+    override fun createEditor(project: Project, file: VirtualFile): FileEditor = LambdaEditor(project, file as LambdaVirtualFile, lambdaSampleEventProvider)
     override fun getPolicy(): FileEditorPolicy = FileEditorPolicy.HIDE_DEFAULT_EDITOR
 }
 
@@ -126,10 +134,6 @@ fun CreateFunctionResponse.toDataClass(client: LambdaClient) = LambdaFunction(
         handler = this.handler(),
         client = client
 )
-
-data class LambdaInputSample(val name: String, val content: String) {
-    override fun toString() = name
-}
 
 class LambdaFileType : FakeFileType() {
     override fun getName(): String = "AWS Lambda"

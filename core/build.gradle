@@ -1,6 +1,7 @@
 dependencies {
     compile(project(":resources"))
-    compile("com.fasterxml.jackson.module:jackson-module-kotlin:2.9.6")
+    compile("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
+    compile("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion")
     compile("software.amazon.awssdk:s3:$awsSdkVersion")
     testCompile("software.amazon.awssdk:service-test-utils:$awsSdkVersion")
 }

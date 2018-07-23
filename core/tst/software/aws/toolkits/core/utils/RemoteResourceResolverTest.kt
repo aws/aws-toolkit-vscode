@@ -17,8 +17,13 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.mockito.invocation.InvocationOnMock
 import java.io.InputStream
+import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
+import java.util.concurrent.Callable
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
+import kotlin.streams.toList
 
 class RemoteResourceResolverTest {
 
@@ -33,17 +38,17 @@ class RemoteResourceResolverTest {
         }
 
         val cachePath = tempPath.newFolder().toPath()
-        val sut = RemoteResourceResolver(urlFetcher, cachePath)
+        val sut = DefaultRemoteResourceResolver(urlFetcher, cachePath, immediateExecutor)
 
         val resource = resource()
 
-        val firstCall = sut.resolve(resource)
-        val secondCall = sut.resolve(resource)
+        val firstCall = sut.resolve(resource).toCompletableFuture().get()
+        val secondCall = sut.resolve(resource).toCompletableFuture().get()
 
         assertThat(firstCall, equalTo(secondCall))
         assertThat(firstCall, containsData("data"))
         verify(urlFetcher).fetch(eq(PRIMARY_URL), any())
-        assertThat(cachePath.toFile().listFiles().toList(), hasSize(1))
+        assertThat(Files.list(cachePath).toList(), hasSize(1))
     }
 
     @Test
@@ -52,13 +57,13 @@ class RemoteResourceResolverTest {
             on { fetch(eq(PRIMARY_URL), any()) }.doAnswer(writeDataToFile("first")).doAnswer(writeDataToFile("second"))
         }
 
-        val sut = RemoteResourceResolver(urlFetcher, tempPath.newFolder().toPath())
+        val sut = DefaultRemoteResourceResolver(urlFetcher, tempPath.newFolder().toPath(), immediateExecutor)
 
         val resource = resource(ttl = Duration.ofMillis(1))
 
-        val firstCall = sut.resolve(resource)
+        val firstCall = sut.resolve(resource).toCompletableFuture().get()
         Thread.sleep(100)
-        val secondCall = sut.resolve(resource)
+        val secondCall = sut.resolve(resource).toCompletableFuture().get()
 
         assertThat(firstCall, equalTo(secondCall))
         assertThat(secondCall, containsData("second"))
@@ -71,12 +76,12 @@ class RemoteResourceResolverTest {
             on { fetch(eq(PRIMARY_URL), any()) }.doAnswer(writeDataToFile("data")).thenThrow(RuntimeException("BOOM!"))
         }
 
-        val sut = RemoteResourceResolver(urlFetcher, tempPath.newFolder().toPath())
+        val sut = DefaultRemoteResourceResolver(urlFetcher, tempPath.newFolder().toPath(), immediateExecutor)
 
         val resource = resource(ttl = Duration.ofMillis(1))
 
-        val firstCall = sut.resolve(resource)
-        val secondCall = sut.resolve(resource)
+        val firstCall = sut.resolve(resource).toCompletableFuture().get()
+        val secondCall = sut.resolve(resource).toCompletableFuture().get()
 
         assertThat(firstCall, equalTo(secondCall))
         assertThat(firstCall, containsData("data"))
@@ -90,11 +95,11 @@ class RemoteResourceResolverTest {
             on { fetch(eq(PRIMARY_URL), any()) }.thenThrow(RuntimeException("BOOM!"))
         }
 
-        val sut = RemoteResourceResolver(urlFetcher, tempPath.newFolder().toPath())
+        val sut = DefaultRemoteResourceResolver(urlFetcher, tempPath.newFolder().toPath(), immediateExecutor)
 
         val resource = resource(initialValue = initialValue)
 
-        val result = sut.resolve(resource)
+        val result = sut.resolve(resource).toCompletableFuture().get()
         assertThat(result, containsData("initialValue"))
     }
 
@@ -104,9 +109,9 @@ class RemoteResourceResolverTest {
             on { fetch(eq(PRIMARY_URL), any()) }.thenThrow(RuntimeException("BOOM!"))
         }
 
-        val sut = RemoteResourceResolver(urlFetcher, tempPath.newFolder().toPath())
+        val sut = DefaultRemoteResourceResolver(urlFetcher, tempPath.newFolder().toPath(), immediateExecutor)
 
-        sut.resolve(resource())
+        sut.resolve(resource()).toCompletableFuture().get()
     }
 
     @Test
@@ -117,9 +122,9 @@ class RemoteResourceResolverTest {
             on { fetch(eq(SECONDARY_URL), any()) }.doAnswer(writeDataToFile("data"))
         }
 
-        val sut = RemoteResourceResolver(urlFetcher, tempPath.newFolder().toPath())
+        val sut = DefaultRemoteResourceResolver(urlFetcher, tempPath.newFolder().toPath(), immediateExecutor)
 
-        assertThat(sut.resolve(resource(urls = listOf(PRIMARY_URL, SECONDARY_URL))), containsData("data"))
+        assertThat(sut.resolve(resource(urls = listOf(PRIMARY_URL, SECONDARY_URL))).toCompletableFuture().get(), containsData("data"))
     }
 
     private companion object {
@@ -142,15 +147,15 @@ class RemoteResourceResolverTest {
 
             override fun matchesSafely(item: Path?): Boolean {
                 val path = item ?: return false
-                return path.toFile().readText() == data
+                return path.readText() == data
             }
 
             override fun describeMismatchSafely(item: Path?, mismatchDescription: Description?) {
                 if (item == null) {
                     mismatchDescription?.appendText("was null")
                 } else {
-                    if (item.toFile().exists()) {
-                        mismatchDescription?.appendText("was file containing '${item.toFile()?.readText()}'")
+                    if (item.exists()) {
+                        mismatchDescription?.appendText("was file containing '${item.readText()}'")
                     } else {
                         mismatchDescription?.appendText("file $item doesn't exist")
                     }
@@ -159,8 +164,10 @@ class RemoteResourceResolverTest {
         }
 
         fun writeDataToFile(data: String): (InvocationOnMock) -> Unit = { invocation ->
-            (invocation.arguments[1] as Path).toFile().writeText(data)
+            (invocation.arguments[1] as Path).writeText(data)
         }
+
+        val immediateExecutor: (Callable<Path>) -> CompletionStage<Path> = { CompletableFuture.completedFuture(it.call()) }
 
         const val PRIMARY_URL = "http://example.com"
         const val SECONDARY_URL = "http://example2.com"
