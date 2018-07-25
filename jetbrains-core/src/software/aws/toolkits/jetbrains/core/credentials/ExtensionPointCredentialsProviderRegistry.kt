@@ -1,5 +1,6 @@
 package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.extensions.AbstractExtensionPointBean
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.util.LazyInstance
@@ -12,17 +13,16 @@ import software.aws.toolkits.core.credentials.ToolkitCredentialsProviderRegistry
  */
 interface CredentialProviderFactory {
     /**
-     * Creates the [ToolkitCredentialsProviderFactory], this is called once per application
+     * Creates the [ToolkitCredentialsProviderFactory], this should return the same instance each time
      */
     fun createToolkitCredentialProviderFactory(): ToolkitCredentialsProviderFactory
 }
 
 class CredentialProviderFactoryEP : AbstractExtensionPointBean() {
     @Attribute("implementation")
-    var implementation: String? = null
+    lateinit var implementation: String
 
     private val instance = object : LazyInstance<CredentialProviderFactory>() {
-        @Throws(ClassNotFoundException::class)
         override fun getInstanceClass(): Class<CredentialProviderFactory> {
             return findClass(implementation)
         }
@@ -34,14 +34,20 @@ class CredentialProviderFactoryEP : AbstractExtensionPointBean() {
 }
 
 class ExtensionPointCredentialsProviderRegistry : ToolkitCredentialsProviderRegistry {
-    private val factories = EXTENSION_POINT.extensions
-        .map { it.getHandler() }
+    override fun listFactories(): Collection<ToolkitCredentialsProviderFactory> = EXTENSION_POINT.extensions
+        .mapNotNull {
+            try {
+                it.getHandler()
+            } catch (e: Exception) {
+                LOG.error(e)
+                null
+            }
+        }
         .map { it.createToolkitCredentialProviderFactory() }
 
-    override fun listFactories(): Collection<ToolkitCredentialsProviderFactory> = factories
-
     companion object {
+        private val LOG = Logger.getInstance(ExtensionPointCredentialsProviderRegistry::class.java)
         private const val EP_NAME = "aws.toolkit.credentialProviderFactory"
-        private val EXTENSION_POINT = ExtensionPointName.create<CredentialProviderFactoryEP>(EP_NAME)
+        val EXTENSION_POINT = ExtensionPointName.create<CredentialProviderFactoryEP>(EP_NAME)
     }
 }

@@ -7,7 +7,7 @@ class ToolkitCredentialsProviderManager(
 ) {
     @Throws(CredentialProviderNotFound::class)
     fun getCredentialProvider(id: String): ToolkitCredentialsProvider {
-        return registry.listFactories().mapNotNull { it.get(id) }.firstOrNull()
+        return registry.listFactories().asSequence().mapNotNull { it.get(id) }.firstOrNull()
             ?: throw CredentialProviderNotFound("No ToolkitCredentialsProvider found represented by $id")
     }
 

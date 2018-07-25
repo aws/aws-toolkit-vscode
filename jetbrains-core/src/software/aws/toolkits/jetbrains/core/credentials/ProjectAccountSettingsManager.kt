@@ -12,6 +12,7 @@ import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.Companion.ACCOUNT_SETTINGS_CHANGED
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
+import software.aws.toolkits.jetbrains.utils.MRUList
 import software.aws.toolkits.resources.message
 
 interface ProjectAccountSettingsManager {
@@ -23,7 +24,14 @@ interface ProjectAccountSettingsManager {
         fun activeRegionChanged(value: AwsRegion) {}
     }
 
+    /**
+     * Setting the active region will add to the recently used list, and evict the least recently used if at max size
+     */
     var activeRegion: AwsRegion
+
+    /**
+     * Setting the active provider will add to the recently used list, and evict the least recently used if at max size
+     */
     var activeCredentialProvider: ToolkitCredentialsProvider
         @Throws(CredentialProviderNotFound::class) get
 
@@ -35,6 +43,16 @@ interface ProjectAccountSettingsManager {
             false
         }
     }
+
+    /**
+     * Returns the list of recently used [AwsRegion]
+     */
+    fun recentlyUsedRegions(): List<AwsRegion>
+
+    /**
+     * Returns the list of recently used [ToolkitCredentialsProvider]
+     */
+    fun recentlyUsedCredentials(): List<ToolkitCredentialsProvider>
 
     companion object {
         /***
@@ -53,39 +71,80 @@ interface ProjectAccountSettingsManager {
 
 data class AccountState(
     var activeProfile: String? = null,
-    var activeRegion: String = AwsRegionProvider.getInstance().defaultRegion().id
+    var activeRegion: String = AwsRegionProvider.getInstance().defaultRegion().id,
+    var recentlyUsedProfiles: List<String> = mutableListOf(),
+    var recentlyUsedRegions: List<String> = mutableListOf()
 )
 
 @State(name = "accountSettings", storages = [Storage("aws.xml")])
-class DefaultProjectAccountSettingsManager internal constructor(private val project: Project) :
+class DefaultProjectAccountSettingsManager(private val project: Project) :
     ProjectAccountSettingsManager, PersistentStateComponent<AccountState> {
 
     private val credentialManager = CredentialManager.getInstance()
     private val regionProvider = AwsRegionProvider.getInstance()
-    private var state = AccountState()
+
+    // use internal fields so we can bypass the message bus, so we dont accidentally trigger a stack overflow
+    private var activeRegionInternal: AwsRegion = regionProvider.defaultRegion()
+    private var activeProfileInternal: ToolkitCredentialsProvider? = null
+    private val recentlyUsedProfiles = MRUList<ToolkitCredentialsProvider>(MAX_HISTORY)
+    private val recentlyUsedRegions = MRUList<AwsRegion>(MAX_HISTORY)
 
     override var activeRegion: AwsRegion
-        get() = regionProvider.lookupRegionById(state.activeRegion)
+        get() = activeRegionInternal
         set(value) {
-            state.activeRegion = value.id
+            activeRegionInternal = value
+            recentlyUsedRegions.add(value)
             project.messageBus.syncPublisher(ACCOUNT_SETTINGS_CHANGED).activeRegionChanged(value)
         }
 
     override var activeCredentialProvider: ToolkitCredentialsProvider
         @Throws(CredentialProviderNotFound::class)
         get() {
-            return state.activeProfile?.let {
-                return credentialManager.getCredentialProvider(it)
-            } ?: throw CredentialProviderNotFound(message("credentials.profile.not_configured"))
+            return activeProfileInternal ?: throw CredentialProviderNotFound(message("credentials.profile.not_configured"))
         }
         set(value) {
-            state.activeProfile = value.id
+            activeProfileInternal = value
+            recentlyUsedProfiles.add(value)
             project.messageBus.syncPublisher(ACCOUNT_SETTINGS_CHANGED).activeCredentialsChanged(value)
         }
 
-    override fun getState() = state
+    override fun recentlyUsedRegions(): List<AwsRegion> {
+        return recentlyUsedRegions.elements()
+    }
+
+    override fun recentlyUsedCredentials(): List<ToolkitCredentialsProvider> {
+        return recentlyUsedProfiles.elements()
+    }
+
+    override fun getState(): AccountState {
+        return AccountState(
+            activeProfile = if (hasActiveCredentials()) activeCredentialProvider.id else null,
+            activeRegion = activeRegionInternal.id,
+            recentlyUsedProfiles = recentlyUsedProfiles.elements().map { it.id },
+            recentlyUsedRegions = recentlyUsedRegions.elements().map { it.id }
+        )
+    }
 
     override fun loadState(state: AccountState) {
-        this.state = state
+        activeRegionInternal = regionProvider.lookupRegionById(state.activeRegion)
+        activeProfileInternal = state.activeProfile?.let { getCredentialProviderOrNull(it) }
+
+        state.recentlyUsedRegions.reversed().mapNotNull { regionProvider.regions()[it] }
+            .forEach { recentlyUsedRegions.add(it) }
+
+        state.recentlyUsedProfiles.reversed().mapNotNull { getCredentialProviderOrNull(it) }
+            .forEach { recentlyUsedProfiles.add(it) }
+    }
+
+    private fun getCredentialProviderOrNull(id: String): ToolkitCredentialsProvider? {
+        return try {
+            credentialManager.getCredentialProvider(id)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    companion object {
+        private const val MAX_HISTORY = 5
     }
 }

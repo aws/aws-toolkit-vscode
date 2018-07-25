@@ -5,7 +5,7 @@ import software.amazon.awssdk.auth.credentials.SystemPropertyCredentialsProvider
 import software.aws.toolkits.core.credentials.SystemPropertyToolkitCredentialsProviderFactory.Companion.TYPE
 import software.aws.toolkits.resources.message
 
-class SystemPropertyToolkitCredentialsProvider() : ToolkitCredentialsProvider {
+class SystemPropertyToolkitCredentialsProvider() : ToolkitCredentialsProvider() {
     private val awsCredentialsProvider = SystemPropertyCredentialsProvider.create()
 
     override val id = TYPE

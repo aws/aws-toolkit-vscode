@@ -36,7 +36,7 @@ class ToolkitCredentialsProviderManagerTest {
             .containsOnly(MockToolkitCredentialProviderFactory::class, MockToolkitCredentialProviderFactory2::class)
     }
 
-    private class MockToolkitCredentialsProvider(override val id: String) : ToolkitCredentialsProvider {
+    private class MockToolkitCredentialsProvider(override val id: String) : ToolkitCredentialsProvider() {
         override val displayName: String
             get() = id
 

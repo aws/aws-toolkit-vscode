@@ -32,7 +32,7 @@ class ProfileToolkitCredentialsProvider(
     internal val profile: Profile,
     private val sdkHttpClient: SdkHttpClient,
     private val regionProvider: ToolkitRegionProvider
-) : ToolkitCredentialsProvider {
+) : ToolkitCredentialsProvider() {
     private val internalCredentialsProvider = createInternalCredentialProvider()
     override val id = "$TYPE:${profile.name()}"
     override val displayName get() = message("credentials.profile.name", profile.name())

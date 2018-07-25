@@ -2,17 +2,36 @@ package software.aws.toolkits.core.credentials
 
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 
-interface ToolkitCredentialsProvider : AwsCredentialsProvider {
+abstract class ToolkitCredentialsProvider : AwsCredentialsProvider {
     /**
      * The ID should be unique across all [ToolkitCredentialsProvider].
      * It is recommended to concatenate the factory type and the display name.
      */
-    val id: String
+    abstract val id: String
 
     /**
      * A user friendly display name shown in the UI.
      */
-    val displayName: String
+    abstract val displayName: String
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ToolkitCredentialsProvider
+
+        if (id != other.id) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return id.hashCode()
+    }
+
+    override fun toString(): String {
+        return "${this::class.simpleName}(id='$id')"
+    }
 }
 
 /**

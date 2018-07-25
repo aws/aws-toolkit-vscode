@@ -5,7 +5,7 @@ import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsPro
 import software.aws.toolkits.core.credentials.EnvironmentVariableToolkitCredentialsProviderFactory.Companion.TYPE
 import software.aws.toolkits.resources.message
 
-class EnvironmentVariableToolkitCredentialsProvider : ToolkitCredentialsProvider {
+class EnvironmentVariableToolkitCredentialsProvider : ToolkitCredentialsProvider() {
     private val awsCredentialsProvider = EnvironmentVariableCredentialsProvider.create()
 
     /**
