@@ -10,17 +10,17 @@
       <font/>
     </border>
     <children>
-      <grid id="34efb" layout-manager="GridLayoutManager" row-count="2" column-count="4" same-size-horizontally="false" same-size-vertically="true" hgap="-1" vgap="-1">
-        <margin top="3" left="5" bottom="3" right="5"/>
+      <grid id="34efb" layout-manager="GridLayoutManager" row-count="2" column-count="5" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+        <margin top="0" left="0" bottom="0" right="0"/>
         <constraints>
-          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="9" fill="0" indent="0" use-parent-layout="true"/>
+          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="1" fill="1" indent="0" use-parent-layout="true"/>
         </constraints>
         <properties/>
         <border type="none" title-resource-bundle="software/aws/toolkits/resources/localized_messages" title-key="lambda.details"/>
         <children>
           <component id="24558" class="javax.swing.JLabel">
             <constraints>
-              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="9" fill="0" indent="0" use-parent-layout="false"/>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
               <labelFor value="4d604"/>
@@ -29,7 +29,7 @@
           </component>
           <component id="4d604" class="javax.swing.JTextField" binding="handler">
             <constraints>
-              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="9" fill="1" indent="0" use-parent-layout="true"/>
+              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="1" indent="0" use-parent-layout="true"/>
             </constraints>
             <properties>
               <editable value="false"/>
@@ -37,7 +37,7 @@
           </component>
           <component id="f9a6b" class="javax.swing.JLabel">
             <constraints>
-              <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="9" fill="0" indent="0" use-parent-layout="true">
+              <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="true">
                 <preferred-size width="87" height="-1"/>
               </grid>
             </constraints>
@@ -47,7 +47,7 @@
           </component>
           <component id="b9416" class="javax.swing.JLabel" binding="lastModified">
             <constraints>
-              <grid row="0" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="4" anchor="9" fill="0" indent="0" use-parent-layout="true"/>
+              <grid row="0" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="8" fill="0" indent="0" use-parent-layout="true"/>
             </constraints>
             <properties>
               <text value=""/>
@@ -55,7 +55,7 @@
           </component>
           <component id="f5d85" class="javax.swing.JTextField" binding="arn">
             <constraints>
-              <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="9" fill="1" indent="0" use-parent-layout="true"/>
+              <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="1" indent="0" use-parent-layout="true"/>
             </constraints>
             <properties>
               <editable value="false"/>
@@ -64,12 +64,17 @@
           </component>
           <component id="5fc1c" class="javax.swing.JLabel">
             <constraints>
-              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="9" fill="0" indent="0" use-parent-layout="true"/>
+              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="true"/>
             </constraints>
             <properties>
               <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.arn.label"/>
             </properties>
           </component>
+          <hspacer id="5e5f6">
+            <constraints>
+              <grid row="0" column="4" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+          </hspacer>
         </children>
       </grid>
       <component id="31511" class="javax.swing.JLabel" binding="title">
