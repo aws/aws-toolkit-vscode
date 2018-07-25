@@ -1,16 +1,18 @@
 package software.aws.toolkits.jetbrains.core
 
+import com.intellij.ide.DataManager
+import com.intellij.openapi.actionSystem.ActionGroup
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.DataKeys
+import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.actionSystem.ex.ComboBoxAction
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupActivity
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.openapi.ui.popup.ListPopup
-import com.intellij.openapi.ui.popup.ListPopupStep
-import com.intellij.openapi.ui.popup.ListSeparator
-import com.intellij.openapi.ui.popup.MnemonicNavigationFilter
-import com.intellij.openapi.ui.popup.PopupStep
-import com.intellij.openapi.ui.popup.PopupStep.FINAL_CHOICE
-import com.intellij.openapi.ui.popup.SpeedSearchFilter
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.WindowManager
@@ -24,9 +26,16 @@ import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsMa
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.resources.message
 import java.awt.event.MouseEvent
-import javax.swing.Icon
+import javax.swing.JComponent
 
-class AwsSettingsPanel(private val project: Project) : StatusBarWidget, StatusBarWidget.MultipleTextValuesPresentation,
+class AwsSettingsPanelInstaller : StartupActivity {
+    override fun runActivity(project: Project) {
+        WindowManager.getInstance().getStatusBar(project).addWidget(AwsSettingsPanel(project), project)
+    }
+}
+
+private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
+    StatusBarWidget.MultipleTextValuesPresentation,
     AccountSettingsChangedNotifier {
     private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
     private var statusBar: StatusBar? = null
@@ -34,16 +43,18 @@ class AwsSettingsPanel(private val project: Project) : StatusBarWidget, StatusBa
     @Suppress("FunctionName")
     override fun ID(): String = "AwsSettingsPanel"
 
-    override fun getTooltipText(): String? = null
+    override fun getTooltipText() = message("settings.title")
 
     override fun getSelectedValue(): String {
-        val credProviderName = try {
-            accountSettingsManager.activeCredentialProvider.displayName
+        val statusLine = try {
+            val displayName = accountSettingsManager.activeCredentialProvider.displayName
+            "$displayName@${accountSettingsManager.activeRegion.name}"
         } catch (_: CredentialProviderNotFound) {
             // TODO: Need to better handle the case where they have no valid profile selected
             message("settings.credentials.none_selected")
         }
-        return "AWS: $credProviderName@${accountSettingsManager.activeRegion.name}"
+
+        return "AWS: $statusLine"
     }
 
     @Suppress("OverridingDeprecatedMember") // No choice, part of interface contract with no default
@@ -51,7 +62,16 @@ class AwsSettingsPanel(private val project: Project) : StatusBarWidget, StatusBa
         TODO("not implemented")
     }
 
-    override fun getPopupStep(): ListPopup? = JBPopupFactory.getInstance().createListPopup(AwsSettingSelection(project))
+    override fun getPopupStep(): ListPopup? {
+        val dataContext = DataManager.getInstance().getDataContext(statusBar!!.component)
+        return JBPopupFactory.getInstance().createActionGroupPopup(
+            tooltipText,
+            ChangeAccountSettingsAction(accountSettingsManager).createPopupActionGroup(),
+            dataContext,
+            JBPopupFactory.ActionSelectionAid.SPEEDSEARCH,
+            true
+        )
+    }
 
     override fun getClickConsumer(): Consumer<MouseEvent>? = null
 
@@ -80,83 +100,78 @@ class AwsSettingsPanel(private val project: Project) : StatusBarWidget, StatusBa
     }
 }
 
-class AwsSettingsPanelInstaller : StartupActivity {
-    override fun runActivity(project: Project) {
-        WindowManager.getInstance().getStatusBar(project).addWidget(AwsSettingsPanel(project), project)
+private class ChangeAccountSettingsAction(private val accountSettingsManager: ProjectAccountSettingsManager) :
+    ComboBoxAction(), DumbAware {
+    fun createPopupActionGroup(): DefaultActionGroup {
+        return createPopupActionGroup(null)
     }
-}
 
-class AwsSettingSelection(private val project: Project) : AwsListPopupStep<Any>() {
-    private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
-    private val regions = AwsRegionProvider.getInstance().regions().values.sortedBy { it.category }
-    private val credentialProfileSubMenu = message("settings.credentials.profile_sub_menu")
+    override fun createPopupActionGroup(button: JComponent?): DefaultActionGroup {
+        val group = DefaultActionGroup()
 
-    override fun getValues() = regions + credentialProfileSubMenu
-
-    override fun onChosen(selectedValue: Any?, finalChoice: Boolean): PopupStep<*>? = when (selectedValue) {
-        is AwsRegion -> {
-            accountSettingsManager.activeRegion = selectedValue
-            FINAL_CHOICE
+        val usedRegions = accountSettingsManager.recentlyUsedRegions()
+        if (usedRegions.isEmpty()) {
+            group.addAll(createShowAllRegions())
+        } else {
+            group.addSeparator(message("settings.regions.recent"))
+            usedRegions.forEach {
+                group.add(ChangeRegionAction(it))
+            }
+            group.add(createShowAllRegions())
         }
-        credentialProfileSubMenu -> AwsCredentialSelection(project)
-        else -> FINAL_CHOICE
+
+        val usedCredentials = accountSettingsManager.recentlyUsedCredentials()
+        if (usedCredentials.isEmpty()) {
+            group.addSeparator(message("settings.credentials"))
+            group.addAll(createShowAllCredentials())
+        } else {
+            group.addSeparator(message("settings.credentials.recent"))
+            usedCredentials.forEach {
+                group.add(ChangeCredentialsAction(it))
+            }
+            group.add(createShowAllCredentials())
+        }
+
+        return group
     }
 
-    override fun getTitle() = message("settings.title")
+    private fun createShowAllRegions(): ActionGroup {
+        val regions = AwsRegionProvider.getInstance().regions().values.groupBy { it.category }
+        val showAll = DefaultActionGroup(message("settings.regions.region_sub_menu"), true)
 
-    override fun getTextFor(value: Any?) = when (value) {
-        is AwsRegion -> value.displayName
-        else -> value.toString()
+        regions.forEach { (category, subRegions) ->
+            showAll.addSeparator(category)
+            subRegions.forEach {
+                showAll.add(ChangeRegionAction(it))
+            }
+        }
+
+        return showAll
     }
 
-    override fun hasSubstep(selectedValue: Any?) = selectedValue == credentialProfileSubMenu
+    private fun createShowAllCredentials(): ActionGroup {
+        val credentialManager = CredentialManager.getInstance()
+        val showAll = DefaultActionGroup(message("settings.credentials.profile_sub_menu"), true)
 
-    override fun getSeparatorAbove(value: Any?) = when {
-        value is AwsRegion && value == regions.first() -> ListSeparator(value.category)
-        value is AwsRegion && regions[regions.indexOf(value) - 1].category != value.category -> ListSeparator(value.category)
-        value == credentialProfileSubMenu -> ListSeparator(message("settings.other"))
-        else -> null
+        credentialManager.getCredentialProviders().forEach {
+            showAll.add(ChangeCredentialsAction(it))
+        }
+
+        return showAll
     }
 }
 
-class AwsCredentialSelection(project: Project) : AwsListPopupStep<ToolkitCredentialsProvider>() {
-    private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
-    private val credentialManager = CredentialManager.getInstance()
-
-    override fun onChosen(selectedValue: ToolkitCredentialsProvider, finalChoice: Boolean): PopupStep<*>? {
-        accountSettingsManager.activeCredentialProvider = selectedValue
-        return FINAL_CHOICE
+private class ChangeRegionAction(val region: AwsRegion) : AnAction(region.displayName), DumbAware {
+    override fun actionPerformed(e: AnActionEvent) {
+        val accountSettingsManager = ProjectAccountSettingsManager.getInstance(e.getRequiredData(DataKeys.PROJECT))
+        accountSettingsManager.activeRegion = region
     }
-
-    override fun getTitle(): String? = null
-
-    override fun getTextFor(value: ToolkitCredentialsProvider) = value.displayName
-
-    override fun getValues() = credentialManager.getCredentialProviders()
 }
 
-abstract class AwsListPopupStep<T> : ListPopupStep<T> {
-    override fun isSelectable(value: T?) = true
-
-    override fun getDefaultOptionIndex() = 0
-
-    override fun getSeparatorAbove(value: T?): ListSeparator? = null
-
-    override fun isAutoSelectionEnabled(): Boolean = false
-
-    override fun getFinalRunnable(): Runnable? = null
-
-    override fun canceled() {}
-
-    override fun getMnemonicNavigationFilter(): MnemonicNavigationFilter<T>? = null
-
-    override fun getSpeedSearchFilter(): SpeedSearchFilter<T>? = null
-
-    override fun hasSubstep(selectedValue: T?): Boolean = false
-
-    override fun isMnemonicsNavigationEnabled(): Boolean = false
-
-    override fun isSpeedSearchEnabled(): Boolean = false
-
-    override fun getIconFor(aValue: T?): Icon? = null
+private class ChangeCredentialsAction(val credentialsProvider: ToolkitCredentialsProvider) :
+    AnAction(credentialsProvider.displayName), DumbAware {
+    override fun actionPerformed(e: AnActionEvent) {
+        val accountSettingsManager = ProjectAccountSettingsManager.getInstance(e.getRequiredData(DataKeys.PROJECT))
+        accountSettingsManager.activeCredentialProvider = credentialsProvider
+    }
 }
