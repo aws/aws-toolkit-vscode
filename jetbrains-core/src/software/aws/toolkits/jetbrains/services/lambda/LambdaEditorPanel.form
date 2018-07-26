@@ -88,107 +88,74 @@
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function_name"/>
         </properties>
       </component>
-      <splitpane id="beee5">
+      <grid id="7464f" binding="invokePanel" layout-manager="BorderLayout" hgap="0" vgap="0">
         <constraints>
-          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
-            <preferred-size width="200" height="200"/>
-          </grid>
+          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
         </constraints>
-        <properties>
-          <dividerSize value="4"/>
-          <orientation value="0"/>
-          <resizeWeight value="0.75"/>
-        </properties>
-        <border type="empty"/>
+        <properties/>
+        <border type="none"/>
         <children>
-          <splitpane id="c4a17">
-            <constraints>
-              <splitpane position="left"/>
-            </constraints>
-            <properties>
-              <continuousLayout value="true"/>
-              <dividerLocation value="616"/>
-              <dividerSize value="4"/>
-              <enabled value="true"/>
-              <resizeWeight value="0.75"/>
-            </properties>
-            <border type="none"/>
-            <children>
-              <grid id="2ca14" layout-manager="GridLayoutManager" row-count="2" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
-                <margin top="0" left="0" bottom="0" right="0"/>
-                <constraints>
-                  <splitpane position="left"/>
-                </constraints>
-                <properties/>
-                <border type="none" title-resource-bundle="software/aws/toolkits/resources/localized_messages" title-key="lambda.input"/>
-                <children>
-                  <component id="a7139" class="com.intellij.ui.EditorTextField" binding="input" custom-create="true">
-                    <constraints>
-                      <grid row="1" column="0" row-span="1" col-span="3" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false">
-                        <minimum-size width="150" height="150"/>
-                      </grid>
-                    </constraints>
-                    <properties/>
-                  </component>
-                  <component id="aaba5" class="javax.swing.JButton" binding="invoke">
-                    <constraints>
-                      <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
-                    </constraints>
-                    <properties>
-                      <icon value="general/run.png"/>
-                      <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.invoke"/>
-                    </properties>
-                  </component>
-                  <component id="659a2" class="javax.swing.JComboBox" binding="exampleRequests">
-                    <constraints>
-                      <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
-                    </constraints>
-                    <properties/>
-                  </component>
-                </children>
-              </grid>
-              <grid id="43fb9" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
-                <margin top="0" left="0" bottom="0" right="0"/>
-                <constraints>
-                  <splitpane position="right"/>
-                </constraints>
-                <properties/>
-                <border type="none" title-resource-bundle="software/aws/toolkits/resources/localized_messages" title-key="lambda.response"/>
-                <children>
-                  <component id="186c2" class="com.intellij.ui.EditorTextField" binding="response" custom-create="true">
-                    <constraints>
-                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
-                    </constraints>
-                    <properties/>
-                  </component>
-                </children>
-              </grid>
-            </children>
-          </splitpane>
-          <grid id="f8747" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
-            <margin top="0" left="0" bottom="0" right="0"/>
-            <constraints>
-              <splitpane position="right"/>
-            </constraints>
+          <grid id="f8747" binding="logOutputPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
+            <constraints border-constraint="South"/>
             <properties/>
-            <border type="none" title-resource-bundle="software/aws/toolkits/resources/localized_messages" title-key="lambda.log_output">
+            <border type="empty" title-resource-bundle="software/aws/toolkits/resources/localized_messages" title-key="lambda.log_output">
               <title-color color="-16777216"/>
+              <size top="5" left="5" bottom="5" right="5"/>
             </border>
             <children>
-              <component id="8e911" class="javax.swing.JTextArea" binding="logOutput">
+              <component id="9c138" class="com.intellij.ui.EditorTextField" binding="logOutput" custom-create="true">
+                <constraints border-constraint="Center"/>
+                <properties/>
+              </component>
+            </children>
+          </grid>
+          <grid id="2ca14" binding="inputPanel" layout-manager="GridLayoutManager" row-count="2" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+            <margin top="0" left="0" bottom="0" right="0"/>
+            <constraints border-constraint="West"/>
+            <properties/>
+            <border type="none" title-resource-bundle="software/aws/toolkits/resources/localized_messages" title-key="lambda.input"/>
+            <children>
+              <component id="a7139" class="com.intellij.ui.EditorTextField" binding="input" custom-create="true">
                 <constraints>
-                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false">
-                    <preferred-size width="150" height="100"/>
+                  <grid row="1" column="0" row-span="1" col-span="3" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                    <minimum-size width="150" height="150"/>
                   </grid>
                 </constraints>
+                <properties/>
+              </component>
+              <component id="aaba5" class="javax.swing.JButton" binding="invoke">
+                <constraints>
+                  <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
+                </constraints>
                 <properties>
-                  <editable value="false"/>
+                  <icon value="general/run.png"/>
+                  <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.invoke"/>
                 </properties>
+              </component>
+              <component id="659a2" class="javax.swing.JComboBox" binding="exampleRequests">
+                <constraints>
+                  <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties/>
+              </component>
+            </children>
+          </grid>
+          <grid id="43fb9" binding="responsePanel" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+            <margin top="0" left="0" bottom="0" right="0"/>
+            <constraints border-constraint="Center"/>
+            <properties/>
+            <border type="none" title-resource-bundle="software/aws/toolkits/resources/localized_messages" title-key="lambda.response"/>
+            <children>
+              <component id="186c2" class="com.intellij.ui.EditorTextField" binding="response" custom-create="true">
+                <constraints>
+                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties/>
               </component>
             </children>
           </grid>
         </children>
-      </splitpane>
+      </grid>
     </children>
   </grid>
 </form>
