@@ -2,9 +2,7 @@
 
 import * as vscode from 'vscode';
 
-import { CdkProvider } from './cdk/cdkProvider';
 import { LambdaProvider } from './lambda/lambdaProvider';
-import { S3Provider } from './s3/s3Provider';
 
 import { AWSClientBuilder } from './shared/awsClientBuilder';
 import { ext } from './shared/extensionGlobals';
@@ -25,9 +23,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('aws.selectRegion', async () => { await ext.sdkClientBuilder.onCommandConfigureRegion(); });
 
     const providers = [
-        new LambdaProvider(),
-        new CdkProvider(),
-        new S3Provider()
+        new LambdaProvider()
     ];
 
     providers.forEach( (p) => {

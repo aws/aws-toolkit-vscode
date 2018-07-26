@@ -1,7 +1,7 @@
 {
-    "name": "aws-vscode-tools",
-    "displayName": "AWS Tools for Visual Studio Code",
-    "description": "Extensions for working with Amazon Web Services in Visual Studio Code",
+    "name": "aws-toolkit-vscode",
+    "displayName": "AWS Toolkit for Visual Studio Code",
+    "description": "An extension for working with Amazon Web Services in Visual Studio Code",
     "version": "0.0.1",
     "publisher": "amazonwebservices",
     "engines": {
@@ -18,9 +18,7 @@
         "onCommand:aws.invokeLambda",
         "onCommand:aws.deployLambda",
         "onCommand:aws.getLambdaConfig",
-        "onCommand:aws.getLambdaPolicy",
-        "onView:s3",
-        "onView:cdk"
+        "onCommand:aws.getLambdaPolicy"
     ],
     "main": "./out/extension",
     "contributes": {
@@ -54,14 +52,6 @@
                 {
                     "id": "lambda",
                     "name": "Lambda"
-                },
-                {
-                    "id": "cdk",
-                    "name": "CDK"
-                },
-                {
-                    "id": "s3",
-                    "name": "S3"
                 }
             ]
         },
