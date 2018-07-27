@@ -12,6 +12,7 @@ import com.intellij.ui.EditorTextFieldProvider;
 import com.intellij.ui.IdeBorderFactory;
 import com.intellij.ui.JBSplitter;
 import com.intellij.util.ui.JBUI;
+import com.intellij.util.ui.JBUI.Fonts;
 import java.awt.BorderLayout;
 import java.awt.Insets;
 import java.util.Collections;
@@ -27,6 +28,7 @@ public final class LambdaEditorPanel {
     private final Project project;
     JTextField handler;
     JLabel title;
+    JLabel description;
     JLabel lastModified;
 
     EditorTextField input;
@@ -46,6 +48,8 @@ public final class LambdaEditorPanel {
         this.project = project;
 
         // Patch up the UI with things we can't do in the designer easily
+        description.setFont(Fonts.smallFont());
+
         Insets insets = JBUI.emptyInsets();
         inputPanel.setBorder(IdeBorderFactory.createTitledBorder(Localization.message("lambda.input"), false, insets));
         responsePanel.setBorder(IdeBorderFactory.createTitledBorder(Localization.message("lambda.response"), false, insets));

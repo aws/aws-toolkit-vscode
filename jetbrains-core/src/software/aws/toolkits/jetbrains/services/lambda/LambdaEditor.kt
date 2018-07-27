@@ -39,6 +39,7 @@ class LambdaEditor(private val project: Project, private val model: LambdaVirtua
 
     init {
         view.title.text = message("lambda.function_name", model.function.name)
+        view.description.text = model.function.description
         view.lastModified.text = model.function.lastModified
         view.handler.text = model.function.handler
         view.arn.text = model.function.arn
@@ -108,7 +109,9 @@ class LambdaViewerProvider(remoteResourceResolverProvider: RemoteResourceResolve
     private val lambdaSampleEventProvider = LambdaSampleEventProvider(remoteResourceResolverProvider.get())
     override fun getEditorTypeId(): String = "lambdaInvoker"
     override fun accept(project: Project, file: VirtualFile): Boolean = file is LambdaVirtualFile
-    override fun createEditor(project: Project, file: VirtualFile): FileEditor = LambdaEditor(project, file as LambdaVirtualFile, lambdaSampleEventProvider)
+    override fun createEditor(project: Project, file: VirtualFile): FileEditor =
+        LambdaEditor(project, file as LambdaVirtualFile, lambdaSampleEventProvider)
+
     override fun getPolicy(): FileEditorPolicy = FileEditorPolicy.HIDE_DEFAULT_EDITOR
 }
 
@@ -118,22 +121,31 @@ class LambdaVirtualFile(internal val function: LambdaFunction) : LightVirtualFil
     }
 }
 
-data class LambdaFunction(val name: String, val arn: String, val lastModified: String, val handler: String, val client: LambdaClient)
+data class LambdaFunction(
+    val name: String,
+    val description: String?,
+    val arn: String,
+    val lastModified: String,
+    val handler: String,
+    val client: LambdaClient
+)
 
 fun FunctionConfiguration.toDataClass(client: LambdaClient) = LambdaFunction(
-        name = this.functionName(),
-        arn = this.functionArn(),
-        lastModified = this.lastModified(),
-        handler = this.handler(),
-        client = client
+    name = this.functionName(),
+    description = this.description(),
+    arn = this.functionArn(),
+    lastModified = this.lastModified(),
+    handler = this.handler(),
+    client = client
 )
 
 fun CreateFunctionResponse.toDataClass(client: LambdaClient) = LambdaFunction(
-        name = this.functionName(),
-        arn = this.functionArn(),
-        lastModified = this.lastModified(),
-        handler = this.handler(),
-        client = client
+    name = this.functionName(),
+    description = this.description(),
+    arn = this.functionArn(),
+    lastModified = this.lastModified(),
+    handler = this.handler(),
+    client = client
 )
 
 class LambdaFileType : FakeFileType() {
