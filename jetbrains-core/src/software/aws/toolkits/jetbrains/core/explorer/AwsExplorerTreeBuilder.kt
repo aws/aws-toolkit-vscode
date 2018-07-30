@@ -15,5 +15,10 @@ class AwsExplorerTreeBuilder(tree: JTree, treeModel: DefaultTreeModel, project: 
         initRootNode()
     }
 
+    override fun runBackgroundLoading(runnable: Runnable) {
+        // TODO: Hack so we don't run in read actions
+        runnable.run()
+    }
+
     override fun isAlwaysShowPlus(descriptor: NodeDescriptor<*>?) = descriptor is AwsExplorerServiceRootNode
 }
