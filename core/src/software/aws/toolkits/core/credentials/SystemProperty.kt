@@ -11,14 +11,14 @@ class SystemPropertyToolkitCredentialsProvider() : ToolkitCredentialsProvider() 
     override val id = TYPE
     override val displayName get() = message("credentials.system_props.name")
 
-    override fun getCredentials(): AwsCredentials = awsCredentialsProvider.credentials
+    override fun resolveCredentials(): AwsCredentials = awsCredentialsProvider.resolveCredentials()
 }
 
 class SystemPropertyToolkitCredentialsProviderFactory() : ToolkitCredentialsProviderFactory(TYPE) {
     init {
         val credentialsProvider = SystemPropertyToolkitCredentialsProvider()
         try {
-            credentialsProvider.credentials
+            credentialsProvider.resolveCredentials()
             add(credentialsProvider)
         } catch (_: Exception) {
             // We can't create creds from sys props, so dont add it

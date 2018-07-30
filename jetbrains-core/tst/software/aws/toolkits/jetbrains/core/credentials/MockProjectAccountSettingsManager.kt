@@ -1,5 +1,6 @@
 package software.aws.toolkits.jetbrains.core.credentials
 
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
@@ -12,7 +13,7 @@ class MockProjectAccountSettingsManager : ProjectAccountSettingsManager {
         override val id = "MockCredentials"
         override val displayName = " Mock Credentials"
 
-        override fun getCredentials(): AwsCredentials = AwsCredentials.create("Foo", "Bar")
+        override fun resolveCredentials(): AwsCredentials = AwsBasicCredentials.create("Foo", "Bar")
     }
 
     override fun recentlyUsedRegions(): List<AwsRegion> {

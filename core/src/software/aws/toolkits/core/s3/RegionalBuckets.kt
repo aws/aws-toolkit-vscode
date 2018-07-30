@@ -9,7 +9,7 @@ fun S3Client.regionForBucket(bucketName: String): String {
             .sdkHttpResponse()
             .headers()[BUCKET_REGION_HEADER]?.first() ?: throw IllegalStateException("Failed to get bucket header")
     } catch (e: S3Exception) {
-        e.headers()[BUCKET_REGION_HEADER]?.run { return@regionForBucket this }
+        e.awsErrorDetails().sdkHttpResponse().headers[BUCKET_REGION_HEADER]?.run { return@regionForBucket this }
         throw e
     }
 }

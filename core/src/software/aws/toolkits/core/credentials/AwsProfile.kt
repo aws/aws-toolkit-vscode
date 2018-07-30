@@ -1,24 +1,24 @@
 package software.aws.toolkits.core.credentials
 
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
-import software.amazon.awssdk.core.client.builder.ClientHttpConfiguration
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.profiles.Profile
 import software.amazon.awssdk.profiles.ProfileFile
-import software.amazon.awssdk.profiles.ProfileProperties
-import software.amazon.awssdk.profiles.ProfileProperties.AWS_ACCESS_KEY_ID
-import software.amazon.awssdk.profiles.ProfileProperties.AWS_SECRET_ACCESS_KEY
-import software.amazon.awssdk.profiles.ProfileProperties.AWS_SESSION_TOKEN
-import software.amazon.awssdk.profiles.ProfileProperties.ROLE_ARN
-import software.amazon.awssdk.profiles.ProfileProperties.ROLE_SESSION_NAME
-import software.amazon.awssdk.profiles.ProfileProperties.SOURCE_PROFILE
+import software.amazon.awssdk.profiles.ProfileProperty.AWS_ACCESS_KEY_ID
+import software.amazon.awssdk.profiles.ProfileProperty.AWS_SECRET_ACCESS_KEY
+import software.amazon.awssdk.profiles.ProfileProperty.AWS_SESSION_TOKEN
+import software.amazon.awssdk.profiles.ProfileProperty.EXTERNAL_ID
+import software.amazon.awssdk.profiles.ProfileProperty.ROLE_ARN
+import software.amazon.awssdk.profiles.ProfileProperty.ROLE_SESSION_NAME
+import software.amazon.awssdk.profiles.ProfileProperty.SOURCE_PROFILE
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain
-import software.amazon.awssdk.services.sts.STSClient
+import software.amazon.awssdk.services.sts.StsClient
 import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider
 import software.amazon.awssdk.services.sts.model.AssumeRoleRequest
 import software.aws.toolkits.core.credentials.ProfileToolkitCredentialsProviderFactory.Companion.TYPE
@@ -37,8 +37,8 @@ class ProfileToolkitCredentialsProvider(
     override val id = "$TYPE:${profile.name()}"
     override val displayName get() = message("credentials.profile.name", profile.name())
 
-    override fun getCredentials(): AwsCredentials {
-        return internalCredentialsProvider.credentials
+    override fun resolveCredentials(): AwsCredentials {
+        return internalCredentialsProvider.resolveCredentials()
     }
 
     private fun createInternalCredentialProvider(): AwsCredentialsProvider {
@@ -50,7 +50,7 @@ class ProfileToolkitCredentialsProvider(
                 val roleArn = requiredProperty(ROLE_ARN)
                 val roleSessionName = profile.property(ROLE_SESSION_NAME)
                     .orElseGet { "aws-toolkit-jetbrains-${System.currentTimeMillis()}" }
-                val externalId = profile.property(ProfileProperties.EXTERNAL_ID).orElse(null)
+                val externalId = profile.property(EXTERNAL_ID).orElse(null)
 
                 val assumeRoleRequest = AssumeRoleRequest.builder()
                     .roleArn(roleArn)
@@ -59,16 +59,14 @@ class ProfileToolkitCredentialsProvider(
                     .build()
 
                 val stsRegion = DefaultAwsRegionProviderChain().region?.let {
-                    regionProvider.regions()[it.value()]
+                    regionProvider.regions()[it.id()]
                 } ?: AwsRegion.GLOBAL
 
                 // Override the default SPI for getting the active credentials since we are making an internal
                 // to this provider client
-                val stsClient = STSClient.builder()
-                    .httpConfiguration(
-                        ClientHttpConfiguration.builder()
-                            .httpClient(sdkHttpClient).build()
-                    ).credentialsProvider(
+                val stsClient = StsClient.builder()
+                    .httpClient(sdkHttpClient)
+                    .credentialsProvider(
                         ProfileToolkitCredentialsProvider(
                             profiles,
                             profiles[sourceProfile]!!,
@@ -95,7 +93,7 @@ class ProfileToolkitCredentialsProvider(
             }
             propertyExists(AWS_ACCESS_KEY_ID) -> {
                 StaticCredentialsProvider.create(
-                    AwsCredentials.create(
+                    AwsBasicCredentials.create(
                         requiredProperty(AWS_ACCESS_KEY_ID),
                         requiredProperty(AWS_SECRET_ACCESS_KEY)
                     )

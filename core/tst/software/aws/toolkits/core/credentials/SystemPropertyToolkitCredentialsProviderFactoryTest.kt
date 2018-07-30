@@ -4,7 +4,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.auth.credentials.AwsCredentials
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.aws.toolkits.core.rules.SystemPropertyHelper
 
@@ -46,7 +46,7 @@ class SystemPropertyToolkitCredentialsProviderFactoryTest {
             .hasSize(1)
             .element(0)
             .satisfies {
-                assertThat(it.credentials).isExactlyInstanceOf(AwsCredentials::class.java)
+                assertThat(it.resolveCredentials()).isExactlyInstanceOf(AwsBasicCredentials::class.java)
             }
     }
 
@@ -61,7 +61,7 @@ class SystemPropertyToolkitCredentialsProviderFactoryTest {
             .hasSize(1)
             .element(0)
             .satisfies {
-                assertThat(it.credentials).isExactlyInstanceOf(AwsSessionCredentials::class.java)
+                assertThat(it.resolveCredentials()).isExactlyInstanceOf(AwsSessionCredentials::class.java)
             }
     }
 

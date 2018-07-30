@@ -7,7 +7,7 @@ import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.ValidationInfo
-import software.amazon.awssdk.services.iam.IAMClient
+import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.jetbrains.core.AwsClientManager
@@ -90,7 +90,7 @@ class UploadToLambdaController(
 ) {
 
     private val s3Client: S3Client = clientManager.getClient()
-    private val iamClient: IAMClient = clientManager.getClient()
+    private val iamClient: IamClient = clientManager.getClient()
 
     fun load() {
         view.handler.text = handlerName

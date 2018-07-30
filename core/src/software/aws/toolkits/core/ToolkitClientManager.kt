@@ -2,7 +2,6 @@ package software.aws.toolkits.core
 
 import software.amazon.awssdk.awscore.client.builder.AwsDefaultClientBuilder
 import software.amazon.awssdk.core.SdkClient
-import software.amazon.awssdk.core.client.builder.ClientHttpConfiguration
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3ClientBuilder
@@ -70,18 +69,18 @@ abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
         val builder = builderMethod.invoke(null) as AwsDefaultClientBuilder<*, *>
 
         return builder
-            .httpConfiguration(ClientHttpConfiguration.builder().httpClient(sdkHttpClient).build())
+            .httpClient(sdkHttpClient)
             .credentialsProvider(getCredentialsProvider())
             .region(Region.of(key.region.id))
             .also {
                 if (it is S3ClientBuilder) {
-                    it.advancedConfiguration { it.pathStyleAccessEnabled(true) }
+                    it.serviceConfiguration { it.pathStyleAccessEnabled(true) }
                 }
             }
             .build() as T
     }
 
     companion object {
-        private val GLOBAL_SERVICES = setOf("IAMClient")
+        private val GLOBAL_SERVICES = setOf("IamClient")
     }
 }

@@ -37,7 +37,7 @@ class MockCredentialProviderFactory : CredentialProviderFactory {
                 override val displayName: String
                     get() = id
 
-                override fun getCredentials(): AwsCredentials = throw NotImplementedError()
+                override fun resolveCredentials(): AwsCredentials = throw NotImplementedError()
             }
             add(mockProvider)
             return mockProvider

@@ -16,7 +16,6 @@ import com.intellij.psi.PsiDocumentManager
 import com.intellij.testFramework.LightVirtualFile
 import com.intellij.ui.EditorTextField
 import com.intellij.util.io.decodeBase64
-import com.intellij.util.io.toByteArray
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.CreateFunctionResponse
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
@@ -84,7 +83,7 @@ class LambdaEditor(private val project: Project, private val model: LambdaVirtua
                     it.functionName(model.function.name).invocationType(InvocationType.REQUEST_RESPONSE).logType(LogType.TAIL)
                             .payload(view.input.text)
                 }
-                block(resp.payload()?.toByteArray()?.toString(StandardCharsets.UTF_8), resp.logResult()?.decodeBase64()?.toString(StandardCharsets.UTF_8))
+                block(resp.payload().asString(StandardCharsets.UTF_8), resp.logResult()?.decodeBase64()?.toString(StandardCharsets.UTF_8))
             } catch (e: LambdaException) {
                 block("", e.message)
             }

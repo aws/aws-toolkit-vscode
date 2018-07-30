@@ -14,14 +14,14 @@ class EnvironmentVariableToolkitCredentialsProvider : ToolkitCredentialsProvider
     override val id = TYPE
     override val displayName get() = message("credentials.env_vars.name")
 
-    override fun getCredentials(): AwsCredentials = awsCredentialsProvider.credentials
+    override fun resolveCredentials(): AwsCredentials = awsCredentialsProvider.resolveCredentials()
 }
 
 class EnvironmentVariableToolkitCredentialsProviderFactory : ToolkitCredentialsProviderFactory(TYPE) {
     init {
         val credentialsProvider = EnvironmentVariableToolkitCredentialsProvider()
         try {
-            credentialsProvider.credentials
+            credentialsProvider.resolveCredentials()
             add(credentialsProvider)
         } catch (_: Exception) {
             // We can't create creds from env vars, so dont add it

@@ -21,7 +21,7 @@ data class AwsRegion(val id: String, val name: String) {
     }
 
     companion object {
-        val GLOBAL = AwsRegion(Region.AWS_GLOBAL.value(), "Global")
+        val GLOBAL = AwsRegion(Region.AWS_GLOBAL.id(), "Global")
         private fun String.trimPrefixAndRemoveBrackets(prefix: String) = this.removePrefix(prefix).replace("(", "").replace(")", "").trim()
     }
 }

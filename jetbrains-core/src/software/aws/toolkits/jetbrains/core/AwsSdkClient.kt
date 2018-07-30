@@ -10,7 +10,7 @@ import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.http.SdkHttpFullRequest
 import software.amazon.awssdk.http.SdkHttpFullResponse
 import software.amazon.awssdk.http.SdkRequestContext
-import software.amazon.awssdk.http.apache.ApacheSdkHttpClientFactory
+import software.amazon.awssdk.http.apache.ApacheHttpClient
 
 class AwsSdkClient : Disposable {
     init {
@@ -18,7 +18,7 @@ class AwsSdkClient : Disposable {
     }
 
     val sdkHttpClient: SdkHttpClient by lazy {
-        ValidateCorrectThreadClient(ApacheSdkHttpClientFactory.builder().build().createHttpClient())
+        ValidateCorrectThreadClient(ApacheHttpClient.builder().build())
     }
 
     override fun dispose() {

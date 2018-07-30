@@ -40,7 +40,7 @@ class ToolkitCredentialsProviderManagerTest {
         override val displayName: String
             get() = id
 
-        override fun getCredentials(): AwsCredentials = throw NotImplementedError()
+        override fun resolveCredentials(): AwsCredentials = throw NotImplementedError()
     }
 
     private inner class MockToolkitCredentialProviderFactory : ToolkitCredentialsProviderFactory("Mock1") {
