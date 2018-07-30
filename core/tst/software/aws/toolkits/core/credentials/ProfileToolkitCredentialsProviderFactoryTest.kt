@@ -4,6 +4,7 @@
 package software.aws.toolkits.core.credentials
 
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.reset
 import com.nhaarman.mockitokotlin2.stub
@@ -21,6 +22,7 @@ import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.http.AbortableCallable
 import software.amazon.awssdk.http.AbortableInputStream
 import software.amazon.awssdk.http.SdkHttpClient
+import software.amazon.awssdk.http.SdkHttpFullRequest
 import software.amazon.awssdk.http.SdkHttpFullResponse
 import software.amazon.awssdk.profiles.Profile
 import software.amazon.awssdk.profiles.ProfileFile
@@ -96,7 +98,6 @@ class ProfileToolkitCredentialsProviderFactoryTest {
             [profile role]
             role_arn=arn1
             role_session_name=testSession
-            source_profile=source_profile
             external_id=externalId
             source_profile=source_profile
 
@@ -127,12 +128,66 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 
         val credentialsProvider = providerFactory.get("profile:role")
         assertThat(credentialsProvider).isNotNull
-        assertThat(credentialsProvider!!.resolveCredentials()).isInstanceOf(AwsSessionCredentials::class.java).satisfies {
-            val sessionCredentials = it as AwsSessionCredentials
-            assertThat(sessionCredentials.accessKeyId()).isEqualTo("AccessKey")
-            assertThat(sessionCredentials.secretAccessKey()).isEqualTo("SecretKey")
-            assertThat(sessionCredentials.sessionToken()).isEqualTo("SessionToken")
+        assertThat(credentialsProvider!!.resolveCredentials()).isInstanceOf(AwsSessionCredentials::class.java)
+            .satisfies {
+                val sessionCredentials = it as AwsSessionCredentials
+                assertThat(sessionCredentials.accessKeyId()).isEqualTo("AccessKey")
+                assertThat(sessionCredentials.secretAccessKey()).isEqualTo("SecretKey")
+                assertThat(sessionCredentials.sessionToken()).isEqualTo("SessionToken")
+            }
+    }
+
+    @Test
+    fun testAssumingRolesMfa() {
+        profileFile.writeText(
+            """
+            [profile role]
+            role_arn=arn1
+            role_session_name=testSession
+            external_id=externalId
+            mfa_serial=someSerialArn
+            source_profile=source_profile
+
+            [profile source_profile]
+            aws_access_key_id=BarAccessKey
+            aws_secret_access_key=BarSecretKey
+        """.trimIndent()
+        )
+
+        val captor = argumentCaptor<SdkHttpFullRequest>()
+
+        mockSdkHttpClient.stub {
+            on { prepareRequest(captor.capture(), any()) }
+                .thenReturn(
+                    SdkHttpFullResponse.builder()
+                        .statusCode(200)
+                        .content(
+                            createAssumeRoleResponse(
+                                "AccessKey",
+                                "SecretKey",
+                                "SessionToken",
+                                ZonedDateTime.now().plus(1, ChronoUnit.HOURS)
+                            )
+                        )
+                        .build().toAbortable()
+                )
         }
+
+        val providerFactory = createProviderFactory()
+
+        val credentialsProvider = providerFactory.get("profile:role")
+        assertThat(credentialsProvider).isNotNull
+        assertThat(credentialsProvider!!.resolveCredentials()).isInstanceOf(AwsSessionCredentials::class.java)
+            .satisfies {
+                val sessionCredentials = it as AwsSessionCredentials
+                assertThat(sessionCredentials.accessKeyId()).isEqualTo("AccessKey")
+                assertThat(sessionCredentials.secretAccessKey()).isEqualTo("SecretKey")
+                assertThat(sessionCredentials.sessionToken()).isEqualTo("SessionToken")
+            }
+
+        val content = captor.firstValue.content().get().bufferedReader().use { it.readText() }
+        assertThat(content).contains("TokenCode=MfaToken")
+            .contains("SerialNumber=someSerialArn")
     }
 
     @Test
@@ -186,12 +241,13 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 
         val credentialsProvider = providerFactory.get("profile:role")
         assertThat(credentialsProvider).isNotNull
-        assertThat(credentialsProvider!!.resolveCredentials()).isInstanceOf(AwsSessionCredentials::class.java).satisfies {
-            val sessionCredentials = it as AwsSessionCredentials
-            assertThat(sessionCredentials.accessKeyId()).isEqualTo("AccessKey")
-            assertThat(sessionCredentials.secretAccessKey()).isEqualTo("SecretKey")
-            assertThat(sessionCredentials.sessionToken()).isEqualTo("SessionToken")
-        }
+        assertThat(credentialsProvider!!.resolveCredentials()).isInstanceOf(AwsSessionCredentials::class.java)
+            .satisfies {
+                val sessionCredentials = it as AwsSessionCredentials
+                assertThat(sessionCredentials.accessKeyId()).isEqualTo("AccessKey")
+                assertThat(sessionCredentials.secretAccessKey()).isEqualTo("SecretKey")
+                assertThat(sessionCredentials.sessionToken()).isEqualTo("SessionToken")
+            }
 
         verify(mockSdkHttpClient, times(2)).prepareRequest(any(), any())
     }
@@ -213,7 +269,8 @@ class ProfileToolkitCredentialsProviderFactoryTest {
                 profiles(),
                 profiles()["role"]!!,
                 mockSdkHttpClient,
-                mockRegionProvider
+                mockRegionProvider,
+                mfaProvider
             )
         }.isInstanceOf(IllegalArgumentException::class.java)
             .hasMessage("Profile `role` references source profile `source_profile` which does not exist")
@@ -246,7 +303,8 @@ class ProfileToolkitCredentialsProviderFactoryTest {
                 profiles(),
                 profiles()["role"]!!,
                 mockSdkHttpClient,
-                mockRegionProvider
+                mockRegionProvider,
+                mfaProvider
             )
         }.isInstanceOf(IllegalArgumentException::class.java)
             .hasMessage("A circular profile dependency was found between role->source_profile->source_profile2->source_profile3->source_profile")
@@ -269,8 +327,16 @@ class ProfileToolkitCredentialsProviderFactoryTest {
         }
     }
 
-    private fun createProviderFactory() =
-        ProfileToolkitCredentialsProviderFactory(mockSdkHttpClient, mockRegionProvider, profileFile.toPath())
+    private val mfaProvider: (String, String) -> String = { _, _ -> MFA_TOKEN }
+
+    private fun createProviderFactory(): ProfileToolkitCredentialsProviderFactory {
+        return ProfileToolkitCredentialsProviderFactory(
+            mockSdkHttpClient,
+            mockRegionProvider,
+            mfaProvider,
+            profileFile.toPath()
+        )
+    }
 
     private fun createAssumeRoleResponse(
         accessKey: String,
@@ -316,6 +382,8 @@ class ProfileToolkitCredentialsProviderFactoryTest {
         private const val BAR_PROFILE_NAME = "bar"
         private const val BAR_ACCESS_KEY = "BarAccessKey"
         private const val BAR_SECRET_KEY = "BarSecretKey"
+
+        private const val MFA_TOKEN = "MfaToken"
 
         private val FOO_PROFILE: Profile = Profile.builder()
             .name(FOO_PROFILE_NAME)
