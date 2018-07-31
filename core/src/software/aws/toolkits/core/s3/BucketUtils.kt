@@ -6,11 +6,14 @@ import software.amazon.awssdk.services.s3.model.ObjectIdentifier
 
 fun S3Client.deleteBucketAndContents(bucket: String) {
     this.listObjectVersionsPaginator(ListObjectVersionsRequest.builder().bucket(bucket).build()).forEach { resp ->
-        val versions = resp.versions()?.map {
+        val versions = resp.versions().map {
             ObjectIdentifier.builder()
-                    .key(it.key())
-                    .versionId(it.versionId()).build()
-        } ?: return@forEach
+                .key(it.key())
+                .versionId(it.versionId()).build()
+        }
+        if (versions.isEmpty()) {
+            return@forEach
+        }
         this.deleteObjects { it.bucket(bucket).delete { it.objects(versions) } }
     }
 
