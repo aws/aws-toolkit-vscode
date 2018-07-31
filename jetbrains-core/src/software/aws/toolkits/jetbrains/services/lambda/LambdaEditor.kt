@@ -118,6 +118,21 @@ class LambdaVirtualFile(internal val function: LambdaFunction) : LightVirtualFil
     init {
         fileType = LambdaFileType()
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as LambdaVirtualFile
+
+        if (function != other.function) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return function.hashCode()
+    }
 }
 
 data class LambdaFunction(
