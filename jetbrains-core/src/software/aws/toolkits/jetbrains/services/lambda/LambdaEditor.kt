@@ -4,11 +4,14 @@ import com.intellij.codeInsight.actions.FileInEditorProcessor
 import com.intellij.codeInsight.actions.LastRunReformatCodeOptionsProvider
 import com.intellij.codeInsight.actions.TextRangeType
 import com.intellij.ide.util.PropertiesComponent
+import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.actionSystem.DataProvider
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorPolicy
 import com.intellij.openapi.fileEditor.FileEditorProvider
 import com.intellij.openapi.fileTypes.ex.FakeFileType
+import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.VirtualFile
@@ -16,9 +19,6 @@ import com.intellij.psi.PsiDocumentManager
 import com.intellij.testFramework.LightVirtualFile
 import com.intellij.ui.EditorTextField
 import com.intellij.util.io.decodeBase64
-import software.amazon.awssdk.services.lambda.LambdaClient
-import software.amazon.awssdk.services.lambda.model.CreateFunctionResponse
-import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.amazon.awssdk.services.lambda.model.InvocationType
 import software.amazon.awssdk.services.lambda.model.LambdaException
 import software.amazon.awssdk.services.lambda.model.LogType
@@ -33,8 +33,12 @@ import javax.swing.DefaultComboBoxModel
 import javax.swing.Icon
 import javax.swing.JComponent
 
-class LambdaEditor(private val project: Project, private val model: LambdaVirtualFile, provider: LambdaSampleEventProvider) : LightFileEditor() {
-    private val view = LambdaEditorPanel(project)
+class LambdaEditor(
+    private val project: Project,
+    private val model: LambdaVirtualFile,
+    provider: LambdaSampleEventProvider
+) : LightFileEditor(), DataProvider {
+    private val view = LambdaEditorPanel(project, this)
 
     init {
         view.title.text = message("lambda.function_name", model.function.name)
@@ -80,10 +84,14 @@ class LambdaEditor(private val project: Project, private val model: LambdaVirtua
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
                 val resp = model.function.client.invoke {
-                    it.functionName(model.function.name).invocationType(InvocationType.REQUEST_RESPONSE).logType(LogType.TAIL)
-                            .payload(view.input.text)
+                    it.functionName(model.function.name).invocationType(InvocationType.REQUEST_RESPONSE)
+                        .logType(LogType.TAIL)
+                        .payload(view.input.text)
                 }
-                block(resp.payload().asString(StandardCharsets.UTF_8), resp.logResult()?.decodeBase64()?.toString(StandardCharsets.UTF_8))
+                block(
+                    resp.payload().asString(StandardCharsets.UTF_8),
+                    resp.logResult()?.decodeBase64()?.toString(StandardCharsets.UTF_8)
+                )
             } catch (e: LambdaException) {
                 block("", e.message)
             }
@@ -102,9 +110,21 @@ class LambdaEditor(private val project: Project, private val model: LambdaVirtua
     override fun getName(): String = message("lambda.viewer")
 
     override fun getComponent(): JComponent = view.contentPanel
+
+    override fun getData(dataId: String): Any? {
+        return when {
+            CommonDataKeys.NAVIGATABLE_ARRAY.`is`(dataId) -> Lambda.findPsiElementsForHandler(
+                project,
+                model.function.runtime,
+                model.function.handler
+            )
+            else -> null
+        }
+    }
 }
 
-class LambdaViewerProvider(remoteResourceResolverProvider: RemoteResourceResolverProvider) : FileEditorProvider {
+class LambdaViewerProvider(remoteResourceResolverProvider: RemoteResourceResolverProvider) :
+    FileEditorProvider, DumbAware {
     private val lambdaSampleEventProvider = LambdaSampleEventProvider(remoteResourceResolverProvider.get())
     override fun getEditorTypeId(): String = "lambdaInvoker"
     override fun accept(project: Project, file: VirtualFile): Boolean = file is LambdaVirtualFile
@@ -134,33 +154,6 @@ class LambdaVirtualFile(internal val function: LambdaFunction) : LightVirtualFil
         return function.hashCode()
     }
 }
-
-data class LambdaFunction(
-    val name: String,
-    val description: String?,
-    val arn: String,
-    val lastModified: String,
-    val handler: String,
-    val client: LambdaClient
-)
-
-fun FunctionConfiguration.toDataClass(client: LambdaClient) = LambdaFunction(
-    name = this.functionName(),
-    description = this.description(),
-    arn = this.functionArn(),
-    lastModified = this.lastModified(),
-    handler = this.handler(),
-    client = client
-)
-
-fun CreateFunctionResponse.toDataClass(client: LambdaClient) = LambdaFunction(
-    name = this.functionName(),
-    description = this.description(),
-    arn = this.functionArn(),
-    lastModified = this.lastModified(),
-    handler = this.handler(),
-    client = client
-)
 
 class LambdaFileType : FakeFileType() {
     override fun getName(): String = message("lambda.service_name")

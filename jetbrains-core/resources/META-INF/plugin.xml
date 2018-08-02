@@ -19,8 +19,17 @@
                         beanClass="software.aws.toolkits.jetbrains.core.credentials.CredentialProviderFactoryEP">
             <with attribute="implementation" implements="software.aws.toolkits.jetbrains.core.credentials.CredentialProviderFactory"/>
         </extensionPoint>
+
         <extensionPoint qualifiedName="aws.toolkit.lambdaPackager" beanClass="com.intellij.lang.LanguageExtensionPoint">
             <with attribute="implementationClass" implements="software.aws.toolkits.jetbrains.services.lambda.LambdaPackager"/>
+        </extensionPoint>
+
+        <extensionPoint qualifiedName="aws.toolkit.lambda.handlerResolver"
+                      beanClass="software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver$LambdaHandlerResolverExtensionPointBean">
+            <with attribute="implementation"
+              implements="software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver"/>
+            <with attribute="runtime"
+              implements="java.lang.String"/>
         </extensionPoint>
     </extensionPoints>
 

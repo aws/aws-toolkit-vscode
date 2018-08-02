@@ -6,12 +6,14 @@ import com.intellij.openapi.compiler.CompilerManager
 import com.intellij.openapi.compiler.CompilerMessageCategory
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.module.Module
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.LibraryOrderEntry
 import com.intellij.openapi.roots.ModuleOrderEntry
 import com.intellij.openapi.roots.OrderEnumerator
 import com.intellij.openapi.roots.OrderRootType
 import com.intellij.openapi.roots.libraries.Library
 import com.intellij.psi.JavaPsiFacade
+import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
@@ -116,7 +118,14 @@ class JavaLambdaPackager : LambdaPackager {
                 try {
                     val zipContents = mutableSetOf<ZipEntry>()
                     entriesForModule(module, zipContents)
-                    val zipFile = createTemporaryZipFile { zip -> zipContents.forEach { zip.putNextEntry(it.pathInZip, it.sourceFile) } }
+                    val zipFile = createTemporaryZipFile { zip ->
+                        zipContents.forEach {
+                            zip.putNextEntry(
+                                it.pathInZip,
+                                it.sourceFile
+                            )
+                        }
+                    }
                     LOG.debug("Created temporary zip: $zipFile")
                     future.complete(zipFile)
                 } catch (e: Exception) {
@@ -126,7 +135,14 @@ class JavaLambdaPackager : LambdaPackager {
                 future.completeExceptionally(RuntimeException(message("lambda.package.compilation_aborted")))
             } else {
                 val errorMessages = context.getMessages(CompilerMessageCategory.ERROR).joinToString("\n")
-                future.completeExceptionally(RuntimeException(message("lambda.package.compilation_errors", errorMessages)))
+                future.completeExceptionally(
+                    RuntimeException(
+                        message(
+                            "lambda.package.compilation_errors",
+                            errorMessages
+                        )
+                    )
+                )
             }
         }
         return future
@@ -146,7 +162,8 @@ class JavaLambdaPackager : LambdaPackager {
     }
 
     private fun addLibrary(library: Library, entries: MutableSet<ZipEntry>) {
-        library.getFiles(OrderRootType.CLASSES).map { Paths.get(it.presentableUrl) }.forEach { entries.add(ZipEntry("lib/${it.fileName}", it)) }
+        library.getFiles(OrderRootType.CLASSES).map { Paths.get(it.presentableUrl) }
+            .forEach { entries.add(ZipEntry("lib/${it.fileName}", it)) }
     }
 
     private fun addModuleFiles(module: Module, entries: MutableSet<ZipEntry>) {
@@ -165,11 +182,13 @@ class JavaLambdaPackager : LambdaPackager {
             .forEach { entries.add(it) }
     }
 
-    private fun productionRuntimeEntries(module: Module) = OrderEnumerator.orderEntries(module).productionOnly().runtimeOnly().withoutSdk()
+    private fun productionRuntimeEntries(module: Module) =
+        OrderEnumerator.orderEntries(module).productionOnly().runtimeOnly().withoutSdk()
 
     private fun toEntries(path: Path): List<ZipEntry> =
         Files.walk(path).use { files ->
-            files.filter { !it.isDirectory() && !it.isHidden() && it.exists() }.map { ZipEntry(path.relativize(it).toString().replace('\\', '/'), it) }.toList()
+            files.filter { !it.isDirectory() && !it.isHidden() && it.exists() }
+                .map { ZipEntry(path.relativize(it).toString().replace('\\', '/'), it) }.toList()
         }
 
     private data class ZipEntry(val pathInZip: String, val sourceFile: InputStream) {
@@ -178,5 +197,30 @@ class JavaLambdaPackager : LambdaPackager {
 
     companion object {
         val LOG = Logger.getInstance(JavaLambdaPackager::class.java)
+    }
+}
+
+class JavaLambdaHandlerResolver : LambdaHandlerResolver {
+    override fun findPsiElements(
+        project: Project,
+        handler: String,
+        searchScope: GlobalSearchScope
+    ): Array<NavigatablePsiElement> {
+        val split = handler.split("::")
+        val className = split[0]
+        val methodName = if (split.size >= 2) split[1] else null
+
+        val psiFacade = JavaPsiFacade.getInstance(project)
+        val classes = psiFacade.findClasses(className, searchScope).toList()
+        return if (methodName.isNullOrEmpty()) {
+            classes.filterIsInstance<NavigatablePsiElement>()
+                .toTypedArray()
+        } else {
+            classes.map { it.findMethodsByName(methodName, true) }
+                .filter { it.size == 1 }
+                .map { it.single() }
+                .filterIsInstance<NavigatablePsiElement>()
+                .toTypedArray()
+        }
     }
 }
