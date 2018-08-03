@@ -1,0 +1,27 @@
+plugins {
+    id "com.github.johnrengelman.shadow" version "1.2.4"
+}
+
+dependencies {
+    compileOnly("com.amazonaws:aws-lambda-java-core:1.1.0")
+    compile("commons-cli:commons-cli:1.3.1")
+    compile("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+    testCompile("com.amazonaws:aws-lambda-java-core:1.1.0")
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'software.aws.lambda.jvm.invoker.StandaloneInvoker'
+    }
+}
+
+shadowJar {
+    dependencies {
+        include dependency("org.jetbrains.kotlin:")
+        include dependency("com.fasterxml.jackson.core:")
+        include dependency("commons-cli:")
+    }
+    relocate "kotlin", "aws.kotlin"
+    relocate "com.fasterxml.jackson", "aws.jackson"
+    relocate "org.apache.commons", "aws.commons"
+}
