@@ -10,9 +10,8 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.psi.PsiElement
+import icons.AwsIcons
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
-import software.aws.toolkits.jetbrains.core.Icons
-import software.aws.toolkits.jetbrains.core.Icons.Services.LAMBDA_OPEN_FUNCTION
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaVirtualFile
 import software.aws.toolkits.resources.message
@@ -32,7 +31,7 @@ abstract class LambdaLineMarker : LineMarkerProviderDescriptor() {
 
     override fun getName(): String? = message("lambda.service_name")
 
-    override fun getIcon(): Icon? = Icons.Services.LAMBDA_SERVICE_ICON
+    override fun getIcon(): Icon? = AwsIcons.Logos.LAMBDA
 
     override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<*>? {
         val handler = getHandlerName(element) ?: return null
@@ -71,8 +70,8 @@ abstract class LambdaLineMarker : LineMarkerProviderDescriptor() {
         override fun getPopupMenuActions(): ActionGroup = actionGroup
     }
 
-    class OpenLambda(val function: LambdaFunction) :
-        AnAction(message("lambda.open_function", function.name), null, LAMBDA_OPEN_FUNCTION) {
+    class OpenLambda(private val function: LambdaFunction) :
+        AnAction(message("lambda.open_function", function.name), null, AwsIcons.Actions.LAMBDA_FUNCTION_OPEN) {
         override fun actionPerformed(e: AnActionEvent?) {
             val event = e ?: return
             val editorManager = event.project?.let { FileEditorManager.getInstance(it) } ?: return

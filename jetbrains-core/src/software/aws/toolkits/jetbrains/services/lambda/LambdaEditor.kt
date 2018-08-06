@@ -19,12 +19,12 @@ import com.intellij.psi.PsiDocumentManager
 import com.intellij.testFramework.LightVirtualFile
 import com.intellij.ui.EditorTextField
 import com.intellij.util.io.decodeBase64
+import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.InvocationType
 import software.amazon.awssdk.services.lambda.model.LambdaException
 import software.amazon.awssdk.services.lambda.model.LogType
 import software.aws.toolkits.core.lambda.LambdaSampleEvent
 import software.aws.toolkits.core.lambda.LambdaSampleEventProvider
-import software.aws.toolkits.jetbrains.core.Icons.Services.LAMBDA_FUNCTION_ICON
 import software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider
 import software.aws.toolkits.jetbrains.utils.filesystem.LightFileEditor
 import software.aws.toolkits.resources.message
@@ -157,7 +157,7 @@ class LambdaVirtualFile(internal val function: LambdaFunction) : LightVirtualFil
 
 class LambdaFileType : FakeFileType() {
     override fun getName(): String = message("lambda.service_name")
-    override fun getIcon(): Icon? = LAMBDA_FUNCTION_ICON
+    override fun getIcon(): Icon? = AwsIcons.Resources.LAMBDA_FUNCTION
     override fun getDescription(): String = message("lambda.service_name")
     override fun isMyFileType(file: VirtualFile): Boolean = file is LambdaVirtualFile
 }

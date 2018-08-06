@@ -3,12 +3,11 @@ package software.aws.toolkits.jetbrains.services.lambda
 import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
+import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.amazon.awssdk.services.lambda.model.ListFunctionsRequest
 import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.core.Icons.Services.LAMBDA_FUNCTION_ICON
-import software.aws.toolkits.jetbrains.core.Icons.Services.LAMBDA_SERVICE_ICON
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerServiceRootNode
@@ -17,7 +16,7 @@ import software.aws.toolkits.resources.message
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
-class LambdaServiceNode(project: Project) : AwsExplorerServiceRootNode(project, message("lambda.service_name"), LAMBDA_SERVICE_ICON) {
+class LambdaServiceNode(project: Project) : AwsExplorerServiceRootNode(project, message("lambda.service_name"), AwsIcons.Logos.LAMBDA) {
     override fun serviceName() = LambdaClient.SERVICE_NAME
 
     private val client: LambdaClient = AwsClientManager.getInstance(project).getClient()
@@ -40,7 +39,7 @@ class LambdaServiceNode(project: Project) : AwsExplorerServiceRootNode(project, 
 }
 
 class LambdaFunctionNode(project: Project, val client: LambdaClient, serviceNode: LambdaServiceNode, private val function: FunctionConfiguration) :
-        AwsExplorerResourceNode<FunctionConfiguration>(project, serviceNode, function, LAMBDA_FUNCTION_ICON) {
+        AwsExplorerResourceNode<FunctionConfiguration>(project, serviceNode, function, AwsIcons.Resources.LAMBDA_FUNCTION) {
 
     private val editorManager = FileEditorManager.getInstance(project)
 

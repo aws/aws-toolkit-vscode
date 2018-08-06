@@ -7,16 +7,16 @@ import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.module.Module
 import com.intellij.psi.PsiFile
+import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.core.Icons.Services.LAMBDA_NEW_FUNCTION
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackagerProvider
 import software.aws.toolkits.jetbrains.services.lambda.LambdaVirtualFile
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 
-class UploadLambdaFunction(private val handlerName: String) : AnAction(message("lambda.create_new"), null, LAMBDA_NEW_FUNCTION) {
+class UploadLambdaFunction(private val handlerName: String) : AnAction(message("lambda.create_new"), null, AwsIcons.Actions.LAMBDA_FUNCTION_NEW) {
 
     override fun update(e: AnActionEvent?) {
         e?.presentation?.isEnabledAndVisible =

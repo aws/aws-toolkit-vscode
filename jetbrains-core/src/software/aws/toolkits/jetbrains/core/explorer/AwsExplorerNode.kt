@@ -7,7 +7,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.ui.LoadingNode
 import com.intellij.ui.SimpleTextAttributes
-import software.aws.toolkits.jetbrains.core.Icons.AWS_ICON
+import icons.AwsIcons
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.resources.message
@@ -29,7 +29,7 @@ abstract class AwsExplorerNode<T>(project: Project, value: T, private val awsIco
 }
 
 class AwsExplorerRootNode(project: Project) :
-        AwsExplorerNode<String>(project, "ROOT", AWS_ICON) {
+        AwsExplorerNode<String>(project, "ROOT", AwsIcons.Logos.AWS_CLOUD) {
 
     private val regionProvider = AwsRegionProvider.getInstance()
     private val settings = ProjectAccountSettingsManager.getInstance(project)

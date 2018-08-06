@@ -55,7 +55,7 @@
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.MockResourceCache"/>
         <toolWindow id="AWS Explorer" anchor="right"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
-                    icon="/icons/aws-box.gif"/>
+                    icon="AwsIcons.Logos.AWS_CLOUD"/>
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit">

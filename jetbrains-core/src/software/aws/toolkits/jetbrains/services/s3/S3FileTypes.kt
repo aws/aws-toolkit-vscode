@@ -5,13 +5,13 @@ import com.intellij.openapi.fileTypes.FileTypeConsumer
 import com.intellij.openapi.fileTypes.FileTypeFactory
 import com.intellij.openapi.fileTypes.ex.FileTypeIdentifiableByVirtualFile
 import com.intellij.openapi.vfs.VirtualFile
-import software.aws.toolkits.jetbrains.core.Icons.Services.S3_BUCKET_ICON
+import icons.AwsIcons
 import javax.swing.Icon
 
 class BucketFileType : FileTypeIdentifiableByVirtualFile {
     override fun getDefaultExtension() = ""
 
-    override fun getIcon(): Icon = S3_BUCKET_ICON
+    override fun getIcon(): Icon = AwsIcons.Resources.S3_BUCKET
 
     override fun getCharset(file: VirtualFile, content: ByteArray) = null
 
