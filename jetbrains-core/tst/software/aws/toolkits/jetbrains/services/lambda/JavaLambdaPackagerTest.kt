@@ -2,9 +2,8 @@ package software.aws.toolkits.jetbrains.services.lambda
 
 import com.fasterxml.jackson.annotation.JacksonAnnotation
 import com.intellij.compiler.CompilerTestUtil
-import com.intellij.openapi.application.Result
 import com.intellij.openapi.application.runInEdt
-import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.command.WriteCommandAction.writeCommandAction
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.projectRoots.impl.JavaAwareProjectJdkTableImpl
@@ -230,17 +229,15 @@ class JavaLambdaPackagerTest {
         val project = projectRule.project
         val modules = ModuleManager.getInstance(project).modules
 
-        object : WriteCommandAction<Nothing>(project) {
-            override fun run(result: Result<Nothing>) {
-                val compilerExtension = CompilerProjectExtension.getInstance(project)!!
-                compilerExtension.compilerOutputUrl = projectRule.fixture.tempDirFixture.findOrCreateDir("out").url
-                val sdk = JavaAwareProjectJdkTableImpl.getInstanceEx().internalJdk
+        writeCommandAction(project).run<Nothing> {
+            val compilerExtension = CompilerProjectExtension.getInstance(project)!!
+            compilerExtension.compilerOutputUrl = projectRule.fixture.tempDirFixture.findOrCreateDir("out").url
+            val sdk = JavaAwareProjectJdkTableImpl.getInstanceEx().internalJdk
 
-                for (module in modules) {
-                    ModuleRootModificationUtil.setModuleSdk(module, sdk)
-                }
+            for (module in modules) {
+                ModuleRootModificationUtil.setModuleSdk(module, sdk)
             }
-        }.execute()
+        }
 
         runInEdtAndWait {
             PlatformTestUtil.saveProject(project)

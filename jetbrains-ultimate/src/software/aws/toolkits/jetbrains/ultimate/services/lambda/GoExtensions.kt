@@ -10,7 +10,6 @@ import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.module.Module
-import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
@@ -78,10 +77,7 @@ class GoLambdaPackager : LambdaPackager {
                                     createZip(tempFile, future)
                                 }
                             }
-                        }).executeWithProgress(
-                                true, true, EmptyConsumer.getInstance<ProgressIndicator>(),
-                                EmptyConsumer.getInstance<Boolean>() // TODO: Put this in our own log tab...not Run's
-                        )
+                        }).executeWithProgress(true, true, EmptyConsumer.getInstance<Boolean>())
             } catch (e: Exception) {
                 future.completeExceptionally(e)
             }

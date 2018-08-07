@@ -5,7 +5,7 @@ intellij {
     pluginName 'aws-intellij-toolkit'
     updateSinceUntilBuild false
     downloadSources = System.getenv("CI") == null
-    plugins = ["PythonCore:2018.1.181.4203.550"]
+    plugins = ["PythonCore:2018.2.182.3684.101"]
 }
 
 jar.baseName = 'aws-intellij-toolkit-core'

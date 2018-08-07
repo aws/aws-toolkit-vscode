@@ -3,7 +3,7 @@ intellij {
     version "IU-" + ideaVersion
     updateSinceUntilBuild false
     downloadSources = System.getenv("CI") == null
-    plugins = ["org.jetbrains.plugins.go:181.4203.564.171"]
+    plugins = ["org.jetbrains.plugins.go:182.3684.111.849"]
 }
 
 jar.baseName = 'aws-jetbrains-toolkit-ultimate'
