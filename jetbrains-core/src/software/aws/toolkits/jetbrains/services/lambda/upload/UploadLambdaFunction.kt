@@ -33,8 +33,8 @@ class UploadLambdaFunction(private val handlerName: String) : AnAction(message("
         UploadToLambdaModal(project,
             packager.determineRuntime(module, psiFile),
             handlerName,
-            UploadToLambdaValidator(),
-            { performUpload(module, psiFile, lambdaCreator, it) }).show()
+            UploadToLambdaValidator()
+        ) { performUpload(module, psiFile, lambdaCreator, it) }.show()
     }
 
     private fun performUpload(module: Module, psiFile: PsiFile, creator: LambdaCreator, functionDetails: FunctionUploadDetails) {
@@ -65,7 +65,8 @@ data class FunctionUploadDetails(
     val iamRole: IamRole,
     val s3Bucket: String,
     val runtime: Runtime,
-    val description: String?
+    val description: String?,
+    val envVars: Map<String, String>
 )
 
 data class IamRole(val name: String, val arn: String) {

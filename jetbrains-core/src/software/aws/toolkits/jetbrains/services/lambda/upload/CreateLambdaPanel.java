@@ -6,6 +6,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.lambda.model.Runtime;
+import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField;
 
 @SuppressWarnings("NullableProblems")
 public final class CreateLambdaPanel {
@@ -18,4 +19,5 @@ public final class CreateLambdaPanel {
     @NotNull ComboBox<IamRole> iamRole;
     @NotNull ComboBox<Runtime> runtime;
     @NotNull ComboBox<String> sourceBucket;
+    @NotNull EnvironmentVariablesTextField envVars;
 }

@@ -50,7 +50,8 @@ class UploadToLambdaModal(
                 iamRole = view.iamRole.selected()!!,
                 s3Bucket = view.sourceBucket.selected()!!,
                 runtime = view.runtime.selected()!!,
-                description = view.description.text
+                description = view.description.text,
+                envVars = view.envVars.envVars
             )
         )
     }
@@ -58,12 +59,18 @@ class UploadToLambdaModal(
 
 class UploadToLambdaValidator {
     fun doValidate(view: CreateLambdaPanel): ValidationInfo? {
-        val name = view.name.blankAsNull() ?: return ValidationInfo(message("lambda.upload_validation.function_name"), view.name)
+        val name = view.name.blankAsNull() ?: return ValidationInfo(
+            message("lambda.upload_validation.function_name"),
+            view.name
+        )
         validateFunctionName(name)?.run { return@doValidate ValidationInfo(this, view.name) }
         view.handler.blankAsNull() ?: return ValidationInfo(message("lambda.upload_validation.handler"), view.handler)
         view.runtime.selected() ?: return ValidationInfo(message("lambda.upload_validation.runtime"), view.runtime)
         view.iamRole.selected() ?: return ValidationInfo(message("lambda.upload_validation.iam_role"), view.iamRole)
-        view.sourceBucket.selected() ?: return ValidationInfo(message("lambda.upload_validation.source_bucket"), view.sourceBucket)
+        view.sourceBucket.selected() ?: return ValidationInfo(
+            message("lambda.upload_validation.source_bucket"),
+            view.sourceBucket
+        )
         return null
     }
 
@@ -102,20 +109,28 @@ class UploadToLambdaController(
         view.runtime.populateValues(selected = runtime) { Runtime.knownValues().toList().sortedBy { it.name } }
 
         view.createRole.addActionListener {
-            val iamRole = Messages.showInputDialog(message("lambda.upload.create_iam_dialog.input"), message("lambda.upload.create_iam_dialog.title"), Icons.AWS_ICON)
+            val iamRole = Messages.showInputDialog(
+                message("lambda.upload.create_iam_dialog.input"),
+                message("lambda.upload.create_iam_dialog.title"),
+                Icons.AWS_ICON
+            )
             iamRole?.run {
                 view.iamRole.addAndSelectValue {
-                    iamClient.createRole { it.roleName(iamRole) }
-                        .let { IamRole(name = it.role().roleName(), arn = it.role().arn()) }
+                    iamClient.createRole { request -> request.roleName(iamRole) }
+                        .let { role -> IamRole(name = role.role().roleName(), arn = role.role().arn()) }
                 }
             }
         }
 
         view.createBucket.addActionListener {
-            val bucket = Messages.showInputDialog(message("lambda.upload.create_s3_dialog.input"), message("lambda.upload.create_s3_dialog.title"), Icons.Services.S3_SERVICE_ICON)
+            val bucket = Messages.showInputDialog(
+                message("lambda.upload.create_s3_dialog.input"),
+                message("lambda.upload.create_s3_dialog.title"),
+                Icons.Services.S3_SERVICE_ICON
+            )
             bucket?.run {
                 view.sourceBucket.addAndSelectValue {
-                    s3Client.createBucket { it.bucket(bucket) }
+                    s3Client.createBucket { request -> request.bucket(bucket) }
                     bucket
                 }
             }
