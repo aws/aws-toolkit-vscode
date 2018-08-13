@@ -1,6 +1,8 @@
 package software.aws.toolkits.jetbrains.core
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationNamesInfo
+import com.intellij.openapi.application.ex.ApplicationInfoEx
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.project.Project
@@ -8,6 +10,7 @@ import com.intellij.openapi.util.Disposer
 import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import javax.security.auth.login.CredentialNotFoundException
 
@@ -24,6 +27,13 @@ class AwsClientManager internal constructor(
     override fun dispose() {
         shutdown()
     }
+
+    override val userAgent: String
+        get() {
+            val platformName = ApplicationNamesInfo.getInstance().fullProductNameWithEdition.replace(' ', '-')
+            val platformVersion = ApplicationInfoEx.getInstanceEx().fullVersion.replace(' ', '-')
+            return "AWS-Toolkit-For-JetBrains/${AwsToolkit.PLUGIN_VERSION} $platformName/$platformVersion"
+        }
 
     override fun getCredentialsProvider(): ToolkitCredentialsProvider {
         try {

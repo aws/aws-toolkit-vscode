@@ -2,6 +2,7 @@ package software.aws.toolkits.core
 
 import software.amazon.awssdk.awscore.client.builder.AwsDefaultClientBuilder
 import software.amazon.awssdk.core.SdkClient
+import software.amazon.awssdk.core.client.config.SdkAdvancedClientOption
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3ClientBuilder
@@ -22,6 +23,8 @@ abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
     )
 
     private val cachedClients = ConcurrentHashMap<AwsClientKey, SdkClient>()
+
+    protected abstract val userAgent: String
 
     @Suppress("UNCHECKED_CAST")
     fun <T : SdkClient> getClient(clz: KClass<T>): T {
@@ -72,6 +75,9 @@ abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
             .httpClient(sdkHttpClient)
             .credentialsProvider(getCredentialsProvider())
             .region(Region.of(key.region.id))
+            .overrideConfiguration {
+                it.putAdvancedOption(SdkAdvancedClientOption.USER_AGENT_SUFFIX, userAgent)
+            }
             .also {
                 if (it is S3ClientBuilder) {
                     it.serviceConfiguration { it.pathStyleAccessEnabled(true) }
