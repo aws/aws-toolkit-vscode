@@ -1,26 +1,33 @@
 package software.aws.toolkits.jetbrains.ultimate.services.lambda
 
 import com.goide.GoConstants
+import com.goide.GoLanguage
 import com.goide.GoTypes
 import com.goide.execution.GoRunUtil
 import com.goide.psi.GoFile
 import com.goide.psi.GoFunctionDeclaration
+import com.goide.sdk.GoSdkType
 import com.goide.util.GoExecutor
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.module.Module
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.util.text.StringUtil
+import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
+import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.util.EmptyConsumer
 import com.intellij.util.io.inputStream
 import com.intellij.util.io.outputStream
 import org.apache.commons.compress.archivers.ArchiveStreamFactory
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
-import software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker
+import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupInformation
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -29,22 +36,13 @@ import java.util.concurrent.CompletionStage
 
 const val AWS_GO_LAMBDA_IMPORT = "github.com/aws/aws-lambda-go/lambda"
 
-class GoLambdaLineMarker : LambdaLineMarker() {
-    override fun getHandlerName(element: PsiElement): String? {
-        if (element.node?.elementType != GoTypes.IDENTIFIER) {
-            return null
-        }
-        val parent = element.parent as? GoFunctionDeclaration ?: return null
-        val goFile = element.containingFile as? GoFile ?: return null
+class GoRuntimeGroup : RuntimeGroupInformation {
+    override val runtimes: Set<Runtime> = setOf(Runtime.GO1_X)
+    override val languageIds: Set<String> = setOf(GoLanguage.INSTANCE.id)
 
-        if (GoConstants.MAIN == parent.name && GoRunUtil.isMainGoFile(goFile) && hasLambdaImport(goFile)) {
-            return StringUtil.trimEnd(goFile.name, ".go")
-        }
-        return null
-    }
-
-    private fun hasLambdaImport(goFile: GoFile) = goFile.imports.any {
-        it.path == AWS_GO_LAMBDA_IMPORT
+    override fun runtimeForSdk(sdk: Sdk): Runtime? = when {
+        sdk.sdkType is GoSdkType -> Runtime.GO1_X
+        else -> null
     }
 }
 
@@ -108,4 +106,27 @@ class GoLambdaPackager : LambdaPackager {
     }
 
     override fun determineRuntime(module: Module, file: PsiFile): Runtime = Runtime.GO1_X
+}
+
+class GoLambdaHandlerResolver : LambdaHandlerResolver {
+
+    // TODO: Actually implement this
+    override fun findPsiElements(project: Project, handler: String, searchScope: GlobalSearchScope): Array<NavigatablePsiElement> = emptyArray()
+
+    override fun determineHandler(element: PsiElement): String? {
+        if (element.node?.elementType != GoTypes.IDENTIFIER) {
+            return null
+        }
+        val parent = element.parent as? GoFunctionDeclaration ?: return null
+        val goFile = element.containingFile as? GoFile ?: return null
+
+        if (GoConstants.MAIN == parent.name && GoRunUtil.isMainGoFile(goFile) && hasLambdaImport(goFile)) {
+            return StringUtil.trimEnd(goFile.name, ".go")
+        }
+        return null
+    }
+
+    private fun hasLambdaImport(goFile: GoFile) = goFile.imports.any {
+        it.path == AWS_GO_LAMBDA_IMPORT
+    }
 }

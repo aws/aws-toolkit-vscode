@@ -13,32 +13,32 @@ import com.intellij.psi.PsiElement
 import icons.AwsIcons
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
+import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
+import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaVirtualFile
+import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.resources.message
 import javax.swing.Icon
 
-abstract class LambdaLineMarker : LineMarkerProviderDescriptor() {
-    /**
-     * Language specific implementations should override this to determine if the given
-     * [element] is a potential Lambda handler.
-     *
-     * Should be done at the lowest possible level (i.e. [com.intellij.psi.PsiIdentifier]
-     * for Java implementations).
-     *
-     * @see com.intellij.codeInsight.daemon.LineMarkerProvider.getLineMarkerInfo
-     */
-    abstract fun getHandlerName(element: PsiElement): String?
+class LambdaLineMarker : LineMarkerProviderDescriptor() {
 
     override fun getName(): String? = message("lambda.service_name")
 
     override fun getIcon(): Icon? = AwsIcons.Logos.LAMBDA
 
     override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<*>? {
-        val handler = getHandlerName(element) ?: return null
+
+        val handlerResolver = element.language.runtimeGroup?.let {
+            LambdaHandlerResolver.getInstance(it)
+        } ?: return null
+
+        val handler = handlerResolver.determineHandler(element) ?: return null
 
         val actionGroup = DefaultActionGroup()
 
-        actionGroup.add(UploadLambdaFunction(handler))
+        if (element.language in LambdaPackager.supportedLanguages) {
+            actionGroup.add(UploadLambdaFunction(handler))
+        }
 
         AwsResourceCache.getInstance(element.project).lambdaFunctions()
             .filter { it.handler == handler }

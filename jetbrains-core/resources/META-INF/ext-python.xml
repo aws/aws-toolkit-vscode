@@ -1,9 +1,7 @@
 <idea-plugin>
-    <extensions defaultExtensionNs="com.intellij">
-        <codeInsight.lineMarkerProvider language="Python" implementationClass="software.aws.toolkits.jetbrains.services.lambda.PythonLambdaLineMarker"/>
-    </extensions>
-
-    <extensions defaultExtensionNs="aws.toolkit">
-        <lambdaPackager language="Python" implementationClass="software.aws.toolkits.jetbrains.services.lambda.PythonLambdaPackager"/>
+    <extensions defaultExtensionNs="aws.toolkit.lambda">
+        <runtimeGroup runtimeGroup="PYTHON" implementation="software.aws.toolkits.jetbrains.services.lambda.PythonRuntimeGroup"/>
+        <packager runtimeGroup="PYTHON" implementation="software.aws.toolkits.jetbrains.services.lambda.PythonLambdaPackager"/>
+        <handlerResolver runtimeGroup="PYTHON" implementation="software.aws.toolkits.jetbrains.services.lambda.PythonLambdaHandlerResolver"/>
     </extensions>
 </idea-plugin>

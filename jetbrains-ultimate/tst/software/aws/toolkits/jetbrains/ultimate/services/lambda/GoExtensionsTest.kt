@@ -110,7 +110,8 @@ class GoExtensionsTest {
 
         runInEdtAndWait {
             val mainMethod = getMethod(goFile)
-            assert(GoLambdaLineMarker().getHandlerName(mainMethod)).isEqualTo("Hello")
+
+            assert(GoLambdaHandlerResolver().determineHandler(mainMethod)).isEqualTo("Hello")
         }
     }
 
@@ -139,7 +140,7 @@ class GoExtensionsTest {
 
         runInEdtAndWait {
             val mainMethod = getMethod(goFile)
-            assert(GoLambdaLineMarker().getHandlerName(mainMethod)).isNull()
+            assert(GoLambdaHandlerResolver().determineHandler(mainMethod)).isNull()
         }
     }
 
@@ -168,7 +169,7 @@ class GoExtensionsTest {
 
         runInEdtAndWait {
             val mainMethod = getMethod(goFile)
-            assert(GoLambdaLineMarker().getHandlerName(mainMethod)).isNull()
+            assert(GoLambdaHandlerResolver().determineHandler(mainMethod)).isNull()
         }
     }
 
@@ -197,7 +198,7 @@ class GoExtensionsTest {
 
         runInEdtAndWait {
             val helloMethod = getMethod(goFile, "hello")
-            assert(GoLambdaLineMarker().getHandlerName(helloMethod)).isNull()
+            assert(GoLambdaHandlerResolver().determineHandler(helloMethod)).isNull()
         }
     }
 
@@ -225,7 +226,7 @@ class GoExtensionsTest {
         ) as GoFile
 
         runInEdtAndWait {
-            assert(GoLambdaLineMarker().getHandlerName(goFile)).isNull()
+            assert(GoLambdaHandlerResolver().determineHandler(goFile)).isNull()
         }
     }
 

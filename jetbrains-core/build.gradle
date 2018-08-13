@@ -19,6 +19,12 @@ task testJar (type: Jar) {
     from sourceSets.test.output
 }
 
+processResources {
+    doFirst {
+        from project(":jvm-lambda-invoker").configurations.getByName("shadow").artifacts.files.files
+    }
+}.dependsOn(":jvm-lambda-invoker:shadowJar")
+
 artifacts {
     testArtifacts testJar
 }

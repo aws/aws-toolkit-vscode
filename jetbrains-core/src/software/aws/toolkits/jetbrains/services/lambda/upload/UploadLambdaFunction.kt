@@ -10,27 +10,24 @@ import com.intellij.psi.PsiFile
 import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.services.lambda.LambdaPackagerProvider
+import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaVirtualFile
+import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 
 class UploadLambdaFunction(private val handlerName: String) : AnAction(message("lambda.create_new"), null, AwsIcons.Actions.LAMBDA_FUNCTION_NEW) {
 
-    override fun update(e: AnActionEvent?) {
-        e?.presentation?.isEnabledAndVisible =
-                e?.getData(LangDataKeys.PSI_FILE)?.language?.let { LambdaPackagerProvider.supportedLanguages().contains(it) } == true
-    }
-
     override fun actionPerformed(event: AnActionEvent?) {
         val module = event?.getData(LangDataKeys.MODULE) ?: return
         val psiFile = event.getData(LangDataKeys.PSI_FILE) ?: return
-        val project = module.project
+        val packager = psiFile.language.runtimeGroup?.let { LambdaPackager.getInstance(it) } ?: return
 
-        val packager = LambdaPackagerProvider.getInstance(psiFile.language)
+        val project = module.project
         val lambdaCreator = LambdaCreatorFactory.create(AwsClientManager.getInstance(project), packager)
-        UploadToLambdaModal(project,
+        UploadToLambdaModal(
+            project,
             packager.determineRuntime(module, psiFile),
             handlerName,
             UploadToLambdaValidator()
@@ -39,23 +36,23 @@ class UploadLambdaFunction(private val handlerName: String) : AnAction(message("
 
     private fun performUpload(module: Module, psiFile: PsiFile, creator: LambdaCreator, functionDetails: FunctionUploadDetails) {
         creator.createLambda(functionDetails, module, psiFile)
-                .whenComplete { function, error ->
-                    when {
-                        function != null -> {
-                            val notificationListener = NotificationListener { _, _ ->
-                                val editorManager = FileEditorManager.getInstance(module.project)
-                                val lambdaVirtualFile = LambdaVirtualFile(function)
-                                editorManager.openFile(lambdaVirtualFile, true)
-                            }
-                            notifyInfo(
-                                    message("lambda.function_created.notification", "<a href=\"$function\">${functionDetails.name}</a>"),
-                                    listener = notificationListener,
-                                    project = module.project
-                            )
+            .whenComplete { function, error ->
+                when {
+                    function != null -> {
+                        val notificationListener = NotificationListener { _, _ ->
+                            val editorManager = FileEditorManager.getInstance(module.project)
+                            val lambdaVirtualFile = LambdaVirtualFile(function)
+                            editorManager.openFile(lambdaVirtualFile, true)
                         }
-                        error is Exception -> error.notifyError(title = "")
+                        notifyInfo(
+                            message("lambda.function_created.notification", "<a href=\"$function\">${functionDetails.name}</a>"),
+                            listener = notificationListener,
+                            project = module.project
+                        )
                     }
+                    error is Exception -> error.notifyError(title = "")
                 }
+            }
     }
 }
 

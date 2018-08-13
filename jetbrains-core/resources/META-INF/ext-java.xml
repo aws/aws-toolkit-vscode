@@ -1,10 +1,8 @@
 <idea-plugin>
-    <extensions defaultExtensionNs="com.intellij">
-        <codeInsight.lineMarkerProvider language="JAVA" implementationClass="software.aws.toolkits.jetbrains.services.lambda.JavaLambdaLineMarker"/>
-    </extensions>
-
-    <extensions defaultExtensionNs="aws.toolkit">
-        <lambdaPackager language="JAVA" implementationClass="software.aws.toolkits.jetbrains.services.lambda.JavaLambdaPackager"/>
-        <lambda.handlerResolver runtime="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.JavaLambdaHandlerResolver"/>
+    <extensions defaultExtensionNs="aws.toolkit.lambda">
+        <runtimeGroup runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.JavaRuntimeGroup"/>
+        <packager runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.JavaLambdaPackager"/>
+        <handlerResolver runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.JavaLambdaHandlerResolver"/>
+        <localRunProvider runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.JavaLambdaLocalRunProvider"/>
     </extensions>
 </idea-plugin>

@@ -1,10 +1,7 @@
 package software.aws.toolkits.jetbrains.services.lambda.upload
 
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.ValidationInfo
@@ -16,11 +13,14 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.services.iam.CreateIamRoleDialog
 import software.aws.toolkits.jetbrains.services.iam.listRolesFilter
+import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
+import software.aws.toolkits.jetbrains.utils.ui.addAndSelectValue
+import software.aws.toolkits.jetbrains.utils.ui.blankAsNull
+import software.aws.toolkits.jetbrains.utils.ui.populateValues
+import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
 import javax.swing.DefaultComboBoxModel
-import javax.swing.JComboBox
 import javax.swing.JComponent
-import javax.swing.JTextField
 
 class UploadToLambdaModal(
     private val project: Project,
@@ -111,7 +111,7 @@ class UploadToLambdaController(
                 .toList()
         }
         view.sourceBucket.populateValues { s3Client.listBuckets().buckets().filterNotNull().mapNotNull { it.name() } }
-        view.runtime.populateValues(selected = runtime) { Runtime.knownValues().toList().sortedBy { it.name } }
+        view.runtime.populateValues(selected = runtime) { runtime.runtimeGroup?.runtimes?.toList() ?: emptyList() }
 
         view.createRole.addActionListener {
             val iamRoleDialog = CreateIamRoleDialog(
@@ -144,32 +144,6 @@ class UploadToLambdaController(
                     bucket
                 }
             }
-        }
-    }
-
-    private fun <T> ComboBox<T>.populateValues(block: () -> List<T>) = this.populateValues(null, block)
-
-    private fun <T> ComboBox<T>.populateValues(selected: T?, block: () -> List<T>) {
-        ApplicationManager.getApplication().executeOnPooledThread {
-            val values = block()
-            ApplicationManager.getApplication().invokeLater({
-                val model = this.model as DefaultComboBoxModel<T>
-                model.removeAllElements()
-                values.forEach { model.addElement(it) }
-                this.selectedItem = selected
-                this.isEnabled = values.isNotEmpty()
-            }, ModalityState.any())
-        }
-    }
-
-    private fun <T> ComboBox<T>.addAndSelectValue(fetch: () -> T) {
-        ApplicationManager.getApplication().executeOnPooledThread {
-            val value = fetch()
-            ApplicationManager.getApplication().invokeLater({
-                val model = this.model as DefaultComboBoxModel<T>
-                model.addElement(value)
-                model.selectedItem = value
-            }, ModalityState.any())
         }
     }
 
@@ -211,12 +185,3 @@ class UploadToLambdaController(
         """.trim()
     }
 }
-
-private fun JTextField?.blankAsNull(): String? = if (this?.text?.isNotBlank() == true) {
-    this.text
-} else {
-    null
-}
-
-@Suppress("UNCHECKED_CAST")
-private fun <T> JComboBox<T>?.selected(): T? = this?.selectedItem as? T
