@@ -2,16 +2,19 @@ package software.aws.toolkits.jetbrains.services.lambda.upload
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.ValidationInfo
 import icons.AwsIcons
+import org.intellij.lang.annotations.Language
 import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.services.iam.CreateIamRoleDialog
 import software.aws.toolkits.jetbrains.services.iam.listRolesFilter
 import software.aws.toolkits.resources.message
 import javax.swing.DefaultComboBoxModel
@@ -35,7 +38,7 @@ class UploadToLambdaModal(
 
     override fun createCenterPanel(): JComponent? {
         val controller =
-            UploadToLambdaController(view, handlerName, runtime, AwsClientManager.getInstance(project))
+            UploadToLambdaController(project, view, handlerName, runtime, AwsClientManager.getInstance(project))
         controller.load()
         return view.content
     }
@@ -91,6 +94,7 @@ class UploadToLambdaValidator {
 }
 
 class UploadToLambdaController(
+    private val project: Project,
     private val view: CreateLambdaPanel,
     private val handlerName: String,
     private val runtime: Runtime,
@@ -110,15 +114,20 @@ class UploadToLambdaController(
         view.runtime.populateValues(selected = runtime) { Runtime.knownValues().toList().sortedBy { it.name } }
 
         view.createRole.addActionListener {
-            val iamRole = Messages.showInputDialog(
-                message("lambda.upload.create_iam_dialog.input"),
-                message("lambda.upload.create_iam_dialog.title"),
-                AwsIcons.Logos.IAM_LARGE
+            val iamRoleDialog = CreateIamRoleDialog(
+                project = project,
+                iamClient = iamClient,
+                parent = view.content,
+                defaultAssumeRolePolicyDocument = DEFAULT_ASSUME_ROLE_POLICY,
+                defaultPolicyDocument = DEFAULT_POLICY
             )
-            iamRole?.run {
-                view.iamRole.addAndSelectValue {
-                    iamClient.createRole { request -> request.roleName(iamRole) }
-                        .let { role -> IamRole(name = role.role().roleName(), arn = role.role().arn()) }
+            if (iamRoleDialog.showAndGet()) {
+                iamRoleDialog.iamRole?.let { iamRole ->
+                    runInEdt {
+                        val comboBoxModel = view.iamRole.model as DefaultComboBoxModel<IamRole>
+                        comboBoxModel.addElement(iamRole)
+                        comboBoxModel.selectedItem = iamRole
+                    }
                 }
             }
         }
@@ -166,6 +175,40 @@ class UploadToLambdaController(
 
     private companion object {
         const val LAMBDA_PRINCIPAL = "lambda.amazonaws.com"
+
+        @Language("JSON")
+        val DEFAULT_ASSUME_ROLE_POLICY = """
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+        """.trim()
+
+        @Language("JSON")
+        val DEFAULT_POLICY = """
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+        """.trim()
     }
 }
 
