@@ -12,6 +12,7 @@ import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.services.iam.listRolesFilter
 import software.aws.toolkits.resources.message
 import javax.swing.DefaultComboBoxModel
 import javax.swing.JComboBox
@@ -95,15 +96,15 @@ class UploadToLambdaController(
     private val runtime: Runtime,
     clientManager: AwsClientManager
 ) {
-
     private val s3Client: S3Client = clientManager.getClient()
     private val iamClient: IamClient = clientManager.getClient()
 
     fun load() {
         view.handler.text = handlerName
         view.iamRole.populateValues {
-            iamClient.listRoles().roles().filterNotNull()
+            iamClient.listRolesFilter { it.assumeRolePolicyDocument().contains(LAMBDA_PRINCIPAL) }
                 .map { IamRole(name = it.roleName(), arn = it.arn()) }
+                .toList()
         }
         view.sourceBucket.populateValues { s3Client.listBuckets().buckets().filterNotNull().mapNotNull { it.name() } }
         view.runtime.populateValues(selected = runtime) { Runtime.knownValues().toList().sortedBy { it.name } }
@@ -161,6 +162,10 @@ class UploadToLambdaController(
                 model.selectedItem = value
             }, ModalityState.any())
         }
+    }
+
+    private companion object {
+        const val LAMBDA_PRINCIPAL = "lambda.amazonaws.com"
     }
 }
 
