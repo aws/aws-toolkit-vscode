@@ -1,28 +1,30 @@
 'use strict';
 
-import * as vscode from 'vscode';
-import { ExplorerNodeBase } from '../../shared/nodes';
+import { TreeItem, TreeItemCollapsibleState } from 'vscode';
+import { AWSTreeNodeBase } from '../../shared/awsTreeNodeBase';
 import { BlueprintNode } from './blueprintNode';
 import { BlueprintsCollection } from '../models/blueprintsCollection';
 import { Blueprint } from '../models/blueprint';
 
-export class BlueprintsLanguageNode extends ExplorerNodeBase {
+export class BlueprintsLanguageNode extends AWSTreeNodeBase {
 
     constructor(public readonly language: string, public readonly blueprintsCollection: BlueprintsCollection) {
         super();
     }
 
-    public getChildren(): BlueprintNode[] {
-        let blueprints: BlueprintNode[] = [];
-        this.blueprintsCollection.filterBlueprintsForLanguage(this.language).forEach((b: Blueprint) => {
-            blueprints.push(new BlueprintNode(b));
-        });
+    public getChildren(): Thenable<BlueprintNode[]> {
+        return new Promise(resolve => {
+            let blueprints: BlueprintNode[] = [];
+            this.blueprintsCollection.filterBlueprintsForLanguage(this.language).forEach((b: Blueprint) => {
+                blueprints.push(new BlueprintNode(b));
+            });
 
-        return blueprints;
+            resolve(blueprints);
+        });
     }
 
-    public getTreeItem(): vscode.TreeItem | Promise<vscode.TreeItem> {
-        const item = new vscode.TreeItem(this.language, vscode.TreeItemCollapsibleState.Collapsed);
+    public getTreeItem(): TreeItem {
+        const item = new TreeItem(this.language, TreeItemCollapsibleState.Collapsed);
         item.tooltip = `Project blueprints for creating new projects targeting AWS Lambda in ${this.language}`;
 
         return item;

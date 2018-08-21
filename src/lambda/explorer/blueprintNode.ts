@@ -1,11 +1,11 @@
 'use strict';
 
-import * as path from 'path';
-import { ExplorerNodeBase } from '../../shared/nodes';
 import { TreeItem, Uri, ThemeIcon } from 'vscode';
+import * as path from 'path';
+import { AWSTreeNodeBase } from '../../shared/awsTreeNodeBase';
 import { Blueprint } from '../models/blueprint';
 
-export class BlueprintNode extends ExplorerNodeBase implements TreeItem {
+export class BlueprintNode extends AWSTreeNodeBase implements TreeItem {
     public static contextValue: string = 'awsLambdaBlueprint';
     public contextValue: string = BlueprintNode.contextValue;
 
@@ -25,11 +25,11 @@ export class BlueprintNode extends ExplorerNodeBase implements TreeItem {
         };
     }
 
-    public getChildren(): BlueprintNode[] {
-        return [];
+    public getChildren(): Thenable<BlueprintNode[]> {
+        return new Promise(resolve => resolve([]));
     }
 
-    public getTreeItem(): BlueprintNode | Promise<BlueprintNode> {
+    public getTreeItem(): TreeItem {
         return this;
     }
 }

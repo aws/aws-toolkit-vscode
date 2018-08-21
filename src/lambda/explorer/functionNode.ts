@@ -1,11 +1,11 @@
 'use strict';
 
-import * as path from 'path';
-import Lambda = require('aws-sdk/clients/lambda');
-import { ExplorerNodeBase } from '../../shared/nodes';
 import { TreeItem, Uri, ThemeIcon } from 'vscode';
+import * as path from 'path';
+import { AWSTreeNodeBase } from '../../shared/awsTreeNodeBase';
+import Lambda = require('aws-sdk/clients/lambda');
 
-export class FunctionNode extends ExplorerNodeBase implements TreeItem {
+export class FunctionNode extends AWSTreeNodeBase implements TreeItem {
     public static contextValue: string = 'awsLambdaFn';
     public contextValue: string = FunctionNode.contextValue;
 
@@ -26,11 +26,11 @@ export class FunctionNode extends ExplorerNodeBase implements TreeItem {
         };
     }
 
-    public getChildren(): FunctionNode[] {
-        return [];
+    public getChildren(): Thenable<FunctionNode[]> {
+        return new Promise(resolve => resolve([]));
     }
 
-    public getTreeItem(): FunctionNode | Promise<FunctionNode> {
+    public getTreeItem(): TreeItem {
         return this;
     }
 }

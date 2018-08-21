@@ -3,7 +3,7 @@
 import { ExtensionContext, OutputChannel } from 'vscode';
 import { AWSClientBuilder } from './awsClientBuilder';
 import { AWSContext } from './awsContext';
-import { IRefreshableAWSTreeProvider } from './nodes';
+import { IRefreshableAWSTreeProvider } from './IAWSTreeprovider';
 import { AWSStatusBar } from './statusBar';
 
 /**

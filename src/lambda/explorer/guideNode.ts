@@ -1,11 +1,11 @@
 'use strict';
 
-import * as vscode from 'vscode';
+import { TreeItem, TreeItemCollapsibleState } from 'vscode';
 import * as path from 'path';
-import { ExplorerNodeBase } from '../../shared/nodes';
+import { AWSTreeNodeBase } from '../../shared/awsTreeNodeBase';
 import { URL } from 'url';
 
-export class GuideNode extends ExplorerNodeBase {
+export class GuideNode extends AWSTreeNodeBase {
 
     public static contextValue: string = 'awsLambdaGuide';
     public contextValue: string = GuideNode.contextValue;
@@ -17,12 +17,12 @@ export class GuideNode extends ExplorerNodeBase {
         super();
     }
 
-    public getChildren(): ExplorerNodeBase[] | Promise<ExplorerNodeBase[]> {
-       return [];
+    public getChildren(): Thenable<AWSTreeNodeBase[]> {
+       return new Promise(resolve => resolve([]));
     }
 
-    public getTreeItem(): vscode.TreeItem | Promise<vscode.TreeItem> {
-        const item = new vscode.TreeItem(`${this.guideName}`, vscode.TreeItemCollapsibleState.Collapsed);
+    public getTreeItem(): TreeItem {
+        const item = new TreeItem(`${this.guideName}`, TreeItemCollapsibleState.Collapsed);
         item.tooltip = `${this.guideUri}`;
         item.iconPath = {
             light: path.join(__filename, '..', '..', '..', 'resources', 'light', 'lambda_function.svg'),

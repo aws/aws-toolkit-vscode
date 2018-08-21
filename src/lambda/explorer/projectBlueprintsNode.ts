@@ -1,15 +1,15 @@
 'use strict';
 
-import * as vscode from 'vscode';
-import { ExplorerNodeBase } from '../../shared/nodes';
+import { TreeItem, TreeItemCollapsibleState } from 'vscode';
+import { AWSTreeNodeBase } from '../../shared/awsTreeNodeBase';
 import { BlueprintsCollection } from '../models/blueprintsCollection';
 import { BlueprintsLanguageNode } from './blueprintsLanguageNode';
 
-export class ProjectBlueprintsNode extends ExplorerNodeBase {
+export class ProjectBlueprintsNode extends AWSTreeNodeBase {
 
     private allBlueprints: BlueprintsCollection = new BlueprintsCollection();
 
-    public async getChildren(): Promise<ExplorerNodeBase[]> {
+    public async getChildren(): Promise<AWSTreeNodeBase[]> {
 
         await this.allBlueprints.loadAllBlueprints(); // to date we do VS blueprints only
 
@@ -22,8 +22,8 @@ export class ProjectBlueprintsNode extends ExplorerNodeBase {
         return languageNodes;
     }
 
-    public getTreeItem(): vscode.TreeItem | Promise<vscode.TreeItem> {
-        const item = new vscode.TreeItem('Project Blueprints', vscode.TreeItemCollapsibleState.Collapsed);
+    public getTreeItem(): TreeItem {
+        const item = new TreeItem('Project Blueprints', TreeItemCollapsibleState.Collapsed);
         item.tooltip = 'Blueprints for creating new projects targeting AWS Lambda';
 
         return item;
