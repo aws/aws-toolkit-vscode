@@ -1,11 +1,11 @@
 'use strict';
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import * as vscode from 'vscode';
 import { AWSTreeNodeBase } from '../shared/awsTreeNodeBase';
 import { IRefreshableAWSTreeProvider } from '../shared/IAWSTreeProvider';
-import { FunctionsNode } from './explorer/functionsNode';
-import { GuidesNode } from './explorer/guidesNode';
-import { ProjectBlueprintsNode } from './explorer/projectBlueprintsNode';
 import { FunctionNode } from './explorer/functionNode';
 import { getLambdaPolicy } from './commands/getLambdaPolicy';
 import { invokeLambda } from './commands/invokeLambda';
@@ -14,6 +14,8 @@ import { deployLambda }from './commands/deployLambda';
 import { getLambdaConfig } from './commands/getLambdaConfig';
 import { AWSContext } from '../shared/awsContext';
 import { ext } from '../shared/extensionGlobals';
+import { AWSCommandTreeNode } from '../shared/awsCommandTreeNode';
+import { RegionNodes } from './explorer/regionNodes';
 
 export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>, IRefreshableAWSTreeProvider {
     private _onDidChangeTreeData: vscode.EventEmitter<FunctionNode | undefined> = new vscode.EventEmitter<FunctionNode | undefined>();
@@ -31,12 +33,6 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
         ext.treesToRefreshOnContextChange.push(this);
     }
 
-    rootNodes: AWSTreeNodeBase[] = [
-        new FunctionsNode(),
-        new GuidesNode(),
-        new ProjectBlueprintsNode()
-    ];
-
     getTreeItem(element: AWSTreeNodeBase): vscode.TreeItem {
         return element.getTreeItem();
     }
@@ -46,7 +42,35 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
             return element.getChildren();
         }
 
-        return new Promise(resolve => resolve(this.rootNodes));
+        return new Promise(resolve => {
+            const profileName = ext.awsContext.getCredentialProfileName();
+            if (!profileName) {
+                resolve([
+                    new AWSCommandTreeNode(localize('AWS.explorerNode.signIn', 'Sign in to AWS...'),
+                                           'aws.login',
+                                           localize('AWS.explorerNode.signIn.tooltip', 'Connect to AWS using a credential profile'))
+                ]);
+            }
+
+            ext.awsContext.getExplorerRegions().then(regions => {
+
+                if (regions.length !== 0) {
+                    let regionNodes: RegionNodes[] = [];
+
+                    regions.forEach(r => {
+                        regionNodes.push(new RegionNodes(r, r));
+                    });
+
+                    resolve(regionNodes);
+                } else {
+                    resolve([
+                        new AWSCommandTreeNode(localize('AWS.explorerNode.addRegion', 'Click to add a region to view functions...'),
+                                               'aws.addExplorerRegion',
+                                               localize('AWS.explorerNode.addRegion.tooltip', 'Configure a region to show available functions'))
+                    ]);
+                }
+            });
+        });
     }
 
     refresh(context?: AWSContext) {

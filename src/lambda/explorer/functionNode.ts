@@ -26,7 +26,7 @@ export class FunctionNode extends AWSTreeNodeBase implements TreeItem {
         };
     }
 
-    public getChildren(): Thenable<FunctionNode[]> {
+    public getChildren(): Thenable<AWSTreeNodeBase[]> {
         return new Promise(resolve => resolve([]));
     }
 

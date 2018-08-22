@@ -1,14 +1,14 @@
 'use strict';
 
 import { FunctionNode } from "../explorer/functionNode";
-import { getSelectedLambdaNode } from '../utils';
 import * as vscode from 'vscode';
 import _ = require("lodash");
 import { BaseTemplates } from "../../shared/templates/baseTemplates";
 import { LambdaTemplates } from "../templates/lambdaTemplates";
 import { AWSError } from "aws-sdk";
+import { getSelectedLambdaNode } from "../utils";
 
-export async function getLambdaConfig(element: FunctionNode) {
+export async function getLambdaConfig(element?: FunctionNode) {
     try {
         const fn: FunctionNode = await getSelectedLambdaNode(element);
 

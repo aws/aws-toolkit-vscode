@@ -7,7 +7,8 @@ import * as vscode from 'vscode';
 export interface ISettingsConfiguration {
     readSetting(settingKey: string, defaultValue?:string) : string | undefined;
 
-    writeSetting(settingKey: string, value: string, target: vscode.ConfigurationTarget) : void;
+    // array values are serialized as a comma-delimited string
+    writeSetting(settingKey: string, value: string | string[] | undefined, target: vscode.ConfigurationTarget) : void;
 }
 
 // default configuration settings handler for production release
@@ -27,9 +28,16 @@ export class SettingsConfiguration implements ISettingsConfiguration {
 
         return undefined;
     }
-    async writeSetting(settingKey: string, value: string, target: vscode.ConfigurationTarget): Promise<void> {
+    async writeSetting(settingKey: string, value: string | string[], target: vscode.ConfigurationTarget): Promise<void> {
         const settings = vscode.workspace.getConfiguration(this.extensionSettingsPrefix);
-        await settings.update(settingKey, value, target);
+        let persistedValue: string;
+        if (value && value instanceof Array) {
+            persistedValue = value.join();
+        } else {
+            persistedValue = value;
+        }
+
+        await settings.update(settingKey, persistedValue, target);
     }
 
     constructor(public extensionSettingsPrefix: string) {

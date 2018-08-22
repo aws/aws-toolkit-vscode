@@ -5,6 +5,7 @@ import { AWSClientBuilder } from './awsClientBuilder';
 import { AWSContext } from './awsContext';
 import { IRefreshableAWSTreeProvider } from './IAWSTreeprovider';
 import { AWSStatusBar } from './statusBar';
+import { AWSContextCommands } from './awsContextCommands';
 
 /**
  * Namespace for common variables used globally in the extension.
@@ -14,6 +15,7 @@ export namespace ext {
     export let context: ExtensionContext;
     export let outputChannel: OutputChannel;
     export let awsContext: AWSContext;
+    export let awsContextCommands: AWSContextCommands;
     export let sdkClientBuilder: AWSClientBuilder;
     export let statusBar: AWSStatusBar;
     export let treesToRefreshOnContextChange: IRefreshableAWSTreeProvider[] = [];

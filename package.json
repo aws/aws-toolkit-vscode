@@ -5,14 +5,16 @@
     "version": "0.0.1",
     "publisher": "amazonwebservices",
     "engines": {
-        "vscode": "^1.23.0"
+        "vscode": "^1.26.0"
     },
     "categories": [
         "Other"
     ],
     "activationEvents": [
-        "onCommand:aws.selectProfile",
-        "onCommand:aws.selectRegion",
+        "onCommand:aws.login",
+        "onCommand:aws.logout",
+        "onCommand:aws.addExplorerRegion",
+        "onCommand:aws.removeExplorerRegion",
         "onView:lambda",
         "onCommand:aws.newLambda",
         "onCommand:aws.invokeLambda",
@@ -24,17 +26,17 @@
     "contributes": {
         "configuration": {
             "type": "object",
-            "title": "AWS Configuration",
+            "title": "%AWS.configuration.title%",
             "properties": {
                 "aws.region": {
                     "type": "string",
                     "default": "",
-                    "description": "The default region for your AWS resources"
+                    "description": "%AWS.configuration.regionDescription%"
                 },
                 "aws.profile": {
                     "type": "string",
                     "default": "",
-                    "description": "The name of the credential profile to obtain credentials from"
+                    "description": "%AWS.configuration.profileDescription%"
                 }
             }
         },
@@ -42,7 +44,7 @@
             "activitybar": [
                 {
                     "id": "aws-explorer",
-                    "title": "AWS",
+                    "title": "%AWS.title%",
                     "icon": "media/aws-logo.svg"
                 }
             ]
@@ -51,36 +53,26 @@
             "aws-explorer": [
                 {
                     "id": "lambda",
-                    "name": "Lambda"
+                    "name": "%AWS.lambda.explorerTitle%"
                 }
             ]
         },
         "menus": {
             "view/title": [
                 {
-                    "command": "aws.selectProfile",
-                    "when": "view == lambda",
-                    "group": "navigation@1"
-                },
-                {
-                    "command": "aws.selectRegion",
+                    "command": "aws.newLambda",
                     "when": "view == lambda",
                     "group": "navigation@2"
                 },
                 {
-                    "command": "aws.newLambda",
+                    "command": "aws.deployLambda",
                     "when": "view == lambda",
                     "group": "navigation@3"
                 },
                 {
-                    "command": "aws.deployLambda",
-                    "when": "view == lambda",
-                    "group": "navigation@4"
-                },
-                {
                     "command": "aws.invokeLambda",
                     "when": "view == lambda",
-                    "group": "navigation@5"
+                    "group": "navigation@4"
                 }
             ],
             "view/item/context": [
@@ -108,26 +100,28 @@
         },
         "commands": [
             {
-                "command": "aws.selectProfile",
-                "title": "Select a credential profile",
-                "category": "AWS",
-                "icon": {
-                    "light": "resources/light/select_profile.svg",
-                    "dark": "resources/dark/select_profile.svg"
-                }
+                "command": "aws.login",
+                "title": "%AWS.command.login%",
+                "category": "AWS"
             },
             {
-                "command": "aws.selectRegion",
-                "title": "Select a region",
-                "category": "AWS",
-                "icon": {
-                    "light": "resources/light/select_region.svg",
-                    "dark": "resources/dark/select_region.svg"
-                }
+                "command": "aws.logout",
+                "title": "%AWS.command.logout%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.addExplorerRegion",
+                "title": "%AWS.command.addExplorerRegion%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.removeExplorerRegion",
+                "title": "%AWS.command.removeExplorerRegion%",
+                "category": "AWS"
             },
             {
                 "command": "aws.newLambda",
-                "title": "%AWS.newLambda%",
+                "title": "%AWS.command.newLambda%",
                 "category": "AWS",
                 "icon": {
                     "light": "resources/light/new_lambda.svg",
@@ -136,7 +130,7 @@
             },
             {
                 "command": "aws.deployLambda",
-                "title": "%AWS.deployLambda%",
+                "title": "%AWS.command.deployLambda%",
                 "category": "AWS",
                 "icon": {
                     "light": "resources/light/deploy_lambda.svg",
@@ -145,7 +139,7 @@
             },
             {
                 "command": "aws.invokeLambda",
-                "title": "%AWS.invokeLambda%",
+                "title": "%AWS.command.invokeLambda%",
                 "category": "AWS",
                 "icon": {
                     "light": "resources/light/invoke_lambda.svg",
@@ -154,12 +148,12 @@
             },
             {
                 "command": "aws.getLambdaConfig",
-                "title": "%AWS.getLambdaConfig%",
+                "title": "%AWS.command.getLambdaConfig%",
                 "category": "AWS"
             },
             {
                 "command": "aws.getLambdaPolicy",
-                "title": "%AWS.getLambdaPolicy%",
+                "title": "%AWS.command.getLambdaPolicy%",
                 "category": "AWS"
             }
         ]
@@ -181,13 +175,15 @@
         "@types/xml2js": "^0.4.3",
         "tslint": "^5.8.0",
         "typescript": "^2.6.1",
-        "vscode": "^1.1.6"
+        "vscode": "^1.1.21",
+        "vscode-nls-dev": "^3.2.1"
     },
     "dependencies": {
         "aws-sdk": "^2.227.1",
         "fs-extra": "^6.0.1",
         "lodash": "^4.17.10",
         "npm": "^6.1.0",
-        "vue": "^2.5.16"
+        "vue": "^2.5.16",
+        "vscode-nls": "^3.2.4"
     }
 }

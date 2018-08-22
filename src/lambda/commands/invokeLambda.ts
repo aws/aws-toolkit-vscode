@@ -10,7 +10,6 @@ import _ = require("lodash");
 import { ext } from "../../shared/extensionGlobals";
 import { LambdaTemplates } from "../templates/lambdaTemplates";
 import { AWSError } from "aws-sdk";
-import Lambda = require('aws-sdk/clients/lambda');
 import { ResourceFetcher } from "../../shared/resourceFetcher";
 import { sampleRequestManifestPath, sampleRequestPath } from "../constants";
 import { SampleRequest } from '../models/sampleRequest';
@@ -35,7 +34,6 @@ export async function invokeLambda(element?: FunctionNode) {
         });
 
         // ideally need to get the client from the explorer, but the context will do for now
-
         console.log('building template...');
         const invokeTemplateFn = _.template(LambdaTemplates.InvokeTemplate);
         const resourcePath = path.join(ext.context.extensionPath, 'resources', 'vs-lambda-sample-request-manifest.xml');
@@ -76,7 +74,7 @@ export async function invokeLambda(element?: FunctionNode) {
                     case 'invokeLambda':
                         console.log('got the following payload:');
                         console.log(message.value);
-                        const lambdaClient = await ext.sdkClientBuilder.createAndConfigureSdkClient(Lambda, undefined);
+                        const lambdaClient = fn.lambda;
                         let funcRequest = {
                             FunctionName: fn.functionConfiguration.FunctionArn!,
                             LogType: 'Tail'
@@ -93,7 +91,7 @@ export async function invokeLambda(element?: FunctionNode) {
                                 command: 'invokedLambda',
                                 logs,
                                 payload,
-                                statusCode: funcResponse.StatusCode 
+                                statusCode: funcResponse.StatusCode
                             });
                         } catch (e) {
                             view.webview.postMessage({

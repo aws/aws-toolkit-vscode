@@ -1,5 +1,8 @@
 'use strict';
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import * as vscode from 'vscode';
 import { FunctionNode } from '../explorer/functionNode';
 
@@ -16,7 +19,7 @@ class QuickPickLambda extends FunctionNode implements vscode.QuickPickItem {
 export async function quickPickLambda(lambdas: FunctionNode[]): Promise<FunctionNode | undefined> {
     try {
         if (!lambdas || lambdas.length === 0) {
-            vscode.window.showInformationMessage('There are no lambdas in this region.');
+            vscode.window.showInformationMessage(localize('AWS.explorerNode.lambda.noFunctions', '..no functions in this region...'));
         } else {
             const qpLambdas = lambdas.map(l => new QuickPickLambda(l));
             return await vscode.window.showQuickPick(qpLambdas, { placeHolder: 'Choose a lambda' });
