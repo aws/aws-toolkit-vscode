@@ -78,6 +78,8 @@
         <fileBasedIndex implementation="software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerIndex"/>
         <codeInsight.lineMarkerProvider language="" implementationClass="software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker"/>
         <configurationType implementation="software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration"/>
+        <runConfigurationProducer implementation="software.aws.toolkits.jetbrains.services.lambda.execution.local.LambdaLocalRunConfigurationProducer"/>
+        <runLineMarkerContributor language="" implementationClass="software.aws.toolkits.jetbrains.services.lambda.execution.local.LambdaLocalRunLineMarker"/>
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit">

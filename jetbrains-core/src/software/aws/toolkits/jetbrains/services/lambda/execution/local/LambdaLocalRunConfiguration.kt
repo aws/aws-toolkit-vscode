@@ -10,21 +10,22 @@ import com.intellij.codeInsight.lookup.CharFilter
 import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.execution.ExecutionException
 import com.intellij.execution.Executor
-import com.intellij.execution.configurations.ConfigurationFactory
-import com.intellij.execution.configurations.LocatableConfigurationBase
-import com.intellij.execution.configurations.ModuleRunProfile
-import com.intellij.execution.configurations.RefactoringListenerProvider
-import com.intellij.execution.configurations.RunConfiguration
-import com.intellij.execution.configurations.RunProfileState
-import com.intellij.execution.configurations.RuntimeConfigurationError
+import com.intellij.execution.actions.ConfigurationContext
+import com.intellij.execution.actions.RunConfigurationProducer
+import com.intellij.execution.configurations.*
+import com.intellij.execution.lineMarker.ExecutorAction
+import com.intellij.execution.lineMarker.RunLineMarkerContributor
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.roots.ProjectRootManager
+import com.intellij.openapi.util.Ref
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiIdentifier
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.refactoring.listeners.RefactoringElementAdapter
 import com.intellij.refactoring.listeners.RefactoringElementListener
@@ -32,6 +33,7 @@ import com.intellij.util.indexing.FileBasedIndex
 import com.intellij.util.textCompletion.TextCompletionProvider
 import com.intellij.util.xmlb.XmlSerializer
 import com.intellij.util.xmlb.XmlSerializerUtil
+import icons.AwsIcons
 import org.jdom.Element
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
@@ -41,13 +43,9 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
+import software.aws.toolkits.jetbrains.services.lambda.*
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
-import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerIndex
-import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
-import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
-import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPointObject
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
-import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.utils.ui.populateValues
 import software.aws.toolkits.resources.message
 import java.nio.charset.StandardCharsets
@@ -133,16 +131,15 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
         return null
     }
 
-    @TestOnly
-    fun configure(
-        runtime: Runtime,
+        fun configure(
+        runtime: Runtime?,
         handler: String,
         input: String? = null,
         envVars: MutableMap<String, String> = mutableMapOf(),
         region: AwsRegion? = null
     ) {
         settings.input = input
-        settings.runtime = runtime.name
+        settings.runtime = runtime?.name
         settings.handler = handler
         settings.environmentVariables = envVars
         settings.regionId = region?.id
@@ -174,7 +171,7 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
                 regionId ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
             val envVarsCopy = environmentVariables.toMutableMap()
 
-            val inputText = if (inputIsFile && inputValue?.isNotEmpty() == true) {
+            val inputText = (if (inputIsFile && inputValue?.isNotEmpty() == true) {
                 try {
                     LocalFileSystem.getInstance()
                         .refreshAndFindFileByPath(inputValue)
@@ -191,7 +188,7 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
                 }
             } else {
                 inputValue
-            }
+            }) ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_input_specified"))
 
             envVarsCopy["AWS_REGION"] = regionId
             envVarsCopy["AWS_DEFAULT_REGION"] = regionId
@@ -327,4 +324,46 @@ interface LambdaLocalRunProvider {
 
     companion object :
         RuntimeGroupExtensionPointObject<LambdaLocalRunProvider>(ExtensionPointName.create("aws.toolkit.lambda.localRunProvider"))
+}
+
+class LambdaLocalRunConfigurationProducer : RunConfigurationProducer<LambdaLocalRunConfiguration>(LambdaRunConfiguration.getInstance()) {
+    override fun setupConfigurationFromContext(
+        configuration: LambdaLocalRunConfiguration,
+        context: ConfigurationContext,
+        sourceElement: Ref<PsiElement>
+    ): Boolean {
+        val element = context.psiLocation ?: return false
+        val runtimeGroup = element.language.runtimeGroup ?: return false
+        if (runtimeGroup !in LambdaHandlerResolver.supportedRuntimeGroups) {
+            return false
+        }
+        val resolver = LambdaHandlerResolver.getInstance(runtimeGroup)
+        val handler = resolver.determineHandler(element) ?: return false
+
+        val sdk = ModuleRootManager.getInstance(context.module).sdk ?: ProjectRootManager.getInstance(context.project).projectSdk
+
+        val runtime = sdk?.let { RuntimeGroup.runtimeForSdk(it) }
+        configuration.configure(runtime, handler)
+        configuration.setGeneratedName()
+        return true
+    }
+
+    override fun isConfigurationFromContext(configuration: LambdaLocalRunConfiguration, context: ConfigurationContext): Boolean {
+        val element = context.psiLocation ?: return false
+        val runtimeGroup = element.language.runtimeGroup ?: return false
+        if (runtimeGroup !in LambdaHandlerResolver.supportedRuntimeGroups) {
+            return false
+        }
+        val resolver = LambdaHandlerResolver.getInstance(runtimeGroup)
+        val handler = resolver.determineHandler(element) ?: return false
+        return configuration.settings.handler == handler
+    }
+}
+
+class LambdaLocalRunLineMarker : RunLineMarkerContributor() {
+    override fun getInfo(element: PsiElement): Info? {
+        element as? PsiIdentifier ?: return null
+        element.language.runtimeGroup?.let { LambdaHandlerResolver.getInstance(it) }?.determineHandler(element) ?: return null
+        return Info(AwsIcons.Logos.LAMBDA, ExecutorAction.getActions(1)) { "Run Lambda" }
+    }
 }
