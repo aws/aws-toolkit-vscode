@@ -5,6 +5,7 @@ import com.intellij.execution.ExecutorRegistry
 import com.intellij.execution.Output
 import com.intellij.execution.OutputListener
 import com.intellij.execution.RunManager
+import com.intellij.execution.RunnerRegistry
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.openapi.application.ApplicationManager
@@ -23,6 +24,7 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.equalTo
 import org.hamcrest.Matchers.equalToIgnoringWhiteSpace
 import org.hamcrest.Matchers.isEmptyString
+import org.hamcrest.Matchers.notNullValue
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -97,6 +99,35 @@ class JavaLambdaLocalRunConfigurationTest {
         assertThat(output.exitCode, equalTo(0))
         assertThat(output.stdout, equalToIgnoringWhiteSpace("HELLO!"))
         assertThat(output.stderr, isEmptyString())
+    }
+
+    @Test
+    fun hasAnAssociatedDebugRunner() {
+        val fixture = projectRule.fixture
+        val module = fixture.addModule("main")
+
+        fixture.addClass(
+            module, """
+            package com.example;
+
+            public class UsefulUtils {
+                public static String upperCase(String input) {
+                    return input.toUpperCase();
+                }
+            }
+            """
+        )
+
+        val runManager = RunManager.getInstance(projectRule.project)
+        val factory = runManager.configurationFactories.filterIsInstance<LambdaRunConfiguration>().first()
+        val runConfigurationAndSettings = runManager.createRunConfiguration("Test", factory.configurationFactories.first())
+        val runConfiguration = runConfigurationAndSettings.configuration as LambdaLocalRunConfiguration
+
+        runConfiguration.configure(handler = "com.example.UsefulUtils::upperCase", runtime = Runtime.JAVA8, input = "hello!")
+
+        val debugExecutor = ExecutorRegistry.getInstance().getExecutorById("Debug")
+        val runner = RunnerRegistry.getInstance().getRunner(debugExecutor.getId(), runConfiguration)
+        assertThat(runner, notNullValue())
     }
 
     private fun compileModule(module: Module) {

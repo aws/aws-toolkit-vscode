@@ -10,9 +10,9 @@ import com.intellij.execution.Executor
 import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.execution.configurations.ConfigurationTypeBase
 import com.intellij.execution.configurations.LocatableConfigurationBase
+import com.intellij.execution.configurations.ModuleRunProfile
 import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.configurations.RunProfileState
-import com.intellij.execution.configurations.RunProfileWithCompileBeforeLaunchOption
 import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.extensions.ExtensionPointName
@@ -48,7 +48,7 @@ class LambdaLocalRunConfigurationFactory(configuration: LambdaRunConfiguration) 
 }
 
 class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactory) : LocatableConfigurationBase(project, factory, "AWS Lambda"),
-    RunProfileWithCompileBeforeLaunchOption {
+    ModuleRunProfile {
 
     internal var settings = PersistableLambdaRunSettings()
 
