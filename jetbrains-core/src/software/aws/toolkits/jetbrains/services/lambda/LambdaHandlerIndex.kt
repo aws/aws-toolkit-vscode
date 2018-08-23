@@ -31,7 +31,7 @@ class LambdaHandlerIndex : ScalarIndexExtension<String>() {
 
         val handlers = mutableMapOf<String, Void?>()
 
-        recursePsiTree(it.psiFile, object : PsiElementVisitor() {
+        it.psiFile.acceptLeafNodes(object : PsiElementVisitor() {
             override fun visitElement(element: PsiElement?) {
                 super.visitElement(element)
                 element?.run {
@@ -51,9 +51,16 @@ class LambdaHandlerIndex : ScalarIndexExtension<String>() {
     companion object {
         val NAME: ID<String, Void> = ID.create("LambdaHandlerIndex")
 
-        fun recursePsiTree(psi: PsiElement, visitor: PsiElementVisitor) {
-            psi.accept(visitor)
-            psi.children.forEach { recursePsiTree(it, visitor) }
+        /**
+         * Passes the [visitor] to the leaf-nodes in this [PsiElement]'s hierarchy.
+         *
+         * A leaf-node is a node with no children.
+         */
+        private fun PsiElement.acceptLeafNodes(visitor: PsiElementVisitor) {
+            when {
+                children.isEmpty() -> accept(visitor)
+                else -> children.forEach { it.acceptLeafNodes(visitor) }
+            }
         }
     }
 }
