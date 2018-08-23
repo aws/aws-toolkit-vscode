@@ -10,9 +10,11 @@ import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.command.undo.UndoManager
 import com.intellij.openapi.compiler.CompileContext
 import com.intellij.openapi.compiler.CompilerManager
 import com.intellij.openapi.compiler.CompilerMessageCategory
+import com.intellij.openapi.fileEditor.impl.text.TextEditorProvider
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.projectRoots.impl.JavaAwareProjectJdkTableImpl
@@ -25,6 +27,7 @@ import org.hamcrest.Matchers.equalTo
 import org.hamcrest.Matchers.equalToIgnoringWhiteSpace
 import org.hamcrest.Matchers.isEmptyString
 import org.hamcrest.Matchers.notNullValue
+import org.intellij.lang.annotations.Language
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -58,32 +61,16 @@ class JavaLambdaLocalRunConfigurationTest {
     fun basicInvocationOfAJavaLambda() {
         val fixture = projectRule.fixture
         val module = fixture.addModule("main")
+        fixture.addClass(module, TEST_CLASS)
 
-        fixture.addClass(
-            module, """
-            package com.example;
-
-            public class UsefulUtils {
-                public static String upperCase(String input) {
-                    return input.toUpperCase();
-                }
-            }
-            """
-        )
-
-        val runManager = RunManager.getInstance(projectRule.project)
-        val factory = runManager.configurationFactories.filterIsInstance<LambdaRunConfiguration>().first()
-        val runConfigurationAndSettings = runManager.createRunConfiguration("Test", factory.configurationFactories.first())
-        val runConfiguration = runConfigurationAndSettings.configuration as LambdaLocalRunConfiguration
-
-        runConfiguration.configure(handler = "com.example.UsefulUtils::upperCase", runtime = Runtime.JAVA8, input = "hello!")
+        val runConfiguration = createRunConfiguration()
 
         compileModule(module)
 
         val executionFuture = CompletableFuture<Output>()
         runInEdtAndWait {
             val executionEnvironment =
-                ExecutionEnvironmentBuilder.create(ExecutorRegistry.getInstance().getExecutorById("Run"), runConfigurationAndSettings).build()
+                ExecutionEnvironmentBuilder.create(ExecutorRegistry.getInstance().getExecutorById("Run"), runConfiguration).build()
 
             executionEnvironment.runner.execute(executionEnvironment) {
                 it.processHandler?.addProcessListener(object : OutputListener() {
@@ -106,28 +93,102 @@ class JavaLambdaLocalRunConfigurationTest {
         val fixture = projectRule.fixture
         val module = fixture.addModule("main")
 
-        fixture.addClass(
-            module, """
-            package com.example;
+        fixture.addClass(module, TEST_CLASS)
 
-            public class UsefulUtils {
-                public static String upperCase(String input) {
-                    return input.toUpperCase();
-                }
-            }
-            """
-        )
+        val runConfiguration = createRunConfiguration()
 
+        val debugExecutor = ExecutorRegistry.getInstance().getExecutorById("Debug")
+        val runner = RunnerRegistry.getInstance().getRunner(debugExecutor.id, runConfiguration)
+        assertThat(runner, notNullValue())
+    }
+
+    @Test
+    fun handlerIsRenamedWhenClassRenamed() {
+        val fixture = projectRule.fixture
+        val module = fixture.addModule("main")
+
+        val psiClass = fixture.addClass(module, TEST_CLASS)
+        runInEdtAndWait {
+            fixture.openFileInEditor(psiClass.containingFile.virtualFile)
+        }
+
+        val runConfiguration = createRunConfiguration()
+
+        WriteCommandAction.runWriteCommandAction(fixture.project) {
+            fixture.renameElement(psiClass, "UsefulUtils2")
+        }
+
+        assertThat(runConfiguration.getHandler(), equalTo("com.example.UsefulUtils2::upperCase"))
+
+        undo()
+
+        assertThat(runConfiguration.getHandler(), equalTo("com.example.UsefulUtils::upperCase"))
+    }
+
+    @Test
+    fun handlerIsRenamedWhenMethodRenamed() {
+        val fixture = projectRule.fixture
+        val module = fixture.addModule("main")
+
+        val psiClass = fixture.addClass(module, TEST_CLASS)
+        runInEdtAndWait {
+            fixture.openFileInEditor(psiClass.containingFile.virtualFile)
+        }
+
+        val runConfiguration = createRunConfiguration()
+
+        runInEdtAndWait {
+            fixture.renameElement(psiClass.findMethodsByName("upperCase", false)[0], "upperCase2")
+        }
+
+        assertThat(runConfiguration.getHandler(), equalTo("com.example.UsefulUtils::upperCase2"))
+
+        undo()
+
+        assertThat(runConfiguration.getHandler(), equalTo("com.example.UsefulUtils::upperCase"))
+    }
+
+    @Test
+    fun handlerIsNotRenamedWhenUnrelatedRenamed() {
+        val fixture = projectRule.fixture
+        val module = fixture.addModule("main")
+
+        val psiClass = fixture.addClass(module, TEST_CLASS)
+        runInEdtAndWait {
+            fixture.openFileInEditor(psiClass.containingFile.virtualFile)
+        }
+
+        val runConfiguration = createRunConfiguration()
+
+        WriteCommandAction.runWriteCommandAction(fixture.project) {
+            val findFieldByName = psiClass.findFieldByName("randomField", false)!!
+            fixture.renameElement(findFieldByName, "randomField2")
+        }
+
+        assertThat(runConfiguration.getHandler(), equalTo("com.example.UsefulUtils::upperCase"))
+
+        undo()
+
+        assertThat(runConfiguration.getHandler(), equalTo("com.example.UsefulUtils::upperCase"))
+    }
+
+    private fun undo() {
+        runInEdtAndWait {
+            val textEditor = TextEditorProvider.getInstance().getTextEditor(projectRule.fixture.editor)
+            UndoManager.getInstance(projectRule.project).undo(textEditor)
+        }
+    }
+
+    private fun createRunConfiguration(): LambdaLocalRunConfiguration {
         val runManager = RunManager.getInstance(projectRule.project)
         val factory = runManager.configurationFactories.filterIsInstance<LambdaRunConfiguration>().first()
         val runConfigurationAndSettings = runManager.createRunConfiguration("Test", factory.configurationFactories.first())
         val runConfiguration = runConfigurationAndSettings.configuration as LambdaLocalRunConfiguration
+        runManager.addConfiguration(runConfigurationAndSettings)
 
         runConfiguration.configure(handler = "com.example.UsefulUtils::upperCase", runtime = Runtime.JAVA8, input = "hello!")
 
-        val debugExecutor = ExecutorRegistry.getInstance().getExecutorById("Debug")
-        val runner = RunnerRegistry.getInstance().getRunner(debugExecutor.getId(), runConfiguration)
-        assertThat(runner, notNullValue())
+        return runConfiguration
     }
 
     private fun compileModule(module: Module) {
@@ -163,5 +224,20 @@ class JavaLambdaLocalRunConfigurationTest {
             PlatformTestUtil.saveProject(project)
             CompilerTestUtil.saveApplicationSettings()
         }
+    }
+
+    private companion object {
+        @Language("JAVA")
+        const val TEST_CLASS = """
+            package com.example;
+
+            public class UsefulUtils {
+                private String randomField = "hello";
+
+                public static String upperCase(String input) {
+                    return input.toUpperCase();
+                }
+            }
+            """
     }
 }

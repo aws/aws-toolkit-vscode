@@ -11,6 +11,7 @@ import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.execution.configurations.ConfigurationTypeBase
 import com.intellij.execution.configurations.LocatableConfigurationBase
 import com.intellij.execution.configurations.ModuleRunProfile
+import com.intellij.execution.configurations.RefactoringListenerProvider
 import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.configurations.RunProfileState
 import com.intellij.execution.configurations.RuntimeConfigurationError
@@ -20,6 +21,10 @@ import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.psi.NavigatablePsiElement
+import com.intellij.psi.PsiElement
+import com.intellij.psi.util.PsiTreeUtil
+import com.intellij.refactoring.listeners.RefactoringElementAdapter
+import com.intellij.refactoring.listeners.RefactoringElementListener
 import com.intellij.util.indexing.FileBasedIndex
 import com.intellij.util.textCompletion.TextCompletionProvider
 import com.intellij.util.xmlb.XmlSerializer
@@ -29,6 +34,7 @@ import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerIndex
+import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPointObject
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
@@ -48,8 +54,7 @@ class LambdaLocalRunConfigurationFactory(configuration: LambdaRunConfiguration) 
 }
 
 class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactory) : LocatableConfigurationBase(project, factory, "AWS Lambda"),
-    ModuleRunProfile {
-
+    ModuleRunProfile, RefactoringListenerProvider {
     internal var settings = PersistableLambdaRunSettings()
 
     override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration> = LocalLambdaRunSettingsEditor(project)
@@ -81,12 +86,52 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
 
     override fun suggestedName(): String? = settings.handler
 
+    private fun getPsiElement(): PsiElement? {
+        return try {
+            settings.validateAndCreateImmutable(project).handlerElement
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    override fun getRefactoringElementListener(element: PsiElement?): RefactoringElementListener? {
+        element?.run {
+            val handlerResolver = element.language.runtimeGroup?.let { runtimeGroup ->
+                LambdaHandlerResolver.getInstance(runtimeGroup)
+            } ?: return null
+
+            val handlerPsi = getPsiElement() ?: return null
+
+            if (PsiTreeUtil.isAncestor(element, handlerPsi, false)) {
+                return object : RefactoringElementAdapter() {
+                    private val originalHandler = settings.handler
+
+                    override fun elementRenamedOrMoved(newElement: PsiElement) {
+                        handlerResolver.determineHandler(handlerPsi)?.let { newHandler ->
+                            settings.handler = newHandler
+                        }
+                    }
+
+                    override fun undoElementMovedOrRenamed(newElement: PsiElement, oldQualifiedName: String) {
+                        settings.handler = originalHandler
+                    }
+                }
+            }
+        }
+        return null
+    }
+
     @TestOnly
     fun configure(runtime: Runtime, handler: String, input: String? = null, envVars: MutableMap<String, String> = mutableMapOf()) {
         settings.input = input
         settings.runtime = runtime.name
         settings.handler = handler
         settings.environmentVariables = envVars
+    }
+
+    @TestOnly
+    fun getHandler(): String? {
+        return settings.handler
     }
 
     internal data class PersistableLambdaRunSettings(

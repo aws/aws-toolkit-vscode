@@ -27,6 +27,10 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
     override fun getIcon(): Icon? = AwsIcons.Logos.LAMBDA
 
     override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<*>? {
+        // Only process leaf elements
+        if (element.firstChild != null) {
+            return null
+        }
 
         val handlerResolver = element.language.runtimeGroup?.let {
             LambdaHandlerResolver.getInstance(it)

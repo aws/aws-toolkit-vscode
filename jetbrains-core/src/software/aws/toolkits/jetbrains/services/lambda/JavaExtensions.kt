@@ -178,11 +178,10 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
     }
 
     override fun determineHandler(element: PsiElement): String? {
-        val parent = (element as? PsiIdentifier)?.parent ?: return null
-
-        return when (parent) {
-            is PsiClass -> findByClass(parent)
-            is PsiMethod -> findByMethod(parent)
+        return when (element) {
+            is PsiClass -> findByClass(element)
+            is PsiMethod -> findByMethod(element)
+            is PsiIdentifier -> determineHandler(element.parent)
             else -> null
         }
     }
