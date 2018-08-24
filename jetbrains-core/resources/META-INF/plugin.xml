@@ -81,7 +81,7 @@
             <action id="lambda.function.delete"
                     class="software.aws.toolkits.jetbrains.services.lambda.DeleteFunctionAction"
                     text="Delete Function"
-                    icon="AllIcons.Actions.Delete"/>
+                    icon="AllIcons.Actions.Cancel"/>
         </group>
     </actions>
 
