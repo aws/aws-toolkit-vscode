@@ -3,19 +3,15 @@ package software.aws.toolkits.jetbrains.services.iam
 import com.intellij.json.JsonLanguage
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
-import com.intellij.openapi.application.runWriteAction
-import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
-import com.intellij.psi.codeStyle.CodeStyleManager
-import com.intellij.psi.codeStyle.LanguageCodeStyleSettingsProvider
-import com.intellij.ui.EditorTextField
 import org.intellij.lang.annotations.Language
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.iam.IamClient
 import software.aws.toolkits.jetbrains.services.lambda.upload.IamRole
+import software.aws.toolkits.jetbrains.utils.ui.formatAndSet
 import software.aws.toolkits.resources.message
 import java.awt.Component
 import javax.swing.JComponent
@@ -37,30 +33,10 @@ class CreateIamRoleDialog(
         title = message("iam.create.role.title")
         setOKButtonText(message("iam.create.role.create"))
 
-        formatDocument(defaultPolicyDocument, view.policyDocument)
-        formatDocument(defaultAssumeRolePolicyDocument, view.assumeRolePolicyDocument)
+        view.policyDocument.formatAndSet(defaultPolicyDocument, JsonLanguage.INSTANCE)
+        view.assumeRolePolicyDocument.formatAndSet(defaultAssumeRolePolicyDocument, JsonLanguage.INSTANCE)
 
         init()
-    }
-
-    private fun formatDocument(jsonDocument: String, editor: EditorTextField) {
-        // Initial docs can't be undo'ed
-        CommandProcessor.getInstance().runUndoTransparentAction {
-            runWriteAction {
-                val formatted =
-                    LanguageCodeStyleSettingsProvider.createFileFromText(
-                        JsonLanguage.INSTANCE,
-                        project,
-                        jsonDocument
-                    )?.let {
-                        CodeStyleManager.getInstance(project).reformat(it)
-                        it.text
-                    } ?: jsonDocument
-
-                val document = editor.document
-                document.replaceString(0, document.textLength, formatted)
-            }
-        }
     }
 
     override fun createCenterPanel(): JComponent? {
