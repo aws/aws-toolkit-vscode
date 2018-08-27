@@ -9,6 +9,7 @@ buildscript {
         }
     }
     dependencies {
+        classpath "com.atlassian.commonmark:commonmark:0.11.0"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
         classpath "org.jetbrains.dokka:dokka-gradle-plugin:$dokkaVersion"
         classpath "gradle.plugin.org.jetbrains.intellij.plugins:gradle-intellij-plugin:$ideaPluginVersion"
@@ -143,6 +144,7 @@ wrapper {
 }
 
 apply plugin: 'org.jetbrains.intellij'
+apply plugin: ChangeLogPlugin
 
 intellij {
     version "IC-" + ideaVersion

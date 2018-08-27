@@ -1,0 +1,46 @@
+buildscript {
+
+    def props = new Properties()
+    file("${project.projectDir.parent}/gradle.properties").withInputStream {
+        props.load(it)
+    }
+
+    ext.kotlinVersion = props.get("kotlinVersion")
+    ext.jacksonVersion = props.get("jacksonVersion")
+    ext.assertjVersion = props.get("assertjVersion")
+    ext.junitVersion = props.get("junitVersion")
+
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
+    }
+}
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+apply plugin: 'kotlin'
+
+sourceSets {
+    main.java.srcDir 'src'
+    test.java.srcDir 'tst'
+}
+
+dependencies {
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+    compile "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    compile "org.eclipse.jgit:org.eclipse.jgit:5.0.2.201807311906-r"
+
+    testCompile "org.assertj:assertj-core:$assertjVersion"
+    testCompile "junit:junit:$junitVersion"
+    testCompile "com.nhaarman.mockitokotlin2:mockito-kotlin:2.0.0-RC1"
+}
