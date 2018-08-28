@@ -1,7 +1,7 @@
 'use strict';
 
 import { TreeItem, TreeItemCollapsibleState } from 'vscode';
-import { AWSTreeNodeBase } from './awsTreeNodeBase';
+import { AWSTreeNodeBase } from '../treeview/awsTreeNodeBase';
 
 export abstract class AWSRegionTreeNode extends AWSTreeNodeBase {
     public readonly contextValue: string = 'awsRegion';

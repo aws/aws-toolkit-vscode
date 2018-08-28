@@ -1,9 +1,9 @@
 'use strict';
 
 import path = require('path');
-import { ResourceFetcher } from "./resourceFetcher";
-import { endpointsFileUrl } from './constants';
-import { ext } from "./extensionGlobals";
+import { ResourceFetcher } from "../resourceFetcher";
+import { endpointsFileUrl } from '../constants';
+import { ext } from "../extensionGlobals";
 
 export class RegionInfo {
 

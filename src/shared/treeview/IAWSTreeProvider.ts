@@ -1,6 +1,6 @@
 'use strict';
 
-import { AWSContext } from "./awsContext";
+import { AWSContext } from "../awsContext";
 
 export interface IAWSTreeProvider {
     viewProviderId: string;

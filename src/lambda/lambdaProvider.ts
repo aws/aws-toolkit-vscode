@@ -4,8 +4,8 @@ import * as nls from 'vscode-nls';
 let localize = nls.loadMessageBundle();
 
 import * as vscode from 'vscode';
-import { AWSTreeNodeBase } from '../shared/awsTreeNodeBase';
-import { IRefreshableAWSTreeProvider } from '../shared/IAWSTreeProvider';
+import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase';
+import { IRefreshableAWSTreeProvider } from '../shared/treeview/IAWSTreeProvider';
 import { FunctionNode } from './explorer/functionNode';
 import { getLambdaPolicy } from './commands/getLambdaPolicy';
 import { invokeLambda } from './commands/invokeLambda';
@@ -14,7 +14,7 @@ import { deployLambda }from './commands/deployLambda';
 import { getLambdaConfig } from './commands/getLambdaConfig';
 import { AWSContext } from '../shared/awsContext';
 import { ext } from '../shared/extensionGlobals';
-import { AWSCommandTreeNode } from '../shared/awsCommandTreeNode';
+import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode';
 import { RegionNodes } from './explorer/regionNodes';
 
 export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>, IRefreshableAWSTreeProvider {

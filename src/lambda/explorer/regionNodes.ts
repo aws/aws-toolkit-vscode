@@ -3,8 +3,8 @@
 import * as nls from 'vscode-nls';
 let localize = nls.loadMessageBundle();
 
-import { AWSRegionTreeNode } from '../../shared/awsRegionTreeNode';
-import { AWSTreeNodeBase } from '../../shared/awsTreeNodeBase';
+import { AWSRegionTreeNode } from '../../shared/treeview/awsRegionTreeNode';
+import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase';
 import { getLambdaFunctionsForRegion } from '../utils';
 import { NoFunctionsNode } from './noFunctionsNode';
 

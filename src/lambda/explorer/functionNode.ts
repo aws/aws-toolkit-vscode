@@ -2,7 +2,7 @@
 
 import { TreeItem, Uri, ThemeIcon } from 'vscode';
 import * as path from 'path';
-import { AWSTreeNodeBase } from '../../shared/awsTreeNodeBase';
+import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase';
 import Lambda = require('aws-sdk/clients/lambda');
 
 export class FunctionNode extends AWSTreeNodeBase implements TreeItem {

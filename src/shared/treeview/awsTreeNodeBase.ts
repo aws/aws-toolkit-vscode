@@ -1,7 +1,7 @@
 'use strict';
 
 import { Command, Disposable, TreeItem } from 'vscode';
-import { AWSContext } from './awsContext';
+import { AWSContext } from '../awsContext';
 
 export abstract class AWSTreeNodeBase extends Disposable {
 
