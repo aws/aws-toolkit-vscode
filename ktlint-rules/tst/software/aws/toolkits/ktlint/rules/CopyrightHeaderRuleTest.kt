@@ -1,0 +1,41 @@
+// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+package software.aws.toolkits.ktlint.rules
+
+import com.github.shyiko.ktlint.core.LintError
+import com.github.shyiko.ktlint.test.lint
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.Test
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
+
+class CopyrightHeaderRuleTest {
+    private val rule = CopyrightHeaderRule(Clock.fixed(Instant.EPOCH, ZoneOffset.UTC))
+
+    @Test
+    fun noHeaderPresent() {
+        assertThat(
+            rule.lint("""
+        import a.b.c
+        """.trimIndent()
+            )
+        ).containsExactly(
+            LintError(1, 1, "copyright-header", "Missing or incorrect file header")
+        )
+    }
+
+    @Test
+    fun headerPresent() {
+        assertThat(
+            rule.lint("""
+        // Copyright 1970 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+        // SPDX-License-Identifier: Apache-2.0
+
+        import a.b.c
+        """.trimIndent()
+            )
+        ).isEmpty()
+    }
+}

@@ -211,4 +211,5 @@ dependencies {
     compile project(':jetbrains-ultimate')
 
     ktlint "com.github.shyiko:ktlint:$ktlintVersion"
+    ktlint project(":ktlint-rules")
 }
