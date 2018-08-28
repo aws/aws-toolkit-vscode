@@ -9,10 +9,12 @@ import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import toolkits.gradle.ChangeLogGenerator
+import toolkits.gradle.ChangeLogWriter
 import toolkits.gradle.ChangeType
 import toolkits.gradle.Entry
 import toolkits.gradle.GitStager
 import toolkits.gradle.GithubWriter
+import toolkits.gradle.JetBrainsWriter
 import toolkits.gradle.MAPPER
 import toolkits.gradle.ReleaseCreator
 import java.io.Console
@@ -24,10 +26,10 @@ import java.util.UUID
 
 class ChangeLogPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        project.extensions.create(NAME, ChangeLogPluginExtension::class.java, project)
+        project.extensions.create(NAME, ChangeLogPluginExtension::class.java)
 
-        project.tasks.create("generateChangeLog", GenerateGitHubChangeLog::class.java).apply {
-            description = "Generates GitHub CHANGELOG file from release entries"
+        project.tasks.create("generateChangeLog", GenerateChangeLog::class.java).apply {
+            description = "Generates CHANGELOG file from release entries"
         }
 
         project.tasks.create("createRelease", CreateRelease::class.java).apply {
@@ -54,19 +56,23 @@ class ChangeLogPlugin : Plugin<Project> {
     }
 }
 
-open class ChangeLogPluginExtension(project: Project) {
-    var changesDirectory: File = File(project.relativePath(".changes"))
-    var githubChangeLogFile: File = File(project.relativePath("CHANGELOG.md"))
-    var nextReleaseDirectory: File = File(changesDirectory, "next-release")
-    var releaseVersion: String = project.version as String
+open class ChangeLogPluginExtension {
+    var changesDirectory: File? = null
+    var nextReleaseDirectory: File? = null
+    var releaseVersion: String? = null
     var releaseDate: String? = null
 }
 
 abstract class ChangeLogTask : DefaultTask() {
     protected val git = GitStager.create(project.rootDir)
 
+    var changesDirectory = configuration()?.changesDirectory ?: File(project.relativePath(".changes"))
+    var nextReleaseDirectory: File = configuration()?.nextReleaseDirectory ?: File(changesDirectory, "next-release")
+    var releaseVersion: String = configuration()?.releaseVersion ?: project.version as String
+    var releaseDate: String? = configuration()?.releaseDate
+
     @Input
-    protected fun configuration(): ChangeLogPluginExtension = project.extensions.findByName(NAME) as ChangeLogPluginExtension
+    protected fun configuration(): ChangeLogPluginExtension? = project.extensions.findByName(NAME) as? ChangeLogPluginExtension?
 }
 
 open class NewChange : ChangeLogTask() {
@@ -118,7 +124,7 @@ open class NewChange : ChangeLogTask() {
     }
 
     private fun newFile(changeType: ChangeType): File =
-        File(configuration().nextReleaseDirectory, "${changeType.name.toLowerCase()}-${UUID.randomUUID()}.json").apply {
+        File(nextReleaseDirectory, "${changeType.name.toLowerCase()}-${UUID.randomUUID()}.json").apply {
             parentFile?.mkdirs()
             createNewFile()
         }
@@ -127,46 +133,76 @@ open class NewChange : ChangeLogTask() {
 open class CreateRelease : ChangeLogTask() {
 
     @InputFiles
-    fun nextReleaseEntries(): List<File> = configuration().nextReleaseDirectory.jsonFiles()
+    fun nextReleaseEntries(): List<File> = nextReleaseDirectory.jsonFiles()
 
     @OutputFile
-    fun releaseEntry(): File = File(configuration().changesDirectory, "${configuration().releaseVersion}.json")
+    fun releaseEntry(): File = File(changesDirectory, "$releaseVersion.json")
 
     @TaskAction
     fun create() {
-        val releaseDate = configuration().releaseDate?.let { DateTimeFormatter.ISO_DATE.parse(it).let { LocalDate.from(it) } } ?: LocalDate.now()
+        val releaseDate = releaseDate?.let { DateTimeFormatter.ISO_DATE.parse(it).let { LocalDate.from(it) } } ?: LocalDate.now()
         val creator = ReleaseCreator(nextReleaseEntries(), releaseEntry())
-        creator.create(configuration().releaseVersion, releaseDate)
+        creator.create(releaseVersion, releaseDate)
         if (git != null) {
             git.stage(releaseEntry())
-            git.stage(configuration().nextReleaseDirectory)
+            git.stage(nextReleaseDirectory)
         }
     }
 }
 
-open class GenerateGitHubChangeLog : ChangeLogTask() {
+open class GenerateChangeLog : ChangeLogTask() {
 
-    var includeUnreleased = true
+    var includeUnreleased = project.hasProperty("includeUnreleased")
+    var generateGithub = true
+    var githubChangeLogFile: File = File(project.relativePath("CHANGELOG.md"))
+    var generateJetbrains = true
+    var issuesUrl: String? = null
+    var jetbrainsChangeNotesFile = File("${project.buildDir}/resources/META-INF/change-notes.xml")
 
     @InputFiles
-    fun nextReleaseEntries(): List<File> = if (includeUnreleased) configuration().nextReleaseDirectory.jsonFiles() else emptyList()
+    fun unreleasedEntries(): List<File> = if (includeUnreleased) nextReleaseDirectory.jsonFiles() else emptyList()
 
     @InputFiles
-    fun releaseEntries(): List<File> = configuration().changesDirectory.jsonFiles()
+    fun releaseEntries(): List<File> = changesDirectory.jsonFiles()
 
     @OutputFile
-    fun githubChangeLogFile(): File = configuration().githubChangeLogFile
+    fun githubChangeLogFile(): File? = if (generateGithub) githubChangeLogFile else null
+
+    @OutputFile
+    fun jetbrainsChangeNotesFile(): File? = if (generateJetbrains) {
+        jetbrainsChangeNotesFile
+    } else {
+        null
+    }
 
     @TaskAction
     fun generate() {
-        val changeLog = githubChangeLogFile().apply { createNewFile() }.toPath()
-        val writer = ChangeLogGenerator(GithubWriter(changeLog))
-        if (includeUnreleased) {
-            writer.unreleased(nextReleaseEntries().map { it.toPath() })
+        val writer = ChangeLogGenerator(*createWriters())
+        if (includeUnreleased && unreleasedEntries().isNotEmpty()) {
+            writer.unreleased(unreleasedEntries().map { it.toPath() })
         }
         writer.generate(releaseEntries().map { it.toPath() })
         writer.flush()
-        git?.stage(githubChangeLogFile())
+        val githubFile = githubChangeLogFile()
+        if (githubFile != null) {
+            git?.stage(githubFile)
+        }
+    }
+
+    private fun createWriters(): Array<out ChangeLogWriter> {
+        val writers = mutableListOf<ChangeLogWriter>()
+        val githubFile = githubChangeLogFile()
+        if (githubFile != null) {
+            val changeLog = githubFile.apply { createNewFile() }.toPath()
+            writers.add(GithubWriter(changeLog))
+        }
+        val changeNotesFile = jetbrainsChangeNotesFile()
+        if (changeNotesFile != null) {
+            changeNotesFile.parentFile.mkdirs()
+            changeNotesFile.createNewFile()
+            writers.add(JetBrainsWriter(changeNotesFile, issuesUrl))
+        }
+        return writers.toTypedArray()
     }
 }
 

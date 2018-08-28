@@ -18,7 +18,7 @@ class GithubWriterTest {
         val sut = GithubWriter(file.toPath())
 
         sut.write(ReleaseEntry(LocalDate.of(2017, 2, 1), "2.0.0-preview-3", listOf(Entry(ChangeType.FEATURE, "Third feature"))))
-        sut.write(ReleaseEntry(LocalDate.of(2017, 1, 3), "2.0.0-preview-2", listOf(Entry(ChangeType.BUGFIX, "Some bugfix"), Entry(ChangeType.FEATURE, "Another feature"))))
+        sut.write(ReleaseEntry(LocalDate.of(2017, 1, 3), "2.0.0-preview-2", listOf(Entry(ChangeType.FEATURE, "Another feature"), Entry(ChangeType.BUGFIX, "Some bugfix"))))
         sut.flush()
 
         assertThat(file.readText().trim()).isEqualToIgnoringWhitespace("""

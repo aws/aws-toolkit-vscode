@@ -29,13 +29,22 @@ Contributions via pull requests are much appreciated. Before sending us a pull r
 
 To send us a pull request, please:
 
-1. Fork the repository.
+1. Fork the repository
 2. Modify the source; please focus on the specific change you are contributing. *(note: all changes must have associated automated tests)*
-3. Ensure local tests pass by running `./gradlew check`
-4. Commit to your fork using clear commit messages, referencing the Issue # if relevant.
-5. Send us a pull request by completing the pull-request template.
-6. Pay attention to any automated CodeBuild/TravisCI failures reported in the pull request.
-7. Stay involved in the conversation.
+3. Ensure local tests pass by running:
+   
+   ```./gradlew check```
+   
+4. Generate a change log entry for your change using 
+
+   ```./gradlew newChange --no-daemon``` 
+   
+   and following the prompts. Change log entries should describe the change
+   succinctly and may include Git-Flavored Markdown ([GFM](https://github.github.com/gfm/)). Reference the Github Issue # if relevant.
+5. Commit to your fork using clear commit messages. Again, reference the Issue # if relevant.
+6. Send us a pull request by completing the pull-request template.
+7. Pay attention to any automated build failures reported in the pull request.
+8. Stay involved in the conversation.
 
 GitHub provides additional documentation on [forking a repository](https://help.github.com/articles/fork-a-repo/) and 
 [creating a pull request](https://help.github.com/articles/creating-a-pull-request/).

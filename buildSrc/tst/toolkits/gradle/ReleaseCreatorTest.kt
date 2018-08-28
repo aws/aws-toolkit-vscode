@@ -52,11 +52,11 @@ class ReleaseCreatorTest {
               "date" : "2018-08-27",
               "version" : "2.0.0",
               "entries" : [ {
-                "type" : "bugfix",
-                "description" : "Some bugfix"
-              }, {
                 "type" : "feature",
                 "description" : "Some feature"
+              }, {
+                "type" : "bugfix",
+                "description" : "Some bugfix"
               } ]
             }
         """.trimIndent()

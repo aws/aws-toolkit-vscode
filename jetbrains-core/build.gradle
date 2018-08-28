@@ -19,11 +19,19 @@ task testJar (type: Jar) {
     from sourceSets.test.output
 }
 
+task pluginChangeLog(type: GenerateChangeLog) {
+    changesDirectory = project.parent.file(".changes")
+    includeUnreleased = true
+    generateGithub = false
+    issuesUrl = "https://github.com/aws/aws-toolkit-jetbrains/issues"
+    jetbrainsChangeNotesFile = project.file("$buildDir/resources/main/META-INF/change-notes.xml")
+}
+
 processResources {
     doFirst {
         from project(":jvm-lambda-invoker").configurations.getByName("shadow").artifacts.files.files
     }
-}.dependsOn(":jvm-lambda-invoker:shadowJar")
+}.dependsOn(":jvm-lambda-invoker:shadowJar", pluginChangeLog)
 
 artifacts {
     testArtifacts testJar
