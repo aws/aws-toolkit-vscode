@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Ability to browse, open, invoke and delete AWS Lambda's by region for a given account"
+}

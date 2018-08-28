@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Ability to invoke AWS Lambda java functions locally, including step-through debug"
+}
