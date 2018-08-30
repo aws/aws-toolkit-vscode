@@ -68,7 +68,7 @@
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.MockResourceCache"/>
         <toolWindow id="AWS Explorer" anchor="right"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
-                    icon="AwsIcons.Logos.AWS_CLOUD"/>
+                    icon="AwsIcons.Logos.AWS"/>
 
         <fileBasedIndex implementation="software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerIndex"/>
         <codeInsight.lineMarkerProvider language="" implementationClass="software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker"/>
