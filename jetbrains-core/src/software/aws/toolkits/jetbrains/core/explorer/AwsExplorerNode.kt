@@ -32,7 +32,7 @@ abstract class AwsExplorerNode<T>(project: Project, value: T, private val awsIco
 }
 
 class AwsExplorerRootNode(project: Project) :
-        AwsExplorerNode<String>(project, "ROOT", AwsIcons.Logos.AWS_CLOUD) {
+        AwsExplorerNode<String>(project, "ROOT", AwsIcons.Logos.AWS) {
 
     private val regionProvider = AwsRegionProvider.getInstance()
     private val settings = ProjectAccountSettingsManager.getInstance(project)
@@ -88,7 +88,7 @@ abstract class AwsExplorerResourceNode<T>(
     abstract fun resourceType(): String
 }
 
-class AwsTruncatedResultNode(private val parentNode: AwsExplorerServiceRootNode, val paginationToken: String) :
+class AwsTruncatedResultNode(private val parentNode: AwsExplorerServiceRootNode, private val paginationToken: String) :
         AwsExplorerNode<String>(parentNode.project!!, MESSAGE, null) {
 
     override fun getChildren(): Collection<AbstractTreeNode<Any>> {

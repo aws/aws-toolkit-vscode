@@ -13,7 +13,7 @@ import javax.swing.Icon
  */
 object AwsIcons {
     object Logos {
-        @JvmField val AWS_CLOUD = IconLoader.getIcon("/icons/logos/AWSCloud.svg") // 16x16
+        @JvmField val AWS = IconLoader.getIcon("/icons/logos/AWS.svg") // 16x16
         @JvmField val IAM_LARGE = IconLoader.getIcon("/icons/logos/IAM_large.svg") // 646x64
         @JvmField val LAMBDA = IconLoader.getIcon("/icons/logos/Lambda.svg") // 16x16
         @JvmField val S3 = IconLoader.getIcon("/icons/logos/S3.svg") // 16x16
