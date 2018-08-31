@@ -14,7 +14,7 @@ import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 
 abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>> : SingleResourceNodeAction<T>() {
-    final override fun actionPerformed(selected: T, e: AnActionEvent?) {
+    final override fun actionPerformed(selected: T, e: AnActionEvent) {
         val resourceName = selected.toString()
         val resourceType = selected.resourceType()
         ApplicationManager.getApplication().invokeLater {

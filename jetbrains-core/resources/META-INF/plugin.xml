@@ -82,7 +82,10 @@
     </extensions>
 
     <actions>
-        <group id="aws.toolkit.explorer.lambda.function" popup="true" compact="true">
+        <group id="aws.toolkit.explorer.lambda.function" popup="true" compact="false">
+            <action id="lambda.function.gotohandler"
+                    class="software.aws.toolkits.jetbrains.services.lambda.actions.GoToHandlerAction"/>
+            <separator/>
             <action id="lambda.function.delete"
                     class="software.aws.toolkits.jetbrains.services.lambda.DeleteFunctionAction"
                     text="Delete Function"

@@ -21,7 +21,7 @@ abstract class SingleResourceNodeAction<in T : AwsExplorerResourceNode<*>> : Res
      * @see AnAction.update
      * @see ResourceNodeAction.update
      */
-    open fun update(selected: T, e: AnActionEvent?) {}
+    open fun update(selected: T, e: AnActionEvent) {}
 
     /**
      * If only a single item is selected [actionPerformed] will be invoked when the action is performed.
@@ -29,14 +29,14 @@ abstract class SingleResourceNodeAction<in T : AwsExplorerResourceNode<*>> : Res
      * @see AnAction.actionPerformed
      * @see ResourceNodeAction.actionPerformed
      */
-    abstract fun actionPerformed(selected: T, e: AnActionEvent?)
+    abstract fun actionPerformed(selected: T, e: AnActionEvent)
 
-    final override fun update(selected: List<T>, e: AnActionEvent?) {
-        e?.presentation?.isEnabled = selected.size == 1
+    final override fun update(selected: List<T>, e: AnActionEvent) {
+        e.presentation.isEnabled = selected.size == 1
         selected.singleOrNull()?.run { update(this, e) }
     }
 
-    final override fun actionPerformed(selected: List<T>, e: AnActionEvent?) {
+    final override fun actionPerformed(selected: List<T>, e: AnActionEvent) {
         selected.singleOrNull()?.run { actionPerformed(this, e) }
     }
 }
@@ -51,21 +51,25 @@ abstract class ResourceNodeAction<in T : AwsExplorerResourceNode<*>> : AnAction(
      *
      * @see AnAction.update
      */
-    open fun update(selected: List<T>, e: AnActionEvent?) {}
+    open fun update(selected: List<T>, e: AnActionEvent) {}
 
     /**
      * Invoked when the action is performed with the selected items of type [T].
      *
      * @see AnAction.actionPerformed
      */
-    abstract fun actionPerformed(selected: List<T>, e: AnActionEvent?)
+    abstract fun actionPerformed(selected: List<T>, e: AnActionEvent)
 
     final override fun actionPerformed(e: AnActionEvent?) {
-        actionPerformed(selectedNodes(e), e)
+        e?.let {
+            actionPerformed(selectedNodes(e), e)
+        }
     }
 
     final override fun update(e: AnActionEvent?) {
-        update(selectedNodes(e), e)
+        e?.let {
+            update(selectedNodes(e), e)
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
