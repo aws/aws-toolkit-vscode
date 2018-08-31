@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.lambda
 import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
+import com.intellij.psi.NavigatablePsiElement
 import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
@@ -19,7 +20,8 @@ import software.aws.toolkits.resources.message
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
-class LambdaServiceNode(project: Project) : AwsExplorerServiceRootNode(project, message("lambda.service_name"), AwsIcons.Logos.LAMBDA) {
+class LambdaServiceNode(project: Project) :
+    AwsExplorerServiceRootNode(project, message("lambda.service_name"), AwsIcons.Logos.LAMBDA) {
     override fun serviceName() = LambdaClient.SERVICE_NAME
 
     private val client: LambdaClient = AwsClientManager.getInstance(project).getClient()
@@ -30,7 +32,7 @@ class LambdaServiceNode(project: Project) : AwsExplorerServiceRootNode(project, 
 
         val response = client.listFunctions(request.build())
         val resources: MutableList<AwsExplorerNode<*>> =
-                response.functions().map { mapResourceToNode(it) }.toMutableList()
+            response.functions().map { mapResourceToNode(it) }.toMutableList()
         response.nextMarker()?.let {
             resources.add(AwsTruncatedResultNode(this, it))
         }
@@ -38,21 +40,37 @@ class LambdaServiceNode(project: Project) : AwsExplorerServiceRootNode(project, 
         return resources
     }
 
-    private fun mapResourceToNode(resource: FunctionConfiguration) = LambdaFunctionNode(project!!, client, this, resource)
+    private fun mapResourceToNode(resource: FunctionConfiguration) =
+        LambdaFunctionNode(project!!, client, this, resource)
 }
 
-class LambdaFunctionNode(project: Project, val client: LambdaClient, serviceNode: LambdaServiceNode, private val function: FunctionConfiguration) :
-        AwsExplorerResourceNode<FunctionConfiguration>(project, serviceNode, function, AwsIcons.Resources.LAMBDA_FUNCTION) {
-
+class LambdaFunctionNode(
+    project: Project,
+    val client: LambdaClient,
+    serviceNode: LambdaServiceNode,
+    functionConfiguration: FunctionConfiguration
+) : AwsExplorerResourceNode<FunctionConfiguration>(project, serviceNode, functionConfiguration, AwsIcons.Resources.LAMBDA_FUNCTION) {
     private val editorManager = FileEditorManager.getInstance(project)
+    private val function = functionConfiguration.toDataClass(client)
 
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
+
     override fun onDoubleClick(model: DefaultTreeModel, selectedElement: DefaultMutableTreeNode) {
-        val lambdaVirtualFile = LambdaVirtualFile(function.toDataClass(client))
+        val lambdaVirtualFile = LambdaVirtualFile(function)
         editorManager.openFile(lambdaVirtualFile, true)
     }
 
     override fun resourceType(): String = "function"
+
     override fun toString(): String = functionName()
-    fun functionName(): String = function.functionName()
+
+    fun functionName(): String = function.name
+
+    fun handlerPsi(): Array<NavigatablePsiElement> {
+        return Lambda.findPsiElementsForHandler(
+            super.getProject()!!,
+            function.runtime,
+            function.handler
+        )
+    }
 }
