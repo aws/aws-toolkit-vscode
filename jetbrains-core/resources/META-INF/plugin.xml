@@ -17,7 +17,10 @@
     <depends optional="true" config-file="ext-python.xml">com.intellij.modules.python</depends>
     <depends optional="true" config-file="ext-go.xml">org.jetbrains.plugins.go</depends>
 
-    <xi:include href="/META-INF/change-notes.xml" xpointer="xpointer(/idea-plugin/*)"/>
+    <xi:include href="/META-INF/change-notes.xml" xpointer="xpointer(/idea-plugin/*)">
+        <xi:fallback/>
+    </xi:include>
+
 
     <extensionPoints>
         <extensionPoint qualifiedName="aws.toolkit.credentialProviderFactory"
