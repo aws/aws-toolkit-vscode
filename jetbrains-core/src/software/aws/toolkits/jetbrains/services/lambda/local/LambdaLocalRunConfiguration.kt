@@ -212,7 +212,8 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaLoca
                 ?.let { RuntimeGroup.runtimeForSdk(it) }
                 ?.let { if (it in supported) it else null }
         view.runtime.populateValues(selected = selected) { supported }
-        view.regionSelector.regions = regionProvider.regions().values.toMutableList()
+
+        view.regionSelector.setRegions(regionProvider.regions().values.toMutableList())
         view.regionSelector.selectedRegion = ProjectAccountSettingsManager.getInstance(project).activeRegion
 
         view.inputFile.addBrowseFolderListener(null, null, project, FileChooserDescriptorFactory.createSingleFileDescriptor(JsonFileType.INSTANCE))

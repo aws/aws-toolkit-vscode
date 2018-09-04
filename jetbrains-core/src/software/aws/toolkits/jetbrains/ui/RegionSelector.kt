@@ -29,13 +29,9 @@ class RegionSelector : ComboBox<AwsRegion>() {
         setRenderer(Renderer()) // use the setter, not protected field
     }
 
-    var regions: List<AwsRegion>
-        get() {
-            return comboBoxModel.toList()
-        }
-        set(value) {
-            comboBoxModel.items = value
-        }
+    fun setRegions(regions: List<AwsRegion>) {
+        comboBoxModel.items = regions
+    }
 
     var selectedRegion: AwsRegion?
         get() {
@@ -46,8 +42,14 @@ class RegionSelector : ComboBox<AwsRegion>() {
         }
 
     private inner class Renderer : ListCellRendererWrapper<AwsRegion>() {
-        override fun customize(list: JList<*>?, value: AwsRegion, index: Int, selected: Boolean, hasFocus: Boolean) {
-            setText(value.displayName)
+        override fun customize(
+            list: JList<*>,
+            value: AwsRegion?,
+            index: Int,
+            selected: Boolean,
+            hasFocus: Boolean
+        ) {
+            setText(value?.displayName)
         }
     }
 }
