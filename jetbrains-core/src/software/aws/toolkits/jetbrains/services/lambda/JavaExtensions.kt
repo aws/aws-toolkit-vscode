@@ -255,10 +255,10 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
 
 class JavaLambdaLocalRunProvider : LambdaLocalRunProvider {
     override fun createRunProfileState(environment: ExecutionEnvironment, project: Project, settings: LambdaRunSettings): RunProfileState =
-        LambdaJavaCommandLineState(environment, project, settings)
+        LambdaJavaCommandLineState(environment, settings)
 }
 
-internal class LambdaJavaCommandLineState(environment: ExecutionEnvironment, private val project: Project, private val settings: LambdaRunSettings) :
+internal class LambdaJavaCommandLineState(environment: ExecutionEnvironment, private val settings: LambdaRunSettings) :
     JavaCommandLineState(environment) {
     override fun createJavaParameters(): JavaParameters {
         return JavaParameters().apply {
@@ -267,7 +267,8 @@ internal class LambdaJavaCommandLineState(environment: ExecutionEnvironment, pri
             classPath.addFirst(InvokerJar.jar)
             mainClass = InvokerJar.mainClass
             env = settings.environmentVariables
-            isPassParentEnvs = true
+            // Do not inherit the System env var, they should configure through run config just like Lambda does
+            isPassParentEnvs = false
             programParametersList.add("-h", settings.handler)
             settings.input?.run { programParametersList.add("-i", this) }
         }

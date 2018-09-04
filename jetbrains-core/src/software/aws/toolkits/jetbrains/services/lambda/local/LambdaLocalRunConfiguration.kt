@@ -46,7 +46,10 @@ import org.jdom.Element
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.lambda.LambdaSampleEventProvider
+import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider
+import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerIndex
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
@@ -140,11 +143,18 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
     }
 
     @TestOnly
-    fun configure(runtime: Runtime, handler: String, input: String? = null, envVars: MutableMap<String, String> = mutableMapOf()) {
+    fun configure(
+        runtime: Runtime,
+        handler: String,
+        input: String? = null,
+        envVars: MutableMap<String, String> = mutableMapOf(),
+        region: AwsRegion? = null
+    ) {
         settings.input = input
         settings.runtime = runtime.name
         settings.handler = handler
         settings.environmentVariables = envVars
+        settings.regionId = region?.id
     }
 
     @TestOnly
@@ -157,7 +167,8 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
         var handler: String? = null,
         var input: String? = null,
         var inputIsFile: Boolean = false,
-        var environmentVariables: MutableMap<String, String> = mutableMapOf()
+        var environmentVariables: MutableMap<String, String> = mutableMapOf(),
+        var regionId: String? = null
     ) {
         fun validateAndCreateImmutable(project: Project): LambdaRunSettings {
             val handler = handler ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
@@ -165,6 +176,7 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
             val element = findPsiElementsForHandler(project, runtime, handler).firstOrNull()
                 ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
             val inputValue = input
+            val regionId = regionId ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
 
             val inputText = if (inputIsFile && inputValue?.isNotEmpty() == true) {
                 try {
@@ -180,6 +192,9 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
                 inputValue
             }
 
+            environmentVariables["AWS_REGION"] = regionId
+            environmentVariables["AWS_DEFAULT_REGION"] = regionId
+
             return LambdaRunSettings(runtime, handler, inputText, environmentVariables, element)
         }
     }
@@ -188,6 +203,7 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
 class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaLocalRunConfiguration>() {
     private val view = LocalLambdaRunSettingsEditorPanel(project, HandlerCompletionProvider(project))
     private val eventProvider = LambdaSampleEventProvider(RemoteResourceResolverProvider.getInstance().get())
+    private val regionProvider = AwsRegionProvider.getInstance()
 
     init {
         val supported = LambdaLocalRunProvider.supportedRuntimeGroups.flatMap { it.runtimes }.map { it }.sorted()
@@ -196,6 +212,8 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaLoca
                 ?.let { RuntimeGroup.runtimeForSdk(it) }
                 ?.let { if (it in supported) it else null }
         view.runtime.populateValues(selected = selected) { supported }
+        view.regionSelector.regions = regionProvider.regions().values.toMutableList()
+        view.regionSelector.selectedRegion = ProjectAccountSettingsManager.getInstance(project).activeRegion
 
         view.inputFile.addBrowseFolderListener(null, null, project, FileChooserDescriptorFactory.createSingleFileDescriptor(JsonFileType.INSTANCE))
 
@@ -252,6 +270,7 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaLoca
         view.runtime.selectedItem = configuration.settings.runtime?.let { Runtime.valueOf(it) }
         view.handler.setText(configuration.settings.handler)
         view.environmentVariables.envVars = configuration.settings.environmentVariables
+        view.regionSelector.selectedRegion = regionProvider.lookupRegionById(configuration.settings.regionId)
         view.isUsingInputFile = configuration.settings.inputIsFile
         if (configuration.settings.inputIsFile) {
             view.inputFile.setText(configuration.settings.input)
@@ -267,6 +286,7 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaLoca
         configuration.settings.handler = view.handler.text
         configuration.settings.input = view.inputText.text
         configuration.settings.environmentVariables = view.environmentVariables.envVars.toMutableMap()
+        configuration.settings.regionId = view.regionSelector.selectedRegion?.id
         configuration.settings.inputIsFile = view.isUsingInputFile
         configuration.settings.input = if (view.isUsingInputFile) {
             view.inputFile.text.trim()
