@@ -26,6 +26,7 @@ import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.runInEdtAndWait
 import org.hamcrest.MatcherAssert.assertThat
+import org.hamcrest.Matchers.containsString
 import org.hamcrest.Matchers.equalTo
 import org.hamcrest.Matchers.equalToIgnoringWhiteSpace
 import org.hamcrest.Matchers.isEmptyString
@@ -36,6 +37,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.services.lambda.local.LambdaLocalRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.local.LambdaRunConfiguration
 import software.aws.toolkits.jetbrains.testutils.rules.HeavyJavaCodeInsightTestFixtureRule
@@ -72,8 +74,8 @@ class JavaLambdaLocalRunConfigurationTest {
 
         val executionFuture = CompletableFuture<Output>()
         runInEdtAndWait {
-            val executionEnvironment =
-                ExecutionEnvironmentBuilder.create(ExecutorRegistry.getInstance().getExecutorById("Run"), runConfiguration).build()
+            val executor = ExecutorRegistry.getInstance().getExecutorById("Run")
+            val executionEnvironment = ExecutionEnvironmentBuilder.create(executor, runConfiguration).build()
 
             executionEnvironment.runner.execute(executionEnvironment) {
                 it.processHandler?.addProcessListener(object : OutputListener() {
@@ -88,6 +90,38 @@ class JavaLambdaLocalRunConfigurationTest {
         val output = executionFuture.get(10, TimeUnit.SECONDS)
         assertThat(output.exitCode, equalTo(0))
         assertThat(output.stdout, equalToIgnoringWhiteSpace("HELLO!"))
+        assertThat(output.stderr, isEmptyString())
+    }
+
+    @Test
+    fun regionIsPassedIn() {
+        val fixture = projectRule.fixture
+        val module = fixture.addModule("main")
+        fixture.addClass(module, TEST_CLASS)
+
+        val runConfiguration = createRunConfiguration("com.example.UsefulUtils::printEnvVar")
+
+        compileModule(module)
+
+        val executionFuture = CompletableFuture<Output>()
+        runInEdtAndWait {
+            val executor = ExecutorRegistry.getInstance().getExecutorById("Run")
+            val executionEnvironment = ExecutionEnvironmentBuilder.create(executor, runConfiguration).build()
+
+            executionEnvironment.runner.execute(executionEnvironment) {
+                it.processHandler?.addProcessListener(object : OutputListener() {
+                    override fun processTerminated(event: ProcessEvent) {
+                        super.processTerminated(event)
+                        executionFuture.complete(this.output)
+                    }
+                })
+            }
+        }
+
+        val output = executionFuture.get(10, TimeUnit.SECONDS)
+        assertThat(output.exitCode, equalTo(0))
+        assertThat(output.stdout, containsString("AWS_REGION=us-east-1"))
+        assertThat(output.stdout, containsString("AWS_DEFAULT_REGION=us-east-1"))
         assertThat(output.stderr, isEmptyString())
     }
 
@@ -182,14 +216,19 @@ class JavaLambdaLocalRunConfigurationTest {
         }
     }
 
-    private fun createRunConfiguration(): LambdaLocalRunConfiguration {
+    private fun createRunConfiguration(handler: String = "com.example.UsefulUtils::upperCase"): LambdaLocalRunConfiguration {
         val runManager = RunManager.getInstance(projectRule.project)
         val factory = runManager.configurationFactories.filterIsInstance<LambdaRunConfiguration>().first()
         val runConfigurationAndSettings = runManager.createRunConfiguration("Test", factory.configurationFactories.first())
         val runConfiguration = runConfigurationAndSettings.configuration as LambdaLocalRunConfiguration
         runManager.addConfiguration(runConfigurationAndSettings)
 
-        runConfiguration.configure(handler = "com.example.UsefulUtils::upperCase", runtime = Runtime.JAVA8, input = "hello!")
+        runConfiguration.configure(
+            handler = handler,
+            runtime = Runtime.JAVA8,
+            input = "hello!",
+            region = AwsRegion("us-east-1", "N.Virginia")
+        )
 
         return runConfiguration
     }
@@ -236,6 +275,14 @@ class JavaLambdaLocalRunConfigurationTest {
 
             public class UsefulUtils {
                 private String randomField = "hello";
+
+                public static String printEnvVar(String ignored) {
+                    StringBuilder builder = new StringBuilder();
+                    System.getenv().forEach((k, v) -> {
+                        builder.append(k).append('=').append(v).append('\n');
+                    });
+                    return builder.toString();
+                }
 
                 public static String upperCase(String input) {
                     return input.toUpperCase();
