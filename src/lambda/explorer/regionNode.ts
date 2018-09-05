@@ -12,7 +12,7 @@ import { NoFunctionsNode } from './noFunctionsNode';
 // on expansion each region lists the functions the user has available
 // in that region. For regions with no deployed functions we output
 // a placeholder child.
-export class RegionNodes extends AWSRegionTreeNode {
+export class RegionNode extends AWSRegionTreeNode {
 
     constructor(regionCode:string, public regionName: string) {
         super(regionCode);

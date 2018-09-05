@@ -19,6 +19,7 @@ export abstract class AWSRegionTreeNode extends AWSTreeNodeBase {
     public getTreeItem(): TreeItem {
         const item = new TreeItem(this.getLabel(), TreeItemCollapsibleState.Expanded);
         item.tooltip = this.getTooltip();
+        item.contextValue = this.contextValue;
 
         return item;
     }
