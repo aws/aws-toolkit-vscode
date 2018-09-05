@@ -15,7 +15,7 @@ import { getLambdaConfig } from './commands/getLambdaConfig';
 import { AWSContext } from '../shared/awsContext';
 import { ext } from '../shared/extensionGlobals';
 import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode';
-import { RegionNodes } from './explorer/regionNodes';
+import { RegionNode } from './explorer/regionNode';
 
 export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>, IRefreshableAWSTreeProvider {
     private _onDidChangeTreeData: vscode.EventEmitter<FunctionNode | undefined> = new vscode.EventEmitter<FunctionNode | undefined>();
@@ -55,17 +55,17 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
             ext.awsContext.getExplorerRegions().then(regions => {
 
                 if (regions.length !== 0) {
-                    let regionNodes: RegionNodes[] = [];
+                    let regionNodes: RegionNode[] = [];
 
                     regions.forEach(r => {
-                        regionNodes.push(new RegionNodes(r, r));
+                        regionNodes.push(new RegionNode(r, r));
                     });
 
                     resolve(regionNodes);
                 } else {
                     resolve([
                         new AWSCommandTreeNode(localize('AWS.explorerNode.addRegion', 'Click to add a region to view functions...'),
-                                               'aws.addExplorerRegion',
+                                               'aws.showRegion',
                                                localize('AWS.explorerNode.addRegion.tooltip', 'Configure a region to show available functions'))
                     ]);
                 }

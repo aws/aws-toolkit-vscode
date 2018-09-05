@@ -11,6 +11,8 @@ import { AWSContext } from './shared/awsContext';
 import { SettingsConfiguration } from './shared/settingsConfiguration';
 import { AWSStatusBar } from './shared/statusBar';
 import { AWSContextCommands } from './shared/awsContextCommands';
+import { RegionNode } from './lambda/explorer/regionNode';
+import { safeGet } from './shared/extensionUtilities';
 
 export async function activate(context: vscode.ExtensionContext) {
 
@@ -25,8 +27,8 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('aws.login', async () => { await ext.awsContextCommands.onCommandLogin(); });
     vscode.commands.registerCommand('aws.logout', async () => { await ext.awsContextCommands.onCommandLogout(); });
 
-    vscode.commands.registerCommand('aws.addExplorerRegion', async () => { await ext.awsContextCommands.onCommandAddExplorerRegion(); });
-    vscode.commands.registerCommand('aws.removeExplorerRegion', async () => { await ext.awsContextCommands.onCommandRemoveExplorerRegion(); });
+    vscode.commands.registerCommand('aws.showRegion', async () => { await ext.awsContextCommands.onCommandShowRegion(); });
+    vscode.commands.registerCommand('aws.hideRegion', async (node?: RegionNode) => { await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode)); });
 
     const providers = [
         new LambdaProvider()

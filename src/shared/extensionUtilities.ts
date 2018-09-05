@@ -34,3 +34,27 @@ export class ExtensionUtilities {
         return text;
     }
 }
+
+/**
+ * A utility function that takes a possibly null value and applies
+ * the given function to it, returning the result of the function or null
+ * 
+ * example usage:
+ * 
+ * function blah(value?: SomeObject) {
+ *  nullSafeGet(value, x => x.propertyOfSomeObject)
+ * }
+ * 
+ * @param obj the object to attempt the get function on
+ * @param getFn the function to use to determine the mapping value
+ */
+export function safeGet<O, T>(obj: O | undefined, getFn: (x: O) => T): T | undefined {
+    if (obj) {
+        try {
+            return getFn(obj);
+        } catch (error) {
+            //ignore
+        }
+    }
+    return undefined;
+}

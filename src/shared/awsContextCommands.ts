@@ -14,37 +14,33 @@ export class AWSContextCommands {
         var newProfile = await this.promptForProfileName();
         if (newProfile) {
             ext.awsContext.setCredentialProfileName(newProfile);
-            ext.treesToRefreshOnContextChange.forEach(t => {
-                t.refresh(ext.awsContext);
-            });
+            this.refresh();
         }
     }
 
     public async onCommandLogout() {
         ext.awsContext.setCredentialProfileName();
-        ext.treesToRefreshOnContextChange.forEach(t => {
-            t.refresh(ext.awsContext);
-        });
+        this.refresh();
     }
 
-    public async onCommandAddExplorerRegion() {
+    public async onCommandShowRegion() {
         var newRegion = await this.promptForRegion();
         if (newRegion) {
             ext.awsContext.addExplorerRegion(newRegion);
-            ext.treesToRefreshOnContextChange.forEach(t => {
-                t.refresh(ext.awsContext);
-            });
+            this.refresh();
         }
     }
 
-    public async onCommandRemoveExplorerRegion() {
-        var region = await this.promptForRegion();
+    public async onCommandHideRegion(regionCode?: string) {
+        var region = regionCode || await this.promptForRegion();
         if (region) {
             ext.awsContext.removeExplorerRegion(region);
-            ext.treesToRefreshOnContextChange.forEach(t => {
-                t.refresh(ext.awsContext);
-            });
+            ext.treesToRefreshOnContextChange.forEach(t => t.refresh(ext.awsContext));
         }
+    }
+
+    private refresh() {
+        ext.treesToRefreshOnContextChange.forEach(t => t.refresh(ext.awsContext));
     }
 
     private async promptForProfileName(): Promise<string | undefined> {

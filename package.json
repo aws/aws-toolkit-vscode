@@ -13,8 +13,8 @@
     "activationEvents": [
         "onCommand:aws.login",
         "onCommand:aws.logout",
-        "onCommand:aws.addExplorerRegion",
-        "onCommand:aws.removeExplorerRegion",
+        "onCommand:aws.showRegion",
+        "onCommand:aws.hideRegion",
         "onView:lambda",
         "onCommand:aws.newLambda",
         "onCommand:aws.invokeLambda",
@@ -95,6 +95,11 @@
                     "command": "aws.getLambdaPolicy",
                     "when": "view == lambda && viewItem == awsLambdaFn",
                     "group": "0@4"
+                },
+                {
+                    "command": "aws.hideRegion",
+                    "group": "0@1",
+                    "when": "view == lambda && viewItem == awsRegion"
                 }
             ]
         },
@@ -110,13 +115,13 @@
                 "category": "AWS"
             },
             {
-                "command": "aws.addExplorerRegion",
-                "title": "%AWS.command.addExplorerRegion%",
+                "command": "aws.showRegion",
+                "title": "%AWS.command.showRegion%",
                 "category": "AWS"
             },
             {
-                "command": "aws.removeExplorerRegion",
-                "title": "%AWS.command.removeExplorerRegion%",
+                "command": "aws.hideRegion",
+                "title": "%AWS.command.hideRegion%",
                 "category": "AWS"
             },
             {
