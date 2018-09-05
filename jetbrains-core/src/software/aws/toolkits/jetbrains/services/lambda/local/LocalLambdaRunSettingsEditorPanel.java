@@ -21,6 +21,7 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import software.amazon.awssdk.services.lambda.model.Runtime;
 import software.aws.toolkits.core.lambda.LambdaSampleEvent;
+import software.aws.toolkits.jetbrains.ui.CredentialProviderSelector;
 import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField;
 import software.aws.toolkits.jetbrains.ui.RegionSelector;
 
@@ -35,6 +36,7 @@ public final class LocalLambdaRunSettingsEditorPanel {
     JRadioButton useInputText;
     TextFieldWithBrowseButton inputFile;
     RegionSelector regionSelector;
+    CredentialProviderSelector credentialSelector;
     ComboBox<LambdaSampleEvent> eventComboBox;
     SortedComboBoxModel<LambdaSampleEvent> eventComboBoxModel;
     private final Project project;
