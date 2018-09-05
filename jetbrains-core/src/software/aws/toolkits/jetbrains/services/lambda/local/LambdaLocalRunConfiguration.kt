@@ -44,10 +44,13 @@ import com.intellij.util.xmlb.XmlSerializer
 import icons.AwsIcons
 import org.jdom.Element
 import org.jetbrains.annotations.TestOnly
+import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.lambda.LambdaSampleEventProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider
+import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
@@ -168,7 +171,8 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
         var input: String? = null,
         var inputIsFile: Boolean = false,
         var environmentVariables: MutableMap<String, String> = mutableMapOf(),
-        var regionId: String? = null
+        var regionId: String? = null,
+        var credentialProviderId: String? = null
     ) {
         fun validateAndCreateImmutable(project: Project): LambdaRunSettings {
             val handler = handler ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
@@ -177,6 +181,7 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
                 ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
             val inputValue = input
             val regionId = regionId ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
+            val envVarsCopy = environmentVariables.toMutableMap()
 
             val inputText = if (inputIsFile && inputValue?.isNotEmpty() == true) {
                 try {
@@ -192,10 +197,31 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
                 inputValue
             }
 
-            environmentVariables["AWS_REGION"] = regionId
-            environmentVariables["AWS_DEFAULT_REGION"] = regionId
+            envVarsCopy["AWS_REGION"] = regionId
+            envVarsCopy["AWS_DEFAULT_REGION"] = regionId
 
-            return LambdaRunSettings(runtime, handler, inputText, environmentVariables, element)
+            credentialProviderId?.let {
+                try {
+                    val credentialProvider = CredentialManager.getInstance().getCredentialProvider(it)
+                    val awsCredentials = credentialProvider.resolveCredentials()
+
+                    envVarsCopy["AWS_ACCESS_KEY"] = awsCredentials.accessKeyId()
+                    envVarsCopy["AWS_ACCESS_KEY_ID"] = awsCredentials.accessKeyId()
+                    envVarsCopy["AWS_SECRET_KEY"] = awsCredentials.secretAccessKey()
+                    envVarsCopy["AWS_SECRET_ACCESS_KEY"] = awsCredentials.secretAccessKey()
+
+                    if (awsCredentials is AwsSessionCredentials) {
+                        envVarsCopy["AWS_SESSION_TOKEN"] = awsCredentials.sessionToken()
+                        envVarsCopy["AWS_SECURITY_TOKEN"] = awsCredentials.sessionToken()
+                    }
+                } catch (e: CredentialProviderNotFound) {
+                    throw RuntimeConfigurationError(message("lambda.run_configuration.credential_not_found_error", it))
+                } catch (e: Exception) {
+                    throw RuntimeConfigurationError(message("lambda.run_configuration.credential_error", e.message ?: "Unknown"))
+                }
+            }
+
+            return LambdaRunSettings(runtime, handler, inputText, envVarsCopy, element)
         }
     }
 }
@@ -204,6 +230,7 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaLoca
     private val view = LocalLambdaRunSettingsEditorPanel(project, HandlerCompletionProvider(project))
     private val eventProvider = LambdaSampleEventProvider(RemoteResourceResolverProvider.getInstance().get())
     private val regionProvider = AwsRegionProvider.getInstance()
+    private val credentialManager = CredentialManager.getInstance()
 
     init {
         val supported = LambdaLocalRunProvider.supportedRuntimeGroups.flatMap { it.runtimes }.map { it }.sorted()
@@ -215,6 +242,8 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaLoca
 
         view.regionSelector.setRegions(regionProvider.regions().values.toMutableList())
         view.regionSelector.selectedRegion = ProjectAccountSettingsManager.getInstance(project).activeRegion
+
+        view.credentialSelector.setCredentialsProviders(credentialManager.getCredentialProviders())
 
         view.inputFile.addBrowseFolderListener(null, null, project, FileChooserDescriptorFactory.createSingleFileDescriptor(JsonFileType.INSTANCE))
 
@@ -272,6 +301,17 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaLoca
         view.handler.setText(configuration.settings.handler)
         view.environmentVariables.envVars = configuration.settings.environmentVariables
         view.regionSelector.selectedRegion = regionProvider.lookupRegionById(configuration.settings.regionId)
+
+        configuration.settings.credentialProviderId?.let {
+            try {
+                view.credentialSelector.setSelectedInvalidCredentialsProvider(credentialManager.getCredentialProvider(it))
+            } catch (e: CredentialProviderNotFound) {
+                // Use the raw string here to not munge what the customer had, will also allow it to show the error
+                // that it could not be found
+                view.credentialSelector.setSelectedInvalidCredentialsProvider(it)
+            }
+        }
+
         view.isUsingInputFile = configuration.settings.inputIsFile
         if (configuration.settings.inputIsFile) {
             view.inputFile.setText(configuration.settings.input)
@@ -288,6 +328,7 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaLoca
         configuration.settings.input = view.inputText.text
         configuration.settings.environmentVariables = view.environmentVariables.envVars.toMutableMap()
         configuration.settings.regionId = view.regionSelector.selectedRegion?.id
+        configuration.settings.credentialProviderId = view.credentialSelector.getSelectedCredentialsProvider()
         configuration.settings.inputIsFile = view.isUsingInputFile
         configuration.settings.input = if (view.isUsingInputFile) {
             view.inputFile.text.trim()
