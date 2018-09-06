@@ -1,7 +1,7 @@
 // Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda.local
+package software.aws.toolkits.jetbrains.services.lambda.execution.local
 
 import com.intellij.codeInsight.completion.CompletionParameters
 import com.intellij.codeInsight.completion.CompletionResultSet
@@ -11,7 +11,6 @@ import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.execution.ExecutionException
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.ConfigurationFactory
-import com.intellij.execution.configurations.ConfigurationTypeBase
 import com.intellij.execution.configurations.LocatableConfigurationBase
 import com.intellij.execution.configurations.ModuleRunProfile
 import com.intellij.execution.configurations.RefactoringListenerProvider
@@ -19,20 +18,11 @@ import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.configurations.RunProfileState
 import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.execution.runners.ExecutionEnvironment
-import com.intellij.json.JsonFileType
-import com.intellij.json.JsonLanguage
-import com.intellij.openapi.application.ModalityState
-import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.extensions.ExtensionPointName
-import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
-import com.intellij.openapi.ui.ComponentWithBrowseButton
-import com.intellij.openapi.ui.TextComponentAccessor
-import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.LocalFileSystem
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
@@ -42,15 +32,12 @@ import com.intellij.util.indexing.FileBasedIndex
 import com.intellij.util.textCompletion.TextCompletionProvider
 import com.intellij.util.xmlb.XmlSerializer
 import com.intellij.util.xmlb.XmlSerializerUtil
-import icons.AwsIcons
 import org.jdom.Element
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
-import software.aws.toolkits.core.lambda.LambdaSampleEventProvider
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
@@ -59,26 +46,20 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerIndex
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPointObject
+import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
-import software.aws.toolkits.jetbrains.utils.ui.formatAndSet
 import software.aws.toolkits.jetbrains.utils.ui.populateValues
 import software.aws.toolkits.resources.message
 import java.nio.charset.StandardCharsets
-import javax.swing.JComboBox
 import javax.swing.JPanel
 
-class LambdaRunConfiguration :
-    ConfigurationTypeBase("aws.lambda", message("lambda.service_name"), message("lambda.run_configuration.description"), AwsIcons.Logos.LAMBDA) {
-    init {
-        addFactory(LambdaLocalRunConfigurationFactory(this))
-    }
-}
-
 class LambdaLocalRunConfigurationFactory(configuration: LambdaRunConfiguration) : ConfigurationFactory(configuration) {
-    override fun createTemplateConfiguration(project: Project): RunConfiguration = LambdaLocalRunConfiguration(project, this)
+    override fun createTemplateConfiguration(project: Project): RunConfiguration =
+        LambdaLocalRunConfiguration(project, this)
 }
 
-class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactory) : LocatableConfigurationBase(project, factory, "AWS Lambda"),
+class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactory) :
+    LocatableConfigurationBase(project, factory, "AWS Lambda"),
     ModuleRunProfile, RefactoringListenerProvider {
     internal var settings = PersistableLambdaRunSettings()
 
@@ -95,7 +76,7 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
             throw ExecutionException(e.message)
         }
         val provider = settings.runtime.runtimeGroup?.let { LambdaLocalRunProvider.getInstance(it) }
-            ?: throw ExecutionException("Unable to find run provider for ${settings.runtime}")
+                ?: throw ExecutionException("Unable to find run provider for ${settings.runtime}")
         return provider.createRunProfileState(environment, project, settings)
     }
 
@@ -181,13 +162,16 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
         var regionId: String? = null,
         var credentialProviderId: String? = null
     ) {
-        fun validateAndCreateImmutable(project: Project): LambdaRunSettings {
-            val handler = handler ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
-            val runtime = runtime?.let { Runtime.valueOf(it) } ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
+        fun validateAndCreateImmutable(project: Project): LambdaLocalRunSettings {
+            val handler =
+                handler ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
+            val runtime = runtime?.let { Runtime.valueOf(it) }
+                    ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
             val element = findPsiElementsForHandler(project, runtime, handler).firstOrNull()
-                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
+                    ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
             val inputValue = input
-            val regionId = regionId ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
+            val regionId =
+                regionId ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
             val envVarsCopy = environmentVariables.toMutableMap()
 
             val inputText = if (inputIsFile && inputValue?.isNotEmpty() == true) {
@@ -196,7 +180,12 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
                         .refreshAndFindFileByPath(inputValue)
                         ?.contentsToByteArray(false)
                         ?.toString(StandardCharsets.UTF_8)
-                            ?: throw RuntimeConfigurationError(message("lambda.run_configuration.input_file_error", inputValue))
+                            ?: throw RuntimeConfigurationError(
+                                message(
+                                    "lambda.run_configuration.input_file_error",
+                                    inputValue
+                                )
+                            )
                 } catch (e: Exception) {
                     throw RuntimeConfigurationError(message("lambda.run_configuration.input_file_error", inputValue))
                 }
@@ -224,18 +213,22 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
                 } catch (e: CredentialProviderNotFound) {
                     throw RuntimeConfigurationError(message("lambda.run_configuration.credential_not_found_error", it))
                 } catch (e: Exception) {
-                    throw RuntimeConfigurationError(message("lambda.run_configuration.credential_error", e.message ?: "Unknown"))
+                    throw RuntimeConfigurationError(
+                        message(
+                            "lambda.run_configuration.credential_error",
+                            e.message ?: "Unknown"
+                        )
+                    )
                 }
             }
 
-            return LambdaRunSettings(runtime, handler, inputText, envVarsCopy, element)
+            return LambdaLocalRunSettings(runtime, handler, inputText, envVarsCopy, element)
         }
     }
 }
 
 class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaLocalRunConfiguration>() {
     private val view = LocalLambdaRunSettingsEditorPanel(project, HandlerCompletionProvider(project))
-    private val eventProvider = LambdaSampleEventProvider(RemoteResourceResolverProvider.getInstance().get())
     private val regionProvider = AwsRegionProvider.getInstance()
     private val credentialManager = CredentialManager.getInstance()
 
@@ -251,56 +244,6 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaLoca
         view.regionSelector.selectedRegion = ProjectAccountSettingsManager.getInstance(project).activeRegion
 
         view.credentialSelector.setCredentialsProviders(credentialManager.getCredentialProviders())
-
-        view.inputFile.addBrowseFolderListener(null, null, project, FileChooserDescriptorFactory.createSingleFileDescriptor(JsonFileType.INSTANCE))
-
-        val actionListener = object : ComponentWithBrowseButton.BrowseFolderActionListener<JComboBox<*>>(
-            null,
-            null,
-            view.inputTemplates,
-            project,
-            FileChooserDescriptorFactory.createSingleFileDescriptor(JsonFileType.INSTANCE),
-            TextComponentAccessor.STRING_COMBOBOX_WHOLE_TEXT
-        ) {
-            override fun getInitialFile(): VirtualFile? {
-                val file = project.baseDir
-                if (file != null) {
-                    return file
-                }
-                return super.getInitialFile()
-            }
-
-            override fun onFileChosen(chosenFile: VirtualFile) {
-                view.eventComboBoxModel.selectedItem = null
-
-                val contents = chosenFile.contentsToByteArray(false).toString(StandardCharsets.UTF_8)
-                val cleanedUp = StringUtil.convertLineSeparators(contents)
-                if (chosenFile.extension == "json") {
-                    view.inputText.formatAndSet(cleanedUp, JsonLanguage.INSTANCE)
-                } else {
-                    view.inputText.text = cleanedUp
-                }
-            }
-        }
-        view.inputTemplates.addActionListener(actionListener)
-
-        eventProvider.get().thenAccept { events ->
-            runInEdt(ModalityState.any()) {
-                view.eventComboBoxModel.setAll(events)
-                view.eventComboBox.selectedItem = null
-            }
-        }
-
-        view.eventComboBox.addActionListener { _ ->
-            view.eventComboBoxModel.selectedItem?.let { event ->
-                event.content.thenApply { content ->
-                    val cleanedUp = StringUtil.convertLineSeparators(content)
-                    runInEdt(ModalityState.any()) {
-                        view.inputText.formatAndSet(cleanedUp, JsonLanguage.INSTANCE)
-                    }
-                }
-            }
-        }
     }
 
     override fun resetEditorFrom(configuration: LambdaLocalRunConfiguration) {
@@ -319,11 +262,11 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaLoca
             }
         }
 
-        view.isUsingInputFile = configuration.settings.inputIsFile
+        view.lambdaInput.isUsingFile = configuration.settings.inputIsFile
         if (configuration.settings.inputIsFile) {
-            view.inputFile.setText(configuration.settings.input)
+            view.lambdaInput.inputFile = configuration.settings.input
         } else {
-            view.inputText.setText(configuration.settings.input)
+            view.lambdaInput.inputText = configuration.settings.input
         }
     }
 
@@ -332,28 +275,29 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaLoca
     override fun applyEditorTo(configuration: LambdaLocalRunConfiguration) {
         configuration.settings.runtime = (view.runtime.selectedItem as? Runtime)?.name
         configuration.settings.handler = view.handler.text
-        configuration.settings.input = view.inputText.text
         configuration.settings.environmentVariables = view.environmentVariables.envVars.toMutableMap()
         configuration.settings.regionId = view.regionSelector.selectedRegion?.id
         configuration.settings.credentialProviderId = view.credentialSelector.getSelectedCredentialsProvider()
-        configuration.settings.inputIsFile = view.isUsingInputFile
-        configuration.settings.input = if (view.isUsingInputFile) {
-            view.inputFile.text.trim()
+        configuration.settings.inputIsFile = view.lambdaInput.isUsingFile
+        configuration.settings.input = if (view.lambdaInput.isUsingFile) {
+            view.lambdaInput.inputFile
         } else {
-            view.inputText.text.trim()
+            view.lambdaInput.inputText
         }
     }
 }
 
 class HandlerCompletionProvider(private val project: Project) : TextCompletionProvider {
-    override fun applyPrefixMatcher(result: CompletionResultSet, prefix: String): CompletionResultSet = result.withPrefixMatcher(PlainPrefixMatcher(prefix))
+    override fun applyPrefixMatcher(result: CompletionResultSet, prefix: String): CompletionResultSet =
+        result.withPrefixMatcher(PlainPrefixMatcher(prefix))
 
     override fun getAdvertisement(): String? = null
 
     override fun getPrefix(text: String, offset: Int): String? = text
 
     override fun fillCompletionVariants(parameters: CompletionParameters, prefix: String, result: CompletionResultSet) {
-        FileBasedIndex.getInstance().getAllKeys(LambdaHandlerIndex.NAME, project).forEach { result.addElement(LookupElementBuilder.create(it)) }
+        FileBasedIndex.getInstance().getAllKeys(LambdaHandlerIndex.NAME, project)
+            .forEach { result.addElement(LookupElementBuilder.create(it)) }
         result.stopHere()
     }
 
@@ -366,7 +310,7 @@ class HandlerCompletionProvider(private val project: Project) : TextCompletionPr
     }
 }
 
-class LambdaRunSettings(
+class LambdaLocalRunSettings(
     val runtime: Runtime,
     val handler: String,
     val input: String?,
@@ -375,7 +319,12 @@ class LambdaRunSettings(
 )
 
 interface LambdaLocalRunProvider {
-    fun createRunProfileState(environment: ExecutionEnvironment, project: Project, settings: LambdaRunSettings): RunProfileState
+    fun createRunProfileState(
+        environment: ExecutionEnvironment,
+        project: Project,
+        settings: LambdaLocalRunSettings
+    ): RunProfileState
 
-    companion object : RuntimeGroupExtensionPointObject<LambdaLocalRunProvider>(ExtensionPointName.create("aws.toolkit.lambda.localRunProvider"))
+    companion object :
+        RuntimeGroupExtensionPointObject<LambdaLocalRunProvider>(ExtensionPointName.create("aws.toolkit.lambda.localRunProvider"))
 }
