@@ -15,6 +15,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
@@ -28,13 +29,12 @@ class DefaultProjectAccountSettingsManagerTest {
     val projectRule = ProjectRule()
 
     private lateinit var mockRegionManager: MockRegionProvider
-    private val mockCredentialsFactory = MockCredentialProviderFactory.INSTANCE
+    private lateinit var mockCredentialManager: MockCredentialsManager
 
     @Before
     fun setUp() {
         mockRegionManager = AwsRegionProvider.getInstance() as MockRegionProvider
-
-        MockCredentialProviderFactory.registerExtension(projectRule.project)
+        mockCredentialManager = CredentialManager.getInstance() as MockCredentialsManager
 
         for (i in 1..5) {
             val mockRegion = "MockRegion-$i"
@@ -44,7 +44,8 @@ class DefaultProjectAccountSettingsManagerTest {
 
     @After
     fun tearDown() {
-        mockCredentialsFactory.reset()
+        mockRegionManager.reset()
+        mockCredentialManager.reset()
     }
 
     @Test
@@ -62,14 +63,20 @@ class DefaultProjectAccountSettingsManagerTest {
         val manager = DefaultProjectAccountSettingsManager(project)
         assertThat(manager.recentlyUsedCredentials()).isEmpty()
 
-        val credentials = mockCredentialsFactory.createMockCredentials("Mock1")
+        val credentials = mockCredentialManager.addCredentials(
+            "Mock1",
+            AwsBasicCredentials.create("Access", "Secret")
+        )
         manager.activeCredentialProvider = credentials
 
         assertThat(manager.hasActiveCredentials()).isTrue()
         assertThat(manager.activeCredentialProvider).isEqualTo(credentials)
         assertThat(manager.recentlyUsedCredentials()).element(0).isEqualTo(credentials)
 
-        val credentials2 = mockCredentialsFactory.createMockCredentials("Mock2")
+        val credentials2 = mockCredentialManager.addCredentials(
+            "Mock2",
+            AwsBasicCredentials.create("Access", "Secret")
+        )
         manager.activeCredentialProvider = credentials2
 
         assertThat(manager.recentlyUsedCredentials()).element(0).isEqualTo(credentials2)
@@ -130,7 +137,10 @@ class DefaultProjectAccountSettingsManagerTest {
             }
         })
 
-        manager.activeCredentialProvider = mockCredentialsFactory.createMockCredentials("Mock")
+        manager.activeCredentialProvider = mockCredentialManager.addCredentials(
+            "Mock",
+            AwsBasicCredentials.create("Access", "Secret")
+        )
 
         assertThat(gotNotification).isTrue()
     }
@@ -157,7 +167,10 @@ class DefaultProjectAccountSettingsManagerTest {
     @Test
     fun testSavingActiveCredential() {
         val manager = DefaultProjectAccountSettingsManager(projectRule.project)
-        manager.activeCredentialProvider = mockCredentialsFactory.createMockCredentials("Mock")
+        manager.activeCredentialProvider = mockCredentialManager.addCredentials(
+            "Mock",
+            AwsBasicCredentials.create("Access", "Secret")
+        )
         val element = manager.state.serialize()
         assertThat(element.string()).isEqualToIgnoringWhitespace(
             """
@@ -186,7 +199,10 @@ class DefaultProjectAccountSettingsManagerTest {
             </AccountState>
         """.toElement()
 
-        val credentials = mockCredentialsFactory.createMockCredentials("Mock")
+        val credentials = mockCredentialManager.addCredentials(
+            "Mock",
+            AwsBasicCredentials.create("Access", "Secret")
+        )
 
         val manager = DefaultProjectAccountSettingsManager(projectRule.project)
         manager.loadState(element.deserialize())

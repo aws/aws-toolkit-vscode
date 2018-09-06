@@ -58,7 +58,9 @@
         <applicationService serviceInterface="software.aws.toolkits.core.region.ToolkitRegionProvider"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.region.AwsRegionProvider"
                             testServiceImplementation="software.aws.toolkits.jetbrains.core.region.MockRegionProvider"/>
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.CredentialManager"/>
+        <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.CredentialManager"
+                            serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultCredentialManager"
+                            testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager"/>
         <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager"
                         serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultProjectAccountSettingsManager"
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager"/>
