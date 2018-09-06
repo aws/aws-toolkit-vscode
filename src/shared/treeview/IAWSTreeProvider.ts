@@ -1,6 +1,6 @@
 'use strict';
 
-import { AWSContext } from "../awsContext";
+import { AwsContext } from "../awsContext";
 
 export interface IAWSTreeProvider {
     viewProviderId: string;
@@ -9,6 +9,6 @@ export interface IAWSTreeProvider {
 }
 
 export interface IRefreshableAWSTreeProvider extends IAWSTreeProvider {
-    refresh(newContext?: AWSContext): void;
+    refresh(newContext?: AwsContext): void;
 }
 

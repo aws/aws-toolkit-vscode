@@ -6,8 +6,9 @@ import { ext } from '../shared/extensionGlobals';
 import { FunctionNode } from './explorer/functionNode';
 import { quickPickLambda } from './commands/quickPickLambda';
 import Lambda = require('aws-sdk/clients/lambda');
+import { AwsContext } from '../shared/awsContext';
 
-export async function getSelectedLambdaNode(element?: FunctionNode): Promise<FunctionNode> {
+export async function getSelectedLambdaNode(awsContext: AwsContext, element?: FunctionNode): Promise<FunctionNode> {
     if (element && element.functionConfiguration) {
         console.log('returning preselected node...');
         return element;
@@ -17,7 +18,7 @@ export async function getSelectedLambdaNode(element?: FunctionNode): Promise<Fun
 
     // TODO: we need to change this into a multi-step command to first obtain the region,
     // then query the lambdas in the region
-    const regions = await ext.awsContext.getExplorerRegions();
+    const regions = await awsContext.getExplorerRegions();
     if (regions.length === 0) {
         throw new Error('No regions defined for explorer, required until we have a multi-stage picker');
     }

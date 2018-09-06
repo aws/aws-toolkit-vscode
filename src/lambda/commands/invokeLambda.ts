@@ -14,10 +14,11 @@ import { ResourceFetcher } from "../../shared/resourceFetcher";
 import { sampleRequestManifestPath, sampleRequestPath } from "../constants";
 import { SampleRequest } from '../models/sampleRequest';
 import { ExtensionUtilities } from '../../shared/extensionUtilities';
+import { AwsContext } from '../../shared/awsContext';
 
-export async function invokeLambda(element?: FunctionNode) {
+export async function invokeLambda(awsContext:AwsContext, element?: FunctionNode) {
     try {
-        const fn: FunctionNode = await getSelectedLambdaNode(element);
+        const fn: FunctionNode = await getSelectedLambdaNode(awsContext, element);
 
         const view = vscode.window.createWebviewPanel(
             'html',
