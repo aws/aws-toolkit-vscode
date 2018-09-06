@@ -46,8 +46,8 @@ import com.intellij.util.io.outputStream
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.createTemporaryZipFile
 import software.aws.toolkits.core.utils.putNextEntry
-import software.aws.toolkits.jetbrains.services.lambda.local.LambdaLocalRunProvider
-import software.aws.toolkits.jetbrains.services.lambda.local.LambdaRunSettings
+import software.aws.toolkits.jetbrains.services.lambda.execution.local.LambdaLocalRunProvider
+import software.aws.toolkits.jetbrains.services.lambda.execution.local.LambdaLocalRunSettings
 import software.aws.toolkits.resources.message
 import java.io.InputStream
 import java.nio.file.Files
@@ -254,11 +254,11 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
 }
 
 class JavaLambdaLocalRunProvider : LambdaLocalRunProvider {
-    override fun createRunProfileState(environment: ExecutionEnvironment, project: Project, settings: LambdaRunSettings): RunProfileState =
+    override fun createRunProfileState(environment: ExecutionEnvironment, project: Project, settings: LambdaLocalRunSettings): RunProfileState =
         LambdaJavaCommandLineState(environment, settings)
 }
 
-internal class LambdaJavaCommandLineState(environment: ExecutionEnvironment, private val settings: LambdaRunSettings) :
+internal class LambdaJavaCommandLineState(environment: ExecutionEnvironment, private val settings: LambdaLocalRunSettings) :
     JavaCommandLineState(environment) {
     override fun createJavaParameters(): JavaParameters {
         return JavaParameters().apply {

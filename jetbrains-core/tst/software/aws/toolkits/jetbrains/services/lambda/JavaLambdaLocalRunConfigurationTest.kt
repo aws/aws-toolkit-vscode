@@ -38,8 +38,8 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.jetbrains.services.lambda.local.LambdaLocalRunConfiguration
-import software.aws.toolkits.jetbrains.services.lambda.local.LambdaRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.execution.local.LambdaLocalRunConfiguration
 import software.aws.toolkits.jetbrains.testutils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.testutils.rules.addClass
 import software.aws.toolkits.jetbrains.testutils.rules.addModule

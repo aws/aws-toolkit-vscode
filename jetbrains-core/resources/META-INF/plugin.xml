@@ -44,7 +44,7 @@
         </extensionPoint>
 
         <extensionPoint qualifiedName="aws.toolkit.lambda.localRunProvider" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
-            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.local.LambdaLocalRunProvider"/>
+            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.execution.local.LambdaLocalRunProvider"/>
             <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
         </extensionPoint>
     </extensionPoints>
@@ -77,7 +77,7 @@
 
         <fileBasedIndex implementation="software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerIndex"/>
         <codeInsight.lineMarkerProvider language="" implementationClass="software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker"/>
-        <configurationType implementation="software.aws.toolkits.jetbrains.services.lambda.local.LambdaRunConfiguration"/>
+        <configurationType implementation="software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration"/>
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit">
