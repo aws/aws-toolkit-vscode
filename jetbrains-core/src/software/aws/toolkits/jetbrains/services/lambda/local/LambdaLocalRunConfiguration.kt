@@ -41,6 +41,7 @@ import com.intellij.refactoring.listeners.RefactoringElementListener
 import com.intellij.util.indexing.FileBasedIndex
 import com.intellij.util.textCompletion.TextCompletionProvider
 import com.intellij.util.xmlb.XmlSerializer
+import com.intellij.util.xmlb.XmlSerializerUtil
 import icons.AwsIcons
 import org.jdom.Element
 import org.jetbrains.annotations.TestOnly
@@ -106,6 +107,12 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
     override fun readExternal(element: Element) {
         super.readExternal(element)
         XmlSerializer.deserializeInto(settings, element)
+    }
+
+    override fun clone(): RunConfiguration {
+        val copy = super.clone() as LambdaLocalRunConfiguration
+        copy.settings = XmlSerializerUtil.createCopy(settings)
+        return copy
     }
 
     override fun suggestedName(): String? = settings.handler
