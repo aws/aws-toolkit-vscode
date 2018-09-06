@@ -4,6 +4,7 @@ import path = require('path');
 import { ResourceFetcher } from "../resourceFetcher";
 import { endpointsFileUrl } from '../constants';
 import { ext } from "../extensionGlobals";
+import { RegionProvider } from "./regionProvider";
 
 export class RegionInfo {
 
@@ -11,12 +12,12 @@ export class RegionInfo {
     }
 }
 
-export abstract class RegionHelpers {
+export class RegionHelpers implements RegionProvider {
 
     // Returns an object whose keys are the region codes (us-east-1 etc) and
     // the values are the long-form names.
     // TODO: implement some form of cache?
-    public static async fetchLatestRegionData(): Promise<RegionInfo[]> {
+    public async fetchLatestRegionData(): Promise<RegionInfo[]> {
         let availableRegions: RegionInfo[] = [];
 
         try {

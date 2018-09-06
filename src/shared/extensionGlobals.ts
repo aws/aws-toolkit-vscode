@@ -2,7 +2,6 @@
 
 import { ExtensionContext, OutputChannel } from 'vscode';
 import { AWSClientBuilder } from './awsClientBuilder';
-import { AWSContext } from './awsContext';
 import { IRefreshableAWSTreeProvider } from './treeview/IAWSTreeProvider';
 import { AWSStatusBar } from './statusBar';
 import { AWSContextCommands } from './awsContextCommands';
@@ -14,7 +13,6 @@ import { AWSContextCommands } from './awsContextCommands';
 export namespace ext {
     export let context: ExtensionContext;
     export let outputChannel: OutputChannel;
-    export let awsContext: AWSContext;
     export let awsContextCommands: AWSContextCommands;
     export let sdkClientBuilder: AWSClientBuilder;
     export let statusBar: AWSStatusBar;
