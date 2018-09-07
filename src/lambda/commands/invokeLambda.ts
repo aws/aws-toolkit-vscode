@@ -22,7 +22,7 @@ import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { AwsContext } from '../../shared/awsContext'
 import { WebResourceLocation, FileResourceLocation } from '../../shared/resourceLocation'
 
-export async function invokeLambda(awsContext:AwsContext, resourceFetcher: ResourceFetcher, element?: FunctionNode) {
+export async function invokeLambda(awsContext: AwsContext, resourceFetcher: ResourceFetcher, element?: FunctionNode) {
     try {
         const fn: FunctionNode = await getSelectedLambdaNode(awsContext, element)
 
@@ -90,21 +90,25 @@ export async function invokeLambda(awsContext:AwsContext, resourceFetcher: Resou
                             console.log('found a payload')
                             funcRequest.Payload = message.value
                         }
+                        ext.lambdaOutputChannel.show()
+                        ext.lambdaOutputChannel.appendLine('Loading response...')
                         try {
                             const funcResponse = await lambdaClient.invoke(funcRequest).promise()
                             const logs = funcResponse.LogResult ? Buffer.from(funcResponse.LogResult, 'base64').toString() : ""
                             const payload = funcResponse.Payload ? funcResponse.Payload : JSON.stringify({})
-                            view.webview.postMessage({
-                                command: 'invokedLambda',
-                                logs,
-                                payload,
-                                statusCode: funcResponse.StatusCode
-                            })
+                            ext.lambdaOutputChannel.appendLine(`Invocation result for ${fn.functionConfiguration.FunctionArn}`)
+                            ext.lambdaOutputChannel.appendLine('')
+                            ext.lambdaOutputChannel.appendLine(`Status Code: ${funcResponse.StatusCode}`)
+                            ext.lambdaOutputChannel.appendLine('')
+                            ext.lambdaOutputChannel.appendLine('Payload:')
+                            ext.lambdaOutputChannel.appendLine(payload)
+                            ext.lambdaOutputChannel.appendLine('')
+                            ext.lambdaOutputChannel.appendLine('Logs:')
+                            ext.lambdaOutputChannel.appendLine(logs)
                         } catch (e) {
-                            view.webview.postMessage({
-                                command: 'invokedLambda',
-                                error: e
-                            })
+                            ext.lambdaOutputChannel.appendLine(`There was an error invoking ${fn.functionConfiguration.FunctionArn}`)
+                            ext.lambdaOutputChannel.appendLine(e)
+                            ext.lambdaOutputChannel.appendLine('')
                         }
                         break
                 }
