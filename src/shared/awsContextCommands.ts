@@ -32,7 +32,7 @@ export class AWSContextCommands {
     }
 
     public async onCommandHideRegion(regionCode?: string) {
-        var region = regionCode || await this.promptForRegion();
+        var region = regionCode || await ext.awsContext.getExplorerRegions().then(r => this.promptForRegion(r));
         if (region) {
             ext.awsContext.removeExplorerRegion(region);
             ext.treesToRefreshOnContextChange.forEach(t => t.refresh(ext.awsContext));
@@ -66,12 +66,18 @@ export class AWSContextCommands {
         return undefined;
     }
 
-    private async promptForRegion(): Promise<string | undefined> {
+    private async promptForRegion(regions?: string[]): Promise<string | undefined> {
         const availableRegions = await RegionHelpers.fetchLatestRegionData();
-        const input = await window.showQuickPick(availableRegions.map(r => ({
+        const regionsToShow = availableRegions.filter(r => {
+            if (regions) {
+                return regions.some(x => x === r.regionCode);
+            }
+            return true;
+        }).map(r => ({
             label: r.regionName,
             detail: r.regionCode
-        })), {
+        }));
+        const input = await window.showQuickPick(regionsToShow, {
             placeHolder: localize('AWS.message.selectRegion', 'Select an AWS region')
         });
         return input ? input.detail : undefined;
