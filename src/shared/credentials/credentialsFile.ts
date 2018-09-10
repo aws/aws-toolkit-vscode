@@ -73,6 +73,7 @@ export function loadSharedConfigFiles(
 }
 
 // TODO: FOR POC-DEMOS ONLY, NOT FOR PRODUCTION USE!
+// REMOVE_BEFORE_RELEASE
 // This is nowhere near resilient enough :-)
 export function saveProfile(
     name: string,
