@@ -9,9 +9,8 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.ui.ComboBox
-import com.intellij.psi.codeStyle.CodeStyleManager
-import com.intellij.psi.codeStyle.LanguageCodeStyleSettingsProvider
 import com.intellij.ui.EditorTextField
+import software.aws.toolkits.jetbrains.utils.formatText
 import javax.swing.DefaultComboBoxModel
 import javax.swing.JComboBox
 import javax.swing.JTextField
@@ -50,21 +49,10 @@ fun JTextField?.blankAsNull(): String? = if (this?.text?.isNotBlank() == true) {
 fun <T> JComboBox<T>?.selected(): T? = this?.selectedItem as? T
 
 fun EditorTextField.formatAndSet(content: String, language: Language) {
-    // Initial docs can't be undo'ed
     CommandProcessor.getInstance().runUndoTransparentAction {
+        val formatted = formatText(this.project, language, content)
         runWriteAction {
-            val formatted =
-                LanguageCodeStyleSettingsProvider.createFileFromText(
-                    language,
-                    project,
-                    content
-                )?.let {
-                    CodeStyleManager.getInstance(project).reformat(it)
-                    it.text
-                } ?: content
-
-            val document = this.document
-            document.replaceString(0, document.textLength, formatted)
+            document.setText(formatted)
         }
     }
 }
