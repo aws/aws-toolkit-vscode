@@ -41,6 +41,14 @@ subprojects {
     apply plugin: 'kotlin'
     apply plugin: 'idea'
     apply plugin: 'org.jetbrains.dokka'
+    apply plugin: 'signing'
+
+    def isReleaseVersion = !version.endsWith("SNAPSHOT")
+
+    signing {
+        required { isReleaseVersion && gradle.startParameter.taskNames.contains("publishPlugin") }
+        sign configurations.archives
+    }
 
     sourceSets {
         main.java.srcDir 'src'
@@ -126,6 +134,9 @@ subprojects {
     project.afterEvaluate {
         removeTask(tasks, 'publishPlugin')
         removeTask(tasks, 'verifyPlugin')
+        if (!isReleaseVersion) {
+            removeTask(tasks, "signArchives")
+        }
     }
 }
 
