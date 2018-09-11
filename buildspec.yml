@@ -1,0 +1,9 @@
+version: 0.1
+phases:
+  pre_build:
+    commands:
+      - npm install --unsafe-perm
+  build:
+    commands:
+      - npm run vscode:prepublish
+      - xvfb-run npm test --silent
