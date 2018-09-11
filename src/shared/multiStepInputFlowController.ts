@@ -33,6 +33,7 @@ interface InputBoxParameters {
     prompt: string;
     validate: (value: string) => Promise<string | undefined>;
     buttons?: QuickInputButton[];
+    ignoreFocusOut?: boolean;
     shouldResume: () => Thenable<boolean>;
 }
 
@@ -118,7 +119,7 @@ export class MultiStepInputFlowController {
         }
     }
 
-    async showInputBox<P extends InputBoxParameters>({ title, step, totalSteps, value, prompt, validate, buttons, shouldResume }: P) {
+    async showInputBox<P extends InputBoxParameters>({ title, step, totalSteps, value, prompt, validate, buttons, ignoreFocusOut, shouldResume }: P) {
         const disposables: Disposable[] = [];
         try {
             return await new Promise<string | (P extends { buttons: (infer I)[] } ? I : never)>((resolve, reject) => {
@@ -132,6 +133,7 @@ export class MultiStepInputFlowController {
                     ...(this.steps.length > 1 ? [QuickInputButtons.Back] : []),
                     ...(buttons || [])
                 ];
+                input.ignoreFocusOut = ignoreFocusOut ? ignoreFocusOut : false;
                 let validating = validate('');
                 disposables.push(
                     input.onDidTriggerButton(item => {
