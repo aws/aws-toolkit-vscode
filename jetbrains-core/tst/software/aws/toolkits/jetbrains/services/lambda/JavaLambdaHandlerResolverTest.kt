@@ -5,15 +5,14 @@ package software.aws.toolkits.jetbrains.services.lambda
 
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiMethod
-import com.intellij.testFramework.fixtures.JavaCodeInsightTestFixture
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
-import org.intellij.lang.annotations.Language
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.testutils.rules.JavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.testutils.rules.openClass
 
 class JavaLambdaHandlerResolverTest {
     @Rule
@@ -203,13 +202,6 @@ class JavaLambdaHandlerResolverTest {
         runInEdtAndWait {
             val elements = Lambda.findPsiElementsForHandler(fixture.project, Runtime.JAVA8, "com.example.LambdaHandler::handleRequest")
             assertThat(elements).isEmpty()
-        }
-    }
-
-    private fun JavaCodeInsightTestFixture.openClass(@Language("JAVA") javaClass: String) {
-        val psiClass = this.addClass(javaClass)
-        runInEdtAndWait {
-            projectRule.fixture.openFileInEditor(psiClass.containingFile.virtualFile)
         }
     }
 }

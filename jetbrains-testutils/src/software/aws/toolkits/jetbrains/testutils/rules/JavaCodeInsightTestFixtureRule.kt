@@ -84,14 +84,22 @@ fun JavaCodeInsightTestFixture.addModule(moduleName: String): Module {
         WriteAction.run<RuntimeException> {
             PsiTestUtil.addSourceRoot(module, root.createChildDirectory(null, "src"), false)
             PsiTestUtil.addSourceRoot(
-                    module,
-                    root.createChildDirectory(null, "src-resources"),
-                    JavaResourceRootType.RESOURCE
+                module,
+                root.createChildDirectory(null, "src-resources"),
+                JavaResourceRootType.RESOURCE
             )
             PsiTestUtil.addSourceRoot(module, root.createChildDirectory(null, "tst"), true)
         }
     }
     return module
+}
+
+fun JavaCodeInsightTestFixture.openClass(@Language("JAVA") javaClass: String): PsiClass {
+    val psiClass = this.addClass(javaClass)
+    runInEdtAndWait {
+        this.openFileInEditor(psiClass.containingFile.virtualFile)
+    }
+    return psiClass
 }
 
 /**
@@ -125,17 +133,24 @@ fun JavaCodeInsightTestFixture.addTestClass(module: Module, @Language("JAVA") cl
  * with [content].
  */
 fun JavaCodeInsightTestFixture.addResourceFile(module: Module, fileName: String, content: String): PsiFile =
-        addFile(module, JavaResourceRootType.RESOURCE, fileName, content)
+    addFile(module, JavaResourceRootType.RESOURCE, fileName, content)
 
-private fun JavaCodeInsightTestFixture.addFile(module: Module, type: JpsModuleSourceRootType<*>, fileName: String, content: String): PsiFile {
+private fun JavaCodeInsightTestFixture.addFile(
+    module: Module,
+    type: JpsModuleSourceRootType<*>,
+    fileName: String,
+    content: String
+): PsiFile {
     val sourceRoot = ModuleRootManager.getInstance(module).getSourceRoots(type).first()
     val fullPath = Paths.get(sourceRoot.path, fileName).toString()
-    val projectRelativePath = FileUtil.getRelativePath(tempDirPath, fullPath, File.separatorChar) ?: throw RuntimeException("Cannot determine relative path")
+    val projectRelativePath = FileUtil.getRelativePath(tempDirPath, fullPath, File.separatorChar)
+            ?: throw RuntimeException("Cannot determine relative path")
     return addFileToProject(projectRelativePath.replace('\\', '/'), content)
 }
 
-private fun determineQualifiedName(project: Project, classText: String): String = ReadAction.compute<String, RuntimeException> {
-    val factory = PsiFileFactory.getInstance(project)
-    val javaFile = factory.createFileFromText("a.java", JavaFileType.INSTANCE, classText) as PsiJavaFile
-    javaFile.classes[0].qualifiedName
-} ?: throw RuntimeException("Cannot determine fully qualified name")
+private fun determineQualifiedName(project: Project, classText: String): String =
+    ReadAction.compute<String, RuntimeException> {
+        val factory = PsiFileFactory.getInstance(project)
+        val javaFile = factory.createFileFromText("a.java", JavaFileType.INSTANCE, classText) as PsiJavaFile
+        javaFile.classes[0].qualifiedName
+    } ?: throw RuntimeException("Cannot determine fully qualified name")

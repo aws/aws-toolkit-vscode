@@ -6,6 +6,8 @@ package software.aws.toolkits.jetbrains.services.lambda.upload
 import com.intellij.codeHighlighting.Pass
 import com.intellij.codeInsight.daemon.LineMarkerInfo
 import com.intellij.codeInsight.daemon.LineMarkerProviderDescriptor
+import com.intellij.execution.lineMarker.ExecutorAction
+import com.intellij.execution.lineMarker.LineMarkerActionWrapper
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -44,10 +46,18 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
         val actionGroup = DefaultActionGroup()
 
         if (element.language in LambdaPackager.supportedLanguages) {
+            val executorActions = ExecutorAction.getActions(1)
+            executorActions.forEach {
+                actionGroup.add(LineMarkerActionWrapper(element, it))
+            }
+        }
+
+        if (element.language in LambdaPackager.supportedLanguages) {
             actionGroup.add(UploadLambdaFunction(handler))
         }
 
         AwsResourceCache.getInstance(element.project).lambdaFunctions()
+            .asSequence()
             .filter { it.handler == handler }
             .forEach { actionGroup.add(OpenLambda(it)) }
 
