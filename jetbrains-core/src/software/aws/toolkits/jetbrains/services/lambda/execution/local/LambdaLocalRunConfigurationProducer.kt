@@ -1,0 +1,61 @@
+// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+package software.aws.toolkits.jetbrains.services.lambda.execution.local
+
+import com.intellij.execution.actions.ConfigurationContext
+import com.intellij.execution.actions.RunConfigurationProducer
+import com.intellij.execution.configurations.ConfigurationFactory
+import com.intellij.openapi.roots.ModuleRootManager
+import com.intellij.openapi.roots.ProjectRootManager
+import com.intellij.openapi.util.Ref
+import com.intellij.psi.PsiElement
+import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
+import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
+import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
+
+class LambdaLocalRunConfigurationProducer : RunConfigurationProducer<LambdaLocalRunConfiguration>(getFactory()) {
+    override fun setupConfigurationFromContext(
+        configuration: LambdaLocalRunConfiguration,
+        context: ConfigurationContext,
+        sourceElement: Ref<PsiElement>
+    ): Boolean {
+        val element = context.psiLocation ?: return false
+        val runtimeGroup = element.language.runtimeGroup ?: return false
+        if (runtimeGroup !in LambdaHandlerResolver.supportedRuntimeGroups) {
+            return false
+        }
+        val resolver = LambdaHandlerResolver.getInstance(runtimeGroup)
+        val handler = resolver.determineHandler(element) ?: return false
+
+        val sdk = ModuleRootManager.getInstance(context.module).sdk
+                ?: ProjectRootManager.getInstance(context.project).projectSdk
+
+        val runtime = sdk?.let { RuntimeGroup.runtimeForSdk(it) }
+        configuration.configure(runtime, handler)
+        configuration.setGeneratedName()
+        return true
+    }
+
+    override fun isConfigurationFromContext(
+        configuration: LambdaLocalRunConfiguration,
+        context: ConfigurationContext
+    ): Boolean {
+        val element = context.psiLocation ?: return false
+        val runtimeGroup = element.language.runtimeGroup ?: return false
+        if (runtimeGroup !in LambdaHandlerResolver.supportedRuntimeGroups) {
+            return false
+        }
+        val resolver = LambdaHandlerResolver.getInstance(runtimeGroup)
+        val handler = resolver.determineHandler(element) ?: return false
+        return configuration.settings.handler == handler
+    }
+
+    companion object {
+        private fun getFactory(): ConfigurationFactory {
+            return LambdaRunConfiguration.getInstance()
+                .configurationFactories.first { it is LambdaLocalRunConfigurationFactory }
+        }
+    }
+}
