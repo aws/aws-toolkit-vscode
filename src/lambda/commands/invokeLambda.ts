@@ -95,7 +95,7 @@ export async function invokeLambda(awsContext:AwsContext, element?: FunctionNode
                             ext.lambdaOutputChannel.appendLine(logs);
                             ext.lambdaOutputChannel.appendLine('');
                             ext.lambdaOutputChannel.appendLine('Payload:');
-                            ext.lambdaOutputChannel.appendLine(payload);
+                            ext.lambdaOutputChannel.appendLine(payload.toString());
                             ext.lambdaOutputChannel.appendLine('');
                         } catch (e) {
                             ext.lambdaOutputChannel.appendLine(`There was an error invoking ${fn.functionConfiguration.FunctionArn}`);
