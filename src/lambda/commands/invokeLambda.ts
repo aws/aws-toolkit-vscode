@@ -90,14 +90,14 @@ export async function invokeLambda(element?: FunctionNode) {
                             const logs = funcResponse.LogResult ? Buffer.from(funcResponse.LogResult, 'base64').toString() : "";
                             const payload = funcResponse.Payload ? funcResponse.Payload : JSON.stringify({});
                             ext.lambdaOutputChannel.appendLine(`Invocation result for ${fn.functionConfiguration.FunctionArn}`);
+                            ext.lambdaOutputChannel.appendLine('Logs:');
+                            ext.lambdaOutputChannel.appendLine(logs);
                             ext.lambdaOutputChannel.appendLine('');
                             ext.lambdaOutputChannel.appendLine(`Status Code: ${funcResponse.StatusCode}`);
                             ext.lambdaOutputChannel.appendLine('');
                             ext.lambdaOutputChannel.appendLine('Payload:');
                             ext.lambdaOutputChannel.appendLine(payload);
                             ext.lambdaOutputChannel.appendLine('');
-                            ext.lambdaOutputChannel.appendLine('Logs:');
-                            ext.lambdaOutputChannel.appendLine(logs);
                         } catch (e) {
                             ext.lambdaOutputChannel.appendLine(`There was an error invoking ${fn.functionConfiguration.FunctionArn}`);
                             ext.lambdaOutputChannel.appendLine(e);
