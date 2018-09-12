@@ -94,8 +94,6 @@ export async function invokeLambda(awsContext:AwsContext, element?: FunctionNode
                             ext.lambdaOutputChannel.appendLine('Logs:');
                             ext.lambdaOutputChannel.appendLine(logs);
                             ext.lambdaOutputChannel.appendLine('');
-                            ext.lambdaOutputChannel.appendLine(`Status Code: ${funcResponse.StatusCode}`);
-                            ext.lambdaOutputChannel.appendLine('');
                             ext.lambdaOutputChannel.appendLine('Payload:');
                             ext.lambdaOutputChannel.appendLine(payload);
                             ext.lambdaOutputChannel.appendLine('');
