@@ -10,6 +10,7 @@ import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotSameAs
 import assertk.assertions.isSameAs
 import assertk.assertions.isTrue
+import com.intellij.openapi.project.Project
 import com.intellij.testFramework.PlatformTestCase
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.runInEdtAndWait
@@ -42,14 +43,14 @@ class AwsClientManagerTest {
 
     @Test
     fun canGetAnInstanceOfAClient() {
-        val sut = AwsClientManager.getInstance(projectRule.project)
+        val sut = getClientManager()
         val client = sut.getClient<DummyServiceClient>()
         assert(client.serviceName()).isEqualTo("dummyClient")
     }
 
     @Test
     fun clientsAreCached() {
-        val sut = AwsClientManager.getInstance(projectRule.project)
+        val sut = getClientManager()
         val fooClient = sut.getClient<DummyServiceClient>()
         val barClient = sut.getClient<DummyServiceClient>()
 
@@ -59,7 +60,7 @@ class AwsClientManagerTest {
     @Test
     fun clientsAreClosedWhenProjectIsDisposed() {
         val project = PlatformTestCase.createProject(temporaryDirectory.newFolder(), "Fake project")
-        val sut = AwsClientManager.getInstance(project)
+        val sut = getClientManager(project)
         val client = sut.getClient<DummyServiceClient>()
 
         runInEdtAndWait {
@@ -71,7 +72,7 @@ class AwsClientManagerTest {
 
     @Test
     fun httpClientIsSharedAcrossClients() {
-        val sut = AwsClientManager.getInstance(projectRule.project)
+        val sut = getClientManager()
         val dummy = sut.getClient<DummyServiceClient>()
         val secondDummy = sut.getClient<SecondDummyServiceClient>()
 
@@ -80,7 +81,7 @@ class AwsClientManagerTest {
 
     @Test
     fun clientWithoutBuilderFailsDescriptively() {
-        val sut = AwsClientManager.getInstance(projectRule.project)
+        val sut = getClientManager()
 
         assert { sut.getClient<InvalidServiceClient>() }.thrownError {
             isInstanceOf(IllegalArgumentException::class)
@@ -90,7 +91,7 @@ class AwsClientManagerTest {
 
     @Test
     fun newClientCreatedWhenRegionChanges() {
-        val sut = AwsClientManager.getInstance(projectRule.project)
+        val sut = getClientManager()
         val first = sut.getClient<DummyServiceClient>()
 
         val testSettings = ProjectAccountSettingsManager.getInstance(projectRule.project)
@@ -100,6 +101,11 @@ class AwsClientManagerTest {
         val afterRegionUpdate = sut.getClient<DummyServiceClient>()
 
         assert(afterRegionUpdate).isNotSameAs(first)
+    }
+
+    private fun getClientManager(project: Project = projectRule.project): AwsClientManager {
+        // Test against real version so bypass ServiceManager for the client manager
+        return AwsClientManager(project, AwsSdkClient.getInstance())
     }
 
     class DummyServiceClient(val httpClient: SdkHttpClient) : TestClient() {

@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.core
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.lambda.LambdaClient
+import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
@@ -24,7 +25,7 @@ interface AwsResourceCache {
 
 class DefaultAwsResourceCache(
     private val accountSettingsManager: ProjectAccountSettingsManager,
-    private val clientManager: AwsClientManager
+    private val clientManager: ToolkitClientManager
 ) : AwsResourceCache {
     private val cache = ConcurrentHashMap<String, Any>()
 

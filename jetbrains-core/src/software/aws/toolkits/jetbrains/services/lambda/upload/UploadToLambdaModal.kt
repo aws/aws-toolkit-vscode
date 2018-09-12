@@ -13,6 +13,7 @@ import org.intellij.lang.annotations.Language
 import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.S3Client
+import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.services.iam.CreateIamRoleDialog
 import software.aws.toolkits.jetbrains.services.iam.listRolesFilter
@@ -101,7 +102,7 @@ class UploadToLambdaController(
     private val view: CreateLambdaPanel,
     private val handlerName: String,
     private val runtime: Runtime,
-    clientManager: AwsClientManager
+    clientManager: ToolkitClientManager
 ) {
     private val s3Client: S3Client = clientManager.getClient()
     private val iamClient: IamClient = clientManager.getClient()

@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.utils
 
+import com.nhaarman.mockitokotlin2.KStubbing
+import com.nhaarman.mockitokotlin2.withSettings
 import org.mockito.Mockito
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
@@ -23,5 +25,16 @@ class DelegateSdkConsumers : Answer<Any> {
         } else {
             Mockito.RETURNS_DEFAULTS.answer(invocation)
         }
+    }
+}
+
+inline fun <reified T : Any> delegateMock(stubbing: KStubbing<T>.(T) -> Unit): T {
+    return Mockito.mock(
+        T::class.java,
+        withSettings(
+            defaultAnswer = DelegateSdkConsumers()
+        )
+    ).apply {
+        KStubbing(this).stubbing(this)
     }
 }

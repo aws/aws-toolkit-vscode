@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.lambda.model.CreateFunctionRequest
 import software.amazon.awssdk.services.lambda.model.FunctionCode
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
-import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
@@ -21,7 +21,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 
 object LambdaCreatorFactory {
-    fun create(clientManager: AwsClientManager, packager: LambdaPackager): LambdaCreator {
+    fun create(clientManager: ToolkitClientManager, packager: LambdaPackager): LambdaCreator {
         return LambdaCreator(
             packager,
             CodeUploader(clientManager.getClient()),
