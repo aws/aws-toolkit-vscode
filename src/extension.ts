@@ -14,7 +14,8 @@ import { AWSContextCommands } from './shared/awsContextCommands';
 import { RegionNode } from './lambda/explorer/regionNode';
 import { safeGet } from './shared/extensionUtilities';
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection';
-import { RegionHelpers } from './shared/regions/regionHelpers';
+import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider';
+import { DefaultResourceFetcher } from './shared/defaultResourceFetcher';
 
 export async function activate(context: vscode.ExtensionContext) {
 
@@ -23,7 +24,8 @@ export async function activate(context: vscode.ExtensionContext) {
     ext.context = context;
     const awsContext = new DefaultAwsContext(new DefaultSettingsConfiguration(extensionSettingsPrefix));
     const awsContextTrees = new AwsContextTreeCollection();
-    const regionProvider = new RegionHelpers();
+    const resourceFetcher = new DefaultResourceFetcher();
+    const regionProvider = new DefaultRegionProvider(context, resourceFetcher);
 
     ext.awsContextCommands = new AWSContextCommands(awsContext, awsContextTrees, regionProvider);
     ext.sdkClientBuilder = new AWSClientBuilder(awsContext);
@@ -36,10 +38,10 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('aws.hideRegion', async (node?: RegionNode) => { await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode)); });
 
     const providers = [
-        new LambdaProvider(awsContext, awsContextTrees, regionProvider)
+        new LambdaProvider(awsContext, awsContextTrees, regionProvider, resourceFetcher)
     ];
 
-    providers.forEach( (p) => {
+    providers.forEach((p) => {
         p.initialize();
         context.subscriptions.push(vscode.window.registerTreeDataProvider(p.viewProviderId, p));
     });

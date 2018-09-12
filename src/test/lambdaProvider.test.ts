@@ -6,8 +6,10 @@ import { RegionNode } from '../lambda/explorer/regionNode';
 import { ContextChangeEventsArgs } from '../shared/defaultAwsContext';
 import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection';
 import { AwsContext } from '../shared/awsContext';
-import { RegionInfo } from '../shared/regions/regionHelpers';
+import { RegionInfo } from '../shared/regions/regionInfo';
 import { RegionProvider } from '../shared/regions/regionProvider';
+import { ResourceFetcher } from '../shared/resourceFetcher';
+import { ResourceLocation } from '../shared/resourceLocation';
 
 suite("LambdaProvider Tests", function (): void {
 
@@ -18,7 +20,7 @@ suite("LambdaProvider Tests", function (): void {
 
         // TODO : Introduce Mocking instead of stub implementations
         class FakeRegionProvider implements RegionProvider {
-            fetchLatestRegionData(): Promise<RegionInfo[]> {
+            getRegionData(): Promise<RegionInfo[]> {
                 return Promise.resolve([new RegionInfo(regionCode, regionName)]);
             }
         }
@@ -48,11 +50,18 @@ suite("LambdaProvider Tests", function (): void {
             }
         }
 
+        class FakeResourceFetcher implements ResourceFetcher {
+            getResource(resourceLocations: ResourceLocation[]): Promise<string> {
+                throw new Error("Method not implemented.");
+            }
+        }
+
         const awsContext = new FakeAwsContext();
         const regionProvider = new FakeRegionProvider();
         const awsContextTreeCollection = new AwsContextTreeCollection();
+        const resourceFetcher = new FakeResourceFetcher();
 
-        const lambdaProvider = new LambdaProvider(awsContext, awsContextTreeCollection, regionProvider);
+        const lambdaProvider = new LambdaProvider(awsContext, awsContextTreeCollection, regionProvider, resourceFetcher);
 
         const treeNodes = lambdaProvider.getChildren();
 

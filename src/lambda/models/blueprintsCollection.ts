@@ -2,16 +2,24 @@
 
 import xml2js = require('xml2js');
 import path = require('path');
-import { ext } from '../../shared/extensionGlobals';
 import { hostedFilesBaseUrl } from "../../shared/constants";
 import { blueprintsManifestPath } from "../constants";
 import { ResourceFetcher } from "../../shared/resourceFetcher";
 import { Blueprint, BlueprintOrigin } from "./blueprint";
+import { ExtensionContext } from 'vscode';
+import { WebResourceLocation, FileResourceLocation } from '../../shared/resourceLocation';
 
 // Represents a collection of blueprints, potentially from multiple sources
 export class BlueprintsCollection {
 
     private availableBlueprints: Blueprint[] = [];
+    private readonly _context: ExtensionContext;
+    private readonly _resourceFetcher: ResourceFetcher;
+
+    constructor(context: ExtensionContext, resourceFetcher: ResourceFetcher) {
+        this._context = context;
+        this._resourceFetcher = resourceFetcher;
+    }
 
     public async loadAllBlueprints(): Promise<void> {
         this.availableBlueprints = [];
@@ -56,8 +64,8 @@ export class BlueprintsCollection {
     }
 
     private async listBlueprintsVSToolkitFromManifest(manifestUrl: string): Promise<Blueprint[]> {
-        const resourcePath = path.join(ext.context.extensionPath, 'resources', 'vs-lambda-blueprint-manifest.xml');
-        const manifest = await ResourceFetcher.fetchHostedResource(manifestUrl, resourcePath);
+        const resourcePath = path.join(this._context.extensionPath, 'resources', 'vs-lambda-blueprint-manifest.xml');
+        const manifest = await this._resourceFetcher.getResource([new WebResourceLocation(manifestUrl), new FileResourceLocation(resourcePath)]);
         return new Promise<Blueprint[]>((resolve, reject) => {
             xml2js.parseString(manifest, {explicitArray: false}, function (err, result) {
                 if (err) {

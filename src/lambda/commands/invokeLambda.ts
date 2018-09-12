@@ -15,8 +15,9 @@ import { sampleRequestManifestPath, sampleRequestPath } from "../constants";
 import { SampleRequest } from '../models/sampleRequest';
 import { ExtensionUtilities } from '../../shared/extensionUtilities';
 import { AwsContext } from '../../shared/awsContext';
+import { WebResourceLocation, FileResourceLocation } from '../../shared/resourceLocation';
 
-export async function invokeLambda(awsContext:AwsContext, element?: FunctionNode) {
+export async function invokeLambda(awsContext:AwsContext, resourceFetcher: ResourceFetcher, element?: FunctionNode) {
     try {
         const fn: FunctionNode = await getSelectedLambdaNode(awsContext, element);
 
@@ -41,7 +42,7 @@ export async function invokeLambda(awsContext:AwsContext, element?: FunctionNode
         console.log(sampleRequestManifestPath);
         console.log(resourcePath);
         try {
-            const sampleInput = await ResourceFetcher.fetchHostedResource(sampleRequestManifestPath, resourcePath);
+            const sampleInput = await resourceFetcher.getResource([new WebResourceLocation(sampleRequestManifestPath), new FileResourceLocation(resourcePath)]);
             const inputs: SampleRequest[] = [];
             console.log('querying manifest url');
             xml2js.parseString(sampleInput, { explicitArray: false }, (err, result) => {
@@ -68,7 +69,7 @@ export async function invokeLambda(awsContext:AwsContext, element?: FunctionNode
                     case 'sampleRequestSelected':
                         console.log('selected the following sample:');
                         console.log(message.value);
-                        const sample = await ResourceFetcher.fetchHostedResource(sampleRequestPath + message.value, resourcePath);
+                        const sample = await resourceFetcher.getResource([new WebResourceLocation(sampleRequestPath + message.value), new FileResourceLocation(resourcePath)]);
                         console.log(sample);
                         view.webview.postMessage({ command: 'loadedSample', sample: sample });
                         return;
