@@ -5,7 +5,7 @@ let localize = nls.loadMessageBundle();
 
 import * as vscode from 'vscode';
 import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase';
-import { IRefreshableAWSTreeProvider } from '../shared/treeview/IAWSTreeProvider';
+import { RefreshableAwsTreeProvider } from '../shared/treeview/refreshableAwsTreeProvider';
 import { FunctionNode } from './explorer/functionNode';
 import { getLambdaPolicy } from './commands/getLambdaPolicy';
 import { invokeLambda } from './commands/invokeLambda';
@@ -18,7 +18,7 @@ import { RegionNode } from './explorer/regionNode';
 import { RegionProvider } from "../shared/regions/regionProvider";
 import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection';
 
-export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>, IRefreshableAWSTreeProvider {
+export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
     private _awsContext: AwsContext;
     private _awsContextTrees: AwsContextTreeCollection;
     private _regionProvider: RegionProvider;

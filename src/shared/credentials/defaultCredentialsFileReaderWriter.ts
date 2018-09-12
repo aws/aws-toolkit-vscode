@@ -1,9 +1,9 @@
 'use strict';
 
-import { ICredentialFileReaderWriter } from "./ICredentialFileReaderWriter";
+import { CredentialsFileReaderWriter } from "./credentialsFileReaderWriter";
 import { loadSharedConfigFiles, saveProfile } from "./credentialsFile";
 
-export class CredentialsFileReaderWriter implements ICredentialFileReaderWriter {
+export class DefaultCredentialsFileReaderWriter implements CredentialsFileReaderWriter {
     async getProfileNames(): Promise<string[]> {
         let profileNames: string[] = [];
 

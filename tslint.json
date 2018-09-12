@@ -5,6 +5,7 @@
 		"no-duplicate-variable": true,
 		"curly": true,
 		"class-name": true,
+		"interface-name": [true, "never-prefix"],
 		"semicolon": [
 			true,
 			"always"

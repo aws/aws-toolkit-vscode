@@ -1,6 +1,6 @@
 'use strict';
 
-export interface ICredentialFileReaderWriter {
+export interface CredentialsFileReaderWriter {
     // returns the list of available profile names
     getProfileNames(): Promise<string[]>;
 

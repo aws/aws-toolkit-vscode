@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { DefaultAwsContext } from '../shared/defaultAwsContext';
-import { ISettingsConfiguration } from '../shared/settingsConfiguration';
+import { SettingsConfiguration } from '../shared/settingsConfiguration';
 import { ConfigurationTarget } from 'vscode';
 import { regionSettingKey, profileSettingKey } from '../shared/constants';
 
@@ -10,7 +10,7 @@ suite("AWSContext Tests", function (): void {
     const testRegion2Value: string = 're-gion-2';
     const testProfileValue: string = 'profile1';
 
-    class ContextTestsSettingsConfigurationBase implements ISettingsConfiguration {
+    class ContextTestsSettingsConfigurationBase implements SettingsConfiguration {
         readSetting(settingKey: string, defaultValue?: string | undefined): string | undefined {
             return undefined;
         }
