@@ -17,14 +17,13 @@ import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import javax.security.auth.login.CredentialNotFoundException
 
-class AwsClientManager internal constructor(
-    project: Project,
-    sdkClient: AwsSdkClient
-) : ToolkitClientManager(sdkClient.sdkHttpClient), Disposable {
+open class AwsClientManager(project: Project, sdkClient: AwsSdkClient) :
+    ToolkitClientManager(sdkClient.sdkHttpClient), Disposable {
+
     private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
 
     init {
-        Disposer.register(project, this)
+        Disposer.register(project, Disposable { this.dispose() })
     }
 
     override fun dispose() {
@@ -55,8 +54,8 @@ class AwsClientManager internal constructor(
 
     companion object {
         @JvmStatic
-        fun getInstance(project: Project): AwsClientManager {
-            return ServiceManager.getService(project, AwsClientManager::class.java)
+        fun getInstance(project: Project): ToolkitClientManager {
+            return ServiceManager.getService(project, ToolkitClientManager::class.java)
         }
     }
 }

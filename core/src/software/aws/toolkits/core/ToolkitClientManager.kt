@@ -29,11 +29,23 @@ abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
 
     protected abstract val userAgent: String
 
+    inline fun <reified T : SdkClient> getClient(
+        credentialsProviderOverride: ToolkitCredentialsProvider? = null,
+        regionOverride: AwsRegion? = null
+    ): T = this.getClient(T::class, credentialsProviderOverride, regionOverride)
+
     @Suppress("UNCHECKED_CAST")
-    fun <T : SdkClient> getClient(clz: KClass<T>): T {
+    fun <T : SdkClient> getClient(
+        clz: KClass<T>,
+        credentialsProviderOverride: ToolkitCredentialsProvider? = null,
+        regionOverride: AwsRegion? = null
+    ): T {
+        val credProvider = credentialsProviderOverride ?: getCredentialsProvider()
+        val region = regionOverride ?: getRegion()
+
         val key = AwsClientKey(
-            credentialProviderId = getCredentialsProvider().id,
-            region = getRegion(),
+            credentialProviderId = credProvider.id,
+            region = region,
             serviceClass = clz
         )
 
@@ -43,9 +55,6 @@ abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
 
         return cachedClients.computeIfAbsent(key) { createNewClient(it) } as T
     }
-
-    inline fun <reified T : SdkClient> getClient(): T =
-        this.getClient(T::class)
 
     /**
      * Get the current active credential provider for the toolkit
@@ -81,9 +90,9 @@ abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
             .overrideConfiguration {
                 it.putAdvancedOption(SdkAdvancedClientOption.USER_AGENT_SUFFIX, userAgent)
             }
-            .also {
-                if (it is S3ClientBuilder) {
-                    it.serviceConfiguration { it.pathStyleAccessEnabled(true) }
+            .also { _ ->
+                if (builder is S3ClientBuilder) {
+                    builder.serviceConfiguration { it.pathStyleAccessEnabled(true) }
                 }
             }
             .build() as T

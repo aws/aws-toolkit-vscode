@@ -270,7 +270,7 @@ internal class LambdaJavaCommandLineState(environment: ExecutionEnvironment, pri
             // Do not inherit the System env var, they should configure through run config just like Lambda does
             isPassParentEnvs = false
             programParametersList.add("-h", settings.handler)
-            settings.input?.run { programParametersList.add("-i", this) }
+            settings.input.run { programParametersList.add("-i", this) }
         }
     }
 

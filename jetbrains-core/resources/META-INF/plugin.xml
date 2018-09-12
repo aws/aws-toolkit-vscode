@@ -21,7 +21,6 @@
         <xi:fallback/>
     </xi:include>
 
-
     <extensionPoints>
         <extensionPoint qualifiedName="aws.toolkit.credentialProviderFactory"
                         beanClass="software.aws.toolkits.jetbrains.core.credentials.CredentialProviderFactoryEP">
@@ -67,14 +66,17 @@
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsSettingsPanelInstaller"/>
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsSdkClient"/>
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientManager"/>
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.DefaultAwsResourceCache"
-                        serviceInterface="software.aws.toolkits.jetbrains.core.AwsResourceCache"
+        <projectService serviceInterface="software.aws.toolkits.core.ToolkitClientManager"
+                        serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientManager"
+                        testServiceImplementation="software.aws.toolkits.jetbrains.core.MockClientManager"/>
+        <projectService serviceInterface="software.aws.toolkits.jetbrains.core.AwsResourceCache"
+                        serviceImplementation="software.aws.toolkits.jetbrains.core.DefaultAwsResourceCache"
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.MockResourceCache"/>
         <toolWindow id="aws.explorer" anchor="left" secondary="true"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
                     icon="AwsIcons.Logos.AWS"/>
 
+        <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaRunner"/>
         <fileBasedIndex implementation="software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerIndex"/>
         <codeInsight.lineMarkerProvider language="" implementationClass="software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker"/>
         <configurationType implementation="software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration"/>
@@ -98,6 +100,5 @@
                     icon="AllIcons.Actions.Cancel"/>
         </group>
     </actions>
-
 
 </idea-plugin>
