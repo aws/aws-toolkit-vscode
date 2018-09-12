@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { AWSContext } from '../shared/awsContext';
+import { DefaultAwsContext } from '../shared/defaultAwsContext';
 import { ISettingsConfiguration } from '../shared/settingsConfiguration';
 import { ConfigurationTarget } from 'vscode';
 import { regionSettingKey, profileSettingKey } from '../shared/constants';
@@ -33,7 +33,7 @@ suite("AWSContext Tests", function (): void {
 
         }
 
-        const testContext = new AWSContext(new TestConfiguration());
+        const testContext = new DefaultAwsContext(new TestConfiguration());
         assert.equal(testContext.getCredentialProfileName(), testProfileValue);
     });
 
@@ -50,7 +50,7 @@ suite("AWSContext Tests", function (): void {
         }
 
 
-        const testContext = new AWSContext(new TestConfiguration());
+        const testContext = new DefaultAwsContext(new TestConfiguration());
         const regions = await testContext.getExplorerRegions();
         assert.equal(regions.length, 1);
         assert.equal(regions[0], testRegion1Value);
@@ -69,7 +69,7 @@ suite("AWSContext Tests", function (): void {
         }
 
 
-        const testContext = new AWSContext(new TestConfiguration());
+        const testContext = new DefaultAwsContext(new TestConfiguration());
         const regions = await testContext.getExplorerRegions();
         assert.equal(regions.length, 2);
         assert.equal(regions[0], testRegion1Value);
@@ -86,7 +86,7 @@ suite("AWSContext Tests", function (): void {
             }
         }
 
-        const testContext = new AWSContext(new TestConfiguration());
+        const testContext = new DefaultAwsContext(new TestConfiguration());
         testContext.addExplorerRegion(testRegion1Value);
     });
 
@@ -100,7 +100,7 @@ suite("AWSContext Tests", function (): void {
             }
         }
 
-        const testContext = new AWSContext(new TestConfiguration());
+        const testContext = new DefaultAwsContext(new TestConfiguration());
         testContext.addExplorerRegion([ testRegion1Value, testRegion2Value ]);
     });
 
@@ -121,7 +121,7 @@ suite("AWSContext Tests", function (): void {
             }
         }
 
-        const testContext = new AWSContext(new TestConfiguration());
+        const testContext = new DefaultAwsContext(new TestConfiguration());
         testContext.removeExplorerRegion([ testRegion2Value ]);
     });
 
@@ -135,13 +135,13 @@ suite("AWSContext Tests", function (): void {
             }
         }
 
-        const testContext = new AWSContext(new TestConfiguration());
+        const testContext = new DefaultAwsContext(new TestConfiguration());
         testContext.addExplorerRegion(testRegion1Value);
     });
 
     test('context fires event on single region change', function(done) {
 
-        const testContext = new AWSContext(new ContextTestsSettingsConfigurationBase());
+        const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase());
 
         testContext.onDidChangeContext((c) => {
             assert.equal(c.regions.length, 1);
@@ -154,7 +154,7 @@ suite("AWSContext Tests", function (): void {
 
     test('context fires event on multi region change', function(done) {
 
-        const testContext = new AWSContext(new ContextTestsSettingsConfigurationBase());
+        const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase());
 
         testContext.onDidChangeContext((c) => {
             assert.equal(c.regions.length, 2);
@@ -168,7 +168,7 @@ suite("AWSContext Tests", function (): void {
 
     test('context fires event on profile change', function(done) {
 
-        const testContext = new AWSContext(new ContextTestsSettingsConfigurationBase());
+        const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase());
 
         testContext.onDidChangeContext((c) => {
             assert.equal(c.profileName, testProfileValue);

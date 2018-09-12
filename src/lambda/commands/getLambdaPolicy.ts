@@ -7,10 +7,11 @@ import { BaseTemplates } from "../../shared/templates/baseTemplates";
 import { LambdaTemplates } from "../templates/lambdaTemplates";
 import { AWSError } from "aws-sdk";
 import { getSelectedLambdaNode } from "../utils";
+import { AwsContext } from '../../shared/awsContext';
 
-export async function getLambdaPolicy(element?: FunctionNode) {
+export async function getLambdaPolicy(awsContext:AwsContext, element?: FunctionNode) {
     try {
-        const fn: FunctionNode = await getSelectedLambdaNode(element);
+        const fn: FunctionNode = await getSelectedLambdaNode(awsContext, element);
 
         const view = vscode.window.createWebviewPanel('html', `Getting policy for ${fn.functionConfiguration.FunctionName}`, -1);
         const baseTemplateFn = _.template(BaseTemplates.SimpleHTML);

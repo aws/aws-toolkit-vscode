@@ -10,14 +10,18 @@ import { FunctionNode } from './explorer/functionNode';
 import { getLambdaPolicy } from './commands/getLambdaPolicy';
 import { invokeLambda } from './commands/invokeLambda';
 import { newLambda } from './commands/newLambda';
-import { deployLambda }from './commands/deployLambda';
+import { deployLambda } from './commands/deployLambda';
 import { getLambdaConfig } from './commands/getLambdaConfig';
-import { AWSContext } from '../shared/awsContext';
-import { ext } from '../shared/extensionGlobals';
+import { AwsContext } from '../shared/awsContext';
 import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode';
 import { RegionNode } from './explorer/regionNode';
+import { RegionProvider } from "../shared/regions/regionProvider";
+import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection';
 
 export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>, IRefreshableAWSTreeProvider {
+    private _awsContext: AwsContext;
+    private _awsContextTrees: AwsContextTreeCollection;
+    private _regionProvider: RegionProvider;
     private _onDidChangeTreeData: vscode.EventEmitter<FunctionNode | undefined> = new vscode.EventEmitter<FunctionNode | undefined>();
     readonly onDidChangeTreeData: vscode.Event<FunctionNode | undefined> = this._onDidChangeTreeData.event;
 
@@ -26,11 +30,11 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
     public initialize(): void {
         vscode.commands.registerCommand('aws.newLambda', async () => await newLambda());
         vscode.commands.registerCommand('aws.deployLambda', async (node: FunctionNode) => await deployLambda(node));
-        vscode.commands.registerCommand('aws.invokeLambda', async (node: FunctionNode) => await invokeLambda(node));
-        vscode.commands.registerCommand('aws.getLambdaConfig', async (node: FunctionNode) => await getLambdaConfig(node));
-        vscode.commands.registerCommand('aws.getLambdaPolicy', async (node: FunctionNode) => await getLambdaPolicy(node));
+        vscode.commands.registerCommand('aws.invokeLambda', async (node: FunctionNode) => await invokeLambda(this._awsContext, node));
+        vscode.commands.registerCommand('aws.getLambdaConfig', async (node: FunctionNode) => await getLambdaConfig(this._awsContext, node));
+        vscode.commands.registerCommand('aws.getLambdaPolicy', async (node: FunctionNode) => await getLambdaPolicy(this._awsContext, node));
 
-        ext.treesToRefreshOnContextChange.push(this);
+        this._awsContextTrees.addTree(this);
     }
 
     getTreeItem(element: AWSTreeNodeBase): vscode.TreeItem {
@@ -43,41 +47,48 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
         }
 
         return new Promise(resolve => {
-            const profileName = ext.awsContext.getCredentialProfileName();
+            const profileName = this._awsContext.getCredentialProfileName();
             if (!profileName) {
                 resolve([
                     new AWSCommandTreeNode(localize('AWS.explorerNode.signIn', 'Sign in to AWS...'),
-                                           'aws.login',
-                                           localize('AWS.explorerNode.signIn.tooltip', 'Connect to AWS using a credential profile'))
+                        'aws.login',
+                        localize('AWS.explorerNode.signIn.tooltip', 'Connect to AWS using a credential profile'))
                 ]);
             }
 
-            ext.awsContext.getExplorerRegions().then(regions => {
+            this._regionProvider.fetchLatestRegionData().then(regionDefinitions => {
+                this._awsContext.getExplorerRegions().then(explorerRegionCodes => {
 
-                if (regions.length !== 0) {
-                    let regionNodes: RegionNode[] = [];
+                    if (explorerRegionCodes.length !== 0) {
+                        let regionNodes: RegionNode[] = [];
 
-                    regions.forEach(r => {
-                        regionNodes.push(new RegionNode(r, r));
-                    });
+                        explorerRegionCodes.forEach(explorerRegionCode => {
+                            let region = regionDefinitions.find(region => region.regionCode === explorerRegionCode);
+                            let regionName = region ? region.regionName : explorerRegionCode;
+                            regionNodes.push(new RegionNode(explorerRegionCode, regionName));
+                        });
 
-                    resolve(regionNodes);
-                } else {
-                    resolve([
-                        new AWSCommandTreeNode(localize('AWS.explorerNode.addRegion', 'Click to add a region to view functions...'),
-                                               'aws.showRegion',
-                                               localize('AWS.explorerNode.addRegion.tooltip', 'Configure a region to show available functions'))
-                    ]);
-                }
+                        resolve(regionNodes);
+                    } else {
+                        resolve([
+                            new AWSCommandTreeNode(localize('AWS.explorerNode.addRegion', 'Click to add a region to view functions...'),
+                                'aws.showRegion',
+                                localize('AWS.explorerNode.addRegion.tooltip', 'Configure a region to show available functions'))
+                        ]);
+                    }
+                });
             });
         });
     }
 
-    refresh(context?: AWSContext) {
+    refresh(context?: AwsContext) {
         this._onDidChangeTreeData.fire();
     }
 
-    constructor() {
+    constructor(awsContext: AwsContext, awsContextTreeCollection: AwsContextTreeCollection, regionProvider: RegionProvider) {
+        this._awsContext = awsContext;
+        this._awsContextTrees = awsContextTreeCollection;
+        this._regionProvider = regionProvider;
     }
 }
 

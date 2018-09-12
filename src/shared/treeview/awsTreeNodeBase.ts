@@ -1,7 +1,7 @@
 'use strict';
 
 import { Command, Disposable, TreeItem } from 'vscode';
-import { AWSContext } from '../awsContext';
+import { AwsContext } from '../awsContext';
 
 export abstract class AWSTreeNodeBase extends Disposable {
 
@@ -31,7 +31,7 @@ export abstract class AWSTreeNodeBase extends Disposable {
         return undefined;
     }
 
-    public refresh(newContext: AWSContext): void { }
+    public refresh(newContext: AwsContext): void { }
 
     public resetChildren(): void {
         if (this.children !== undefined) {

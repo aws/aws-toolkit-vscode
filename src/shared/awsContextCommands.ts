@@ -5,42 +5,55 @@ let localize = nls.loadMessageBundle();
 
 import { window } from 'vscode';
 import { ext } from './extensionGlobals';
-import { RegionHelpers } from './regions/regionHelpers';
+import { RegionProvider } from './regions/regionProvider';
 import { credentialProfileSelector, CredentialSelectionDataProvider } from './credentials/credentialProfileSelector';
 import { CredentialsFileReaderWriter } from './credentials/credentialFileReaderWriter';
+import { AwsContext } from './awsContext';
+import { AwsContextTreeCollection } from './awsContextTreeCollection';
 
 export class AWSContextCommands {
+
+    private _awsContext: AwsContext;
+    private _awsContextTrees: AwsContextTreeCollection;
+    private _regionProvider: RegionProvider;
+
+    constructor(awsContext: AwsContext, awsContextTrees: AwsContextTreeCollection, regionProvider: RegionProvider) {
+        this._awsContext = awsContext;
+        this._awsContextTrees = awsContextTrees;
+        this._regionProvider = regionProvider;
+    }
+
     public async onCommandLogin() {
         var newProfile = await this.promptForProfileName();
         if (newProfile) {
-            ext.awsContext.setCredentialProfileName(newProfile);
+            this._awsContext.setCredentialProfileName(newProfile);
             this.refresh();
         }
     }
 
     public async onCommandLogout() {
-        ext.awsContext.setCredentialProfileName();
+        this._awsContext.setCredentialProfileName();
         this.refresh();
     }
 
     public async onCommandShowRegion() {
         var newRegion = await this.promptForRegion();
         if (newRegion) {
-            ext.awsContext.addExplorerRegion(newRegion);
+            this._awsContext.addExplorerRegion(newRegion);
             this.refresh();
         }
     }
 
     public async onCommandHideRegion(regionCode?: string) {
-        var region = regionCode || await this.promptForRegion();
+        var region = regionCode || await this._awsContext.getExplorerRegions().then(r => this.promptForRegion(r));
         if (region) {
-            ext.awsContext.removeExplorerRegion(region);
-            ext.treesToRefreshOnContextChange.forEach(t => t.refresh(ext.awsContext));
+            this._awsContext.removeExplorerRegion(region);
+            this.refresh();
         }
     }
 
     private refresh() {
-        ext.treesToRefreshOnContextChange.forEach(t => t.refresh(ext.awsContext));
+        this._awsContextTrees.refreshTrees(this._awsContext);
     }
 
     private async promptForProfileName(): Promise<string | undefined> {
@@ -66,12 +79,18 @@ export class AWSContextCommands {
         return undefined;
     }
 
-    private async promptForRegion(): Promise<string | undefined> {
-        const availableRegions = await RegionHelpers.fetchLatestRegionData();
-        const input = await window.showQuickPick(availableRegions.map(r => ({
+    private async promptForRegion(regions?: string[]): Promise<string | undefined> {
+        const availableRegions = await this._regionProvider.fetchLatestRegionData();
+        const regionsToShow = availableRegions.filter(r => {
+            if (regions) {
+                return regions.some(x => x === r.regionCode);
+            }
+            return true;
+        }).map(r => ({
             label: r.regionName,
             detail: r.regionCode
-        })), {
+        }));
+        const input = await window.showQuickPick(regionsToShow, {
             placeHolder: localize('AWS.message.selectRegion', 'Select an AWS region')
         });
         return input ? input.detail : undefined;

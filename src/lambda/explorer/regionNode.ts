@@ -23,7 +23,7 @@ export class RegionNode extends AWSRegionTreeNode {
     }
 
     protected getTooltip(): string | undefined {
-        return `${this.getLabel} (${this.regionCode})`;
+        return `${this.getLabel()} [${this.regionCode}]`;
     }
 
     public getChildren(): Thenable<AWSTreeNodeBase[]> {

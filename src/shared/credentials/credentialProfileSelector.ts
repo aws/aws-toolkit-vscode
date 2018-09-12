@@ -65,6 +65,7 @@ export class CredentialSelectionDataProvider implements ICredentialSelectionData
             value: '',
             prompt: localize('AWS.placeHolder.inputAccessKey', 'Input the AWS Access Key'),
             validate: this.validateAccessKey,
+            ignoreFocusOut: true,
             shouldResume: this.shouldResume
         });
     }
@@ -77,6 +78,7 @@ export class CredentialSelectionDataProvider implements ICredentialSelectionData
             value: '',
             prompt: localize('AWS.placeHolder.inputSecretKey', 'Input the AWS Secret Key'),
             validate: this.validateSecretKey,
+            ignoreFocusOut: true,
             shouldResume: this.shouldResume
         });
     }
