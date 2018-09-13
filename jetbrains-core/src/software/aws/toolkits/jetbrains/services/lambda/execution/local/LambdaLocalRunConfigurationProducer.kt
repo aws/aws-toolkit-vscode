@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.local
 
+import com.intellij.execution.RunManager
+import com.intellij.execution.RunnerAndConfigurationSettings
 import com.intellij.execution.actions.ConfigurationContext
 import com.intellij.execution.actions.RunConfigurationProducer
 import com.intellij.execution.configurations.ConfigurationFactory
@@ -16,6 +18,12 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfig
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 
 class LambdaLocalRunConfigurationProducer : RunConfigurationProducer<LambdaLocalRunConfiguration>(getFactory()) {
+    override fun getConfigurationSettingsList(runManager: RunManager): List<RunnerAndConfigurationSettings> {
+        // Filter all Lambda run configurations down to only ones that are Lambda local for this run producer
+        return super.getConfigurationSettingsList(runManager)
+            .filter { it.configuration is LambdaLocalRunConfiguration }
+    }
+
     override fun setupConfigurationFromContext(
         configuration: LambdaLocalRunConfiguration,
         context: ConfigurationContext,
