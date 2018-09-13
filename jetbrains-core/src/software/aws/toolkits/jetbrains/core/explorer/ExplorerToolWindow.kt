@@ -28,7 +28,6 @@ import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsMa
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_SERVICE_NODE
 import java.awt.Component
-import java.awt.FlowLayout
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.JPanel
@@ -36,12 +35,11 @@ import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
-class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, false), AccountSettingsChangedNotifier {
+class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, true), AccountSettingsChangedNotifier {
     private val actionManager = ActionManagerEx.getInstanceEx()
 
     private val treePanelWrapper: Wrapper = Wrapper()
     private val errorPanel: JPanel
-    private val mainPanel: JPanel
     private var awsTree: Tree? = null
 
     init {
@@ -50,8 +48,6 @@ class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, fal
         errorPanel = JPanel()
         errorPanel.add(link)
 
-        mainPanel = JPanel(FlowLayout(FlowLayout.LEADING, 0, 0))
-        setToolbar(mainPanel)
         setContent(treePanelWrapper)
 
         project.messageBus.connect().subscribe(ProjectAccountSettingsManager.ACCOUNT_SETTINGS_CHANGED, this)
