@@ -76,7 +76,7 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
             throw ExecutionException(e.message)
         }
         val provider = settings.runtime.runtimeGroup?.let { LambdaLocalRunProvider.getInstance(it) }
-                ?: throw ExecutionException("Unable to find run provider for ${settings.runtime}")
+            ?: throw ExecutionException("Unable to find run provider for ${settings.runtime}")
         return provider.createRunProfileState(environment, project, settings)
     }
 
@@ -133,7 +133,7 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
         return null
     }
 
-        fun configure(
+    fun configure(
         runtime: Runtime?,
         handler: String,
         input: String? = null,
@@ -165,9 +165,9 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
             val handler =
                 handler ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
             val runtime = runtime?.let { Runtime.valueOf(it) }
-                    ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
+                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
             val element = findPsiElementsForHandler(project, runtime, handler).firstOrNull()
-                    ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
+                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
             val inputValue = input
             val regionId =
                 regionId ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
@@ -179,12 +179,12 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
                         .refreshAndFindFileByPath(inputValue)
                         ?.contentsToByteArray(false)
                         ?.toString(StandardCharsets.UTF_8)
-                            ?: throw RuntimeConfigurationError(
-                                message(
-                                    "lambda.run_configuration.input_file_error",
-                                    inputValue
-                                )
+                        ?: throw RuntimeConfigurationError(
+                            message(
+                                "lambda.run_configuration.input_file_error",
+                                inputValue
                             )
+                        )
                 } catch (e: Exception) {
                     throw RuntimeConfigurationError(message("lambda.run_configuration.input_file_error", inputValue))
                 }
@@ -327,4 +327,3 @@ interface LambdaLocalRunProvider {
     companion object :
         RuntimeGroupExtensionPointObject<LambdaLocalRunProvider>(ExtensionPointName.create("aws.toolkit.lambda.localRunProvider"))
 }
-
