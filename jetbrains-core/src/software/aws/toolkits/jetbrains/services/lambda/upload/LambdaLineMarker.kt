@@ -21,6 +21,7 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaVirtualFile
+import software.aws.toolkits.jetbrains.services.lambda.execution.local.LambdaLocalRunProvider
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.resources.message
 import javax.swing.Icon
@@ -45,7 +46,7 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
 
         val actionGroup = DefaultActionGroup()
 
-        if (element.language in LambdaPackager.supportedLanguages) {
+        if (element.language in LambdaLocalRunProvider.supportedLanguages) {
             val executorActions = ExecutorAction.getActions(1)
             executorActions.forEach {
                 actionGroup.add(LineMarkerActionWrapper(element, it))

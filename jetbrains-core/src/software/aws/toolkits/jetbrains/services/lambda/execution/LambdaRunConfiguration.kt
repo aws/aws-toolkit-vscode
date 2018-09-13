@@ -16,6 +16,6 @@ class LambdaRunConfiguration :
     }
 
     companion object {
-        fun getInstance() = ConfigurationTypeUtil.findConfigurationType(LambdaRunConfiguration::class.java);
+        fun getInstance() = ConfigurationTypeUtil.findConfigurationType(LambdaRunConfiguration::class.java)
     }
 }
