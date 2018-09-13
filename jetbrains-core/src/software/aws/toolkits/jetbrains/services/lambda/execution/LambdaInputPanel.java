@@ -20,16 +20,19 @@ import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.ui.ClickListener;
 import com.intellij.ui.ComboboxWithBrowseButton;
 import com.intellij.ui.EditorTextField;
 import com.intellij.ui.EditorTextFieldProvider;
 import com.intellij.ui.SortedComboBoxModel;
 import com.intellij.util.ui.UIUtil;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Objects;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import org.jetbrains.annotations.NotNull;
@@ -70,6 +73,11 @@ public class LambdaInputPanel {
             }
         });
 
+        addQuickEnable(inputFile.getTextField(), useInputFile);
+        addQuickEnable(inputTemplates.getComboBox(), useInputText);
+        addQuickEnable(inputTemplates.getButton(), useInputText);
+        addQuickEnable(inputText.getComponent(), useInputText);
+
         inputFile.addBrowseFolderListener(null, null, project,
                                           FileChooserDescriptorFactory.createSingleFileDescriptor(JsonFileType.INSTANCE));
 
@@ -85,6 +93,21 @@ public class LambdaInputPanel {
         inputTemplates.addActionListener(new InputTemplateBrowseAction());
 
         updateComponents();
+    }
+
+    // Allows triggering the radio button selection by clicking on the component
+    private void addQuickEnable(JComponent component, JRadioButton radioButton) {
+        new ClickListener() {
+            @Override
+            public boolean onClick(@NotNull MouseEvent event, int clickCount) {
+                if (radioButton.isSelected()) {
+                    return false;
+                }
+                radioButton.setSelected(true);
+                updateComponents();
+                return true;
+            }
+        }.installOn(component);
     }
 
     private void createUIComponents() {
