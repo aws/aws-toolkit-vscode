@@ -39,10 +39,7 @@ abstract class LambdaRunConfigurationBase<T : LambdaRunConfigurationBase.Mutable
         return copy
     }
 
-    final override fun suggestedName(): String? = settings.handler
-
     abstract class MutableLambdaRunSettings(
-        var handler: String?,
         var input: String?,
         var inputIsFile: Boolean
     ) {

@@ -23,12 +23,15 @@ import com.intellij.testFramework.LightVirtualFile
 import com.intellij.ui.EditorTextField
 import com.intellij.util.io.decodeBase64
 import icons.AwsIcons
+import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.InvocationType
 import software.amazon.awssdk.services.lambda.model.LambdaException
 import software.amazon.awssdk.services.lambda.model.LogType
 import software.aws.toolkits.core.lambda.LambdaSampleEvent
 import software.aws.toolkits.core.lambda.LambdaSampleEventProvider
+import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider
+import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.utils.filesystem.LightFileEditor
 import software.aws.toolkits.resources.message
 import java.nio.charset.StandardCharsets
@@ -86,8 +89,14 @@ class LambdaEditor(
     private fun makeRequest(block: (String?, String?) -> Unit) {
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
-                val resp = model.function.client.invoke {
-                    it.functionName(model.function.name).invocationType(InvocationType.REQUEST_RESPONSE)
+                val function = model.function
+                val credentialProvider =
+                    CredentialManager.getInstance().getCredentialProvider(function.credentialProviderId)
+                val client =
+                    AwsClientManager.getInstance(project).getClient<LambdaClient>(credentialProvider, function.region)
+
+                val resp = client.invoke {
+                    it.functionName(function.name).invocationType(InvocationType.REQUEST_RESPONSE)
                         .logType(LogType.TAIL)
                         .payload(view.input.text)
                 }

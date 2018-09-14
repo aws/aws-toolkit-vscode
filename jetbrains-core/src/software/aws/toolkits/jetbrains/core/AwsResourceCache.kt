@@ -37,10 +37,16 @@ class DefaultAwsResourceCache(
             return emptyList()
         }
 
-        val resourceKey = "${accountSettingsManager.activeRegion}:${credentialProvider.id}:lambdafunctions"
-        return cache.computeIfAbsent(resourceKey) {
+        val region = accountSettingsManager.activeRegion
+        val credentialProviderId = credentialProvider.id
+
+        val resourceKey = "$region:$credentialProviderId:lambdafunctions"
+        return cache.computeIfAbsent(resourceKey) { _ ->
             val client = clientManager.getClient<LambdaClient>()
-            client.listFunctionsPaginator().functions().map { it.toDataClass(client) }.toList()
+
+            return@computeIfAbsent client.listFunctionsPaginator().functions()
+                .map { it.toDataClass(credentialProviderId, region) }
+                .toList()
         } as List<LambdaFunction>
     }
 }

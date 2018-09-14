@@ -12,6 +12,7 @@ import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.amazon.awssdk.services.lambda.model.ListFunctionsRequest
 import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerServiceRootNode
@@ -32,7 +33,7 @@ class LambdaServiceNode(project: Project) :
 
         val response = client.listFunctions(request.build())
         val resources: MutableList<AwsExplorerNode<*>> =
-            response.functions().map { mapResourceToNode(it) }.toMutableList()
+            response.functions().asSequence().map { mapResourceToNode(it) }.toMutableList()
         response.nextMarker()?.let {
             resources.add(AwsTruncatedResultNode(this, it))
         }
@@ -51,7 +52,8 @@ class LambdaFunctionNode(
     functionConfiguration: FunctionConfiguration
 ) : AwsExplorerResourceNode<FunctionConfiguration>(project, serviceNode, functionConfiguration, AwsIcons.Resources.LAMBDA_FUNCTION) {
     private val editorManager = FileEditorManager.getInstance(project)
-    private val function = functionConfiguration.toDataClass(client)
+    private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
+    val function = functionConfiguration.toDataClass(accountSettingsManager.activeCredentialProvider.id, accountSettingsManager.activeRegion)
 
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 

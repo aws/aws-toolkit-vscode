@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.lambda.upload
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.module.Module
+import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.CreateFunctionRequest
@@ -12,6 +13,7 @@ import software.amazon.awssdk.services.lambda.model.FunctionCode
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.aws.toolkits.core.ToolkitClientManager
+import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
@@ -35,15 +37,20 @@ class LambdaCreator internal constructor(
     private val uploader: CodeUploader,
     private val functionCreator: LambdaFunctionCreator
 ) {
-    fun createLambda(functionDetails: FunctionUploadDetails, module: Module, file: PsiFile): CompletionStage<LambdaFunction> {
+    fun createLambda(
+        functionDetails: FunctionUploadDetails,
+        module: Module,
+        file: PsiFile
+    ): CompletionStage<LambdaFunction> {
         return packager.createPackage(module, file)
             .thenCompose { uploader.upload(functionDetails, it) }
-            .thenCompose { functionCreator.create(functionDetails, it) }
+            .thenCompose { functionCreator.create(module.project, functionDetails, it) }
     }
 }
 
 internal class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
     fun create(
+        project: Project,
         details: FunctionUploadDetails,
         uploadedCode: UploadedCode
     ): CompletionStage<LambdaFunction> {
@@ -63,8 +70,14 @@ internal class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
                     }
                     .build()
 
+                val settingsManager = ProjectAccountSettingsManager.getInstance(project)
                 val result = lambdaClient.createFunction(req)
-                future.complete(result.toDataClass(lambdaClient))
+                future.complete(
+                    result.toDataClass(
+                        settingsManager.activeCredentialProvider.id,
+                        settingsManager.activeRegion
+                    )
+                )
             } catch (e: Exception) {
                 future.completeExceptionally(e)
             }

@@ -133,15 +133,17 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
         return settings.handler
     }
 
+    override fun suggestedName(): String? = settings.handler
+
     class MutableLambdaLocalRunSettings(
         var runtime: String? = null,
-        handler: String? = null,
+        var handler: String? = null,
         input: String? = null,
         inputIsFile: Boolean = false,
         var environmentVariables: MutableMap<String, String> = mutableMapOf(),
         var regionId: String? = null,
         var credentialProviderId: String? = null
-    ) : MutableLambdaRunSettings(handler, input, inputIsFile) {
+    ) : MutableLambdaRunSettings(input, inputIsFile) {
         fun validateAndCreateImmutable(project: Project): LambdaLocalRunSettings {
             val handler =
                 handler ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
