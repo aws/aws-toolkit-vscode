@@ -8,23 +8,27 @@ import com.intellij.idea.ActionsBundle
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.psi.NavigatablePsiElement
 import com.intellij.util.OpenSourceUtil
-import software.aws.toolkits.jetbrains.core.explorer.SingleResourceNodeAction
+import software.aws.toolkits.jetbrains.core.explorer.ResourceNodeAction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 
-class GoToHandlerAction : SingleResourceNodeAction<LambdaFunctionNode>() {
-    override fun update(selected: LambdaFunctionNode, e: AnActionEvent) {
+class GoToHandlerAction : ResourceNodeAction<LambdaFunctionNode>() {
+    override fun update(selected: List<LambdaFunctionNode>, e: AnActionEvent) {
         super.update(selected, e)
 
         val presentation = e.presentation
         presentation.icon = AllIcons.Actions.EditSource
         presentation.text = ActionsBundle.actionText("EditSource")
         presentation.description = ActionsBundle.actionText("EditSource")
-        presentation.isEnabled = getHandler(selected)?.isNotEmpty() ?: false
+        if (selected.size == 1) {
+            presentation.isEnabled = getHandler(selected.first())?.isNotEmpty() ?: false
+        } else {
+            presentation.isEnabled = false
+        }
         presentation.isVisible = true
     }
 
-    override fun actionPerformed(selected: LambdaFunctionNode, e: AnActionEvent) {
-        getHandler(selected)?.let {
+    override fun actionPerformed(selected: List<LambdaFunctionNode>, e: AnActionEvent) {
+        getHandler(selected.first())?.let {
             OpenSourceUtil.navigate(true, *it)
         }
     }
