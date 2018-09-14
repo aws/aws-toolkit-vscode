@@ -3,7 +3,7 @@
 
 AWS Toolkit for JetBrains - a plugin for interacting with AWS from JetBrains IDEs. The plugin includes features that make it easier to write applications on [Amazon Web Services](https://aws.amazon.com/) using a JetBrains IDE.
 
-The Toolkit is currently in preview and only available if built from [source](#Building-From-Source).
+The Toolkit is currently in preview and only available if built from [source](#building-from-source).
 
 
 ## Features
@@ -35,7 +35,7 @@ The following table shows the features that are available in various JetBrains I
 | AWS Service | Feature | IntelliJ | PyCharm | GoLand |
 | --- | --- | --- | --- | --- |
 | ![AWS Lambda][lambda-icon] AWS Lambda | Package & Deploy | :white_check_mark: | :white_check_mark: <br> (no external dependencies) | :white_check_mark: |
-| ![AWS Lambda][lambda-icon] AWS Lambda | Invoke / Debug Function (Local) | :soon: (#82) | | |
+| ![AWS Lambda][lambda-icon] AWS Lambda | Invoke / Debug Function (Local) | :white_check_mark: | | |
 
 
 *NB: If a feature is available in a non-IntelliJ plugin (e.g. PyCharm) it is also available through IntelliJ if the related IntelliJ plugin is available (e.g. [Python Plugin](https://www.jetbrains.com/help/idea/plugin-overview.html))*
