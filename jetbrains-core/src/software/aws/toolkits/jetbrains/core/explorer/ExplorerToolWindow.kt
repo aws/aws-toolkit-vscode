@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.explorer
 
+import com.intellij.execution.Location
 import com.intellij.ide.util.treeView.AbstractTreeBuilder
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ide.util.treeView.NodeRenderer
@@ -27,6 +28,8 @@ import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsMa
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_SERVICE_NODE
+import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
+import software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaLocation
 import java.awt.Component
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -129,6 +132,14 @@ class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, tru
         }
         if (SELECTED_SERVICE_NODE.`is`(dataId)) {
             return getSelectedServiceNode()
+        }
+        if (Location.DATA_KEY.`is`(dataId)) {
+            val lambdas = getSelectedNodesSameType<LambdaFunctionNode>()
+            if (lambdas?.size != 1) {
+                return null
+            }
+
+            return RemoteLambdaLocation(project, lambdas.first().function)
         }
 
         return super.getData(dataId)

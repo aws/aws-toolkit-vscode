@@ -53,13 +53,14 @@ class LambdaRemoteRunConfiguration(project: Project, factory: ConfigurationFacto
         return RemoteLambdaState(environment, settings.validateAndCreateImmutable())
     }
 
-    @TestOnly
+    override fun suggestedName() = settings.functionName
+
     fun configure(
         credentialProviderId: String?,
         regionId: String?,
         functionName: String?,
-        input: String,
-        inputIsFile: Boolean
+        input: String? = null,
+        inputIsFile: Boolean = false
     ) {
         settings.credentialProviderId = credentialProviderId
         settings.regionId = regionId
@@ -68,13 +69,16 @@ class LambdaRemoteRunConfiguration(project: Project, factory: ConfigurationFacto
         settings.inputIsFile = inputIsFile
     }
 
+    @TestOnly
+    fun getInternalSettings() = settings
+
     class MutableRemoteLambdaSettings(
         var credentialProviderId: String? = null,
         var regionId: String? = null,
         var functionName: String? = null,
         input: String? = null,
         inputIsFile: Boolean = false
-    ) : MutableLambdaRunSettings(functionName, input, inputIsFile) {
+    ) : MutableLambdaRunSettings(input, inputIsFile) {
         fun validateAndCreateImmutable(): LambdaRemoteRunSettings {
             val credProviderId = credentialProviderId
                     ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_credentials_specified"))
