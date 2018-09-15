@@ -4,7 +4,7 @@ import * as AWS from 'aws-sdk';
 import * as vscode from 'vscode';
 import { regionSettingKey, profileSettingKey } from './constants';
 import { AwsContext } from './awsContext';
-import { ISettingsConfiguration } from './settingsConfiguration';
+import { SettingsConfiguration } from './settingsConfiguration';
 
 // Carries the current context data on events
 export class ContextChangeEventsArgs {
@@ -26,7 +26,7 @@ export class DefaultAwsContext implements AwsContext {
     // the user's credential context (currently this maps to an sdk/cli credential profile)
     private profileName: string | undefined;
 
-    constructor(public settingsConfiguration: ISettingsConfiguration) {
+    constructor(public settingsConfiguration: SettingsConfiguration) {
 
         this.profileName = settingsConfiguration.readSetting(profileSettingKey, '');
         const persistedRegions = settingsConfiguration.readSetting(regionSettingKey, undefined);

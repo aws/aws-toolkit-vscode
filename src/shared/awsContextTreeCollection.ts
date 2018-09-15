@@ -1,16 +1,16 @@
 'use strict';
 
 import { AwsContext } from './awsContext';
-import { IRefreshableAWSTreeProvider } from '../shared/treeview/IAWSTreeProvider';
+import { RefreshableAwsTreeProvider } from './treeview/refreshableAwsTreeProvider';
 
 export class AwsContextTreeCollection {
-    private _trees: IRefreshableAWSTreeProvider[];
+    private _trees: RefreshableAwsTreeProvider[];
 
     constructor() {
         this._trees = [];
     }
 
-    public addTree(tree: IRefreshableAWSTreeProvider): void {
+    public addTree(tree: RefreshableAwsTreeProvider): void {
         this._trees.push(tree);
     }
 

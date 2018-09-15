@@ -2,7 +2,6 @@
 
 import { ExtensionContext, OutputChannel } from 'vscode';
 import { AWSClientBuilder } from './awsClientBuilder';
-import { IRefreshableAWSTreeProvider } from './treeview/IAWSTreeProvider';
 import { AWSStatusBar } from './statusBar';
 import { AWSContextCommands } from './awsContextCommands';
 
@@ -16,5 +15,4 @@ export namespace ext {
     export let awsContextCommands: AWSContextCommands;
     export let sdkClientBuilder: AWSClientBuilder;
     export let statusBar: AWSStatusBar;
-    export let treesToRefreshOnContextChange: IRefreshableAWSTreeProvider[] = [];
 }

@@ -13,9 +13,10 @@ let localize = nls.loadMessageBundle();
 
 import { QuickPickItem, Uri, ExtensionContext } from 'vscode';
 import { MultiStepInputFlowController } from '../multiStepInputFlowController';
-import { AddProfileButton, ICredentialSelectionState, ICredentialSelectionDataProvider } from './ICredentialSelectionDataProvider';
+import { CredentialSelectionState } from './credentialSelectionState';
+import { AddProfileButton, CredentialSelectionDataProvider } from './credentialSelectionDataProvider';
 
-export class CredentialSelectionDataProvider implements ICredentialSelectionDataProvider {
+export class DefaultCredentialSelectionDataProvider implements CredentialSelectionDataProvider {
 
     newProfileButton: AddProfileButton;
 
@@ -26,7 +27,7 @@ export class CredentialSelectionDataProvider implements ICredentialSelectionData
         }, localize('AWS.tooltip.createCredentialProfile', 'Create a new credential profile'));
     }
 
-    async pickCredentialProfile(input: MultiStepInputFlowController, state: Partial<ICredentialSelectionState>): Promise<QuickPickItem | AddProfileButton> {
+    async pickCredentialProfile(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>): Promise<QuickPickItem | AddProfileButton> {
         let existingProfiles: QuickPickItem[] = [];
 
         this.existingProfileNames.forEach(element => {
@@ -45,7 +46,7 @@ export class CredentialSelectionDataProvider implements ICredentialSelectionData
         });
     }
 
-    async inputProfileName(input: MultiStepInputFlowController, state: Partial<ICredentialSelectionState>) : Promise<string | undefined> {
+    async inputProfileName(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>) : Promise<string | undefined> {
         return await input.showInputBox({
             title: localize('AWS.title.createCredentialProfile', 'Create a new AWS credential profile'),
             step: 1,
@@ -57,7 +58,7 @@ export class CredentialSelectionDataProvider implements ICredentialSelectionData
         });
     }
 
-    async inputAccessKey(input: MultiStepInputFlowController, state: Partial<ICredentialSelectionState>) : Promise<string | undefined> {
+    async inputAccessKey(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>) : Promise<string | undefined> {
         return await input.showInputBox({
             title: localize('AWS.title.createCredentialProfile', 'Create a new AWS credential profile'),
             step: 2,
@@ -70,7 +71,7 @@ export class CredentialSelectionDataProvider implements ICredentialSelectionData
         });
     }
 
-    async inputSecretKey(input: MultiStepInputFlowController, state: Partial<ICredentialSelectionState>) : Promise<string | undefined> {
+    async inputSecretKey(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>) : Promise<string | undefined> {
         return await input.showInputBox({
             title: localize('AWS.title.createCredentialProfile', 'Create a new AWS credential profile'),
             step: 3,
@@ -107,9 +108,9 @@ export class CredentialSelectionDataProvider implements ICredentialSelectionData
     }
 }
 
-export async function credentialProfileSelector(dataProvider: ICredentialSelectionDataProvider) : Promise<ICredentialSelectionState | undefined> {
+export async function credentialProfileSelector(dataProvider: CredentialSelectionDataProvider) : Promise<CredentialSelectionState | undefined> {
 
-    async function pickCredentialProfile(input: MultiStepInputFlowController, state: Partial<ICredentialSelectionState>) {
+    async function pickCredentialProfile(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>) {
         const pick = await dataProvider.pickCredentialProfile(input, state);
         if (pick instanceof AddProfileButton) {
             return (input: MultiStepInputFlowController) => inputProfileName(input, state);
@@ -117,24 +118,24 @@ export async function credentialProfileSelector(dataProvider: ICredentialSelecti
         state.credentialProfile = pick;
     }
 
-    async function inputProfileName(input: MultiStepInputFlowController, state: Partial<ICredentialSelectionState>) {
+    async function inputProfileName(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>) {
         state.profileName = await dataProvider.inputProfileName(input, state);
         return (input: MultiStepInputFlowController) => inputAccessKey(input, state);
     }
 
-    async function inputAccessKey(input: MultiStepInputFlowController, state: Partial<ICredentialSelectionState>) {
+    async function inputAccessKey(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>) {
         state.accesskey = await dataProvider.inputAccessKey(input, state);
         return (input: MultiStepInputFlowController) => inputSecretKey(input, state);
     }
 
-    async function inputSecretKey(input: MultiStepInputFlowController, state: Partial<ICredentialSelectionState>) {
+    async function inputSecretKey(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>) {
         state.secretKey = await dataProvider.inputSecretKey(input, state);
     }
 
     async function collectInputs() {
-        const state = {} as Partial<ICredentialSelectionState>;
+        const state = {} as Partial<CredentialSelectionState>;
         await MultiStepInputFlowController.run(input => pickCredentialProfile(input, state));
-        return state as ICredentialSelectionState;
+        return state as CredentialSelectionState;
     }
 
     return await collectInputs();

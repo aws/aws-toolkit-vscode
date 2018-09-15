@@ -8,7 +8,7 @@ import { AWSClientBuilder } from './shared/awsClientBuilder';
 import { ext } from './shared/extensionGlobals';
 import { extensionSettingsPrefix } from './shared/constants';
 import { DefaultAwsContext } from './shared/defaultAwsContext';
-import { SettingsConfiguration } from './shared/settingsConfiguration';
+import { DefaultSettingsConfiguration } from './shared/settingsConfiguration';
 import { AWSStatusBar } from './shared/statusBar';
 import { AWSContextCommands } from './shared/awsContextCommands';
 import { RegionNode } from './lambda/explorer/regionNode';
@@ -21,7 +21,7 @@ export async function activate(context: vscode.ExtensionContext) {
     nls.config(process.env.VSCODE_NLS_CONFIG)();
 
     ext.context = context;
-    const awsContext = new DefaultAwsContext(new SettingsConfiguration(extensionSettingsPrefix));
+    const awsContext = new DefaultAwsContext(new DefaultSettingsConfiguration(extensionSettingsPrefix));
     const awsContextTrees = new AwsContextTreeCollection();
     const regionProvider = new RegionHelpers();
 
