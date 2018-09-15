@@ -81,7 +81,7 @@ export class AWSContextCommands {
     }
 
     private async promptForRegion(regions?: string[]): Promise<string | undefined> {
-        const availableRegions = await this._regionProvider.fetchLatestRegionData();
+        const availableRegions = await this._regionProvider.getRegionData();
         const regionsToShow = availableRegions.filter(r => {
             if (regions) {
                 return regions.some(x => x === r.regionCode);

@@ -17,11 +17,13 @@ import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode';
 import { RegionNode } from './explorer/regionNode';
 import { RegionProvider } from "../shared/regions/regionProvider";
 import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection';
+import { ResourceFetcher } from '../shared/resourceFetcher';
 
 export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
     private _awsContext: AwsContext;
     private _awsContextTrees: AwsContextTreeCollection;
     private _regionProvider: RegionProvider;
+    private readonly _resourceFetcher: ResourceFetcher;
     private _onDidChangeTreeData: vscode.EventEmitter<FunctionNode | undefined> = new vscode.EventEmitter<FunctionNode | undefined>();
     readonly onDidChangeTreeData: vscode.Event<FunctionNode | undefined> = this._onDidChangeTreeData.event;
 
@@ -30,7 +32,7 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
     public initialize(): void {
         vscode.commands.registerCommand('aws.newLambda', async () => await newLambda());
         vscode.commands.registerCommand('aws.deployLambda', async (node: FunctionNode) => await deployLambda(node));
-        vscode.commands.registerCommand('aws.invokeLambda', async (node: FunctionNode) => await invokeLambda(this._awsContext, node));
+        vscode.commands.registerCommand('aws.invokeLambda', async (node: FunctionNode) => await invokeLambda(this._awsContext, this._resourceFetcher, node));
         vscode.commands.registerCommand('aws.getLambdaConfig', async (node: FunctionNode) => await getLambdaConfig(this._awsContext, node));
         vscode.commands.registerCommand('aws.getLambdaPolicy', async (node: FunctionNode) => await getLambdaPolicy(this._awsContext, node));
 
@@ -56,7 +58,7 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
                 ]);
             }
 
-            this._regionProvider.fetchLatestRegionData().then(regionDefinitions => {
+            this._regionProvider.getRegionData().then(regionDefinitions => {
                 this._awsContext.getExplorerRegions().then(explorerRegionCodes => {
 
                     if (explorerRegionCodes.length !== 0) {
@@ -85,10 +87,11 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
         this._onDidChangeTreeData.fire();
     }
 
-    constructor(awsContext: AwsContext, awsContextTreeCollection: AwsContextTreeCollection, regionProvider: RegionProvider) {
+    constructor(awsContext: AwsContext, awsContextTreeCollection: AwsContextTreeCollection, regionProvider: RegionProvider, resourceFetcher: ResourceFetcher) {
         this._awsContext = awsContext;
         this._awsContextTrees = awsContextTreeCollection;
         this._regionProvider = regionProvider;
+        this._resourceFetcher = resourceFetcher;
     }
 }
 

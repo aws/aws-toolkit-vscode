@@ -1,8 +1,9 @@
 'use strict';
 
-import { RegionInfo } from "./regionHelpers";
+import { RegionInfo } from "./regionInfo";
 
 // Provides AWS Region Information
 export interface RegionProvider {
-    fetchLatestRegionData(): Promise<RegionInfo[]>;
+    // Returns an array of Regions
+    getRegionData(): Promise<RegionInfo[]>;
 }
