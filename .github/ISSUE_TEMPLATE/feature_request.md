@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea for this product
+about: Suggest an idea for the Toolkit
 
 ---
 
