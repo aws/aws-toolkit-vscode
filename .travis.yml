@@ -1,0 +1,11 @@
+language: java
+install: true
+
+jdk:
+- oraclejdk8
+
+script:
+- ./gradlew check -S --info --console plain
+
+after_success:
+- bash <(curl -s https://codecov.io/bash)
