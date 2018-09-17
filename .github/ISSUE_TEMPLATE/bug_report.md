@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Create a bug report to help us improve our product
+about: Create a bug report to help us improve the Toolkit
 
 ---
 
