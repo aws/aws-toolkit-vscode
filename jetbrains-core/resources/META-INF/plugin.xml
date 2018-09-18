@@ -84,8 +84,6 @@
 
     <extensions defaultExtensionNs="aws.toolkit">
         <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.ProfileCredentialProviderFactory"/>
-        <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.EnvironmentCredentialProviderFactory"/>
-        <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.SystemPropertyCredentialProviderFactory"/>
     </extensions>
 
     <actions>
