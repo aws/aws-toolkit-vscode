@@ -1,6 +1,12 @@
 language: java
 install: true
 
+matrix:
+  include:
+    - os: linux
+    - os: osx
+      osx_image: xcode8
+
 jdk:
 - oraclejdk8
 

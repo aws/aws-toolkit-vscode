@@ -34,9 +34,9 @@ class JetBrainsWriter(private val changeNotesFile: File, issueUrl: String? = nul
     }
 
     private fun expandIssueLinks(entry: String, issueUrl: String): String {
-        val regex = """#(?<issue>\d+)(?=<|\s)""".toRegex()
+        val regex = """#(\d+)(?=<|\s)""".toRegex()
         return regex.replace(entry) {
-            val issue = it.groups["issue"]?.value ?: return@replace it.value
+            val issue = it.groups[1]?.value ?: return@replace it.value
             """<a href="$issueUrl$issue">#$issue</a>"""
         }
     }
