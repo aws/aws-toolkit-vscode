@@ -10,17 +10,12 @@ import com.intellij.execution.lineMarker.ExecutorAction
 import com.intellij.execution.lineMarker.LineMarkerActionWrapper
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.editor.markup.GutterIconRenderer
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.psi.PsiElement
 import icons.AwsIcons
-import software.aws.toolkits.jetbrains.core.AwsResourceCache
-import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
-import software.aws.toolkits.jetbrains.services.lambda.LambdaVirtualFile
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.LambdaLocalRunProvider
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.resources.message
@@ -57,11 +52,6 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
             actionGroup.add(UploadLambdaFunction(handler))
         }
 
-        AwsResourceCache.getInstance(element.project).lambdaFunctions()
-            .asSequence()
-            .filter { it.handler == handler }
-            .forEach { actionGroup.add(OpenLambda(it)) }
-
         return object : LineMarkerInfo<PsiElement>(
             element, element.textRange, icon, Pass.LINE_MARKERS,
             null, null,
@@ -86,15 +76,5 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
         override fun isNavigateAction(): Boolean = true
 
         override fun getPopupMenuActions(): ActionGroup = actionGroup
-    }
-
-    class OpenLambda(private val function: LambdaFunction) :
-        AnAction(message("lambda.open_function", function.name), null, AwsIcons.Actions.LAMBDA_FUNCTION_OPEN) {
-        override fun actionPerformed(e: AnActionEvent?) {
-            val event = e ?: return
-            val editorManager = event.project?.let { FileEditorManager.getInstance(it) } ?: return
-            val lambdaVirtualFile = LambdaVirtualFile(function)
-            editorManager.openFile(lambdaVirtualFile, true)
-        }
     }
 }
