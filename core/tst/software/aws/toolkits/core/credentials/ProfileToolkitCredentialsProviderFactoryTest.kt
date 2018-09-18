@@ -18,7 +18,6 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
-import software.amazon.awssdk.http.Abortable
 import software.amazon.awssdk.http.AbortableCallable
 import software.amazon.awssdk.http.AbortableInputStream
 import software.amazon.awssdk.http.SdkHttpClient
@@ -294,7 +293,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
                     </AssumeRoleResponse>
                     """.trimIndent()
 
-        return AbortableInputStream(body.toByteArray().inputStream(), Abortable {})
+        return AbortableInputStream.create(body.toByteArray().inputStream())
     }
 
     companion object {
