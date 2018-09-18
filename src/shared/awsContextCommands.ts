@@ -10,6 +10,7 @@ import { credentialProfileSelector, DefaultCredentialSelectionDataProvider } fro
 import { DefaultCredentialsFileReaderWriter } from './credentials/defaultCredentialsFileReaderWriter';
 import { AwsContext } from './awsContext';
 import { AwsContextTreeCollection } from './awsContextTreeCollection';
+import { RegionInfo } from './regions/regionInfo';
 
 export class AWSContextCommands {
 
@@ -37,7 +38,9 @@ export class AWSContextCommands {
     }
 
     public async onCommandShowRegion() {
-        var newRegion = await this.promptForRegion();
+        const explorerRegions = new Set(await this._awsContext.getExplorerRegions());
+        const newRegion = await this.promptForFilteredRegion(candidateRegion => !explorerRegions.has(candidateRegion.regionCode));
+
         if (newRegion) {
             this._awsContext.addExplorerRegion(newRegion);
             this.refresh();
@@ -80,6 +83,25 @@ export class AWSContextCommands {
         return undefined;
     }
 
+    /**
+     * @description
+     * Prompts the user to select a region.
+     * The set shown to the user is filtered from all available regions.
+     * 
+     * @param filter Filter to apply to the available regions 
+     */
+    private async promptForFilteredRegion(filter: (region: RegionInfo) => boolean): Promise<string | undefined> {
+        const availableRegions = await this._regionProvider.getRegionData();
+        const regionsToShow = availableRegions.filter(r => filter(r)).map(r => r.regionCode);
+        return this.promptForRegion(regionsToShow);
+    }
+
+    /**
+     * Prompts the user to select a region.
+     * 
+     * @param regions (Optional) The regions to show the user. If none provided, all available
+     * regions are shown. Regions provided must exist in the available regions to be shown.
+     */
     private async promptForRegion(regions?: string[]): Promise<string | undefined> {
         const availableRegions = await this._regionProvider.getRegionData();
         const regionsToShow = availableRegions.filter(r => {
