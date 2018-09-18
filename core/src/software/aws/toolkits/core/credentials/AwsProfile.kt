@@ -61,8 +61,12 @@ class ProfileToolkitCredentialsProvider(
                     .externalId(externalId)
                     .build()
 
-                val stsRegion = DefaultAwsRegionProviderChain().region?.let {
-                    regionProvider.regions()[it.id()]
+                val stsRegion = try {
+                    DefaultAwsRegionProviderChain().region?.let {
+                        regionProvider.regions()[it.id()]
+                    }
+                } catch (_: Exception) {
+                    null
                 } ?: AwsRegion.GLOBAL
 
                 // Override the default SPI for getting the active credentials since we are making an internal
