@@ -49,8 +49,6 @@
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
-        <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.lambda.LambdaViewerProvider"/>
-
         <!-- Credential Management -->
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.DefaultRemoteResourceResolverProvider"/>

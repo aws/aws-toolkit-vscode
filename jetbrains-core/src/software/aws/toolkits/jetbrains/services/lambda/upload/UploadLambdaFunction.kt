@@ -3,18 +3,15 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.upload
 
-import com.intellij.notification.NotificationListener
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.module.Module
 import com.intellij.psi.PsiFile
 import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
-import software.aws.toolkits.jetbrains.services.lambda.LambdaVirtualFile
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
@@ -42,14 +39,8 @@ class UploadLambdaFunction(private val handlerName: String) : AnAction(message("
             .whenComplete { function, error ->
                 when {
                     function != null -> {
-                        val notificationListener = NotificationListener { _, _ ->
-                            val editorManager = FileEditorManager.getInstance(module.project)
-                            val lambdaVirtualFile = LambdaVirtualFile(function)
-                            editorManager.openFile(lambdaVirtualFile, true)
-                        }
                         notifyInfo(
-                            message("lambda.function_created.notification", "<a href=\"$function\">${functionDetails.name}</a>"),
-                            listener = notificationListener,
+                            message("lambda.function_created.notification", functionDetails.name),
                             project = module.project
                         )
                     }

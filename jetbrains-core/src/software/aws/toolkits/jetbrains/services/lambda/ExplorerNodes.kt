@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.lambda
 
 import com.intellij.ide.util.treeView.AbstractTreeNode
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.psi.NavigatablePsiElement
 import icons.AwsIcons
@@ -18,8 +17,6 @@ import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsTruncatedResultNode
 import software.aws.toolkits.resources.message
-import javax.swing.tree.DefaultMutableTreeNode
-import javax.swing.tree.DefaultTreeModel
 
 class LambdaServiceNode(project: Project) :
     AwsExplorerServiceRootNode(project, message("lambda.service_name"), AwsIcons.Logos.LAMBDA) {
@@ -51,16 +48,11 @@ class LambdaFunctionNode(
     serviceNode: LambdaServiceNode,
     functionConfiguration: FunctionConfiguration
 ) : AwsExplorerResourceNode<FunctionConfiguration>(project, serviceNode, functionConfiguration, AwsIcons.Resources.LAMBDA_FUNCTION) {
-    private val editorManager = FileEditorManager.getInstance(project)
     private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
+
     val function = functionConfiguration.toDataClass(accountSettingsManager.activeCredentialProvider.id, accountSettingsManager.activeRegion)
 
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
-
-    override fun onDoubleClick(model: DefaultTreeModel, selectedElement: DefaultMutableTreeNode) {
-        val lambdaVirtualFile = LambdaVirtualFile(function)
-        editorManager.openFile(lambdaVirtualFile, true)
-    }
 
     override fun resourceType(): String = "function"
 
