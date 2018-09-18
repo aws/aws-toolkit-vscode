@@ -96,7 +96,7 @@
                     class="software.aws.toolkits.jetbrains.services.lambda.actions.GoToHandlerAction"/>
             <separator/>
             <action id="lambda.function.delete"
-                    class="software.aws.toolkits.jetbrains.services.lambda.DeleteFunctionAction"
+                    class="software.aws.toolkits.jetbrains.services.lambda.actions.DeleteFunctionAction"
                     text="Delete Function"
                     icon="AllIcons.Actions.Cancel"/>
         </group>

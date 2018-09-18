@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.core
 
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.ui.InputValidator
 import com.intellij.openapi.ui.Messages
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerResourceNode
@@ -13,7 +14,7 @@ import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 
-abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>> : SingleResourceNodeAction<T>() {
+abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>> : SingleResourceNodeAction<T>(), DumbAware {
     final override fun actionPerformed(selected: T, e: AnActionEvent) {
         val resourceName = selected.toString()
         val resourceType = selected.resourceType()
