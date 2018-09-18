@@ -28,6 +28,7 @@ import software.amazon.awssdk.services.sts.model.AssumeRoleRequest
 import software.aws.toolkits.core.credentials.ProfileToolkitCredentialsProviderFactory.Companion.TYPE
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.ToolkitRegionProvider
+import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.resources.message
 import java.nio.file.Path
 import java.util.function.Supplier
@@ -59,12 +60,10 @@ class ProfileToolkitCredentialsProvider(
                 val externalId = profile.property(EXTERNAL_ID).orElse(null)
                 val mfaSerial = profile.property(MFA_SERIAL).orElse(null)
 
-                val stsRegion = try {
+                val stsRegion = tryOrNull {
                     DefaultAwsRegionProviderChain().region?.let {
                         regionProvider.regions()[it.id()]
                     }
-                } catch (_: Exception) {
-                    null
                 } ?: AwsRegion.GLOBAL
 
                 // Override the default SPI for getting the active credentials since we are making an internal
