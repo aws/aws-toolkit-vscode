@@ -7,13 +7,12 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.S3Exception
 
 fun S3Client.regionForBucket(bucketName: String): String {
-    try {
-        return this.headBucket { it.bucket(bucketName) }
+    return try {
+        this.headBucket { it.bucket(bucketName) }
             .sdkHttpResponse()
             .headers()[BUCKET_REGION_HEADER]?.first() ?: throw IllegalStateException("Failed to get bucket header")
     } catch (e: S3Exception) {
-        e.awsErrorDetails().sdkHttpResponse().headers[BUCKET_REGION_HEADER]?.run { return@regionForBucket this }
-        throw e
+        e.awsErrorDetails().sdkHttpResponse().firstMatchingHeader(BUCKET_REGION_HEADER).orElseGet { null } ?: throw e
     }
 }
 
