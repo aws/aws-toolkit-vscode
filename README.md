@@ -78,7 +78,7 @@ Currently the only way to consume the plugin is to build the source and add it a
   gradlew buildPlugin
   ```
   
-3. In your JetBrains IDE (e.g. IntelliJ) navigate to `Settings/Preferences` -> `Plugins` and select "Install Plugin from Disk". Nagivate to the directory where you cloned the project and select the `build/distributions/aws-jetbrains-toolkit-0.1-SNAPSHOT.zip` file. 
+3. In your JetBrains IDE (e.g. IntelliJ) navigate to `Settings/Preferences` -> `Plugins` and select "Install Plugin from Disk". Navigate to the directory where you cloned the project and select the `build/distributions/aws-jetbrains-toolkit-0.1-SNAPSHOT.zip` file. 
 4. You will be prompted to restart your IDE.
 
 ## Contributing
