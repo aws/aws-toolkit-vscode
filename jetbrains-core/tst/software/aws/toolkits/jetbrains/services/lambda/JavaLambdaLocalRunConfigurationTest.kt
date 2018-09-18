@@ -29,7 +29,6 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.containsString
 import org.hamcrest.Matchers.equalTo
 import org.hamcrest.Matchers.equalToIgnoringWhiteSpace
-import org.hamcrest.Matchers.isEmptyString
 import org.hamcrest.Matchers.notNullValue
 import org.intellij.lang.annotations.Language
 import org.junit.After
@@ -90,7 +89,6 @@ class JavaLambdaLocalRunConfigurationTest {
         val output = executionFuture.get(10, TimeUnit.SECONDS)
         assertThat(output.exitCode, equalTo(0))
         assertThat(output.stdout, equalToIgnoringWhiteSpace("HELLO!"))
-        assertThat(output.stderr, isEmptyString())
     }
 
     @Test
@@ -122,7 +120,6 @@ class JavaLambdaLocalRunConfigurationTest {
         assertThat(output.exitCode, equalTo(0))
         assertThat(output.stdout, containsString("AWS_REGION=us-east-1"))
         assertThat(output.stdout, containsString("AWS_DEFAULT_REGION=us-east-1"))
-        assertThat(output.stderr, isEmptyString())
     }
 
     @Test
