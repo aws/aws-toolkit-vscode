@@ -85,7 +85,6 @@ class ProfileToolkitCredentialsProviderFactoryTest {
         profileFile.writeText(TEST_PROFILE_FILE_CONTENTS)
 
         val providerFactory = createProviderFactory()
-
         val credentialsProvider = providerFactory.get("profile:foo")
         assertThat(credentialsProvider).isNotNull
         assertThat(credentialsProvider!!.resolveCredentials()).isInstanceOf(AwsCredentials::class.java)

@@ -44,12 +44,13 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
     StatusBarWidget.MultipleTextValuesPresentation,
     AccountSettingsChangedNotifier {
     private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
-    private var statusBar: StatusBar? = null
+    private val settingsSelector = SettingsSelector(project)
+    private lateinit var statusBar: StatusBar
 
     @Suppress("FunctionName")
     override fun ID(): String = "AwsSettingsPanel"
 
-    override fun getTooltipText() = message("settings.title")
+    override fun getTooltipText() = SettingsSelector.tooltipText
 
     override fun getSelectedValue(): String {
         val statusLine = try {
@@ -68,16 +69,7 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
         TODO("not implemented")
     }
 
-    override fun getPopupStep(): ListPopup? {
-        val dataContext = DataManager.getInstance().getDataContext(statusBar!!.component)
-        return JBPopupFactory.getInstance().createActionGroupPopup(
-            tooltipText,
-            ChangeAccountSettingsAction(accountSettingsManager).createPopupActionGroup(),
-            dataContext,
-            JBPopupFactory.ActionSelectionAid.SPEEDSEARCH,
-            true
-        )
-    }
+    override fun getPopupStep() = settingsSelector.settingsPopup(statusBar.component)
 
     override fun getClickConsumer(): Consumer<MouseEvent>? = null
 
@@ -98,11 +90,13 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
     }
 
     private fun updateWidget() {
-        statusBar?.updateWidget(ID())
+        statusBar.updateWidget(ID())
     }
 
     override fun dispose() {
-        ApplicationManager.getApplication().invokeLater({ statusBar?.removeWidget(ID()) }, { project.isDisposed })
+        if (::statusBar.isInitialized) {
+            ApplicationManager.getApplication().invokeLater({ statusBar.removeWidget(ID()) }, { project.isDisposed })
+        }
     }
 }
 
@@ -137,8 +131,10 @@ class SettingsSelector(project: Project) {
     }
 }
 
-private class ChangeAccountSettingsAction(private val accountSettingsManager: ProjectAccountSettingsManager, private val showRegions: Boolean = true) :
-    ComboBoxAction(), DumbAware {
+private class ChangeAccountSettingsAction(
+    private val accountSettingsManager: ProjectAccountSettingsManager,
+    private val showRegions: Boolean
+) : ComboBoxAction(), DumbAware {
 
     fun createPopupActionGroup(): DefaultActionGroup {
         return createPopupActionGroup(null)
