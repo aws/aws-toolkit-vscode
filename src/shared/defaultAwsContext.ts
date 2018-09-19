@@ -3,14 +3,10 @@
 import * as AWS from 'aws-sdk'
 import * as vscode from 'vscode'
 import { regionSettingKey, profileSettingKey } from './constants'
-import { AwsContext } from './awsContext'
+import { AwsContext, ContextChangeEventsArgs } from './awsContext'
 import { SettingsConfiguration } from './settingsConfiguration'
 
-// Carries the current context data on events
-export class ContextChangeEventsArgs {
-    constructor(public profileName: string | undefined, public regions: string[]) {
-    }
-}
+
 
 // Wraps an AWS context in terms of credential profile and zero or more regions. The
 // context listens for configuration updates and resets the context accordingly.

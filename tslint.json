@@ -1,16 +1,16 @@
 {
-	"extends": "tslint-eslint-rules",
+	"extends": [
+		"tslint-eslint-rules",
+		"tslint-no-circular-imports"
+	],
 	"rules": {
 		"no-string-throw": true,
 		"no-unused-expression": true,
 		"no-duplicate-variable": true,
 		"curly": true,
 		"class-name": true,
-		"interface-name": [true, "never-prefix"],
-		"semicolon": [
-			true,
-			"never"
-		],
+		"interface-name": [ true, "never-prefix" ],
+		"semicolon": [ true, "never" ],
 		"no-unexpected-multiline": true,
 		"triple-equals": true
 	},

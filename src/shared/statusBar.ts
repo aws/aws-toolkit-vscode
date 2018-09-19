@@ -4,8 +4,7 @@ import * as nls from 'vscode-nls'
 let localize = nls.loadMessageBundle()
 
 import { ExtensionContext, window, StatusBarItem, StatusBarAlignment } from 'vscode'
-import { ContextChangeEventsArgs } from './defaultAwsContext'
-import { AwsContext } from './awsContext'
+import { AwsContext, ContextChangeEventsArgs } from './awsContext'
 
 // may want to have multiple elements of data on the status bar,
 // so wrapping in a class to allow for per-element update capability
