@@ -180,6 +180,7 @@
         "@types/xml2js": "^0.4.3",
         "semver-regex": "^2.0.0",
         "tslint": "^5.11.0",
+        "tslint-eslint-rules": "^5.4.0",
         "typescript": "^3.0.1",
         "vscode": "^1.1.21",
         "vscode-nls-dev": "^3.2.2"
