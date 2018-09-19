@@ -57,7 +57,7 @@ export class LambdaTemplates {
     <% Scripts.forEach(function(scr) { %>
         <script nonce="<%= scr.Nonce %>" src="<%= scr.Uri %>"></script>
     <% }); %>
-    `;
+    `
     static readonly GetPolicyTemplate = `
     <h1>
         Policy for <%= FunctionName %>...
@@ -65,7 +65,7 @@ export class LambdaTemplates {
     <p>Policy:
         <pre><%- JSON.stringify(JSON.parse(Policy), null, 4) %></pre>
     </p>
-    `;
+    `
     static readonly GetConfigTemplate = `
     <h1>
         Configuration for <%= FunctionName %>...
@@ -79,5 +79,5 @@ export class LambdaTemplates {
     <p>Role: <%= Role %>
     <p>Timeout: <%= Timeout %>
     <p>Version: <%= Version %>
-    `;
+    `
 }

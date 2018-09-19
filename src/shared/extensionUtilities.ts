@@ -1,37 +1,37 @@
-import * as vscode from 'vscode';
-import * as path from 'path';
-import { ext } from "../shared/extensionGlobals";
-import { ScriptResource } from '../lambda/models/scriptResource';
-import * as _ from 'lodash';
+import * as vscode from 'vscode'
+import * as path from 'path'
+import { ext } from "../shared/extensionGlobals"
+import { ScriptResource } from '../lambda/models/scriptResource'
+import * as _ from 'lodash'
 
 export class ExtensionUtilities {
     public static getLibrariesForHtml(names: string[]): ScriptResource[] {
-        const basePath = path.join(ext.context.extensionPath, 'media', 'libs');
-        return this.resolveResourceURIs(basePath, names);
+        const basePath = path.join(ext.context.extensionPath, 'media', 'libs')
+        return this.resolveResourceURIs(basePath, names)
     }
     public static getScriptsForHtml(names: string[]): ScriptResource[] {
-        const basePath = path.join(ext.context.extensionPath, 'media', 'js');
-        return this.resolveResourceURIs(basePath, names);
+        const basePath = path.join(ext.context.extensionPath, 'media', 'js')
+        return this.resolveResourceURIs(basePath, names)
     }
 
     private static resolveResourceURIs(basePath: string, names: string[]): ScriptResource[] {
-        const scripts: ScriptResource[] = [];
+        const scripts: ScriptResource[] = []
         _.forEach(names, (scriptName) => {
-            const scriptPathOnDisk = vscode.Uri.file(path.join(basePath, scriptName));
-            const scriptUri = scriptPathOnDisk.with({ scheme: 'vscode-resource' });
-            const nonce = ExtensionUtilities.getNonce();
-            scripts.push({ Nonce: nonce, Uri: scriptUri });
-        });
-        return scripts;
+            const scriptPathOnDisk = vscode.Uri.file(path.join(basePath, scriptName))
+            const scriptUri = scriptPathOnDisk.with({ scheme: 'vscode-resource' })
+            const nonce = ExtensionUtilities.getNonce()
+            scripts.push({ Nonce: nonce, Uri: scriptUri })
+        })
+        return scripts
     }
 
     public static getNonce(): string {
-        let text = "";
-        const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        let text = ""
+        const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
         for (let i = 0; i < 32; i++) {
-            text += possible.charAt(Math.floor(Math.random() * possible.length));
+            text += possible.charAt(Math.floor(Math.random() * possible.length))
         }
-        return text;
+        return text
     }
 }
 
@@ -51,10 +51,10 @@ export class ExtensionUtilities {
 export function safeGet<O, T>(obj: O | undefined, getFn: (x: O) => T): T | undefined {
     if (obj) {
         try {
-            return getFn(obj);
+            return getFn(obj)
         } catch (error) {
             //ignore
         }
     }
-    return undefined;
+    return undefined
 }

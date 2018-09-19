@@ -1,14 +1,14 @@
-'use strict';
+'use strict'
 
-import { AwsContext } from './awsContext';
-import { env, version } from 'vscode';
+import { AwsContext } from './awsContext'
+import { env, version } from 'vscode'
 
 export class AWSClientBuilder {
 
-    private _awsContext: AwsContext;
+    private _awsContext: AwsContext
 
     constructor(awsContext: AwsContext) {
-        this._awsContext = awsContext;
+        this._awsContext = awsContext
 
     }
 
@@ -22,19 +22,19 @@ export class AWSClientBuilder {
         
 
         if (!awsServiceOpts.credentials) {
-            awsServiceOpts.credentials = await this._awsContext.getCredentials();
+            awsServiceOpts.credentials = await this._awsContext.getCredentials()
         }
 
         if (!awsServiceOpts.region && region) {
-            awsServiceOpts.region = region;
+            awsServiceOpts.region = region
         }
 
         if (!awsServiceOpts.customUserAgent) {
-            const pluginVersion: string = require('../../package.json').version;
-            const platformName = env.appName.replace(/\s/g, '-');
-            awsServiceOpts.customUserAgent = `AWS-Toolkit-For-VisualStudio/${pluginVersion} ${platformName}/${version}`;
+            const pluginVersion: string = require('../../package.json').version
+            const platformName = env.appName.replace(/\s/g, '-')
+            awsServiceOpts.customUserAgent = `AWS-Toolkit-For-VisualStudio/${pluginVersion} ${platformName}/${version}`
         }
 
-        return new awsService(awsServiceOpts);
+        return new awsService(awsServiceOpts)
     }
 }

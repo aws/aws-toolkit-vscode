@@ -9,5 +9,5 @@ export class BaseTemplates {
             <body>
                 <%= content %>
             </body>
-        </html>`;
+        </html>`
 }

@@ -1,33 +1,33 @@
-'use strict';
+'use strict'
 
-import { FunctionNode } from "../explorer/functionNode";
-import * as vscode from 'vscode';
-import _ = require("lodash");
-import { BaseTemplates } from "../../shared/templates/baseTemplates";
-import { LambdaTemplates } from "../templates/lambdaTemplates";
-import { AWSError } from "aws-sdk";
-import { getSelectedLambdaNode } from "../utils";
-import { AwsContext } from '../../shared/awsContext';
+import { FunctionNode } from "../explorer/functionNode"
+import * as vscode from 'vscode'
+import _ = require("lodash")
+import { BaseTemplates } from "../../shared/templates/baseTemplates"
+import { LambdaTemplates } from "../templates/lambdaTemplates"
+import { AWSError } from "aws-sdk"
+import { getSelectedLambdaNode } from "../utils"
+import { AwsContext } from '../../shared/awsContext'
 
 export async function getLambdaConfig(awsContext: AwsContext, element?: FunctionNode) {
     try {
-        const fn: FunctionNode = await getSelectedLambdaNode(awsContext, element);
+        const fn: FunctionNode = await getSelectedLambdaNode(awsContext, element)
 
-        const view = vscode.window.createWebviewPanel('html', `Getting config for ${fn.functionConfiguration.FunctionName}`, -1);
+        const view = vscode.window.createWebviewPanel('html', `Getting config for ${fn.functionConfiguration.FunctionName}`, -1)
 
-        const baseTemplateFn = _.template(BaseTemplates.SimpleHTML);
-        view.webview.html = baseTemplateFn({ content: `<h1>Loading...</h1>` });
+        const baseTemplateFn = _.template(BaseTemplates.SimpleHTML)
+        view.webview.html = baseTemplateFn({ content: `<h1>Loading...</h1>` })
         const funcResponse = await fn.lambda.getFunctionConfiguration({
             FunctionName: fn.functionConfiguration.FunctionName!
-        }).promise();
+        }).promise()
 
-        const getConfigTemplateFn = _.template(LambdaTemplates.GetConfigTemplate);
+        const getConfigTemplateFn = _.template(LambdaTemplates.GetConfigTemplate)
         view.webview.html = baseTemplateFn({
             content: getConfigTemplateFn(funcResponse)
-        });
+        })
     }
     catch (err) {
-        const ex: AWSError = err;
-        console.log(ex.message);
+        const ex: AWSError = err
+        console.log(ex.message)
     }
 }

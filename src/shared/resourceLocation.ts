@@ -1,29 +1,29 @@
-'use strict';
+'use strict'
 
 export interface ResourceLocation {
-    getLocationUri(): string;
+    getLocationUri(): string
 }
 
 export class WebResourceLocation implements ResourceLocation {
-    private readonly _uri: string;
+    private readonly _uri: string
 
     constructor(uri: string) {
-        this._uri = uri;
+        this._uri = uri
     }
 
     public getLocationUri(): string {
-        return this._uri;
+        return this._uri
     }
 }
 
 export class FileResourceLocation implements ResourceLocation {
-    private readonly _filename: string;
+    private readonly _filename: string
 
     constructor(filename: string) {
-        this._filename = filename;
+        this._filename = filename
     }
 
     public getLocationUri(): string {
-        return this._filename;
+        return this._filename
     }
 }

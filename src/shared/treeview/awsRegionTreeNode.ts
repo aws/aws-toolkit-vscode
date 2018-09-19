@@ -1,26 +1,26 @@
-'use strict';
+'use strict'
 
-import { TreeItem, TreeItemCollapsibleState } from 'vscode';
-import { AWSTreeNodeBase } from '../treeview/awsTreeNodeBase';
+import { TreeItem, TreeItemCollapsibleState } from 'vscode'
+import { AWSTreeNodeBase } from '../treeview/awsTreeNodeBase'
 
 export abstract class AWSRegionTreeNode extends AWSTreeNodeBase {
-    public readonly contextValue: string = 'awsRegion';
+    public readonly contextValue: string = 'awsRegion'
 
     constructor(public regionCode:string) {
-        super();
+        super()
     }
 
-    protected abstract getLabel(): string;
+    protected abstract getLabel(): string
 
     protected getTooltip(): string | undefined {
-        return undefined;
+        return undefined
     }
 
     public getTreeItem(): TreeItem {
-        const item = new TreeItem(this.getLabel(), TreeItemCollapsibleState.Expanded);
-        item.tooltip = this.getTooltip();
-        item.contextValue = this.contextValue;
+        const item = new TreeItem(this.getLabel(), TreeItemCollapsibleState.Expanded)
+        item.tooltip = this.getTooltip()
+        item.contextValue = this.contextValue
 
-        return item;
+        return item
     }
 }
