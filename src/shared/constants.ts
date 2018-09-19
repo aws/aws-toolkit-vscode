@@ -1,9 +1,9 @@
-'use strict';
+'use strict'
 
-export const extensionSettingsPrefix: string = 'aws';
-export const regionSettingKey: string = 'region';
-export const profileSettingKey: string = 'profile';
+export const extensionSettingsPrefix: string = 'aws'
+export const regionSettingKey: string = 'region'
+export const profileSettingKey: string = 'profile'
 
-export const hostedFilesBaseUrl: string = 'https://d3rrggjwfhwld2.cloudfront.net/';
-export const endpointsFileUrl:string = 'https://aws-toolkit-endpoints.s3.amazonaws.com/endpoints.json';
+export const hostedFilesBaseUrl: string = 'https://d3rrggjwfhwld2.cloudfront.net/'
+export const endpointsFileUrl:string = 'https://aws-toolkit-endpoints.s3.amazonaws.com/endpoints.json'
 

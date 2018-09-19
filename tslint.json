@@ -8,7 +8,7 @@
 		"interface-name": [true, "never-prefix"],
 		"semicolon": [
 			true,
-			"always"
+			"never"
 		],
 		"triple-equals": true
 	},

@@ -1,7 +1,7 @@
-'use strict';
+'use strict'
 
 export interface AwsTreeProvider {
-    viewProviderId: string;
+    viewProviderId: string
 
-    initialize(): void;
+    initialize(): void
 }

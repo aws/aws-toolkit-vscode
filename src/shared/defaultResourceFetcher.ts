@@ -1,37 +1,37 @@
-'use strict';
+'use strict'
 
-import request = require('request');
-import * as fse from 'fs-extra';
-import { ResourceFetcher } from './resourceFetcher';
-import { WebResourceLocation, FileResourceLocation, ResourceLocation } from './resourceLocation';
+import request = require('request')
+import * as fse from 'fs-extra'
+import { ResourceFetcher } from './resourceFetcher'
+import { WebResourceLocation, FileResourceLocation, ResourceLocation } from './resourceLocation'
 
 export class DefaultResourceFetcher implements ResourceFetcher {
     // Attempts to retrieve a resource from the given locations in order, stopping on the first success.
     async getResource(resourceLocations: ResourceLocation[]): Promise<string> {
         if (resourceLocations.length === 0) {
-            throw new Error("no locations provided to get resource from");
+            throw new Error("no locations provided to get resource from")
         }
 
         for (let resourceLocation of resourceLocations) {
             try {
-                let result: string;
+                let result: string
                 if (resourceLocation instanceof WebResourceLocation) {
-                    result = await this.getWebResource(resourceLocation);
+                    result = await this.getWebResource(resourceLocation)
                 }
                 else if (resourceLocation instanceof FileResourceLocation) {
-                    result = await this.getFileResource(resourceLocation);
+                    result = await this.getFileResource(resourceLocation)
                 }
                 else {
-                    throw new Error(`Unknown resource location type: ${typeof resourceLocation}`);
+                    throw new Error(`Unknown resource location type: ${typeof resourceLocation}`)
                 }
-                return Promise.resolve(result);
+                return Promise.resolve(result)
             } catch (err) {
                 // Log error, then try the next fallback location if there is one.
-                console.log(`Error getting resource from ${resourceLocation.getLocationUri()} : ${err}`);
+                console.log(`Error getting resource from ${resourceLocation.getLocationUri()} : ${err}`)
             }
         }
 
-        return Promise.reject(new Error("Resource could not be found"));
+        return Promise.reject(new Error("Resource could not be found"))
     }
 
     // Http based file retriever
@@ -43,12 +43,12 @@ export class DefaultResourceFetcher implements ResourceFetcher {
             request(resourceLocation.getLocationUri(), {}, (err, res, body) => {
 
                 if (err) {
-                    reject(err);
+                    reject(err)
                 } else {
-                    resolve(body);
+                    resolve(body)
                 }
-            });
-        });
+            })
+        })
     }
 
     // Local file retriever
@@ -56,12 +56,12 @@ export class DefaultResourceFetcher implements ResourceFetcher {
         return new Promise<string>((resolve, reject) => {
 
             try {
-                const content = fse.readFileSync(resourceLocation.getLocationUri()).toString();
-                resolve(content);
+                const content = fse.readFileSync(resourceLocation.getLocationUri()).toString()
+                resolve(content)
             } catch (err) {
-                reject(err);
+                reject(err)
             }
-        });
+        })
     }
 }
 

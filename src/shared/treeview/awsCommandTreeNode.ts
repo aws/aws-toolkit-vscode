@@ -1,7 +1,7 @@
-'use strict';
+'use strict'
 
-import { TreeItem, TreeItemCollapsibleState } from 'vscode';
-import { AWSTreeNodeBase } from '../treeview/awsTreeNodeBase';
+import { TreeItem, TreeItemCollapsibleState } from 'vscode'
+import { AWSTreeNodeBase } from '../treeview/awsTreeNodeBase'
 
 export class AWSCommandTreeNode extends AWSTreeNodeBase {
 
@@ -11,23 +11,23 @@ export class AWSCommandTreeNode extends AWSTreeNodeBase {
         public tooltip?: string,
         public contextValue?: string,
     ) {
-        super();
+        super()
     }
 
     public getChildren(): Thenable<AWSTreeNodeBase[]> {
-       return new Promise(resolve => resolve([]));
+       return new Promise(resolve => resolve([]))
     }
 
     public getTreeItem(): TreeItem {
-        const item = new TreeItem(`${this.label}`, TreeItemCollapsibleState.None);
-        item.tooltip = this.tooltip;
-        item.contextValue = this.contextValue;
+        const item = new TreeItem(`${this.label}`, TreeItemCollapsibleState.None)
+        item.tooltip = this.tooltip
+        item.contextValue = this.contextValue
         item.command = {
             title: this.label,
             command: this.commandId
-        };
+        }
 
-        return item;
+        return item
     }
 }
 
