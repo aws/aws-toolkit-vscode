@@ -15,8 +15,8 @@
 		"triple-equals": true,
 		"file-header": [
 			true,
-			"Copyright \\d{4} Amazon.com, Inc. or its affiliates. All Rights Reserved.",
-			"Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved."
+			"Copyright \\d{4} Amazon.com, Inc. or its affiliates. All Rights Reserved.\\r?\\n \\* SPDX-License-Identifier: Apache-2.0",
+			"Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.\nSPDX-License-Identifier: Apache-2.0"
 		]
 	},
 	"defaultSeverity": "warning"

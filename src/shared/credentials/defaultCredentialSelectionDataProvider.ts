@@ -1,5 +1,6 @@
 /*!
  * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 // Implements a multi-step capable selector for traditional AWS credential profiles
