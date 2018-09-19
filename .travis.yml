@@ -14,7 +14,7 @@ script:
 - ./gradlew check -S --info --console plain
 
 after_success:
-- bash <(curl -s https://codecov.io/bash)
+- bash <(curl -s https://codecov.io/bash) -F unittest
 
 branches:
   only:
