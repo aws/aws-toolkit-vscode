@@ -1,3 +1,7 @@
+/*!
+ * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ */
+
 // Implements a multi-step capable selector for traditional AWS credential profiles
 // (access key/secret key based) for with the ability for users to add new credential
 // profiles. As other sign-in mechanisms become available in the future, we should be

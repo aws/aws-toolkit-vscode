@@ -1,3 +1,7 @@
+/*!
+ * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ */
+
 'use strict'
 
 import { QuickPickItem, QuickInputButton, Uri } from "vscode"

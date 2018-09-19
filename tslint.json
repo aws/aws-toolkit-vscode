@@ -12,7 +12,12 @@
 		"interface-name": [ true, "never-prefix" ],
 		"semicolon": [ true, "never" ],
 		"no-unexpected-multiline": true,
-		"triple-equals": true
+		"triple-equals": true,
+		"file-header": [
+			true,
+			"Copyright \\d{4} Amazon.com, Inc. or its affiliates. All Rights Reserved.",
+			"Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved."
+		]
 	},
 	"defaultSeverity": "warning"
 }

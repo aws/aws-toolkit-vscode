@@ -1,3 +1,7 @@
+/*!
+ * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ */
+
 export class BaseTemplates {
     static readonly SimpleHTML = `
         <html>

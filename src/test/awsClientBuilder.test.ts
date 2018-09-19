@@ -1,3 +1,7 @@
+/*!
+ * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ */
+
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { AwsContext, ContextChangeEventsArgs } from '../shared/awsContext'

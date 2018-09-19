@@ -1,3 +1,7 @@
+/*!
+ * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ */
+
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { ext } from "../shared/extensionGlobals"
