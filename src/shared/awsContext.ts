@@ -1,7 +1,12 @@
 'use strict'
 
 import * as vscode from 'vscode'
-import { ContextChangeEventsArgs } from './defaultAwsContext'
+
+// Carries the current context data on events
+export class ContextChangeEventsArgs {
+    constructor(public profileName: string | undefined, public regions: string[]) {
+    }
+}
 
 // Represents a credential profile and zero or more regions.
 export interface AwsContext {

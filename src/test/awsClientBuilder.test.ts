@@ -1,7 +1,6 @@
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { ContextChangeEventsArgs } from '../shared/defaultAwsContext'
-import { AwsContext } from '../shared/awsContext'
+import { AwsContext, ContextChangeEventsArgs } from '../shared/awsContext'
 import { AWSClientBuilder } from '../shared/awsClientBuilder'
 
 suite('AwsClientBuilder Tests', () => {

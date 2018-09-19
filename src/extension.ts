@@ -10,7 +10,7 @@ import { extensionSettingsPrefix } from './shared/constants'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { AWSStatusBar } from './shared/statusBar'
-import { AWSContextCommands } from './shared/awsContextCommands'
+import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
 import { RegionNode } from './lambda/explorer/regionNode'
 import { safeGet } from './shared/extensionUtilities'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
@@ -27,7 +27,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const resourceFetcher = new DefaultResourceFetcher()
     const regionProvider = new DefaultRegionProvider(context, resourceFetcher)
 
-    ext.awsContextCommands = new AWSContextCommands(awsContext, awsContextTrees, regionProvider)
+    ext.awsContextCommands = new DefaultAWSContextCommands(awsContext, awsContextTrees, regionProvider)
     ext.sdkClientBuilder = new AWSClientBuilder(awsContext)
     ext.statusBar = new AWSStatusBar(awsContext, context)
 
