@@ -1,3 +1,8 @@
+/*!
+ * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import * as assert from 'assert'
 import { credentialProfileSelector } from '../shared/credentials/defaultCredentialSelectionDataProvider'
 import { CredentialSelectionState } from '../shared/credentials/credentialSelectionState'

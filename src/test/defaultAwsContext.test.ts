@@ -1,3 +1,8 @@
+/*!
+ * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import * as assert from 'assert'
 import { DefaultAwsContext } from '../shared/defaultAwsContext'
 import { SettingsConfiguration } from '../shared/settingsConfiguration'
