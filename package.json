@@ -4,6 +4,7 @@
     "description": "An extension for working with Amazon Web Services in Visual Studio Code",
     "version": "0.0.1",
     "publisher": "amazonwebservices",
+    "repository": "github:aws/aws-toolkit-vscode",
     "engines": {
         "vscode": "^1.26.0"
     },
