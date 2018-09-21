@@ -39,7 +39,7 @@ class LambdaSampleEventProvider(private val resourceResolver: RemoteResourceReso
     }
 }
 
-class LambdaSampleEvent(val name: String, private val contentProvider: () -> CompletionStage<String>) {
+open class LambdaSampleEvent(val name: String, private val contentProvider: () -> CompletionStage<String>) {
     val content: CompletionStage<String> by lazy { contentProvider() }
     override fun toString() = name
 }
