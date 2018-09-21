@@ -73,7 +73,10 @@ class JavaRuntimeGroup : RuntimeGroupInformation {
 class JavaLambdaPackager : LambdaPackager {
     override fun createPackage(module: Module, file: PsiFile): CompletionStage<Path> {
         val future = CompletableFuture<Path>()
-        CompilerManager.getInstance(module.project).rebuild { aborted, errors, _, context ->
+        val compilerManager = CompilerManager.getInstance(module.project)
+        val compileScope = compilerManager.createModulesCompileScope(arrayOf(module), true, true)
+
+        compilerManager.make(compileScope) { aborted, errors, _, context ->
             if (!aborted && errors == 0) {
                 try {
                     val zipContents = mutableSetOf<ZipEntry>()
