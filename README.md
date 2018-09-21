@@ -52,7 +52,7 @@ Currently the only way to consume the plugin is to build the source and add it a
 
 ### Requirements
 
-* Java 8+
+* Java 8
 * [Git](https://git-scm.com/)
 
 ### Instructions
