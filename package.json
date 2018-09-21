@@ -37,6 +37,11 @@
                     "type": "string",
                     "default": "",
                     "description": "%AWS.configuration.profileDescription%"
+                },
+                "aws.onDefaultRegionMissing": {
+                    "type": "string",
+                    "default": "prompt",
+                    "markdownDescription": "%AWS.configuration.description.onDefaultRegionMissing%"
                 }
             }
         },

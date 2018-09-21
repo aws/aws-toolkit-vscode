@@ -10,10 +10,10 @@ import * as vscode from 'vscode'
 // defines helper methods for interacting with VSCode's configuration
 // persistence mechanisms, allowing us to test with mocks.
 export interface SettingsConfiguration {
-    readSetting(settingKey: string, defaultValue?:string) : string | undefined
+    readSetting(settingKey: string, defaultValue?: string): string | undefined
 
     // array values are serialized as a comma-delimited string
-    writeSetting(settingKey: string, value: string | string[] | undefined, target: vscode.ConfigurationTarget) : void
+    writeSetting(settingKey: string, value: string | string[] | undefined, target: vscode.ConfigurationTarget): void
 }
 
 // default configuration settings handler for production release
@@ -45,7 +45,7 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
         await settings.update(settingKey, persistedValue, target)
     }
 
-    constructor(public extensionSettingsPrefix: string) {
+    constructor(public readonly extensionSettingsPrefix: string) {
     }
 
 }

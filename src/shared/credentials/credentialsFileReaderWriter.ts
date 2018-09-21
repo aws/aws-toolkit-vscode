@@ -11,4 +11,12 @@ export interface CredentialsFileReaderWriter {
 
     // writes a new profile to the credential file
     addProfileToFile(profileName: string, accessKey: string, secretKet: string): Promise<void>
+
+    /**
+     * Gets the default region for a credentials profile
+     * 
+     * @param profileName Profile to get the default region from
+     * @returns Default region, undefined if region is not set
+     */
+    getDefaultRegion(profileName: string): Promise<string | undefined>
 }
