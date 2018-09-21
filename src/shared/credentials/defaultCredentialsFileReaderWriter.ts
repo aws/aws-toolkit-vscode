@@ -11,12 +11,12 @@ import { loadSharedConfigFiles, saveProfile, Profile } from "./credentialsFile"
 export class DefaultCredentialsFileReaderWriter implements CredentialsFileReaderWriter {
     async getProfileNames(): Promise<string[]> {
         // TODO: cache the file and attach a watcher to it
-        const credentialFiles = await loadSharedConfigFiles()
+        const sharedCredentials = await loadSharedConfigFiles()
 
-        const credentialsProfiles = Object.keys(credentialFiles.credentialsFile)
-        const configProfiles = Object.keys(credentialFiles.configFile)
+        const credentialsProfileNames = Object.keys(sharedCredentials.credentialsFile)
+        const configProfileNames = this.getCanUseConfigFile() ? Object.keys(sharedCredentials.configFile) : []
 
-        const profileNames = new Set(credentialsProfiles.concat(configProfiles))
+        const profileNames = new Set(credentialsProfileNames.concat(configProfileNames))
 
         return Promise.resolve(Array.from(profileNames))
     }
@@ -59,5 +59,23 @@ export class DefaultCredentialsFileReaderWriter implements CredentialsFileReader
         }
 
         return Promise.resolve(profile)
+    }
+
+    /**
+     * Indicates if credentials information can be retrieved from
+     * the config file in addition to the credentials file.
+     */
+    getCanUseConfigFile(): boolean {
+        return process.env.AWS_SDK_LOAD_CONFIG
+    }
+
+    /**
+     * Specifies whether or not credentials information can be retrieved from
+     * the config file in addition to the credentials file.
+ 
+     * @param allow - true: load from credentials and config, false: load from credentials only
+     */
+    setCanUseConfigFile(allow: boolean): void {
+        process.env.AWS_SDK_LOAD_CONFIG = allow
     }
 }

@@ -69,9 +69,11 @@ export async function listLambdas(lambda: Lambda): Promise<FunctionNode[]> {
         } while (!isNullOrUndefined(request.Marker))
     } catch (error) {
         // TODO:
+        console.log(`ERROR: ${error.message}`)
+    } finally {
+        status.dispose()
     }
 
-    status.dispose()
     return arr
 }
 

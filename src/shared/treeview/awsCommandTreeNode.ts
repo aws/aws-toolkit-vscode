@@ -13,6 +13,7 @@ export class AWSCommandTreeNode extends AWSTreeNodeBase {
     constructor(
         public readonly label: string,
         public commandId: string,
+        public commandArguments?: any[],
         public tooltip?: string,
         public contextValue?: string,
     ) {
@@ -20,7 +21,7 @@ export class AWSCommandTreeNode extends AWSTreeNodeBase {
     }
 
     public getChildren(): Thenable<AWSTreeNodeBase[]> {
-       return new Promise(resolve => resolve([]))
+        return new Promise(resolve => resolve([]))
     }
 
     public getTreeItem(): TreeItem {
@@ -29,7 +30,8 @@ export class AWSCommandTreeNode extends AWSTreeNodeBase {
         item.contextValue = this.contextValue
         item.command = {
             title: this.label,
-            command: this.commandId
+            command: this.commandId,
+            arguments: this.commandArguments,
         }
 
         return item
