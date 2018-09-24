@@ -92,6 +92,27 @@ class ProfileToolkitCredentialsProviderFactoryTest {
     }
 
     @Test
+    fun oneFailureDoesNotCauseOtherCredentialsToFail() {
+        profileFile.writeText(
+            """
+            [profile role]
+            role_arn=arn1
+            role_session_name=testSession
+            external_id=externalId
+            source_profile=doNotExist
+
+            [profile another_profile]
+            aws_access_key_id=BarAccessKey
+            aws_secret_access_key=BarSecretKey
+        """.trimIndent()
+        )
+
+        val providerFactory = createProviderFactory()
+
+        assertThat(providerFactory.listCredentialProviders()).hasOnlyOneElementSatisfying { assertThat(it.id).isEqualTo("profile:another_profile") }
+    }
+
+    @Test
     fun testAssumingRoles() {
         profileFile.writeText(
             """

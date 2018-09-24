@@ -113,6 +113,7 @@ class DefaultProjectAccountSettingsManager(private val project: Project) :
             ?: throw CredentialProviderNotFound(message("credentials.profile.not_configured"))
         set(value) {
             updateActiveProfile(value)
+            project.messageBus.syncPublisher(ACCOUNT_SETTINGS_CHANGED).activeCredentialsChanged(value)
         }
 
     override fun recentlyUsedRegions(): List<AwsRegion> {
@@ -146,7 +147,6 @@ class DefaultProjectAccountSettingsManager(private val project: Project) :
     private fun updateActiveProfile(value: ToolkitCredentialsProvider) {
         activeProfileInternal = value
         recentlyUsedProfiles.add(value)
-        project.messageBus.syncPublisher(ACCOUNT_SETTINGS_CHANGED).activeCredentialsChanged(value)
     }
 
     private fun getCredentialProviderOrNull(id: String): ToolkitCredentialsProvider? = tryOrNull {

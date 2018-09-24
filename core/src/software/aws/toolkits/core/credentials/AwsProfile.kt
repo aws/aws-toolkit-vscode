@@ -190,7 +190,7 @@ class ProfileToolkitCredentialsProviderFactory(
      * Clean out all the current credentials and load all the profiles
      */
     private fun loadFromProfileFile() {
-        try {
+        LOG.tryOrNull(message("credentials.profile.failed_load")) {
             val profiles = credentialLocationOverride?.let {
                 ProfileFile.builder()
                     .content(credentialLocationOverride)
@@ -201,11 +201,10 @@ class ProfileToolkitCredentialsProviderFactory(
 
             clear()
             profiles.values.forEach {
-                add(ProfileToolkitCredentialsProvider(profiles, it, sdkHttpClient, regionProvider, mfaProvider))
+                LOG.tryOrNull(message("credentials.profile.failed_load")) {
+                    add(ProfileToolkitCredentialsProvider(profiles, it, sdkHttpClient, regionProvider, mfaProvider))
+                }
             }
-        } catch (e: Exception) {
-            // TODO: Need a better way to report this, a notification SPI?
-            LOG.warn(message("credentials.profile.failed_load"), e)
         }
     }
 
