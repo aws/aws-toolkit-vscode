@@ -51,56 +51,52 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
         return element.getTreeItem()
     }
 
-    getChildren(element?: AWSTreeNodeBase): Thenable<AWSTreeNodeBase[]> {
+    async getChildren(element?: AWSTreeNodeBase): Promise<AWSTreeNodeBase[]> {
         if (element) {
-            return element.getChildren().then(
-                (children) => children,
-                (error) => {
-                    return Promise.resolve([
-                        new AWSCommandTreeNode(
-                            localize("AWS.explorerNode.lambda.retry", "Unable to load Lambda Functions, click here to retry"),
-                            "aws.refreshLambdaProviderNode",
-                            [this, element],
-                        )
-                    ])
-                })
-        }
-
-        return new Promise<AWSTreeNodeBase[]>(resolve => {
-            const profileName = this._awsContext.getCredentialProfileName()
-            if (!profileName) {
-                resolve([
-                    new AWSCommandTreeNode(localize('AWS.explorerNode.signIn', 'Sign in to AWS...'),
-                        'aws.login',
-                        undefined,
-                        localize('AWS.explorerNode.signIn.tooltip', 'Connect to AWS using a credential profile'))
+            try {
+                return await element.getChildren()
+            } catch (error) {
+                return Promise.resolve([
+                    new AWSCommandTreeNode(
+                        localize("AWS.explorerNode.lambda.retry", "Unable to load Lambda Functions, click here to retry"),
+                        "aws.refreshLambdaProviderNode",
+                        [this, element],
+                    )
                 ])
             }
+        }
 
-            this._regionProvider.getRegionData().then(regionDefinitions => {
-                this._awsContext.getExplorerRegions().then(explorerRegionCodes => {
+        const profileName = this._awsContext.getCredentialProfileName()
+        if (!profileName) {
+            return [
+                new AWSCommandTreeNode(localize('AWS.explorerNode.signIn', 'Sign in to AWS...'),
+                    'aws.login',
+                    undefined,
+                    localize('AWS.explorerNode.signIn.tooltip', 'Connect to AWS using a credential profile'))
+            ]
+        }
 
-                    if (explorerRegionCodes.length !== 0) {
-                        let regionNodes: RegionNode[] = []
+        const regionDefinitions = await this._regionProvider.getRegionData()
+        const explorerRegionCodes = await this._awsContext.getExplorerRegions()
 
-                        explorerRegionCodes.forEach(explorerRegionCode => {
-                            let region = regionDefinitions.find(region => region.regionCode === explorerRegionCode)
-                            let regionName = region ? region.regionName : explorerRegionCode
-                            regionNodes.push(new RegionNode(explorerRegionCode, regionName))
-                        })
+        if (explorerRegionCodes.length !== 0) {
+            let regionNodes: RegionNode[] = []
 
-                        resolve(regionNodes)
-                    } else {
-                        resolve([
-                            new AWSCommandTreeNode(localize('AWS.explorerNode.addRegion', 'Click to add a region to view functions...'),
-                                'aws.showRegion',
-                                undefined,
-                                localize('AWS.explorerNode.addRegion.tooltip', 'Configure a region to show available functions'))
-                        ])
-                    }
-                })
+            explorerRegionCodes.forEach(explorerRegionCode => {
+                let region = regionDefinitions.find(region => region.regionCode === explorerRegionCode)
+                let regionName = region ? region.regionName : explorerRegionCode
+                regionNodes.push(new RegionNode(explorerRegionCode, regionName))
             })
-        })
+
+            return regionNodes
+        } else {
+            return [
+                new AWSCommandTreeNode(localize('AWS.explorerNode.addRegion', 'Click to add a region to view functions...'),
+                    'aws.showRegion',
+                    undefined,
+                    localize('AWS.explorerNode.addRegion.tooltip', 'Configure a region to show available functions'))
+            ]
+        }
     }
 
     refresh(context?: AwsContext) {

@@ -21,7 +21,7 @@ export class AWSCommandTreeNode extends AWSTreeNodeBase {
     }
 
     public getChildren(): Thenable<AWSTreeNodeBase[]> {
-        return new Promise(resolve => resolve([]))
+        return Promise.resolve([])
     }
 
     public getTreeItem(): TreeItem {

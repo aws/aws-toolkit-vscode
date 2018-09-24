@@ -17,7 +17,7 @@ const localize = nls.loadMessageBundle()
  */
 export class CredentialsManager {
 
-    private static readonly UserCancelledMfaError: string = localize("AWS.error.mfa.userCancelled", "User cancelled entering MFA code")
+    private static readonly UserCancelledMfaError: string = localize("AWS.error.mfa.userCancelled", "User cancelled entering authentication code")
     private _credentialsCache: { [key: string]: AWS.Credentials }
     private _asyncLock: AsyncLock
 
@@ -33,14 +33,16 @@ export class CredentialsManager {
      */
     public async getCredentials(profileName: string): Promise<AWS.Credentials> {
 
-        const credentials = await this._asyncLock.acquire(CredentialsManager.generateLockKey(profileName), async () => {
+        const credentials = await this._asyncLock.acquire(
+            `credentials.lock.${profileName}`,
+            async () => {
 
-            if (!this._credentialsCache[profileName]) {
-                this._credentialsCache[profileName] = await this.createCredentials(profileName)
-            }
+                if (!this._credentialsCache[profileName]) {
+                    this._credentialsCache[profileName] = await this.createCredentials(profileName)
+                }
 
-            return this._credentialsCache[profileName]
-        })
+                return this._credentialsCache[profileName]
+            })
 
         return credentials
     }
@@ -80,8 +82,8 @@ export class CredentialsManager {
         try {
             const token = await vscode.window.showInputBox({
                 ignoreFocusOut: true,
-                placeHolder: localize("AWS.prompt.mfa.enterCode.placeholder", "Enter MFA Code Here"),
-                prompt: localize("AWS.prompt.mfa.enterCode.prompt", "Enter MFA Code for profile {0}", profileName),
+                placeHolder: localize("AWS.prompt.mfa.enterCode.placeholder", "Enter Authentication Code Here"),
+                prompt: localize("AWS.prompt.mfa.enterCode.prompt", "Enter authentication code for profile {0}", profileName),
             })
 
             // Distinguish user cancel vs code entry issues
@@ -93,12 +95,5 @@ export class CredentialsManager {
         } catch (err) {
             callback(err)
         }
-    }
-
-    /**
-     * @description Produces async lock name based on requested profile name
-     */
-    private static generateLockKey(profileName: string): string {
-        return `credentials.lock.${profileName}`
     }
 }
