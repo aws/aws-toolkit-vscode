@@ -34,6 +34,7 @@ import java.util.concurrent.CompletionStage
 class PythonRuntimeGroup : RuntimeGroupInformation {
     override val runtimes: Set<Runtime> = setOf(Runtime.PYTHON2_7, Runtime.PYTHON3_6)
     override val languageIds: Set<String> = setOf(PythonLanguage.INSTANCE.id)
+    override val requiresCompilation: Boolean = false
 
     override fun runtimeForSdk(sdk: Sdk): Runtime? = when {
         sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isPy3K -> Runtime.PYTHON3_6

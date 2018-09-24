@@ -42,6 +42,7 @@ const val AWS_GO_LAMBDA_IMPORT = "github.com/aws/aws-lambda-go/lambda"
 class GoRuntimeGroup : RuntimeGroupInformation {
     override val runtimes: Set<Runtime> = setOf(Runtime.GO1_X)
     override val languageIds: Set<String> = setOf(GoLanguage.INSTANCE.id)
+    override val requiresCompilation: Boolean = true
 
     override fun runtimeForSdk(sdk: Sdk): Runtime? = when {
         sdk.sdkType is GoSdkType -> Runtime.GO1_X

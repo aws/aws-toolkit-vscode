@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.openapi.components.ServiceManager
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
@@ -25,6 +26,12 @@ class MockCredentialsManager : CredentialManager {
     fun addCredentials(id: String, credentials: AwsCredentials): ToolkitCredentialsProvider {
         return MockCredentialsProvider(id, id, credentials).also {
             providers[id] = it
+        }
+    }
+
+    companion object {
+        fun getInstance(): MockCredentialsManager {
+            return ServiceManager.getService(CredentialManager::class.java) as MockCredentialsManager
         }
     }
 

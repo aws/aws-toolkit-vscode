@@ -1,19 +1,17 @@
 // Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda.execution.local
+package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 
 import com.intellij.execution.ExecutionException
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.ConfigurationFactory
-import com.intellij.execution.configurations.ModuleRunProfile
 import com.intellij.execution.configurations.RefactoringListenerProvider
 import com.intellij.execution.configurations.RunConfiguration
-import com.intellij.execution.configurations.RunProfileState
 import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.execution.runners.ExecutionEnvironment
-import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.options.SettingsEditor
+import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.psi.NavigatablePsiElement
@@ -21,7 +19,6 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.refactoring.listeners.RefactoringElementAdapter
 import com.intellij.refactoring.listeners.RefactoringElementListener
-import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
@@ -33,43 +30,44 @@ import software.aws.toolkits.jetbrains.services.lambda.HandlerCompletionProvider
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
-import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPointObject
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationBase
+import software.aws.toolkits.jetbrains.services.lambda.execution.local.LambdaLocalRunProvider
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunConfiguration.MutableLambdaSamRunSettings
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
+import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
+import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.utils.ui.populateValues
 import software.aws.toolkits.resources.message
 import javax.swing.JPanel
 
-class LambdaLocalRunConfigurationFactory(configuration: LambdaRunConfiguration) : ConfigurationFactory(configuration) {
+class SamRunConfigurationFactory(configuration: LambdaRunConfiguration) : ConfigurationFactory(configuration) {
     override fun createTemplateConfiguration(project: Project): RunConfiguration =
-        LambdaLocalRunConfiguration(project, this)
+        SamRunConfiguration(project, this)
 
     override fun getName(): String {
-        return "Local"
+        return "SAM CLI"
     }
 }
 
-class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactory) :
-    LambdaRunConfigurationBase<LambdaLocalRunConfiguration.MutableLambdaLocalRunSettings>(project, factory, "Local"),
-    ModuleRunProfile, RefactoringListenerProvider {
-    override var settings = MutableLambdaLocalRunSettings()
+class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
+    LambdaRunConfigurationBase<MutableLambdaSamRunSettings>(project, factory, "SAM CLI"),
+    RefactoringListenerProvider {
+    override var settings = MutableLambdaSamRunSettings()
 
-    override fun getConfigurationEditor() = LocalLambdaRunSettingsEditor(project)
+    override fun getConfigurationEditor() = SamRunSettingsEditor(project)
 
     override fun checkConfiguration() {
         settings.validateAndCreateImmutable(project)
     }
 
-    override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState {
+    override fun getState(executor: Executor, environment: ExecutionEnvironment): SamRunningState {
         val settings = try {
             settings.validateAndCreateImmutable(project)
         } catch (e: Exception) {
             throw ExecutionException(e.message)
         }
-        val provider = settings.runtime.runtimeGroup?.let { LambdaLocalRunProvider.getInstance(it) }
-            ?: throw ExecutionException("Unable to find run provider for ${settings.runtime}")
-        return provider.createRunProfileState(environment, project, settings)
+        return SamRunningState(environment, settings)
     }
 
     private fun getPsiElement(): PsiElement? {
@@ -109,26 +107,25 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
 
     fun configure(
         runtime: Runtime?,
-        handler: String,
+        handler: String?,
         input: String? = null,
+        inputIsFile: Boolean = false,
         envVars: MutableMap<String, String> = mutableMapOf(),
+        credentialsProviderId: String? = null,
         region: AwsRegion? = null
     ) {
         settings.input = input
+        settings.inputIsFile = inputIsFile
         settings.runtime = runtime?.name
         settings.handler = handler
         settings.environmentVariables = envVars
+        settings.credentialProviderId = credentialsProviderId
         settings.regionId = region?.id
-    }
-
-    @TestOnly
-    fun getHandler(): String? {
-        return settings.handler
     }
 
     override fun suggestedName(): String? = settings.handler
 
-    class MutableLambdaLocalRunSettings(
+    class MutableLambdaSamRunSettings(
         var runtime: String? = null,
         var handler: String? = null,
         input: String? = null,
@@ -137,13 +134,19 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
         var regionId: String? = null,
         var credentialProviderId: String? = null
     ) : MutableLambdaRunSettings(input, inputIsFile) {
-        fun validateAndCreateImmutable(project: Project): LambdaLocalRunSettings {
+        fun validateAndCreateImmutable(project: Project): SamRunSettings {
+            if (SamSettings.getInstance().executablePath.isEmpty()) {
+                throw RuntimeConfigurationError(message("lambda.run_configuration.sam.not_specified")) {
+                    ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsConfigurable::class.java)
+                }
+            }
+
             val handler =
                 handler ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
             val runtime = runtime?.let { Runtime.valueOf(it) }
-                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
+                    ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
             val element = findPsiElementsForHandler(project, runtime, handler).firstOrNull()
-                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
+                    ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
             val regionId =
                 regionId ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
             val envVarsCopy = environmentVariables.toMutableMap()
@@ -178,13 +181,13 @@ class LambdaLocalRunConfiguration(project: Project, factory: ConfigurationFactor
                 }
             }
 
-            return LambdaLocalRunSettings(runtime, handler, inputText, envVarsCopy, element)
+            return SamRunSettings(runtime, handler, inputText, envVarsCopy, element)
         }
     }
 }
 
-class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaLocalRunConfiguration>() {
-    private val view = LocalLambdaRunSettingsEditorPanel(project, HandlerCompletionProvider(project))
+class SamRunSettingsEditor(project: Project) : SettingsEditor<SamRunConfiguration>() {
+    private val view = SamRunSettingsEditorPanel(project, HandlerCompletionProvider(project))
     private val regionProvider = AwsRegionProvider.getInstance()
     private val credentialManager = CredentialManager.getInstance()
 
@@ -202,7 +205,9 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaLoca
         view.credentialSelector.setCredentialsProviders(credentialManager.getCredentialProviders())
     }
 
-    override fun resetEditorFrom(configuration: LambdaLocalRunConfiguration) {
+    override fun createEditor(): JPanel = view.panel
+
+    override fun resetEditorFrom(configuration: SamRunConfiguration) {
         val settings = configuration.settings
 
         view.runtime.selectedItem = settings.runtime?.let { Runtime.valueOf(it) }
@@ -228,9 +233,7 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaLoca
         }
     }
 
-    override fun createEditor(): JPanel = view.panel
-
-    override fun applyEditorTo(configuration: LambdaLocalRunConfiguration) {
+    override fun applyEditorTo(configuration: SamRunConfiguration) {
         val settings = configuration.settings
 
         settings.runtime = (view.runtime.selectedItem as? Runtime)?.name
@@ -247,21 +250,10 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaLoca
     }
 }
 
-class LambdaLocalRunSettings(
+class SamRunSettings(
     val runtime: Runtime,
     val handler: String,
     val input: String,
     val environmentVariables: Map<String, String>,
     val handlerElement: NavigatablePsiElement
 )
-
-interface LambdaLocalRunProvider {
-    fun createRunProfileState(
-        environment: ExecutionEnvironment,
-        project: Project,
-        settings: LambdaLocalRunSettings
-    ): RunProfileState
-
-    companion object :
-        RuntimeGroupExtensionPointObject<LambdaLocalRunProvider>(ExtensionPointName.create("aws.toolkit.lambda.localRunProvider"))
-}

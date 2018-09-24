@@ -60,8 +60,8 @@ import kotlin.streams.toList
 
 class JavaRuntimeGroup : RuntimeGroupInformation {
     override val runtimes = setOf(Runtime.JAVA8)
-
     override val languageIds = setOf(JavaLanguage.INSTANCE.id)
+    override val requiresCompilation: Boolean = true
 
     override fun runtimeForSdk(sdk: Sdk): Runtime? = when {
         sdk.sdkType is JavaSdkType && JavaSdk.getInstance().getVersion(sdk)
