@@ -98,6 +98,8 @@ export class DefaultAWSContextCommands {
     private async promptForProfileName(): Promise<string | undefined> {
         const credentialReaderWriter = new DefaultCredentialsFileReaderWriter()
         const profileNames = await credentialReaderWriter.getProfileNames()
+
+
         const dataProvider = new DefaultCredentialSelectionDataProvider(profileNames, ext.context)
         const state = await credentialProfileSelector(dataProvider)
         if (state) {

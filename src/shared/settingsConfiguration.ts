@@ -13,7 +13,7 @@ export interface SettingsConfiguration {
     readSetting(settingKey: string, defaultValue?: string): string | undefined
 
     // array values are serialized as a comma-delimited string
-    writeSetting(settingKey: string, value: string | string[] | undefined, target: vscode.ConfigurationTarget): void
+    writeSetting(settingKey: string, value: string | string[] | undefined, target: vscode.ConfigurationTarget): Promise<void>
 }
 
 // default configuration settings handler for production release

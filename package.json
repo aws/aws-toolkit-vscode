@@ -42,6 +42,11 @@
                     "type": "string",
                     "default": "prompt",
                     "markdownDescription": "%AWS.configuration.description.onDefaultRegionMissing%"
+                },
+                "aws.credentialsProfileMRU": {
+                    "type": "string",
+                    "default": "",
+                    "description": "%AWS.configuration.description.credentialsProfileMRU%"
                 }
             }
         },
