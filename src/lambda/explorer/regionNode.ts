@@ -35,7 +35,7 @@ export class RegionNode extends AWSRegionTreeNode {
         const lambdaFunctions: AWSTreeNodeBase[] = await getLambdaFunctionsForRegion(this.regionCode)
 
         if (lambdaFunctions.length === 0) {
-            lambdaFunctions.push(new NoFunctionsNode(localize('AWS.explorerNode.lambda.noFunctions', '...no functions in this region...'),
+            lambdaFunctions.push(new NoFunctionsNode(localize('AWS.explorerNode.lambda.noFunctions', '[no functions in this region]'),
                 'awsLambdaNoFns'))
         }
 

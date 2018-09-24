@@ -19,7 +19,7 @@
     "AWS.error.mfa.userCancelled": "User cancelled entering authentication code",
     "AWS.explorerNode.addRegion": "Add a region to view functions...",
     "AWS.explorerNode.addRegion.tooltip": "Click to add a region to view functions...",
-    "AWS.explorerNode.lambda.noFunctions": "..no functions in this region...",
+    "AWS.explorerNode.lambda.noFunctions": "[no functions in this region]",
     "AWS.explorerNode.lambda.retry": "Unable to load Lambda Functions, click here to retry",
     "AWS.explorerNode.signIn": "Sign in to AWS...",
     "AWS.explorerNode.signIn.tooltip": "Connect to AWS using a credential profile",
