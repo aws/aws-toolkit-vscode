@@ -19,7 +19,7 @@ import { NoFunctionsNode } from './noFunctionsNode'
 // a placeholder child.
 export class RegionNode extends AWSRegionTreeNode {
 
-    constructor(regionCode:string, public regionName: string) {
+    constructor(regionCode: string, public regionName: string) {
         super(regionCode)
     }
 
@@ -31,17 +31,15 @@ export class RegionNode extends AWSRegionTreeNode {
         return `${this.getLabel()} [${this.regionCode}]`
     }
 
-    public getChildren(): Thenable<AWSTreeNodeBase[]> {
-        return new Promise(resolve => {
-            getLambdaFunctionsForRegion(this.regionCode).then((result) => {
-                const arr: AWSTreeNodeBase[] = result
-                if (arr.length === 0) {
-                    arr.push(new NoFunctionsNode(localize('AWS.explorerNode.lambda.noFunctions', '...no functions in this region...'),
-                                                 'awsLambdaNoFns'))
-                }
-                resolve(arr)
-            })
-        })
+    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+        const lambdaFunctions: AWSTreeNodeBase[] = await getLambdaFunctionsForRegion(this.regionCode)
+
+        if (lambdaFunctions.length === 0) {
+            lambdaFunctions.push(new NoFunctionsNode(localize('AWS.explorerNode.lambda.noFunctions', '[no functions in this region]'),
+                'awsLambdaNoFns'))
+        }
+
+        return lambdaFunctions
     }
 
 }

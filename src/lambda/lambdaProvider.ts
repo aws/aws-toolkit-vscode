@@ -29,8 +29,8 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
     private _awsContextTrees: AwsContextTreeCollection
     private _regionProvider: RegionProvider
     private readonly _resourceFetcher: ResourceFetcher
-    private _onDidChangeTreeData: vscode.EventEmitter<FunctionNode | undefined> = new vscode.EventEmitter<FunctionNode | undefined>()
-    readonly onDidChangeTreeData: vscode.Event<FunctionNode | undefined> = this._onDidChangeTreeData.event
+    private _onDidChangeTreeData: vscode.EventEmitter<AWSTreeNodeBase | undefined> = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
+    readonly onDidChangeTreeData: vscode.Event<AWSTreeNodeBase | undefined> = this._onDidChangeTreeData.event
 
     public viewProviderId: string = 'lambda'
 
@@ -40,6 +40,9 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
         vscode.commands.registerCommand('aws.invokeLambda', async (node: FunctionNode) => await invokeLambda(this._awsContext, this._resourceFetcher, node))
         vscode.commands.registerCommand('aws.getLambdaConfig', async (node: FunctionNode) => await getLambdaConfig(this._awsContext, node))
         vscode.commands.registerCommand('aws.getLambdaPolicy', async (node: FunctionNode) => await getLambdaPolicy(this._awsContext, node))
+        vscode.commands.registerCommand('aws.refreshLambdaProviderNode', async (lambdaProvider: LambdaProvider, element: AWSTreeNodeBase) => {
+            lambdaProvider._onDidChangeTreeData.fire(element)
+        })
 
         this._awsContextTrees.addTree(this)
     }
@@ -48,44 +51,52 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
         return element.getTreeItem()
     }
 
-    getChildren(element?: AWSTreeNodeBase): Thenable<AWSTreeNodeBase[]> {
+    async getChildren(element?: AWSTreeNodeBase): Promise<AWSTreeNodeBase[]> {
         if (element) {
-            return element.getChildren()
-        }
-
-        return new Promise(resolve => {
-            const profileName = this._awsContext.getCredentialProfileName()
-            if (!profileName) {
-                resolve([
-                    new AWSCommandTreeNode(localize('AWS.explorerNode.signIn', 'Sign in to AWS...'),
-                        'aws.login',
-                        localize('AWS.explorerNode.signIn.tooltip', 'Connect to AWS using a credential profile'))
+            try {
+                return await element.getChildren()
+            } catch (error) {
+                return Promise.resolve([
+                    new AWSCommandTreeNode(
+                        localize("AWS.explorerNode.lambda.retry", "Unable to load Lambda Functions, click here to retry"),
+                        "aws.refreshLambdaProviderNode",
+                        [this, element],
+                    )
                 ])
             }
+        }
 
-            this._regionProvider.getRegionData().then(regionDefinitions => {
-                this._awsContext.getExplorerRegions().then(explorerRegionCodes => {
+        const profileName = this._awsContext.getCredentialProfileName()
+        if (!profileName) {
+            return [
+                new AWSCommandTreeNode(localize('AWS.explorerNode.signIn', 'Sign in to AWS...'),
+                    'aws.login',
+                    undefined,
+                    localize('AWS.explorerNode.signIn.tooltip', 'Connect to AWS using a credential profile'))
+            ]
+        }
 
-                    if (explorerRegionCodes.length !== 0) {
-                        let regionNodes: RegionNode[] = []
+        const regionDefinitions = await this._regionProvider.getRegionData()
+        const explorerRegionCodes = await this._awsContext.getExplorerRegions()
 
-                        explorerRegionCodes.forEach(explorerRegionCode => {
-                            let region = regionDefinitions.find(region => region.regionCode === explorerRegionCode)
-                            let regionName = region ? region.regionName : explorerRegionCode
-                            regionNodes.push(new RegionNode(explorerRegionCode, regionName))
-                        })
+        if (explorerRegionCodes.length !== 0) {
+            let regionNodes: RegionNode[] = []
 
-                        resolve(regionNodes)
-                    } else {
-                        resolve([
-                            new AWSCommandTreeNode(localize('AWS.explorerNode.addRegion', 'Click to add a region to view functions...'),
-                                'aws.showRegion',
-                                localize('AWS.explorerNode.addRegion.tooltip', 'Configure a region to show available functions'))
-                        ])
-                    }
-                })
+            explorerRegionCodes.forEach(explorerRegionCode => {
+                let region = regionDefinitions.find(region => region.regionCode === explorerRegionCode)
+                let regionName = region ? region.regionName : explorerRegionCode
+                regionNodes.push(new RegionNode(explorerRegionCode, regionName))
             })
-        })
+
+            return regionNodes
+        } else {
+            return [
+                new AWSCommandTreeNode(localize('AWS.explorerNode.addRegion', 'Click to add a region to view functions...'),
+                    'aws.showRegion',
+                    undefined,
+                    localize('AWS.explorerNode.addRegion.tooltip', 'Configure a region to show available functions'))
+            ]
+        }
     }
 
     refresh(context?: AwsContext) {
