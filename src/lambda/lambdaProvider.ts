@@ -69,7 +69,7 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
         const profileName = this._awsContext.getCredentialProfileName()
         if (!profileName) {
             return [
-                new AWSCommandTreeNode(localize('AWS.explorerNode.signIn', 'Sign in to AWS...'),
+                new AWSCommandTreeNode(localize('AWS.explorerNode.signIn', 'Connect to AWS...'),
                     'aws.login',
                     undefined,
                     localize('AWS.explorerNode.signIn.tooltip', 'Connect to AWS using a credential profile'))
