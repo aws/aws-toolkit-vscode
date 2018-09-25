@@ -121,6 +121,11 @@ subprojects {
             junitXml.destination file("$buildDir/integration-test-results")
         }
 
+        testLogging {
+            showStandardStreams = true
+            exceptionFormat = 'full'
+        }
+
         mustRunAfter tasks.test
     }
 

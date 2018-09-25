@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 
 import com.intellij.execution.ExecutionException
 import com.intellij.execution.ExecutorRegistry
-import com.intellij.execution.RunManager
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.testFramework.runInEdtAndWait
@@ -17,10 +16,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
-import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
-import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.testutils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.resources.message
@@ -53,7 +49,7 @@ class SamRunConfigurationTest {
         SamSettings.getInstance().executablePath = ""
 
         runInEdtAndWait {
-            val runConfiguration = createRunConfiguration()
+            val runConfiguration = createRunConfiguration(project = projectRule.project)
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
@@ -64,7 +60,8 @@ class SamRunConfigurationTest {
     @Test
     fun handlerIsNotSet() {
         runInEdtAndWait {
-            val runConfiguration = createRunConfiguration(handler = null)
+            val runConfiguration =
+                createRunConfiguration(project = projectRule.project, handler = null)
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
@@ -75,7 +72,7 @@ class SamRunConfigurationTest {
     @Test
     fun runtimeIsNotSet() {
         runInEdtAndWait {
-            val runConfiguration = createRunConfiguration(runtime = null)
+            val runConfiguration = createRunConfiguration(project = projectRule.project, runtime = null)
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
@@ -86,7 +83,7 @@ class SamRunConfigurationTest {
     @Test
     fun handlerDoesNotExist() {
         runInEdtAndWait {
-            val runConfiguration = createRunConfiguration(handler = "Fake")
+            val runConfiguration = createRunConfiguration(project = projectRule.project, handler = "Fake")
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
@@ -97,7 +94,7 @@ class SamRunConfigurationTest {
     @Test
     fun invalidRegion() {
         runInEdtAndWait {
-            val runConfiguration = createRunConfiguration(region = null)
+            val runConfiguration = createRunConfiguration(project = projectRule.project, region = null)
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
@@ -108,7 +105,7 @@ class SamRunConfigurationTest {
     @Test
     fun regionIsAdded() {
         runInEdtAndWait {
-            val runConfiguration = createRunConfiguration()
+            val runConfiguration = createRunConfiguration(project = projectRule.project)
             assertThat(runConfiguration).isNotNull
             val environmentVariables = getState(runConfiguration).settings.environmentVariables
             assertThat(environmentVariables)
@@ -123,7 +120,10 @@ class SamRunConfigurationTest {
         val credentialsProvider = MockCredentialsManager.getInstance().addCredentials("SomeId", awsCredentials)
 
         runInEdtAndWait {
-            val runConfiguration = createRunConfiguration(credentialsProviderId = credentialsProvider.id)
+            val runConfiguration = createRunConfiguration(
+                project = projectRule.project,
+                credentialsProviderId = credentialsProvider.id
+            )
             assertThat(runConfiguration).isNotNull
             val environmentVariables = getState(runConfiguration).settings.environmentVariables
             assertThat(environmentVariables)
@@ -139,7 +139,7 @@ class SamRunConfigurationTest {
     @Test
     fun inputTextIsResolved() {
         runInEdtAndWait {
-            val runConfiguration = createRunConfiguration(input = "TestInput")
+            val runConfiguration = createRunConfiguration(project = projectRule.project, input = "TestInput")
             assertThat(runConfiguration).isNotNull
             assertThat(getState(runConfiguration).settings.input).isEqualTo("TestInput")
         }
@@ -151,30 +151,14 @@ class SamRunConfigurationTest {
         tempFile.writeText("TestInputFile")
 
         runInEdtAndWait {
-            val runConfiguration = createRunConfiguration(input = tempFile.absolutePath, inputIsFile = true)
+            val runConfiguration = createRunConfiguration(
+                project = projectRule.project,
+                input = tempFile.absolutePath,
+                inputIsFile = true
+            )
             assertThat(runConfiguration).isNotNull
             assertThat(getState(runConfiguration).settings.input).isEqualTo("TestInputFile")
         }
-    }
-
-    private fun createRunConfiguration(
-        runtime: Runtime? = Runtime.JAVA8,
-        handler: String? = "com.example.LambdaHandler::handleRequest",
-        input: String? = "inputText",
-        inputIsFile: Boolean = false,
-        credentialsProviderId: String? = null,
-        region: AwsRegion? = AwsRegion("us-east-1", "us-east-1")
-    ): SamRunConfiguration {
-        val runManager = RunManager.getInstance(projectRule.project)
-        val topLevelFactory = runManager.configurationFactories.first { it is LambdaRunConfiguration }
-        val factory = topLevelFactory.configurationFactories.first { it is SamRunConfigurationFactory }
-        val runConfigurationAndSettings = runManager.createRunConfiguration("Test", factory)
-        val runConfiguration = runConfigurationAndSettings.configuration as SamRunConfiguration
-        runManager.addConfiguration(runConfigurationAndSettings)
-
-        runConfiguration.configure(runtime, handler, input, inputIsFile, mutableMapOf(), credentialsProviderId, region)
-
-        return runConfiguration
     }
 
     private fun getState(runConfiguration: SamRunConfiguration): SamRunningState {
