@@ -5,8 +5,10 @@ package software.aws.toolkits.jetbrains.core
 
 import com.intellij.ide.DataManager
 import com.intellij.openapi.actionSystem.ActionGroup
+import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.DataKeys
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.ex.ComboBoxAction
@@ -28,6 +30,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsMa
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.resources.message
+import java.awt.Component
 import java.awt.event.MouseEvent
 import javax.swing.JComponent
 
@@ -103,8 +106,40 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
     }
 }
 
-private class ChangeAccountSettingsAction(private val accountSettingsManager: ProjectAccountSettingsManager) :
+class SettingsSelectorAction : AnAction(message("configure.toolkit")), DumbAware {
+    override fun actionPerformed(e: AnActionEvent?) {
+        val project = e?.project ?: return
+        val settingsSelector = SettingsSelector(project)
+        settingsSelector.settingsPopup(e.dataContext).showCenteredInCurrentWindow(project)
+    }
+}
+
+class SettingsSelector(project: Project) {
+    private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
+
+    fun settingsPopup(contextComponent: Component, showRegions: Boolean = true): ListPopup {
+        val dataContext = DataManager.getInstance().getDataContext(contextComponent)
+        return settingsPopup(dataContext, showRegions)
+    }
+
+    fun settingsPopup(dataContext: DataContext, showRegions: Boolean = true): ListPopup {
+        return JBPopupFactory.getInstance().createActionGroupPopup(
+            tooltipText,
+            ChangeAccountSettingsAction(accountSettingsManager, showRegions).createPopupActionGroup(),
+            dataContext,
+            JBPopupFactory.ActionSelectionAid.SPEEDSEARCH,
+            true
+        )
+    }
+
+    companion object {
+        internal val tooltipText = message("settings.title")
+    }
+}
+
+private class ChangeAccountSettingsAction(private val accountSettingsManager: ProjectAccountSettingsManager, private val showRegions: Boolean = true) :
     ComboBoxAction(), DumbAware {
+
     fun createPopupActionGroup(): DefaultActionGroup {
         return createPopupActionGroup(null)
     }
@@ -112,15 +147,17 @@ private class ChangeAccountSettingsAction(private val accountSettingsManager: Pr
     override fun createPopupActionGroup(button: JComponent?): DefaultActionGroup {
         val group = DefaultActionGroup()
 
-        val usedRegions = accountSettingsManager.recentlyUsedRegions()
-        if (usedRegions.isEmpty()) {
-            group.addAll(createShowAllRegions())
-        } else {
-            group.addSeparator(message("settings.regions.recent"))
-            usedRegions.forEach {
-                group.add(ChangeRegionAction(it))
+        if (showRegions) {
+            val usedRegions = accountSettingsManager.recentlyUsedRegions()
+            if (usedRegions.isEmpty()) {
+                group.addAll(createShowAllRegions())
+            } else {
+                group.addSeparator(message("settings.regions.recent"))
+                usedRegions.forEach {
+                    group.add(ChangeRegionAction(it))
+                }
+                group.add(createShowAllRegions())
             }
-            group.add(createShowAllRegions())
         }
 
         val usedCredentials = accountSettingsManager.recentlyUsedCredentials()
@@ -160,6 +197,9 @@ private class ChangeAccountSettingsAction(private val accountSettingsManager: Pr
             showAll.add(ChangeCredentialsAction(it))
         }
 
+        showAll.addSeparator()
+        showAll.add(ActionManager.getInstance().getAction("aws.settings.upsertCredentials"))
+
         return showAll
     }
 }
@@ -171,8 +211,7 @@ private class ChangeRegionAction(val region: AwsRegion) : AnAction(region.displa
     }
 }
 
-private class ChangeCredentialsAction(val credentialsProvider: ToolkitCredentialsProvider) :
-    AnAction(credentialsProvider.displayName), DumbAware {
+private class ChangeCredentialsAction(val credentialsProvider: ToolkitCredentialsProvider) : AnAction(credentialsProvider.displayName), DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
         val accountSettingsManager = ProjectAccountSettingsManager.getInstance(e.getRequiredData(DataKeys.PROJECT))
         accountSettingsManager.activeCredentialProvider = credentialsProvider
