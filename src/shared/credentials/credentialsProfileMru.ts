@@ -13,7 +13,7 @@ import { SettingsConfiguration } from '../settingsConfiguration'
  */
 export class CredentialsProfileMru {
 
-    private static readonly ConfigurationSettingName: string = "credentialsProfileMRU"
+    private static readonly ConfigurationSettingName: string = "recentCredentials"
     private readonly _configuration: SettingsConfiguration
 
     constructor(configuration: SettingsConfiguration) {

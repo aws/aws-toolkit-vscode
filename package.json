@@ -43,10 +43,10 @@
                     "default": "prompt",
                     "markdownDescription": "%AWS.configuration.description.onDefaultRegionMissing%"
                 },
-                "aws.credentialsProfileMRU": {
+                "aws.recentCredentials": {
                     "type": "string",
                     "default": "",
-                    "description": "%AWS.configuration.description.credentialsProfileMRU%"
+                    "description": "%AWS.configuration.description.recentCredentials%"
                 }
             }
         },
