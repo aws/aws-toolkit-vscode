@@ -68,7 +68,7 @@ export class DefaultCredentialsFileReaderWriter implements CredentialsFileReader
      * the config file in addition to the credentials file.
      */
     getCanUseConfigFile(): boolean {
-        return process.env.AWS_SDK_LOAD_CONFIG ? true : false
+        return !!process.env.AWS_SDK_LOAD_CONFIG
     }
 
     /**
