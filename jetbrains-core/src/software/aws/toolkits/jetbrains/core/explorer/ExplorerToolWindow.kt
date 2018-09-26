@@ -72,7 +72,7 @@ class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, tru
         updateModel()
     }
 
-    private fun updateModel() {
+    internal fun updateModel() {
         if (!ProjectAccountSettingsManager.getInstance(project).hasActiveCredentials()) {
             treePanelWrapper.setContent(errorPanel)
             return
