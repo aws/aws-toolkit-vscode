@@ -47,8 +47,10 @@ export class DefaultCredentialsFileReaderWriter implements CredentialsFileReader
 
         let profile: Profile = {}
 
-        if (credentialFiles.configFile && credentialFiles.configFile[profileName]) {
-            profile = credentialFiles.configFile[profileName]
+        if (this.getCanUseConfigFile()) {
+            if (credentialFiles.configFile && credentialFiles.configFile[profileName]) {
+                profile = credentialFiles.configFile[profileName]
+            }
         }
 
         if (credentialFiles.credentialsFile && credentialFiles.credentialsFile[profileName]) {
@@ -66,7 +68,7 @@ export class DefaultCredentialsFileReaderWriter implements CredentialsFileReader
      * the config file in addition to the credentials file.
      */
     getCanUseConfigFile(): boolean {
-        return process.env.AWS_SDK_LOAD_CONFIG
+        return process.env.AWS_SDK_LOAD_CONFIG ? true : false
     }
 
     /**
@@ -76,6 +78,6 @@ export class DefaultCredentialsFileReaderWriter implements CredentialsFileReader
      * @param allow - true: load from credentials and config, false: load from credentials only
      */
     setCanUseConfigFile(allow: boolean): void {
-        process.env.AWS_SDK_LOAD_CONFIG = allow
+        process.env.AWS_SDK_LOAD_CONFIG = allow ? true : ""
     }
 }
