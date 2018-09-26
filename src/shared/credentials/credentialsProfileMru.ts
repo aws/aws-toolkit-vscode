@@ -13,6 +13,8 @@ import { SettingsConfiguration } from '../settingsConfiguration'
  */
 export class CredentialsProfileMru {
 
+    public static readonly MaxCredentialMruSize = 5
+
     private static readonly ConfigurationSettingName: string = "recentCredentials"
     private readonly _configuration: SettingsConfiguration
 
@@ -22,16 +24,11 @@ export class CredentialsProfileMru {
 
     /**
      * @description Returns the most recently used credentials names
-     * @param maxEntries Optional, caps the amount of items returns
      */
-    public getMruList(maxEntries?: number): string[] {
+    public getMruList(): string[] {
         const mruStr = this._configuration.readSetting(CredentialsProfileMru.ConfigurationSettingName)
 
         const mru = mruStr ? mruStr.split(",") : []
-
-        if (maxEntries) {
-            mru.splice(maxEntries)
-        }
 
         return mru
     }
@@ -49,6 +46,8 @@ export class CredentialsProfileMru {
         }
 
         mru.splice(0, 0, profileName)
+
+        mru.splice(CredentialsProfileMru.MaxCredentialMruSize)
 
         await this._configuration.writeSetting(CredentialsProfileMru.ConfigurationSettingName, mru, vscode.ConfigurationTarget.Global)
     }

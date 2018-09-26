@@ -26,7 +26,6 @@ import { extensionSettingsPrefix } from '../constants'
 
 export class DefaultCredentialSelectionDataProvider implements CredentialSelectionDataProvider {
 
-    private static readonly MaxCredentialMruSize = 5
     private readonly _credentialsMru: CredentialsProfileMru = new CredentialsProfileMru(new DefaultSettingsConfiguration(extensionSettingsPrefix))
     private _newProfileButton: AddProfileButton
 
@@ -99,7 +98,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
      * Returns a list of the profile names that are currently in the MRU list
      */
     private getMostRecentlyUsedProfileNames(): string[] {
-        const mru = this._credentialsMru.getMruList(DefaultCredentialSelectionDataProvider.MaxCredentialMruSize)
+        const mru = this._credentialsMru.getMruList()
 
         return mru.filter(x => this.existingProfileNames.indexOf(x) !== -1)
     }

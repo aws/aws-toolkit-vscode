@@ -75,20 +75,14 @@ suite("CredentialsProfileMru Tests", function (): void {
         assert.equal(mru[2], "dill")
     })
 
-    test('Get MRU with size limit', async function () {
+    test('MRU max size trim', async function () {
         const credentialsMru = new CredentialsProfileMru(new TestSettingsConfiguration())
 
-        await credentialsMru.setMostRecentlyUsedProfile("one")
-        await credentialsMru.setMostRecentlyUsedProfile("two")
-        await credentialsMru.setMostRecentlyUsedProfile("three")
-        await credentialsMru.setMostRecentlyUsedProfile("four")
-
-        for (let i: number = 0; i < 3; i++) {
-            const mru = credentialsMru.getMruList(i + 1)
-
-            assert(mru)
-            assert.equal(mru.length, i + 1)
+        for (let i = 0; i < CredentialsProfileMru.MaxCredentialMruSize + 1; i++) {
+            await credentialsMru.setMostRecentlyUsedProfile("entry" + i)
         }
-    })
 
+        const mru = credentialsMru.getMruList()
+        assert.equal(mru.length, CredentialsProfileMru.MaxCredentialMruSize)
+    })
 })
