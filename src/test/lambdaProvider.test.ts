@@ -17,7 +17,7 @@ import { ResourceLocation } from '../shared/resourceLocation'
 
 suite("LambdaProvider Tests", function (): void {
 
-    test('region nodes display the user-friendly region name', function () {
+    test('region nodes display the user-friendly region name', async function () {
 
         const regionCode = "regionQuerty"
         const regionName = "The Querty Region"
@@ -67,17 +67,16 @@ suite("LambdaProvider Tests", function (): void {
 
         const lambdaProvider = new LambdaProvider(awsContext, awsContextTreeCollection, regionProvider, resourceFetcher)
 
-        const treeNodes = lambdaProvider.getChildren()
+        const treeNodesPromise = lambdaProvider.getChildren()
 
+        assert(treeNodesPromise)
+        const treeNodes = await treeNodesPromise
         assert(treeNodes)
-        treeNodes.then(treeNodes => {
-            assert(treeNodes)
-            assert.equal(treeNodes.length, 1)
+        assert.equal(treeNodes.length, 1)
 
-            const regionNode = treeNodes[0] as RegionNode
-            assert(regionNode)
-            assert.equal(regionNode.regionCode, regionCode)
-            assert.equal(regionNode.regionName, regionName)
-        })
+        const regionNode = treeNodes[0] as RegionNode
+        assert(regionNode)
+        assert.equal(regionNode.regionCode, regionCode)
+        assert.equal(regionNode.regionName, regionName)
     })
 })

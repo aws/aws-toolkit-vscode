@@ -50,7 +50,7 @@ export interface SharedConfigFiles {
 
 const swallowError = () => ({})
 
-export function loadSharedConfigFiles(
+export async function loadSharedConfigFiles(
     init: SharedConfigInit = {}
 ): Promise<SharedConfigFiles> {
     const {
@@ -60,7 +60,7 @@ export function loadSharedConfigFiles(
             || join(getHomeDir(), '.aws', 'config'),
     } = init
 
-    return Promise.all([
+    const [configFile, credentialsFile] = await Promise.all([
         slurpFile(configFilepath)
             .then(parseIni)
             .then(normalizeConfigFile)
@@ -68,13 +68,12 @@ export function loadSharedConfigFiles(
         slurpFile(filepath)
             .then(parseIni)
             .catch(swallowError),
-    ]).then((parsedFiles: Array<ParsedIniData>) => {
-        const [configFile, credentialsFile] = parsedFiles
-        return {
-            configFile,
-            credentialsFile,
-        }
-    })
+    ]) 
+
+    return {
+        configFile,
+        credentialsFile,
+    }
 }
 
 // TODO: FOR POC-DEMOS ONLY, NOT FOR PRODUCTION USE!
@@ -86,26 +85,25 @@ export function saveProfile(
     secretKey: string
 ): Promise<void> {
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         const filepath = process.env[ENV_CREDENTIALS_PATH]
                 || join(getHomeDir(), '.aws', 'credentials')
 
         // even though poc concept code, let's preserve the user's file!
         copy(filepath, filepath + '.bak_vscode', { overwrite: true})
 
-        slurpFile(filepath).then(data => {
-            data += '\r\n'
-            data += `[${name}]\r\n`
-            data += `aws_access_key_id=${accessKey}\r\n`
-            data += `aws_secret_access_key=${secretKey}\r\n`
+        let data = await slurpFile(filepath)
+        data += '\r\n'
+        data += `[${name}]\r\n`
+        data += `aws_access_key_id=${accessKey}\r\n`
+        data += `aws_secret_access_key=${secretKey}\r\n`
 
-            writeFile(filepath, data, 'utf8', (err) => {
-                if (err) {
-                    reject(err)
-                } else {
-                    resolve()
-                }
-            })
+        writeFile(filepath, data, 'utf8', (err) => {
+            if (err) {
+                reject(err)
+            } else {
+                resolve()
+            }
         })
     })
 }

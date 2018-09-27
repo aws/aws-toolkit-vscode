@@ -84,7 +84,7 @@ export class DefaultAWSContextCommands {
     }
 
     public async onCommandHideRegion(regionCode?: string) {
-        var region = regionCode || await this._awsContext.getExplorerRegions().then(r => this.promptForRegion(r))
+        var region = regionCode || await this.promptForRegion(await this._awsContext.getExplorerRegions())
         if (region) {
             this._awsContext.removeExplorerRegion(region)
             this.refresh()
