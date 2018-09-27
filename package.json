@@ -29,8 +29,8 @@
             "title": "%AWS.configuration.title%",
             "properties": {
                 "aws.region": {
-                    "type": "string",
-                    "default": "",
+                    "type": "array",
+                    "default": [],
                     "description": "%AWS.configuration.regionDescription%"
                 },
                 "aws.profile": {
@@ -44,8 +44,8 @@
                     "markdownDescription": "%AWS.configuration.description.onDefaultRegionMissing%"
                 },
                 "aws.recentCredentials": {
-                    "type": "string",
-                    "default": "",
+                    "type": "array",
+                    "default": [],
                     "description": "%AWS.configuration.description.recentCredentials%"
                 }
             }

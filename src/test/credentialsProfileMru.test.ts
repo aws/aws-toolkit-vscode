@@ -11,21 +11,14 @@ import { SettingsConfiguration } from '../shared/settingsConfiguration'
 
 class TestSettingsConfiguration implements SettingsConfiguration {
 
-    private _data: { [key: string]: string } = {}
+    private _data: { [key: string]: any } = {}
 
-    readSetting(settingKey: string, defaultValue?: string | undefined): string | undefined {
+    readSetting<T>(settingKey: string, defaultValue?: T | undefined): T | undefined {
         return this._data[settingKey]
     }
 
-    async writeSetting(settingKey: string, value: string | string[], target: any): Promise<void> {
-        let persistedValue: string
-        if (value && value instanceof Array) {
-            persistedValue = value.join()
-        } else {
-            persistedValue = value
-        }
-
-        this._data[settingKey] = persistedValue
+    async writeSetting<T>(settingKey: string, value: T, target: any): Promise<void> {
+        this._data[settingKey] = value
     }
 }
 

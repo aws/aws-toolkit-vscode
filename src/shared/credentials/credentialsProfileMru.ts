@@ -26,11 +26,9 @@ export class CredentialsProfileMru {
      * @description Returns the most recently used credentials names
      */
     public getMruList(): string[] {
-        const mruStr = this._configuration.readSetting(CredentialsProfileMru.ConfigurationSettingName)
+        const mru = this._configuration.readSetting<string[]>(CredentialsProfileMru.ConfigurationSettingName)
 
-        const mru = mruStr ? mruStr.split(",") : []
-
-        return mru
+        return mru || []
     }
 
     /**
@@ -38,7 +36,7 @@ export class CredentialsProfileMru {
      * @param profileName The credentials most recently used
      */
     public async setMostRecentlyUsedProfile(profileName: string): Promise<void> {
-        const mru = this.getMruList()
+        const mru: string[] = this.getMruList()
 
         const currentIndex = mru.indexOf(profileName)
         if (currentIndex !== -1) {

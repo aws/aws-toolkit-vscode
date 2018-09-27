@@ -36,13 +36,9 @@ export class DefaultAwsContext implements AwsContext {
 
     constructor(public settingsConfiguration: SettingsConfiguration) {
 
-        this.profileName = settingsConfiguration.readSetting(profileSettingKey, '')
-        const persistedRegions = settingsConfiguration.readSetting(regionSettingKey, undefined)
-        if (persistedRegions) {
-            this.explorerRegions = persistedRegions.split(',')
-        } else {
-            this.explorerRegions = []
-        }
+        this.profileName = settingsConfiguration.readSetting(profileSettingKey, "")
+        const persistedRegions = settingsConfiguration.readSetting<string[]>(regionSettingKey)
+        this.explorerRegions = persistedRegions || []
 
         this._credentialsManager = new CredentialsManager()
     }
