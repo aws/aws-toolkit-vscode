@@ -60,12 +60,9 @@ export class BlueprintsCollection {
 
     private async loadVisualStudioBlueprints(): Promise<void> {
         const manifestUrl = hostedFilesBaseUrl + blueprintsManifestPath
-        await this.listBlueprintsVSToolkitFromManifest(manifestUrl)
-            .then(results => {
-                results.forEach((b: Blueprint) => {
-                    this.availableBlueprints.push(b)
-            })
-        })
+        const results = await this.listBlueprintsVSToolkitFromManifest(manifestUrl)
+        
+        results.forEach((b: Blueprint) => this.availableBlueprints.push(b))
     }
 
     private async listBlueprintsVSToolkitFromManifest(manifestUrl: string): Promise<Blueprint[]> {

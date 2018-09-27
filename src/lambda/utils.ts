@@ -53,19 +53,15 @@ export async function listLambdas(lambda: Lambda): Promise<FunctionNode[]> {
     try {
         const request: Lambda.ListFunctionsRequest = {}
         do {
-            await lambda.listFunctions(request)
-                .promise()
-                .then((r: Lambda.ListFunctionsResponse) => {
-                    request.Marker = r.NextMarker
-                    if (r.Functions) {
-                        r.Functions.forEach((f: Lambda.FunctionConfiguration) => {
-                            const func = new FunctionNode(f, lambda)
-                            func.contextValue = 'awsLambdaFn'
-                            arr.push(func)
-                        })
-                    }
-
+            const response: Lambda.ListFunctionsResponse = await lambda.listFunctions(request).promise()
+            request.Marker = response.NextMarker
+            if (response.Functions) {
+                response.Functions.forEach(f => {
+                    const func = new FunctionNode(f, lambda)
+                    func.contextValue = 'awsLambdaFn'
+                    arr.push(func)
                 })
+            }
         } while (!isNullOrUndefined(request.Marker))
     } catch (error) {
         // TODO: Handle error gracefully, possibly add a node that can attempt to retry the operation
