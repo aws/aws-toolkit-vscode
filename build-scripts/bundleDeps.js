@@ -7,26 +7,31 @@ const fs = require('fs-extra');
 const path = require('path');
 const _ = require('lodash');
 
-const DEPS = [{
+const JS_DEPS = [
+    {
         name: 'vue.min.js',
         path: 'vue/dist/vue.min.js'
     }
 ];
-const workingDir = path.join(__dirname, '..');
-const nodeModulesDir = path.join(workingDir, 'node_modules');
-const libraryDir = path.join(workingDir, 'media', 'libs');
+const WORKING_DIR = path.join(__dirname, '..');
+const NODE_MODULES_DIR = path.join(WORKING_DIR, 'node_modules');
+const LIBRARY_DIR = path.join(WORKING_DIR, 'media', 'libs');
 (async () => {
     const work = [];
-    _.forEach(DEPS, (dep) => {
-        const depPath = path.join(nodeModulesDir, dep.path);
-        console.log(`Copying ${depPath} to ${libraryDir}`);
-        work.push(fs.copy(depPath, path.join(libraryDir, dep.name)));
-    });
+    copy(JS_DEPS, LIBRARY_DIR, work);
     try {
         await Promise.all(work);
         console.log('Successfully copied all clientside dependencies.');
     } catch (e) {
         console.error('Error when copying clientside dependencies.');
         console.error(e);
+    }
+
+    function copy(deps, destinationPath, workArr) {
+        _.forEach(deps, (dep) => {
+            const depPath = path.join(NODE_MODULES_DIR, dep.path);
+            console.log(`Copying ${depPath} to ${destinationPath}`);
+            workArr.push(fs.copy(depPath, path.join(destinationPath, dep.name)));
+        });
     }
 })();

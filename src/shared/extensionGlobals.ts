@@ -17,6 +17,7 @@ import { AWSContextCommands } from './awsContextCommands'
 export namespace ext {
     export let context: ExtensionContext
     export let outputChannel: OutputChannel
+    export let lambdaOutputChannel: OutputChannel
     export let awsContextCommands: AWSContextCommands
     export let sdkClientBuilder: AWSClientBuilder
     export let statusBar: AWSStatusBar

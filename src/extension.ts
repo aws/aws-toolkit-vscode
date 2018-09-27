@@ -27,6 +27,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     nls.config(process.env.VSCODE_NLS_CONFIG)()
 
+    ext.lambdaOutputChannel = vscode.window.createOutputChannel('AWS Lambda')
     ext.context = context
 
     new DefaultCredentialsFileReaderWriter().setCanUseConfigFile(true)
