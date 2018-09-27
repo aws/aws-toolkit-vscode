@@ -24,8 +24,14 @@ import { CredentialsProfileMru } from './credentialsProfileMru'
 import { DefaultSettingsConfiguration } from '../settingsConfiguration'
 import { extensionSettingsPrefix } from '../constants'
 
+interface ProfileEntry {
+    profileName: string,
+    isRecentlyUsed: boolean,
+}
+
 export class DefaultCredentialSelectionDataProvider implements CredentialSelectionDataProvider {
 
+    private static readonly DefaultCredentialsProfileName: string = "default"
     private readonly _credentialsMru: CredentialsProfileMru = new CredentialsProfileMru(new DefaultSettingsConfiguration(extensionSettingsPrefix))
     private _newProfileButton: AddProfileButton
 
@@ -53,14 +59,13 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
      * Builds and returns the list of QuickPickItem objects representing the profile names to select from in the UI
      */
     private getProfileSelectionList(): QuickPickItem[] {
-        const orderedProfileNames: string[] = this.getOrderedProfileNames()
-        const mruProfileNames: string[] = this.getMostRecentlyUsedProfileNames()
+        const orderedProfiles: ProfileEntry[] = this.getOrderedProfile()
 
         const selectionList: QuickPickItem[] = []
-        orderedProfileNames.forEach(profileName => {
-            const selectionItem: QuickPickItem = { label: profileName }
+        orderedProfiles.forEach(profile => {
+            const selectionItem: QuickPickItem = { label: profile.profileName }
 
-            if (mruProfileNames.indexOf(profileName) !== -1) {
+            if (profile.isRecentlyUsed) {
                 selectionItem.description = localize("AWS.profile.recentlyUsed", "recently used")
             }
 
@@ -71,27 +76,38 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
     }
 
     /**
-     * Returns a list of profile names, ordered by: MRU, default, all others
+     * Returns a list of profiles, and whether or not they have been
+     * used recently. Ordered by: MRU, default, all others
      */
-    private getOrderedProfileNames(): string[] {
+    private getOrderedProfile(): ProfileEntry[] {
 
         const mostRecentProfileNames = this.getMostRecentlyUsedProfileNames()
 
-        const orderedNames: string[] = []
+        const orderedProfiles: ProfileEntry[] = []
+        const orderedNames = new Set()
 
         // Add MRU entries first
-        orderedNames.push(...mostRecentProfileNames)
+        mostRecentProfileNames.forEach(profileName => {
+            orderedProfiles.push({ profileName: profileName, isRecentlyUsed: true })
+            orderedNames.add(profileName)
+        })
 
         // Add default if it hasn't been, and is an existing profile name
-        if (orderedNames.indexOf("default") === -1 && this.existingProfileNames.indexOf("default") !== -1) {
-            orderedNames.push("default")
+        if (!orderedNames.has(DefaultCredentialSelectionDataProvider.DefaultCredentialsProfileName)
+            && this.existingProfileNames.indexOf(DefaultCredentialSelectionDataProvider.DefaultCredentialsProfileName) !== -1) {
+            orderedProfiles.push({ profileName: DefaultCredentialSelectionDataProvider.DefaultCredentialsProfileName, isRecentlyUsed: false })
+            orderedNames.add(DefaultCredentialSelectionDataProvider.DefaultCredentialsProfileName)
         }
 
         // Add remaining items, sorted alphanumerically
-        const remaining = this.existingProfileNames.filter(x => orderedNames.indexOf(x) === -1).sort()
-        orderedNames.push(...remaining)
+        this.existingProfileNames
+            .filter(x => !orderedNames.has(x))
+            .sort()
+            .filter(profileName => {
+                orderedProfiles.push({ profileName: profileName, isRecentlyUsed: false })
+            })
 
-        return orderedNames
+        return orderedProfiles
     }
 
     /**
