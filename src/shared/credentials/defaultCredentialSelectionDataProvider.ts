@@ -93,7 +93,8 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         })
 
         // Add default if it hasn't been, and is an existing profile name
-        if (!orderedNames.has(DefaultCredentialSelectionDataProvider.DefaultCredentialsProfileName) && this.existingProfileNames.indexOf(DefaultCredentialSelectionDataProvider.DefaultCredentialsProfileName) !== -1) {
+        if (!orderedNames.has(DefaultCredentialSelectionDataProvider.DefaultCredentialsProfileName)
+            && this.existingProfileNames.indexOf(DefaultCredentialSelectionDataProvider.DefaultCredentialsProfileName) !== -1) {
             orderedProfiles.push({ profileName: DefaultCredentialSelectionDataProvider.DefaultCredentialsProfileName, isRecentlyUsed: false })
             orderedNames.add(DefaultCredentialSelectionDataProvider.DefaultCredentialsProfileName)
         }
