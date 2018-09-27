@@ -16,21 +16,20 @@ suite("AWSContext Tests", function (): void {
     const testProfileValue: string = 'profile1'
 
     class ContextTestsSettingsConfigurationBase implements SettingsConfiguration {
-        readSetting(settingKey: string, defaultValue?: string | undefined): string | undefined {
+        readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
             return undefined
         }
-
-        writeSetting(settingKey: string, value: string, target: ConfigurationTarget): void {
+        async writeSetting<T>(settingKey: string, value: T | undefined, target: ConfigurationTarget): Promise<void> {
         }
     }
 
 
-    test('context reads profile from config on startup', function() {
+    test('context reads profile from config on startup', function () {
 
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
-            readSetting(settingKey: string, defaultValue?: string | undefined): string | undefined {
-                if(settingKey === profileSettingKey) {
-                    return testProfileValue
+            readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
+                if (settingKey === profileSettingKey) {
+                    return <T><any>testProfileValue
                 }
 
                 return super.readSetting(settingKey, defaultValue)
@@ -42,12 +41,12 @@ suite("AWSContext Tests", function (): void {
         assert.equal(testContext.getCredentialProfileName(), testProfileValue)
     })
 
-    test('context gets single region from config on startup', async function() {
+    test('context gets single region from config on startup', async function () {
 
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
-            readSetting(settingKey: string, defaultValue?: string | undefined): string | undefined {
-                if(settingKey === regionSettingKey) {
-                    return testRegion1Value
+            readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
+                if (settingKey === regionSettingKey) {
+                    return <T><any>[testRegion1Value]
                 }
 
                 return super.readSetting(settingKey, defaultValue)
@@ -61,12 +60,12 @@ suite("AWSContext Tests", function (): void {
         assert.equal(regions[0], testRegion1Value)
     })
 
-    test('context gets multiple regions from config on startup', async function() {
+    test('context gets multiple regions from config on startup', async function () {
 
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
-            readSetting(settingKey: string, defaultValue?: string | undefined): string | undefined {
-                if(settingKey === regionSettingKey) {
-                    return `${testRegion1Value},${testRegion2Value}`
+            readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
+                if (settingKey === regionSettingKey) {
+                    return <T><any>[testRegion1Value, testRegion2Value]
                 }
 
                 return super.readSetting(settingKey, defaultValue)
@@ -81,10 +80,10 @@ suite("AWSContext Tests", function (): void {
         assert.equal(regions[1], testRegion2Value)
     })
 
-    test('context updates config on single region change', function() {
+    test('context updates config on single region change', function () {
 
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
-            writeSetting(settingKey: string, value: string, target: ConfigurationTarget): void {
+            async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
                 assert.equal(settingKey, regionSettingKey)
                 assert.equal(value, testRegion1Value)
                 assert.equal(target, ConfigurationTarget.Global)
@@ -95,31 +94,34 @@ suite("AWSContext Tests", function (): void {
         testContext.addExplorerRegion(testRegion1Value)
     })
 
-    test('context updates config on multiple region change', function() {
+    test('context updates config on multiple region change', function () {
 
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
-            writeSetting(settingKey: string, value: string, target: ConfigurationTarget): void {
+            async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
                 assert.equal(settingKey, regionSettingKey)
-                assert.equal(value, `${testRegion1Value}${testRegion2Value}`)
+                assert(value instanceof Array)
+                const values = value as any as string[]
+                assert.equal(values[0], testRegion1Value)
+                assert.equal(values[1], testRegion2Value)
                 assert.equal(target, ConfigurationTarget.Global)
             }
         }
 
         const testContext = new DefaultAwsContext(new TestConfiguration())
-        testContext.addExplorerRegion([ testRegion1Value, testRegion2Value ])
+        testContext.addExplorerRegion([testRegion1Value, testRegion2Value])
     })
 
-    test('context updates on region removal', function() {
+    test('context updates on region removal', function () {
 
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
-            readSetting(settingKey: string, defaultValue?: string | undefined): string | undefined {
-                if(settingKey === regionSettingKey) {
-                    return `${testRegion1Value},${testRegion2Value}`
+            readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
+                if (settingKey === regionSettingKey) {
+                    return <T><any>[testRegion1Value, testRegion2Value]
                 }
 
-                return super.readSetting(settingKey, defaultValue)
+                return super.readSetting<T>(settingKey, defaultValue)
             }
-            writeSetting(settingKey: string, value: string, target: ConfigurationTarget): void {
+            async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
                 assert.equal(settingKey, regionSettingKey)
                 assert.equal(value, `${testRegion2Value}`)
                 assert.equal(target, ConfigurationTarget.Global)
@@ -127,13 +129,13 @@ suite("AWSContext Tests", function (): void {
         }
 
         const testContext = new DefaultAwsContext(new TestConfiguration())
-        testContext.removeExplorerRegion([ testRegion2Value ])
+        testContext.removeExplorerRegion([testRegion2Value])
     })
 
-    test('context updates config on profile change', function() {
+    test('context updates config on profile change', async function () {
 
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
-            writeSetting(settingKey: string, value: string, target: ConfigurationTarget): void {
+            async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
                 assert.equal(settingKey, profileSettingKey)
                 assert.equal(value, testProfileValue)
                 assert.equal(target, ConfigurationTarget.Global)
@@ -141,10 +143,10 @@ suite("AWSContext Tests", function (): void {
         }
 
         const testContext = new DefaultAwsContext(new TestConfiguration())
-        testContext.addExplorerRegion(testRegion1Value)
+        await testContext.setCredentialProfileName(testProfileValue)
     })
 
-    test('context fires event on single region change', function(done) {
+    test('context fires event on single region change', function (done) {
 
         const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase())
 
@@ -157,7 +159,7 @@ suite("AWSContext Tests", function (): void {
         testContext.addExplorerRegion(testRegion1Value)
     })
 
-    test('context fires event on multi region change', function(done) {
+    test('context fires event on multi region change', function (done) {
 
         const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase())
 
@@ -168,10 +170,10 @@ suite("AWSContext Tests", function (): void {
             done()
         })
 
-        testContext.addExplorerRegion([ testRegion1Value, testRegion2Value ])
+        testContext.addExplorerRegion([testRegion1Value, testRegion2Value])
     })
 
-    test('context fires event on profile change', function(done) {
+    test('context fires event on profile change', function (done) {
 
         const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase())
 

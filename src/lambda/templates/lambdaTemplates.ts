@@ -27,34 +27,12 @@ export class LambdaTemplates {
         <br />
         <textarea
             rows="20"
-            cols="90"
+            cols="90"    
             v-model="sampleText"
         ></textarea>
         <br />
         <input type="submit" v-on:click="sendInput" value="Invoke">
         <br />
-        <h3 v-if="isLoading">Loading response...</h3>
-        <div v-if="showResponse">
-            <h1>
-            Function output
-            </h1>
-            <div v-if="error">
-            <p>Something went wrong.</p>
-            <pre>{{ error }}</pre>
-            </div>
-            <div v-else>
-                <div>
-                    <p>Status Code: {{statusCode}}</p>
-                    <p>Payload:
-                        <pre>{{ payload }}</pre>
-                    </p>
-                </div>
-                <div>
-                    <h2>Logs</h2>
-                    <pre>{{ logs }}</pre>
-                </div>
-            </div>
-        </div>
     </div>
     <% Libraries.forEach(function(lib) { %>
         <script nonce="<%= lib.Nonce %>" src="<%= lib.Uri %>"></script>

@@ -21,12 +21,17 @@ import { safeGet } from './shared/extensionUtilities'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
+import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
 
 export async function activate(context: vscode.ExtensionContext) {
 
     nls.config(process.env.VSCODE_NLS_CONFIG)()
 
+    ext.lambdaOutputChannel = vscode.window.createOutputChannel('AWS Lambda')
     ext.context = context
+
+    new DefaultCredentialsFileReaderWriter().setCanUseConfigFile(true)
+
     const awsContext = new DefaultAwsContext(new DefaultSettingsConfiguration(extensionSettingsPrefix))
     const awsContextTrees = new AwsContextTreeCollection()
     const resourceFetcher = new DefaultResourceFetcher()

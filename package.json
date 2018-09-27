@@ -30,14 +30,24 @@
             "title": "%AWS.configuration.title%",
             "properties": {
                 "aws.region": {
-                    "type": "string",
-                    "default": "",
+                    "type": "array",
+                    "default": [],
                     "description": "%AWS.configuration.regionDescription%"
                 },
                 "aws.profile": {
                     "type": "string",
                     "default": "",
                     "description": "%AWS.configuration.profileDescription%"
+                },
+                "aws.onDefaultRegionMissing": {
+                    "type": "string",
+                    "default": "prompt",
+                    "markdownDescription": "%AWS.configuration.description.onDefaultRegionMissing%"
+                },
+                "aws.recentCredentials": {
+                    "type": "array",
+                    "default": [],
+                    "description": "%AWS.configuration.description.recentCredentials%"
                 }
             }
         },
@@ -173,12 +183,15 @@
         "test": "npm run compile && node ./node_modules/vscode/bin/test"
     },
     "devDependencies": {
+        "@types/async-lock": "^1.1.0",
+        "@types/del": "^3.0.1",
         "@types/fs-extra": "^5.0.4",
         "@types/lodash": "^4.14.110",
         "@types/mocha": "^2.2.42",
         "@types/node": "^7.0.43",
         "@types/request": "^2.47.1",
         "@types/xml2js": "^0.4.3",
+        "del": "^3.0.0",
         "semver-regex": "^2.0.0",
         "tslint": "^5.11.0",
         "tslint-eslint-rules": "^5.4.0",
@@ -188,11 +201,12 @@
         "vscode-nls-dev": "^3.2.2"
     },
     "dependencies": {
-        "aws-sdk": "^2.227.1",
+        "async-lock": "^1.1.3",
+        "aws-sdk": "^2.317.0",
         "fs-extra": "^6.0.1",
         "lodash": "^4.17.10",
         "npm": "^6.1.0",
-        "vue": "^2.5.16",
-        "vscode-nls": "^3.2.4"
+        "vscode-nls": "^3.2.4",
+        "vue": "^2.5.16"
     }
 }
