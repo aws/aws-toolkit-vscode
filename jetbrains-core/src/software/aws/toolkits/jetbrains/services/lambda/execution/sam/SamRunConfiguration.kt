@@ -256,4 +256,7 @@ class SamRunSettings(
     val input: String,
     val environmentVariables: Map<String, String>,
     val handlerElement: NavigatablePsiElement
-)
+) {
+    val runtimeGroup: RuntimeGroup = runtime.runtimeGroup
+            ?: throw IllegalStateException("Attempting to run SAM for unsupported runtime $runtime")
+}

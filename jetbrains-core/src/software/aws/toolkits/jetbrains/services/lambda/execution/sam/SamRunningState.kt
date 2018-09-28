@@ -9,13 +9,15 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.util.io.FileUtil
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamInvokeRunner.SamRunner
 import software.aws.toolkits.jetbrains.settings.SamSettings
 
 class SamRunningState(
     environment: ExecutionEnvironment,
     val settings: SamRunSettings
 ) : CommandLineState(environment) {
-    lateinit var codeLocation: String
+    internal lateinit var codeLocation: String
+    internal lateinit var runner: SamRunner
 
     override fun startProcess(): ProcessHandler {
         val samCliExecutable = SamSettings.getInstance().executablePath
@@ -28,6 +30,8 @@ class SamRunningState(
             .withParameters("--event")
             .withParameters(createEventFile())
             .withEnvironment(settings.environmentVariables)
+
+        runner.patchSamCommand(this, commandLine)
 
         return ProcessHandlerFactory.getInstance().createColoredProcessHandler(commandLine)
     }
