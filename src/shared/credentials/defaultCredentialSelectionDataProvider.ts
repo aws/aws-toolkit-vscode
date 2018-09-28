@@ -59,7 +59,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
      * Builds and returns the list of QuickPickItem objects representing the profile names to select from in the UI
      */
     private getProfileSelectionList(): QuickPickItem[] {
-        const orderedProfiles: ProfileEntry[] = this.getOrderedProfile()
+        const orderedProfiles: ProfileEntry[] = this.getOrderedProfiles()
 
         const selectionList: QuickPickItem[] = []
         orderedProfiles.forEach(profile => {
@@ -79,7 +79,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
      * Returns a list of profiles, and whether or not they have been
      * used recently. Ordered by: MRU, default, all others
      */
-    private getOrderedProfile(): ProfileEntry[] {
+    private getOrderedProfiles(): ProfileEntry[] {
 
         const mostRecentProfileNames = this.getMostRecentlyUsedProfileNames()
 
@@ -100,12 +100,11 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         }
 
         // Add remaining items, sorted alphanumerically
-        this.existingProfileNames
+        const remainingProfiles: ProfileEntry[] = this.existingProfileNames
             .filter(x => !orderedNames.has(x))
             .sort()
-            .filter(profileName => {
-                orderedProfiles.push({ profileName: profileName, isRecentlyUsed: false })
-            })
+            .map(profileName => ({ profileName: profileName, isRecentlyUsed: false }))
+        orderedProfiles.push(...remainingProfiles)
 
         return orderedProfiles
     }
