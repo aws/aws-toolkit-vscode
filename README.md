@@ -1,5 +1,7 @@
 # AWS Toolkit for Visual Studio Code
 
+![Build Status - develop branch](https://codebuild.us-west-2.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiMlluaDRTMnZLdmMvcFREQVQ4RjFoK0FUSTZPdlRVcWJlQ2gwRElLT2gxZDhMeno5MThZZnlXdURDVFFjOWdqSEQ5QjVBYm0xSURoU3E1RTVHejltcnZrPSIsIml2UGFyYW1ldGVyU3BlYyI6IkY3SE9CaG1oMHhJUmsyakkiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=develop)
+
 The AWS Toolkit for Visual Studio Code is an extension for working with AWS services such as AWS Lambda.
 
 ## Getting Started
