@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Create a report to help us improve the toolkit
+about: Create a report to help us improve the AWS Toolkit for Visual Studio Code
 
 ---
 
@@ -25,7 +25,7 @@ Steps to reproduce the behavior:
 **Desktop (please complete the following information):**
  - OS:
  - Visual Studio Code Version:
- - AWS Toolkit Version:
+ - AWS Toolkit for Visual Studio Code Version:
 
 **Additional context**
 <!-- Add any other context about the problem here. -->
