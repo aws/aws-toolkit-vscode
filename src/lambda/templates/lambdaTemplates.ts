@@ -4,7 +4,7 @@
  */
 
 export class LambdaTemplates {
-    static readonly InvokeTemplate = `
+    public static readonly INVOKE_TEMPLATE = `
     <h1>
         Invoke function <%= FunctionName %>
     </h1>
@@ -27,7 +27,7 @@ export class LambdaTemplates {
         <br />
         <textarea
             rows="20"
-            cols="90"    
+            cols="90"
             v-model="sampleText"
         ></textarea>
         <br />
@@ -35,13 +35,13 @@ export class LambdaTemplates {
         <br />
     </div>
     <% Libraries.forEach(function(lib) { %>
-        <script nonce="<%= lib.Nonce %>" src="<%= lib.Uri %>"></script>
+        <script nonce="<%= lib.nonce %>" src="<%= lib.uri %>"></script>
     <% }); %>
     <% Scripts.forEach(function(scr) { %>
-        <script nonce="<%= scr.Nonce %>" src="<%= scr.Uri %>"></script>
+        <script nonce="<%= scr.nonce %>" src="<%= scr.uri %>"></script>
     <% }); %>
     `
-    static readonly GetPolicyTemplate = `
+    public static readonly GET_POLICY_TEMPLATE = `
     <h1>
         Policy for <%= FunctionName %>...
     </h1>
@@ -49,7 +49,7 @@ export class LambdaTemplates {
         <pre><%- JSON.stringify(JSON.parse(Policy), null, 4) %></pre>
     </p>
     `
-    static readonly GetConfigTemplate = `
+    public static readonly GET_CONFIG_TEMPLATE = `
     <h1>
         Configuration for <%= FunctionName %>...
     </h1>

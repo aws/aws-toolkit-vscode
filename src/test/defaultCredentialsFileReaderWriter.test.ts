@@ -3,26 +3,26 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from "assert"
-import * as fs from "fs"
-import * as path from "path"
-import * as del from "del"
-import { DefaultCredentialsFileReaderWriter } from "../shared/credentials/defaultCredentialsFileReaderWriter"
-import * as credentialsFile from "../shared/credentials/credentialsFile"
+import * as assert from 'assert'
+import * as del from 'del'
+import * as fs from 'fs'
+import * as path from 'path'
+import * as credentialsFile from '../shared/credentials/credentialsFile'
+import { DefaultCredentialsFileReaderWriter } from '../shared/credentials/defaultCredentialsFileReaderWriter'
 
-suite("DefaultCredentialsFileReaderWriter Tests", function (): void {
+suite('DefaultCredentialsFileReaderWriter Tests', function(): void {
 
     let tempFolder: string
-    let credentialsProfileNames: string[] = ["default", "apple", "orange"]
-    let configProfileNames: string[] = ["banana", "mango"]
+    const credentialsProfileNames: string[] = ['default', 'apple', 'orange']
+    const configProfileNames: string[] = ['banana', 'mango']
 
-    suiteSetup(function () {
+    suiteSetup(function() {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
-        tempFolder = fs.mkdtempSync("vsctk")
+        tempFolder = fs.mkdtempSync('vsctk')
 
-        const credentialsFilename = path.join(tempFolder, "credentials-1")
-        const configFilename = path.join(tempFolder, "config-1")
+        const credentialsFilename = path.join(tempFolder, 'credentials-1')
+        const configFilename = path.join(tempFolder, 'config-1')
 
         const configProfiles: string[] = []
         configProfileNames.forEach(x => configProfiles.push(`profile ${x}`))
@@ -34,23 +34,23 @@ suite("DefaultCredentialsFileReaderWriter Tests", function (): void {
         process.env[credentialsFile.ENV_CONFIG_PATH] = configFilename
     })
 
-    suiteTeardown(function () {
+    suiteTeardown(function() {
         del.sync([tempFolder])
     })
 
-    test("Can use Config File", async function () {
+    test('Can use Config File', async function() {
         const writer = new DefaultCredentialsFileReaderWriter()
         writer.setCanUseConfigFile(true)
         assert.equal(writer.getCanUseConfigFile(), true)
     })
 
-    test("Can not use Config File", async function () {
+    test('Can not use Config File', async function() {
         const writer = new DefaultCredentialsFileReaderWriter()
         writer.setCanUseConfigFile(false)
         assert.equal(writer.getCanUseConfigFile(), false)
     })
 
-    test("Does load profiles from Config", async function () {
+    test('Does load profiles from Config', async function() {
         const writer = new DefaultCredentialsFileReaderWriter()
         writer.setCanUseConfigFile(true)
 
@@ -65,7 +65,7 @@ suite("DefaultCredentialsFileReaderWriter Tests", function (): void {
         })
     })
 
-    test("Refrains from loading profiles from Config", async function () {
+    test('Refrains from loading profiles from Config', async function() {
         const writer = new DefaultCredentialsFileReaderWriter()
         writer.setCanUseConfigFile(false)
 
@@ -81,12 +81,13 @@ suite("DefaultCredentialsFileReaderWriter Tests", function (): void {
     })
 
     function createCredentialsFile(filename: string, profileNames: string[]): void {
-        let fileContents = ""
+        let fileContents = ''
 
         profileNames.forEach(profileName => {
-            fileContents += `[${profileName}]\n`
-                + `aws_access_key_id = FAKEKEY\n`
-                + `aws_secret_access_key = FAKESECRET\n`
+            fileContents += `[${profileName}]
+aws_access_key_id = FAKEKEY
+aws_secret_access_key = FAKESECRET
+`
         })
 
         fs.writeFileSync(filename, fileContents)

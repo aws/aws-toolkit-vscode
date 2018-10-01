@@ -8,35 +8,38 @@
 import * as AWS from 'aws-sdk'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { extensionSettingsPrefix, regionSettingKey, profileSettingKey } from './constants'
 import { AwsContext, ContextChangeEventsArgs } from './awsContext'
-import { SettingsConfiguration, DefaultSettingsConfiguration } from './settingsConfiguration'
-import { CredentialsManager } from './credentialsManager'
+import { extensionSettingsPrefix, profileSettingKey, regionSettingKey } from './constants'
 import { CredentialsProfileMru } from './credentials/credentialsProfileMru'
+import { CredentialsManager } from './credentialsManager'
+import { DefaultSettingsConfiguration, SettingsConfiguration } from './settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
-
 
 // Wraps an AWS context in terms of credential profile and zero or more regions. The
 // context listens for configuration updates and resets the context accordingly.
 export class DefaultAwsContext implements AwsContext {
 
-    private readonly _credentialsMru: CredentialsProfileMru = new CredentialsProfileMru(new DefaultSettingsConfiguration(extensionSettingsPrefix))
-    private _onDidChangeContext: vscode.EventEmitter<ContextChangeEventsArgs> = new vscode.EventEmitter<ContextChangeEventsArgs>()
-    public readonly onDidChangeContext: vscode.Event<ContextChangeEventsArgs> = this._onDidChangeContext.event
+    public readonly onDidChangeContext: vscode.Event<ContextChangeEventsArgs>
+    private readonly _credentialsMru: CredentialsProfileMru =
+        new CredentialsProfileMru(new DefaultSettingsConfiguration(extensionSettingsPrefix))
+    private readonly _onDidChangeContext: vscode.EventEmitter<ContextChangeEventsArgs>
 
     // the collection of regions the user has expressed an interest in working with in
     // the current workspace
-    private explorerRegions: string[]
+    private readonly explorerRegions: string[]
 
     // the user's credential context (currently this maps to an sdk/cli credential profile)
     private profileName: string | undefined
 
-    private _credentialsManager: CredentialsManager
+    private readonly _credentialsManager: CredentialsManager
 
-    constructor(public settingsConfiguration: SettingsConfiguration) {
+    public constructor(public settingsConfiguration: SettingsConfiguration) {
 
-        this.profileName = settingsConfiguration.readSetting(profileSettingKey, "")
+        this._onDidChangeContext = new vscode.EventEmitter<ContextChangeEventsArgs>()
+        this.onDidChangeContext = this._onDidChangeContext.event
+
+        this.profileName = settingsConfiguration.readSetting(profileSettingKey, '')
         const persistedRegions = settingsConfiguration.readSetting<string[]>(regionSettingKey)
         this.explorerRegions = persistedRegions || []
 
@@ -56,9 +59,14 @@ export class DefaultAwsContext implements AwsContext {
 
         try {
             const credentials = await this._credentialsManager.getCredentials(this.profileName)
+
             return credentials
         } catch (err) {
-            vscode.window.showErrorMessage(localize("AWS.message.credentials.error", "There was an issue trying to use credentials profile {0}.\nYou will be disconnected from AWS.\n\n{1}", this.profileName, err.message))
+            vscode.window.showErrorMessage(localize(
+                'AWS.message.credentials.error',
+                'There was an issue trying to use credentials profile {0}.\nYou will be disconnected from AWS.\n\n{1}',
+                this.profileName, err.message
+            ))
 
             throw err
         }
@@ -93,12 +101,16 @@ export class DefaultAwsContext implements AwsContext {
     public async addExplorerRegion(region: string | string[]): Promise<void> {
         const regionsToProcess: string[] = region instanceof Array ? region : [region]
         regionsToProcess.forEach(r => {
-            const index = this.explorerRegions.findIndex(r => r === region)
+            const index = this.explorerRegions.findIndex(regionToProcess => regionToProcess === region)
             if (index === -1) {
                 this.explorerRegions.push(r)
             }
         })
-        await this.settingsConfiguration.writeSetting(regionSettingKey, this.explorerRegions, vscode.ConfigurationTarget.Global)
+        await this.settingsConfiguration.writeSetting(
+            regionSettingKey,
+            this.explorerRegions,
+            vscode.ConfigurationTarget.Global
+        )
         this._onDidChangeContext.fire(new ContextChangeEventsArgs(this.profileName, this.explorerRegions))
     }
 
@@ -107,12 +119,16 @@ export class DefaultAwsContext implements AwsContext {
     public async removeExplorerRegion(region: string | string[]): Promise<void> {
         const regionsToProcess: string[] = region instanceof Array ? region : [region]
         regionsToProcess.forEach(r => {
-            const index = this.explorerRegions.findIndex(r => r === region)
+            const index = this.explorerRegions.findIndex(explorerRegion => explorerRegion === region)
             if (index >= 0) {
                 this.explorerRegions.splice(index, 1)
             }
         })
-        await this.settingsConfiguration.writeSetting(regionSettingKey, this.explorerRegions, vscode.ConfigurationTarget.Global)
+        await this.settingsConfiguration.writeSetting(
+            regionSettingKey,
+            this.explorerRegions,
+            vscode.ConfigurationTarget.Global
+        )
         this._onDidChangeContext.fire(new ContextChangeEventsArgs(this.profileName, this.explorerRegions))
     }
 }

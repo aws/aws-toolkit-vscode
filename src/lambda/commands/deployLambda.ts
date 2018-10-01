@@ -6,7 +6,7 @@
 'use strict'
 
 import * as vscode from 'vscode'
-import { FunctionNode } from "../explorer/functionNode"
+import { FunctionNode } from '../explorer/functionNode'
 
 export async function deployLambda(element?: FunctionNode) {
     try {
@@ -18,4 +18,3 @@ export async function deployLambda(element?: FunctionNode) {
 
     }
 }
-

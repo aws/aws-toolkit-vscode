@@ -5,10 +5,10 @@
 
 'use strict'
 
-import { TreeItem, Uri, ThemeIcon } from 'vscode'
-import * as path from 'path'
-import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 import Lambda = require('aws-sdk/clients/lambda')
+import * as path from 'path'
+import { ThemeIcon, TreeItem, Uri } from 'vscode'
+import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 
 export class FunctionNode extends AWSTreeNodeBase implements TreeItem {
     public static contextValue: string = 'awsLambdaFn'
@@ -18,7 +18,7 @@ export class FunctionNode extends AWSTreeNodeBase implements TreeItem {
     public tooltip?: string
     public iconPath?: string | Uri | { light: string | Uri; dark: string | Uri } | ThemeIcon
 
-    constructor(
+    public constructor(
         public readonly functionConfiguration: Lambda.FunctionConfiguration,
         public readonly lambda: Lambda
     ) {

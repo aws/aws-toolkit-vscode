@@ -12,13 +12,12 @@ import { SettingsConfiguration } from '../settingsConfiguration'
  * Tracks the credentials selected by the user, ordered by most recent.
  */
 export class CredentialsProfileMru {
+    public static readonly MAX_CREDENTIAL_MRU_SIZE = 5
 
-    public static readonly MaxCredentialMruSize = 5
-
-    private static readonly ConfigurationSettingName: string = "recentCredentials"
+    private static readonly configurationSettingName: string = 'recentCredentials'
     private readonly _configuration: SettingsConfiguration
 
-    constructor(configuration: SettingsConfiguration) {
+    public constructor(configuration: SettingsConfiguration) {
         this._configuration = configuration
     }
 
@@ -26,7 +25,7 @@ export class CredentialsProfileMru {
      * @description Returns the most recently used credentials names
      */
     public getMruList(): string[] {
-        const mru = this._configuration.readSetting<string[]>(CredentialsProfileMru.ConfigurationSettingName)
+        const mru = this._configuration.readSetting<string[]>(CredentialsProfileMru.configurationSettingName)
 
         return mru || []
     }
@@ -45,8 +44,12 @@ export class CredentialsProfileMru {
 
         mru.splice(0, 0, profileName)
 
-        mru.splice(CredentialsProfileMru.MaxCredentialMruSize)
+        mru.splice(CredentialsProfileMru.MAX_CREDENTIAL_MRU_SIZE)
 
-        await this._configuration.writeSetting(CredentialsProfileMru.ConfigurationSettingName, mru, vscode.ConfigurationTarget.Global)
+        await this._configuration.writeSetting(
+            CredentialsProfileMru.configurationSettingName,
+            mru,
+            vscode.ConfigurationTarget.Global
+        )
     }
 }

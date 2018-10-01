@@ -7,8 +7,8 @@
 
 import { ExtensionContext, OutputChannel } from 'vscode'
 import { AWSClientBuilder } from './awsClientBuilder'
-import { AWSStatusBar } from './statusBar'
 import { AWSContextCommands } from './awsContextCommands'
+import { AWSStatusBar } from './statusBar'
 
 /**
  * Namespace for common variables used globally in the extension.

@@ -5,7 +5,7 @@
 
 'use strict'
 
-import { QuickPickItem } from "vscode"
+import { QuickPickItem } from 'vscode'
 
 export interface CredentialSelectionState {
     title: string
