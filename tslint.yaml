@@ -102,9 +102,6 @@ rules:
     options:
       - spaces
       - 4
-  linebreak-style:
-    options:
-      - CRLF
   max-line-length:
     options:
       - 120
