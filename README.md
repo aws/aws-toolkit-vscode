@@ -8,7 +8,6 @@ The toolkit is in preview and only available if built from source. This is pre-r
 
 This is an open source project because we want you to be involved. We love issues, feature requests, code reviews, pull requests or any positive contribution.
 
-
 ## Getting Started
 
 ### Install the toolkit
