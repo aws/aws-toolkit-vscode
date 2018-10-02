@@ -13,6 +13,20 @@ import { FileResourceLocation, WebResourceLocation } from '../resourceLocation'
 import { RegionInfo } from './regionInfo'
 import { RegionProvider } from './regionProvider'
 
+interface RawRegion {
+    description: string
+}
+
+interface RawPartition {
+    regions: {
+        [ regionKey: string ]: RawRegion
+    }
+}
+
+interface RawEndpoints {
+    partitions: RawPartition[]
+}
+
 export class DefaultRegionProvider implements RegionProvider {
 
     private _areRegionsLoaded: boolean = false
@@ -41,12 +55,16 @@ export class DefaultRegionProvider implements RegionProvider {
                 new WebResourceLocation(endpointsFileUrl),
                 new FileResourceLocation(resourcePath)
             ])
-            const allEndpoints = JSON.parse(endpointsSource)
+            const allEndpoints = JSON.parse(endpointsSource) as RawEndpoints
 
-            availableRegions = (allEndpoints.partitions as any[]).reduce(
-                (accumulator: RegionInfo[], partition) => accumulator.push(...Object.keys(partition.regions).map(
-                    regionKey => new RegionInfo(regionKey, `${partition.regions[regionKey].description}`)
-                )),
+            availableRegions = allEndpoints.partitions.reduce(
+                (accumulator: RegionInfo[], partition: RawPartition) => {
+                    accumulator.push(...Object.keys(partition.regions).map(
+                        regionKey => new RegionInfo(regionKey, `${partition.regions[regionKey].description}`)
+                    ))
+
+                    return accumulator
+                },
                 []
             )
 

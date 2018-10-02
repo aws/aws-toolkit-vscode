@@ -7,8 +7,8 @@ import * as assert from 'assert'
 import * as del from 'del'
 import * as fs from 'fs'
 import * as path from 'path'
-import * as credentialsFile from '../shared/credentials/credentialsFile'
 import { DefaultCredentialsFileReaderWriter } from '../shared/credentials/defaultCredentialsFileReaderWriter'
+import { EnvironmentVariables } from '../shared/environmentVariables'
 
 suite('DefaultCredentialsFileReaderWriter Tests', function(): void {
 
@@ -30,8 +30,9 @@ suite('DefaultCredentialsFileReaderWriter Tests', function(): void {
         createCredentialsFile(credentialsFilename, credentialsProfileNames)
         createCredentialsFile(configFilename, configProfiles)
 
-        process.env[credentialsFile.ENV_CREDENTIALS_PATH] = credentialsFilename
-        process.env[credentialsFile.ENV_CONFIG_PATH] = configFilename
+        const env = process.env as EnvironmentVariables
+        env.AWS_SHARED_CREDENTIALS_FILE = credentialsFilename
+        env.AWS_CONFIG_FILE = configFilename
     })
 
     suiteTeardown(function() {

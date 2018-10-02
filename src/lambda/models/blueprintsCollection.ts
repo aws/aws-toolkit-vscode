@@ -14,6 +14,27 @@ import { FileResourceLocation, WebResourceLocation } from '../../shared/resource
 import { blueprintsManifestPath } from '../constants'
 import { Blueprint, BlueprintOrigin } from './blueprint'
 
+interface RawBlueprint {
+    Name: string
+    Description: string
+    File: string
+    SortOrder?: number
+    Tags?: {
+        Tag: string | string[]
+    }
+    HiddenTags?: {
+        HiddenTag: string | string[]
+    }
+}
+
+interface BlueprintManifest {
+    BlueprintManifest: {
+        Blueprints: {
+            Blueprint: RawBlueprint[]
+        }
+    }
+}
+
 // Represents a collection of blueprints, potentially from multiple sources
 export class BlueprintsCollection {
 
@@ -73,12 +94,12 @@ export class BlueprintsCollection {
         ])
 
         return new Promise<Blueprint[]>((resolve, reject) => {
-            xml2js.parseString(manifest, {explicitArray: false}, (err, result) => {
+            xml2js.parseString(manifest, {explicitArray: false}, (err, result: BlueprintManifest) => {
                 if (err) {
                     // TODO: fall back to resource version before giving up
                     reject(err)
                 } else {
-                    const blueprints: Blueprint[] = (result.BlueprintManifest.Blueprints.Blueprint).map((b: any) => {
+                    const blueprints: Blueprint[] = (result.BlueprintManifest.Blueprints.Blueprint).map(b => {
                         const blueprint = new Blueprint(b.Name, b.Description, b.File, BlueprintOrigin.vsToolkit)
 
                         // post optional data
@@ -106,15 +127,6 @@ export class BlueprintsCollection {
     }
 
     private static stringOrArrayToStringArray(input: string | string[]): string[] {
-        const output: string[] = []
-        if (Array.isArray(input)) {
-            input.forEach((i: any) => {
-                output.push(i)
-            })
-        } else {
-            output.push(input)
-        }
-
-        return output
+        return Array.isArray(input) ? input : [ input ]
     }
 }

@@ -80,7 +80,7 @@ rules:
   no-unbound-method:
     options:
       - ignore-static
-#  no-unsafe-any: true
+  no-unsafe-any: true
   no-unsafe-finally: true
   no-unused-expression: true
   no-var-keyword: true

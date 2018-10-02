@@ -15,10 +15,8 @@
 import { copy } from 'fs-extra'
 import { homedir } from 'os'
 import { join, sep } from 'path'
-import { readFileAsync, writeFileAsync } from '../filesystem'
-
-export const ENV_CREDENTIALS_PATH = 'AWS_SHARED_CREDENTIALS_FILE'
-export const ENV_CONFIG_PATH = 'AWS_CONFIG_FILE'
+import { EnvironmentVariables } from '../environmentVariables'
+import { accessAsync, readFileAsync, writeFileAsync } from '../filesystem'
 
 export interface SharedConfigInit {
     /**
@@ -64,19 +62,33 @@ export async function loadSharedConfigFiles(init: SharedConfigInit = {}): Promis
 }
 
 async function loadConfigFile(
-    configFilePath: string = process.env[ENV_CONFIG_PATH] || join(getHomeDir(), '.aws', 'config')
+    configFilePath?: string
 ): Promise<ParsedIniData> {
-    const content: string = await slurpFile(configFilePath)
+    const env = process.env as EnvironmentVariables
+    if (!configFilePath) {
+        configFilePath = env.AWS_CONFIG_FILE || join(getHomeDir(), '.aws', 'config')
+    }
 
-    return normalizeConfigFile(parseIni(content))
+    if (!await accessAsync(configFilePath)) {
+        return {}
+    }
+
+    return normalizeConfigFile(parseIni(await slurpFile(configFilePath)))
 }
 
 async function loadCredentialsFile(
-    credentialsFilePath: string = process.env[ENV_CREDENTIALS_PATH] || join(getHomeDir(), '.aws', 'credentials')
+    credentialsFilePath?: string
 ): Promise<ParsedIniData> {
-    const content: string = await slurpFile(credentialsFilePath)
+    const env = process.env as EnvironmentVariables
+    if (!credentialsFilePath) {
+        credentialsFilePath = env.AWS_SHARED_CREDENTIALS_FILE || join(getHomeDir(), '.aws', 'credentials')
+    }
 
-    return parseIni(content)
+    if (!await accessAsync(credentialsFilePath)) {
+        return {}
+    }
+
+    return parseIni(await slurpFile(credentialsFilePath))
 }
 
 // TODO: FOR POC-DEMOS ONLY, NOT FOR PRODUCTION USE!
@@ -87,7 +99,8 @@ export async function saveProfile(
     accessKey: string,
     secretKey: string
 ): Promise<void> {
-    const filepath = process.env[ENV_CREDENTIALS_PATH] || join(getHomeDir(), '.aws', 'credentials')
+    const env = process.env as EnvironmentVariables
+    const filepath = env.AWS_SHARED_CREDENTIALS_FILE || join(getHomeDir(), '.aws', 'credentials')
 
     // even though poc concept code, let's preserve the user's file!
     await copy(filepath, `${filepath}.bak_vscode`, { overwrite: true})
@@ -152,12 +165,13 @@ async function slurpFile(path: string): Promise<string> {
 }
 
 function getHomeDir(): string {
+    const env = process.env as EnvironmentVariables
     const {
         HOME,
         USERPROFILE,
         HOMEPATH,
         HOMEDRIVE = `C:${sep}`,
-    } = process.env
+    } = env
 
     if (HOME) { return HOME }
     if (USERPROFILE) { return USERPROFILE }

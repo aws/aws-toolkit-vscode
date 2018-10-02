@@ -62,13 +62,16 @@ export class DefaultAwsContext implements AwsContext {
 
             return credentials
         } catch (err) {
+            const error = err as Error
+
             vscode.window.showErrorMessage(localize(
                 'AWS.message.credentials.error',
                 'There was an issue trying to use credentials profile {0}.\nYou will be disconnected from AWS.\n\n{1}',
-                this.profileName, err.message
+                this.profileName,
+                error.message
             ))
 
-            throw err
+            throw error
         }
     }
 

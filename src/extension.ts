@@ -23,9 +23,16 @@ import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { AWSStatusBar } from './shared/statusBar'
 
+import { EnvironmentVariables } from './shared/environmentVariables'
+
 export async function activate(context: vscode.ExtensionContext) {
 
-    nls.config(process.env.VSCODE_NLS_CONFIG)()
+    const env = process.env as EnvironmentVariables
+    if (!!env.VSCODE_NLS_CONFIG) {
+        nls.config(JSON.parse(env.VSCODE_NLS_CONFIG) as nls.Options)()
+    } else {
+        nls.config()()
+    }
 
     ext.lambdaOutputChannel = vscode.window.createOutputChannel('AWS Lambda')
     ext.context = context
