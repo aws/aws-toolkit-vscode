@@ -24,9 +24,7 @@ export class AWSStatusBar {
         this.credentialContext = window.createStatusBarItem(StatusBarAlignment.Right, 100)
         context.subscriptions.push(this.credentialContext)
 
-        this._awsContext.onDidChangeContext((changedContext) => {
-            this.updateContext(changedContext)
-        })
+        this._awsContext.onDidChangeContext(async (changedContext) => await this.updateContext(changedContext))
     }
 
     public async updateContext(eventContext: ContextChangeEventsArgs | undefined) {

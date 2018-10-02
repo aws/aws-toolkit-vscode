@@ -90,7 +90,7 @@ export async function saveProfile(
     const filepath = process.env[ENV_CREDENTIALS_PATH] || join(getHomeDir(), '.aws', 'credentials')
 
     // even though poc concept code, let's preserve the user's file!
-    copy(filepath, `${filepath}.bak_vscode`, { overwrite: true})
+    await copy(filepath, `${filepath}.bak_vscode`, { overwrite: true})
 
     const data = `${await slurpFile(filepath)}
 [${name}]

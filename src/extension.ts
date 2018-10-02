@@ -41,8 +41,8 @@ export async function activate(context: vscode.ExtensionContext) {
     ext.sdkClientBuilder = new AWSClientBuilder(awsContext)
     ext.statusBar = new AWSStatusBar(awsContext, context)
 
-    vscode.commands.registerCommand('aws.login', async () => { await ext.awsContextCommands.onCommandLogin() })
-    vscode.commands.registerCommand('aws.logout', async () => { await ext.awsContextCommands.onCommandLogout() })
+    vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
+    vscode.commands.registerCommand('aws.logout', async () => await ext.awsContextCommands.onCommandLogout())
 
     vscode.commands.registerCommand(
         'aws.showRegion',
@@ -62,7 +62,7 @@ export async function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(vscode.window.registerTreeDataProvider(p.viewProviderId, p))
     })
 
-    ext.statusBar.updateContext(undefined)
+    await ext.statusBar.updateContext(undefined)
 }
 
 export function deactivate() {

@@ -81,7 +81,7 @@ suite('AWSContext Tests', function(): void {
         assert.equal(regions[1], testRegion2Value)
     })
 
-    test('context updates config on single region change', function() {
+    test('context updates config on single region change', async function() {
 
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
             public async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
@@ -92,7 +92,7 @@ suite('AWSContext Tests', function(): void {
         }
 
         const testContext = new DefaultAwsContext(new TestConfiguration())
-        testContext.addExplorerRegion(testRegion1Value)
+        await testContext.addExplorerRegion(testRegion1Value)
     })
 
     test('context updates config on multiple region change', async function() {
@@ -147,42 +147,51 @@ suite('AWSContext Tests', function(): void {
         await testContext.setCredentialProfileName(testProfileValue)
     })
 
-    test('context fires event on single region change', function(done) {
+    test('context fires event on single region change', async function() {
 
         const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase())
 
+        let invocationCount = 0
         testContext.onDidChangeContext((c) => {
             assert.equal(c.regions.length, 1)
             assert.equal(c.regions[0], testRegion1Value)
-            done()
+            invocationCount++
         })
 
-        testContext.addExplorerRegion(testRegion1Value)
+        await testContext.addExplorerRegion(testRegion1Value)
+
+        assert.equal(invocationCount, 1)
     })
 
-    test('context fires event on multi region change', function(done) {
+    test('context fires event on multi region change', async function() {
 
         const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase())
 
+        let invocationCount = 0
         testContext.onDidChangeContext((c) => {
             assert.equal(c.regions.length, 2)
             assert.equal(c.regions[0], testRegion1Value)
             assert.equal(c.regions[1], testRegion2Value)
-            done()
+            invocationCount++
         })
 
-        testContext.addExplorerRegion(testRegion1Value, testRegion2Value)
+        await testContext.addExplorerRegion(testRegion1Value, testRegion2Value)
+
+        assert.equal(invocationCount, 1)
     })
 
-    test('context fires event on profile change', function(done) {
+    test('context fires event on profile change', async function() {
 
         const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase())
 
+        let invocationCount = 0
         testContext.onDidChangeContext((c) => {
             assert.equal(c.profileName, testProfileValue)
-            done()
+            invocationCount++
         })
 
-        testContext.setCredentialProfileName(testProfileValue)
+        await testContext.setCredentialProfileName(testProfileValue)
+
+        assert.equal(invocationCount, 1)
     })
 })
