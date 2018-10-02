@@ -47,10 +47,12 @@ suite('LambdaProvider Tests', function(): void {
 
                 return Promise.resolve(regions)
             }
-            public addExplorerRegion(region: string | string[]): Promise<void> {
+
+            public async addExplorerRegion(...regions: string[]): Promise<void> {
                 throw new Error('Method not implemented.')
             }
-            public removeExplorerRegion(region: string | string[]): Promise<void> {
+
+            public async removeExplorerRegion(...regions: string[]): Promise<void> {
                 throw new Error('Method not implemented.')
             }
         }

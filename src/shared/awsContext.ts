@@ -28,7 +28,7 @@ export interface AwsContext {
     getExplorerRegions(): Promise<string[]>
 
     // adds one or more regions into the preferred set
-    addExplorerRegion(region: string | string[]): Promise<void>
+    addExplorerRegion(...regions: string[]): Promise<void>
     // removes one or more regions from the user's preferred set
-    removeExplorerRegion(region: string | string[]): Promise<void>
+    removeExplorerRegion(...regions: string[]): Promise<void>
 }

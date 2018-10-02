@@ -24,10 +24,12 @@ suite('AwsClientBuilder Tests', () => {
         public getExplorerRegions(): Promise<string[]> {
             throw new Error('Method not implemented.')
         }
-        public addExplorerRegion(region: string | string[]): Promise<void> {
+
+        public async addExplorerRegion(...regions: string[]): Promise<void> {
             throw new Error('Method not implemented.')
         }
-        public removeExplorerRegion(region: string | string[]): Promise<void> {
+
+        public async removeExplorerRegion(...regions: string[]): Promise<void> {
             throw new Error('Method not implemented.')
         }
     }

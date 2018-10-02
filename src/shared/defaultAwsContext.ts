@@ -98,10 +98,9 @@ export class DefaultAwsContext implements AwsContext {
 
     // adds one or more regions into the preferred set, persisting the set afterwards as a
     // comma-separated string.
-    public async addExplorerRegion(region: string | string[]): Promise<void> {
-        const regionsToProcess: string[] = region instanceof Array ? region : [region]
-        regionsToProcess.forEach(r => {
-            const index = this.explorerRegions.findIndex(regionToProcess => regionToProcess === region)
+    public async addExplorerRegion(...regions: string[]): Promise<void> {
+        regions.forEach(r => {
+            const index = this.explorerRegions.findIndex(regionToProcess => regionToProcess === r)
             if (index === -1) {
                 this.explorerRegions.push(r)
             }
@@ -116,10 +115,9 @@ export class DefaultAwsContext implements AwsContext {
 
     // removes one or more regions from the user's preferred set, persisting the set afterwards as a
     // comma-separated string.
-    public async removeExplorerRegion(region: string | string[]): Promise<void> {
-        const regionsToProcess: string[] = region instanceof Array ? region : [region]
-        regionsToProcess.forEach(r => {
-            const index = this.explorerRegions.findIndex(explorerRegion => explorerRegion === region)
+    public async removeExplorerRegion(...regions: string[]): Promise<void> {
+        regions.forEach(r => {
+            const index = this.explorerRegions.findIndex(explorerRegion => explorerRegion === r)
             if (index >= 0) {
                 this.explorerRegions.splice(index, 1)
             }

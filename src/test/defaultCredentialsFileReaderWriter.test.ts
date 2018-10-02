@@ -57,11 +57,21 @@ suite('DefaultCredentialsFileReaderWriter Tests', function(): void {
         const profileNames = new Set(await writer.getProfileNames())
 
         credentialsProfileNames.forEach(profileName => {
-            assert.equal(profileNames.has(profileName), true)
+            assert.equal(
+                profileNames.has(profileName),
+                true,
+                `ERROR: profileNames [ ${[...profileNames].map(n => `'${n}'`).join(', ')} ]` +
+                    ` does not contain '${profileName}'`
+            )
         })
 
         configProfileNames.forEach(profileName => {
-            assert.equal(profileNames.has(profileName), true)
+            assert.equal(
+                profileNames.has(profileName),
+                true,
+                `ERROR: configProfileNames [ ${[...configProfileNames].map(n => `'${n}'`).join(', ')} ]` +
+                    `does not contain '${profileName}'`
+            )
         })
     })
 
@@ -72,11 +82,21 @@ suite('DefaultCredentialsFileReaderWriter Tests', function(): void {
         const profileNames = new Set(await writer.getProfileNames())
 
         credentialsProfileNames.forEach(profileName => {
-            assert.equal(profileNames.has(profileName), true)
+            assert.equal(
+                profileNames.has(profileName),
+                true,
+                `ERROR: profileNames [ ${[...profileNames].map(n => `'${n}'`).join(', ')} ]` +
+                    ` does not contain '${profileName}'`
+            )
         })
 
         configProfileNames.forEach(profileName => {
-            assert.equal(profileNames.has(profileName), false)
+            assert.equal(
+                profileNames.has(profileName),
+                false,
+                `ERROR: configProfileNames [ ${[...configProfileNames].map(n => `'${n}'`).join(', ')} ]` +
+                    ` contains '${profileName}'`
+            )
         })
     })
 
