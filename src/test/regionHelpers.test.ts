@@ -16,12 +16,12 @@ suite('ResourceFetcherBase Tests', function(): void {
     class ResourceFetcherCounter implements ResourceFetcher {
         public timesCalled = 0
 
-        public getResource(resourceLocations: ResourceLocation[]): Promise<string> {
+        public async getResource(resourceLocations: ResourceLocation[]): Promise<string> {
             this.timesCalled++
 
-            return Promise.resolve(JSON.stringify({
+            return JSON.stringify({
                 partitions: []
-            }))
+            })
         }
     }
 

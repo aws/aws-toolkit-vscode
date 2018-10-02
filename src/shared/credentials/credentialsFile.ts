@@ -11,10 +11,11 @@
 // their version.
 // ***************************************************************************
 
-import { readFile, writeFile } from 'fs'
+// import { readFile, writeFile } from 'fs'
 import { copy } from 'fs-extra'
 import { homedir } from 'os'
 import { join, sep } from 'path'
+import { readFileAsync, writeFileAsync } from '../filesystem'
 
 export const ENV_CREDENTIALS_PATH = 'AWS_SHARED_CREDENTIALS_FILE'
 export const ENV_CONFIG_PATH = 'AWS_CONFIG_FILE'
@@ -81,33 +82,23 @@ async function loadCredentialsFile(
 // TODO: FOR POC-DEMOS ONLY, NOT FOR PRODUCTION USE!
 // REMOVE_BEFORE_RELEASE
 // This is nowhere near resilient enough :-)
-export function saveProfile(
+export async function saveProfile(
     name: string,
     accessKey: string,
     secretKey: string
 ): Promise<void> {
+    const filepath = process.env[ENV_CREDENTIALS_PATH] || join(getHomeDir(), '.aws', 'credentials')
 
-    return new Promise(async (resolve, reject) => {
-        const filepath = process.env[ENV_CREDENTIALS_PATH]
-                || join(getHomeDir(), '.aws', 'credentials')
+    // even though poc concept code, let's preserve the user's file!
+    copy(filepath, `${filepath}.bak_vscode`, { overwrite: true})
 
-        // even though poc concept code, let's preserve the user's file!
-        copy(filepath, `${filepath}.bak_vscode`, { overwrite: true})
+    const data = `${await slurpFile(filepath)}
+[${name}]
+aws_access_key_id=${accessKey}
+aws_secret_access_key=${secretKey}
+`
 
-        let data = await slurpFile(filepath)
-        data += '\r\n'
-        data += `[${name}]\r\n`
-        data += `aws_access_key_id=${accessKey}\r\n`
-        data += `aws_secret_access_key=${secretKey}\r\n`
-
-        writeFile(filepath, data, 'utf8', (err) => {
-            if (err) {
-                reject(err)
-            } else {
-                resolve()
-            }
-        })
-    })
+    await writeFileAsync(filepath, data, 'utf8')
 }
 
 const profileKeyRegex = /^profile\s(["'])?([^\1]+)\1$/
@@ -151,16 +142,13 @@ function parseIni(iniData: string): ParsedIniData {
     return map
 }
 
-function slurpFile(path: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-        readFile(path, 'utf8', (err, data) => {
-            if (err) {
-                reject(err)
-            } else {
-                resolve(data)
-            }
-        })
-    })
+async function slurpFile(path: string): Promise<string> {
+    const result = await readFileAsync(path, 'utf8')
+    if (result instanceof Buffer) {
+        return result.toString('utf8')
+    }
+
+    return result
 }
 
 function getHomeDir(): string {

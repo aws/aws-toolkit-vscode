@@ -24,28 +24,29 @@ suite('LambdaProvider Tests', function(): void {
 
         // TODO : Introduce Mocking instead of stub implementations
         class FakeRegionProvider implements RegionProvider {
-            public getRegionData(): Promise<RegionInfo[]> {
-                return Promise.resolve([new RegionInfo(regionCode, regionName)])
+            public async getRegionData(): Promise<RegionInfo[]> {
+                return [new RegionInfo(regionCode, regionName)]
             }
         }
 
         class FakeAwsContext implements AwsContext {
             public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> =
                 new vscode.EventEmitter<ContextChangeEventsArgs>().event
-            public getCredentials(): Promise<AWS.Credentials | undefined> {
+
+            public async getCredentials(): Promise<AWS.Credentials | undefined> {
                 throw new Error('Method not implemented.')
             }
+
             public getCredentialProfileName(): string | undefined {
                 return 'qwerty'
             }
-            public setCredentialProfileName(profileName?: string | undefined): Promise<void> {
+
+            public async setCredentialProfileName(profileName?: string | undefined): Promise<void> {
                 throw new Error('Method not implemented.')
             }
-            public getExplorerRegions(): Promise<string[]> {
-                const regions = []
-                regions.push(regionCode)
 
-                return Promise.resolve(regions)
+            public async getExplorerRegions(): Promise<string[]> {
+                return [ regionCode ]
             }
 
             public async addExplorerRegion(...regions: string[]): Promise<void> {
@@ -58,7 +59,7 @@ suite('LambdaProvider Tests', function(): void {
         }
 
         class FakeResourceFetcher implements ResourceFetcher {
-            public getResource(resourceLocations: ResourceLocation[]): Promise<string> {
+            public async getResource(resourceLocations: ResourceLocation[]): Promise<string> {
                 throw new Error('Method not implemented.')
             }
         }

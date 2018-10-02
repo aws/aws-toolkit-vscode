@@ -58,7 +58,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
             items: this.getProfileSelectionList(),
             activeItem: state.credentialProfile,
             buttons: [this._newProfileButton],
-            shouldResume: this.shouldResume
+            shouldResume: this.shouldResume.bind(this)
         })
     }
 
@@ -72,8 +72,8 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
             totalSteps: 3,
             value: '',
             prompt: localize('AWS.placeHolder.newProfileName', 'Choose a unique name for the new profile'),
-            validate: this.validateNameIsUnique,
-            shouldResume: this.shouldResume
+            validate: this.validateNameIsUnique.bind(this),
+            shouldResume: this.shouldResume.bind(this)
         })
     }
 
@@ -87,9 +87,9 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
             totalSteps: 3,
             value: '',
             prompt: localize('AWS.placeHolder.inputAccessKey', 'Input the AWS Access Key'),
-            validate: this.validateAccessKey,
+            validate: this.validateAccessKey.bind(this),
             ignoreFocusOut: true,
-            shouldResume: this.shouldResume
+            shouldResume: this.shouldResume.bind(this)
         })
     }
 
@@ -103,33 +103,31 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
             totalSteps: 3,
             value: '',
             prompt: localize('AWS.placeHolder.inputSecretKey', 'Input the AWS Secret Key'),
-            validate: this.validateSecretKey,
+            validate: this.validateSecretKey.bind(this),
             ignoreFocusOut: true,
-            shouldResume: this.shouldResume
+            shouldResume: this.shouldResume.bind(this)
         })
     }
 
-    public validateNameIsUnique = (name: string): Promise<string | undefined> => {
-        return new Promise<string | undefined>(resolve => {
-            const duplicate = this.existingProfileNames.find(k => k === name)
-            resolve(duplicate ? 'Name not unique' : undefined)
-        })
+    public async validateNameIsUnique(name: string): Promise<string | undefined> {
+        const duplicate = this.existingProfileNames.find(k => k === name)
+
+        return duplicate ? 'Name not unique' : undefined
     }
 
-    public validateAccessKey = (accessKey: string): Promise<string | undefined> => {
+    public async validateAccessKey(accessKey: string): Promise<string | undefined> {
         // TODO: is there a regex pattern we could use?
-        return new Promise<string | undefined>(resolve => resolve(undefined))
+        return undefined
     }
 
-    public validateSecretKey = (accessKey: string): Promise<string | undefined> => {
+    public async validateSecretKey(accessKey: string): Promise<string | undefined> {
         // TODO: don't believe there is a regex but at this point we could try a 'safe' call
-        return new Promise<string | undefined>(resolve => resolve(undefined))
+        return undefined
     }
 
-    public shouldResume = (): Promise<boolean> => {
+    public async shouldResume(): Promise<boolean> {
         // Could show a notification with the option to resume.
-        return new Promise<boolean>((resolve, reject) => {
-        })
+        return false
     }
 
     /**
@@ -206,21 +204,28 @@ export async function credentialProfileSelector(
     ) {
         const pick = await dataProvider.pickCredentialProfile(input, state)
         if (pick instanceof AddProfileButton) {
+            /* tslint:disable promise-function-async */
             return (inputController: MultiStepInputFlowController) => inputProfileName(inputController, state)
+            /* tslint:enable promise-function-async */
         }
+
         state.credentialProfile = pick
     }
 
     async function inputProfileName(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>) {
         state.profileName = await dataProvider.inputProfileName(input, state)
 
+        /* tslint:disable promise-function-async */
         return (inputController: MultiStepInputFlowController) => inputAccessKey(inputController, state)
+        /* tslint:enable promise-function-async */
     }
 
     async function inputAccessKey(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>) {
         state.accesskey = await dataProvider.inputAccessKey(input, state)
 
+        /* tslint:disable promise-function-async */
         return (inputController: MultiStepInputFlowController) => inputSecretKey(inputController, state)
+        /* tslint:enable promise-function-async */
     }
 
     async function inputSecretKey(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>) {
@@ -229,7 +234,9 @@ export async function credentialProfileSelector(
 
     async function collectInputs() {
         const state: Partial<CredentialSelectionState> = {}
+        /* tslint:disable promise-function-async */
         await MultiStepInputFlowController.run(input => pickCredentialProfile(input, state))
+        /* tslint:enable promise-function-async */
 
         return state as CredentialSelectionState
     }

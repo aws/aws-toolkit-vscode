@@ -12,16 +12,20 @@ suite('AwsClientBuilder Tests', () => {
     class FakeAwsContext implements AwsContext {
         public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> =
             new vscode.EventEmitter<ContextChangeEventsArgs>().event
-        public getCredentials(): Promise<AWS.Credentials | undefined> {
-            return Promise.resolve(undefined)
+
+        public async getCredentials(): Promise<AWS.Credentials | undefined> {
+            return undefined
         }
+
         public getCredentialProfileName(): string | undefined {
             throw new Error('Method not implemented.')
         }
-        public setCredentialProfileName(profileName?: string | undefined): Promise<void> {
+
+        public async setCredentialProfileName(profileName?: string | undefined): Promise<void> {
             throw new Error('Method not implemented.')
         }
-        public getExplorerRegions(): Promise<string[]> {
+
+        public async getExplorerRegions(): Promise<string[]> {
             throw new Error('Method not implemented.')
         }
 

@@ -16,7 +16,7 @@ rules:
   no-reference: true
   no-var-requires: true
   prefer-for-of: true
-#  promise-function-async: true
+  promise-function-async: true
   typedef-whitespace:
     options:
       -
