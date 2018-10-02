@@ -5,7 +5,7 @@
 
 'use strict'
 
-import { RegionInfo } from "./regionInfo"
+import { RegionInfo } from './regionInfo'
 
 // Provides AWS Region Information
 export interface RegionProvider {

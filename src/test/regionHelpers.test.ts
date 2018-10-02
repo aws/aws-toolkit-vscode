@@ -7,17 +7,18 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
+import { DefaultRegionProvider } from '../shared/regions/defaultRegionProvider'
 import { ResourceFetcher } from '../shared/resourceFetcher'
 import { ResourceLocation } from '../shared/resourceLocation'
-import { DefaultRegionProvider } from '../shared/regions/defaultRegionProvider'
 
-suite("ResourceFetcherBase Tests", function (): void {
+suite('ResourceFetcherBase Tests', function(): void {
 
     class ResourceFetcherCounter implements ResourceFetcher {
-        timesCalled = 0
+        public timesCalled = 0
 
-        getResource(resourceLocations: ResourceLocation[]): Promise<string> {
+        public getResource(resourceLocations: ResourceLocation[]): Promise<string> {
             this.timesCalled++
+
             return Promise.resolve(JSON.stringify({
                 partitions: []
             }))
@@ -25,29 +26,31 @@ suite("ResourceFetcherBase Tests", function (): void {
     }
 
     class FakeMemento implements vscode.Memento {
-        get<T>(key: string): T | undefined; get<T>(key: string, defaultValue: T): T
-        get(key: any, defaultValue?: any) {
-            throw new Error("Method not implemented.")
+        public get<T>(key: string): T | undefined
+        public  get<T>(key: string, defaultValue: T): T
+        public get(key: any, defaultValue?: any) {
+            throw new Error('Method not implemented.')
         }
-        update(key: string, value: any): Thenable<void> {
-            throw new Error("Method not implemented.")
+        public update(key: string, value: any): Thenable<void> {
+            throw new Error('Method not implemented.')
         }
     }
 
     class FakeExtensionContext implements vscode.ExtensionContext {
-        subscriptions: {
+        public subscriptions: {
             dispose(): any;
         }[] = []
-        workspaceState: vscode.Memento = new FakeMemento()
-        globalState: vscode.Memento = new FakeMemento()
-        extensionPath: string = ""
-        asAbsolutePath(relativePath: string): string {
-            throw new Error("Method not implemented.")
+        public workspaceState: vscode.Memento = new FakeMemento()
+        public globalState: vscode.Memento = new FakeMemento()
+        public extensionPath: string = ''
+        public storagePath: string | undefined
+
+        public asAbsolutePath(relativePath: string): string {
+            throw new Error('Method not implemented.')
         }
-        storagePath: string | undefined
     }
 
-    test('Fetches something', async function () {
+    test('Fetches something', async function() {
         const fetchCounter = new ResourceFetcherCounter()
         const context = new FakeExtensionContext()
         const regionProvider = new DefaultRegionProvider(context, fetchCounter)
@@ -57,7 +60,7 @@ suite("ResourceFetcherBase Tests", function (): void {
         assert.equal(fetchCounter.timesCalled, 1)
     })
 
-    test('Fetches something the first time only', async function () {
+    test('Fetches something the first time only', async function() {
         const fetchCounter = new ResourceFetcherCounter()
         const context = new FakeExtensionContext()
         const regionProvider = new DefaultRegionProvider(context, fetchCounter)

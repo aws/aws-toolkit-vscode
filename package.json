@@ -177,10 +177,11 @@
     "scripts": {
         "vscode:prepublish": "npm run compile",
         "bundleDeps": "node ./build-scripts/bundleDeps.js",
-        "compile": "tsc -p ./ && npm run bundleDeps",
+        "compile": "npm run lint && tsc -p ./ && npm run bundleDeps",
         "watch": "tsc -watch -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
-        "test": "npm run compile && node ./node_modules/vscode/bin/test"
+        "test": "npm run compile && node ./node_modules/vscode/bin/test",
+        "lint": "tslint --project ."
     },
     "devDependencies": {
         "@types/async-lock": "^1.1.0",
@@ -206,7 +207,9 @@
         "fs-extra": "^6.0.1",
         "lodash": "^4.17.10",
         "npm": "^6.1.0",
+        "request": "^2.88.0",
         "vscode-nls": "^3.2.4",
-        "vue": "^2.5.16"
+        "vue": "^2.5.16",
+        "xml2js": "^0.4.19"
     }
 }

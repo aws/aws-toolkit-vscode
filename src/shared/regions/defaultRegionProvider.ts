@@ -6,12 +6,12 @@
 'use strict'
 
 import path = require('path')
-import { ResourceFetcher } from "../resourceFetcher"
-import { endpointsFileUrl } from '../constants'
-import { RegionInfo } from "./regionInfo"
-import { RegionProvider } from "./regionProvider"
 import { ExtensionContext } from 'vscode'
-import { WebResourceLocation, FileResourceLocation } from '../resourceLocation'
+import { endpointsFileUrl } from '../constants'
+import { ResourceFetcher } from '../resourceFetcher'
+import { FileResourceLocation, WebResourceLocation } from '../resourceLocation'
+import { RegionInfo } from './regionInfo'
+import { RegionProvider } from './regionProvider'
 
 export class DefaultRegionProvider implements RegionProvider {
 
@@ -20,7 +20,7 @@ export class DefaultRegionProvider implements RegionProvider {
     private readonly _context: ExtensionContext
     private readonly _resourceFetcher: ResourceFetcher
 
-    constructor(context: ExtensionContext, resourceFetcher: ResourceFetcher) {
+    public constructor(context: ExtensionContext, resourceFetcher: ResourceFetcher) {
         this._loadedRegions = []
         this._context = context
         this._resourceFetcher = resourceFetcher
@@ -37,17 +37,19 @@ export class DefaultRegionProvider implements RegionProvider {
             console.log('> Downloading latest toolkits endpoint data')
 
             const resourcePath = path.join(this._context.extensionPath, 'resources', 'endpoints.json')
-            const endpointsSource = await this._resourceFetcher.getResource([new WebResourceLocation(endpointsFileUrl), new FileResourceLocation(resourcePath)])
-            var allEndpoints = JSON.parse(endpointsSource)
+            const endpointsSource = await this._resourceFetcher.getResource([
+                new WebResourceLocation(endpointsFileUrl),
+                new FileResourceLocation(resourcePath)
+            ])
+            const allEndpoints = JSON.parse(endpointsSource)
 
-            for (var p = 0; p < allEndpoints.partitions.length; p++) {
-                var partition = allEndpoints.partitions[p]
+            availableRegions = (allEndpoints.partitions as any[]).reduce(
+                (accumulator: RegionInfo[], partition) => accumulator.push(...Object.keys(partition.regions).map(
+                    regionKey => new RegionInfo(regionKey, `${partition.regions[regionKey].description}`)
+                )),
+                []
+            )
 
-                var regionKeys = Object.keys(partition.regions)
-                regionKeys.forEach((rk) => {
-                    availableRegions.push(new RegionInfo(rk, `${partition.regions[rk].description}`))
-                })
-            }
             this._areRegionsLoaded = true
             this._loadedRegions = availableRegions
         } catch (err) {

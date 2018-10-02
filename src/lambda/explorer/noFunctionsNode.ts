@@ -12,7 +12,7 @@ import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 // relevant to the explorer type.
 export class NoFunctionsNode extends AWSTreeNodeBase implements TreeItem {
 
-    constructor(public label: string, public contextValue?: string, public tooltip?: string) {
+    public constructor(public label: string, public contextValue?: string, public tooltip?: string) {
         super()
     }
 

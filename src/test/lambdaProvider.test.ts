@@ -6,57 +6,60 @@
 import * as assert from 'assert'
 import * as AWS from 'aws-sdk'
 import * as vscode from 'vscode'
-import { LambdaProvider } from '../lambda/lambdaProvider'
 import { RegionNode } from '../lambda/explorer/regionNode'
-import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
+import { LambdaProvider } from '../lambda/lambdaProvider'
 import { AwsContext, ContextChangeEventsArgs } from '../shared/awsContext'
+import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
 import { RegionInfo } from '../shared/regions/regionInfo'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { ResourceFetcher } from '../shared/resourceFetcher'
 import { ResourceLocation } from '../shared/resourceLocation'
 
-suite("LambdaProvider Tests", function (): void {
+suite('LambdaProvider Tests', function(): void {
 
-    test('region nodes display the user-friendly region name', async function () {
+    test('region nodes display the user-friendly region name', async function() {
 
-        const regionCode = "regionQuerty"
-        const regionName = "The Querty Region"
+        const regionCode = 'regionQuerty'
+        const regionName = 'The Querty Region'
 
         // TODO : Introduce Mocking instead of stub implementations
         class FakeRegionProvider implements RegionProvider {
-            getRegionData(): Promise<RegionInfo[]> {
+            public getRegionData(): Promise<RegionInfo[]> {
                 return Promise.resolve([new RegionInfo(regionCode, regionName)])
             }
         }
 
         class FakeAwsContext implements AwsContext {
-            onDidChangeContext: vscode.Event<ContextChangeEventsArgs> = new vscode.EventEmitter<ContextChangeEventsArgs>().event
-            getCredentials(): Promise<AWS.Credentials | undefined> {
-                throw new Error("Method not implemented.")
+            public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> =
+                new vscode.EventEmitter<ContextChangeEventsArgs>().event
+            public getCredentials(): Promise<AWS.Credentials | undefined> {
+                throw new Error('Method not implemented.')
             }
-            getCredentialProfileName(): string | undefined {
-                return "qwerty"
+            public getCredentialProfileName(): string | undefined {
+                return 'qwerty'
             }
-            setCredentialProfileName(profileName?: string | undefined): Promise<void> {
-                throw new Error("Method not implemented.")
+            public setCredentialProfileName(profileName?: string | undefined): Promise<void> {
+                throw new Error('Method not implemented.')
             }
-            getExplorerRegions(): Promise<string[]> {
+            public getExplorerRegions(): Promise<string[]> {
                 const regions = []
                 regions.push(regionCode)
 
                 return Promise.resolve(regions)
             }
-            addExplorerRegion(region: string | string[]): Promise<void> {
-                throw new Error("Method not implemented.")
+
+            public async addExplorerRegion(...regions: string[]): Promise<void> {
+                throw new Error('Method not implemented.')
             }
-            removeExplorerRegion(region: string | string[]): Promise<void> {
-                throw new Error("Method not implemented.")
+
+            public async removeExplorerRegion(...regions: string[]): Promise<void> {
+                throw new Error('Method not implemented.')
             }
         }
 
         class FakeResourceFetcher implements ResourceFetcher {
-            getResource(resourceLocations: ResourceLocation[]): Promise<string> {
-                throw new Error("Method not implemented.")
+            public getResource(resourceLocations: ResourceLocation[]): Promise<string> {
+                throw new Error('Method not implemented.')
             }
         }
 

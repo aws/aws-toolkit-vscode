@@ -5,14 +5,14 @@
 
 'use strict'
 
-import { AwsContext } from './awsContext'
 import { env, version } from 'vscode'
+import { AwsContext } from './awsContext'
 
 export class AWSClientBuilder {
 
-    private _awsContext: AwsContext
+    private readonly _awsContext: AwsContext
 
-    constructor(awsContext: AwsContext) {
+    public constructor(awsContext: AwsContext) {
         this._awsContext = awsContext
 
     }
@@ -22,10 +22,8 @@ export class AWSClientBuilder {
     public async createAndConfigureSdkClient(
         awsService: any,
         awsServiceOpts: any | undefined = {},
-        region: string | undefined = undefined
+        region?: string
     ): Promise<any> {
-        
-
         if (!awsServiceOpts.credentials) {
             awsServiceOpts.credentials = await this._awsContext.getCredentials()
         }

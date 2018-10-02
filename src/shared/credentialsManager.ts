@@ -17,11 +17,14 @@ const localize = nls.loadMessageBundle()
  */
 export class CredentialsManager {
 
-    private static readonly UserCancelledMfaError: string = localize("AWS.error.mfa.userCancelled", "User cancelled entering authentication code")
-    private _credentialsCache: { [key: string]: AWS.Credentials }
-    private _asyncLock: AsyncLock
+    private static readonly userCancelledMfaError: string = localize(
+        'AWS.error.mfa.userCancelled',
+        'User cancelled entering authentication code'
+    )
+    private readonly _credentialsCache: { [key: string]: AWS.Credentials }
+    private readonly _asyncLock: AsyncLock
 
-    constructor() {
+    public constructor() {
         this._credentialsCache = {}
         this._asyncLock = new AsyncLock()
     }
@@ -49,14 +52,15 @@ export class CredentialsManager {
 
     /**
      * Instantiates credentials for the specified profile
-     * 
+     *
      * @param profileName Profile to set up
      */
     private async createCredentials(profileName: string): Promise<AWS.Credentials> {
 
         const credentials: AWS.Credentials = new AWS.SharedIniFileCredentials({
             profile: profileName,
-            tokenCodeFn: async (mfaSerial, callback) => await CredentialsManager.getMfaTokenFromUser(mfaSerial, profileName, callback)
+            tokenCodeFn: async (mfaSerial, callback) =>
+                await CredentialsManager.getMfaTokenFromUser(mfaSerial, profileName, callback)
         })
 
         await credentials.getPromise()
@@ -66,10 +70,10 @@ export class CredentialsManager {
 
     /**
      * @description Prompts user for MFA token
-     * 
+     *
      * Entered token is passed to the callback.
      * If user cancels out, the callback is passed an error with a fixed message string.
-     * 
+     *
      * @param mfaSerial Serial arn of MFA device
      * @param profileName Name of Credentials profile we are asking an MFA Token for
      * @param callback tokens/errors are passed through here
@@ -82,13 +86,17 @@ export class CredentialsManager {
         try {
             const token = await vscode.window.showInputBox({
                 ignoreFocusOut: true,
-                placeHolder: localize("AWS.prompt.mfa.enterCode.placeholder", "Enter Authentication Code Here"),
-                prompt: localize("AWS.prompt.mfa.enterCode.prompt", "Enter authentication code for profile {0}", profileName),
+                placeHolder: localize('AWS.prompt.mfa.enterCode.placeholder', 'Enter Authentication Code Here'),
+                prompt: localize(
+                    'AWS.prompt.mfa.enterCode.prompt',
+                    'Enter authentication code for profile {0}',
+                    profileName
+                ),
             })
 
             // Distinguish user cancel vs code entry issues
             if (!token) {
-                throw new Error(CredentialsManager.UserCancelledMfaError)
+                throw new Error(CredentialsManager.userCancelledMfaError)
             }
 
             callback(undefined, token)

@@ -11,71 +11,71 @@ import { SettingsConfiguration } from '../shared/settingsConfiguration'
 
 class TestSettingsConfiguration implements SettingsConfiguration {
 
-    private _data: { [key: string]: any } = {}
+    private readonly _data: { [key: string]: any } = {}
 
-    readSetting<T>(settingKey: string, defaultValue?: T | undefined): T | undefined {
+    public readSetting<T>(settingKey: string, defaultValue?: T | undefined): T | undefined {
         return this._data[settingKey]
     }
 
-    async writeSetting<T>(settingKey: string, value: T, target: any): Promise<void> {
+    public async writeSetting<T>(settingKey: string, value: T, target: any): Promise<void> {
         this._data[settingKey] = value
     }
 }
 
-suite("CredentialsProfileMru Tests", function (): void {
+suite('CredentialsProfileMru Tests', function(): void {
 
-    test('Set and Get one', async function () {
+    test('Set and Get one', async function() {
 
         const credentialsMru = new CredentialsProfileMru(new TestSettingsConfiguration())
 
-        await credentialsMru.setMostRecentlyUsedProfile("apples")
+        await credentialsMru.setMostRecentlyUsedProfile('apples')
 
         const mru = credentialsMru.getMruList()
 
         assert(mru)
         assert.equal(mru.length >= 1, true)
-        assert.equal(mru[0], "apples")
+        assert.equal(mru[0], 'apples')
     })
 
-    test('Set and Get two', async function () {
+    test('Set and Get two', async function() {
         const credentialsMru = new CredentialsProfileMru(new TestSettingsConfiguration())
 
-        await credentialsMru.setMostRecentlyUsedProfile("dogs")
-        await credentialsMru.setMostRecentlyUsedProfile("cats")
+        await credentialsMru.setMostRecentlyUsedProfile('dogs')
+        await credentialsMru.setMostRecentlyUsedProfile('cats')
 
         const mru = credentialsMru.getMruList()
 
         assert(mru)
         assert.equal(mru.length >= 2, true)
-        assert.equal(mru[0], "cats")
-        assert.equal(mru[1], "dogs")
+        assert.equal(mru[0], 'cats')
+        assert.equal(mru[1], 'dogs')
     })
 
-    test('Set one already in MRU', async function () {
+    test('Set one already in MRU', async function() {
         const credentialsMru = new CredentialsProfileMru(new TestSettingsConfiguration())
 
-        await credentialsMru.setMostRecentlyUsedProfile("bbq")
-        await credentialsMru.setMostRecentlyUsedProfile("dill")
-        await credentialsMru.setMostRecentlyUsedProfile("ketchup")
-        await credentialsMru.setMostRecentlyUsedProfile("bbq")
+        await credentialsMru.setMostRecentlyUsedProfile('bbq')
+        await credentialsMru.setMostRecentlyUsedProfile('dill')
+        await credentialsMru.setMostRecentlyUsedProfile('ketchup')
+        await credentialsMru.setMostRecentlyUsedProfile('bbq')
 
         const mru = credentialsMru.getMruList()
 
         assert(mru)
         assert.equal(mru.length >= 3, true)
-        assert.equal(mru[0], "bbq")
-        assert.equal(mru[1], "ketchup")
-        assert.equal(mru[2], "dill")
+        assert.equal(mru[0], 'bbq')
+        assert.equal(mru[1], 'ketchup')
+        assert.equal(mru[2], 'dill')
     })
 
-    test('MRU max size trim', async function () {
+    test('MRU max size trim', async function() {
         const credentialsMru = new CredentialsProfileMru(new TestSettingsConfiguration())
 
-        for (let i = 0; i < CredentialsProfileMru.MaxCredentialMruSize + 1; i++) {
-            await credentialsMru.setMostRecentlyUsedProfile("entry" + i)
+        for (let i = 0; i < CredentialsProfileMru.MAX_CREDENTIAL_MRU_SIZE + 1; i++) {
+            await credentialsMru.setMostRecentlyUsedProfile(`entry${i}`)
         }
 
         const mru = credentialsMru.getMruList()
-        assert.equal(mru.length, CredentialsProfileMru.MaxCredentialMruSize)
+        assert.equal(mru.length, CredentialsProfileMru.MAX_CREDENTIAL_MRU_SIZE)
     })
 })
