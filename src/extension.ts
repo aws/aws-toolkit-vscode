@@ -17,13 +17,12 @@ import { DefaultCredentialsFileReaderWriter } from './shared/credentials/default
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
 import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
+import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
 import { safeGet } from './shared/extensionUtilities'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { AWSStatusBar } from './shared/statusBar'
-
-import { EnvironmentVariables } from './shared/environmentVariables'
 
 export async function activate(context: vscode.ExtensionContext) {
 
