@@ -4,6 +4,7 @@
 package software.aws.toolkits.core.credentials
 
 import org.slf4j.LoggerFactory
+import org.slf4j.event.Level
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -201,7 +202,7 @@ class ProfileToolkitCredentialsProviderFactory(
 
             clear()
             profiles.values.forEach {
-                LOG.tryOrNull(message("credentials.profile.failed_load")) {
+                LOG.tryOrNull(message("credentials.profile.failed_load"), level = Level.WARN) {
                     add(ProfileToolkitCredentialsProvider(profiles, it, sdkHttpClient, regionProvider, mfaProvider))
                 }
             }
