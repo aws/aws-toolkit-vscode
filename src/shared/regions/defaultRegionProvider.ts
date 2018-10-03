@@ -44,9 +44,12 @@ export class DefaultRegionProvider implements RegionProvider {
             const allEndpoints = JSON.parse(endpointsSource)
 
             availableRegions = (allEndpoints.partitions as any[]).reduce(
-                (accumulator: RegionInfo[], partition) => accumulator.push(...Object.keys(partition.regions).map(
-                    regionKey => new RegionInfo(regionKey, `${partition.regions[regionKey].description}`)
-                )),
+                (accumulator: RegionInfo[], partition) => {
+                    accumulator.push(...Object.keys(partition.regions).map(
+                        regionKey => new RegionInfo(regionKey, `${partition.regions[regionKey].description}`)))
+
+                    return accumulator
+                },
                 []
             )
 
