@@ -4,6 +4,10 @@
 
 The AWS Toolkit for Visual Studio Code is an extension for working with AWS services such as AWS Lambda.
 
+The toolkit is in preview and only available if built from source. This is pre-release software and we recommend against using it in a production environment.
+
+This is an open source project because we want you to be involved. We love issues, feature requests, code reviews, pull requests or any positive contribution.
+
 ## Getting Started
 
 ### Install the toolkit
