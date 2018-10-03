@@ -16,7 +16,7 @@ rules:
   no-reference: true
   no-var-requires: true
   prefer-for-of: true
-#  promise-function-async: true
+  promise-function-async: true
   typedef-whitespace:
     options:
       -
@@ -53,7 +53,7 @@ rules:
   no-duplicate-variable: true
   no-dynamic-delete: true
   no-eval: true
-#  no-floating-promises: true
+  no-floating-promises: true
   no-for-in-array: true
   no-implicit-dependencies:
     options:
@@ -80,7 +80,7 @@ rules:
   no-unbound-method:
     options:
       - ignore-static
-#  no-unsafe-any: true
+  no-unsafe-any: true
   no-unsafe-finally: true
   no-unused-expression: true
   no-var-keyword: true

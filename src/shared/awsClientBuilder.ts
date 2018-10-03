@@ -5,8 +5,10 @@
 
 'use strict'
 
+import { Service, ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { env, version } from 'vscode'
 import { AwsContext } from './awsContext'
+import { NpmPackage } from './npmPackage'
 
 export class AWSClientBuilder {
 
@@ -19,11 +21,15 @@ export class AWSClientBuilder {
 
     // centralized construction of transient AWS service clients, allowing us
     // to customize requests and/or user agent
-    public async createAndConfigureSdkClient(
-        awsService: any,
-        awsServiceOpts: any | undefined = {},
+    public async createAndConfigureSdkClient<T extends Service>(
+        awsServiceFactory: (options: ServiceConfigurationOptions) => T,
+        awsServiceOpts?: ServiceConfigurationOptions,
         region?: string
-    ): Promise<any> {
+    ): Promise<T> {
+        if (!awsServiceOpts) {
+            awsServiceOpts = {}
+        }
+
         if (!awsServiceOpts.credentials) {
             awsServiceOpts.credentials = await this._awsContext.getCredentials()
         }
@@ -33,11 +39,12 @@ export class AWSClientBuilder {
         }
 
         if (!awsServiceOpts.customUserAgent) {
-            const pluginVersion: string = require('../../package.json').version
+            const npmPackage = require('../../package.json') as NpmPackage
+            const pluginVersion = npmPackage.version
             const platformName = env.appName.replace(/\s/g, '-')
             awsServiceOpts.customUserAgent = `AWS-Toolkit-For-VisualStudio/${pluginVersion} ${platformName}/${version}`
         }
 
-        return new awsService(awsServiceOpts)
+        return awsServiceFactory(awsServiceOpts)
     }
 }

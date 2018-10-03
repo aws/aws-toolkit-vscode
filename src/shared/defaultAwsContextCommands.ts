@@ -74,7 +74,7 @@ export class DefaultAWSContextCommands {
     public async onCommandLogin() {
         const profileName = await this.promptForProfileName()
         if (profileName) {
-            this._awsContext.setCredentialProfileName(profileName)
+            await this._awsContext.setCredentialProfileName(profileName)
             this.refresh()
 
             await this.checkExplorerForDefaultRegion(profileName)
@@ -82,7 +82,7 @@ export class DefaultAWSContextCommands {
     }
 
     public async onCommandLogout() {
-        this._awsContext.setCredentialProfileName()
+        await this._awsContext.setCredentialProfileName()
         this.refresh()
     }
 
@@ -93,7 +93,7 @@ export class DefaultAWSContextCommands {
         )
 
         if (newRegion) {
-            this._awsContext.addExplorerRegion(newRegion)
+            await this._awsContext.addExplorerRegion(newRegion)
             this.refresh()
         }
     }
@@ -101,7 +101,7 @@ export class DefaultAWSContextCommands {
     public async onCommandHideRegion(regionCode?: string) {
         const region = regionCode || await this.promptForRegion(await this._awsContext.getExplorerRegions())
         if (region) {
-            this._awsContext.removeExplorerRegion(region)
+            await this._awsContext.removeExplorerRegion(region)
             this.refresh()
         }
     }

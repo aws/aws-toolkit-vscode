@@ -17,6 +17,7 @@ import { DefaultCredentialsFileReaderWriter } from './shared/credentials/default
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
 import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
+import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
 import { safeGet } from './shared/extensionUtilities'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
@@ -25,7 +26,12 @@ import { AWSStatusBar } from './shared/statusBar'
 
 export async function activate(context: vscode.ExtensionContext) {
 
-    nls.config(process.env.VSCODE_NLS_CONFIG)()
+    const env = process.env as EnvironmentVariables
+    if (!!env.VSCODE_NLS_CONFIG) {
+        nls.config(JSON.parse(env.VSCODE_NLS_CONFIG) as nls.Options)()
+    } else {
+        nls.config()()
+    }
 
     ext.lambdaOutputChannel = vscode.window.createOutputChannel('AWS Lambda')
     ext.context = context
@@ -41,8 +47,8 @@ export async function activate(context: vscode.ExtensionContext) {
     ext.sdkClientBuilder = new AWSClientBuilder(awsContext)
     ext.statusBar = new AWSStatusBar(awsContext, context)
 
-    vscode.commands.registerCommand('aws.login', async () => { await ext.awsContextCommands.onCommandLogin() })
-    vscode.commands.registerCommand('aws.logout', async () => { await ext.awsContextCommands.onCommandLogout() })
+    vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
+    vscode.commands.registerCommand('aws.logout', async () => await ext.awsContextCommands.onCommandLogout())
 
     vscode.commands.registerCommand(
         'aws.showRegion',
@@ -62,7 +68,7 @@ export async function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(vscode.window.registerTreeDataProvider(p.viewProviderId, p))
     })
 
-    ext.statusBar.updateContext(undefined)
+    await ext.statusBar.updateContext(undefined)
 }
 
 export function deactivate() {

@@ -101,7 +101,8 @@ export class CredentialsManager {
 
             callback(undefined, token)
         } catch (err) {
-            callback(err)
+            const error = err as Error
+            callback(error)
         }
     }
 }

@@ -29,7 +29,11 @@ export async function getSelectedLambdaNode(awsContext: AwsContext, element?: Fu
         throw new Error('No regions defined for explorer, required until we have a multi-stage picker')
     }
     const lambdas = await listLambdas(
-        await ext.sdkClientBuilder.createAndConfigureSdkClient(Lambda, undefined, regions[0])
+        await ext.sdkClientBuilder.createAndConfigureSdkClient(
+            opts => new Lambda(opts),
+            undefined,
+            regions[0]
+        )
     )
 
     // used to show a list of lambdas and allow user to select.
@@ -43,7 +47,11 @@ export async function getSelectedLambdaNode(awsContext: AwsContext, element?: Fu
 }
 
 export async function getLambdaFunctionsForRegion(regionCode: string): Promise<FunctionNode[]> {
-    const client = await ext.sdkClientBuilder.createAndConfigureSdkClient(Lambda, undefined, regionCode)
+    const client = await ext.sdkClientBuilder.createAndConfigureSdkClient(
+        opts => new Lambda(opts),
+        undefined,
+        regionCode
+    )
 
     return listLambdas(client)
 }
@@ -67,7 +75,9 @@ export async function listLambdas(lambda: Lambda): Promise<FunctionNode[]> {
                 })
             }
         } while (!isNullOrUndefined(request.Marker))
-    } catch (error) {
+    } catch (err) {
+        const error = err as Error
+
         // TODO: Handle error gracefully, possibly add a node that can attempt to retry the operation
         console.error(error.message)
     } finally {

@@ -3,7 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+'use strict'
+
 import * as assert from 'assert'
+import { Service } from 'aws-sdk'
+import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import * as vscode from 'vscode'
 import { AWSClientBuilder } from '../shared/awsClientBuilder'
 import { AwsContext, ContextChangeEventsArgs } from '../shared/awsContext'
@@ -12,16 +16,20 @@ suite('AwsClientBuilder Tests', () => {
     class FakeAwsContext implements AwsContext {
         public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> =
             new vscode.EventEmitter<ContextChangeEventsArgs>().event
-        public getCredentials(): Promise<AWS.Credentials | undefined> {
-            return Promise.resolve(undefined)
+
+        public async getCredentials(): Promise<AWS.Credentials | undefined> {
+            return undefined
         }
+
         public getCredentialProfileName(): string | undefined {
             throw new Error('Method not implemented.')
         }
-        public setCredentialProfileName(profileName?: string | undefined): Promise<void> {
+
+        public async setCredentialProfileName(profileName?: string | undefined): Promise<void> {
             throw new Error('Method not implemented.')
         }
-        public getExplorerRegions(): Promise<string[]> {
+
+        public async getExplorerRegions(): Promise<string[]> {
             throw new Error('Method not implemented.')
         }
 
@@ -34,8 +42,9 @@ suite('AwsClientBuilder Tests', () => {
         }
     }
 
-    class FakeService {
-        public constructor(public config: any) {
+    class FakeService extends Service {
+        public constructor(config?: ServiceConfigurationOptions) {
+            super(config)
         }
     }
 
@@ -43,28 +52,33 @@ suite('AwsClientBuilder Tests', () => {
     // what the product code does, so these tests would still pass with bad versions. Instead, we
     // verify that a valid semver is used. This protects us against things like `null`, `undefined`,
     // or other unexpected values.
-    const semverRegex = require('semver-regex')() as RegExp
+    const semverRegex = (require('semver-regex') as () => RegExp)()
     const userAgentRegex = new RegExp(
         `^AWS-Toolkit-For-VisualStudio\\/${semverRegex.source} Visual-Studio-Code\\/${semverRegex.source}`
     )
 
     test('createAndConfigureSdkClient includes custom user-agent if no options are specified', async () => {
         const builder = new AWSClientBuilder(new FakeAwsContext())
-        const service = await builder.createAndConfigureSdkClient(FakeService)
+        const service = await builder.createAndConfigureSdkClient(opts => new FakeService(opts))
 
-        assert.equal(userAgentRegex.test(service.config.customUserAgent), true)
+        assert.equal(!!service.config.customUserAgent, true)
+        assert.equal(userAgentRegex.test(service.config.customUserAgent!), true)
     })
 
     test('createAndConfigureSdkClient includes custom user-agent if not specified in options', async () => {
         const builder = new AWSClientBuilder(new FakeAwsContext())
-        const service = await builder.createAndConfigureSdkClient(FakeService, {})
+        const service = await builder.createAndConfigureSdkClient(opts => new FakeService(opts), {})
 
-        assert.equal(userAgentRegex.test(service.config.customUserAgent), true)
+        assert.equal(!!service.config.customUserAgent, true)
+        assert.equal(userAgentRegex.test(service.config.customUserAgent!), true)
     })
 
     test('createAndConfigureSdkClient does not override custom user-agent if specified in options', async () => {
         const builder = new AWSClientBuilder(new FakeAwsContext())
-        const service = await builder.createAndConfigureSdkClient(FakeService, { customUserAgent: 'CUSTOM USER AGENT' })
+        const service = await builder.createAndConfigureSdkClient(
+            opts => new FakeService(opts),
+            { customUserAgent: 'CUSTOM USER AGENT' }
+        )
 
         assert.equal(service.config.customUserAgent, 'CUSTOM USER AGENT')
     })

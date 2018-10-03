@@ -14,7 +14,7 @@ class TestSettingsConfiguration implements SettingsConfiguration {
     private readonly _data: { [key: string]: any } = {}
 
     public readSetting<T>(settingKey: string, defaultValue?: T | undefined): T | undefined {
-        return this._data[settingKey]
+        return this._data[settingKey] as T
     }
 
     public async writeSetting<T>(settingKey: string, value: T, target: any): Promise<void> {

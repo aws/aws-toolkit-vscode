@@ -44,9 +44,9 @@ export class DefaultResourceFetcher implements ResourceFetcher {
 
             // TODO: consider inject cache lookup here, or put that in a separate ResourceFetcherBase class
 
-            request(resourceLocation.getLocationUri(), {}, (err, res, body) => {
+            request(resourceLocation.getLocationUri(), {}, (err, res, body: string) => {
 
-                if (err) {
+                if (!!err) {
                     reject(err)
                 } else {
                     resolve(body)

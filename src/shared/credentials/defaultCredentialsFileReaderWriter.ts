@@ -5,6 +5,7 @@
 
 'use strict'
 
+import { EnvironmentVariables } from '../environmentVariables'
 import { loadSharedConfigFiles, Profile, saveProfile } from './credentialsFile'
 import { CredentialsFileReaderWriter } from './credentialsFileReaderWriter'
 
@@ -42,7 +43,9 @@ export class DefaultCredentialsFileReaderWriter implements CredentialsFileReader
      * the config file in addition to the credentials file.
      */
     public getCanUseConfigFile(): boolean {
-        return !!process.env.AWS_SDK_LOAD_CONFIG
+        const env = process.env as EnvironmentVariables
+
+        return !!env.AWS_SDK_LOAD_CONFIG
     }
 
     /**
@@ -52,7 +55,9 @@ export class DefaultCredentialsFileReaderWriter implements CredentialsFileReader
      * @param allow - true: load from credentials and config, false: load from credentials only
      */
     public setCanUseConfigFile(allow: boolean): void {
-        process.env.AWS_SDK_LOAD_CONFIG = allow ? true : ''
+        const env = process.env as EnvironmentVariables
+
+        env.AWS_SDK_LOAD_CONFIG = allow ? true : ''
     }
 
     /**

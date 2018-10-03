@@ -97,7 +97,7 @@ export class MultiStepInputFlowController {
                 this.current.show()
             })
         } finally {
-            disposables.forEach(d => d.dispose())
+            disposables.forEach(d => d.dispose() as void)
         }
     }
 
@@ -168,7 +168,7 @@ export class MultiStepInputFlowController {
                 this.current.show()
             })
         } finally {
-            disposables.forEach(d => d.dispose())
+            disposables.forEach(d => d.dispose() as void)
         }
     }
 
