@@ -11,7 +11,6 @@
 // their version.
 // ***************************************************************************
 
-// import { readFile, writeFile } from 'fs'
 import { copy } from 'fs-extra'
 import { homedir } from 'os'
 import { join, sep } from 'path'

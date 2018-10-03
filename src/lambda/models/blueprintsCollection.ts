@@ -127,6 +127,6 @@ export class BlueprintsCollection {
     }
 
     private static stringOrArrayToStringArray(input: string | string[]): string[] {
-        return Array.isArray(input) ? input : [ input ]
+        return Array.isArray(input) ? [ ...input ] : [ input ]
     }
 }
