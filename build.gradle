@@ -126,6 +126,10 @@ subprojects {
             exceptionFormat = 'full'
         }
 
+        jacoco {
+            excludes = ["com.sun.*"] // See https://groups.google.com/forum/#!topic/jacoco/H0gDwxNuhK4
+        }
+
         mustRunAfter tasks.test
     }
 
