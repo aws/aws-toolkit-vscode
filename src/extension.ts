@@ -48,6 +48,10 @@ export async function activate(context: vscode.ExtensionContext) {
     ext.statusBar = new AWSStatusBar(awsContext, context)
 
     vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
+    vscode.commands.registerCommand(
+        'aws.credential.profile.create',
+        async () => await ext.awsContextCommands.onCommandCreateCredentialsProfile()
+    )
     vscode.commands.registerCommand('aws.logout', async () => await ext.awsContextCommands.onCommandLogout())
 
     vscode.commands.registerCommand(

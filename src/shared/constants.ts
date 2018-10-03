@@ -11,3 +11,4 @@ export const profileSettingKey: string = 'profile'
 
 export const hostedFilesBaseUrl: string = 'https://d3rrggjwfhwld2.cloudfront.net/'
 export const endpointsFileUrl: string = 'https://aws-toolkit-endpoints.s3.amazonaws.com/endpoints.json'
+export const aboutCredentialsFileUrl: string = 'https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html'
