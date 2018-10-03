@@ -5,14 +5,15 @@
 
 'use strict'
 
-import {QuickPickItem} from 'vscode'
+import { QuickPickItem } from 'vscode'
 
 export class QuickPickNode implements QuickPickItem {
-    label: string
-    description?: string | undefined
-    detail?: string | undefined
-    picked?: boolean | undefined
-    constructor(
+    public label: string
+    public description?: string | undefined
+    public detail?: string | undefined
+    public picked?: boolean | undefined
+
+    public constructor(
         readonly id: string
     ) {
         this.label = id

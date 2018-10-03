@@ -12,7 +12,7 @@ export interface ResourceLocation {
 export class WebResourceLocation implements ResourceLocation {
     private readonly _uri: string
 
-    constructor(uri: string) {
+    public constructor(uri: string) {
         this._uri = uri
     }
 
@@ -24,7 +24,7 @@ export class WebResourceLocation implements ResourceLocation {
 export class FileResourceLocation implements ResourceLocation {
     private readonly _filename: string
 
-    constructor(filename: string) {
+    public constructor(filename: string) {
         this._filename = filename
     }
 

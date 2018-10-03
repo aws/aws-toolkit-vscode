@@ -9,9 +9,9 @@ import { AwsContext } from './awsContext'
 import { RefreshableAwsTreeProvider } from './treeview/refreshableAwsTreeProvider'
 
 export class AwsContextTreeCollection {
-    private _trees: RefreshableAwsTreeProvider[]
+    private readonly _trees: RefreshableAwsTreeProvider[]
 
-    constructor() {
+    public constructor() {
         this._trees = []
     }
 

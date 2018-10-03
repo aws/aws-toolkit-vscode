@@ -4,7 +4,8 @@
  */
 
 export class BaseTemplates {
-    static readonly SimpleHTML = `
+    /* tslint:disable max-line-length */
+    public static readonly SIMPLE_HTML = `
         <html>
         <head>
             <meta charset="UTF-8">
@@ -15,4 +16,5 @@ export class BaseTemplates {
                 <%= content %>
             </body>
         </html>`
+    /* tslint:enable max-line-length */
 }

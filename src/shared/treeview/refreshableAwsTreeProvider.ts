@@ -5,10 +5,9 @@
 
 'use strict'
 
-import { AwsTreeProvider } from "./awsTreeProvider"
-import { AwsContext } from "../awsContext"
+import { AwsContext } from '../awsContext'
+import { AwsTreeProvider } from './awsTreeProvider'
 
 export interface RefreshableAwsTreeProvider extends AwsTreeProvider {
     refresh(newContext?: AwsContext): void
 }
-

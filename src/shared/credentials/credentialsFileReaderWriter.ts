@@ -14,7 +14,7 @@ export interface CredentialsFileReaderWriter {
 
     /**
      * Gets the default region for a credentials profile
-     * 
+     *
      * @param profileName Profile to get the default region from
      * @returns Default region, undefined if region is not set
      */
@@ -29,7 +29,7 @@ export interface CredentialsFileReaderWriter {
     /**
      * Specifies whether or not credentials information can be retrieved from
      * the config file in addition to the credentials file.
-     * 
+     *
      * @param allow - true: load from credentials and config, false: load from credentials only
      */
     setCanUseConfigFile(allow: boolean): void

@@ -18,7 +18,10 @@ export interface SettingsConfiguration {
 
 // default configuration settings handler for production release
 export class DefaultSettingsConfiguration implements SettingsConfiguration {
-    readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
+    public constructor(public readonly extensionSettingsPrefix: string) {
+    }
+
+    public readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
         const settings = vscode.workspace.getConfiguration(this.extensionSettingsPrefix)
         if (settings) {
             const val = settings.get<T>(settingKey)
@@ -29,16 +32,10 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
 
         return defaultValue || undefined
     }
-    // async writeSetting(settingKey: string, value: string | string[], target: vscode.ConfigurationTarget): Promise<void> {
-    async writeSetting<T>(settingKey: string, value: T, target: vscode.ConfigurationTarget): Promise<void> {
+
+    public async writeSetting<T>(settingKey: string, value: T, target: vscode.ConfigurationTarget): Promise<void> {
         const settings = vscode.workspace.getConfiguration(this.extensionSettingsPrefix)
 
         await settings.update(settingKey, value, target)
     }
-
-    constructor(public readonly extensionSettingsPrefix: string) {
-    }
-
 }
-
-

@@ -5,22 +5,22 @@
 
 'use strict'
 
-import xml2js = require('xml2js')
+import { AWSError } from 'aws-sdk'
+import _ = require('lodash')
 import path = require('path')
-import { FunctionNode } from "../explorer/functionNode"
-import { getSelectedLambdaNode } from '../utils'
-import { BaseTemplates } from "../../shared/templates/baseTemplates"
 import * as vscode from 'vscode'
-import _ = require("lodash")
-import { ext } from "../../shared/extensionGlobals"
-import { LambdaTemplates } from "../templates/lambdaTemplates"
-import { AWSError } from "aws-sdk"
-import { ResourceFetcher } from "../../shared/resourceFetcher"
-import { sampleRequestManifestPath, sampleRequestPath } from "../constants"
-import { SampleRequest } from '../models/sampleRequest'
-import { ExtensionUtilities } from '../../shared/extensionUtilities'
+import xml2js = require('xml2js')
 import { AwsContext } from '../../shared/awsContext'
-import { WebResourceLocation, FileResourceLocation } from '../../shared/resourceLocation'
+import { ext } from '../../shared/extensionGlobals'
+import { ExtensionUtilities } from '../../shared/extensionUtilities'
+import { ResourceFetcher } from '../../shared/resourceFetcher'
+import { FileResourceLocation, WebResourceLocation } from '../../shared/resourceLocation'
+import { BaseTemplates } from '../../shared/templates/baseTemplates'
+import { sampleRequestManifestPath, sampleRequestPath } from '../constants'
+import { FunctionNode } from '../explorer/functionNode'
+import { SampleRequest } from '../models/sampleRequest'
+import { LambdaTemplates } from '../templates/lambdaTemplates'
+import { getSelectedLambdaNode } from '../utils'
 
 export async function invokeLambda(awsContext: AwsContext, resourceFetcher: ResourceFetcher, element?: FunctionNode) {
     try {
@@ -35,19 +35,22 @@ export async function invokeLambda(awsContext: AwsContext, resourceFetcher: Reso
                 enableScripts: true
             }
         )
-        const baseTemplateFn = _.template(BaseTemplates.SimpleHTML)
+        const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
         view.webview.html = baseTemplateFn({
-            content: `<h1>Loading...</h1>`
+            content: '<h1>Loading...</h1>'
         })
 
         // ideally need to get the client from the explorer, but the context will do for now
         console.log('building template...')
-        const invokeTemplateFn = _.template(LambdaTemplates.InvokeTemplate)
+        const invokeTemplateFn = _.template(LambdaTemplates.INVOKE_TEMPLATE)
         const resourcePath = path.join(ext.context.extensionPath, 'resources', 'vs-lambda-sample-request-manifest.xml')
         console.log(sampleRequestManifestPath)
         console.log(resourcePath)
         try {
-            const sampleInput = await resourceFetcher.getResource([new WebResourceLocation(sampleRequestManifestPath), new FileResourceLocation(resourcePath)])
+            const sampleInput = await resourceFetcher.getResource([
+                new WebResourceLocation(sampleRequestManifestPath),
+                new FileResourceLocation(resourcePath)
+            ])
             const inputs: SampleRequest[] = []
             console.log('querying manifest url')
             xml2js.parseString(sampleInput, { explicitArray: false }, (err, result) => {
@@ -69,55 +72,69 @@ export async function invokeLambda(awsContext: AwsContext, resourceFetcher: Reso
                 }),
             })
 
-            view.webview.onDidReceiveMessage(async message => {
-                switch (message.command) {
-                    case 'sampleRequestSelected':
-                        console.log('selected the following sample:')
-                        console.log(message.value)
-                        const sample = await resourceFetcher.getResource([new WebResourceLocation(sampleRequestPath + message.value), new FileResourceLocation(resourcePath)])
-                        console.log(sample)
-                        view.webview.postMessage({ command: 'loadedSample', sample: sample })
-                        return
-                    case 'invokeLambda':
-                        console.log('got the following payload:')
-                        console.log(message.value)
-                        const lambdaClient = fn.lambda
-                        let funcRequest = {
-                            FunctionName: fn.functionConfiguration.FunctionArn!,
-                            LogType: 'Tail'
-                        } as AWS.Lambda.InvocationRequest
-                        if (message.value) {
-                            console.log('found a payload')
-                            funcRequest.Payload = message.value
-                        }
-                        ext.lambdaOutputChannel.show()
-                        ext.lambdaOutputChannel.appendLine('Loading response...')
-                        try {
-                            const funcResponse = await lambdaClient.invoke(funcRequest).promise()
-                            const logs = funcResponse.LogResult ? Buffer.from(funcResponse.LogResult, 'base64').toString() : ""
-                            const payload = funcResponse.Payload ? funcResponse.Payload : JSON.stringify({})
-                            ext.lambdaOutputChannel.appendLine(`Invocation result for ${fn.functionConfiguration.FunctionArn}`)
-                            ext.lambdaOutputChannel.appendLine('Logs:')
-                            ext.lambdaOutputChannel.appendLine(logs)
-                            ext.lambdaOutputChannel.appendLine('')
-                            ext.lambdaOutputChannel.appendLine('Payload:')
-                            ext.lambdaOutputChannel.appendLine(payload.toString())
-                            ext.lambdaOutputChannel.appendLine('')
-                        } catch (e) {
-                            ext.lambdaOutputChannel.appendLine(`There was an error invoking ${fn.functionConfiguration.FunctionArn}`)
-                            ext.lambdaOutputChannel.appendLine(e)
-                            ext.lambdaOutputChannel.appendLine('')
-                        }
-                        break
-                }
-            }, undefined, ext.context.subscriptions)
-        }
-        catch (err) {
+            view.webview.onDidReceiveMessage(
+                async message => {
+                    switch (message.command) {
+                        case 'sampleRequestSelected':
+                            console.log('selected the following sample:')
+                            console.log(message.value)
+                            const sample = await resourceFetcher.getResource([
+                                new WebResourceLocation(`${sampleRequestPath}${message.value}`),
+                                new FileResourceLocation(resourcePath)
+                            ])
+                            console.log(sample)
+                            view.webview.postMessage({ command: 'loadedSample', sample: sample })
+
+                            return
+
+                        case 'invokeLambda':
+                            console.log('got the following payload:')
+                            console.log(message.value)
+                            const lambdaClient = fn.lambda
+                            const funcRequest: AWS.Lambda.InvocationRequest = {
+                                FunctionName: fn.functionConfiguration.FunctionArn!,
+                                LogType: 'Tail'
+                            }
+                            if (message.value) {
+                                console.log('found a payload')
+                                funcRequest.Payload = message.value
+                            }
+                            ext.lambdaOutputChannel.show()
+                            ext.lambdaOutputChannel.appendLine('Loading response...')
+                            try {
+                                const funcResponse = await lambdaClient.invoke(funcRequest).promise()
+                                const logs = funcResponse.LogResult ?
+                                    Buffer.from(funcResponse.LogResult, 'base64').toString() :
+                                    ''
+                                const payload = funcResponse.Payload ? funcResponse.Payload : JSON.stringify({})
+                                ext.lambdaOutputChannel.appendLine(
+                                    `Invocation result for ${fn.functionConfiguration.FunctionArn}`
+                                )
+                                ext.lambdaOutputChannel.appendLine('Logs:')
+                                ext.lambdaOutputChannel.appendLine(logs)
+                                ext.lambdaOutputChannel.appendLine('')
+                                ext.lambdaOutputChannel.appendLine('Payload:')
+                                ext.lambdaOutputChannel.appendLine(payload.toString())
+                                ext.lambdaOutputChannel.appendLine('')
+                            } catch (e) {
+                                ext.lambdaOutputChannel.appendLine(
+                                    `There was an error invoking ${fn.functionConfiguration.FunctionArn}`
+                                )
+                                ext.lambdaOutputChannel.appendLine(e)
+                                ext.lambdaOutputChannel.appendLine('')
+                            }
+
+                            return
+                    }
+                },
+                undefined,
+                ext.context.subscriptions
+            )
+        } catch (err) {
             console.log('Error getting manifest data..')
             console.log(err)
         }
-    }
-    catch (err) {
+    } catch (err) {
         const ex: AWSError = err
         console.log(ex.message)
     }

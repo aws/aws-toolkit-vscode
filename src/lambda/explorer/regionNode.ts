@@ -6,7 +6,7 @@
 'use strict'
 
 import * as nls from 'vscode-nls'
-let localize = nls.loadMessageBundle()
+const localize = nls.loadMessageBundle()
 
 import { AWSRegionTreeNode } from '../../shared/treeview/awsRegionTreeNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
@@ -19,8 +19,21 @@ import { NoFunctionsNode } from './noFunctionsNode'
 // a placeholder child.
 export class RegionNode extends AWSRegionTreeNode {
 
-    constructor(regionCode: string, public regionName: string) {
+    public constructor(regionCode: string, public regionName: string) {
         super(regionCode)
+    }
+
+    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+        const lambdaFunctions: AWSTreeNodeBase[] = await getLambdaFunctionsForRegion(this.regionCode)
+
+        if (lambdaFunctions.length === 0) {
+            lambdaFunctions.push(new NoFunctionsNode(
+                localize('AWS.explorerNode.lambda.noFunctions', '[no functions in this region]'),
+                'awsLambdaNoFns'
+            ))
+        }
+
+        return lambdaFunctions
     }
 
     protected getLabel(): string {
@@ -30,16 +43,4 @@ export class RegionNode extends AWSRegionTreeNode {
     protected getTooltip(): string | undefined {
         return `${this.getLabel()} [${this.regionCode}]`
     }
-
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
-        const lambdaFunctions: AWSTreeNodeBase[] = await getLambdaFunctionsForRegion(this.regionCode)
-
-        if (lambdaFunctions.length === 0) {
-            lambdaFunctions.push(new NoFunctionsNode(localize('AWS.explorerNode.lambda.noFunctions', '[no functions in this region]'),
-                'awsLambdaNoFns'))
-        }
-
-        return lambdaFunctions
-    }
-
 }

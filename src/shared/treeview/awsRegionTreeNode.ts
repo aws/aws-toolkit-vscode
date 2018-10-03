@@ -11,14 +11,8 @@ import { AWSTreeNodeBase } from '../treeview/awsTreeNodeBase'
 export abstract class AWSRegionTreeNode extends AWSTreeNodeBase {
     public readonly contextValue: string = 'awsRegion'
 
-    constructor(public regionCode:string) {
+    public constructor(public regionCode: string) {
         super()
-    }
-
-    protected abstract getLabel(): string
-
-    protected getTooltip(): string | undefined {
-        return undefined
     }
 
     public getTreeItem(): TreeItem {
@@ -27,5 +21,11 @@ export abstract class AWSRegionTreeNode extends AWSTreeNodeBase {
         item.contextValue = this.contextValue
 
         return item
+    }
+
+    protected abstract getLabel(): string
+
+    protected getTooltip(): string | undefined {
+        return undefined
     }
 }

@@ -5,17 +5,18 @@
 
 'use strict'
 
-import * as vscode from 'vscode'
-import { isNullOrUndefined } from 'util'
-import { ext } from '../shared/extensionGlobals'
-import { FunctionNode } from './explorer/functionNode'
-import { quickPickLambda } from './commands/quickPickLambda'
 import Lambda = require('aws-sdk/clients/lambda')
+import { isNullOrUndefined } from 'util'
+import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
+import { ext } from '../shared/extensionGlobals'
+import { quickPickLambda } from './commands/quickPickLambda'
+import { FunctionNode } from './explorer/functionNode'
 
 export async function getSelectedLambdaNode(awsContext: AwsContext, element?: FunctionNode): Promise<FunctionNode> {
     if (element && element.functionConfiguration) {
         console.log('returning preselected node...')
+
         return element
     }
 
@@ -27,7 +28,9 @@ export async function getSelectedLambdaNode(awsContext: AwsContext, element?: Fu
     if (regions.length === 0) {
         throw new Error('No regions defined for explorer, required until we have a multi-stage picker')
     }
-    const lambdas = await listLambdas(await ext.sdkClientBuilder.createAndConfigureSdkClient(Lambda, undefined, regions[0]))
+    const lambdas = await listLambdas(
+        await ext.sdkClientBuilder.createAndConfigureSdkClient(Lambda, undefined, regions[0])
+    )
 
     // used to show a list of lambdas and allow user to select.
     // this is useful for calling commands from the command palette
@@ -41,6 +44,7 @@ export async function getSelectedLambdaNode(awsContext: AwsContext, element?: Fu
 
 export async function getLambdaFunctionsForRegion(regionCode: string): Promise<FunctionNode[]> {
     const client = await ext.sdkClientBuilder.createAndConfigureSdkClient(Lambda, undefined, regionCode)
+
     return listLambdas(client)
 }
 
@@ -48,7 +52,7 @@ export async function listLambdas(lambda: Lambda): Promise<FunctionNode[]> {
     // TODO: this 'loading' message needs to go under each regional entry
     // in the explorer, and be removed when that region's query completes
     const status = vscode.window.setStatusBarMessage('Loading lambdas...')
-    let arr: FunctionNode[] = []
+    const arr: FunctionNode[] = []
 
     try {
         const request: Lambda.ListFunctionsRequest = {}
@@ -72,4 +76,3 @@ export async function listLambdas(lambda: Lambda): Promise<FunctionNode[]> {
 
     return arr
 }
-

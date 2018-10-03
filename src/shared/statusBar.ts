@@ -6,27 +6,26 @@
 'use strict'
 
 import * as nls from 'vscode-nls'
-let localize = nls.loadMessageBundle()
+const localize = nls.loadMessageBundle()
 
-import { ExtensionContext, window, StatusBarItem, StatusBarAlignment } from 'vscode'
+import { ExtensionContext, StatusBarAlignment, StatusBarItem, window } from 'vscode'
 import { AwsContext, ContextChangeEventsArgs } from './awsContext'
 
 // may want to have multiple elements of data on the status bar,
 // so wrapping in a class to allow for per-element update capability
 export class AWSStatusBar {
 
-    private _awsContext: AwsContext
-
     public readonly credentialContext: StatusBarItem
+    private readonly _awsContext: AwsContext
 
-    constructor(awsContext: AwsContext, context: ExtensionContext) {
+    public constructor(awsContext: AwsContext, context: ExtensionContext) {
         this._awsContext = awsContext
 
         this.credentialContext = window.createStatusBarItem(StatusBarAlignment.Right, 100)
         context.subscriptions.push(this.credentialContext)
 
-        this._awsContext.onDidChangeContext((context) => {
-            this.updateContext(context)
+        this._awsContext.onDidChangeContext((changedContext) => {
+            this.updateContext(changedContext)
         })
     }
 
@@ -35,13 +34,12 @@ export class AWSStatusBar {
 
         if (eventContext) {
             profileName = eventContext.profileName
-        }
-        else {
+        } else {
             profileName = this._awsContext.getCredentialProfileName()
         }
 
         if (profileName) {
-            this.credentialContext.text = localize('AWS.title', 'AWS') + ':' + profileName
+            this.credentialContext.text = `${localize('AWS.title', 'AWS')}:${profileName}`
             this.credentialContext.show()
         } else {
             this.credentialContext.hide()

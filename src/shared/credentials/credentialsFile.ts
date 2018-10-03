@@ -5,16 +5,16 @@
 
 'use strict'
 
-//***************************************************************************
+// ***************************************************************************
 // Note: Supplied by the AWS Javascript SDK team, from their upcoming v3 SDK.
 // Once that release is GA and we switch over, we can remove this copy and use
 // their version.
-//***************************************************************************
+// ***************************************************************************
 
-import {homedir} from 'os'
-import {join, sep} from 'path'
-import {readFile, writeFile} from 'fs'
+import { readFile, writeFile } from 'fs'
 import { copy } from 'fs-extra'
+import { homedir } from 'os'
+import { join, sep } from 'path'
 
 export const ENV_CREDENTIALS_PATH = 'AWS_SHARED_CREDENTIALS_FILE'
 export const ENV_CONFIG_PATH = 'AWS_CONFIG_FILE'
@@ -36,7 +36,7 @@ export interface SharedConfigInit {
 }
 
 export interface Profile {
-    [key: string]: string|undefined
+    [key: string]: string | undefined
 }
 
 export interface ParsedIniData {
@@ -48,32 +48,34 @@ export interface SharedConfigFiles {
     configFile: ParsedIniData
 }
 
-const swallowError = () => ({})
-
-export async function loadSharedConfigFiles(
-    init: SharedConfigInit = {}
-): Promise<SharedConfigFiles> {
-    const {
-        filepath = process.env[ENV_CREDENTIALS_PATH]
-            || join(getHomeDir(), '.aws', 'credentials'),
-        configFilepath = process.env[ENV_CONFIG_PATH]
-            || join(getHomeDir(), '.aws', 'config'),
-    } = init
-
-    const [configFile, credentialsFile] = await Promise.all([
-        slurpFile(configFilepath)
-            .then(parseIni)
-            .then(normalizeConfigFile)
-            .catch(swallowError),
-        slurpFile(filepath)
-            .then(parseIni)
-            .catch(swallowError),
-    ]) 
+export async function loadSharedConfigFiles(init: SharedConfigInit = {}): Promise<SharedConfigFiles> {
+    const [ configFile, credentialsFile ] = await Promise.all([
+        /* tslint:disable await-promise */
+        loadConfigFile(init.configFilepath),
+        loadCredentialsFile(init.filepath)
+        /* tslint:enable await-promise */
+    ])
 
     return {
-        configFile,
         credentialsFile,
+        configFile
     }
+}
+
+async function loadConfigFile(
+    configFilePath: string = process.env[ENV_CONFIG_PATH] || join(getHomeDir(), '.aws', 'config')
+): Promise<ParsedIniData> {
+    const content: string = await slurpFile(configFilePath)
+
+    return normalizeConfigFile(parseIni(content))
+}
+
+async function loadCredentialsFile(
+    credentialsFilePath: string = process.env[ENV_CREDENTIALS_PATH] || join(getHomeDir(), '.aws', 'credentials')
+): Promise<ParsedIniData> {
+    const content: string = await slurpFile(credentialsFilePath)
+
+    return parseIni(content)
 }
 
 // TODO: FOR POC-DEMOS ONLY, NOT FOR PRODUCTION USE!
@@ -90,7 +92,7 @@ export function saveProfile(
                 || join(getHomeDir(), '.aws', 'credentials')
 
         // even though poc concept code, let's preserve the user's file!
-        copy(filepath, filepath + '.bak_vscode', { overwrite: true})
+        copy(filepath, `${filepath}.bak_vscode`, { overwrite: true})
 
         let data = await slurpFile(filepath)
         data += '\r\n'
@@ -111,15 +113,17 @@ export function saveProfile(
 const profileKeyRegex = /^profile\s(["'])?([^\1]+)\1$/
 function normalizeConfigFile(data: ParsedIniData): ParsedIniData {
     const map: ParsedIniData = {}
-    for (let key of Object.keys(data)) {
-        let matches: Array<string>|null
+    for (const key of Object.keys(data)) {
         if (key === 'default') {
             map.default = data.default
-        } else if (matches = profileKeyRegex.exec(key)) {
-            // @ts-ignore
-            const [_1, _2, normalizedKey] = matches
-            if (normalizedKey) {
-                map[normalizedKey] = data[key]
+        } else {
+            const matches = profileKeyRegex.exec(key)
+            if (matches) {
+                // @ts-ignore
+                const [_1, _2, normalizedKey] = matches
+                if (normalizedKey) {
+                    map[normalizedKey] = data[key]
+                }
             }
         }
     }
@@ -129,7 +133,7 @@ function normalizeConfigFile(data: ParsedIniData): ParsedIniData {
 
 function parseIni(iniData: string): ParsedIniData {
     const map: ParsedIniData = {}
-    let currentSection: string|undefined
+    let currentSection: string | undefined
     for (let line of iniData.split(/\r?\n/)) {
         line = line.split(/(^|\s)[;#]/)[0] // remove comments
         const section = line.match(/^\s*\[([^\[\]]+)]\s*$/)

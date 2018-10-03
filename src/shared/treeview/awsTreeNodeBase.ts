@@ -15,11 +15,11 @@ export abstract class AWSTreeNodeBase extends Disposable {
     protected children: AWSTreeNodeBase[] | undefined
     protected disposable: Disposable | undefined
 
-    constructor() {
+    public constructor() {
         super(() => this.dispose())
     }
 
-    dispose() {
+    public dispose() {
         if (this.disposable !== undefined) {
             this.disposable.dispose()
             this.disposable = undefined
@@ -45,4 +45,3 @@ export abstract class AWSTreeNodeBase extends Disposable {
         }
     }
 }
-

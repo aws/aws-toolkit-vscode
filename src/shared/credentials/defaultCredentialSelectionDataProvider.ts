@@ -14,15 +14,15 @@
 'use strict'
 
 import * as nls from 'vscode-nls'
-let localize = nls.loadMessageBundle()
+const localize = nls.loadMessageBundle()
 
-import { QuickPickItem, Uri, ExtensionContext } from 'vscode'
-import { MultiStepInputFlowController } from '../multiStepInputFlowController'
-import { CredentialSelectionState } from './credentialSelectionState'
-import { AddProfileButton, CredentialSelectionDataProvider } from './credentialSelectionDataProvider'
-import { CredentialsProfileMru } from './credentialsProfileMru'
-import { DefaultSettingsConfiguration } from '../settingsConfiguration'
+import { ExtensionContext, QuickPickItem, Uri } from 'vscode'
 import { extensionSettingsPrefix } from '../constants'
+import { MultiStepInputFlowController } from '../multiStepInputFlowController'
+import { DefaultSettingsConfiguration } from '../settingsConfiguration'
+import { AddProfileButton, CredentialSelectionDataProvider } from './credentialSelectionDataProvider'
+import { CredentialSelectionState } from './credentialSelectionState'
+import { CredentialsProfileMru } from './credentialsProfileMru'
 
 interface ProfileEntry {
     profileName: string,
@@ -31,18 +31,25 @@ interface ProfileEntry {
 
 export class DefaultCredentialSelectionDataProvider implements CredentialSelectionDataProvider {
 
-    private static readonly DefaultCredentialsProfileName: string = "default"
-    private readonly _credentialsMru: CredentialsProfileMru = new CredentialsProfileMru(new DefaultSettingsConfiguration(extensionSettingsPrefix))
-    private _newProfileButton: AddProfileButton
+    private static readonly defaultCredentialsProfileName: string = 'default'
+    private readonly _credentialsMru: CredentialsProfileMru =
+        new CredentialsProfileMru(new DefaultSettingsConfiguration(extensionSettingsPrefix))
+    private readonly _newProfileButton: AddProfileButton
 
-    constructor(public readonly existingProfileNames: string[], protected context: ExtensionContext) {
-        this._newProfileButton = new AddProfileButton({
-            dark: Uri.file(context.asAbsolutePath('resources/dark/add.svg')),
-            light: Uri.file(context.asAbsolutePath('resources/light/add.svg')),
-        }, localize('AWS.tooltip.createCredentialProfile', 'Create a new credential profile'))
+    public constructor(public readonly existingProfileNames: string[], protected context: ExtensionContext) {
+        this._newProfileButton = new AddProfileButton(
+            {
+                dark: Uri.file(context.asAbsolutePath('resources/dark/add.svg')),
+                light: Uri.file(context.asAbsolutePath('resources/light/add.svg')),
+            },
+            localize('AWS.tooltip.createCredentialProfile', 'Create a new credential profile')
+        )
     }
 
-    async pickCredentialProfile(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>): Promise<QuickPickItem | AddProfileButton> {
+    public async pickCredentialProfile(
+        input: MultiStepInputFlowController,
+        state: Partial<CredentialSelectionState>
+    ): Promise<QuickPickItem | AddProfileButton> {
         return await input.showQuickPick({
             title: localize('AWS.title.selectCredentialProfile', 'Select an AWS credential profile'),
             step: 1,
@@ -52,6 +59,76 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
             activeItem: state.credentialProfile,
             buttons: [this._newProfileButton],
             shouldResume: this.shouldResume
+        })
+    }
+
+    public async inputProfileName(
+        input: MultiStepInputFlowController,
+        state: Partial<CredentialSelectionState>
+    ): Promise<string | undefined> {
+        return await input.showInputBox({
+            title: localize('AWS.title.createCredentialProfile', 'Create a new AWS credential profile'),
+            step: 1,
+            totalSteps: 3,
+            value: '',
+            prompt: localize('AWS.placeHolder.newProfileName', 'Choose a unique name for the new profile'),
+            validate: this.validateNameIsUnique,
+            shouldResume: this.shouldResume
+        })
+    }
+
+    public async inputAccessKey(
+        input: MultiStepInputFlowController,
+        state: Partial<CredentialSelectionState>
+    ): Promise<string | undefined> {
+        return await input.showInputBox({
+            title: localize('AWS.title.createCredentialProfile', 'Create a new AWS credential profile'),
+            step: 2,
+            totalSteps: 3,
+            value: '',
+            prompt: localize('AWS.placeHolder.inputAccessKey', 'Input the AWS Access Key'),
+            validate: this.validateAccessKey,
+            ignoreFocusOut: true,
+            shouldResume: this.shouldResume
+        })
+    }
+
+    public async inputSecretKey(
+        input: MultiStepInputFlowController,
+        state: Partial<CredentialSelectionState>
+    ): Promise<string | undefined> {
+        return await input.showInputBox({
+            title: localize('AWS.title.createCredentialProfile', 'Create a new AWS credential profile'),
+            step: 3,
+            totalSteps: 3,
+            value: '',
+            prompt: localize('AWS.placeHolder.inputSecretKey', 'Input the AWS Secret Key'),
+            validate: this.validateSecretKey,
+            ignoreFocusOut: true,
+            shouldResume: this.shouldResume
+        })
+    }
+
+    public validateNameIsUnique = (name: string): Promise<string | undefined> => {
+        return new Promise<string | undefined>(resolve => {
+            const duplicate = this.existingProfileNames.find(k => k === name)
+            resolve(duplicate ? 'Name not unique' : undefined)
+        })
+    }
+
+    public validateAccessKey = (accessKey: string): Promise<string | undefined> => {
+        // TODO: is there a regex pattern we could use?
+        return new Promise<string | undefined>(resolve => resolve(undefined))
+    }
+
+    public validateSecretKey = (accessKey: string): Promise<string | undefined> => {
+        // TODO: don't believe there is a regex but at this point we could try a 'safe' call
+        return new Promise<string | undefined>(resolve => resolve(undefined))
+    }
+
+    public shouldResume = (): Promise<boolean> => {
+        // Could show a notification with the option to resume.
+        return new Promise<boolean>((resolve, reject) => {
         })
     }
 
@@ -66,7 +143,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
             const selectionItem: QuickPickItem = { label: profile.profileName }
 
             if (profile.isRecentlyUsed) {
-                selectionItem.description = localize("AWS.profile.recentlyUsed", "recently used")
+                selectionItem.description = localize('AWS.profile.recentlyUsed', 'recently used')
             }
 
             selectionList.push(selectionItem)
@@ -93,10 +170,10 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         })
 
         // Add default if it hasn't been, and is an existing profile name
-        if (!orderedNames.has(DefaultCredentialSelectionDataProvider.DefaultCredentialsProfileName)
-            && this.existingProfileNames.indexOf(DefaultCredentialSelectionDataProvider.DefaultCredentialsProfileName) !== -1) {
-            orderedProfiles.push({ profileName: DefaultCredentialSelectionDataProvider.DefaultCredentialsProfileName, isRecentlyUsed: false })
-            orderedNames.add(DefaultCredentialSelectionDataProvider.DefaultCredentialsProfileName)
+        const defaultProfileName = DefaultCredentialSelectionDataProvider.defaultCredentialsProfileName
+        if (!orderedNames.has(defaultProfileName) && this.existingProfileNames.indexOf(defaultProfileName) !== -1) {
+            orderedProfiles.push({ profileName: defaultProfileName, isRecentlyUsed: false })
+            orderedNames.add(DefaultCredentialSelectionDataProvider.defaultCredentialsProfileName)
         }
 
         // Add remaining items, sorted alphanumerically
@@ -117,87 +194,33 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
 
         return mru.filter(x => this.existingProfileNames.indexOf(x) !== -1)
     }
-
-    async inputProfileName(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>): Promise<string | undefined> {
-        return await input.showInputBox({
-            title: localize('AWS.title.createCredentialProfile', 'Create a new AWS credential profile'),
-            step: 1,
-            totalSteps: 3,
-            value: '',
-            prompt: localize('AWS.placeHolder.newProfileName', 'Choose a unique name for the new profile'),
-            validate: this.validateNameIsUnique,
-            shouldResume: this.shouldResume
-        })
-    }
-
-    async inputAccessKey(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>): Promise<string | undefined> {
-        return await input.showInputBox({
-            title: localize('AWS.title.createCredentialProfile', 'Create a new AWS credential profile'),
-            step: 2,
-            totalSteps: 3,
-            value: '',
-            prompt: localize('AWS.placeHolder.inputAccessKey', 'Input the AWS Access Key'),
-            validate: this.validateAccessKey,
-            ignoreFocusOut: true,
-            shouldResume: this.shouldResume
-        })
-    }
-
-    async inputSecretKey(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>): Promise<string | undefined> {
-        return await input.showInputBox({
-            title: localize('AWS.title.createCredentialProfile', 'Create a new AWS credential profile'),
-            step: 3,
-            totalSteps: 3,
-            value: '',
-            prompt: localize('AWS.placeHolder.inputSecretKey', 'Input the AWS Secret Key'),
-            validate: this.validateSecretKey,
-            ignoreFocusOut: true,
-            shouldResume: this.shouldResume
-        })
-    }
-
-    validateNameIsUnique = (name: string): Promise<string | undefined> => {
-        return new Promise<string | undefined>(resolve => {
-            const duplicate = this.existingProfileNames.find(k => k === name)
-            resolve(duplicate ? 'Name not unique' : undefined)
-        })
-    }
-
-    validateAccessKey = (accessKey: string): Promise<string | undefined> => {
-        // TODO: is there a regex pattern we could use?
-        return new Promise<string | undefined>(resolve => resolve(undefined))
-    }
-
-    validateSecretKey = (accessKey: string): Promise<string | undefined> => {
-        // TODO: don't believe there is a regex but at this point we could try a 'safe' call
-        return new Promise<string | undefined>(resolve => resolve(undefined))
-    }
-
-    shouldResume = (): Promise<boolean> => {
-        // Could show a notification with the option to resume.
-        return new Promise<boolean>((resolve, reject) => {
-        })
-    }
 }
 
-export async function credentialProfileSelector(dataProvider: CredentialSelectionDataProvider): Promise<CredentialSelectionState | undefined> {
+export async function credentialProfileSelector(
+    dataProvider: CredentialSelectionDataProvider
+): Promise<CredentialSelectionState | undefined> {
 
-    async function pickCredentialProfile(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>) {
+    async function pickCredentialProfile(
+        input: MultiStepInputFlowController,
+        state: Partial<CredentialSelectionState>
+    ) {
         const pick = await dataProvider.pickCredentialProfile(input, state)
         if (pick instanceof AddProfileButton) {
-            return (input: MultiStepInputFlowController) => inputProfileName(input, state)
+            return (inputController: MultiStepInputFlowController) => inputProfileName(inputController, state)
         }
         state.credentialProfile = pick
     }
 
     async function inputProfileName(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>) {
         state.profileName = await dataProvider.inputProfileName(input, state)
-        return (input: MultiStepInputFlowController) => inputAccessKey(input, state)
+
+        return (inputController: MultiStepInputFlowController) => inputAccessKey(inputController, state)
     }
 
     async function inputAccessKey(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>) {
         state.accesskey = await dataProvider.inputAccessKey(input, state)
-        return (input: MultiStepInputFlowController) => inputSecretKey(input, state)
+
+        return (inputController: MultiStepInputFlowController) => inputSecretKey(inputController, state)
     }
 
     async function inputSecretKey(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>) {
@@ -205,8 +228,9 @@ export async function credentialProfileSelector(dataProvider: CredentialSelectio
     }
 
     async function collectInputs() {
-        const state = {} as Partial<CredentialSelectionState>
+        const state: Partial<CredentialSelectionState> = {}
         await MultiStepInputFlowController.run(input => pickCredentialProfile(input, state))
+
         return state as CredentialSelectionState
     }
 
