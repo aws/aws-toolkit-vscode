@@ -17,8 +17,7 @@ import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerServiceRootNode
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
-class S3ServiceNode(project: Project) :
-        AwsExplorerServiceRootNode(project, "Amazon S3", AwsIcons.Logos.S3) {
+class S3ServiceNode(project: Project) : AwsExplorerServiceRootNode(project, "Amazon S3") {
     override fun serviceName() = "s3" // TODO: Get from client in v2
 
     private val client: S3Client = AwsClientManager.getInstance(project).getClient()

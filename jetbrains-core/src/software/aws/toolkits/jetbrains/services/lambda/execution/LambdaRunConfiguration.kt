@@ -15,7 +15,7 @@ class LambdaRunConfiguration :
         "aws.lambda",
         message("lambda.service_name"),
         message("lambda.run_configuration.description"),
-        AwsIcons.Logos.LAMBDA
+        AwsIcons.Resources.LAMBDA_FUNCTION
     ) {
     init {
         addFactory(LambdaLocalRunConfigurationFactory(this))

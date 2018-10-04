@@ -25,7 +25,7 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
 
     override fun getName(): String? = message("lambda.service_name")
 
-    override fun getIcon(): Icon? = AwsIcons.Logos.LAMBDA
+    override fun getIcon(): Icon? = AwsIcons.Resources.LAMBDA_FUNCTION
 
     override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<*>? {
         // Only process leaf elements
