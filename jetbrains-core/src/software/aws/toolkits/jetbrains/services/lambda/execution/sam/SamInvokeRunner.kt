@@ -13,23 +13,40 @@ import com.intellij.execution.runners.AsyncProgramRunner
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.RunContentBuilder
 import com.intellij.execution.ui.RunContentDescriptor
+import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleUtil
-import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.psi.PsiFile
 import com.intellij.xdebugger.XDebuggerManager
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
-import software.aws.toolkits.jetbrains.services.lambda.LambdaDebugger
+import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
+import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import java.net.ServerSocket
 
 class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
     override fun getRunnerId(): String = "SamInvokeRunner"
 
     override fun canRun(executorId: String, profile: RunProfile): Boolean {
-        return profile is SamRunConfiguration &&
-                (DefaultRunExecutor.EXECUTOR_ID == executorId || DefaultDebugExecutor.EXECUTOR_ID == executorId)
+        if (profile !is SamRunConfiguration) {
+            return false
+        }
+
+        // Only requires LambdaPackager support, which is implicit based on the UI
+        if (DefaultRunExecutor.EXECUTOR_ID == executorId) {
+            return true
+        }
+
+        // Requires SamDebugSupport too
+        if (DefaultDebugExecutor.EXECUTOR_ID == executorId) {
+            profile.settings.runtime?.let {
+                return SamDebugSupport.supportedRuntimeGroups.contains(Runtime.valueOf(it).runtimeGroup)
+            }
+        }
+
+        return false
     }
 
     override fun execute(environment: ExecutionEnvironment, state: RunProfileState): Promise<RunContentDescriptor?> {
@@ -45,68 +62,66 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
 
         samState.runner = runner
 
-        if (requiresCompilation(samState)) {
-            val packager = LambdaPackager.getInstance(state.settings.runtimeGroup)
-            packager.createPackage(module, psiFile)
-                .thenAccept {
-                    samState.codeLocation = it.toString()
+        val packager = LambdaPackager.getInstance(state.settings.runtimeGroup)
+        packager.createPackage(module, psiFile)
+            .thenAccept {
+                runInEdt {
+                    samState.lambdaPackage = it
                     buildingPromise.setResult(runner.run(environment, samState))
                 }
-                .exceptionally { buildingPromise.setError(it); null }
-        } else {
-            samState.codeLocation = moduleContentRoot(module)
-            buildingPromise.setResult(runner.run(environment, samState))
-        }
+            }
+            .exceptionally {
+                LOG.warn("Failed to create Lambda package", it)
+                buildingPromise.setError(it)
+                null
+            }
 
         return buildingPromise
     }
 
-    private fun moduleContentRoot(module: Module): String =
-        ModuleRootManager.getInstance(module).contentRoots.getOrElse(0) {
-            throw IllegalStateException("Failed to get content root entry for $module")
-        }.path
-
-    private fun requiresCompilation(state: SamRunningState): Boolean = state.settings.runtimeGroup.requiresCompilation
-
     private fun getModule(psiFile: PsiFile): Module = ModuleUtil.findModuleForFile(psiFile)
             ?: throw java.lang.IllegalStateException("Failed to locate module for $psiFile")
 
-    internal open inner class SamRunner {
-        open fun patchSamCommand(state: SamRunningState, commandLine: GeneralCommandLine) {}
+    private companion object {
+        val LOG = Logger.getInstance(SamInvokeRunner::class.java)
+    }
+}
 
-        open fun run(environment: ExecutionEnvironment, state: SamRunningState): RunContentDescriptor {
-            val executionResult = state.execute(environment.executor, environment.runner)
-            return RunContentBuilder(executionResult, environment).showRunContent(environment.contentToReuse)
+internal open class SamRunner {
+    open fun patchCommandLine(state: SamRunningState, commandLine: GeneralCommandLine) {}
+
+    open fun run(environment: ExecutionEnvironment, state: SamRunningState): RunContentDescriptor {
+        val executionResult = state.execute(environment.executor, environment.runner)
+
+        return RunContentBuilder(executionResult, environment).showRunContent(environment.contentToReuse)
+    }
+}
+
+internal class SamDebugger : SamRunner() {
+    private val debugPort = findDebugPort()
+
+    private fun findDebugPort(): Int {
+        try {
+            ServerSocket(0).use {
+                it.reuseAddress = true
+                return it.localPort
+            }
+        } catch (e: Exception) {
+            throw IllegalStateException("Failed to find free port", e)
         }
     }
 
-    internal inner class SamDebugger : SamRunner() {
-        private val debugPort = findDebugPort()
+    override fun patchCommandLine(state: SamRunningState, commandLine: GeneralCommandLine) {
+        SamDebugSupport.getInstance(state.settings.runtimeGroup)
+            .patchCommandLine(debugPort, state, commandLine)
+    }
 
-        private fun findDebugPort(): Int {
-            try {
-                ServerSocket(0).use {
-                    it.reuseAddress = true
-                    return it.localPort
-                }
-            } catch (e: Exception) {
-                throw IllegalStateException("Failed to find free port", e)
-            }
-        }
-
-        override fun patchSamCommand(state: SamRunningState, commandLine: GeneralCommandLine) {
-            commandLine.withParameters("--debug-port")
-                .withParameters(debugPort.toString())
-        }
-
-        override fun run(environment: ExecutionEnvironment, state: SamRunningState): RunContentDescriptor {
-            val lambdaDebugger = LambdaDebugger.getInstance(state.settings.runtimeGroup)
-            val debugProcess = lambdaDebugger.createDebugProcess(environment, state, debugPort)
-            val debugManager = XDebuggerManager.getInstance(environment.project)
-
-            return debugProcess?.let {
-                debugManager.startSession(environment, debugProcess).runContentDescriptor
-            } ?: throw IllegalStateException("Failed to create debug process")
-        }
+    override fun run(environment: ExecutionEnvironment, state: SamRunningState): RunContentDescriptor {
+        val debugSupport = SamDebugSupport.getInstance(state.settings.runtimeGroup)
+        val debugProcess = debugSupport.createDebugProcess(environment, state, debugPort)
+        val debugManager = XDebuggerManager.getInstance(environment.project)
+        return debugProcess?.let {
+            return debugManager.startSession(environment, debugProcess).runContentDescriptor
+        } ?: throw IllegalStateException("Failed to create debug process")
     }
 }

@@ -30,10 +30,10 @@ import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.services.lambda.HandlerCompletionProvider
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
+import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationBase
-import software.aws.toolkits.jetbrains.services.lambda.execution.local.LambdaLocalRunProvider
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunConfiguration.MutableLambdaSamRunSettings
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
@@ -198,11 +198,14 @@ class SamRunSettingsEditor(project: Project) : SettingsEditor<SamRunConfiguratio
     private val credentialManager = CredentialManager.getInstance()
 
     init {
-        val supported = LambdaLocalRunProvider.supportedRuntimeGroups.flatMap { it.runtimes }.map { it }.sorted()
-        val selected =
-            ProjectRootManager.getInstance(project).projectSdk
-                ?.let { RuntimeGroup.runtimeForSdk(it) }
-                ?.let { if (it in supported) it else null }
+        val supported = LambdaPackager.supportedRuntimeGroups
+            .flatMap { it.runtimes }
+            .sorted()
+
+        val selected = ProjectRootManager.getInstance(project).projectSdk
+            ?.let { RuntimeGroup.runtimeForSdk(it) }
+            ?.let { if (it in supported) it else null }
+
         view.runtime.populateValues(selected = selected) { supported }
 
         view.regionSelector.setRegions(regionProvider.regions().values.toMutableList())

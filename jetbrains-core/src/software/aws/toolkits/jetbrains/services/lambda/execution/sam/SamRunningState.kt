@@ -9,14 +9,14 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.util.io.FileUtil
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamInvokeRunner.SamRunner
+import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
 import software.aws.toolkits.jetbrains.settings.SamSettings
 
 class SamRunningState(
     environment: ExecutionEnvironment,
     val settings: SamRunSettings
 ) : CommandLineState(environment) {
-    internal lateinit var codeLocation: String
+    internal lateinit var lambdaPackage: LambdaPackage
     internal lateinit var runner: SamRunner
 
     override fun startProcess(): ProcessHandler {
@@ -30,8 +30,9 @@ class SamRunningState(
             .withParameters("--event")
             .withParameters(createEventFile())
             .withEnvironment(settings.environmentVariables)
+            .withEnvironment("PYTHONUNBUFFERED", "1") // Force SAM to not buffer stdout/stderr so it gets shown in IDE
 
-        runner.patchSamCommand(this, commandLine)
+        runner.patchCommandLine(this, commandLine)
 
         return ProcessHandlerFactory.getInstance().createColoredProcessHandler(commandLine)
     }
@@ -43,7 +44,7 @@ class SamRunningState(
                 Type: AWS::Serverless::Function
                 Properties:
                   Handler: ${settings.handler}
-                  CodeUri: $codeLocation
+                  CodeUri: ${lambdaPackage.location}
                   Runtime: ${settings.runtime}
                   Timeout: 900
         """.trimIndent()

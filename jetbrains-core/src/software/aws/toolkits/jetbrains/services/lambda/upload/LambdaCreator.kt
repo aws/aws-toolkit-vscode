@@ -43,7 +43,7 @@ class LambdaCreator internal constructor(
         file: PsiFile
     ): CompletionStage<LambdaFunction> {
         return packager.createPackage(module, file)
-            .thenCompose { uploader.upload(functionDetails, it) }
+            .thenCompose { uploader.upload(functionDetails, it.location) }
             .thenCompose { functionCreator.create(module.project, functionDetails, it) }
     }
 }

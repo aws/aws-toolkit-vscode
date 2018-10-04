@@ -6,5 +6,6 @@
         <runtimeGroup runtimeGroup="PYTHON" implementation="software.aws.toolkits.jetbrains.services.lambda.PythonRuntimeGroup"/>
         <packager runtimeGroup="PYTHON" implementation="software.aws.toolkits.jetbrains.services.lambda.PythonLambdaPackager"/>
         <handlerResolver runtimeGroup="PYTHON" implementation="software.aws.toolkits.jetbrains.services.lambda.PythonLambdaHandlerResolver"/>
+        <sam.debugSupport runtimeGroup="PYTHON" implementation="software.aws.toolkits.jetbrains.services.lambda.PythonSamDebugSupport"/>
     </extensions>
 </idea-plugin>

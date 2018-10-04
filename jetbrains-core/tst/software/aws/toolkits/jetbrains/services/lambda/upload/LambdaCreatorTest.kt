@@ -20,6 +20,7 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
 import software.aws.toolkits.jetbrains.core.MockClientManager
+import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
 import software.aws.toolkits.jetbrains.testutils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.delegateMock
@@ -81,7 +82,7 @@ class LambdaCreatorTest {
         val tempFile = FileUtil.createTempFile("lambda", ".zip")
 
         val packager = mock<LambdaPackager> {
-            on { createPackage(any(), any()) } doReturn CompletableFuture.completedFuture(tempFile.toPath())
+            on { createPackage(any(), any()) } doReturn CompletableFuture.completedFuture(LambdaPackage(tempFile.toPath()))
         }
 
         val psiFile = projectRule.fixture.addClass(

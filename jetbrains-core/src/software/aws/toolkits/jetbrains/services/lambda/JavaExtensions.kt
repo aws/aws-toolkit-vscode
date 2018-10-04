@@ -57,6 +57,7 @@ import software.aws.toolkits.core.utils.createTemporaryZipFile
 import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.LambdaLocalRunProvider
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.LambdaLocalRunSettings
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
 import software.aws.toolkits.resources.message
 import java.io.InputStream
@@ -81,8 +82,8 @@ class JavaRuntimeGroup : RuntimeGroupInformation {
 }
 
 class JavaLambdaPackager : LambdaPackager {
-    override fun createPackage(module: Module, file: PsiFile): CompletionStage<Path> {
-        val future = CompletableFuture<Path>()
+    override fun createPackage(module: Module, file: PsiFile): CompletionStage<LambdaPackage> {
+        val future = CompletableFuture<LambdaPackage>()
         val compilerManager = CompilerManager.getInstance(module.project)
         val compileScope = compilerManager.createModulesCompileScope(arrayOf(module), true, true)
 
@@ -100,7 +101,7 @@ class JavaLambdaPackager : LambdaPackager {
                         }
                     }
                     LOG.debug("Created temporary zip: $zipFile")
-                    future.complete(zipFile)
+                    future.complete(LambdaPackage(zipFile))
                 } catch (e: Exception) {
                     future.completeExceptionally(RuntimeException(message("lambda.package.zip_fail"), e))
                 }
@@ -358,7 +359,7 @@ object InvokerJar {
     }
 }
 
-class JavaLambdaDebugger : LambdaDebugger {
+class JavaSamDebugSupport : SamDebugSupport {
     override fun createDebugProcess(
         environment: ExecutionEnvironment,
         state: SamRunningState,

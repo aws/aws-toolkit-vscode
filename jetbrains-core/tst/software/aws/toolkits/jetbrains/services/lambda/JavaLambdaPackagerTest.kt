@@ -217,14 +217,14 @@ class JavaLambdaPackagerTest {
     private fun runAndVerifyExpectedEntries(module: Module, mainClass: PsiFile, vararg entries: String) {
         setUpCompiler()
 
-        val completableFuture = CompletableFuture<Path>()
+        val completableFuture = CompletableFuture<LambdaPackage>()
 
         runInEdt {
             lambdaPackager.createPackage(module, mainClass).whenDone(completableFuture)
         }
 
         completableFuture.thenAccept {
-            assertThat(zipEntries(it)).containsExactlyInAnyOrder(*entries)
+            assertThat(zipEntries(it.location)).containsExactlyInAnyOrder(*entries)
         }.get(30, TimeUnit.SECONDS)
     }
 
