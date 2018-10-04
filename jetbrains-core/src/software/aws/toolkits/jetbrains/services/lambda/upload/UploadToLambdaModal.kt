@@ -14,7 +14,9 @@ import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.core.ToolkitClientManager
+import software.aws.toolkits.core.s3.regionForBucket
 import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.iam.CreateIamRoleDialog
 import software.aws.toolkits.jetbrains.services.iam.listRolesFilter
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
@@ -127,7 +129,15 @@ class UploadToLambdaController(
                 .map { IamRole(name = it.roleName(), arn = it.arn()) }
                 .toList()
         }
-        view.sourceBucket.populateValues { s3Client.listBuckets().buckets().filterNotNull().mapNotNull { it.name() } }
+        view.sourceBucket.populateValues {
+            val activeRegionId = ProjectAccountSettingsManager.getInstance(project).activeRegion.id
+            s3Client.listBuckets().buckets()
+                .asSequence()
+                .filterNotNull()
+                .mapNotNull { it.name() }
+                .filter { s3Client.regionForBucket(it) == activeRegionId }
+                .toList()
+        }
         view.runtime.populateValues(selected = runtime) { runtime.runtimeGroup?.runtimes?.toList() ?: emptyList() }
 
         view.createRole.addActionListener {
