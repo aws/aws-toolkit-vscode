@@ -34,6 +34,9 @@
 
 import * as fs from "fs";
 import * as glob from "glob";
+// 2018-10-05: Amazon addition.
+import * as os from "os"
+// END 2018-10-05: Amazon addition.
 import * as paths from "path";
 
 const istanbul = require("istanbul");
@@ -175,6 +178,12 @@ class CoverageRunner {
             // END 2018-10-05: Amazon addition.
             fileMap[fullPath] = true;
 
+            // 2018-10-05: Amazon addition.
+            if (os.platform() === 'win32') {
+                (fileMap as any)[fullPath.toLowerCase()] = true
+            }
+            // END 2018-10-05: Amazon addition.
+
             // On Windows, extension is loaded pre-test hooks and this mean we lose
             // our chance to hook the Require call. In order to instrument the code
             // we have to decache the JS file so on next load it gets instrumented.
@@ -184,10 +193,15 @@ class CoverageRunner {
             decache(fullPath);
         });
 
-        // 2018-10-05: Amazon addition.
-        // @ts-ignore - Implicit any
+        // 2018-10-05: Amazon addition. (modify matchFn for case insensitive check)
+        self.matchFn = (file: string): boolean => {
+            let fileIsInMap: boolean = !!(fileMap as any)[file]
+            if (os.platform() === 'win32') {
+                fileIsInMap = fileIsInMap || !!(fileMap as any)[file.toLowerCase()]
+            }
+            return fileIsInMap
+        }
         // END 2018-10-05: Amazon addition.
-        self.matchFn = (file): boolean => { return fileMap[file]; };
         self.matchFn.files = Object.keys(fileMap);
 
         // Hook up to the Require function so that when this is called, if any of our source files
@@ -285,7 +299,9 @@ class CoverageRunner {
         let reportTypes = (self.options.reports instanceof Array) ? self.options.reports : ["lcov"];
         reporter.addAll(reportTypes);
         reporter.write(remappedCollector, true, () => {
-            console.log(`reports written to ${reportingDir}`);
+            // 2018-10-05: Amazon addition. (Modified log output)
+            console.log(`Code coverage reports written to ${reportingDir}`);
+            // END 2018-10-05: Amazon addition.
         });
     }
 }
