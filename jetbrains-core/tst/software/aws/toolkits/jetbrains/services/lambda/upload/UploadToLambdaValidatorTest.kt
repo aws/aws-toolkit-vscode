@@ -24,6 +24,12 @@ class UploadToLambdaValidatorTest {
     }
 
     @Test
+    fun nameMustBeSpecified() {
+        view.name.text = ""
+        assert(sut.doValidate(view)).containsMessage("Function Name must be specified")
+    }
+
+    @Test
     fun validFunctionNameLength() {
         view.name.text = "aStringThatIsGreaterThanSixtyFourCharactersInLengthAndIsThereforeInvalid"
         assert(sut.doValidate(view)).containsMessage("must not exceed 64 characters")
@@ -59,6 +65,30 @@ class UploadToLambdaValidatorTest {
         assert(sut.doValidate(view)).containsMessage("IAM role must be specified")
     }
 
+    @Test
+    fun timeoutMustBeSpecified() {
+        view.timeout.text = ""
+        assert(sut.doValidate(view)).containsMessage("Timeout must be between")
+    }
+
+    @Test
+    fun timeoutMustBeNumeric() {
+        view.timeout.text = "foo"
+        assert(sut.doValidate(view)).containsMessage("Timeout must be between")
+    }
+
+    @Test
+    fun timeoutMustBeWithinLowerBound() {
+        view.timeout.text = "0"
+        assert(sut.doValidate(view)).containsMessage("Timeout must be between")
+    }
+
+    @Test
+    fun timeoutMustBeWithinUpperBound() {
+        view.timeout.text = "301"
+        assert(sut.doValidate(view)).containsMessage("Timeout must be between")
+    }
+
     @Before
     @Suppress("UNCHECKED_CAST")
     fun wireMocksTogetherWithValidOptions() {
@@ -73,6 +103,7 @@ class UploadToLambdaValidatorTest {
         val bucket = "sourceBucket"
         view.sourceBucket.model = DefaultComboBoxModel(arrayOf(bucket))
         view.sourceBucket.selectedItem = bucket
+        view.timeout.text = "30"
     }
 
     private fun Assert<ValidationInfo?>.containsMessage(expectedMessage: String) {

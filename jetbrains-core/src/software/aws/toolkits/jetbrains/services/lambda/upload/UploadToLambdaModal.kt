@@ -26,6 +26,10 @@ import software.aws.toolkits.resources.message
 import javax.swing.DefaultComboBoxModel
 import javax.swing.JComponent
 
+private const val DEFAULT_TIMEOUT = 60
+private const val MAX_TIMEOUT = 300
+private const val MIN_TIMEOUT = 1
+
 class UploadToLambdaModal(
     private val project: Project,
     private val runtime: Runtime,
@@ -59,7 +63,8 @@ class UploadToLambdaModal(
                 s3Bucket = view.sourceBucket.selected()!!,
                 runtime = view.runtime.selected()!!,
                 description = view.description.text,
-                envVars = view.envVars.envVars
+                envVars = view.envVars.envVars,
+                timeout = view.timeout.text.toInt()
             )
         )
     }
@@ -74,6 +79,14 @@ class UploadToLambdaValidator {
         validateFunctionName(name)?.run { return@doValidate ValidationInfo(this, view.name) }
         view.handler.blankAsNull() ?: return ValidationInfo(message("lambda.upload_validation.handler"), view.handler)
         view.runtime.selected() ?: return ValidationInfo(message("lambda.upload_validation.runtime"), view.runtime)
+        view.timeout.text.toIntOrNull().let {
+            if (it == null || it < MIN_TIMEOUT || it > MAX_TIMEOUT) {
+                return ValidationInfo(
+                    message("lambda.upload_validation.timeout", MIN_TIMEOUT, MAX_TIMEOUT),
+                    view.timeout
+                )
+            }
+        }
         view.iamRole.selected() ?: return ValidationInfo(message("lambda.upload_validation.iam_role"), view.iamRole)
         view.sourceBucket.selected() ?: return ValidationInfo(
             message("lambda.upload_validation.source_bucket"),
@@ -149,6 +162,8 @@ class UploadToLambdaController(
                 }
             }
         }
+
+        view.timeout.text = DEFAULT_TIMEOUT.toString()
     }
 
     private companion object {

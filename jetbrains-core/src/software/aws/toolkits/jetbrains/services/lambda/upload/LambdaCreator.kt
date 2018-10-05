@@ -64,6 +64,8 @@ internal class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
                     .functionName(details.name)
                     .role(details.iamRole.arn)
                     .runtime(details.runtime)
+                    .description(details.description)
+                    .timeout(details.timeout)
                     .code(code.build())
                     .environment {
                         it.variables(details.envVars)

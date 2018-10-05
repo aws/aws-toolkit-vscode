@@ -57,7 +57,8 @@ data class FunctionUploadDetails(
     val s3Bucket: String,
     val runtime: Runtime,
     val description: String?,
-    val envVars: Map<String, String>
+    val envVars: Map<String, String>,
+    val timeout: Int
 )
 
 data class IamRole(val name: String, val arn: String) {
