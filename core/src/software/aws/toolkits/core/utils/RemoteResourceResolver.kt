@@ -41,7 +41,7 @@ class DefaultRemoteResourceResolver(
             val tmpFile = try {
                 Files.createTempFile("${resource.name}-${UUID.randomUUID()}", ".tmp")
             } catch (e: Exception) {
-                LOG.error(e) { "Error creating temporary file" }
+                LOG.warn(e) { "Error creating temporary file" }
                 lastException = e
                 return@mapNotNull null
             }
@@ -50,7 +50,7 @@ class DefaultRemoteResourceResolver(
             try {
                 urlFetcher.fetch(url, tmpFile)
             } catch (e: Exception) {
-                LOG.error(e) { "Exception occurred downloading" }
+                LOG.warn(e) { "Exception occurred downloading" }
                 lastException = e
                 tmpFile.delete()
                 return@mapNotNull null
