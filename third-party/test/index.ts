@@ -1,27 +1,35 @@
-// MIT License for this file sourced from https://github.com/codecov/example-typescript-vscode-extension/blob/master/LICENSE
-//
-// Copyright (c) 2017 Nikita Gryzlov <nixel2007@gmail.com>
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
-//
-// Portions Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+/* tslint:disable:file-header */ // 2018-10-05: Amazon addition (this line only).
+/*!
+ * MIT License for this file sourced from
+ * https://github.com/codecov/example-typescript-vscode-extension/blob/master/LICENSE
+ *
+ * Copyright (c) 2017 Nikita Gryzlov <nixel2007@gmail.com>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ * Portions Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ */
 
+// 2018-10-05: Amazon addition.
+/* tslint:disable */
+// END 2018-10-05: Amazon addition.
 "use strict";
 
 import * as fs from "fs";
@@ -46,6 +54,9 @@ let mocha = new Mocha({
     useColors: true,
 });
 
+// 2018-10-05: Amazon addition.
+// @ts-ignore - Implicit any
+// END 2018-10-05: Amazon addition.
 function configure(mochaOpts): void {
     mocha = new Mocha(mochaOpts);
 }
@@ -59,6 +70,9 @@ function _mkDirIfExists(dir: string): void {
 
 function _readCoverOptions(testsRoot: string): ITestRunnerOptions {
     let coverConfigPath = paths.join(testsRoot, "..", "..", "coverconfig.json");
+    // 2018-10-05: Amazon addition.
+    // @ts-ignore - Type 'undefined' not assignable
+    // END 2018-10-05: Amazon addition.
     let coverConfig: ITestRunnerOptions = undefined;
     if (fs.existsSync(coverConfigPath)) {
         let configContent = fs.readFileSync(coverConfigPath, "utf-8");
@@ -67,6 +81,9 @@ function _readCoverOptions(testsRoot: string): ITestRunnerOptions {
     return coverConfig;
 }
 
+// 2018-10-05: Amazon addition.
+// @ts-ignore - Implicit any
+// END 2018-10-05: Amazon addition.
 function run(testsRoot, clb): any {
     // Enable source map support
     require("source-map-support").install();
@@ -93,6 +110,9 @@ function run(testsRoot, clb): any {
             let failureCount = 0;
 
             mocha.run()
+                // 2018-10-05: Amazon addition.
+                // @ts-ignore - Implicit any
+                // END 2018-10-05: Amazon addition.
                 .on("fail", (test, err): void => {
                     failureCount++;
                 })
@@ -123,6 +143,9 @@ class CoverageRunner {
     private matchFn: any = undefined;
     private instrumenter: any = undefined;
 
+    // 2018-10-05: Amazon addition.
+    // @ts-ignore - endRunCallback declared but not used
+    // END 2018-10-05: Amazon addition.
     constructor(private options: ITestRunnerOptions, private testsRoot: string, private endRunCallback: any) {
         if (!options.relativeSourcePath) {
             return endRunCallback("Error - relativeSourcePath must be defined for code coverage to work");
@@ -147,6 +170,9 @@ class CoverageRunner {
         let fileMap = {};
         srcFiles.forEach((file) => {
             let fullPath = paths.join(sourceRoot, file);
+            // 2018-10-05: Amazon addition.
+            // @ts-ignore - Implicit any
+            // END 2018-10-05: Amazon addition.
             fileMap[fullPath] = true;
 
             // On Windows, extension is loaded pre-test hooks and this mean we lose
@@ -158,6 +184,9 @@ class CoverageRunner {
             decache(fullPath);
         });
 
+        // 2018-10-05: Amazon addition.
+        // @ts-ignore - Implicit any
+        // END 2018-10-05: Amazon addition.
         self.matchFn = (file): boolean => { return fileMap[file]; };
         self.matchFn.files = Object.keys(fileMap);
 
@@ -169,10 +198,16 @@ class CoverageRunner {
         istanbul.hook.hookRequire(self.matchFn, self.transformer, hookOpts);
 
         // initialize the global variable to stop mocha from complaining about leaks
+        // 2018-10-05: Amazon addition.
+        // @ts-ignore - Implicit any
+        // END 2018-10-05: Amazon addition.
         global[self.coverageVar] = {};
 
         // Hook the process exit event to handle reporting
         // Only report coverage if the process is exiting successfully
+        // 2018-10-05: Amazon addition.
+        // @ts-ignore - Implicit any
+        // END 2018-10-05: Amazon addition.
         process.on("exit", (code) => {
             self.reportCoverage();
         });
@@ -189,16 +224,25 @@ class CoverageRunner {
         let self = this;
         istanbul.hook.unhookRequire();
         let cov: any;
+        // 2018-10-05: Amazon addition.
+        // @ts-ignore - Implicit any
+        // END 2018-10-05: Amazon addition.
         if (typeof global[self.coverageVar] === "undefined" || Object.keys(global[self.coverageVar]).length === 0) {
             console.error("No coverage information was collected, exit without writing coverage information");
             return;
         } else {
+            // 2018-10-05: Amazon addition.
+            // @ts-ignore - Implicit any
+            // END 2018-10-05: Amazon addition.
             cov = global[self.coverageVar];
         }
 
         // TODO consider putting this under a conditional flag
         // Files that are not touched by code ran by the test runner is manually instrumented, to
         // illustrate the missing coverage.
+        // 2018-10-05: Amazon addition.
+        // @ts-ignore - Implicit any
+        // END 2018-10-05: Amazon addition.
         self.matchFn.files.forEach((file) => {
             if (!cov[file]) {
                 self.transformer(fs.readFileSync(file, "utf-8"), file);
@@ -225,6 +269,9 @@ class CoverageRunner {
         fs.writeFileSync(coverageFile, JSON.stringify(cov), "utf8");
 
         let remappedCollector = remapIstanbul.remap(cov, {
+            // 2018-10-05: Amazon addition.
+            // @ts-ignore - Implicit any
+            // END 2018-10-05: Amazon addition.
             warn: warning => {
                 // We expect some warnings as any JS file without a typescript mapping will cause this.
                 // By default, we"ll skip printing these to the console as it clutters it up
