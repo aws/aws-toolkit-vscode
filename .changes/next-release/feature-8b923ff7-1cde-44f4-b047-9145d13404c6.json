@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Automatically select the default profile from the AWS credential file if it exists and no other credential is selected."
+}

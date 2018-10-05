@@ -5,28 +5,31 @@ package software.aws.toolkits.core.utils
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.slf4j.event.Level
 
 inline fun <reified T : Any> getLogger(): Logger = LoggerFactory.getLogger(T::class.java)
 
 /**
- * Execute the given block and log any exception that occurs with the provided [message].
+ * Execute the given [block] and log any exception that occurs at the [level] with the provided [message].
+ *
+ * Defaults to [Level.ERROR] if none specified.
  */
-fun <T> Logger.tryOrNull(message: String, block: () -> T?): T? = try {
+fun <T> Logger.tryOrNull(message: String, level: Level = Level.ERROR, block: () -> T?): T? = try {
     block()
 } catch (e: Exception) {
-    this.error(e) { message }
+    log(level, e) { message }
     null
 }
 
 /**
- * Execute the given block, log an error and then bubble any exception that occurs.
+ * Execute the given block, log at the given [level] and then bubble any exception that occurs.
  *
  * A [block] that returns null bubbles an exception
  */
-fun <T> Logger.tryOrThrow(message: String, block: () -> T?): T = try {
+fun <T> Logger.tryOrThrow(message: String, level: Level = Level.ERROR, block: () -> T?): T = try {
     block() ?: throw NullPointerException()
 } catch (e: Exception) {
-    this.error(e) { message }
+    log(level, e) { message }
     throw e
 }
 
@@ -35,11 +38,21 @@ fun <T> Logger.tryOrThrow(message: String, block: () -> T?): T = try {
  *
  * A [block] that returns null is legal
  */
-fun <T> Logger.tryOrThrowNullable(message: String, block: () -> T?) = try {
+fun <T> Logger.tryOrThrowNullable(message: String, level: Level = Level.ERROR, block: () -> T?) = try {
     block()
 } catch (e: Exception) {
-    this.error(e) { message }
+    log(level, e) { message }
     throw e
+}
+
+fun Logger.log(level: Level, exception: Throwable? = null, block: () -> String) {
+    when (level) {
+        Level.ERROR -> error(exception, block)
+        Level.WARN -> warn(exception, block)
+        Level.INFO -> info(exception, block)
+        Level.DEBUG -> debug(exception, block)
+        Level.TRACE -> trace(exception, block)
+    }
 }
 
 fun Logger.debug(exception: Throwable? = null, block: () -> String) {

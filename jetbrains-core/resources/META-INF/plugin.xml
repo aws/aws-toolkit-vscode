@@ -110,6 +110,8 @@
                     text="Delete Function"
                     icon="AllIcons.Actions.Cancel"/>
         </group>
+        <action class="software.aws.toolkits.jetbrains.core.SettingsSelectorAction" id="aws.settings.selector" icon="AwsIcons.Logos.AWS"/>
+        <action class="software.aws.toolkits.jetbrains.core.credentials.CreateOrUpdateCredentialProfilesAction" id="aws.settings.upsertCredentials" icon="AwsIcons.Logos.AWS"/>
     </actions>
 
 </idea-plugin>

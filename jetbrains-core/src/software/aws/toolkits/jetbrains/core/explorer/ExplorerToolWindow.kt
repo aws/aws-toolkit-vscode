@@ -24,12 +24,14 @@ import com.intellij.util.ui.JBSwingUtilities
 import com.intellij.util.ui.UIUtil
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.core.SettingsSelector
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_SERVICE_NODE
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 import software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaLocation
+import software.aws.toolkits.resources.message
 import java.awt.Component
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -44,12 +46,16 @@ class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, tru
     private val treePanelWrapper: Wrapper = Wrapper()
     private val errorPanel: JPanel
     private var awsTree: Tree? = null
+    private val settingsSelector by lazy {
+        SettingsSelector(project)
+    }
 
     init {
-        val link = HyperlinkLabel("TODO: Add links to the getting started pages")
+        val select = HyperlinkLabel(message("configure.toolkit"))
+        select.addHyperlinkListener { settingsSelector.settingsPopup(select, showRegions = false).showInCenterOf(select) }
 
         errorPanel = JPanel()
-        errorPanel.add(link)
+        errorPanel.add(select)
 
         setContent(treePanelWrapper)
 
@@ -66,7 +72,7 @@ class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, tru
         updateModel()
     }
 
-    private fun updateModel() {
+    internal fun updateModel() {
         if (!ProjectAccountSettingsManager.getInstance(project).hasActiveCredentials()) {
             treePanelWrapper.setContent(errorPanel)
             return

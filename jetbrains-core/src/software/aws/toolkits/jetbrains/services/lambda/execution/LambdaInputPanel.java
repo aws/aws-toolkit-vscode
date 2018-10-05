@@ -5,7 +5,9 @@ package software.aws.toolkits.jetbrains.services.lambda.execution;
 
 import static com.intellij.openapi.application.ActionsKt.runInEdt;
 import static software.aws.toolkits.jetbrains.utils.ui.UiUtilsKt.formatAndSet;
+import static software.aws.toolkits.resources.Localization.message;
 
+import com.intellij.icons.AllIcons;
 import com.intellij.json.JsonFileType;
 import com.intellij.json.JsonLanguage;
 import com.intellij.openapi.application.ModalityState;
@@ -15,6 +17,7 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.ui.ComponentWithBrowseButton;
+import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.ui.TextComponentAccessor;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.openapi.util.text.StringUtil;
@@ -24,15 +27,17 @@ import com.intellij.ui.ClickListener;
 import com.intellij.ui.ComboboxWithBrowseButton;
 import com.intellij.ui.EditorTextField;
 import com.intellij.ui.EditorTextFieldProvider;
+import com.intellij.ui.ListCellRendererWrapper;
 import com.intellij.ui.SortedComboBoxModel;
 import com.intellij.util.ui.UIUtil;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import org.jetbrains.annotations.NotNull;
@@ -46,6 +51,8 @@ public class LambdaInputPanel {
     private final Project project;
     private ComboBox<LambdaSampleEvent> eventComboBox;
     private SortedComboBoxModel<LambdaSampleEvent> eventComboBoxModel;
+    private String selectedTemplate;
+    private LambdaSampleEvent selected;
 
     JRadioButton useInputFile;
     JRadioButton useInputText;
@@ -62,15 +69,31 @@ public class LambdaInputPanel {
 
         eventComboBox.addActionListener(e -> {
             LambdaSampleEvent selectedSample = eventComboBoxModel.getSelectedItem();
-            if (selectedSample != null) {
+            if (selectedSample != null && selectedSample != selected) {
+                if (inputText.getText().length() > 0 && !inputText.getText().equals(selectedTemplate)) {
+                    int result = Messages.showOkCancelDialog(project,
+                                                             message("lambda.run_configuration.input.samples.confirm"),
+                                                             message("lambda.run_configuration.input.samples.confirm.title"),
+                                                             AllIcons.General.WarningDialog);
+                    if (result == Messages.CANCEL) {
+                        eventComboBoxModel.setSelectedItem(selected);
+                        if (selectedSample instanceof LocalLambdaSampleEvent) {
+                            eventComboBoxModel.remove(selectedSample);
+                        }
+                        return;
+                    }
+                }
+
                 selectedSample.getContent().thenAccept(selectedSampleContent -> {
                     String cleanedUp = StringUtil.convertLineSeparators(selectedSampleContent);
                     runInEdt(ModalityState.any(), () -> {
                         formatAndSet(inputText, cleanedUp, JsonLanguage.INSTANCE);
+                        selectedTemplate = inputText.getText();
                         return null;
                     });
                 });
             }
+            selected = selectedSample;
         });
 
         addQuickEnable(inputFile.getTextField(), useInputFile);
@@ -81,8 +104,7 @@ public class LambdaInputPanel {
         inputFile.addBrowseFolderListener(null, null, project,
                                           FileChooserDescriptorFactory.createSingleFileDescriptor(JsonFileType.INSTANCE));
 
-        LambdaSampleEventProvider eventProvider = new LambdaSampleEventProvider(
-            RemoteResourceResolverProvider.Companion.getInstance().get());
+        LambdaSampleEventProvider eventProvider = new LambdaSampleEventProvider(RemoteResourceResolverProvider.Companion.getInstance().get());
 
         eventProvider.get().thenAccept(events -> runInEdt(ModalityState.any(), () -> {
             eventComboBoxModel.setAll(events);
@@ -116,7 +138,19 @@ public class LambdaInputPanel {
 
         eventComboBoxModel = new SortedComboBoxModel<>(Comparator.comparing(LambdaSampleEvent::getName));
         eventComboBox = new ComboBox<>(eventComboBoxModel);
+        eventComboBox.setRenderer(new ListCellRendererWrapper<LambdaSampleEvent>() {
+
+            @Override
+            public void customize(JList list, LambdaSampleEvent value, int index, boolean selected, boolean hasFocus) {
+                if (value == null) {
+                    //noinspection HardCodedStringLiteral
+                    setText(String.format(" -- %s -- ", message("lambda.run_configuration.input.samples.label")));
+                }
+            }
+        });
         inputTemplates = new ComboboxWithBrowseButton(eventComboBox);
+        inputTemplates.getButton().setIcon(AllIcons.General.OpenDiskHover);
+        inputTemplates.getButton().setDisabledIcon(AllIcons.General.OpenDisk);
     }
 
     private void updateComponents() {
@@ -138,7 +172,6 @@ public class LambdaInputPanel {
     public void setUsingFile(boolean value) {
         useInputFile.setSelected(value);
         useInputText.setSelected(!value);
-
         updateComponents();
     }
 
@@ -170,19 +203,21 @@ public class LambdaInputPanel {
 
         @Override
         protected void onFileChosen(@NotNull VirtualFile chosenFile) {
-            eventComboBoxModel.setSelectedItem(null);
-
             try {
                 String contents = VfsUtil.loadText(chosenFile);
                 String cleanedUp = StringUtil.convertLineSeparators(contents);
-                if (Objects.equals(chosenFile.getExtension(), "json")) {
-                    formatAndSet(inputText, cleanedUp, JsonLanguage.INSTANCE);
-                } else {
-                    inputText.setText(cleanedUp);
-                }
+                LambdaSampleEvent fileEvent = new LocalLambdaSampleEvent(chosenFile.getName(), cleanedUp);
+                eventComboBoxModel.add(fileEvent);
+                eventComboBoxModel.setSelectedItem(fileEvent);
             } catch (IOException e) {
                 LOG.error(e);
             }
+        }
+    }
+
+    private class LocalLambdaSampleEvent extends LambdaSampleEvent {
+        LocalLambdaSampleEvent(@NotNull String name, @NotNull String content) {
+            super(name, () -> CompletableFuture.completedFuture(content));
         }
     }
 }

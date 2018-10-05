@@ -44,7 +44,7 @@ public class LambdaRemoteRunSettingsEditorPanel {
     @Nullable
     public String getFunctionName() {
         String selectedItem = functionNamesModel.getSelectedItem();
-        if (selectedItem != null) {
+        if(selectedItem != null) {
             return selectedItem.trim();
         }
         return null;

@@ -58,6 +58,15 @@ class DefaultProjectAccountSettingsManagerTest {
     }
 
     @Test
+    fun defaultProfileCredentialSelectedIfExists() {
+        mockCredentialManager.addCredentials("profile:default", AwsBasicCredentials.create("Access", "Secret"))
+        val manager = DefaultProjectAccountSettingsManager(projectRule.project)
+        assertThat(manager.hasActiveCredentials()).isTrue()
+        assertThat(manager.recentlyUsedCredentials()).hasOnlyOneElementSatisfying { assertThat(it.id).isEqualTo("profile:default") }
+        assertThat(manager.activeCredentialProvider.id).isEqualTo("profile:default")
+    }
+
+    @Test
     fun testMakingCredentialActive() {
         val project = projectRule.project
         val manager = DefaultProjectAccountSettingsManager(project)
