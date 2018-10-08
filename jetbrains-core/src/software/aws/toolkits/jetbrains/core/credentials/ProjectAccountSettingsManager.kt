@@ -11,8 +11,10 @@ import com.intellij.openapi.project.Project
 import com.intellij.util.messages.MessageBus
 import com.intellij.util.messages.Topic
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
+import software.aws.toolkits.core.credentials.ProfileToolkitCredentialsProviderFactory
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.Companion.ACCOUNT_SETTINGS_CHANGED
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.utils.MRUList
@@ -102,12 +104,15 @@ class DefaultProjectAccountSettingsManager(private val project: Project) :
 
     override var activeCredentialProvider: ToolkitCredentialsProvider
         @Throws(CredentialProviderNotFound::class)
-        get() {
-            return activeProfileInternal ?: throw CredentialProviderNotFound(message("credentials.profile.not_configured"))
-        }
+        get() = activeProfileInternal
+            ?: tryOrNull {
+                getCredentialProviderOrNull("${ProfileToolkitCredentialsProviderFactory.TYPE}:default")
+            }?.apply {
+                updateActiveProfile(this)
+            }
+            ?: throw CredentialProviderNotFound(message("credentials.profile.not_configured"))
         set(value) {
-            activeProfileInternal = value
-            recentlyUsedProfiles.add(value)
+            updateActiveProfile(value)
             project.messageBus.syncPublisher(ACCOUNT_SETTINGS_CHANGED).activeCredentialsChanged(value)
         }
 
@@ -139,12 +144,13 @@ class DefaultProjectAccountSettingsManager(private val project: Project) :
             .forEach { recentlyUsedProfiles.add(it) }
     }
 
-    private fun getCredentialProviderOrNull(id: String): ToolkitCredentialsProvider? {
-        return try {
-            credentialManager.getCredentialProvider(id)
-        } catch (_: Exception) {
-            null
-        }
+    private fun updateActiveProfile(value: ToolkitCredentialsProvider) {
+        activeProfileInternal = value
+        recentlyUsedProfiles.add(value)
+    }
+
+    private fun getCredentialProviderOrNull(id: String): ToolkitCredentialsProvider? = tryOrNull {
+        credentialManager.getCredentialProvider(id)
     }
 
     companion object {

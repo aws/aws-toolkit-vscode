@@ -85,10 +85,30 @@ class ProfileToolkitCredentialsProviderFactoryTest {
         profileFile.writeText(TEST_PROFILE_FILE_CONTENTS)
 
         val providerFactory = createProviderFactory()
-
         val credentialsProvider = providerFactory.get("profile:foo")
         assertThat(credentialsProvider).isNotNull
         assertThat(credentialsProvider!!.resolveCredentials()).isInstanceOf(AwsCredentials::class.java)
+    }
+
+    @Test
+    fun oneFailureDoesNotCauseOtherCredentialsToFail() {
+        profileFile.writeText(
+            """
+            [profile role]
+            role_arn=arn1
+            role_session_name=testSession
+            external_id=externalId
+            source_profile=doNotExist
+
+            [profile another_profile]
+            aws_access_key_id=BarAccessKey
+            aws_secret_access_key=BarSecretKey
+        """.trimIndent()
+        )
+
+        val providerFactory = createProviderFactory()
+
+        assertThat(providerFactory.listCredentialProviders()).hasOnlyOneElementSatisfying { assertThat(it.id).isEqualTo("profile:another_profile") }
     }
 
     @Test

@@ -15,6 +15,7 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.slf4j.Logger
+import org.slf4j.event.Level
 
 class LogUtilsTest {
 
@@ -23,9 +24,9 @@ class LogUtilsTest {
     @Test
     fun exceptionIsLoggedAndSuppressedInTryOrNull() {
         val expectedException = RuntimeException("Boom")
-        val result = log.tryOrNull("message") { throw expectedException }
+        val result = log.tryOrNull("message", level = Level.WARN) { throw expectedException }
 
-        verify(log).error(any(), eq(expectedException))
+        verify(log).warn(any(), eq(expectedException))
         assertThat(result, equalTo(null))
     }
 
@@ -128,6 +129,23 @@ class LogUtilsTest {
         log.trace(exception) { "message" }
 
         verify(log).trace("message", exception)
+    }
+
+    @Test
+    fun canLogAtDifferentLevels() {
+        val exception = RuntimeException("Boom")
+
+        log.log(Level.TRACE) { "trace" }
+        log.log(Level.INFO) { "info" }
+        log.log(Level.ERROR, exception = exception) { "error" }
+        log.log(Level.WARN) { "warn" }
+        log.log(Level.DEBUG) { "debug" }
+
+        verify(log).trace("trace", null)
+        verify(log).info("info", null)
+        verify(log).error("error", exception)
+        verify(log).warn("warn", null)
+        verify(log).debug("debug", null)
     }
 
     @Before
