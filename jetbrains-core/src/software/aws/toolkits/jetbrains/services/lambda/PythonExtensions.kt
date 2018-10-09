@@ -79,14 +79,20 @@ class PythonLambdaPackager : LambdaPackager {
 }
 
 class PythonLambdaHandlerResolver : LambdaHandlerResolver {
-    override fun findPsiElements(project: Project, handler: String, searchScope: GlobalSearchScope): Array<NavigatablePsiElement> {
+    override fun findPsiElements(
+        project: Project,
+        handler: String,
+        searchScope: GlobalSearchScope
+    ): Array<NavigatablePsiElement> {
         val psiFacade = PyPsiFacade.getInstance(project)
-        val module = handler.substringBeforeLast(".")
+        val lambdaModule = handler.substringBeforeLast(".")
         val function = handler.substringAfterLast(".")
-        return ModuleManager.getInstance(project).modules.flatMap {
-            psiFacade.resolveQualifiedName(QualifiedName.fromDottedString(module), fromModule(it)).flatMap {
-                it.children.filterIsInstance<NavigatablePsiElement>().filter { it.name == function }
-            }
+        return ModuleManager.getInstance(project).modules.flatMap { module ->
+            psiFacade.resolveQualifiedName(QualifiedName.fromDottedString(lambdaModule), fromModule(module))
+                .filterIsInstance<PyFile>()
+                .flatMap { pyFile ->
+                    pyFile.children.filterIsInstance<NavigatablePsiElement>().filter { it.name == function }
+                }
         }.toTypedArray()
     }
 

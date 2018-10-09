@@ -23,4 +23,5 @@ public final class CreateLambdaPanel {
     @NotNull ComboBox<Runtime> runtime;
     @NotNull ComboBox<String> sourceBucket;
     @NotNull EnvironmentVariablesTextField envVars;
+    @NotNull JTextField timeout;
 }
