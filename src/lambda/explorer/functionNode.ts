@@ -27,7 +27,7 @@ export class FunctionNode extends AWSTreeNodeBase implements TreeItem {
         this.tooltip = `${this.functionConfiguration.FunctionName}-${this.functionConfiguration.FunctionArn}`
         this.iconPath = {
             dark: Uri.file(ext.context.asAbsolutePath('resources/dark/lambda_function.svg')),
-            light: Uri.file(ext.context.asAbsolutePath('resources/light/lambda_function.svg')),
+            light: Uri.file(ext.context.asAbsolutePath('resources/light/lambda_function.svg'))
         }
     }
 
