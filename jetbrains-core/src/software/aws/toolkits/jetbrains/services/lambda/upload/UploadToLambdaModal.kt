@@ -14,7 +14,9 @@ import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.core.ToolkitClientManager
+import software.aws.toolkits.core.s3.regionForBucket
 import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.iam.CreateIamRoleDialog
 import software.aws.toolkits.jetbrains.services.iam.listRolesFilter
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
@@ -25,6 +27,10 @@ import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
 import javax.swing.DefaultComboBoxModel
 import javax.swing.JComponent
+
+private const val DEFAULT_TIMEOUT = 60
+private const val MAX_TIMEOUT = 300
+private const val MIN_TIMEOUT = 1
 
 class UploadToLambdaModal(
     private val project: Project,
@@ -59,7 +65,8 @@ class UploadToLambdaModal(
                 s3Bucket = view.sourceBucket.selected()!!,
                 runtime = view.runtime.selected()!!,
                 description = view.description.text,
-                envVars = view.envVars.envVars
+                envVars = view.envVars.envVars,
+                timeout = view.timeout.text.toInt()
             )
         )
     }
@@ -74,6 +81,14 @@ class UploadToLambdaValidator {
         validateFunctionName(name)?.run { return@doValidate ValidationInfo(this, view.name) }
         view.handler.blankAsNull() ?: return ValidationInfo(message("lambda.upload_validation.handler"), view.handler)
         view.runtime.selected() ?: return ValidationInfo(message("lambda.upload_validation.runtime"), view.runtime)
+        view.timeout.text.toIntOrNull().let {
+            if (it == null || it < MIN_TIMEOUT || it > MAX_TIMEOUT) {
+                return ValidationInfo(
+                    message("lambda.upload_validation.timeout", MIN_TIMEOUT, MAX_TIMEOUT),
+                    view.timeout
+                )
+            }
+        }
         view.iamRole.selected() ?: return ValidationInfo(message("lambda.upload_validation.iam_role"), view.iamRole)
         view.sourceBucket.selected() ?: return ValidationInfo(
             message("lambda.upload_validation.source_bucket"),
@@ -114,7 +129,15 @@ class UploadToLambdaController(
                 .map { IamRole(name = it.roleName(), arn = it.arn()) }
                 .toList()
         }
-        view.sourceBucket.populateValues { s3Client.listBuckets().buckets().filterNotNull().mapNotNull { it.name() } }
+        view.sourceBucket.populateValues {
+            val activeRegionId = ProjectAccountSettingsManager.getInstance(project).activeRegion.id
+            s3Client.listBuckets().buckets()
+                .asSequence()
+                .filterNotNull()
+                .mapNotNull { it.name() }
+                .filter { s3Client.regionForBucket(it) == activeRegionId }
+                .toList()
+        }
         view.runtime.populateValues(selected = runtime) { runtime.runtimeGroup?.runtimes?.toList() ?: emptyList() }
 
         view.createRole.addActionListener {
@@ -149,6 +172,8 @@ class UploadToLambdaController(
                 }
             }
         }
+
+        view.timeout.text = DEFAULT_TIMEOUT.toString()
     }
 
     private companion object {

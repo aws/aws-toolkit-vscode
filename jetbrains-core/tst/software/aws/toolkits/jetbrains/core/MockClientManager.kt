@@ -25,6 +25,10 @@ class MockClientManager(private val project: Project) : AwsClientManager(project
         mockClients[clazz] = sdkClient
     }
 
+    fun reset() {
+        mockClients.clear()
+    }
+
     companion object {
         @JvmStatic
         fun getInstance(project: Project): MockClientManager {
