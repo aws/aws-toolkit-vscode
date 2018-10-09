@@ -9,8 +9,8 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
-import com.intellij.openapi.actionSystem.DataKeys
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.actionSystem.ex.ComboBoxAction
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.DumbAware
@@ -202,14 +202,14 @@ private class ChangeAccountSettingsAction(
 
 private class ChangeRegionAction(val region: AwsRegion) : AnAction(region.displayName), DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
-        val accountSettingsManager = ProjectAccountSettingsManager.getInstance(e.getRequiredData(DataKeys.PROJECT))
+        val accountSettingsManager = ProjectAccountSettingsManager.getInstance(e.getRequiredData(PlatformDataKeys.PROJECT))
         accountSettingsManager.activeRegion = region
     }
 }
 
 private class ChangeCredentialsAction(val credentialsProvider: ToolkitCredentialsProvider) : AnAction(credentialsProvider.displayName), DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
-        val accountSettingsManager = ProjectAccountSettingsManager.getInstance(e.getRequiredData(DataKeys.PROJECT))
+        val accountSettingsManager = ProjectAccountSettingsManager.getInstance(e.getRequiredData(PlatformDataKeys.PROJECT))
         accountSettingsManager.activeCredentialProvider = credentialsProvider
     }
 }

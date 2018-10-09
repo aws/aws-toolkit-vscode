@@ -6,7 +6,7 @@ package software.aws.toolkits.jetbrains.core.credentials
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.DataKeys
+import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
@@ -32,7 +32,7 @@ class CreateOrUpdateCredentialProfilesAction @TestOnly constructor(
     private val localFileSystem = LocalFileSystem.getInstance()
 
     override fun actionPerformed(e: AnActionEvent) {
-        val project = e.getRequiredData(DataKeys.PROJECT)
+        val project = e.getRequiredData(PlatformDataKeys.PROJECT)
 
         if (!file.exists()) {
             if (confirm(project, file)) {
