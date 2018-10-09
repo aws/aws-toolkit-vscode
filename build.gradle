@@ -205,13 +205,13 @@ publishedProjects.forEach {
 }
 check.dependsOn coverageReport
 
-// Workaround for runIde being defined in multiple projects, if we request the root project runIde, all others will
-// be disabled
+// Workaround for runIde being defined in multiple projects, if we request the root project runIde, "alias" it to
+// community edition
 if (gradle.startParameter.taskNames.contains("runIde")) {
     println("Top level runIde selected, excluding sub-projects' runIde")
     gradle.taskGraph.whenReady { graph ->
         graph.allTasks.forEach {
-            if (it.name == "runIde" && it.project != gradle.rootProject) {
+            if (it.name == "runIde" && it.project != project(':jetbrains-core')) {
                 it.enabled = false
             }
         }

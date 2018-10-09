@@ -28,7 +28,7 @@ open class CodeInsightTestFixtureRule(protected val testDescription: LightProjec
     TestWatcher() {
     private lateinit var description: Description
     private val appRule = ApplicationRule()
-    internal val lazyFixture = ClearableLazy {
+    protected val lazyFixture = ClearableLazy {
         invokeAndWait {
             createTestFixture()
         }
@@ -82,7 +82,7 @@ open class CodeInsightTestFixtureRule(protected val testDescription: LightProjec
     }
 }
 
-internal class ClearableLazy<out T>(private val initializer: () -> T) {
+class ClearableLazy<out T>(private val initializer: () -> T) {
     private var _value: T? = null
     private var isSet = false
 
