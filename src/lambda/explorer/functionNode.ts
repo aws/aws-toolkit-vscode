@@ -6,7 +6,7 @@
 'use strict'
 
 import Lambda = require('aws-sdk/clients/lambda')
-import { ThemeIcon, TreeItem, Uri } from 'vscode'
+import { TreeItem, Uri } from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 
