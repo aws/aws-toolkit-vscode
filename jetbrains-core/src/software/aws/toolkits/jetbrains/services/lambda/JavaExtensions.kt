@@ -3,9 +3,14 @@
 
 package software.aws.toolkits.jetbrains.services.lambda
 
+import com.intellij.debugger.DebuggerManagerEx
+import com.intellij.debugger.DefaultDebugEnvironment
+import com.intellij.debugger.engine.JavaDebugProcess
+import com.intellij.execution.DefaultExecutionResult
 import com.intellij.execution.JavaExecutionUtil
 import com.intellij.execution.configurations.JavaCommandLineState
 import com.intellij.execution.configurations.JavaParameters
+import com.intellij.execution.configurations.RemoteConnection
 import com.intellij.execution.configurations.RunProfileState
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.lang.java.JavaLanguage
@@ -43,11 +48,16 @@ import com.intellij.util.io.inputStream
 import com.intellij.util.io.isDirectory
 import com.intellij.util.io.isHidden
 import com.intellij.util.io.outputStream
+import com.intellij.xdebugger.XDebugProcess
+import com.intellij.xdebugger.XDebugProcessStarter
+import com.intellij.xdebugger.XDebugSession
+import com.intellij.xdebugger.impl.XDebugSessionImpl
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.createTemporaryZipFile
 import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.LambdaLocalRunProvider
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.LambdaLocalRunSettings
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
 import software.aws.toolkits.resources.message
 import java.io.InputStream
 import java.nio.file.Files
@@ -60,8 +70,8 @@ import kotlin.streams.toList
 
 class JavaRuntimeGroup : RuntimeGroupInformation {
     override val runtimes = setOf(Runtime.JAVA8)
-
     override val languageIds = setOf(JavaLanguage.INSTANCE.id)
+    override val requiresCompilation: Boolean = true
 
     override fun runtimeForSdk(sdk: Sdk): Runtime? = when {
         sdk.sdkType is JavaSdkType && JavaSdk.getInstance().getVersion(sdk)
@@ -164,7 +174,11 @@ class JavaLambdaPackager : LambdaPackager {
 }
 
 class JavaLambdaHandlerResolver : LambdaHandlerResolver {
-    override fun findPsiElements(project: Project, handler: String, searchScope: GlobalSearchScope): Array<NavigatablePsiElement> {
+    override fun findPsiElements(
+        project: Project,
+        handler: String,
+        searchScope: GlobalSearchScope
+    ): Array<NavigatablePsiElement> {
         val split = handler.split("::")
         val className = split[0]
         val methodName = if (split.size >= 2) split[1] else null
@@ -196,7 +210,7 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
         val parentClass = method.parent as? PsiClass ?: return null
         if (method.isPublic &&
             (method.isStatic ||
-                (parentClass.canBeInstantiatedByLambda() && !parentClass.implementsLambdaHandlerInterface())) &&
+                    (parentClass.canBeInstantiatedByLambda() && !parentClass.implementsLambdaHandlerInterface())) &&
             method.hasRequiredParameters()
         ) {
             return "${parentClass.qualifiedName}::${method.name}"
@@ -240,7 +254,8 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
 
     private fun PsiParameter.isContextParameter(): Boolean {
         val className = (this.type as? PsiClassReferenceType)?.className ?: return false
-        val imports = containingFile.children.filterIsInstance<PsiImportList>().flatMap { it.children.filterIsInstance<PsiImportStatement>() }
+        val imports = containingFile.children.filterIsInstance<PsiImportList>()
+            .flatMap { it.children.filterIsInstance<PsiImportStatement>() }
             .mapNotNull { it.qualifiedName }.map {
                 it.substringAfterLast(".") to it
             }.toMap()
@@ -257,11 +272,18 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
 }
 
 class JavaLambdaLocalRunProvider : LambdaLocalRunProvider {
-    override fun createRunProfileState(environment: ExecutionEnvironment, project: Project, settings: LambdaLocalRunSettings): RunProfileState =
+    override fun createRunProfileState(
+        environment: ExecutionEnvironment,
+        project: Project,
+        settings: LambdaLocalRunSettings
+    ): RunProfileState =
         LambdaJavaCommandLineState(environment, settings)
 }
 
-internal class LambdaJavaCommandLineState(environment: ExecutionEnvironment, private val settings: LambdaLocalRunSettings) :
+internal class LambdaJavaCommandLineState(
+    environment: ExecutionEnvironment,
+    private val settings: LambdaLocalRunSettings
+) :
     JavaCommandLineState(environment) {
     override fun createJavaParameters(): JavaParameters {
         return JavaParameters().apply {
@@ -293,6 +315,37 @@ object InvokerJar {
         file.toAbsolutePath().toString()
     }
     val mainClass: String by lazy {
-        JarFile(jar).use { it.manifest.mainAttributes.getValue("Main-Class") ?: throw RuntimeException("Cannot determine Main-Class in $jar") }
+        JarFile(jar).use {
+            it.manifest.mainAttributes.getValue("Main-Class")
+                    ?: throw RuntimeException("Cannot determine Main-Class in $jar")
+        }
+    }
+}
+
+class JavaLambdaDebugger : LambdaDebugger {
+    override fun createDebugProcess(
+        environment: ExecutionEnvironment,
+        state: SamRunningState,
+        debugPort: Int
+    ): XDebugProcessStarter? {
+        val connection = RemoteConnection(true, "localhost", debugPort.toString(), false)
+        val debugEnvironment = DefaultDebugEnvironment(environment, state, connection, true)
+        val debuggerManager = DebuggerManagerEx.getInstanceEx(environment.project)
+        val debuggerSession = debuggerManager.attachVirtualMachine(debugEnvironment) ?: return null
+
+        return object : XDebugProcessStarter() {
+            override fun start(session: XDebugSession): XDebugProcess {
+                if (debuggerSession is XDebugSessionImpl) {
+                    val debugProcess = debuggerSession.process
+                    val executionResult = debugProcess.executionResult
+                    debuggerSession.addExtraActions(*executionResult.actions)
+                    if (executionResult is DefaultExecutionResult) {
+                        debuggerSession.addRestartActions(*executionResult.restartActions)
+                    }
+                }
+
+                return JavaDebugProcess.create(session, debuggerSession)
+            }
+        }
     }
 }

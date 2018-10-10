@@ -37,6 +37,11 @@
             <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
         </extensionPoint>
 
+        <extensionPoint qualifiedName="aws.toolkit.lambda.debugger" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
+            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.LambdaDebugger"/>
+            <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
+        </extensionPoint>
+
         <extensionPoint qualifiedName="aws.toolkit.lambda.handlerResolver" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
             <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver"/>
             <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
@@ -58,6 +63,8 @@
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.CredentialManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultCredentialManager"
                             testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.SamSettings"/>
+
         <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager"
                         serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultProjectAccountSettingsManager"
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager"/>
@@ -74,6 +81,11 @@
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
                     icon="AwsIcons.Logos.AWS"/>
 
+        <projectConfigurable id="aws" groupId="tools" bundle="software.aws.toolkits.resources.localized_messages"
+                             key="aws.settings.title"
+                             instance="software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable"/>
+
+        <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamInvokeRunner"/>
         <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaRunner"/>
         <fileBasedIndex implementation="software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerIndex"/>
         <codeInsight.lineMarkerProvider language="" implementationClass="software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker"/>

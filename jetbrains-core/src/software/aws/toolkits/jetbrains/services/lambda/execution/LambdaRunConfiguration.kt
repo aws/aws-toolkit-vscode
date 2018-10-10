@@ -8,6 +8,7 @@ import com.intellij.execution.configurations.ConfigurationTypeUtil
 import icons.AwsIcons
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.LambdaLocalRunConfigurationFactory
 import software.aws.toolkits.jetbrains.services.lambda.execution.remote.LambdaRemoteRunConfigurationFactory
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunConfigurationFactory
 import software.aws.toolkits.resources.message
 
 class LambdaRunConfiguration :
@@ -19,6 +20,7 @@ class LambdaRunConfiguration :
     ) {
     init {
         addFactory(LambdaLocalRunConfigurationFactory(this))
+        addFactory(SamRunConfigurationFactory(this))
         addFactory(LambdaRemoteRunConfigurationFactory(this))
     }
 

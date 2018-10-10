@@ -71,6 +71,7 @@ enum class RuntimeGroup {
 
     val runtimes: Set<Runtime> by lazy { info.flatMap { it.runtimes }.toSet() }
     val languageIds: Set<String> by lazy { info.flatMap { it.languageIds }.toSet() }
+    val requiresCompilation: Boolean by lazy { info.any { it.requiresCompilation } }
     fun runtimeForSdk(sdk: Sdk): Runtime? = info.asSequence().mapNotNull { it.runtimeForSdk(sdk) }.firstOrNull()
 
     internal companion object {
@@ -92,6 +93,7 @@ enum class RuntimeGroup {
 interface RuntimeGroupInformation {
     val runtimes: Set<Runtime>
     val languageIds: Set<String>
+    val requiresCompilation: Boolean
     fun runtimeForSdk(sdk: Sdk): Runtime?
 
     companion object : RuntimeGroupExtensionPointObject<RuntimeGroupInformation>(ExtensionPointName("aws.toolkit.lambda.runtimeGroup")) {
