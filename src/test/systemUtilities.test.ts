@@ -74,16 +74,16 @@ suite('SystemUtilities Tests', () => {
         assert.equal(SystemUtilities.getHomeDirectory(), os.homedir())
     })
 
-    test('fileExists with file that exists', () => {
+    test('fileExists with file that exists', async () => {
         const filename: string = path.join(tempFolder, 'existing-file.txt')
 
         fs.writeFileSync(filename, 'hello world', 'utf8')
 
-        assert.equal(SystemUtilities.fileExists(filename), true)
+        assert.equal(await SystemUtilities.fileExists(filename), true)
     })
 
-    test('fileExists with file that does not exist', () => {
+    test('fileExists with file that does not exist', async () => {
         const filename: string = path.join(tempFolder, 'non-existing-file.txt')
-        assert.equal(SystemUtilities.fileExists(filename), false)
+        assert.equal(await SystemUtilities.fileExists(filename), false)
     })
 })

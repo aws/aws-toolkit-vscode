@@ -208,7 +208,7 @@ export async function credentialProfileSelector(
 
 export async function promptToDefineCredentialsProfile(
     dataProvider: CredentialSelectionDataProvider
-): Promise<CredentialSelectionState | undefined> {
+): Promise<CredentialSelectionState> {
 
     async function inputProfileName(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>) {
         state.profileName = await dataProvider.inputProfileName(input, state)
@@ -230,7 +230,7 @@ export async function promptToDefineCredentialsProfile(
         state.secretKey = await dataProvider.inputSecretKey(input, state)
     }
 
-    async function collectInputs() {
+    async function collectInputs(): Promise<CredentialSelectionState> {
         const state: Partial<CredentialSelectionState> = {}
         /* tslint:disable promise-function-async */
         await MultiStepInputFlowController.run(input => inputProfileName(input, state))

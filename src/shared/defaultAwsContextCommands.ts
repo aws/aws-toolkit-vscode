@@ -91,7 +91,7 @@ export class DefaultAWSContextCommands {
 
     public async onCommandCreateCredentialsProfile(): Promise<void> {
 
-        const credentialsFiles: string[] = UserCredentialsUtils.findExistingCredentialsFilenames()
+        const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
 
         if (credentialsFiles.length === 0) {
             // Help user make a new credentials profile
@@ -146,9 +146,9 @@ export class DefaultAWSContextCommands {
         while (true) {
 
             const dataProvider = new DefaultCredentialSelectionDataProvider([], ext.context)
-            const state: CredentialSelectionState | undefined = await promptToDefineCredentialsProfile(dataProvider)
+            const state: CredentialSelectionState = await promptToDefineCredentialsProfile(dataProvider)
 
-            if (!state || !state.profileName || !state.accesskey || !state.secretKey) {
+            if (!state.profileName || !state.accesskey || !state.secretKey) {
                 return undefined
             }
 
@@ -158,7 +158,7 @@ export class DefaultAWSContextCommands {
             )
 
             if (validationResult.isValid) {
-                UserCredentialsUtils.generateCredentialsFile(
+                await UserCredentialsUtils.generateCredentialsFile(
                     ext.context.extensionPath,
                     {
                         profileName: state.profileName,
@@ -200,13 +200,13 @@ export class DefaultAWSContextCommands {
     private async getProfileNameFromUser(): Promise<string | undefined> {
 
         new DefaultCredentialsFileReaderWriter().setCanUseConfigFile(
-            SystemUtilities.fileExists(UserCredentialsUtils.getConfigFilename())
+            await SystemUtilities.fileExists(UserCredentialsUtils.getConfigFilename())
         )
 
         const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
         const responseNo: string = localize('AWS.generic.response.no', 'No')
 
-        const credentialsFiles: string[] = UserCredentialsUtils.findExistingCredentialsFilenames()
+        const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
 
         if (credentialsFiles.length === 0) {
 
@@ -239,7 +239,7 @@ export class DefaultAWSContextCommands {
                     responseNo
                 )
 
-                if (userResponse && userResponse === responseYes) {
+                if (userResponse === responseYes) {
                     // Start edit, the user will have to try connecting again
                     // after they have made their edits.
                     await this.editCredentials()
@@ -264,7 +264,7 @@ export class DefaultAWSContextCommands {
      */
     private async editCredentials(): Promise<void> {
 
-        const credentialsFiles: string[] = UserCredentialsUtils.findExistingCredentialsFilenames()
+        const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
         let preserveFocus: boolean = false
         let viewColumn: ViewColumn = ViewColumn.Active
 
@@ -286,8 +286,7 @@ export class DefaultAWSContextCommands {
         const response = await window.showInformationMessage(
             localize(
                 'AWS.message.prompt.credentials.definition.help',
-                // tslint:disable-next-line:max-line-length
-                'One or more credentials files have been opened. Would you like some information explaining how to define credentials?',
+                'Would you like some information related to defining credentials?',
             ),
             responseYes,
             responseNo)

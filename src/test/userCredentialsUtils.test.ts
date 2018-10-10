@@ -74,7 +74,7 @@ suite('UserCredentialsUtils Tests', () => {
         createCredentialsFile(credentialsFilename, ['default'])
         createCredentialsFile(configFilename, ['default'])
 
-        const foundFiles: string[] = UserCredentialsUtils.findExistingCredentialsFilenames()
+        const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
         assert(foundFiles)
         assert.equal(foundFiles.length, 2)
     })
@@ -89,7 +89,7 @@ suite('UserCredentialsUtils Tests', () => {
 
         createCredentialsFile(credentialsFilename, ['default'])
 
-        const foundFiles: string[] = UserCredentialsUtils.findExistingCredentialsFilenames()
+        const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
         assert(foundFiles)
         assert.equal(foundFiles.length, 1)
         assert.equal(foundFiles[0], credentialsFilename)
@@ -105,7 +105,7 @@ suite('UserCredentialsUtils Tests', () => {
 
         createCredentialsFile(configFilename, ['default'])
 
-        const foundFiles: string[] = UserCredentialsUtils.findExistingCredentialsFilenames()
+        const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
         assert(foundFiles)
         assert.equal(foundFiles.length, 1)
         assert.equal(foundFiles[0], configFilename)
@@ -119,7 +119,7 @@ suite('UserCredentialsUtils Tests', () => {
         env.AWS_SHARED_CREDENTIALS_FILE = credentialsFilename
         env.AWS_CONFIG_FILE = configFilename
 
-        const foundFiles: string[] = UserCredentialsUtils.findExistingCredentialsFilenames()
+        const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
         assert(foundFiles)
         assert.equal(foundFiles.length, 0)
     })
@@ -132,7 +132,7 @@ suite('UserCredentialsUtils Tests', () => {
         const env = process.env as EnvironmentVariables
         env.AWS_SHARED_CREDENTIALS_FILE = credentialsFilename
 
-        UserCredentialsUtils.generateCredentialsFile(
+        await UserCredentialsUtils.generateCredentialsFile(
             path.join(__dirname, '..', '..'),
             {
                 accessKey: '123',

@@ -25,13 +25,15 @@ export class SystemUtilities {
         return os.homedir()
     }
 
-    public static fileExists(file: string): boolean {
-        try {
-            fs.accessSync(file, fs.constants.F_OK)
+    public static async fileExists(file: string): Promise<boolean> {
+        return new Promise<boolean>((resolve, reject) => {
+            fs.access(file, err => {
+                if (!!err) {
+                    resolve(false)
+                }
 
-            return true
-        } catch (err) {
-            return false
-        }
+                resolve(true)
+            })
+        })
     }
 }

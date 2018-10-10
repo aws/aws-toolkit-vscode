@@ -5,9 +5,9 @@
 
 'use strict'
 
-import * as fs from 'fs'
 import * as handlebars from 'handlebars'
 import * as path from 'path'
+import * as filesystem from '../filesystem'
 
 import { STS } from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
@@ -37,11 +37,17 @@ export class UserCredentialsUtils {
      *
      * @returns array of filenames for files found.
      */
-    public static findExistingCredentialsFilenames(): string[] {
-        return [
+    public static async findExistingCredentialsFilenames(): Promise<string[]> {
+        const candidateFiles: string[] = [
             this.getCredentialsFilename(),
             this.getConfigFilename()
-        ].filter(f => SystemUtilities.fileExists(f))
+        ]
+
+        const existsResults: boolean[] = await Promise.all(
+            candidateFiles.map(async filename => await SystemUtilities.fileExists(filename))
+        )
+
+        return candidateFiles.filter((filename, index) => existsResults[index])
     }
 
     /**
@@ -70,20 +76,23 @@ export class UserCredentialsUtils {
      *
      * @param credentialsContext the profile to create in the file
      */
-    public static generateCredentialsFile(extensionPath: string, credentialsContext: CredentialsTemplateContext): void {
+    public static async generateCredentialsFile(
+        extensionPath: string,
+        credentialsContext: CredentialsTemplateContext
+    ): Promise<void> {
         const templatePath: string = path.join(extensionPath, 'resources', 'newUserCredentialsFile')
 
-        const credentialsTemplate = fs.readFileSync(templatePath, 'utf-8')
+        const credentialsTemplate: string = await filesystem.readFileAsyncAsString(templatePath, 'utf-8')
 
         const handlebarTemplate = handlebars.compile(credentialsTemplate)
         const credentialsFileContents = handlebarTemplate(credentialsContext)
 
         // Make a final check
-        if (SystemUtilities.fileExists(this.getCredentialsFilename())) {
+        if (await SystemUtilities.fileExists(this.getCredentialsFilename())) {
             throw new Error('Credentials file exists. Not overwriting it.')
         }
 
-        fs.writeFileSync(this.getCredentialsFilename(), credentialsFileContents)
+        await filesystem.writeFileAsync(this.getCredentialsFilename(), credentialsFileContents, 'utf8')
     }
 
     /**
