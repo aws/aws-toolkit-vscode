@@ -198,7 +198,7 @@ export async function credentialProfileSelector(
 
     async function collectInputs() {
         const state: Partial<CredentialSelectionState> = {}
-        await MultiStepInputFlowController.run(input => pickCredentialProfile(input, state))
+        await MultiStepInputFlowController.run(async input => await pickCredentialProfile(input, state))
 
         return state as CredentialSelectionState
     }

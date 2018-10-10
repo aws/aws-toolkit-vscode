@@ -98,7 +98,7 @@ export class DefaultAWSContextCommands {
             const profileName: string | undefined = await this.promptAndCreateNewCredentialsFile()
 
             if (profileName) {
-                this._awsContext.setCredentialProfileName(profileName)
+                await this._awsContext.setCredentialProfileName(profileName)
             }
         } else {
             // Get the editor set up and turn things over to the user

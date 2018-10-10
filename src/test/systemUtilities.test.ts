@@ -38,7 +38,7 @@ suite('SystemUtilities Tests', () => {
     test('getHomeDirectory - User Profile', async () => {
         const env = process.env as EnvironmentVariables
 
-        delete process.env.HOME
+        delete env.HOME
         env.USERPROFILE = 'c:\\profiles\\qwerty'
         assert.equal(SystemUtilities.getHomeDirectory(), 'c:\\profiles\\qwerty')
     })
@@ -46,9 +46,9 @@ suite('SystemUtilities Tests', () => {
     test('getHomeDirectory - Homepath', async () => {
         const env = process.env as EnvironmentVariables
 
-        delete process.env.HOME
-        delete process.env.USERPROFILE
-        delete process.env.HOMEDRIVE
+        delete env.HOME
+        delete env.USERPROFILE
+        delete env.HOMEDRIVE
         env.HOMEPATH = `${path.sep}users${path.sep}homepath`
         assert.equal(SystemUtilities.getHomeDirectory().toLowerCase(), `c:${path.sep}users${path.sep}homepath`)
     })
@@ -56,18 +56,20 @@ suite('SystemUtilities Tests', () => {
     test('getHomeDirectory - Homepath and home drive', async () => {
         const env = process.env as EnvironmentVariables
 
-        delete process.env.HOME
-        delete process.env.USERPROFILE
+        delete env.HOME
+        delete env.USERPROFILE
         env.HOMEPATH = `${path.sep}users${path.sep}homepath`
         env.HOMEDRIVE = 'x:'
         assert.equal(SystemUtilities.getHomeDirectory(), `x:${path.sep}users${path.sep}homepath`)
     })
 
     test('getHomeDirectory - os homedir', async () => {
-        delete process.env.HOME
-        delete process.env.USERPROFILE
-        delete process.env.HOMEPATH
-        delete process.env.HOMEDRIVE
+        const env = process.env as EnvironmentVariables
+
+        delete env.HOME
+        delete env.USERPROFILE
+        delete env.HOMEPATH
+        delete env.HOMEDRIVE
 
         assert.equal(SystemUtilities.getHomeDirectory(), os.homedir())
     })

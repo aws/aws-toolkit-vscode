@@ -152,7 +152,7 @@ suite('UserCredentialsUtils Tests', () => {
         let timesCalled: number = 0
 
         const mockResponse = {
-            promise: () => {
+            promise: async () => {
                 return Promise.resolve()
             }
         }
@@ -179,7 +179,7 @@ suite('UserCredentialsUtils Tests', () => {
         let timesCalled: number = 0
 
         const mockResponse = {
-            promise: () => {
+            promise: async () => {
                 return Promise.reject('Simulating error')
             }
         }
