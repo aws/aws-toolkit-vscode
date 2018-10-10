@@ -18,7 +18,7 @@ import {
 import {
     CredentialsValidationResult,
     UserCredentialsUtils,
-} from '../shared/credentials/UserCredentialsUtils'
+} from '../shared/credentials/userCredentialsUtils'
 import { EnvironmentVariables } from '../shared/environmentVariables'
 
 suite('UserCredentialsUtils Tests', () => {
