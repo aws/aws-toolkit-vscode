@@ -20,6 +20,24 @@ export function readFileAsync(filename: string, encoding: string | null): Promis
     })
 }
 
+/**
+ * @description Wraps readFileAsync and resolves the Buffer to a string for convenience
+ *
+ * @param path filename to read
+ * @param encoding Optional - file encoding
+ *
+ * @returns the contents of the file as a string
+ */
+export async function readFileAsyncAsString(path: string, encoding?: string): Promise<string> {
+    // tslint:disable-next-line:no-null-keyword
+    const result = await readFileAsync(path, encoding || null)
+    if (result instanceof Buffer) {
+        return result.toString(encoding || undefined)
+    }
+
+    return result
+}
+
 export function writeFileAsync(filename: string, data: any, encoding: string): Promise<void> {
     return new Promise((resolve, reject) => {
         writeFile(filename, data, encoding, err => {

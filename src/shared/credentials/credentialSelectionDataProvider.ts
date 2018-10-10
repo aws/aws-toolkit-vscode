@@ -5,13 +5,9 @@
 
 'use strict'
 
-import { QuickInputButton, QuickPickItem, Uri } from 'vscode'
+import { QuickPickItem } from 'vscode'
 import { MultiStepInputFlowController } from '../multiStepInputFlowController'
 import { CredentialSelectionState } from './credentialSelectionState'
-
-export class AddProfileButton implements QuickInputButton {
-    public constructor(public iconPath: { light: Uri; dark: Uri; }, public tooltip: string) { }
-}
 
 export interface CredentialSelectionDataProvider {
     existingProfileNames: string[]
@@ -19,7 +15,7 @@ export interface CredentialSelectionDataProvider {
     pickCredentialProfile(
         input: MultiStepInputFlowController,
         state: Partial<CredentialSelectionState>
-    ): Promise<QuickPickItem | AddProfileButton>
+    ): Promise<QuickPickItem>
 
     inputProfileName(
         input: MultiStepInputFlowController,

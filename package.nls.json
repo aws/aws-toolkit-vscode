@@ -10,6 +10,7 @@
     "AWS.configuration.title": "AWS Configuration",
     "AWS.command.login": "Connect to AWS",
     "AWS.command.logout": "Sign out",
+    "AWS.command.credential.profile.create": "Create Credentials Profile",
     "AWS.command.showRegion": "Show region in the Explorer",
     "AWS.command.hideRegion": "Hide region from the Explorer",
     "AWS.command.newLambda": "New Lambda Function or Serverless App",
@@ -35,6 +36,9 @@
     "AWS.message.prompt.defaultRegionHidden.ignore": "No",
     "AWS.message.prompt.defaultRegionHidden.alwaysIgnore": "No, and don't ask again",
     "AWS.message.prompt.defaultRegionHidden.suppressed": "You will no longer be asked what to do when the current profile's default region is hidden from the Explorer. This behavior can be changed by modifying the '{0}' setting.",
+    "AWS.message.prompt.credentials.create": "You do not appear to have any AWS Credentials defined. Would you like to set one up now?",
+    "AWS.message.prompt.credentials.definition.help": "Would you like some information related to defining credentials?",
+    "AWS.message.prompt.credentials.definition.tryAgain": "The credentials do not appear to be valid ({0}). Would you like to try again?",
     "AWS.prompt.mfa.enterCode.placeholder": "Enter Authentication Code Here",
     "AWS.prompt.mfa.enterCode.prompt": "Enter authentication code for profile {0}",
     "AWS.placeHolder.inputAccessKey": "Input the AWS Access Key to be stored in the profile",
@@ -42,5 +46,6 @@
     "AWS.placeHolder.newProfileName": "Choose a unique name for the new profile",
     "AWS.placeHolder.selectProfile": "Select a credential profile",
     "AWS.profile.recentlyUsed": "recently used",
-    "AWS.tooltip.createCredentialProfile": "Create a new credential profile"
+    "AWS.generic.response.no": "No",
+    "AWS.generic.response.yes": "Yes"
 }
