@@ -47,20 +47,20 @@ suite('Lambda Explorer FunctionNode Tests', () => {
 
         const testNode = new FunctionNode(fakeFunctionConfig, new Lambda())
 
-        const iconPath: any = testNode.iconPath
+        const iconPath = testNode.iconPath
         assert(iconPath !== undefined)
 
-        assert(iconPath.light !== undefined)
-        assert(iconPath.light instanceof Uri)
-        assert.equal(iconPath.light.scheme, fileScheme)
-        const lightResourcePath: string = iconPath.light.path
+        assert(iconPath!.light !== undefined)
+        assert(iconPath!.light instanceof Uri)
+        assert.equal(iconPath!.light.scheme, fileScheme)
+        const lightResourcePath: string = iconPath!.light.path
         assert(lightResourcePath.endsWith(`/light/${resourceImageName}`))
 
-        assert(iconPath.dark !== undefined)
-        assert(iconPath.dark instanceof Uri)
-        assert.equal(iconPath.dark.scheme, fileScheme)
-        const darkResourcePath: string = iconPath.dark.path
-        assert(darkResourcePath.endsWith(`/dark/${resourceImageName}`))
+        assert(iconPath!.dark !== undefined)
+        assert(iconPath!.dark instanceof Uri)
+        assert.equal(iconPath!.dark.scheme, fileScheme)
+        const darkResourcePath: string = iconPath!.dark.path
+        assert(darkResourcePath.endsWith(`dark/${resourceImageName}`))
     })
 
     // Validates we don't yield some unexpected value that our command triggers

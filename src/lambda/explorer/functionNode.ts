@@ -16,7 +16,7 @@ export class FunctionNode extends AWSTreeNodeBase implements TreeItem {
 
     public label?: string
     public tooltip?: string
-    public iconPath?: string | Uri | { light: string | Uri; dark: string | Uri } | ThemeIcon
+    public iconPath?: { light: Uri; dark: Uri }
 
     public constructor(
         public readonly functionConfiguration: Lambda.FunctionConfiguration,
