@@ -202,13 +202,13 @@ suite('UserCredentialsUtils Tests', () => {
         assert.equal(result.invalidMessage, 'Simulating error')
     })
 
-    test('validateCredentials - Error', async () => {
+    test('validateCredentials - throw based failure', async () => {
 
         let timesCalled: number = 0
 
         const mockResponse = {
             promise: () => {
-                throw new Error('An error occurred')
+                throw new Error('Simulating error with explicit throw')
             }
         }
 
@@ -227,7 +227,7 @@ suite('UserCredentialsUtils Tests', () => {
 
         assert.equal(timesCalled, 1)
         assert.equal(result.isValid, false)
-        assert.equal(result.invalidMessage, 'An error occurred')
+        assert.equal(result.invalidMessage, 'Simulating error with explicit throw')
     })
 
     function createCredentialsFile(filename: string, profileNames: string[]): void {
