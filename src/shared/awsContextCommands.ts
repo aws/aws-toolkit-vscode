@@ -7,6 +7,7 @@
 
 export interface AWSContextCommands {
     onCommandLogin(): Promise<void>
+    onCommandCreateCredentialsProfile(): Promise<void>
     onCommandLogout(): Promise<void>
     onCommandShowRegion(): Promise<void>
     onCommandHideRegion(regionCode?: string): Promise<void>

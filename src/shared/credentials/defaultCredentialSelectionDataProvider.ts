@@ -16,11 +16,11 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { ExtensionContext, QuickPickItem, Uri } from 'vscode'
+import { ExtensionContext, QuickPickItem } from 'vscode'
 import { extensionSettingsPrefix } from '../constants'
 import { MultiStepInputFlowController } from '../multiStepInputFlowController'
 import { DefaultSettingsConfiguration } from '../settingsConfiguration'
-import { AddProfileButton, CredentialSelectionDataProvider } from './credentialSelectionDataProvider'
+import { CredentialSelectionDataProvider } from './credentialSelectionDataProvider'
 import { CredentialSelectionState } from './credentialSelectionState'
 import { CredentialsProfileMru } from './credentialsProfileMru'
 
@@ -34,22 +34,14 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
     private static readonly defaultCredentialsProfileName: string = 'default'
     private readonly _credentialsMru: CredentialsProfileMru =
         new CredentialsProfileMru(new DefaultSettingsConfiguration(extensionSettingsPrefix))
-    private readonly _newProfileButton: AddProfileButton
 
     public constructor(public readonly existingProfileNames: string[], protected context: ExtensionContext) {
-        this._newProfileButton = new AddProfileButton(
-            {
-                dark: Uri.file(context.asAbsolutePath('resources/dark/add.svg')),
-                light: Uri.file(context.asAbsolutePath('resources/light/add.svg')),
-            },
-            localize('AWS.tooltip.createCredentialProfile', 'Create a new credential profile')
-        )
     }
 
     public async pickCredentialProfile(
         input: MultiStepInputFlowController,
         state: Partial<CredentialSelectionState>
-    ): Promise<QuickPickItem | AddProfileButton> {
+    ): Promise<QuickPickItem> {
         return await input.showQuickPick({
             title: localize('AWS.title.selectCredentialProfile', 'Select an AWS credential profile'),
             step: 1,
@@ -57,7 +49,6 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
             placeholder: localize('AWS.placeHolder.selectProfile', 'Select a credential profile'),
             items: this.getProfileSelectionList(),
             activeItem: state.credentialProfile,
-            buttons: [this._newProfileButton],
             shouldResume: this.shouldResume.bind(this)
         })
     }
@@ -202,15 +193,22 @@ export async function credentialProfileSelector(
         input: MultiStepInputFlowController,
         state: Partial<CredentialSelectionState>
     ) {
-        const pick = await dataProvider.pickCredentialProfile(input, state)
-        if (pick instanceof AddProfileButton) {
-            /* tslint:disable promise-function-async */
-            return (inputController: MultiStepInputFlowController) => inputProfileName(inputController, state)
-            /* tslint:enable promise-function-async */
-        }
-
-        state.credentialProfile = pick
+        state.credentialProfile = await dataProvider.pickCredentialProfile(input, state)
     }
+
+    async function collectInputs() {
+        const state: Partial<CredentialSelectionState> = {}
+        await MultiStepInputFlowController.run(async input => await pickCredentialProfile(input, state))
+
+        return state as CredentialSelectionState
+    }
+
+    return await collectInputs()
+}
+
+export async function promptToDefineCredentialsProfile(
+    dataProvider: CredentialSelectionDataProvider
+): Promise<CredentialSelectionState> {
 
     async function inputProfileName(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>) {
         state.profileName = await dataProvider.inputProfileName(input, state)
@@ -232,10 +230,10 @@ export async function credentialProfileSelector(
         state.secretKey = await dataProvider.inputSecretKey(input, state)
     }
 
-    async function collectInputs() {
+    async function collectInputs(): Promise<CredentialSelectionState> {
         const state: Partial<CredentialSelectionState> = {}
         /* tslint:disable promise-function-async */
-        await MultiStepInputFlowController.run(input => pickCredentialProfile(input, state))
+        await MultiStepInputFlowController.run(input => inputProfileName(input, state))
         /* tslint:enable promise-function-async */
 
         return state as CredentialSelectionState

@@ -8,18 +8,26 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { window, workspace } from 'vscode'
+import opn = require('opn')
+import { Uri, ViewColumn, window, workspace } from 'vscode'
 import { AwsContext } from './awsContext'
 import { AwsContextTreeCollection } from './awsContextTreeCollection'
-import { extensionSettingsPrefix } from './constants'
+import * as extensionConstants from './constants'
+import { CredentialSelectionState } from './credentials/credentialSelectionState'
 import {
     credentialProfileSelector,
-    DefaultCredentialSelectionDataProvider
+    DefaultCredentialSelectionDataProvider,
+    promptToDefineCredentialsProfile
 } from './credentials/defaultCredentialSelectionDataProvider'
 import { DefaultCredentialsFileReaderWriter } from './credentials/defaultCredentialsFileReaderWriter'
+import {
+    CredentialsValidationResult,
+    UserCredentialsUtils
+} from './credentials/userCredentialsUtils'
 import { ext } from './extensionGlobals'
 import { RegionInfo } from './regions/regionInfo'
 import { RegionProvider } from './regions/regionProvider'
+import { SystemUtilities } from './systemUtilities'
 
 /**
  * The actions that can be taken when we discover that a profile's default region is not
@@ -72,12 +80,29 @@ export class DefaultAWSContextCommands {
     }
 
     public async onCommandLogin() {
-        const profileName = await this.promptForProfileName()
+        const profileName = await this.getProfileNameFromUser()
         if (profileName) {
             await this._awsContext.setCredentialProfileName(profileName)
             this.refresh()
 
             await this.checkExplorerForDefaultRegion(profileName)
+        }
+    }
+
+    public async onCommandCreateCredentialsProfile(): Promise<void> {
+
+        const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
+
+        if (credentialsFiles.length === 0) {
+            // Help user make a new credentials profile
+            const profileName: string | undefined = await this.promptAndCreateNewCredentialsFile()
+
+            if (profileName) {
+                await this._awsContext.setCredentialProfileName(profileName)
+            }
+        } else {
+            // Get the editor set up and turn things over to the user
+            await this.editCredentials()
         }
     }
 
@@ -110,33 +135,165 @@ export class DefaultAWSContextCommands {
         this._awsContextTrees.refreshTrees(this._awsContext)
     }
 
-    private async promptForProfileName(): Promise<string | undefined> {
-        const credentialReaderWriter = new DefaultCredentialsFileReaderWriter()
-        const profileNames = await credentialReaderWriter.getProfileNames()
+    /**
+     * @description Ask user for credentials information, store
+     * it in new credentials file.
+     *
+     * @returns The profile name, or undefined if user cancelled
+     */
+    private async promptAndCreateNewCredentialsFile(): Promise<string | undefined> {
 
-        const dataProvider = new DefaultCredentialSelectionDataProvider(profileNames, ext.context)
-        const state = await credentialProfileSelector(dataProvider)
-        if (state) {
-            if (state.credentialProfile) {
-                return state.credentialProfile.label
+        while (true) {
+
+            const dataProvider = new DefaultCredentialSelectionDataProvider([], ext.context)
+            const state: CredentialSelectionState = await promptToDefineCredentialsProfile(dataProvider)
+
+            if (!state.profileName || !state.accesskey || !state.secretKey) {
+                return undefined
             }
 
-            if (state.profileName) {
-                window.showInformationMessage(localize(
-                    'AWS.title.creatingCredentialProfile',
-                    'Creating credential profile {0}',
-                    state.profileName
-                ))
+            const validationResult: CredentialsValidationResult = await UserCredentialsUtils.validateCredentials(
+                state.accesskey,
+                state.secretKey
+            )
 
-                // TODO: using save code written for POC demos only -- need more production resiliance around this
-                // REMOVE_BEFORE_RELEASE
-                await credentialReaderWriter.addProfileToFile(state.profileName, state.accesskey, state.secretKey)
+            if (validationResult.isValid) {
+                await UserCredentialsUtils.generateCredentialsFile(
+                    ext.context.extensionPath,
+                    {
+                        profileName: state.profileName,
+                        accessKey: state.accesskey,
+                        secretKey: state.secretKey
+                    })
 
                 return state.profileName
             }
+
+            const responseNo: string = localize('AWS.generic.response.no', 'No')
+            const responseYes: string = localize('AWS.generic.response.no', 'Yes')
+
+            const response = await window.showWarningMessage(
+                localize(
+                    'AWS.message.prompt.credentials.definition.tryAgain',
+                    'The credentials do not appear to be valid ({0}). Would you like to try again?',
+                    validationResult.invalidMessage!
+                ),
+                responseYes,
+                responseNo
+            )
+
+            if (!response || response !== responseYes) {
+                return undefined
+            }
+
+        } // Keep asking until cancel or valid credentials are entered
+    }
+
+    /**
+     * @description Responsible for getting a profile from the user,
+     * working with them to define one if necessary.
+     *
+     * @returns User's selected Profile name, or undefined if none was selected.
+     * undefined is also returned if we leave the user in a state where they are
+     * editing their credentials file.
+     */
+    private async getProfileNameFromUser(): Promise<string | undefined> {
+
+        new DefaultCredentialsFileReaderWriter().setCanUseConfigFile(
+            await SystemUtilities.fileExists(UserCredentialsUtils.getConfigFilename())
+        )
+
+        const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
+        const responseNo: string = localize('AWS.generic.response.no', 'No')
+
+        const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
+
+        if (credentialsFiles.length === 0) {
+
+            const userResponse = await window.showInformationMessage(
+                localize(
+                    'AWS.message.prompt.credentials.create',
+                    'You do not appear to have any AWS Credentials defined. Would you like to set one up now?'
+                ),
+                responseYes,
+                responseNo
+            )
+
+            if (userResponse !== responseYes) { return undefined }
+
+            return await this.promptAndCreateNewCredentialsFile()
+        } else {
+
+            const credentialReaderWriter = new DefaultCredentialsFileReaderWriter()
+            const profileNames = await credentialReaderWriter.getProfileNames()
+
+            // If no credentials were found, the user should be
+            // encouraged to define some.
+            if (profileNames.length === 0) {
+                const userResponse = await window.showInformationMessage(
+                    localize(
+                        'AWS.message.prompt.credentials.create',
+                        'You do not appear to have any AWS Credentials defined. Would you like to set one up now?'
+                    ),
+                    responseYes,
+                    responseNo
+                )
+
+                if (userResponse === responseYes) {
+                    // Start edit, the user will have to try connecting again
+                    // after they have made their edits.
+                    await this.editCredentials()
+                }
+
+                return undefined
+            }
+
+            // If we get here, there are credentials for the user to choose from
+            const dataProvider = new DefaultCredentialSelectionDataProvider(profileNames, ext.context)
+            const state = await credentialProfileSelector(dataProvider)
+            if (state && state.credentialProfile) {
+                return state.credentialProfile.label
+            }
+
+            return undefined
+        }
+    }
+
+    /**
+     * @description Sets the user up to edit the credentials files.
+     */
+    private async editCredentials(): Promise<void> {
+
+        const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
+        let preserveFocus: boolean = false
+        let viewColumn: ViewColumn = ViewColumn.Active
+
+        for (const filename of credentialsFiles) {
+            await window.showTextDocument(
+                Uri.file(filename),
+                {
+                    preserveFocus: preserveFocus,
+                    preview: false,
+                    viewColumn: viewColumn
+                })
+
+            preserveFocus = true
+            viewColumn = ViewColumn.Beside
         }
 
-        return undefined
+        const responseNo: string = localize('AWS.generic.response.no', 'No')
+        const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
+        const response = await window.showInformationMessage(
+            localize(
+                'AWS.message.prompt.credentials.definition.help',
+                'Would you like some information related to defining credentials?',
+            ),
+            responseYes,
+            responseNo)
+
+        if (response && response === responseYes) {
+            await opn(extensionConstants.aboutCredentialsFileUrl)
+        }
     }
 
     /**
@@ -188,7 +345,7 @@ export class DefaultAWSContextCommands {
         if (explorerRegions.has(profileRegion)) { return }
 
         // Explorer does not contain the default region. See if we should add it.
-        const config = workspace.getConfiguration(extensionSettingsPrefix)
+        const config = workspace.getConfiguration(extensionConstants.extensionSettingsPrefix)
 
         const defaultAction = config.get<OnDefaultRegionMissingOperation>(
             'onDefaultRegionMissing',
@@ -243,7 +400,7 @@ export class DefaultAWSContextCommands {
                 window.showInformationMessage(localize(
                     'AWS.message.prompt.defaultRegionHidden.suppressed',
                     "You will no longer be asked what to do when the current profile's default region is " +
-                        "hidden from the Explorer. This behavior can be changed by modifying the '{0}' setting.",
+                    "hidden from the Explorer. This behavior can be changed by modifying the '{0}' setting.",
                     'aws.onDefaultRegionMissing'
                 ))
                 break

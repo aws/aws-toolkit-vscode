@@ -4,18 +4,18 @@
  */
 
 import * as assert from 'assert'
-import { QuickPickItem, Uri } from 'vscode'
-import {
-    AddProfileButton,
-    CredentialSelectionDataProvider
-} from '../shared/credentials/credentialSelectionDataProvider'
+import { QuickPickItem } from 'vscode'
+import { CredentialSelectionDataProvider } from '../shared/credentials/credentialSelectionDataProvider'
 import { CredentialSelectionState } from '../shared/credentials/credentialSelectionState'
-import { credentialProfileSelector } from '../shared/credentials/defaultCredentialSelectionDataProvider'
+import {
+    credentialProfileSelector,
+    promptToDefineCredentialsProfile
+} from '../shared/credentials/defaultCredentialSelectionDataProvider'
 import { MultiStepInputFlowController } from '../shared/multiStepInputFlowController'
 
-suite('CredentialProfileSelector Tests', function(): void {
+suite('CredentialProfileSelector Tests', () => {
 
-    test('selector stops on selection of existing profile name', async function() {
+    test('selector stops on selection of existing profile name', async () => {
 
         // need to find a better mock solution
         class MockCredentialSelectionDataProvider implements CredentialSelectionDataProvider {
@@ -25,8 +25,8 @@ suite('CredentialProfileSelector Tests', function(): void {
             public async pickCredentialProfile(
                 input: MultiStepInputFlowController,
                 partialState: Partial<CredentialSelectionState>
-            ): Promise<QuickPickItem | AddProfileButton> {
-                return new Promise<QuickPickItem | AddProfileButton>(resolve => {
+            ): Promise<QuickPickItem> {
+                return new Promise<QuickPickItem>(resolve => {
                     resolve({ label: this.existingProfileNames[1] })
                 })
             }
@@ -60,30 +60,21 @@ suite('CredentialProfileSelector Tests', function(): void {
         ]
 
         const dataProvider = new MockCredentialSelectionDataProvider(profileNames)
-        const state = await credentialProfileSelector(dataProvider)
+        const state: CredentialSelectionState | undefined = await credentialProfileSelector(dataProvider)
 
-        return new Promise<void>((resolve, reject) => {
-            if (state && state.credentialProfile) {
-                assert.equal(state.credentialProfile.label, profileNames[1])
-                assert.equal(state.profileName, undefined)
-                resolve()
-            } else {
-                reject('state or the credentialProfile member is undefined, expected a profile name')
-            }
-        })
+        assert(state)
+        assert(state!.credentialProfile)
+        assert.equal(state!.credentialProfile!.label, profileNames[1])
+        assert.equal(state!.profileName, undefined)
     })
 
-    test('selector returns new profile details', async function() {
+    test('CredentialSelectionState population from promptToDefineCredentialsProfile', async () => {
+
+        const sampleProfileName: string = 'demoProfile'
+        const sampleAccessKey: string = 'ABCD1234'
+        const sampleSecretKey: string = '!@#$!@#$'
 
         // need to find a better mock solution
-        const button = new AddProfileButton(
-            {
-                dark: Uri.file('resources/dontcare'),
-                light: Uri.file('resources/dontcare')
-            },
-            'dontcare'
-        )
-
         class MockCredentialSelectionDataProvider implements CredentialSelectionDataProvider {
             public constructor(public readonly existingProfileNames: string[]) {
             }
@@ -91,50 +82,48 @@ suite('CredentialProfileSelector Tests', function(): void {
             public async pickCredentialProfile(
                 input: MultiStepInputFlowController,
                 partialState: Partial<CredentialSelectionState>
-            ): Promise<QuickPickItem | AddProfileButton> {
-                return new Promise<QuickPickItem | AddProfileButton>(resolve => {
-                    resolve(button)
-                })
+            ): Promise<QuickPickItem> {
+                throw new Error('Should never get here')
             }
 
             public async inputProfileName(
                 input: MultiStepInputFlowController,
                 partialState: Partial<CredentialSelectionState>
             ): Promise<string | undefined> {
-                return 'newProfileName'
+                return sampleProfileName
             }
 
             public async inputAccessKey(
                 input: MultiStepInputFlowController,
                 partialState: Partial<CredentialSelectionState>
             ): Promise<string | undefined> {
-                return 'newAccesskey'
+                return sampleAccessKey
             }
 
             public async inputSecretKey(
                 input: MultiStepInputFlowController,
                 partialState: Partial<CredentialSelectionState>
             ): Promise<string | undefined> {
-                return 'newSecretkey'
+                return sampleSecretKey
             }
         }
 
         const profileNames: string[] = [
+            'profile1',
+            'profile2',
+            'profile3'
         ]
 
         const dataProvider = new MockCredentialSelectionDataProvider(profileNames)
-        const state = await credentialProfileSelector(dataProvider)
+        const credentialState: CredentialSelectionState | undefined =
+            await promptToDefineCredentialsProfile(dataProvider)
 
-        return new Promise<void>((resolve, reject) => {
-            if (state) {
-                assert.equal(state.credentialProfile, undefined)
-                assert.equal(state.profileName, 'newProfileName')
-                assert.equal(state.accesskey, 'newAccesskey')
-                assert.equal(state.secretKey, 'newSecretkey')
-                resolve()
-            } else {
-                reject('state is undefined')
-            }
-        })
+        assert(credentialState)
+        assert(credentialState!.accesskey)
+        assert.equal(credentialState!.accesskey, sampleAccessKey)
+        assert(credentialState!.profileName)
+        assert.equal(credentialState!.profileName, sampleProfileName)
+        assert(credentialState!.secretKey)
+        assert.equal(credentialState!.secretKey, sampleSecretKey)
     })
 })
