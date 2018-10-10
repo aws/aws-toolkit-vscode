@@ -33,7 +33,7 @@ This is an open source project because we want you to be involved. We love issue
 
 1. If you haven't already, sign up for AWS. You can create a free account [here](https://aws.amazon.com/free/).
 2. Install the AWS Tools for PowerShell by following the instructions [here](https://aws.amazon.com/powershell/).
-3. Run the command `Set-AWSCredential -AccessKey access-key-value -SecretKey secret-key-value -StoreAs profile-name`.
+3. Run the command `Set-AWSCredential -AccessKey [access-key-value] -SecretKey [secret-key-value] -StoreAs [profile-name]`.
 
 ##### Method Three: Manually create a profile
 
