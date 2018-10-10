@@ -72,8 +72,8 @@ function _mkDirIfExists(dir: string): void {
 }
 
 function _readCoverOptions(testsRoot: string): ITestRunnerOptions {
-    let coverConfigPath = paths.join(testsRoot, "..", "..", "coverconfig.json");
-    // 2018-10-05: Amazon addition.
+    // 2018-10-05: Amazon addition. (Modified the path to coverconfig, added ts-ignore)
+    let coverConfigPath = paths.join(testsRoot, "..", "..", "..", "coverconfig.json");
     // @ts-ignore - Type 'undefined' not assignable
     // END 2018-10-05: Amazon addition.
     let coverConfig: ITestRunnerOptions = undefined;

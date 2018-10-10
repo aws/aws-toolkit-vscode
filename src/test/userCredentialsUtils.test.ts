@@ -133,7 +133,7 @@ suite('UserCredentialsUtils Tests', () => {
         env.AWS_SHARED_CREDENTIALS_FILE = credentialsFilename
 
         await UserCredentialsUtils.generateCredentialsFile(
-            path.join(__dirname, '..', '..'),
+            path.join(__dirname, '..', '..', '..'),
             {
                 accessKey: '123',
                 profileName: profileName,

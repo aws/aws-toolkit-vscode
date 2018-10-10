@@ -24,7 +24,7 @@
         "onCommand:aws.getLambdaConfig",
         "onCommand:aws.getLambdaPolicy"
     ],
-    "main": "./out/extension",
+    "main": "./out/src/extension",
     "contributes": {
         "configuration": {
             "type": "object",
@@ -186,7 +186,7 @@
         "compile": "tsc -p ./ && npm run lint && npm run bundleDeps",
         "watch": "tsc -watch -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
-        "test": "npm run compile && node ./node_modules/vscode/bin/test",
+        "test": "npm run compile && node ./test-scripts/test.js",
         "lint": "tslint --project ."
     },
     "devDependencies": {
