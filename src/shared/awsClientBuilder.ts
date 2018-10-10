@@ -39,7 +39,7 @@ export class AWSClientBuilder {
         }
 
         if (!awsServiceOpts.customUserAgent) {
-            const npmPackage = require('../../package.json') as NpmPackage
+            const npmPackage = require('../../../package.json') as NpmPackage
             const pluginVersion = npmPackage.version
             const platformName = env.appName.replace(/\s/g, '-')
             awsServiceOpts.customUserAgent = `AWS-Toolkit-For-VisualStudio/${pluginVersion} ${platformName}/${version}`
