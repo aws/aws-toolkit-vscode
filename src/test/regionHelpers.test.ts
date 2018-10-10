@@ -6,10 +6,10 @@
 'use strict'
 
 import * as assert from 'assert'
-import * as vscode from 'vscode'
 import { DefaultRegionProvider } from '../shared/regions/defaultRegionProvider'
 import { ResourceFetcher } from '../shared/resourceFetcher'
 import { ResourceLocation } from '../shared/resourceLocation'
+import { FakeExtensionContext } from './fakeExtensionContext'
 
 suite('ResourceFetcherBase Tests', function(): void {
 
@@ -22,31 +22,6 @@ suite('ResourceFetcherBase Tests', function(): void {
             return JSON.stringify({
                 partitions: []
             })
-        }
-    }
-
-    class FakeMemento implements vscode.Memento {
-        public get<T>(key: string): T | undefined
-        public  get<T>(key: string, defaultValue: T): T
-        public get(key: any, defaultValue?: any) {
-            throw new Error('Method not implemented.')
-        }
-        public update(key: string, value: any): Thenable<void> {
-            throw new Error('Method not implemented.')
-        }
-    }
-
-    class FakeExtensionContext implements vscode.ExtensionContext {
-        public subscriptions: {
-            dispose(): any;
-        }[] = []
-        public workspaceState: vscode.Memento = new FakeMemento()
-        public globalState: vscode.Memento = new FakeMemento()
-        public extensionPath: string = ''
-        public storagePath: string | undefined
-
-        public asAbsolutePath(relativePath: string): string {
-            throw new Error('Method not implemented.')
         }
     }
 
