@@ -56,7 +56,7 @@ This is an open source project because we want you to be involved. We love issue
 
 ## Contributing
 
-See [Contributing](./Contributing.md).
+See [Contributing](./CONTRIBUTING.md).
 
 ## License
 
