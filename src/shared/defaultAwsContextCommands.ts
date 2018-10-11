@@ -27,7 +27,6 @@ import {
 import { ext } from './extensionGlobals'
 import { RegionInfo } from './regions/regionInfo'
 import { RegionProvider } from './regions/regionProvider'
-import { SystemUtilities } from './systemUtilities'
 
 /**
  * The actions that can be taken when we discover that a profile's default region is not
@@ -199,9 +198,7 @@ export class DefaultAWSContextCommands {
      */
     private async getProfileNameFromUser(): Promise<string | undefined> {
 
-        new DefaultCredentialsFileReaderWriter().setCanUseConfigFile(
-            await SystemUtilities.fileExists(UserCredentialsUtils.getConfigFilename())
-        )
+        await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileOnFileExistance()
 
         const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
         const responseNo: string = localize('AWS.generic.response.no', 'No')

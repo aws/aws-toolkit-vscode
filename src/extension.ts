@@ -36,7 +36,7 @@ export async function activate(context: vscode.ExtensionContext) {
     ext.lambdaOutputChannel = vscode.window.createOutputChannel('AWS Lambda')
     ext.context = context
 
-    new DefaultCredentialsFileReaderWriter().setCanUseConfigFile(true)
+    await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileOnFileExistance()
 
     const awsContext = new DefaultAwsContext(new DefaultSettingsConfiguration(extensionSettingsPrefix))
     const awsContextTrees = new AwsContextTreeCollection()

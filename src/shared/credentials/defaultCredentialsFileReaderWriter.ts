@@ -6,8 +6,10 @@
 'use strict'
 
 import { EnvironmentVariables } from '../environmentVariables'
+import { SystemUtilities } from '../systemUtilities'
 import { loadSharedConfigFiles, Profile, saveProfile } from './credentialsFile'
 import { CredentialsFileReaderWriter } from './credentialsFileReaderWriter'
+import { UserCredentialsUtils } from './userCredentialsUtils'
 
 export class DefaultCredentialsFileReaderWriter implements CredentialsFileReaderWriter {
     public async getProfileNames(): Promise<string[]> {
@@ -58,6 +60,15 @@ export class DefaultCredentialsFileReaderWriter implements CredentialsFileReader
         const env = process.env as EnvironmentVariables
 
         env.AWS_SDK_LOAD_CONFIG = allow ? true : ''
+    }
+
+    /**
+     * @description Calls setCanUseConfigFile , setting it to true if the config file exists, false otherwise
+     */
+    public async setCanUseConfigFileOnFileExistance(): Promise<void> {
+        this.setCanUseConfigFile(
+            await SystemUtilities.fileExists(UserCredentialsUtils.getConfigFilename())
+        )
     }
 
     /**
