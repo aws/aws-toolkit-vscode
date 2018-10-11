@@ -14,7 +14,29 @@ This is an open source project because we want you to be involved. We love issue
 
 ### Install the toolkit
 
-The toolkit has not been released to the marketplace, so in order to try it you must follow the instructions in [CONTRIBUTING.md](./CONTRIBUTING.md) to build and run from source.
+The toolkit has not been released to the marketplace, so in order to try it you must build and run from source:
+
+> Note: [`git`](https://git-scm.com/downloads) and [`npm`](https://nodejs.org/) are required to build from source.
+
+1. Clone the repository
+
+```shell
+git clone git@github.com:aws/aws-toolkit-vscode.git
+cd aws-toolkit-vscode
+```
+
+2. Build and package the toolkit
+
+```shell
+npm install
+npm run package
+```
+
+3. Install the toolkit
+
+```shell
+code --install-extension aws-toolkit-vscode-<VERSION>.vsix
+```
 
 ### Sign in to your AWS account
 
@@ -43,13 +65,13 @@ The toolkit has not been released to the marketplace, so in order to try it you 
 2. Select `View > Command Palette...` and search for `AWS`.
 3. Select `AWS: Connect to AWS`
 
-![Search AWS][search-aws]
+![Search AWS][./docs/images/search_aws.png]
 
 <!-- markdownlint-disable MD029 -->
 4. Select the profile that you created earlier.
 <!-- markdownlint-enable MD029 -->
 
-![Select Profile][select-profile]
+![Select Profile][./docs/images/select_profile.png]
 
 ## Contributing
 
@@ -58,6 +80,3 @@ See [Contributing](./CONTRIBUTING.md).
 ## License
 
 The **AWS Toolkit for Visual Studio Code** is distributed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
-
-[search-aws]: ./docs/images/search_aws.png "Search AWS"
-[select-profile]: ./docs/images/select_profile.png "Select Profile"
