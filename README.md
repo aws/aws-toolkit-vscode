@@ -2,6 +2,7 @@
 
 [![TravisCI Build Status - develop branch](https://travis-ci.org/aws/aws-toolkit-vscode.svg?branch=develop)](https://travis-ci.org/aws/aws-toolkit-vscode)
 ![CodeBuild Build Status - develop branch](https://codebuild.us-west-2.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiMlluaDRTMnZLdmMvcFREQVQ4RjFoK0FUSTZPdlRVcWJlQ2gwRElLT2gxZDhMeno5MThZZnlXdURDVFFjOWdqSEQ5QjVBYm0xSURoU3E1RTVHejltcnZrPSIsIml2UGFyYW1ldGVyU3BlYyI6IkY3SE9CaG1oMHhJUmsyakkiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=develop)
+[![Coverage](https://img.shields.io/codecov/c/github/aws/aws-toolkit-vscode/develop.svg)](https://codecov.io/gh/aws/aws-toolkit-vscode/branch/develop)
 
 The AWS Toolkit for Visual Studio Code is an extension for working with AWS services such as AWS Lambda.
 
