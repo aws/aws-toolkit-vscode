@@ -14,12 +14,7 @@ This is an open source project because we want you to be involved. We love issue
 
 ### Install the toolkit
 
-1. If you haven't already, install [Visual Studio Code](https://code.visualstudio.com/).
-2. Launch Visual Studio Code.
-3. Select `View > Extensions` or click the `Extensions` button to open the Extensions pane.
-4. Search the marketplace for 'AWS Toolkit for Visual Studio Code'.
-5. Click the `Install` button by the toolkit in the search results. <!-- TODO: Add screenshot once the toolkit is published to the marketplace. -->
-6. Once installation has finished, click the `Reload` button by the toolkit in the search results. <!-- TODO: Add screenshot once the toolkit is published to the marketplace. -->
+The toolkit has not been released to the marketplace, so in order to try it you must follow the instructions in [CONTRIBUTING.md](./CONTRIBUTING.md) to build and run from source.
 
 ### Sign in to your AWS account
 
