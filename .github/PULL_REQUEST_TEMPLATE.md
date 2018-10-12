@@ -6,6 +6,7 @@
 
 - [ ] Bug fix (non-breaking change which fixes an issue)
 - [ ] New feature (non-breaking change which adds functionality)
+- [ ] Infrastructure (change which improves the lifecycle management (CI/CD, build, package, deploy, lint, etc) of the application, but does not change functionality.)
 - [ ] Technical debt (change which improves the maintainability of the codebase, but does not change functionality)
 - [ ] Testing (change which modifies or adds test coverage, but does not change functionality)
 - [ ] Documentation (change which modifies or adds documentation, but does not change functionality)

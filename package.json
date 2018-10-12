@@ -4,7 +4,11 @@
     "description": "An extension for working with Amazon Web Services in Visual Studio Code",
     "version": "0.0.1",
     "publisher": "amazonwebservices",
-    "repository": "github:aws/aws-toolkit-vscode",
+    "license": "apache-2.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/aws/aws-toolkit-vscode"
+    },
     "engines": {
         "vscode": "^1.26.0"
     },
@@ -187,7 +191,8 @@
         "watch": "tsc -watch -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
         "test": "npm run compile && node ./test-scripts/test.js",
-        "lint": "tslint --project ."
+        "lint": "tslint --project .",
+        "package": "vsce package"
     },
     "devDependencies": {
         "@types/async-lock": "^1.1.0",
@@ -209,6 +214,7 @@
         "tslint-eslint-rules": "^5.4.0",
         "tslint-no-circular-imports": "^0.6.1",
         "typescript": "^3.0.1",
+        "vsce": "^1.51.1",
         "vscode": "^1.1.21",
         "vscode-nls-dev": "^3.2.2"
     },

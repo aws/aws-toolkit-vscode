@@ -13,7 +13,7 @@ information to effectively respond to your bug report or contribution.
 Before you start, install the following dependencies.
 
 * [Visual Studio Code](https://code.visualstudio.com/Download)
-* [NodeJS and NPM](https://nodejs.org/en/)
+* [NodeJS and NPM](https://nodejs.org/)
 * [Git](https://git-scm.com/downloads)
 
 Then clone the repository and install npm dependencies:
