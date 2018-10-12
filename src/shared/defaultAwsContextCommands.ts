@@ -198,7 +198,7 @@ export class DefaultAWSContextCommands {
      */
     private async getProfileNameFromUser(): Promise<string | undefined> {
 
-        await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileOnFileExistance()
+        await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
 
         const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
         const responseNo: string = localize('AWS.generic.response.no', 'No')

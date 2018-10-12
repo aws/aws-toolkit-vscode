@@ -101,7 +101,7 @@ suite('DefaultCredentialsFileReaderWriter Tests', () => {
         })
     })
 
-    test('setCanUseConfigFileOnFileExistance with config file that exists', async () => {
+    test('setCanUseConfigFileIfExists with config file that exists', async () => {
         let canUseState: boolean | undefined
 
         const writer = new DefaultCredentialsFileReaderWriter()
@@ -109,12 +109,12 @@ suite('DefaultCredentialsFileReaderWriter Tests', () => {
             canUseState = allow
         }
 
-        await writer.setCanUseConfigFileOnFileExistance()
+        await writer.setCanUseConfigFileIfExists()
 
         assert.equal(canUseState, true)
     })
 
-    test('setCanUseConfigFileOnFileExistance with config file that does not exist', async () => {
+    test('setCanUseConfigFileIfExists with config file that does not exist', async () => {
         let canUseState: boolean | undefined
 
         const env = process.env as EnvironmentVariables
@@ -125,7 +125,7 @@ suite('DefaultCredentialsFileReaderWriter Tests', () => {
             canUseState = allow
         }
 
-        await writer.setCanUseConfigFileOnFileExistance()
+        await writer.setCanUseConfigFileIfExists()
 
         assert.equal(canUseState, false)
     })
