@@ -3,11 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.local
 
-import com.intellij.codeInsight.completion.CompletionParameters
-import com.intellij.codeInsight.completion.CompletionResultSet
-import com.intellij.codeInsight.completion.PlainPrefixMatcher
-import com.intellij.codeInsight.lookup.CharFilter
-import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.execution.ExecutionException
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.ConfigurationFactory
@@ -26,8 +21,6 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.refactoring.listeners.RefactoringElementAdapter
 import com.intellij.refactoring.listeners.RefactoringElementListener
-import com.intellij.util.indexing.FileBasedIndex
-import com.intellij.util.textCompletion.TextCompletionProvider
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
@@ -36,8 +29,8 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
+import software.aws.toolkits.jetbrains.services.lambda.HandlerCompletionProvider
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
-import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerIndex
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPointObject
@@ -250,29 +243,6 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaLoca
             view.lambdaInput.inputFile
         } else {
             view.lambdaInput.inputText
-        }
-    }
-}
-
-class HandlerCompletionProvider(private val project: Project) : TextCompletionProvider {
-    override fun applyPrefixMatcher(result: CompletionResultSet, prefix: String): CompletionResultSet =
-        result.withPrefixMatcher(PlainPrefixMatcher(prefix))
-
-    override fun getAdvertisement(): String? = null
-
-    override fun getPrefix(text: String, offset: Int): String? = text
-
-    override fun fillCompletionVariants(parameters: CompletionParameters, prefix: String, result: CompletionResultSet) {
-        FileBasedIndex.getInstance().getAllKeys(LambdaHandlerIndex.NAME, project)
-            .forEach { result.addElement(LookupElementBuilder.create(it)) }
-        result.stopHere()
-    }
-
-    override fun acceptChar(c: Char): CharFilter.Result? {
-        return if (c.isWhitespace()) {
-            CharFilter.Result.SELECT_ITEM_AND_FINISH_LOOKUP
-        } else {
-            CharFilter.Result.ADD_TO_PREFIX
         }
     }
 }

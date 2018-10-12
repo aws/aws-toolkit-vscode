@@ -9,7 +9,6 @@ import com.intellij.codeInsight.completion.PlainPrefixMatcher
 import com.intellij.codeInsight.lookup.CharFilter
 import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.openapi.project.Project
-import com.intellij.util.indexing.FileBasedIndex
 import com.intellij.util.textCompletion.TextCompletionProvider
 
 class HandlerCompletionProvider(private val project: Project) : TextCompletionProvider {
@@ -21,8 +20,7 @@ class HandlerCompletionProvider(private val project: Project) : TextCompletionPr
     override fun getPrefix(text: String, offset: Int): String? = text
 
     override fun fillCompletionVariants(parameters: CompletionParameters, prefix: String, result: CompletionResultSet) {
-        FileBasedIndex.getInstance().getAllKeys(LambdaHandlerIndex.NAME, project)
-            .forEach { result.addElement(LookupElementBuilder.create(it)) }
+        LambdaHandlerIndex.listHandlers(project).forEach { result.addElement(LookupElementBuilder.create(it)) }
         result.stopHere()
     }
 
