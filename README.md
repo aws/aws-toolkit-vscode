@@ -65,13 +65,14 @@ code --install-extension aws-toolkit-vscode-<VERSION>.vsix
 2. Select `View > Command Palette...` and search for `AWS`.
 3. Select `AWS: Connect to AWS`
 
-![Search AWS][./docs/images/search_aws.png]
+![Search AWS](./docs/images/search_aws.png)
 
 <!-- markdownlint-disable MD029 -->
 4. Select the profile that you created earlier.
 <!-- markdownlint-enable MD029 -->
 
-![Select Profile][./docs/images/select_profile.png]
+![Select Profile](./docs/images/select_profile.png)
+
 
 ## Contributing
 
