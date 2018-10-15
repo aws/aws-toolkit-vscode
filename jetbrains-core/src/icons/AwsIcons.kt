@@ -26,7 +26,6 @@ object AwsIcons {
     }
 
     object Actions {
-        @JvmField val LAMBDA_FUNCTION_NEW: Icon = LayeredIcon.create(Logos.LAMBDA, AllIcons.Actions.New)
-        @JvmField val LAMBDA_FUNCTION_OPEN: Icon = LayeredIcon.create(Logos.LAMBDA, AllIcons.Nodes.RunnableMark)
+        @JvmField val LAMBDA_FUNCTION_NEW: Icon = LayeredIcon.create(Resources.LAMBDA_FUNCTION, AllIcons.Actions.New)
     }
 }

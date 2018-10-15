@@ -90,4 +90,4 @@ We love contributions! Please see the the [CONTRIBUTING](CONTRIBUTING.md) guide 
 
 The plugin is distributed according to the terms outlined in our [LICENSE](LICENSE).
 
-[lambda-icon]: jetbrains-core/resources/icons/logos/Lambda.svg
+[lambda-icon]: jetbrains-core/resources/icons/resources/LambdaFunction.svg
