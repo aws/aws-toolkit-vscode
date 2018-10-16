@@ -1,0 +1,63 @@
+/*!
+ * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+'use strict'
+
+import * as os from 'os'
+import * as path from 'path'
+import * as filesystem from '../../../shared/filesystem'
+
+export async function createTemporaryDirectory(prefix: string): Promise<string> {
+    const fullPrefix = path.join(os.tmpdir(), prefix)
+
+    return await filesystem.mkdtempAsync(fullPrefix)
+}
+
+export async function saveTemplate(templatePath: string, ...functionNames: string[]) {
+    const functionResources = functionNames.map(
+        functionName => `    ${functionName}:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: hello_world/
+            Handler: app.lambdaHandler
+            Runtime: nodejs8.10
+            Environment:
+                Variables:
+                    PARAM1: VALUE
+            Events:
+                HelloWorld:
+                    Type: Api
+                    Properties:
+                        Path: /hello
+                        Method: get`
+    ).join(os.EOL)
+
+    const templateContent = `AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+    my-sam-app
+
+    Sample SAM Template for my-sam-app
+
+Resources:
+${functionResources}
+
+Outputs:
+
+    HelloWorldApi:
+        Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+        Value: !Sub "https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/"
+
+    HelloWorldFunction:
+        Description: "Hello World Lambda Function ARN"
+        Value: !GetAtt HelloWorldFunction.Arn
+
+    HelloWorldFunctionIamRole:
+        Description: "Implicit IAM Role created for Hello World function"
+        Value: !GetAtt HelloWorldFunctionRole.Arn
+`
+
+    await filesystem.writeFileAsync(templatePath, templateContent, 'utf8')
+}
