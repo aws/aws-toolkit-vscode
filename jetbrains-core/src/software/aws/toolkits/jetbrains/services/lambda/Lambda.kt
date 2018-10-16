@@ -62,7 +62,6 @@ fun CreateFunctionResponse.toDataClass(credentialProviderId: String, region: Aws
  */
 enum class RuntimeGroup {
     JAVA,
-    GO,
     PYTHON;
 
     private val info by lazy {

@@ -7,6 +7,5 @@ include 'resources'
 include 'core'
 include 'jetbrains-testutils'
 include 'jetbrains-core'
-include 'jetbrains-ultimate'
 include 'jvm-lambda-invoker'
 

@@ -228,8 +228,7 @@ if (gradle.startParameter.taskNames.contains("runIde")) {
 }
 
 dependencies {
-    compile project(':jetbrains-core')
-    compile project(':jetbrains-ultimate')
+    compile project(':jetbrains-core') 
 
     ktlint "com.github.shyiko:ktlint:$ktlintVersion"
     ktlint project(":ktlint-rules")
