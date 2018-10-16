@@ -85,12 +85,43 @@ class JavaLambdaHandlerResolverTest {
     }
 
     @Test
+    fun testMethodReferenceWhenUsingHandlerInterface() {
+        val fixture = projectRule.fixture
+
+        fixture.openClass(
+            """
+            package com.example;
+
+            import com.amazonaws.services.lambda.runtime.Context;
+            import com.amazonaws.services.lambda.runtime.RequestHandler;
+
+            public class LambdaHandler implements RequestHandler {
+                public String handleRequest(String request, Context context) {
+                    return request.toUpperCase();
+                }
+            }
+            """
+        )
+
+        runInEdtAndWait {
+            val elements = Lambda.findPsiElementsForHandler(fixture.project, Runtime.JAVA8, "com.example.LambdaHandler::handleRequest")
+            assertThat(elements).hasSize(1)
+            assertThat(elements[0]).isInstanceOfSatisfying(PsiMethod::class.java) {
+                assertThat(it.containingClass?.qualifiedName).isEqualTo("com.example.LambdaHandler")
+                assertThat(it.name).isEqualTo("handleRequest")
+            }
+        }
+    }
+
+    @Test
     fun testMethodHandler() {
         val fixture = projectRule.fixture
 
         fixture.openClass(
             """
             package com.example;
+
+            import com.amazonaws.services.lambda.runtime.Context;
 
             public class LambdaHandler {
                 public String handleRequest(String request, Context context) {
@@ -128,6 +159,8 @@ class JavaLambdaHandlerResolverTest {
             """
             package com.example;
 
+            import com.amazonaws.services.lambda.runtime.Context;
+
             public class LambdaHandler {
                 public String handleRequest(String request, Context context) {
                     return request.toUpperCase();
@@ -149,6 +182,8 @@ class JavaLambdaHandlerResolverTest {
         fixture.addClass(
             """
             package com.example;
+
+            import com.amazonaws.services.lambda.runtime.Context;
 
             public abstract class AbstractHandler {
                 public void handleRequest(InputStream input, OutputStream output, Context context) { }
@@ -184,17 +219,78 @@ class JavaLambdaHandlerResolverTest {
     }
 
     @Test
-    fun testMultipleMethodsInSameClass() {
+    fun testMultipleMethodsInSameClassParameterLength() {
         val fixture = projectRule.fixture
 
         fixture.openClass(
             """
             package com.example;
 
-            public abstract class LambdaHandler {
-                public void handleRequest(InputStream input, OutputStream output, Context context) { }
+            import com.amazonaws.services.lambda.runtime.Context;
 
-                public void handleRequest(InputStream input, OutputStream output) { }
+            public class LambdaHandler {
+                // Should be picked due to more params
+                public static void handleRequest(InputStream input, OutputStream output, Context context) { }
+
+                public static void handleRequest(InputStream input, OutputStream output) { }
+            }
+            """
+        )
+
+        runInEdtAndWait {
+            val elements = Lambda.findPsiElementsForHandler(fixture.project, Runtime.JAVA8, "com.example.LambdaHandler::handleRequest")
+            assertThat(elements[0]).isInstanceOfSatisfying(PsiMethod::class.java) {
+                assertThat(it.containingClass?.qualifiedName).isEqualTo("com.example.LambdaHandler")
+                assertThat(it.name).isEqualTo("handleRequest")
+                assertThat(it.parameterList.toString()).contains("InputStream input, OutputStream output, Context context")
+            }
+        }
+    }
+
+    @Test
+    fun testMultipleMethodsInSameClassContextTakesPriority() {
+        val fixture = projectRule.fixture
+
+        fixture.openClass(
+            """
+            package com.example;
+
+            import com.amazonaws.services.lambda.runtime.Context;
+
+            public class LambdaHandler {
+                public static void handleRequest(InputStream input, OutputStream output) { }
+
+                // Should be picked due to ends in Context
+                public static void handleRequest(InputStream input, Context context) { }
+            }
+            """
+        )
+
+        runInEdtAndWait {
+            val elements = Lambda.findPsiElementsForHandler(fixture.project, Runtime.JAVA8, "com.example.LambdaHandler::handleRequest")
+            assertThat(elements[0]).isInstanceOfSatisfying(PsiMethod::class.java) {
+                assertThat(it.containingClass?.qualifiedName).isEqualTo("com.example.LambdaHandler")
+                assertThat(it.name).isEqualTo("handleRequest")
+                assertThat(it.parameterList.toString()).contains("InputStream input, Context context")
+            }
+        }
+    }
+
+    @Test
+    fun testMultipleMethodsInSameClassUndefinedBehavior() {
+        val fixture = projectRule.fixture
+
+        fixture.openClass(
+            """
+            package com.example;
+
+            import com.amazonaws.services.lambda.runtime.Context;
+
+            // This enters the realm of undefined behavior, return nothing?
+            public class LambdaHandler {
+                public static void handleRequest(Object input) { }
+
+                public static void handleRequest(InputStream input) { }
             }
             """
         )

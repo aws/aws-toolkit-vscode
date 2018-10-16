@@ -189,12 +189,47 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
             classes.filterIsInstance<NavigatablePsiElement>()
                 .toTypedArray()
         } else {
-            classes.map { it.findMethodsByName(methodName, true) }
-                .filter { it.size == 1 }
-                .map { it.single() }
-                .filterIsInstance<NavigatablePsiElement>()
-                .toTypedArray()
+            val handlerMethod = classes.asSequence()
+                .map { it.findMethodsByName(methodName, true) }
+                .flatMap { it.asSequence() }
+                .filter { it.body != null } // Filter out interfaces
+                .pickMostSpecificHandler()
+            return handlerMethod?.let {
+                arrayOf(it)
+            } ?: NavigatablePsiElement.EMPTY_NAVIGATABLE_ELEMENT_ARRAY
         }
+    }
+
+    /**
+     * https://docs.aws.amazon.com/lambda/latest/dg/java-programming-model-handler-types.html
+     * Handler Overload Resolution
+     *
+     * If your Java code contains multiple methods with same name as the handler name, then AWS Lambda uses the following rules to pick a method to invoke:
+     *
+     * 1. Select the method with the largest number of parameters.
+     *
+     * 2. If two or more methods have the same number of parameters, AWS Lambda selects the method that has the Context as the last parameter.
+     *
+     * If none or all of these methods have the Context parameter, then the behavior is undefined.
+     */
+    private fun Sequence<PsiMethod>.pickMostSpecificHandler(): NavigatablePsiElement? {
+        var maxWeight = -1
+        val methods = this.filter { it.parameterList.parametersCount in 1..3 }
+            .groupBy {
+                var weight = it.parameterList.parametersCount
+                if (it.parameterList.parameters.getOrNull(weight - 1)?.isContextParameter() == true) {
+                    weight++
+                }
+                maxWeight = maxOf(maxWeight, weight)
+                weight
+            }.getOrDefault(maxWeight, emptyList())
+
+        // Empty, or undefined behavior
+        if (methods.isEmpty() || methods.size > 1) {
+            return null
+        }
+
+        return methods[0]
     }
 
     override fun determineHandler(element: PsiElement): String? {
@@ -256,9 +291,10 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
         val className = (this.type as? PsiClassReferenceType)?.className ?: return false
         val imports = containingFile.children.filterIsInstance<PsiImportList>()
             .flatMap { it.children.filterIsInstance<PsiImportStatement>() }
-            .mapNotNull { it.qualifiedName }.map {
-                it.substringAfterLast(".") to it
-            }.toMap()
+            .asSequence()
+            .mapNotNull { it.qualifiedName }
+            .map { it.substringAfterLast(".") to it }
+            .toMap()
         return imports[className] == LAMBDA_CONTEXT
     }
 
