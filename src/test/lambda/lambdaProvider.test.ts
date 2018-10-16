@@ -6,18 +6,18 @@
 import * as assert from 'assert'
 import * as AWS from 'aws-sdk'
 import * as vscode from 'vscode'
-import { RegionNode } from '../lambda/explorer/regionNode'
-import { LambdaProvider } from '../lambda/lambdaProvider'
-import { AwsContext, ContextChangeEventsArgs } from '../shared/awsContext'
-import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
-import { RegionInfo } from '../shared/regions/regionInfo'
-import { RegionProvider } from '../shared/regions/regionProvider'
-import { ResourceFetcher } from '../shared/resourceFetcher'
-import { ResourceLocation } from '../shared/resourceLocation'
+import { RegionNode } from '../../lambda/explorer/regionNode'
+import { LambdaProvider } from '../../lambda/lambdaProvider'
+import { AwsContext, ContextChangeEventsArgs } from '../../shared/awsContext'
+import { AwsContextTreeCollection } from '../../shared/awsContextTreeCollection'
+import { RegionInfo } from '../../shared/regions/regionInfo'
+import { RegionProvider } from '../../shared/regions/regionProvider'
+import { ResourceFetcher } from '../../shared/resourceFetcher'
+import { ResourceLocation } from '../../shared/resourceLocation'
 
-suite('LambdaProvider Tests', function(): void {
+describe('LambdaProvider', function(): void {
 
-    test('region nodes display the user-friendly region name', async function() {
+    it('displays region nodes with user-friendly region names', async () => {
 
         const regionCode = 'regionQuerty'
         const regionName = 'The Querty Region'

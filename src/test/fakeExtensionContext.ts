@@ -6,7 +6,6 @@
 'use strict'
 
 import { ExtensionContext, Memento } from 'vscode'
-import { FakeMemento } from './fakeMemento'
 
 export class FakeExtensionContext implements ExtensionContext {
     public subscriptions: {
@@ -18,6 +17,17 @@ export class FakeExtensionContext implements ExtensionContext {
     public storagePath: string | undefined
 
     public asAbsolutePath(relativePath: string): string {
+        throw new Error('Method not implemented.')
+    }
+}
+
+class FakeMemento implements Memento {
+    public get<T>(key: string): T | undefined
+    public  get<T>(key: string, defaultValue: T): T
+    public get(key: any, defaultValue?: any) {
+        throw new Error('Method not implemented.')
+    }
+    public update(key: string, value: any): Thenable<void> {
         throw new Error('Method not implemented.')
     }
 }

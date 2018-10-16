@@ -12,46 +12,46 @@ import { Uri, WorkspaceFolder } from 'vscode'
 import { detectLocalLambdas } from '../../../lambda/local/detectLocalLambdas'
 import { createTemporaryDirectory, createWorkspaceFolder, saveTemplate } from './util'
 
-suite('detectLocalLambdas tests', () => {
+describe('detectLocalLambdas', () => {
     const workspacePaths: string[] = []
     const workspaceFolders: WorkspaceFolder[] = []
 
-    setup(async () => {
+    beforeEach(async () => {
         const { workspacePath, workspaceFolder } = await createWorkspaceFolder('vsctk')
 
         workspacePaths.push(workspacePath)
         workspaceFolders.push(workspaceFolder)
     })
 
-    teardown(async () => {
+    afterEach(async () => {
         await del(workspacePaths, { force: true })
 
         workspacePaths.length = 0
         workspaceFolders.length = 0
     })
 
-    test('detects no lambdas when workspaceFolders is undefined', async () => {
+    it('detects no lambdas when workspaceFolders is undefined', async () => {
         const actual = await detectLocalLambdas(undefined)
 
         assert.ok(actual)
         assert.equal(actual.length, 0)
     })
 
-    test('detects no lambdas when workspaceFolders is empty', async () => {
+    it('detects no lambdas when workspaceFolders is empty', async () => {
         const actual = await detectLocalLambdas([])
 
         assert.ok(actual)
         assert.equal(actual.length, 0)
     })
 
-    test('detects no lambdas when template.y[a]ml does not exist', async () => {
+    it('detects no lambdas when template.y[a]ml does not exist', async () => {
         const actual = await detectLocalLambdas(workspaceFolders)
 
         assert.ok(actual)
         assert.equal(actual.length, 0)
     })
 
-    test('detects no lambdas when template.y[a]ml is empty', async () => {
+    it('detects no lambdas when template.y[a]ml is empty', async () => {
         await saveTemplate(path.join(workspaceFolders[0].uri.fsPath, 'template.yml'))
         const actual = await detectLocalLambdas(workspaceFolders)
 
@@ -59,7 +59,7 @@ suite('detectLocalLambdas tests', () => {
         assert.equal(actual.length, 0)
     })
 
-    test('detects lambdas when template.yml exists', async () => {
+    it('detects lambdas when template.yml exists', async () => {
         const templatePath = path.join(workspaceFolders[0].uri.fsPath, 'template.yml')
         await saveTemplate(templatePath, 'MyFunction')
         const actual = await detectLocalLambdas(workspaceFolders)
@@ -71,7 +71,7 @@ suite('detectLocalLambdas tests', () => {
         assert.equal(actual[0].templatePath, templatePath)
     })
 
-    test('detects lambdas when template.yaml exists', async () => {
+    it('detects lambdas when template.yaml exists', async () => {
         const templatePath = path.join(workspaceFolders[0].uri.fsPath, 'template.yaml')
         await saveTemplate(templatePath, 'MyFunction')
         const actual = await detectLocalLambdas(workspaceFolders)
@@ -83,7 +83,7 @@ suite('detectLocalLambdas tests', () => {
         assert.equal(actual[0].templatePath, templatePath)
     })
 
-    test('detects lambdas in multi-folder workspace', async () => {
+    it('detects lambdas in multi-folder workspace', async () => {
         assert.equal(workspacePaths.length, 1)
 
         workspacePaths.push(await createTemporaryDirectory('vsctk2'))
@@ -91,7 +91,7 @@ suite('detectLocalLambdas tests', () => {
             uri: Uri.file(workspacePaths[1]),
             name: path.basename(workspacePaths[1]),
             index: 1
-    })
+        })
 
         const templatePath1 = path.join(workspaceFolders[0].uri.fsPath, 'template.yaml')
         const templatePath2 = path.join(workspaceFolders[1].uri.fsPath, 'template.yml')

@@ -8,11 +8,11 @@
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
 import { Uri } from 'vscode'
-import { FunctionNode } from '../lambda/explorer/functionNode'
-import { ext } from '../shared/extensionGlobals'
-import { FakeExtensionContext } from './fakeExtensionContext'
+import { FunctionNode } from '../../../lambda/explorer/functionNode'
+import { ext } from '../../../shared/extensionGlobals'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
 
-suite('Lambda Explorer FunctionNode Tests', () => {
+describe('FunctionNode', () => {
 
     let fakeFunctionConfig: Lambda.FunctionConfiguration
 
@@ -23,7 +23,7 @@ suite('Lambda Explorer FunctionNode Tests', () => {
         }
     }
 
-    suiteSetup(function() {
+    before(function() {
         ext.context = new FakeExtensionContextOverride()
         fakeFunctionConfig = {
             FunctionName: 'testFunctionName',
@@ -32,7 +32,7 @@ suite('Lambda Explorer FunctionNode Tests', () => {
     })
 
     // Validates we tagged the node correctly
-    test('Function node name and tooltip are initialized', async () => {
+    it('initializes name and tooltip', async () => {
         const testNode = new FunctionNode(fakeFunctionConfig, new Lambda())
 
         assert.equal(testNode.label, fakeFunctionConfig.FunctionName)
@@ -40,7 +40,7 @@ suite('Lambda Explorer FunctionNode Tests', () => {
     })
 
     // Validates we wired up the expected resource for the node icon
-    test('Function node iconPath member is initialized', async () => {
+    it('initializes icon path', async () => {
 
         const fileScheme: string = 'file'
         const resourceImageName: string = 'lambda_function.svg'
@@ -65,14 +65,14 @@ suite('Lambda Explorer FunctionNode Tests', () => {
 
     // Validates we don't yield some unexpected value that our command triggers
     // don't recognize
-    test('Function node returns expected context value', async () => {
+    it('returns expected context value', async () => {
         const testNode = new FunctionNode(fakeFunctionConfig, new Lambda())
 
         assert.equal(testNode.contextValue, FunctionNode.contextValue)
     })
 
     // Validates function nodes are leaves
-    test('Function node has no children', async () => {
+    it('has no children', async () => {
         const testNode = new FunctionNode(fakeFunctionConfig, new Lambda())
 
         const childNodes = await testNode.getChildren()

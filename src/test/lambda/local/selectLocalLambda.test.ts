@@ -12,12 +12,12 @@ import { WorkspaceFolder } from 'vscode'
 import { selectLocalLambda } from '../../../lambda/local/selectLocalLambda'
 import { createWorkspaceFolder, saveTemplate } from './util'
 
-suite('selectLocalLambda tests', () => {
+describe('selectLocalLambda tests', () => {
     const workspacePaths: string[] = []
     const workspaceFolders: WorkspaceFolder[] = []
     let templatePath: string | undefined
 
-    setup(async () => {
+    beforeEach(async () => {
         const { workspacePath, workspaceFolder } = await createWorkspaceFolder('vsctk')
         workspacePaths.push(workspacePath)
         workspaceFolders.push(workspaceFolder)
@@ -26,14 +26,14 @@ suite('selectLocalLambda tests', () => {
         await saveTemplate(templatePath, 'MyFunction')
     })
 
-    teardown(async () => {
+    afterEach(async () => {
         await del(workspacePaths, { force: true })
         workspacePaths.length = 0
         workspaceFolders.length = 0
         templatePath = undefined
     })
 
-    test('can select first lambda', async () => {
+    it('returns selected lambda', async () => {
         let showQuickPickInvoked = false
 
         const actual = await selectLocalLambda(
@@ -58,7 +58,7 @@ suite('selectLocalLambda tests', () => {
         assert.equal(actual!.templatePath, templatePath)
     })
 
-    test('can cancel without selecting a lambda', async () => {
+    it('returns undefined if no lambda selected', async () => {
         let showQuickPickInvoked = false
 
         const actual = await selectLocalLambda(
