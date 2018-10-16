@@ -8,6 +8,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.util.text.nullize
 import icons.AwsIcons
 import org.intellij.lang.annotations.Language
 import software.amazon.awssdk.services.iam.IamClient
@@ -39,7 +40,7 @@ class UploadToLambdaModal(
     private val validator: UploadToLambdaValidator,
     private val okHandler: (FunctionUploadDetails) -> Unit
 ) : DialogWrapper(project) {
-    private val view = CreateLambdaPanel()
+    private val view = CreateLambdaPanel(project)
 
     init {
         super.init()
@@ -60,7 +61,7 @@ class UploadToLambdaModal(
         okHandler(
             FunctionUploadDetails(
                 name = view.name.text!!,
-                handler = view.handler.text!!,
+                handler = view.handler.text,
                 iamRole = view.iamRole.selected()!!,
                 s3Bucket = view.sourceBucket.selected()!!,
                 runtime = view.runtime.selected()!!,
@@ -79,7 +80,7 @@ class UploadToLambdaValidator {
             view.name
         )
         validateFunctionName(name)?.run { return@doValidate ValidationInfo(this, view.name) }
-        view.handler.blankAsNull() ?: return ValidationInfo(message("lambda.upload_validation.handler"), view.handler)
+        view.handler.text.nullize(true) ?: return ValidationInfo(message("lambda.upload_validation.handler"), view.handler)
         view.runtime.selected() ?: return ValidationInfo(message("lambda.upload_validation.runtime"), view.runtime)
         view.timeout.text.toIntOrNull().let {
             if (it == null || it < MIN_TIMEOUT || it > MAX_TIMEOUT) {

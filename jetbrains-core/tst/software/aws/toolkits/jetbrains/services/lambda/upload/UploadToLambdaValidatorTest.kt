@@ -9,14 +9,29 @@ import assertk.assertions.contains
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.testFramework.EdtRule
+import com.intellij.testFramework.ProjectRule
+import com.intellij.testFramework.RuleChain
+import com.intellij.testFramework.RunsInEdt
+import com.intellij.testFramework.runInEdtAndGet
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
 import javax.swing.DefaultComboBoxModel
 
+@RunsInEdt
 class UploadToLambdaValidatorTest {
+    private val projectRule = ProjectRule()
+
+    @Rule
+    @JvmField
+    val ruleChain = RuleChain(projectRule, EdtRule())
+
     private val sut = UploadToLambdaValidator()
-    private val view = CreateLambdaPanel()
+    private val view = runInEdtAndGet {
+        CreateLambdaPanel(projectRule.project)
+    }
 
     @Test
     fun validFunctionReturnsNull() {
