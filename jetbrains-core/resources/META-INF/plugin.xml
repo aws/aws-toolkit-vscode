@@ -45,11 +45,6 @@
             <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver"/>
             <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
         </extensionPoint>
-
-        <extensionPoint qualifiedName="aws.toolkit.lambda.localRunProvider" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
-            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.execution.local.LambdaLocalRunProvider"/>
-            <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
-        </extensionPoint>
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">

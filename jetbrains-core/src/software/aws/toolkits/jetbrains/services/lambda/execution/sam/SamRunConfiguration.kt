@@ -47,7 +47,7 @@ class SamRunConfigurationFactory(configuration: LambdaRunConfiguration) : Config
         SamRunConfiguration(project, this)
 
     override fun getName(): String {
-        return "SAM CLI"
+        return "Local"
     }
 }
 

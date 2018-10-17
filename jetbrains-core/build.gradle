@@ -30,11 +30,7 @@ task pluginChangeLog(type: GenerateChangeLog) {
     jetbrainsChangeNotesFile = project.file("$buildDir/resources/main/META-INF/change-notes.xml")
 }
 
-processResources {
-    doFirst {
-        from project(":jvm-lambda-invoker").configurations.getByName("shadow").artifacts.files.files
-    }
-}.dependsOn(":jvm-lambda-invoker:shadowJar", pluginChangeLog)
+processResources.dependsOn(pluginChangeLog)
 
 artifacts {
     testArtifacts testJar

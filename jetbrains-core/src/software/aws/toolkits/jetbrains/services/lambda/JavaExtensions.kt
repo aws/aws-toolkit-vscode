@@ -8,10 +8,7 @@ import com.intellij.debugger.DefaultDebugEnvironment
 import com.intellij.debugger.engine.JavaDebugProcess
 import com.intellij.execution.DefaultExecutionResult
 import com.intellij.execution.JavaExecutionUtil
-import com.intellij.execution.configurations.JavaCommandLineState
-import com.intellij.execution.configurations.JavaParameters
 import com.intellij.execution.configurations.RemoteConnection
-import com.intellij.execution.configurations.RunProfileState
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.lang.java.JavaLanguage
 import com.intellij.lang.jvm.JvmModifier
@@ -47,7 +44,6 @@ import com.intellij.util.io.exists
 import com.intellij.util.io.inputStream
 import com.intellij.util.io.isDirectory
 import com.intellij.util.io.isHidden
-import com.intellij.util.io.outputStream
 import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugProcessStarter
 import com.intellij.xdebugger.XDebugSession
@@ -55,8 +51,6 @@ import com.intellij.xdebugger.impl.XDebugSessionImpl
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.createTemporaryZipFile
 import software.aws.toolkits.core.utils.putNextEntry
-import software.aws.toolkits.jetbrains.services.lambda.execution.local.LambdaLocalRunProvider
-import software.aws.toolkits.jetbrains.services.lambda.execution.local.LambdaLocalRunSettings
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
 import software.aws.toolkits.resources.message
@@ -66,7 +60,6 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
-import java.util.jar.JarFile
 import kotlin.streams.toList
 
 class JavaRuntimeGroup : RuntimeGroupInformation {
@@ -305,57 +298,6 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
             "com.amazonaws.services.lambda.runtime.RequestHandler"
         )
         const val LAMBDA_CONTEXT = "com.amazonaws.services.lambda.runtime.Context"
-    }
-}
-
-class JavaLambdaLocalRunProvider : LambdaLocalRunProvider {
-    override fun createRunProfileState(
-        environment: ExecutionEnvironment,
-        project: Project,
-        settings: LambdaLocalRunSettings
-    ): RunProfileState =
-        LambdaJavaCommandLineState(environment, settings)
-}
-
-internal class LambdaJavaCommandLineState(
-    environment: ExecutionEnvironment,
-    private val settings: LambdaLocalRunSettings
-) :
-    JavaCommandLineState(environment) {
-    override fun createJavaParameters(): JavaParameters {
-        return JavaParameters().apply {
-            val module = JavaExecutionUtil.findModule(determineClass(settings.handlerElement))
-            configureByModule(module, JavaParameters.JDK_AND_CLASSES)
-            classPath.addFirst(InvokerJar.jar)
-            mainClass = InvokerJar.mainClass
-            env = settings.environmentVariables
-            // Do not inherit the System env var, they should configure through run config just like Lambda does
-            isPassParentEnvs = false
-            programParametersList.add("-h", settings.handler)
-            settings.input.run { programParametersList.add("-i", this) }
-        }
-    }
-
-    private fun determineClass(psiElement: PsiElement): PsiClass {
-        return when {
-            psiElement is PsiClass -> psiElement
-            psiElement.parent != null -> determineClass(psiElement.parent)
-            else -> throw RuntimeException("Cannot determine PsiClass from $psiElement")
-        }
-    }
-}
-
-object InvokerJar {
-    val jar by lazy {
-        val file = Files.createTempFile("jvm-lambda-invoker", "jar")
-        javaClass.getResourceAsStream("/jvm-lambda-invoker.jar").copyTo(file.outputStream())
-        file.toAbsolutePath().toString()
-    }
-    val mainClass: String by lazy {
-        JarFile(jar).use {
-            it.manifest.mainAttributes.getValue("Main-Class")
-                    ?: throw RuntimeException("Cannot determine Main-Class in $jar")
-        }
     }
 }
 

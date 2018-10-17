@@ -7,6 +7,5 @@
         <packager runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.JavaLambdaPackager"/>
         <sam.debugSupport runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.JavaSamDebugSupport"/>
         <handlerResolver runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.JavaLambdaHandlerResolver"/>
-        <localRunProvider runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.JavaLambdaLocalRunProvider"/>
     </extensions>
 </idea-plugin>

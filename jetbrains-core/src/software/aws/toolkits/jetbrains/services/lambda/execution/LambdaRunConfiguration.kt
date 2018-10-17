@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.lambda.execution
 import com.intellij.execution.configurations.ConfigurationTypeBase
 import com.intellij.execution.configurations.ConfigurationTypeUtil
 import icons.AwsIcons
-import software.aws.toolkits.jetbrains.services.lambda.execution.local.LambdaLocalRunConfigurationFactory
 import software.aws.toolkits.jetbrains.services.lambda.execution.remote.LambdaRemoteRunConfigurationFactory
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunConfigurationFactory
 import software.aws.toolkits.resources.message
@@ -19,7 +18,6 @@ class LambdaRunConfiguration :
         AwsIcons.Resources.LAMBDA_FUNCTION
     ) {
     init {
-        addFactory(LambdaLocalRunConfigurationFactory(this))
         addFactory(SamRunConfigurationFactory(this))
         addFactory(LambdaRemoteRunConfigurationFactory(this))
     }
