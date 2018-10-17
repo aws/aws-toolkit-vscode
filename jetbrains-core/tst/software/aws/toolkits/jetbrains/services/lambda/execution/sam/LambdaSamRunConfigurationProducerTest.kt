@@ -28,7 +28,7 @@ class LambdaSamRunConfigurationProducerTest {
     @Test
     fun validRunConfigurationIsCreated() {
         val psiClass = projectRule.fixture.openClass(
-                """
+            """
             package com.example;
 
             public class LambdaHandler {
@@ -52,7 +52,7 @@ class LambdaSamRunConfigurationProducerTest {
     @Test
     fun invalidLambdaIsNotCreated() {
         val psiClass = projectRule.fixture.openClass(
-                """
+            """
             package com.example;
 
             public class LambdaHandler {
