@@ -40,7 +40,7 @@ suite('filesystem Tests', () => {
         let error: Error | string | undefined
 
         try {
-            await filesystem.mkdtempAsync('\n')
+            await filesystem.mkdtempAsync('\n\0')
         } catch (err) {
             error = err as Error | string
         } finally {
