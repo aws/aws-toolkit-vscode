@@ -19,6 +19,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.refactoring.listeners.RefactoringElementAdapter
 import com.intellij.refactoring.listeners.RefactoringElementListener
+import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
@@ -76,6 +77,11 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
         } catch (e: Exception) {
             null
         }
+    }
+
+    @TestOnly
+    fun getHandler(): String? {
+        return settings.handler
     }
 
     override fun getRefactoringElementListener(element: PsiElement?): RefactoringElementListener? {
