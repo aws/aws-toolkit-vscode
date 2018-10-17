@@ -3,10 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda
 
-import com.intellij.lang.Language
-import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.search.GlobalSearchScope
 import software.amazon.awssdk.services.lambda.model.CreateFunctionResponse
@@ -53,56 +50,3 @@ fun CreateFunctionResponse.toDataClass(credentialProviderId: String, region: Aws
     credentialProviderId = credentialProviderId,
     region = region
 )
-
-/**
- * Grouping of Lambda [Runtime] by parent language.
- *
- * A Lambda [Runtime] belongs to a single [RuntimeGroup], a [RuntimeGroup] may have several
- * Lambda [Runtime]s, [Language]s or [Sdk]s.
- */
-enum class RuntimeGroup {
-    JAVA,
-    PYTHON;
-
-    private val info by lazy {
-        RuntimeGroupInformation.getInstances(this)
-    }
-
-    val runtimes: Set<Runtime> by lazy { info.flatMap { it.runtimes }.toSet() }
-    val languageIds: Set<String> by lazy { info.flatMap { it.languageIds }.toSet() }
-    val requiresCompilation: Boolean by lazy { info.any { it.requiresCompilation } }
-    fun runtimeForSdk(sdk: Sdk): Runtime? = info.asSequence().mapNotNull { it.runtimeForSdk(sdk) }.firstOrNull()
-
-    internal companion object {
-        /**
-         * Lazily apply the predicate to each [RuntimeGroup] and return the first match (or null)
-         */
-        fun find(predicate: (RuntimeGroup) -> Boolean): RuntimeGroup? {
-            return RuntimeGroup.values().asSequence().filter(predicate).firstOrNull()
-        }
-
-        fun runtimeForSdk(sdk: Sdk): Runtime? = values().asSequence().mapNotNull { it.runtimeForSdk(sdk) }.firstOrNull()
-    }
-}
-
-/**
- * Represents information about a specific [Runtime] or [RuntimeGroup]. A single [RuntimeGroup] can have more than one RuntimeGroupInformation
- * registered.
- */
-interface RuntimeGroupInformation {
-    val runtimes: Set<Runtime>
-    val languageIds: Set<String>
-    val requiresCompilation: Boolean
-    fun runtimeForSdk(sdk: Sdk): Runtime?
-
-    companion object : RuntimeGroupExtensionPointObject<RuntimeGroupInformation>(ExtensionPointName("aws.toolkit.lambda.runtimeGroup")) {
-        fun getInstances(runtimeGroup: RuntimeGroup): List<RuntimeGroupInformation> = collector.forKey(runtimeGroup)
-    }
-}
-
-val Runtime.runtimeGroup: RuntimeGroup? get() = RuntimeGroup.find { this in it.runtimes }
-
-/**
- * For a given [com.intellij.lang.Language] determine the corresponding Lambda [RuntimeGroup]
- */
-val Language.runtimeGroup: RuntimeGroup? get() = RuntimeGroup.find { this.id in it.languageIds }

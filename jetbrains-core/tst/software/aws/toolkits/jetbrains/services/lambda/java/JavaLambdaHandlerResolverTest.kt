@@ -1,7 +1,7 @@
 // Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda
+package software.aws.toolkits.jetbrains.services.lambda.java
 
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiMethod
@@ -11,6 +11,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.jetbrains.services.lambda.Lambda
 import software.aws.toolkits.jetbrains.testutils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.testutils.rules.openClass
 
@@ -76,7 +77,11 @@ class JavaLambdaHandlerResolverTest {
         )
 
         runInEdtAndWait {
-            val elements = Lambda.findPsiElementsForHandler(fixture.project, Runtime.JAVA8, "com.example.LambdaHandler")
+            val elements = Lambda.findPsiElementsForHandler(
+                fixture.project,
+                Runtime.JAVA8,
+                "com.example.LambdaHandler"
+            )
             assertThat(elements).hasSize(1)
             assertThat(elements[0]).isInstanceOfSatisfying(PsiClass::class.java) {
                 assertThat(it.qualifiedName).isEqualTo("com.example.LambdaHandler")
@@ -104,7 +109,11 @@ class JavaLambdaHandlerResolverTest {
         )
 
         runInEdtAndWait {
-            val elements = Lambda.findPsiElementsForHandler(fixture.project, Runtime.JAVA8, "com.example.LambdaHandler::handleRequest")
+            val elements = Lambda.findPsiElementsForHandler(
+                fixture.project,
+                Runtime.JAVA8,
+                "com.example.LambdaHandler::handleRequest"
+            )
             assertThat(elements).hasSize(1)
             assertThat(elements[0]).isInstanceOfSatisfying(PsiMethod::class.java) {
                 assertThat(it.containingClass?.qualifiedName).isEqualTo("com.example.LambdaHandler")
@@ -132,7 +141,11 @@ class JavaLambdaHandlerResolverTest {
         )
 
         runInEdtAndWait {
-            val elements = Lambda.findPsiElementsForHandler(fixture.project, Runtime.JAVA8, "com.example.LambdaHandler::handleRequest")
+            val elements = Lambda.findPsiElementsForHandler(
+                fixture.project,
+                Runtime.JAVA8,
+                "com.example.LambdaHandler::handleRequest"
+            )
             assertThat(elements).hasSize(1)
             assertThat(elements[0]).isInstanceOfSatisfying(PsiMethod::class.java) {
                 assertThat(it.containingClass?.qualifiedName).isEqualTo("com.example.LambdaHandler")
@@ -146,7 +159,11 @@ class JavaLambdaHandlerResolverTest {
         val fixture = projectRule.fixture
 
         runInEdtAndWait {
-            val elements = Lambda.findPsiElementsForHandler(fixture.project, Runtime.JAVA8, "com.example.LambdaHandler")
+            val elements = Lambda.findPsiElementsForHandler(
+                fixture.project,
+                Runtime.JAVA8,
+                "com.example.LambdaHandler"
+            )
             assertThat(elements).isEmpty()
         }
     }
@@ -170,7 +187,11 @@ class JavaLambdaHandlerResolverTest {
         )
 
         runInEdtAndWait {
-            val elements = Lambda.findPsiElementsForHandler(fixture.project, Runtime.JAVA8, "com.example.LambdaHandler::someMethod")
+            val elements = Lambda.findPsiElementsForHandler(
+                fixture.project,
+                Runtime.JAVA8,
+                "com.example.LambdaHandler::someMethod"
+            )
             assertThat(elements).isEmpty()
         }
     }
@@ -209,7 +230,11 @@ class JavaLambdaHandlerResolverTest {
         )
 
         runInEdtAndWait {
-            val elements = Lambda.findPsiElementsForHandler(fixture.project, Runtime.JAVA8, "com.example.ConcreteHandler::handleRequest")
+            val elements = Lambda.findPsiElementsForHandler(
+                fixture.project,
+                Runtime.JAVA8,
+                "com.example.ConcreteHandler::handleRequest"
+            )
             assertThat(elements).hasSize(1)
             assertThat(elements[0]).isInstanceOfSatisfying(PsiMethod::class.java) {
                 assertThat(it.containingClass?.qualifiedName).isEqualTo("com.example.AbstractHandler")
@@ -238,7 +263,11 @@ class JavaLambdaHandlerResolverTest {
         )
 
         runInEdtAndWait {
-            val elements = Lambda.findPsiElementsForHandler(fixture.project, Runtime.JAVA8, "com.example.LambdaHandler::handleRequest")
+            val elements = Lambda.findPsiElementsForHandler(
+                fixture.project,
+                Runtime.JAVA8,
+                "com.example.LambdaHandler::handleRequest"
+            )
             assertThat(elements[0]).isInstanceOfSatisfying(PsiMethod::class.java) {
                 assertThat(it.containingClass?.qualifiedName).isEqualTo("com.example.LambdaHandler")
                 assertThat(it.name).isEqualTo("handleRequest")
@@ -267,7 +296,11 @@ class JavaLambdaHandlerResolverTest {
         )
 
         runInEdtAndWait {
-            val elements = Lambda.findPsiElementsForHandler(fixture.project, Runtime.JAVA8, "com.example.LambdaHandler::handleRequest")
+            val elements = Lambda.findPsiElementsForHandler(
+                fixture.project,
+                Runtime.JAVA8,
+                "com.example.LambdaHandler::handleRequest"
+            )
             assertThat(elements[0]).isInstanceOfSatisfying(PsiMethod::class.java) {
                 assertThat(it.containingClass?.qualifiedName).isEqualTo("com.example.LambdaHandler")
                 assertThat(it.name).isEqualTo("handleRequest")
@@ -296,7 +329,11 @@ class JavaLambdaHandlerResolverTest {
         )
 
         runInEdtAndWait {
-            val elements = Lambda.findPsiElementsForHandler(fixture.project, Runtime.JAVA8, "com.example.LambdaHandler::handleRequest")
+            val elements = Lambda.findPsiElementsForHandler(
+                fixture.project,
+                Runtime.JAVA8,
+                "com.example.LambdaHandler::handleRequest"
+            )
             assertThat(elements).isEmpty()
         }
     }

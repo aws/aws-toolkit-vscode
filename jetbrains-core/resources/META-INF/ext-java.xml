@@ -3,9 +3,9 @@
 
 <idea-plugin>
     <extensions defaultExtensionNs="aws.toolkit.lambda">
-        <runtimeGroup runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.JavaRuntimeGroup"/>
-        <packager runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.JavaLambdaPackager"/>
-        <sam.debugSupport runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.JavaSamDebugSupport"/>
-        <handlerResolver runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.JavaLambdaHandlerResolver"/>
+        <runtimeGroup runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.java.JavaRuntimeGroup"/>
+        <packager runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.java.JavaLambdaPackager"/>
+        <sam.debugSupport runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.java.JavaSamDebugSupport"/>
+        <handlerResolver runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.java.JavaLambdaHandlerResolver"/>
     </extensions>
 </idea-plugin>

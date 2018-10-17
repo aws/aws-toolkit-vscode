@@ -1,7 +1,7 @@
 // Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda
+package software.aws.toolkits.jetbrains.services.lambda.java
 
 import com.fasterxml.jackson.annotation.JacksonAnnotation
 import com.intellij.compiler.CompilerTestUtil
@@ -23,6 +23,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
 import software.aws.toolkits.jetbrains.testutils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.testutils.rules.addClass
 import software.aws.toolkits.jetbrains.testutils.rules.addModule

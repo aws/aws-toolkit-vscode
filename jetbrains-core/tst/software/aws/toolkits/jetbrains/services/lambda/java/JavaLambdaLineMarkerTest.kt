@@ -1,7 +1,7 @@
 // Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda
+package software.aws.toolkits.jetbrains.services.lambda.java
 
 import assertk.Assert
 import assertk.assert
