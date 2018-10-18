@@ -64,6 +64,11 @@ You can run up your changes locally to test them in a few different ways.
   
   (see `alternativeIdePath` in the Gradle IntelliJ Plugin [documentation](https://github.com/JetBrains/gradle-intellij-plugin) for more details)
 
+- If you wish to run the integration tests, they require valid AWS credentials to run. Take care, as it will respect any credentials currently defined in your environmental variables, and fallback to your default AWS profile otherwise.
+You will also need to have SAM CLI available in your path.
+
+  ```./gradlew integrationTest```
+
 ## Finding contributions to work on
 
 Looking at the existing issues is a great way to find something to contribute on. Looking at any ['help wanted'](https://github.com/aws/aws-toolkit-jetbrains/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) issues is a great place to start. 

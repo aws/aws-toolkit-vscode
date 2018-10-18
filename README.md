@@ -33,10 +33,10 @@ These features require some knowledge of the programming language/paradigm your 
 
 The following table shows the features that are available in various JetBrains IDEs. Minimum supported version of IntelliJ platform is [2018.2](https://blog.jetbrains.com/idea/tag/2018-2/).
 
-| AWS Service | Feature | IntelliJ | PyCharm | GoLand |
-| --- | --- | --- | --- | --- |
-| ![AWS Lambda][lambda-icon] AWS Lambda | Package & Deploy | :white_check_mark: | :white_check_mark: <br> (no external dependencies) | :white_check_mark: |
-| ![AWS Lambda][lambda-icon] AWS Lambda | Invoke / Debug Function (Local) | :white_check_mark: | | |
+| AWS Service | Feature | IntelliJ | PyCharm |
+| --- | --- | --- | --- |
+| ![AWS Lambda][lambda-icon] AWS Lambda | Package & Deploy | :white_check_mark: | :white_check_mark: <br> (no external dependencies) |
+| ![AWS Lambda][lambda-icon] AWS Lambda | Invoke / Debug Function (Local) | :white_check_mark: |  :white_check_mark: <br> (no external dependencies) |
 
 
 *NB: If a feature is available in a non-IntelliJ plugin (e.g. PyCharm) it is also available through IntelliJ if the related IntelliJ plugin is available (e.g. [Python Plugin](https://www.jetbrains.com/help/idea/plugin-overview.html))*
