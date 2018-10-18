@@ -1,0 +1,15 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  sam-app
+
+  Sample SAM Template for sam-app
+
+Resources:
+
+  ToUpperCase:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: target/HelloWorld-1.0.jar
+      Handler: com.amazonaws.test.UsefulUtils::upper
+      Runtime: java8

@@ -11,6 +11,7 @@ import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.util.io.FileUtil
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
 import software.aws.toolkits.jetbrains.settings.SamSettings
+import java.io.File
 
 class SamRunningState(
     environment: ExecutionEnvironment,
@@ -22,13 +23,14 @@ class SamRunningState(
     override fun startProcess(): ProcessHandler {
         val samCliExecutable = SamSettings.getInstance().executablePath
         val commandLine = GeneralCommandLine(samCliExecutable)
-            .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.NONE)
+            .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.CONSOLE)
             .withParameters("local")
             .withParameters("invoke")
             .withParameters("--template")
-            .withParameters(createSamTemplate())
+            .withParameters(samTemplate())
             .withParameters("--event")
             .withParameters(createEventFile())
+            .apply { settings.templateDetails?.run { withParameters(logicalName) } }
             .withEnvironment(settings.environmentVariables)
             .withEnvironment("PYTHONUNBUFFERED", "1") // Force SAM to not buffer stdout/stderr so it gets shown in IDE
 
@@ -37,7 +39,22 @@ class SamRunningState(
         return ProcessHandlerFactory.getInstance().createColoredProcessHandler(commandLine)
     }
 
-    private fun createSamTemplate(): String {
+    private fun samTemplate(): String {
+        val tempFile = FileUtil.createTempFile("${environment.runProfile.name}-template", ".yaml", true)
+        when {
+            settings.templateDetails != null -> substituteCodeUri(tempFile, settings.templateDetails)
+            else -> writeDummySamTemplate(tempFile)
+        }
+
+        return tempFile.absolutePath
+    }
+
+    private fun substituteCodeUri(tempFile: File, templateDetails: SamTemplateDetails) {
+        File(templateDetails.templateFile).copyTo(tempFile, overwrite = true)
+        updateCodeUriForFunctions(tempFile, lambdaPackage.location.toString())
+    }
+
+    private fun writeDummySamTemplate(tempFile: File) {
         val template = """
             Resources:
               Function:
@@ -49,9 +66,7 @@ class SamRunningState(
                   Timeout: 900
         """.trimIndent()
 
-        val templateFile = FileUtil.createTempFile("${environment.runProfile.name}-template", ".yaml", true)
-        templateFile.writeText(template)
-        return templateFile.absolutePath
+        tempFile.writeText(template)
     }
 
     private fun createEventFile(): String {

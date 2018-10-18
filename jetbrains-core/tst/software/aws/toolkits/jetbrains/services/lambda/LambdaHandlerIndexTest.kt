@@ -97,8 +97,7 @@ class LambdaHandlerIndexTest {
         )
 
         runInEdtAndWait {
-            assertThat(LambdaHandlerIndex.listHandlers(projectRule.project))
-                .containsExactly("com.example.LambdaHandler::handleRequest")
+            assertThat(LambdaHandlerIndex.listHandlers(projectRule.project)).containsExactly("com.example.LambdaHandler::handleRequest")
         }
 
         WriteCommandAction.runWriteCommandAction(fixture.project) {
@@ -106,8 +105,7 @@ class LambdaHandlerIndexTest {
         }
 
         runInEdtAndWait {
-            assertThat(LambdaHandlerIndex.listHandlers(projectRule.project))
-                .isEmpty()
+            assertThat(LambdaHandlerIndex.listHandlers(projectRule.project)).isEmpty()
         }
     }
 }

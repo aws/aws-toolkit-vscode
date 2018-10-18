@@ -88,6 +88,8 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
         }
     }
 
+    override fun handlerDisplayName(handler: String): String = handler.substringAfterLast('.').replace("::", ".")
+
     private fun findByMethod(method: PsiMethod): String? {
         val parentClass = method.parent as? PsiClass ?: return null
         if (method.isPublic &&

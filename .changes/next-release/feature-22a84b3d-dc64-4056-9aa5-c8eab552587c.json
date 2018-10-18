@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Enable running SAM locally using an existing template.yaml in the project. Can create run configurations directly from the function definition in the YAML template."
+}

@@ -37,5 +37,10 @@ interface LambdaHandlerResolver {
      */
     fun determineHandler(element: PsiElement): String?
 
+    /**
+     * Given a [handler] create a shorter name used for display.
+     */
+    fun handlerDisplayName(handler: String): String = handler
+
     companion object : RuntimeGroupExtensionPointObject<LambdaHandlerResolver>(ExtensionPointName.create("aws.toolkit.lambda.handlerResolver"))
 }

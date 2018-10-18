@@ -1,5 +1,6 @@
 // Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
+@file:JvmName("UiUtils")
 
 package software.aws.toolkits.jetbrains.utils.ui
 
@@ -9,11 +10,16 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.ui.ComboBox
+import com.intellij.ui.ClickListener
 import com.intellij.ui.EditorTextField
 import software.aws.toolkits.jetbrains.utils.formatText
+import java.awt.event.MouseEvent
+import javax.swing.AbstractButton
 import javax.swing.DefaultComboBoxModel
 import javax.swing.JComboBox
+import javax.swing.JComponent
 import javax.swing.JTextField
+import javax.swing.ListModel
 
 fun <T> ComboBox<T>.populateValues(selected: T? = null, block: () -> List<T>) {
     ApplicationManager.getApplication().executeOnPooledThread {
@@ -55,4 +61,31 @@ fun EditorTextField.formatAndSet(content: String, language: Language) {
             document.setText(formatted)
         }
     }
+}
+
+/**
+ * Allows triggering [button] selection based on clicking on receiver component
+ */
+@JvmOverloads
+fun JComponent.addQuickSelect(button: AbstractButton, postAction: Runnable? = null) {
+    object : ClickListener() {
+        override fun onClick(event: MouseEvent, clickCount: Int): Boolean {
+            if (button.isSelected) {
+                return false
+            }
+            button.isSelected = true
+            postAction?.run()
+            return true
+        }
+    }.installOn(this)
+}
+
+fun <T> ListModel<T>.find(predicate: (T) -> Boolean): T? {
+    for (i in 0..(size - 1)) {
+        val element = getElementAt(i)
+        if (predicate(element)) {
+            return element
+        }
+    }
+    return null
 }

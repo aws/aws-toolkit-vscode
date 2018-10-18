@@ -53,7 +53,7 @@ class LambdaRemoteRunConfiguration(project: Project, factory: ConfigurationFacto
         return RemoteLambdaState(environment, settings.validateAndCreateImmutable())
     }
 
-    override fun suggestedName() = settings.functionName
+    override fun suggestedName() = "[${message("lambda.run_configuration.remote")}] ${settings.functionName}"
 
     fun configure(
         credentialProviderId: String?,

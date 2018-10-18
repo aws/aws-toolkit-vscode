@@ -15,6 +15,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.testFramework.MapDataContext
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
+import org.jetbrains.yaml.psi.YAMLFile
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.testutils.rules.JavaCodeInsightTestFixtureRule
@@ -45,7 +46,55 @@ class LambdaSamRunConfigurationProducerTest {
             assertThat(runConfiguration).isNotNull
             val configuration = runConfiguration?.configuration as SamRunConfiguration
             assertThat(configuration.getHandler()).isEqualTo("com.example.LambdaHandler::handleRequest")
-            assertThat(configuration.name).isEqualTo("com.example.LambdaHandler::handleRequest")
+            assertThat(configuration.name).isEqualTo("[Local] LambdaHandler.handleRequest")
+        }
+    }
+
+    @Test
+    fun validRunConfigurationIsCreatedFromTemplate() {
+        runInEdtAndWait {
+            val psiFile = projectRule.fixture.configureByText(
+                "template.yaml", """
+Resources:
+    MyFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            Handler: helloworld.App::handleRequest
+            Runtime: java8
+        """.trimIndent()
+            ) as YAMLFile
+            val psiElement = psiFile.findByLocation("Resources.MyFunction")?.key ?: throw RuntimeException("Can't find function")
+            val runConfiguration = createRunConfiguration(psiElement)
+            assertThat(runConfiguration).isNotNull
+            val configuration = runConfiguration?.configuration as SamRunConfiguration
+            assertThat(configuration.name).isEqualTo("[Local] MyFunction")
+        }
+    }
+
+    @Test
+    fun canRoundTripTemplateBasedConfiguration() {
+        runInEdtAndWait {
+            val psiFile = projectRule.fixture.configureByText(
+                "template.yaml", """
+Resources:
+    MyFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            Handler: helloworld.App::handleRequest
+            Runtime: java8
+        """.trimIndent()
+            ) as YAMLFile
+            val psiElement = psiFile.findByLocation("Resources.MyFunction")?.key ?: throw RuntimeException("Can't find function")
+            val runConfiguration = createRunConfiguration(psiElement)
+
+            val sut = RunConfigurationProducer.getInstance(LambdaSamRunConfigurationProducer::class.java)
+
+            assertThat(
+                sut.isConfigurationFromContext(
+                    runConfiguration?.configuration as SamRunConfiguration,
+                    createContext(psiElement, MapDataContext())
+                )
+            ).isTrue()
         }
     }
 

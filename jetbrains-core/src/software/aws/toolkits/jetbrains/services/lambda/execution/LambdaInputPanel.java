@@ -4,7 +4,8 @@
 package software.aws.toolkits.jetbrains.services.lambda.execution;
 
 import static com.intellij.openapi.application.ActionsKt.runInEdt;
-import static software.aws.toolkits.jetbrains.utils.ui.UiUtilsKt.formatAndSet;
+import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.addQuickSelect;
+import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.formatAndSet;
 import static software.aws.toolkits.resources.Localization.message;
 
 import com.intellij.icons.AllIcons;
@@ -23,20 +24,17 @@ import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.ui.ClickListener;
 import com.intellij.ui.ComboboxWithBrowseButton;
 import com.intellij.ui.EditorTextField;
 import com.intellij.ui.EditorTextFieldProvider;
 import com.intellij.ui.ListCellRendererWrapper;
 import com.intellij.ui.SortedComboBoxModel;
 import com.intellij.util.ui.UIUtil;
-import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
 import javax.swing.JComboBox;
-import javax.swing.JComponent;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
@@ -96,10 +94,10 @@ public class LambdaInputPanel {
             selected = selectedSample;
         });
 
-        addQuickEnable(inputFile.getTextField(), useInputFile);
-        addQuickEnable(inputTemplates.getComboBox(), useInputText);
-        addQuickEnable(inputTemplates.getButton(), useInputText);
-        addQuickEnable(inputText.getComponent(), useInputText);
+        addQuickSelect(inputFile.getTextField(), useInputFile, this::updateComponents);
+        addQuickSelect(inputTemplates.getComboBox(), useInputText, this::updateComponents);
+        addQuickSelect(inputTemplates.getButton(), useInputText, this::updateComponents);
+        addQuickSelect(inputText.getComponent(), useInputText, this::updateComponents);
 
         inputFile.addBrowseFolderListener(null, null, project,
                                           FileChooserDescriptorFactory.createSingleFileDescriptor(JsonFileType.INSTANCE));
@@ -115,21 +113,6 @@ public class LambdaInputPanel {
         inputTemplates.addActionListener(new InputTemplateBrowseAction());
 
         updateComponents();
-    }
-
-    // Allows triggering the radio button selection by clicking on the component
-    private void addQuickEnable(JComponent component, JRadioButton radioButton) {
-        new ClickListener() {
-            @Override
-            public boolean onClick(@NotNull MouseEvent event, int clickCount) {
-                if (radioButton.isSelected()) {
-                    return false;
-                }
-                radioButton.setSelected(true);
-                updateComponents();
-                return true;
-            }
-        }.installOn(component);
     }
 
     private void createUIComponents() {
@@ -159,7 +142,7 @@ public class LambdaInputPanel {
         if (inputText.isEnabled()) {
             inputText.setBackground(UIUtil.getTextFieldBackground());
         } else {
-            inputText.setBackground(panel.getBackground());
+            inputText.setBackground(UIUtil.getComboBoxDisabledBackground());
         }
 
         inputFile.setEnabled(useInputFile.isSelected());

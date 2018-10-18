@@ -42,7 +42,7 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
         // Requires SamDebugSupport too
         if (DefaultDebugExecutor.EXECUTOR_ID == executorId) {
             profile.settings.runtime?.let {
-                return SamDebugSupport.supportedRuntimeGroups.contains(Runtime.valueOf(it).runtimeGroup)
+                return SamDebugSupport.supportedRuntimeGroups.contains(Runtime.fromValue(it).runtimeGroup)
             }
         }
 

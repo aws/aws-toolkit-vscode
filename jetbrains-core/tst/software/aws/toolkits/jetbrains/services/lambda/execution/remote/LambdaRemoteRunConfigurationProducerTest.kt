@@ -48,7 +48,7 @@ class LambdaRemoteRunConfigurationProducerTest {
             assertThat(settings.functionName).isEqualTo(functionName)
             assertThat(settings.credentialProviderId).isEqualTo(credentialProviderId)
             assertThat(settings.regionId).isEqualTo(region.id)
-            assertThat(configuration.name).isEqualTo(functionName)
+            assertThat(configuration.name).isEqualTo("[Remote] $functionName")
         }
     }
 
