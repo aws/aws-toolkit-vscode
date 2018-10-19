@@ -8,7 +8,6 @@ import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.xdebugger.XDebuggerUtil
 import com.jetbrains.python.psi.PyFile
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -70,7 +69,6 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
 
     @Test
     fun samIsExecutedWithDebugger() {
-        assumeTrue("Test disabled in CI", System.getenv("CI") == null)
         runInEdtAndWait {
             val document = projectRule.fixture.editor.document
             val lambdaClass = projectRule.fixture.file as PyFile

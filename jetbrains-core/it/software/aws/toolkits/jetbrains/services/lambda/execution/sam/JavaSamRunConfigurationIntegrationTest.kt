@@ -16,7 +16,6 @@ import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.xdebugger.XDebuggerUtil
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
-import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -93,7 +92,6 @@ class JavaSamRunConfigurationIntegrationTest {
 
     @Test
     fun samIsExecutedWithDebugger() {
-        assumeTrue("Test disabled in CI", System.getenv("CI") == null)
         runInEdtAndWait {
             val document = projectRule.fixture.editor.document
             val lambdaClass = projectRule.fixture.file as PsiJavaFile
