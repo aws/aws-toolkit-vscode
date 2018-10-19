@@ -3,25 +3,48 @@
 
 package software.aws.toolkits.jetbrains.settings;
 
-import com.intellij.openapi.options.ConfigurationException;
+import static software.aws.toolkits.resources.Localization.message;
+
+import com.intellij.ide.BrowserUtil;
+import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.options.SearchableConfigurable;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
+import com.intellij.ui.components.labels.LinkLabel;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.Nls.Capitalization;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import software.aws.toolkits.resources.Localization;
 
 public class AwsSettingsConfigurable implements SearchableConfigurable {
+    private static final String SAM_HELP_LINK = "https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html";
+
+    private final Project project;
     private JPanel panel;
     private TextFieldWithBrowseButton samExecutablePath;
+    private LinkLabel samHelp;
+
+    public AwsSettingsConfigurable(Project project) {
+        this.project = project;
+
+        samExecutablePath.addBrowseFolderListener(
+            message("aws.settings.sam.find.title"),
+            message("aws.settings.sam.find.description"),
+            project,
+            FileChooserDescriptorFactory.createSingleLocalFileDescriptor()
+        );
+    }
 
     @Nullable
     @Override
     public JComponent createComponent() {
         return panel;
+    }
+
+    private void createUIComponents() {
+        samHelp = LinkLabel.create(message("aws.settings.sam.help"), () -> BrowserUtil.browse(SAM_HELP_LINK));
     }
 
     @NotNull
@@ -33,7 +56,7 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
     @Nls(capitalization = Capitalization.Title)
     @Override
     public String getDisplayName() {
-        return Localization.message("aws.settings.title");
+        return message("aws.settings.title");
     }
 
     @Override
@@ -44,7 +67,7 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
     }
 
     @Override
-    public void apply() throws ConfigurationException {
+    public void apply() {
         SamSettings samSettings = SamSettings.getInstance();
         samSettings.setExecutablePath(samExecutablePath.getText().trim());
     }
