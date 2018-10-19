@@ -69,8 +69,6 @@ async function detectLambdasFromTemplate(templatePath: string): Promise<LocalLam
     return Object.keys(resources)
         .filter(key => resources[key].Type === 'AWS::Serverless::Function')
         .map(key => ({
-            label: key,
-            description: templatePath,
             lambda: key,
             templatePath
         }))
