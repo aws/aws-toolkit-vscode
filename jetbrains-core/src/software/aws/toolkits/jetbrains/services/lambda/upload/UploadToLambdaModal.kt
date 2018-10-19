@@ -26,11 +26,12 @@ import software.aws.toolkits.jetbrains.utils.ui.blankAsNull
 import software.aws.toolkits.jetbrains.utils.ui.populateValues
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
+import java.util.concurrent.TimeUnit
 import javax.swing.DefaultComboBoxModel
 import javax.swing.JComponent
 
-private const val DEFAULT_TIMEOUT = 60
-private const val MAX_TIMEOUT = 300
+private val DEFAULT_TIMEOUT = TimeUnit.MINUTES.toSeconds(1)
+private val MAX_TIMEOUT = TimeUnit.MINUTES.toSeconds(15)
 private const val MIN_TIMEOUT = 1
 
 class UploadToLambdaModal(

@@ -100,7 +100,7 @@ class UploadToLambdaValidatorTest {
 
     @Test
     fun timeoutMustBeWithinUpperBound() {
-        view.timeout.text = "301"
+        view.timeout.text = Integer.MAX_VALUE.toString()
         assert(sut.doValidate(view)).containsMessage("Timeout must be between")
     }
 
