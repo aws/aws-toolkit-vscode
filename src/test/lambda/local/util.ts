@@ -7,7 +7,24 @@
 
 import * as os from 'os'
 import * as path from 'path'
+import { Uri, WorkspaceFolder } from 'vscode'
 import * as filesystem from '../../../shared/filesystem'
+
+export async function createWorkspaceFolder(prefix: string): Promise<{
+    workspacePath: string
+    workspaceFolder: WorkspaceFolder
+}> {
+    const workspacePath = await createTemporaryDirectory('vsctk')
+
+    return {
+        workspacePath,
+        workspaceFolder: {
+            uri: Uri.file(workspacePath),
+            name: path.basename(workspacePath),
+            index: 0
+        }
+    }
+}
 
 export async function createTemporaryDirectory(prefix: string): Promise<string> {
     const fullPrefix = path.join(os.tmpdir(), prefix)

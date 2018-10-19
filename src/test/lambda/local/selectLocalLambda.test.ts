@@ -8,32 +8,28 @@
 import * as assert from 'assert'
 import * as del from 'del'
 import * as path from 'path'
-import { Uri, WorkspaceFolder } from 'vscode'
+import { WorkspaceFolder } from 'vscode'
 import { selectLocalLambda } from '../../../lambda/local/selectLocalLambda'
-import { createTemporaryDirectory, saveTemplate } from './util'
+import { createWorkspaceFolder, saveTemplate } from './util'
 
 suite('selectLocalLambda tests', () => {
-    let workspacePath: string | undefined
-    let workspaceFolder: WorkspaceFolder | undefined
+    const workspacePaths: string[] = []
+    const workspaceFolders: WorkspaceFolder[] = []
     let templatePath: string | undefined
 
-    suiteSetup(async () => {
-        workspacePath = await createTemporaryDirectory('vsctk')
-
-        workspaceFolder = {
-            uri: Uri.file(workspacePath),
-            name: path.basename(workspacePath),
-            index: 0
-        }
+    setup(async () => {
+        const { workspacePath, workspaceFolder } = await createWorkspaceFolder('vsctk')
+        workspacePaths.push(workspacePath)
+        workspaceFolders.push(workspaceFolder)
 
         templatePath = path.join(workspaceFolder.uri.fsPath, 'template.yml')
         await saveTemplate(templatePath, 'MyFunction')
     })
 
-    suiteTeardown(async () => {
-        await del([ workspacePath! ], { force: true })
-        workspacePath = undefined
-        workspaceFolder = undefined
+    teardown(async () => {
+        await del(workspacePaths, { force: true })
+        workspacePaths.length = 0
+        workspaceFolders.length = 0
         templatePath = undefined
     })
 
@@ -41,7 +37,7 @@ suite('selectLocalLambda tests', () => {
         let showQuickPickInvoked = false
 
         const actual = await selectLocalLambda(
-            [ workspaceFolder! ],
+            workspaceFolders,
             async (items, options, token) => {
                 assert.equal(showQuickPickInvoked, false)
                 showQuickPickInvoked = true
@@ -66,7 +62,7 @@ suite('selectLocalLambda tests', () => {
         let showQuickPickInvoked = false
 
         const actual = await selectLocalLambda(
-            [ workspaceFolder! ],
+            workspaceFolders,
             async (items, options, token) => {
                 assert.equal(showQuickPickInvoked, false)
                 showQuickPickInvoked = true
