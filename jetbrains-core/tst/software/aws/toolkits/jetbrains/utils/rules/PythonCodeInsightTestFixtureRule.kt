@@ -4,11 +4,17 @@
 package software.aws.toolkits.jetbrains.utils.rules
 
 import com.intellij.ide.util.projectWizard.EmptyModuleBuilder
+import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleType
 import com.intellij.openapi.module.ModuleTypeManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.impl.ProjectJdkImpl
+import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.roots.ModuleRootModificationUtil
+import com.intellij.openapi.roots.OrderRootType
+import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.builders.ModuleFixtureBuilder
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
@@ -22,8 +28,11 @@ import com.jetbrains.python.PythonModuleTypeBase
 import com.jetbrains.python.sdk.PythonSdkAdditionalData
 import com.jetbrains.python.sdk.PythonSdkType
 import com.jetbrains.python.sdk.flavors.CPythonSdkFlavor
+import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.annotations.NotNull
 import software.aws.toolkits.jetbrains.testutils.rules.CodeInsightTestFixtureRule
+import java.io.File
+import java.nio.file.Paths
 
 /**
  * JUnit test Rule that will create a Light [Project] and [CodeInsightTestFixture] with Python support. Projects are
@@ -50,7 +59,7 @@ class PythonCodeInsightTestFixtureRule : CodeInsightTestFixtureRule() {
         PsiTestUtil.addSourceRoot(module, projectRoot)
         PsiTestUtil.addContentRoot(module, projectRoot)
 
-        ModuleRootModificationUtil.setModuleSdk(module, PyTestSdk())
+        ModuleRootModificationUtil.setModuleSdk(module, PyTestSdk3x())
 
         return newFixture
     }
@@ -83,17 +92,66 @@ internal class PlatformPythonModuleType : PythonModuleTypeBase<EmptyModuleBuilde
     }
 }
 
-internal class PyTestSdk() : ProjectJdkImpl("Fake CPython", PythonSdkType.getInstance()) {
+class PyTestSdk2x() : PyTestSdk("PyTestSdk2x") {
+    override fun getVersionString(): String? {
+        return "FakeCPython 2.6.0"
+    }
+}
+
+class PyTestSdk3x() : PyTestSdk("PyTestSdk3x") {
+    override fun getVersionString(): String? {
+        return "FakeCPython 3.7.0"
+    }
+}
+
+class PyVirtualEnvSdk(module: Module) : PyTestSdk("PyVirtEnv") {
+    private val envHome = Paths.get(ModuleRootManager.getInstance(module).contentRoots[0].path, "venv")
+    private val pythonExecutable = envHome.resolve(Paths.get("bin", "python"))
+    private val envSitePackages = envHome.resolve("lib").resolve("site-packages")
+
     init {
-        sdkAdditionalData = PythonSdkAdditionalData(object : CPythonSdkFlavor() {
-            @NotNull
-            override fun getName(): String {
-                return "Fake CPython"
-            }
-        })
+        Disposer.register(module, this)
+
+        createFileIfNotExists(pythonExecutable.toFile())
+        createFileIfNotExists(envHome.resolve("pyvenv.cfg").toFile())
+        createDirIfNotExists(envSitePackages.toFile())
+
+        addRoot(LocalFileSystem.getInstance().findFileByIoFile(envSitePackages.toFile())!!, OrderRootType.CLASSES)
+
+        homePath = pythonExecutable.toString()
     }
 
     override fun getVersionString(): String? {
-        return "Fake CPython 3.7.0"
+        return "FakeCPython 3.7.0 [virtual-env]"
+    }
+
+    fun addSitePackage(libName: String) {
+        assertThat(createFileIfNotExists(envSitePackages.resolve(libName).resolve("__init__.py").toFile()))
+            .isTrue()
+    }
+
+    private fun createFileIfNotExists(file: File): Boolean {
+        return createDirIfNotExists(file.parentFile) && FileUtil.createIfNotExists(file).also {
+            LocalFileSystem.getInstance().refreshAndFindFileByIoFile(file)
+        }
+    }
+
+    private fun createDirIfNotExists(dir: File): Boolean {
+        return FileUtil.createDirectory(dir).also {
+            LocalFileSystem.getInstance().refreshAndFindFileByIoFile(dir)
+        }
+    }
+}
+
+abstract class PyTestSdk(name: String) : ProjectJdkImpl(name, PythonSdkType.getInstance()) {
+    init {
+        sdkAdditionalData = PythonSdkAdditionalData(FakeCPython())
+    }
+}
+
+internal class FakeCPython : CPythonSdkFlavor() {
+    @NotNull
+    override fun getName(): String {
+        return "FakeCPython"
     }
 }

@@ -23,6 +23,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import software.aws.toolkits.core.utils.zipEntries
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
 import software.aws.toolkits.jetbrains.testutils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.testutils.rules.addClass
@@ -30,11 +31,9 @@ import software.aws.toolkits.jetbrains.testutils.rules.addModule
 import software.aws.toolkits.jetbrains.testutils.rules.addResourceFile
 import software.aws.toolkits.jetbrains.testutils.rules.addTestClass
 import java.io.File
-import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.TimeUnit
-import java.util.zip.ZipFile
 
 class JavaLambdaPackagerTest {
     private val dependentJarPath = PathUtil.getJarPathForClass(JacksonAnnotation::class.java)
@@ -247,10 +246,6 @@ class JavaLambdaPackagerTest {
             PlatformTestUtil.saveProject(project)
             CompilerTestUtil.saveApplicationSettings()
         }
-    }
-
-    private fun zipEntries(zipFile: Path): List<String> = ZipFile(zipFile.toFile()).use { zip ->
-        zip.entries().toList().filterNot { it.isDirectory }.mapNotNull { it.name }
     }
 
     private fun <T> CompletionStage<T>.whenDone(other: CompletableFuture<T>) = whenComplete { result, exception ->
