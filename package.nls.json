@@ -39,6 +39,7 @@
     "AWS.message.prompt.credentials.create": "You do not appear to have any AWS Credentials defined. Would you like to set one up now?",
     "AWS.message.prompt.credentials.definition.help": "Would you like some information related to defining credentials?",
     "AWS.message.prompt.credentials.definition.tryAgain": "The credentials do not appear to be valid ({0}). Would you like to try again?",
+    "AWS.message.prompt.selectLocalLambda.placeholder": "Select a lambda function",
     "AWS.prompt.mfa.enterCode.placeholder": "Enter Authentication Code Here",
     "AWS.prompt.mfa.enterCode.prompt": "Enter authentication code for profile {0}",
     "AWS.placeHolder.inputAccessKey": "Input the AWS Access Key to be stored in the profile",

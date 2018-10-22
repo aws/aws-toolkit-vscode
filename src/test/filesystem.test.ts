@@ -21,8 +21,8 @@ suite('filesystem Tests', () => {
         tempFolder = fs.mkdtempSync('vsctk')
     })
 
-    suiteTeardown(() => {
-        del.sync([tempFolder])
+    suiteTeardown(async () => {
+        await del([ tempFolder ])
     })
 
     test('readFileAsyncAsString', async () => {
@@ -34,6 +34,18 @@ suite('filesystem Tests', () => {
             await filesystem.readFileAsyncAsString(filename),
             expectedJson
         )
+    })
+
+    test('mkdtempAsync rejects on error', async () => {
+        let error: Error | string | undefined
+
+        try {
+            await filesystem.mkdtempAsync('\n\0')
+        } catch (err) {
+            error = err as Error | string
+        } finally {
+            assert.ok(error)
+        }
     })
 
     function generateRandomData(): string {

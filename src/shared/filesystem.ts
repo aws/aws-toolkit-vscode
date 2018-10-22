@@ -5,9 +5,25 @@
 
 'use strict'
 
-import { access, readFile, writeFile } from 'fs'
+import { access, mkdtemp, readFile, writeFile } from 'fs'
 
 /* tslint:disable promise-function-async */
+export function accessAsync(path: string | Buffer): Promise<boolean> {
+    return new Promise((resolve, reject) => access(path, err => resolve(!err)))
+}
+
+export function mkdtempAsync(prefix: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        mkdtemp(prefix, (err, folder) => {
+            if (!err) {
+                resolve(folder)
+            } else {
+                reject(err)
+            }
+        })
+    })
+}
+
 export function readFileAsync(filename: string, encoding: string | null): Promise<string | Buffer> {
     return new Promise((resolve, reject) => {
         readFile(filename, encoding, (err, data) => {
@@ -46,18 +62,6 @@ export function writeFileAsync(filename: string, data: any, encoding: string): P
             } else {
                 reject(err)
             }
-        })
-    })
-}
-
-export function accessAsync(path: string | Buffer): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-        access(path, err => {
-            if (!!err) {
-                console.error(`Could not access file '${path}'`)
-            }
-
-            resolve(!err)
         })
     })
 }
