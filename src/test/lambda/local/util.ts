@@ -14,7 +14,7 @@ export async function createWorkspaceFolder(prefix: string): Promise<{
     workspacePath: string
     workspaceFolder: WorkspaceFolder
 }> {
-    const workspacePath = await createTemporaryDirectory('vsctk')
+    const workspacePath = await createTemporaryDirectory(prefix)
 
     return {
         workspacePath,
