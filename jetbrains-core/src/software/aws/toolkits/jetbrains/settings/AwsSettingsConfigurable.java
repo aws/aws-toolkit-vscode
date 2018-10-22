@@ -62,7 +62,6 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
     @Override
     public boolean isModified() {
         SamSettings samSettings = SamSettings.getInstance();
-
         return isModified(samExecutablePath.getTextField(), samSettings.getExecutablePath());
     }
 

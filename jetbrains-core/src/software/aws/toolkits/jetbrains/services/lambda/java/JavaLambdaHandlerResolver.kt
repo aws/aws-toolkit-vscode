@@ -33,8 +33,7 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
         val psiFacade = JavaPsiFacade.getInstance(project)
         val classes = psiFacade.findClasses(className, searchScope).toList()
         return if (methodName.isNullOrEmpty()) {
-            classes.filterIsInstance<NavigatablePsiElement>()
-                .toTypedArray()
+            classes.filterIsInstance<NavigatablePsiElement>().toTypedArray()
         } else {
             val handlerMethod = classes.asSequence()
                 .map { it.findMethodsByName(methodName, true) }
