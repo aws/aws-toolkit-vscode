@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.lambda
 import com.intellij.lang.Language
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
@@ -36,6 +37,21 @@ interface LambdaHandlerResolver {
      * @see com.intellij.codeInsight.daemon.LineMarkerProvider.getLineMarkerInfo
      */
     fun determineHandler(element: PsiElement): String?
+
+    /**
+     * Return a set of valid handlers from the given [PsiElement]. Different from [determineHandler], it returns all the
+     * valid handler strings contained by the [element].
+     *
+     * For Java implementation, if the element is a Java class, it returns all the valid methods either defined by this
+     * class or its super class(es).
+     *
+     * @param element The [PsiElement] that containing all the handlers
+     * @param file The underlying [VirtualFile] for the [PsiElement]. In JetBrains indexing, the [VirtualFile] is not
+     * attached to the target [PsiElement], you need to explicitly pass in this parameter.
+     *
+     * @see LambdaHandlerIndex.getIndexer
+     */
+    fun determineHandlers(element: PsiElement, file: VirtualFile): Set<String>
 
     /**
      * Given a [handler] create a shorter name used for display.

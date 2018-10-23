@@ -44,8 +44,7 @@ class LambdaHandlerIndex : ScalarIndexExtension<String>() {
             override fun visitElement(element: PsiElement?) {
                 super.visitElement(element)
                 element?.run {
-                    val handler = handlerIdentifier.determineHandler(this) ?: return@run
-                    handlers[handler] = null
+                    handlerIdentifier.determineHandlers(this, fileContent.file).forEach { handlers[it] = null }
                 }
             }
         })
