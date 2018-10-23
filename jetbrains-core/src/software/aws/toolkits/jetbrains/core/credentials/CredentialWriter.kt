@@ -8,6 +8,8 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.fileEditor.OpenFileDescriptor
+import com.intellij.openapi.fileTypes.UnknownFileType
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
@@ -27,6 +29,7 @@ class CreateOrUpdateCredentialProfilesAction @TestOnly constructor(
     private val writer: CredentialFileWriter,
     private val file: File
 ) : AnAction(message("configure.toolkit.upsert_credentials.action")), DumbAware {
+    @Suppress("unused")
     constructor() : this(DefaultCredentialFileWriter, FileLocation.credentialsFileLocationPath().toFile())
 
     private val localFileSystem = LocalFileSystem.getInstance()
@@ -42,12 +45,17 @@ class CreateOrUpdateCredentialProfilesAction @TestOnly constructor(
             }
         }
 
-        val virtualFile = localFileSystem.refreshAndFindFileByIoFile(file) ?: throw RuntimeException("Could not open $file")
+        val virtualFile = localFileSystem.refreshAndFindFileByIoFile(file) ?: throw RuntimeException(message("credentials.could_not_open", file))
         virtualFile.isWritable = true
+        if (virtualFile.fileType is UnknownFileType && virtualFile.length == 0L) {
+            throw RuntimeException(message("credentials.empty_file", file))
+        }
+
         val fileEditorManager = FileEditorManager.getInstance(project)
 
         localFileSystem.refreshFiles(listOf(virtualFile), false, false) {
-            fileEditorManager.openFile(virtualFile, true)
+            fileEditorManager.openTextEditor(OpenFileDescriptor(project, virtualFile), true)
+                ?: throw RuntimeException(message("credentials.could_not_open", file))
         }
     }
 

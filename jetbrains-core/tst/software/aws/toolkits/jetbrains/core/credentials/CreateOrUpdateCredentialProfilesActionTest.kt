@@ -62,4 +62,13 @@ class CreateOrUpdateCredentialProfilesActionTest {
 
         verifyZeroInteractions(writer)
     }
+
+    @Test(expected = RuntimeException::class)
+    fun exceptionThrownIfFileIsEmpty() {
+        val file = File(folderRule.newFolder(), "credentials")
+        file.createNewFile()
+        val sut = CreateOrUpdateCredentialProfilesAction(mock(), file)
+
+        sut.actionPerformed(TestActionEvent(DataContext { projectRule.project }))
+    }
 }
