@@ -16,7 +16,9 @@ fun createRunConfiguration(
     input: String? = "inputText",
     inputIsFile: Boolean = false,
     credentialsProviderId: String? = null,
-    region: AwsRegion? = AwsRegion("us-east-1", "us-east-1")
+    region: AwsRegion? = AwsRegion("us-east-1", "us-east-1"),
+    templateFile: String? = null,
+    logicalFunctionName: String? = null
 ): SamRunConfiguration {
     val runManager = RunManager.getInstance(project)
     val topLevelFactory = runManager.configurationFactories.first { it is LambdaRunConfiguration }
@@ -25,7 +27,7 @@ fun createRunConfiguration(
     val runConfiguration = runConfigurationAndSettings.configuration as SamRunConfiguration
     runManager.addConfiguration(runConfigurationAndSettings)
 
-    runConfiguration.configure(runtime, handler, input, inputIsFile, mutableMapOf(), credentialsProviderId, region)
+    runConfiguration.configure(runtime, handler, input, inputIsFile, mutableMapOf(), credentialsProviderId, region, templateFile, logicalFunctionName)
 
     return runConfiguration
 }
