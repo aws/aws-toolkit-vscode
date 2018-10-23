@@ -6,8 +6,8 @@
 'use strict'
 
 import * as assert from 'assert'
-import { CredentialsProfileMru } from '../shared/credentials/credentialsProfileMru'
-import { SettingsConfiguration } from '../shared/settingsConfiguration'
+import { CredentialsProfileMru } from '../../../shared/credentials/credentialsProfileMru'
+import { SettingsConfiguration } from '../../../shared/settingsConfiguration'
 
 class TestSettingsConfiguration implements SettingsConfiguration {
 
@@ -22,9 +22,9 @@ class TestSettingsConfiguration implements SettingsConfiguration {
     }
 }
 
-suite('CredentialsProfileMru Tests', function(): void {
+describe('CredentialsProfileMru', function(): void {
 
-    test('Set and Get one', async function() {
+    it('lists single profile when only one exists', async function() {
 
         const credentialsMru = new CredentialsProfileMru(new TestSettingsConfiguration())
 
@@ -37,7 +37,7 @@ suite('CredentialsProfileMru Tests', function(): void {
         assert.equal(mru[0], 'apples')
     })
 
-    test('Set and Get two', async function() {
+    it('lists multiple profiles when multiple exist', async function() {
         const credentialsMru = new CredentialsProfileMru(new TestSettingsConfiguration())
 
         await credentialsMru.setMostRecentlyUsedProfile('dogs')
@@ -51,7 +51,7 @@ suite('CredentialsProfileMru Tests', function(): void {
         assert.equal(mru[1], 'dogs')
     })
 
-    test('Set one already in MRU', async function() {
+    it('does not list duplicate profiles', async function() {
         const credentialsMru = new CredentialsProfileMru(new TestSettingsConfiguration())
 
         await credentialsMru.setMostRecentlyUsedProfile('bbq')
@@ -68,7 +68,7 @@ suite('CredentialsProfileMru Tests', function(): void {
         assert.equal(mru[2], 'dill')
     })
 
-    test('MRU max size trim', async function() {
+    it('does not list more than MAX_CRENDTIAL_MRU_SIZE profiles', async function() {
         const credentialsMru = new CredentialsProfileMru(new TestSettingsConfiguration())
 
         for (let i = 0; i < CredentialsProfileMru.MAX_CREDENTIAL_MRU_SIZE + 1; i++) {

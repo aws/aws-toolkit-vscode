@@ -9,7 +9,7 @@ import * as assert from 'assert'
 import * as del from 'del'
 import * as fs from 'fs'
 import * as path from 'path'
-import * as filesystem from '../shared/filesystem'
+import * as filesystem from '../../shared/filesystem'
 
 describe('filesystem', () => {
 
@@ -26,7 +26,7 @@ describe('filesystem', () => {
     })
 
     describe('readFileAsyncAsString', () => {
-        it('reads file content as string', async () => {
+        it('reads file contents as a string', async () => {
             const expectedJson: string = generateRandomData()
             const filename = path.join(tempFolder, 'read-async-string-test.json')
             fs.writeFileSync(filename, expectedJson)
@@ -36,18 +36,6 @@ describe('filesystem', () => {
                 expectedJson
             )
         })
-
-        function generateRandomData(): string {
-            const data: { [key: string]: Number } = {}
-
-            for (let i = 0; i < 250; i++) {
-                const key: string = `data${Math.round(Math.random() * 1000)}`
-
-                data[key] = Math.random()
-            }
-
-            return JSON.stringify(data)
-        }
     })
 
     describe('mkdtempAsync', () => {
@@ -63,4 +51,16 @@ describe('filesystem', () => {
             }
         })
     })
+
+    function generateRandomData(): string {
+        const data: { [key: string]: Number } = {}
+
+        for (let i = 0; i < 250; i++) {
+            const key: string = `data${Math.round(Math.random() * 1000)}`
+
+            data[key] = Math.random()
+        }
+
+        return JSON.stringify(data)
+    }
 })

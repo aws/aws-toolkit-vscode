@@ -6,12 +6,12 @@
 'use strict'
 
 import * as assert from 'assert'
-import { DefaultRegionProvider } from '../shared/regions/defaultRegionProvider'
-import { ResourceFetcher } from '../shared/resourceFetcher'
-import { ResourceLocation } from '../shared/resourceLocation'
-import { FakeExtensionContext } from './fakeExtensionContext'
+import { DefaultRegionProvider } from '../../shared/regions/defaultRegionProvider'
+import { ResourceFetcher } from '../../shared/resourceFetcher'
+import { ResourceLocation } from '../../shared/resourceLocation'
+import { FakeExtensionContext } from '../fakeExtensionContext'
 
-suite('ResourceFetcherBase Tests', function(): void {
+describe('ResourceFetcher', () => {
 
     class ResourceFetcherCounter implements ResourceFetcher {
         public timesCalled = 0
@@ -25,7 +25,7 @@ suite('ResourceFetcherBase Tests', function(): void {
         }
     }
 
-    test('Fetches something', async function() {
+    it('fetches something', async () => {
         const fetchCounter = new ResourceFetcherCounter()
         const context = new FakeExtensionContext()
         const regionProvider = new DefaultRegionProvider(context, fetchCounter)
@@ -35,7 +35,7 @@ suite('ResourceFetcherBase Tests', function(): void {
         assert.equal(fetchCounter.timesCalled, 1)
     })
 
-    test('Fetches something the first time only', async function() {
+    it('fetches something the first time only', async () => {
         const fetchCounter = new ResourceFetcherCounter()
         const context = new FakeExtensionContext()
         const regionProvider = new DefaultRegionProvider(context, fetchCounter)

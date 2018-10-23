@@ -7,16 +7,16 @@ import * as assert from 'assert'
 import * as del from 'del'
 import * as fs from 'fs'
 import * as path from 'path'
-import { DefaultCredentialsFileReaderWriter } from '../shared/credentials/defaultCredentialsFileReaderWriter'
-import { EnvironmentVariables } from '../shared/environmentVariables'
+import { DefaultCredentialsFileReaderWriter } from '../../../shared/credentials/defaultCredentialsFileReaderWriter'
+import { EnvironmentVariables } from '../../../shared/environmentVariables'
 
-suite('DefaultCredentialsFileReaderWriter Tests', () => {
+describe('DefaultCredentialsFileReaderWriter', () => {
 
     let tempFolder: string
     const credentialsProfileNames: string[] = ['default', 'apple', 'orange']
     const configProfileNames: string[] = ['banana', 'mango']
 
-    suiteSetup(() => {
+    before(() => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
         tempFolder = fs.mkdtempSync('vsctk')
@@ -35,23 +35,23 @@ suite('DefaultCredentialsFileReaderWriter Tests', () => {
         env.AWS_CONFIG_FILE = configFilename
     })
 
-    suiteTeardown(() => {
+    after(() => {
         del.sync([tempFolder])
     })
 
-    test('Can use Config File', async () => {
+    it('can use Config File', async () => {
         const writer = new DefaultCredentialsFileReaderWriter()
         writer.setCanUseConfigFile(true)
         assert.equal(writer.getCanUseConfigFile(), true)
     })
 
-    test('Can not use Config File', async () => {
+    it('can not use Config File', async () => {
         const writer = new DefaultCredentialsFileReaderWriter()
         writer.setCanUseConfigFile(false)
         assert.equal(writer.getCanUseConfigFile(), false)
     })
 
-    test('Does load profiles from Config', async () => {
+    it('loads profiles from Config', async () => {
         const writer = new DefaultCredentialsFileReaderWriter()
         writer.setCanUseConfigFile(true)
 
@@ -76,7 +76,7 @@ suite('DefaultCredentialsFileReaderWriter Tests', () => {
         })
     })
 
-    test('Refrains from loading profiles from Config', async () => {
+    it('refrains from loading profiles from Config', async () => {
         const writer = new DefaultCredentialsFileReaderWriter()
         writer.setCanUseConfigFile(false)
 
@@ -101,33 +101,36 @@ suite('DefaultCredentialsFileReaderWriter Tests', () => {
         })
     })
 
-    test('setCanUseConfigFileIfExists with config file that exists', async () => {
-        let canUseState: boolean | undefined
+    describe('setCanUseConfigFileIfExists', () => {
 
-        const writer = new DefaultCredentialsFileReaderWriter()
-        writer.setCanUseConfigFile = (allow) => {
-            canUseState = allow
-        }
+        it('allows use of config file if it exists', async () => {
+            let canUseState: boolean | undefined
 
-        await writer.setCanUseConfigFileIfExists()
+            const writer = new DefaultCredentialsFileReaderWriter()
+            writer.setCanUseConfigFile = (allow) => {
+                canUseState = allow
+            }
 
-        assert.equal(canUseState, true)
-    })
+            await writer.setCanUseConfigFileIfExists()
 
-    test('setCanUseConfigFileIfExists with config file that does not exist', async () => {
-        let canUseState: boolean | undefined
+            assert.equal(canUseState, true)
+        })
 
-        const env = process.env as EnvironmentVariables
-        env.AWS_CONFIG_FILE = path.join(tempFolder, 'config-not-exist-file')
+        it('does not allow use of config file if it does not exist', async () => {
+            let canUseState: boolean | undefined
 
-        const writer = new DefaultCredentialsFileReaderWriter()
-        writer.setCanUseConfigFile = (allow) => {
-            canUseState = allow
-        }
+            const env = process.env as EnvironmentVariables
+            env.AWS_CONFIG_FILE = path.join(tempFolder, 'config-not-exist-file')
 
-        await writer.setCanUseConfigFileIfExists()
+            const writer = new DefaultCredentialsFileReaderWriter()
+            writer.setCanUseConfigFile = (allow) => {
+                canUseState = allow
+            }
 
-        assert.equal(canUseState, false)
+            await writer.setCanUseConfigFileIfExists()
+
+            assert.equal(canUseState, false)
+        })
     })
 
     function createCredentialsFile(filename: string, profileNames: string[]): void {
