@@ -3,7 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.sam;
 
-import static software.aws.toolkits.jetbrains.services.lambda.execution.sam.TemplateUtils.findSamFunctionsFromTemplate;
+import static software.aws.toolkits.jetbrains.services.lambda.execution.sam.TemplateUtils.findFunctionsFromTemplate;
 import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.addQuickSelect;
 import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.find;
 
@@ -30,6 +30,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.yaml.YAMLFileType;
 import software.amazon.awssdk.services.lambda.model.Runtime;
+import software.aws.toolkits.jetbrains.services.cloudformation.Function;
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaInputPanel;
 import software.aws.toolkits.jetbrains.ui.CredentialProviderSelector;
 import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField;
@@ -44,8 +45,8 @@ public final class SamRunSettingsEditorPanel {
     public CredentialProviderSelector credentialSelector;
     public LambdaInputPanel lambdaInput;
     public JCheckBox useTemplate;
-    public JComboBox<SamFunction> function;
-    private DefaultComboBoxModel<SamFunction> functionModels;
+    public JComboBox<Function> function;
+    private DefaultComboBoxModel<Function> functionModels;
     public TextFieldWithBrowseButton templateFile;
 
     private final Project project;
@@ -78,10 +79,10 @@ public final class SamRunSettingsEditorPanel {
             handler.setBackground(UIUtil.getComboBoxDisabledBackground());
             handler.setForeground(UIUtil.getComboBoxDisabledForeground());
 
-            if (functionModels.getSelectedItem() instanceof SamFunction) {
-                SamFunction selected = (SamFunction) functionModels.getSelectedItem();
-                handler.setText(selected.getHandler());
-                runtime.setSelectedItem(Runtime.fromValue(selected.getRuntime()));
+            if (functionModels.getSelectedItem() instanceof Function) {
+                Function selected = (Function) functionModels.getSelectedItem();
+                handler.setText(selected.handler());
+                runtime.setSelectedItem(Runtime.fromValue(selected.runtime()));
                 function.setEnabled(true);
             }
         } else {
@@ -97,12 +98,12 @@ public final class SamRunSettingsEditorPanel {
             updateFunctionModel(Collections.emptyList());
         } else {
             templateFile.setText(file);
-            List<SamFunction> functions = findSamFunctionsFromTemplate(project, new File(file));
+            List<Function> functions = findFunctionsFromTemplate(project, new File(file));
             updateFunctionModel(functions);
         }
     }
 
-    private void updateFunctionModel(List<SamFunction> functions) {
+    private void updateFunctionModel(List<Function> functions) {
         functionModels.removeAllElements();
         function.setEnabled(!functions.isEmpty());
         functions.forEach(functionModels::addElement);
@@ -114,7 +115,7 @@ public final class SamRunSettingsEditorPanel {
 
     public void selectFunction(@Nullable String logicalFunctionName) {
         if (logicalFunctionName == null) return;
-        SamFunction function = find(functionModels, f -> f.getLogicalName().equals(logicalFunctionName));
+        Function function = find(functionModels, f -> f.getLogicalName().equals(logicalFunctionName));
         if (function != null) {
             functionModels.setSelectedItem(function);
             updateComponents();
@@ -134,7 +135,7 @@ public final class SamRunSettingsEditorPanel {
         @Override
         protected void onFileChosen(@NotNull VirtualFile chosenFile) {
             templateFile.setText(chosenFile.getPath());
-            List<SamFunction> functions = findSamFunctionsFromTemplate(project, chosenFile);
+            List<Function> functions = TemplateUtils.findFunctionsFromTemplate(project, chosenFile);
             updateFunctionModel(functions);
         }
     }

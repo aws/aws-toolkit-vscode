@@ -9,6 +9,9 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.vfs.LocalFileSystem
+import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
+import software.aws.toolkits.jetbrains.services.cloudformation.Function
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import java.io.File
@@ -50,8 +53,14 @@ class SamRunningState(
     }
 
     private fun substituteCodeUri(tempFile: File, templateDetails: SamTemplateDetails) {
-        File(templateDetails.templateFile).copyTo(tempFile, overwrite = true)
-        updateCodeUriForFunctions(tempFile, lambdaPackage.location.toString())
+        val file = LocalFileSystem.getInstance().refreshAndFindFileByPath(templateDetails.templateFile)
+                ?: throw IllegalStateException("Failed to load the template file: ${templateDetails.templateFile}")
+        val template = CloudFormationTemplate.parse(environment.project, file)
+        val function = template.getResourceByName(templateDetails.logicalName) as? Function
+                ?: throw IllegalStateException("Failed to locate the resource: ${templateDetails.logicalName}")
+        function.setCodeLocation(lambdaPackage.location.toString())
+
+        template.saveTo(tempFile)
     }
 
     private fun writeDummySamTemplate(tempFile: File) {

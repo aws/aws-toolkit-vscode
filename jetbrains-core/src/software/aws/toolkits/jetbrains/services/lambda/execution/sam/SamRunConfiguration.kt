@@ -164,9 +164,9 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
             val myLogicalFunctionName = logicalFunctionName
             val (handler, runtime, templateDetails) = if (myTemplateFile != null) {
                 myLogicalFunctionName ?: throw RuntimeConfigurationError(message("lambda.run_configuration.sam.no_function_specified", myTemplateFile))
-                val function = findSamFunctionsFromTemplate(project, File(templateFile)).find { it.logicalName == myLogicalFunctionName }
+                val function = findFunctionsFromTemplate(project, File(templateFile)).find { it.logicalName == myLogicalFunctionName }
                     ?: throw RuntimeConfigurationError(message("lambda.run_configuration.sam.no_such_function", myLogicalFunctionName, myTemplateFile))
-                Triple(function.handler, Runtime.fromValue(function.runtime), SamTemplateDetails(myTemplateFile, myLogicalFunctionName))
+                Triple(function.handler(), Runtime.fromValue(function.runtime()), SamTemplateDetails(myTemplateFile, myLogicalFunctionName))
             } else {
                 validateHandlerRuntime()
             }
@@ -284,8 +284,8 @@ class SamRunSettingsEditor(project: Project) : SettingsEditor<SamRunConfiguratio
         if (view.useTemplate.isSelected) {
             settings.templateFile = view.templateFile.text
             settings.logicalFunctionName = view.function.selected()?.logicalName
-            settings.runtime = view.function.selected()?.runtime
-            settings.handler = view.function.selected()?.handler
+            settings.runtime = view.function.selected()?.runtime()
+            settings.handler = view.function.selected()?.handler()
         } else {
             settings.templateFile = null
             settings.logicalFunctionName = null
