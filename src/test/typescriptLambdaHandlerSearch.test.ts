@@ -11,7 +11,7 @@ import * as vscode from 'vscode'
 import { LambdaHandlerCandidate } from '../shared/lambdaHandlerSearch'
 import { TypescriptLambdaHandlerSearch } from '../shared/typescriptLambdaHandlerSearch'
 
-describe('TypescriptLambdaHandlerSearch Tests', () => {
+describe('TypescriptLambdaHandlerSearch', () => {
 
     describe('Typescript code', () => {
 
@@ -28,7 +28,7 @@ describe('TypescriptLambdaHandlerSearch Tests', () => {
                 'sampleFunctions.exportedFunctionWithThreeArgs'
             ])
 
-            testTypescriptLambdaHandlerSearch(filename, expectedHandlerNames)
+            await testTypescriptLambdaHandlerSearch(filename, expectedHandlerNames)
         })
 
         it('ignores class functions', async () => {
@@ -41,7 +41,7 @@ describe('TypescriptLambdaHandlerSearch Tests', () => {
                 'sampleClasses.exportedFunctionWithNoArgs',
             ])
 
-            testTypescriptLambdaHandlerSearch(filename, expectedHandlerNames)
+            await testTypescriptLambdaHandlerSearch(filename, expectedHandlerNames)
         })
 
         it('ignores interface functions', async () => {
@@ -54,7 +54,7 @@ describe('TypescriptLambdaHandlerSearch Tests', () => {
                 'sampleInterfaces.exportedFunctionWithNoArgs',
             ])
 
-            testTypescriptLambdaHandlerSearch(filename, expectedHandlerNames)
+            await testTypescriptLambdaHandlerSearch(filename, expectedHandlerNames)
         })
 
     })
@@ -74,7 +74,7 @@ describe('TypescriptLambdaHandlerSearch Tests', () => {
                 'sampleFunctions.exportedFunctionWithThreeArgs'
             ])
 
-            testTypescriptLambdaHandlerSearch(filename, expectedHandlerNames)
+            await testTypescriptLambdaHandlerSearch(filename, expectedHandlerNames)
         })
 
         it('ignores class functions', async () => {
@@ -87,7 +87,7 @@ describe('TypescriptLambdaHandlerSearch Tests', () => {
                 'sampleClasses.exportedFunctionWithNoArgs',
             ])
 
-            testTypescriptLambdaHandlerSearch(filename, expectedHandlerNames)
+            await testTypescriptLambdaHandlerSearch(filename, expectedHandlerNames)
         })
 
     })

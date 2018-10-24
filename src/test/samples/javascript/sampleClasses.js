@@ -7,12 +7,10 @@
 
 class NonExportedClass {
     publicMethod() { }
-    privateMethod() { }
 }
 
 class ExportedClass {
     publicMethod() { }
-    privateMethod() { }
 
     static publicStaticMethod() { }
 }

@@ -16,7 +16,7 @@ import { LambdaHandlerCandidate, LambdaHandlerSearch } from './lambdaHandlerSear
  */
 export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
 
-    private _uri!: vscode.Uri
+    private readonly _uri!: vscode.Uri
 
     public constructor(uri: vscode.Uri) {
         this._uri = uri
