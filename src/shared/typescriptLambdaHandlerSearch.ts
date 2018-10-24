@@ -75,13 +75,13 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
 
         const handlers: LambdaHandlerCandidate[] = []
 
-        handlers.push(...TypescriptLambdaHandlerSearch.findJavascriptHandlerCandidates(
+        handlers.push(...TypescriptLambdaHandlerSearch.findModuleExportsRelatedHandlerCandidates(
             functionDeclarations,
             expressionStatements,
             filename
         ))
 
-        handlers.push(...TypescriptLambdaHandlerSearch.findTypescriptHandlerCandidates(
+        handlers.push(...TypescriptLambdaHandlerSearch.findExportRelatedHandlerCandidates(
             exportNodes,
             filename
         ))
@@ -95,7 +95,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
      * @param expressionStatements - assignment expressions
      * @param filename filename of the file containing these nodes
      */
-    private static findJavascriptHandlerCandidates(
+    private static findModuleExportsRelatedHandlerCandidates(
         functionDeclarations: ts.SignatureDeclaration[],
         expressionStatements: ts.ExpressionStatement[],
         filename: string
@@ -139,7 +139,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
      * @param exportNodes - nodes that 'export' something
      * @param filename filename of the file containing these nodes
      */
-    private static findTypescriptHandlerCandidates(
+    private static findExportRelatedHandlerCandidates(
         exportNodes: ts.Node[],
         filename: string
     ): LambdaHandlerCandidate[] {
