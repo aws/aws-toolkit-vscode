@@ -66,7 +66,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
 
             if (ts.isMethodDeclaration(node)) {
                 if (this.isMethodLambdaHandlerCandidate(node)) {
-                    const handlerStack = [baseFilename, node.name!.getText()]
+                    const handlerStack = [baseFilename, node.name.getText()]
                     handlers.push({
                         filename: filename,
                         handlerName: handlerStack.join('.'),
