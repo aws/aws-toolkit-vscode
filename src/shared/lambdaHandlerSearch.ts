@@ -8,8 +8,6 @@
 export interface LambdaHandlerCandidate {
     handlerName: string,
     filename: string,
-    // Represents all of the component names that are used in a handler name (eg: filename, assembly, class, function)
-    handlerStack: string[],
 }
 
 export interface LambdaHandlerSearch {

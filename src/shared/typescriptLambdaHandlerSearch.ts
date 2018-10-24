@@ -128,7 +128,6 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
             handlers.push({
                 filename: filename,
                 handlerName: `${baseFilename}.${exportsTarget}`,
-                handlerStack: []
             })
         })
 
@@ -156,7 +155,6 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                     handlers.push({
                         filename: filename,
                         handlerName: `${baseFilename}.${exportNode.name.getText()}`,
-                        handlerStack: []
                     })
                 }
             }
