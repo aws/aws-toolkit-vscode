@@ -6,26 +6,29 @@
 'use strict'
 
 function functionWithNoArgs() { }
-
-export function exportedFunctionWithNoArgs() { }
-exports.exportedFunctionWithNoArgs = exportedFunctionWithNoArgs
+exports.exportedFunctionWithNoArgs = functionWithNoArgs
 
 function functionWithOneArg(arg1) { }
-
-export function exportedFunctionWithOneArg(arg1) { }
-exports.exportedFunctionWithOneArg = exportedFunctionWithOneArg
+exports.exportedFunctionWithOneArg = functionWithOneArg
 
 function functionWithTwoArgs(arg1, arg2) { }
-
-export function exportedFunctionWithTwoArgs(arg1, arg2) { }
-exports.exportedFunctionWithTwoArgs = exportedFunctionWithTwoArgs
+exports.exportedFunctionWithTwoArgs = functionWithTwoArgs
 
 function functionWithThreeArgs(arg1, arg2, arg3) { }
+exports.exportedFunctionWithThreeArgs = functionWithThreeArgs
 
-export function exportedFunctionWithThreeArgs(arg1, arg2, arg3) { }
-exports.exportedFunctionWithThreeArgs = exportedFunctionWithThreeArgs
-
+// 4 args shouldn't be considered a lambda handler
 function functionWithFourArgs(arg1, arg2, arg3, arg4) { }
+exports.exportedFunctionWithFourArgs = functionWithFourArgs
 
-export function exportedFunctionWithFourArgs(arg1, arg2, arg3, arg4) { }
-exports.exportedFunctionWithFourArgs = exportedFunctionWithFourArgs
+// module.exports assignments
+module.exports.anotherExportedFunctionWithNoArgs = functionWithNoArgs
+module.exports.directExportsArrowFunction = (name) => { console.log(name) }
+module.exports.directExportsArrowFunctionAsync = async (name) => { console.log(name) }
+module.exports.directExportsFunction = function (name) { console.log(name) }
+module.exports.directExportsFunctionAsync = async function (name) { console.log(name) }
+
+// module.!exports checks
+module.fooFunction = () => { }
+module.fooData = {}
+module.fooStr = 'foo'

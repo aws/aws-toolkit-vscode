@@ -16,6 +16,8 @@ import { LambdaHandlerCandidate, LambdaHandlerSearch } from './lambdaHandlerSear
  */
 export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
 
+    public static readonly MAXIMUM_FUNCTION_PARAMETERS: number = 3
+
     private readonly _uri!: vscode.Uri
 
     public constructor(uri: vscode.Uri) {
@@ -35,57 +37,200 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
 
         const sourceFile = ts.createSourceFile(filename, fileContents, ts.ScriptTarget.Latest, true)
 
-        const handlers: LambdaHandlerCandidate[] = []
-
-        sourceFile.forEachChild(
-            childNode => {
-                const foundHandlers = TypescriptLambdaHandlerSearch.visitSourceFileChild(
-                    childNode,
-                    filename
-                )
-                handlers.push(...foundHandlers)
-            }
-        )
+        const handlers: LambdaHandlerCandidate[] = this.processSourceFile(sourceFile, filename)
 
         return handlers
     }
 
     /**
-     * @description looks for Lambda Handler candidates in given node.
+     * @description looks for Lambda Handler candidates in the given source file
      * Lambda Handler candidates are top level exported methods/functions.
      *
-     * @param node SourceFile child node to visit
+     * @param sourceFile SourceFile child node to process
      * @param filename filename of the loaded SourceFile
      * @returns Collection of candidate Lambda handler information, empty array otherwise
      */
-    private static visitSourceFileChild(node: ts.Node, filename: string): LambdaHandlerCandidate[] {
+    private processSourceFile(sourceFile: ts.SourceFile, filename: string): LambdaHandlerCandidate[] {
+        // functionDeclarations - each top level function declared
+        const functionDeclarations: ts.SignatureDeclaration[] = []
+        // expressionStatements - all statements like "exports.handler = ..."
+        const expressionStatements: ts.ExpressionStatement[] = []
+        // exportNodes - all "export function Xyz()"
+        const exportNodes: ts.Node[] = []
+
+        // look for nodes of interest
+        sourceFile.forEachChild((node: ts.Node) => {
+            if (ts.isFunctionLike(node)) {
+                functionDeclarations.push(node)
+            }
+
+            if (ts.isExpressionStatement(node) && (ts.isBinaryExpression(node.expression))) {
+                expressionStatements.push(node)
+            }
+
+            if (TypescriptLambdaHandlerSearch.isNodeExported(node)) {
+                exportNodes.push(node)
+            }
+        })
+
         const handlers: LambdaHandlerCandidate[] = []
 
-        if (this.isNodeExported(node)) {
-            const baseFilename = path.parse(filename).name
+        handlers.push(...TypescriptLambdaHandlerSearch.findJavascriptHandlerCandidates(
+            functionDeclarations,
+            expressionStatements,
+            filename
+        ))
 
-            if (ts.isMethodDeclaration(node)) {
-                if (this.isMethodLambdaHandlerCandidate(node)) {
-                    const handlerStack = [baseFilename, node.name.getText()]
+        handlers.push(...TypescriptLambdaHandlerSearch.findTypescriptHandlerCandidates(
+            exportNodes,
+            filename
+        ))
+
+        return handlers
+    }
+
+    /**
+     * @description Looks at function declaration and module.exports assignments to find candidate Lamdba handlers
+     * @param functionDeclarations - Function declaration nodes
+     * @param expressionStatements - assignment expressions
+     * @param filename filename of the file containing these nodes
+     */
+    private static findJavascriptHandlerCandidates(
+        functionDeclarations: ts.SignatureDeclaration[],
+        expressionStatements: ts.ExpressionStatement[],
+        filename: string
+    ): LambdaHandlerCandidate[] {
+        const baseFilename = path.parse(filename).name
+
+        // Determine the candidate function declarations
+        const functionHandlerNames: string[] = functionDeclarations
+            .filter(fn => fn.parameters.length <= TypescriptLambdaHandlerSearch.MAXIMUM_FUNCTION_PARAMETERS)
+            .filter(fn => !!fn.name)
+            .map(fn => fn.name!.getText())
+
+        // Determine the candidate module exports assignments
+        const candidateExpressionStatements: ts.ExpressionStatement[] = expressionStatements
+            .filter(TypescriptLambdaHandlerSearch.isModuleExportsAssignment)
+            .filter(stmt => {
+                return TypescriptLambdaHandlerSearch.isEligibleLambdaHandlerAssignment(stmt, functionHandlerNames)
+            })
+
+        // Join to find actual module.exports assignments of interest
+        const handlers: LambdaHandlerCandidate[] = []
+
+        candidateExpressionStatements.forEach(candidate => {
+            // 'module.exports.xyz' => ['module', 'exports', 'xyz']
+            const lhsComponents: string[] = (candidate.expression as ts.BinaryExpression)
+                .left.getText().split('.').map(x => x.trim())
+
+            const exportsTarget: string = lhsComponents[0] === 'exports' ? lhsComponents[1] : lhsComponents[2]
+
+            handlers.push({
+                filename: filename,
+                handlerName: `${baseFilename}.${exportsTarget}`,
+                handlerStack: []
+            })
+        })
+
+        return handlers
+    }
+
+    /**
+     * @description Looks at export function declarations to find candidate Lamdba handlers
+     * @param exportNodes - nodes that 'export' something
+     * @param filename filename of the file containing these nodes
+     */
+    private static findTypescriptHandlerCandidates(
+        exportNodes: ts.Node[],
+        filename: string
+    ): LambdaHandlerCandidate[] {
+        const baseFilename = path.parse(filename).name
+
+        const handlers: LambdaHandlerCandidate[] = []
+
+        exportNodes.forEach(exportNode => {
+            if (ts.isFunctionLike(exportNode)
+                && (TypescriptLambdaHandlerSearch.isFunctionLambdaHandlerCandidate(exportNode))) {
+
+                if (!!exportNode.name) {
                     handlers.push({
                         filename: filename,
-                        handlerName: handlerStack.join('.'),
-                        handlerStack: handlerStack
-                    })
-                }
-            } else if (ts.isFunctionDeclaration(node)) {
-                if (this.isFunctionLambdaHandlerCandidate(node)) {
-                    const handlerStack = [baseFilename, node.name!.getText()]
-                    handlers.push({
-                        filename: filename,
-                        handlerName: handlerStack.join('.'),
-                        handlerStack: handlerStack
+                        handlerName: `${baseFilename}.${exportNode.name.getText()}`,
+                        handlerStack: []
                     })
                 }
             }
-        }
+        })
 
         return handlers
+    }
+
+    /**
+     * @description Whether or not the given expression is attempting to assign to '[module.]exports.foo'
+     * @param expressionStatement Expression node to evaluate
+     */
+    private static isModuleExportsAssignment(expressionStatement: ts.ExpressionStatement): boolean {
+        if (ts.isBinaryExpression(expressionStatement.expression)) {
+            const lhsComponents: string[] = expressionStatement.expression.left.getText().split('.').map(x => x.trim())
+
+            return (lhsComponents.length === 3 && lhsComponents[0] === 'module' && lhsComponents[1] === 'exports')
+                || (lhsComponents.length === 2 && lhsComponents[0] === 'exports')
+        }
+
+        return false
+    }
+
+    /**
+     * @description Whether or not the given expression appears to be assigning a candidate Lambda Handler
+     * Expression could be one of:
+     *      [module.]exports.foo = alreadyDeclaredFunction
+     *      [module.]exports.foo = (event, context) => { ... }
+     * @param expressionStatement Expression node to evaluate
+     * @param functionHandlerNames Names of declared functions considered to be Handler Candidates
+     */
+    private static isEligibleLambdaHandlerAssignment(
+        expressionStatement: ts.ExpressionStatement,
+        functionHandlerNames: string[]
+    ): boolean {
+        if (ts.isBinaryExpression(expressionStatement.expression)) {
+            return this.isTargetFunctionReference(expressionStatement.expression.right, functionHandlerNames)
+                || this.isValidFunctionAssignment(expressionStatement.expression.right)
+        }
+
+        return false
+    }
+
+    /**
+     * @description Whether or not the given expression appears to contain a function of interest on the right hand side
+     *
+     * Example expression:
+     *      something = alreadyDeclaredFunction
+     * @param expression Expression node to evaluate
+     * @param targetFunctionNames Names of functions of interest
+     */
+    private static isTargetFunctionReference(expression: ts.Expression, targetFunctionNames: string[]): boolean {
+        if (ts.isIdentifier(expression)) {
+            return (targetFunctionNames.indexOf(expression.text) !== -1)
+        }
+
+        return false
+    }
+
+    /**
+     * @description Whether or not the given expression appears to have a function that could be a valid Lambda handler
+     * on the right hand side.
+     *
+     * Example expression:
+     *      something = (event, context) => { }
+     * @param expression Expression node to evaluate
+     * @param targetFunctionNames Names of functions of interest
+     */
+    private static isValidFunctionAssignment(expression: ts.Expression): boolean {
+        if (ts.isFunctionLike(expression)) {
+            return expression.parameters.length <= TypescriptLambdaHandlerSearch.MAXIMUM_FUNCTION_PARAMETERS
+        }
+
+        return false
     }
 
     /**
@@ -99,18 +244,10 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
     }
 
     /**
-     * @description Indicates whether or not a method could be a Lambda Handler
-     * @param node Method Node to check
+     * @description Indicates whether or not a function/method could be a Lambda Handler
+     * @param node Signature Declaration Node to check
      */
-    private static isMethodLambdaHandlerCandidate(node: ts.MethodDeclaration): boolean {
-        return node.parameters.length <= 3
-    }
-
-    /**
-     * @description Indicates whether or not a function could be a Lambda Handler
-     * @param node Function Node to check
-     */
-    private static isFunctionLambdaHandlerCandidate(node: ts.FunctionDeclaration): boolean {
-        return node.parameters.length <= 3 && !!node.name
+    private static isFunctionLambdaHandlerCandidate(node: ts.SignatureDeclaration): boolean {
+        return node.parameters.length <= TypescriptLambdaHandlerSearch.MAXIMUM_FUNCTION_PARAMETERS && !!node.name
     }
 }

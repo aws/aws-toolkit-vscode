@@ -71,7 +71,12 @@ describe('TypescriptLambdaHandlerSearch', () => {
                 'sampleFunctions.exportedFunctionWithNoArgs',
                 'sampleFunctions.exportedFunctionWithOneArg',
                 'sampleFunctions.exportedFunctionWithTwoArgs',
-                'sampleFunctions.exportedFunctionWithThreeArgs'
+                'sampleFunctions.exportedFunctionWithThreeArgs',
+                'sampleFunctions.anotherExportedFunctionWithNoArgs',
+                'sampleFunctions.directExportsArrowFunction',
+                'sampleFunctions.directExportsArrowFunctionAsync',
+                'sampleFunctions.directExportsFunction',
+                'sampleFunctions.directExportsFunctionAsync',
             ])
 
             await testTypescriptLambdaHandlerSearch(filename, expectedHandlerNames)
