@@ -45,75 +45,71 @@ class ProfileToolkitCredentialsProvider(
     override val id = "$TYPE:${profile.name()}"
     override val displayName get() = message("credentials.profile.name", profile.name())
 
-    override fun resolveCredentials(): AwsCredentials {
-        return internalCredentialsProvider.resolveCredentials()
-    }
+    override fun resolveCredentials(): AwsCredentials = internalCredentialsProvider.resolveCredentials()
 
-    private fun createInternalCredentialProvider(): AwsCredentialsProvider {
-        return when {
-            propertyExists(ROLE_ARN) -> {
-                validateChain()
+    private fun createInternalCredentialProvider(): AwsCredentialsProvider = when {
+        propertyExists(ROLE_ARN) -> {
+            validateChain()
 
-                val sourceProfile = requiredProperty(SOURCE_PROFILE)
-                val roleArn = requiredProperty(ROLE_ARN)
-                val roleSessionName = profile.property(ROLE_SESSION_NAME)
-                    .orElseGet { "aws-toolkit-jetbrains-${System.currentTimeMillis()}" }
-                val externalId = profile.property(EXTERNAL_ID).orElse(null)
-                val mfaSerial = profile.property(MFA_SERIAL).orElse(null)
+            val sourceProfile = requiredProperty(SOURCE_PROFILE)
+            val roleArn = requiredProperty(ROLE_ARN)
+            val roleSessionName = profile.property(ROLE_SESSION_NAME)
+                .orElseGet { "aws-toolkit-jetbrains-${System.currentTimeMillis()}" }
+            val externalId = profile.property(EXTERNAL_ID).orElse(null)
+            val mfaSerial = profile.property(MFA_SERIAL).orElse(null)
 
-                val stsRegion = tryOrNull {
-                    DefaultAwsRegionProviderChain().region?.let {
-                        regionProvider.regions()[it.id()]
-                    }
-                } ?: AwsRegion.GLOBAL
+            val stsRegion = tryOrNull {
+                DefaultAwsRegionProviderChain().region?.let {
+                    regionProvider.regions()[it.id()]
+                }
+            } ?: AwsRegion.GLOBAL
 
-                // Override the default SPI for getting the active credentials since we are making an internal
-                // to this provider client
-                val stsClient = StsClient.builder()
-                    .httpClient(sdkHttpClient)
-                    .credentialsProvider(
-                        ProfileToolkitCredentialsProvider(
-                            profiles,
-                            profiles[sourceProfile]!!,
-                            sdkHttpClient,
-                            regionProvider,
-                            mfaProvider
-                        )
-                    )
-                    .region(Region.of(stsRegion.id))
-                    .build()
-
-                StsAssumeRoleCredentialsProvider.builder()
-                    .stsClient(stsClient)
-                    .refreshRequest(Supplier {
-                        createAssumeRoleRequest(
-                            mfaSerial,
-                            roleArn,
-                            roleSessionName,
-                            externalId
-                        )
-                    })
-                    .build()
-            }
-            propertyExists(AWS_SESSION_TOKEN) -> {
-                StaticCredentialsProvider.create(
-                    AwsSessionCredentials.create(
-                        requiredProperty(AWS_ACCESS_KEY_ID),
-                        requiredProperty(AWS_SECRET_ACCESS_KEY),
-                        requiredProperty(AWS_SESSION_TOKEN)
+            // Override the default SPI for getting the active credentials since we are making an internal
+            // to this provider client
+            val stsClient = StsClient.builder()
+                .httpClient(sdkHttpClient)
+                .credentialsProvider(
+                    ProfileToolkitCredentialsProvider(
+                        profiles,
+                        profiles[sourceProfile]!!,
+                        sdkHttpClient,
+                        regionProvider,
+                        mfaProvider
                     )
                 )
-            }
-            propertyExists(AWS_ACCESS_KEY_ID) -> {
-                StaticCredentialsProvider.create(
-                    AwsBasicCredentials.create(
-                        requiredProperty(AWS_ACCESS_KEY_ID),
-                        requiredProperty(AWS_SECRET_ACCESS_KEY)
+                .region(Region.of(stsRegion.id))
+                .build()
+
+            StsAssumeRoleCredentialsProvider.builder()
+                .stsClient(stsClient)
+                .refreshRequest(Supplier {
+                    createAssumeRoleRequest(
+                        mfaSerial,
+                        roleArn,
+                        roleSessionName,
+                        externalId
                     )
-                )
-            }
-            else -> throw IllegalArgumentException("Profile `$profile` is unsupported")
+                })
+                .build()
         }
+        propertyExists(AWS_SESSION_TOKEN) -> {
+            StaticCredentialsProvider.create(
+                AwsSessionCredentials.create(
+                    requiredProperty(AWS_ACCESS_KEY_ID),
+                    requiredProperty(AWS_SECRET_ACCESS_KEY),
+                    requiredProperty(AWS_SESSION_TOKEN)
+                )
+            )
+        }
+        propertyExists(AWS_ACCESS_KEY_ID) -> {
+            StaticCredentialsProvider.create(
+                AwsBasicCredentials.create(
+                    requiredProperty(AWS_ACCESS_KEY_ID),
+                    requiredProperty(AWS_SECRET_ACCESS_KEY)
+                )
+            )
+        }
+        else -> throw IllegalArgumentException("Profile `$profile` is unsupported")
     }
 
     private fun createAssumeRoleRequest(
@@ -121,21 +117,19 @@ class ProfileToolkitCredentialsProvider(
         roleArn: String,
         roleSessionName: String?,
         externalId: String?
-    ): AssumeRoleRequest {
-        return mfaSerial?.let {
-            AssumeRoleRequest.builder()
-                .roleArn(roleArn)
-                .roleSessionName(roleSessionName)
-                .externalId(externalId)
-                .serialNumber(mfaSerial)
-                .tokenCode(mfaProvider.invoke(profile.name(), mfaSerial))
-                .build()
-        } ?: AssumeRoleRequest.builder()
+    ): AssumeRoleRequest = mfaSerial?.let {
+        AssumeRoleRequest.builder()
             .roleArn(roleArn)
             .roleSessionName(roleSessionName)
             .externalId(externalId)
+            .serialNumber(mfaSerial)
+            .tokenCode(mfaProvider.invoke(profile.name(), mfaSerial))
             .build()
-    }
+    } ?: AssumeRoleRequest.builder()
+        .roleArn(roleArn)
+        .roleSessionName(roleSessionName)
+        .externalId(externalId)
+        .build()
 
     private fun validateChain() {
         val profileChain = LinkedHashSet<String>()
@@ -154,26 +148,20 @@ class ProfileToolkitCredentialsProvider(
         }
     }
 
-    private fun propertyExists(property: String): Boolean {
-        return profile.property(property).isPresent
-    }
+    private fun propertyExists(property: String): Boolean = profile.property(property).isPresent
 
-    private fun requiredProperty(property: String): String {
-        return profile.property(property)
-            .orElseThrow {
-                IllegalArgumentException(
-                    message(
-                        "credentials.profile.missing_property",
-                        profile.name(),
-                        property
-                    )
+    private fun requiredProperty(property: String): String = profile.property(property)
+        .orElseThrow {
+            IllegalArgumentException(
+                message(
+                    "credentials.profile.missing_property",
+                    profile.name(),
+                    property
                 )
-            }
-    }
+            )
+        }
 
-    override fun toString(): String {
-        return "ProfileToolkitCredentialsProvider(profile=$profile)"
-    }
+    override fun toString(): String = "ProfileToolkitCredentialsProvider(profile=$profile)"
 }
 
 class ProfileToolkitCredentialsProviderFactory(

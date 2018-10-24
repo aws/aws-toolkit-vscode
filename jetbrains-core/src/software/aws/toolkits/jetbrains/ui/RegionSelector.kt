@@ -34,9 +34,7 @@ class RegionSelector : ComboBox<AwsRegion>() {
     }
 
     var selectedRegion: AwsRegion?
-        get() {
-            return selected()
-        }
+        get() = selected()
         set(value) {
             selectedItem = value
         }

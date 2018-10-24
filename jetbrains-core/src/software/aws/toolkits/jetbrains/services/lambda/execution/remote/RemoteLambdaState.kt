@@ -50,13 +50,9 @@ class RemoteLambdaState(
     }
 
     private inner class LambdaProcess : ProcessHandler() {
-        override fun getProcessInput(): OutputStream? {
-            return null
-        }
+        override fun getProcessInput(): OutputStream? = null
 
-        override fun detachIsDefault(): Boolean {
-            return true
-        }
+        override fun detachIsDefault(): Boolean = true
 
         override fun detachProcessImpl() {
             notifyProcessDetached()
@@ -118,11 +114,9 @@ class RemoteLambdaState(
         }
     }
 
-    private fun formatJson(input: String): String {
-        return if (input.isNotEmpty() && input.first() == '{' && input.last() == '}') {
-            formatText(environment.project, JsonLanguage.INSTANCE, input)
-        } else {
-            input
-        }
+    private fun formatJson(input: String) = if (input.isNotEmpty() && input.first() == '{' && input.last() == '}') {
+        formatText(environment.project, JsonLanguage.INSTANCE, input)
+    } else {
+        input
     }
 }

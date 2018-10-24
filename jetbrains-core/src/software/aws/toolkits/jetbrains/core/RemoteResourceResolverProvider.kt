@@ -19,9 +19,7 @@ interface RemoteResourceResolverProvider {
     fun get(): RemoteResourceResolver
 
     companion object {
-        fun getInstance(): RemoteResourceResolverProvider {
-            return ServiceManager.getService(RemoteResourceResolverProvider::class.java)
-        }
+        fun getInstance(): RemoteResourceResolverProvider = ServiceManager.getService(RemoteResourceResolverProvider::class.java)
     }
 }
 

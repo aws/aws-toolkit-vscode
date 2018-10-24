@@ -35,9 +35,7 @@ enum class RuntimeGroup {
         /**
          * Lazily apply the predicate to each [RuntimeGroup] and return the first match (or null)
          */
-        fun find(predicate: (RuntimeGroup) -> Boolean): RuntimeGroup? {
-            return RuntimeGroup.values().asSequence().filter(predicate).firstOrNull()
-        }
+        fun find(predicate: (RuntimeGroup) -> Boolean): RuntimeGroup? = RuntimeGroup.values().asSequence().filter(predicate).firstOrNull()
 
         fun runtimeForSdk(sdk: Sdk): Runtime? = values().asSequence().mapNotNull { it.runtimeForSdk(sdk) }.firstOrNull()
     }
@@ -79,9 +77,7 @@ class RuntimeGroupExtensionPoint<T> : AbstractExtensionPointBean(), KeyedLazyIns
     lateinit var runtimeGroup: RuntimeGroup
 
     private val instance = object : LazyInstance<T>() {
-        override fun getInstanceClass(): Class<T> {
-            return findClass(implementation)
-        }
+        override fun getInstanceClass(): Class<T> = findClass(implementation)
     }
 
     override fun getKey(): String = runtimeGroup.name

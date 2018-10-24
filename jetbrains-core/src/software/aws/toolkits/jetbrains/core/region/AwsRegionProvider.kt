@@ -39,8 +39,6 @@ class AwsRegionProvider private constructor(remoteResourceResolverProvider: Remo
         private const val DEFAULT_REGION = "us-east-1"
 
         @JvmStatic
-        fun getInstance(): ToolkitRegionProvider {
-            return ServiceManager.getService(ToolkitRegionProvider::class.java)
-        }
+        fun getInstance(): ToolkitRegionProvider = ServiceManager.getService(ToolkitRegionProvider::class.java)
     }
 }

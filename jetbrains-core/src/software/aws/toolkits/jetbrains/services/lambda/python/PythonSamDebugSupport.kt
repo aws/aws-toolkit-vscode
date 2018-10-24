@@ -36,26 +36,24 @@ class PythonSamDebugSupport : SamDebugSupport {
         environment: ExecutionEnvironment,
         state: SamRunningState,
         debugPort: Int
-    ): XDebugProcessStarter? {
-        return object : XDebugProcessStarter() {
-            override fun start(session: XDebugSession): XDebugProcess {
-                val executionResult = state.execute(environment.executor, environment.runner)
-                return PyDebugProcess(
-                    session,
-                    executionResult.executionConsole,
-                    executionResult.processHandler,
-                    "localhost",
-                    debugPort
-                ).also {
-                    it.positionConverter = PositionConverter()
-                        .apply {
-                        state.lambdaPackage.mappings.forEach { local, remote ->
-                            addMapping(local, FileUtil.normalize("$TASK_PATH/$remote"))
-                        }
-                        addMapping(PythonHelper.DEBUGGER.pythonPathEntry,
-                            DEBUGGER_VOLUME_PATH
-                        )
+    ): XDebugProcessStarter? = object : XDebugProcessStarter() {
+        override fun start(session: XDebugSession): XDebugProcess {
+            val executionResult = state.execute(environment.executor, environment.runner)
+            return PyDebugProcess(
+                session,
+                executionResult.executionConsole,
+                executionResult.processHandler,
+                "localhost",
+                debugPort
+            ).also {
+                it.positionConverter = PositionConverter()
+                    .apply {
+                    state.lambdaPackage.mappings.forEach { local, remote ->
+                        addMapping(local, FileUtil.normalize("$TASK_PATH/$remote"))
                     }
+                    addMapping(PythonHelper.DEBUGGER.pythonPathEntry,
+                        DEBUGGER_VOLUME_PATH
+                    )
                 }
             }
         }

@@ -33,7 +33,5 @@ class GoToHandlerAction : ResourceNodeAction<LambdaFunctionNode>() {
         }
     }
 
-    private fun getHandler(node: LambdaFunctionNode): Array<NavigatablePsiElement>? {
-        return node.handlerPsi()
-    }
+    private fun getHandler(node: LambdaFunctionNode): Array<NavigatablePsiElement>? = node.handlerPsi()
 }

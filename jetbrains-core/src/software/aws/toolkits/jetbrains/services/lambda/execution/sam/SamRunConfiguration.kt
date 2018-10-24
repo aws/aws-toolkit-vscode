@@ -48,9 +48,7 @@ class SamRunConfigurationFactory(configuration: LambdaRunConfiguration) : Config
     override fun createTemplateConfiguration(project: Project): RunConfiguration =
         SamRunConfiguration(project, this)
 
-    override fun getName(): String {
-        return "Local"
-    }
+    override fun getName(): String = "Local"
 }
 
 class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
@@ -73,18 +71,14 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
         return SamRunningState(environment, settings)
     }
 
-    private fun getPsiElement(): PsiElement? {
-        return try {
-            settings.validateAndCreateImmutable(project).handlerElement
-        } catch (e: Exception) {
-            null
-        }
+    private fun getPsiElement(): PsiElement? = try {
+        settings.validateAndCreateImmutable(project).handlerElement
+    } catch (e: Exception) {
+        null
     }
 
     @TestOnly
-    fun getHandler(): String? {
-        return settings.handler
-    }
+    fun getHandler(): String? = settings.handler
 
     override fun getRefactoringElementListener(element: PsiElement?): RefactoringElementListener? {
         element?.run {

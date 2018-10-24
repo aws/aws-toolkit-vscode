@@ -62,7 +62,5 @@ data class FunctionUploadDetails(
 )
 
 data class IamRole(val name: String, val arn: String) {
-    override fun toString(): String {
-        return name
-    }
+    override fun toString(): String = name
 }

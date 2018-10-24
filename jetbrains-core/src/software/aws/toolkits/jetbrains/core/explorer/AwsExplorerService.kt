@@ -10,9 +10,7 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaServiceNode
 
 enum class AwsExplorerService(val serviceId: String) {
     LAMBDA(LambdaClient.SERVICE_NAME) {
-        override fun buildServiceRootNode(project: Project): LambdaServiceNode {
-            return LambdaServiceNode(project)
-        }
+        override fun buildServiceRootNode(project: Project): LambdaServiceNode = LambdaServiceNode(project)
     },
     ;
 

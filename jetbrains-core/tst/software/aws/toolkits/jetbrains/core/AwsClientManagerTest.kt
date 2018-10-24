@@ -103,10 +103,8 @@ class AwsClientManagerTest {
         assert(afterRegionUpdate).isNotSameAs(first)
     }
 
-    private fun getClientManager(project: Project = projectRule.project): AwsClientManager {
-        // Test against real version so bypass ServiceManager for the client manager
-        return AwsClientManager(project, AwsSdkClient.getInstance())
-    }
+    // Test against real version so bypass ServiceManager for the client manager
+    private fun getClientManager(project: Project = projectRule.project) = AwsClientManager(project, AwsSdkClient.getInstance())
 
     class DummyServiceClient(val httpClient: SdkHttpClient) : TestClient() {
         companion object {
@@ -175,7 +173,7 @@ class AwsClientManagerTest {
     private val SdkHttpClient.delegate: SdkHttpClient
         get() {
             val delegateProperty = this::class.declaredMemberProperties.find { it.name == "delegate" }
-                    ?: throw IllegalArgumentException("Expected instance of software.amazon.awssdk.core.client.builder.SdkDefaultClientBuilder.NonManagedSdkHttpClient")
+                ?: throw IllegalArgumentException("Expected instance of software.amazon.awssdk.core.client.builder.SdkDefaultClientBuilder.NonManagedSdkHttpClient")
             delegateProperty.isAccessible = true
             return delegateProperty.call(this) as SdkHttpClient
         }

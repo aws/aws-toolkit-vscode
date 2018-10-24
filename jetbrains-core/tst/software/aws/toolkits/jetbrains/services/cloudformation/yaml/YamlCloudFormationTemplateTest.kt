@@ -81,11 +81,9 @@ Resources:
         assertThat(tempFile).hasContent(TEST_TEMPLATE)
     }
 
-    private fun yamlTemplate(): CloudFormationTemplate {
-        return runInEdtAndGet {
-            val file = projectRule.fixture.addFileToProject("template.yaml", TEST_TEMPLATE)
-            CloudFormationTemplate.parse(projectRule.project, file.virtualFile)
-        }
+    private fun yamlTemplate(): CloudFormationTemplate = runInEdtAndGet {
+        val file = projectRule.fixture.addFileToProject("template.yaml", TEST_TEMPLATE)
+        CloudFormationTemplate.parse(projectRule.project, file.virtualFile)
     }
 
     private companion object {

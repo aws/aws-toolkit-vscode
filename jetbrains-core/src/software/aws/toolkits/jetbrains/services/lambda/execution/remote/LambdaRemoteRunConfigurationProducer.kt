@@ -13,11 +13,9 @@ import com.intellij.psi.PsiElement
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
 
 class LambdaRemoteRunConfigurationProducer : RunConfigurationProducer<LambdaRemoteRunConfiguration>(getFactory()) {
-    override fun getConfigurationSettingsList(runManager: RunManager): List<RunnerAndConfigurationSettings> {
-        // Filter all Lambda run configurations down to only ones that are Lambda remote for this run producer
-        return super.getConfigurationSettingsList(runManager)
-            .filter { it.configuration is LambdaRemoteRunConfiguration }
-    }
+    // Filter all Lambda run configurations down to only ones that are Lambda remote for this run producer
+    override fun getConfigurationSettingsList(runManager: RunManager): List<RunnerAndConfigurationSettings> =
+        super.getConfigurationSettingsList(runManager).filter { it.configuration is LambdaRemoteRunConfiguration }
 
     override fun setupConfigurationFromContext(
         configuration: LambdaRemoteRunConfiguration,
@@ -44,9 +42,7 @@ class LambdaRemoteRunConfigurationProducer : RunConfigurationProducer<LambdaRemo
     }
 
     companion object {
-        private fun getFactory(): ConfigurationFactory {
-            return LambdaRunConfiguration.getInstance()
-                .configurationFactories.first { it is LambdaRemoteRunConfigurationFactory }
-        }
+        private fun getFactory(): ConfigurationFactory =
+            LambdaRunConfiguration.getInstance().configurationFactories.first { it is LambdaRemoteRunConfigurationFactory }
     }
 }

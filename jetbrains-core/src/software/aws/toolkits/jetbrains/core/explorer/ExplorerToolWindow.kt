@@ -156,9 +156,7 @@ class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, tru
         return if (nodes.size == 1) nodes[0] else null
     }
 
-    private fun getSelectedServiceNode(): AwsExplorerServiceRootNode? {
-        return getSelectedNode() as? AwsExplorerServiceRootNode
-    }
+    private fun getSelectedServiceNode(): AwsExplorerServiceRootNode? = getSelectedNode() as? AwsExplorerServiceRootNode
 
     /**
      * Returns the list of selected nodes if they are all of the same type
@@ -177,15 +175,13 @@ class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, tru
         }
     }
 
-    private inline fun <reified T : AwsExplorerNode<*>> getSelectedNodes(): List<T> {
-        return awsTree?.selectionPaths?.let {
-            it.map { it.lastPathComponent }
-                .filterIsInstance<DefaultMutableTreeNode>()
-                .map { it.userObject }
-                .filterIsInstance<T>()
-                .toList()
-        } ?: emptyList<T>()
-    }
+    private inline fun <reified T : AwsExplorerNode<*>> getSelectedNodes() = awsTree?.selectionPaths?.let {
+        it.map { it.lastPathComponent }
+            .filterIsInstance<DefaultMutableTreeNode>()
+            .map { it.userObject }
+            .filterIsInstance<T>()
+            .toList()
+    } ?: emptyList<T>()
 
     private class AwsTreeCellRenderer : NodeRenderer() {
         override fun customizeCellRenderer(

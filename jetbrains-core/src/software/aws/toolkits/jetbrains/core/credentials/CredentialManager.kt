@@ -18,9 +18,7 @@ interface CredentialManager {
     fun getCredentialProviders(): List<ToolkitCredentialsProvider>
 
     companion object {
-        fun getInstance(): CredentialManager {
-            return ServiceManager.getService(CredentialManager::class.java)
-        }
+        fun getInstance(): CredentialManager = ServiceManager.getService(CredentialManager::class.java)
     }
 }
 
@@ -33,13 +31,9 @@ class DefaultCredentialManager : CredentialManager, Disposable {
     }
 
     @Throws(CredentialProviderNotFound::class)
-    override fun getCredentialProvider(providerId: String): ToolkitCredentialsProvider {
-        return toolkitCredentialManager.getCredentialProvider(providerId)
-    }
+    override fun getCredentialProvider(providerId: String): ToolkitCredentialsProvider = toolkitCredentialManager.getCredentialProvider(providerId)
 
-    override fun getCredentialProviders(): List<ToolkitCredentialsProvider> {
-        return toolkitCredentialManager.getCredentialProviders()
-    }
+    override fun getCredentialProviders(): List<ToolkitCredentialsProvider> = toolkitCredentialManager.getCredentialProviders()
 
     override fun dispose() {
         toolkitCredentialManager.shutDown()

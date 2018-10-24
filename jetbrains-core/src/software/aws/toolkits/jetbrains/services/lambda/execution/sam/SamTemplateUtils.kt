@@ -20,11 +20,9 @@ fun findFunctionsFromTemplate(project: Project, file: File): List<Function> {
     return findFunctionsFromTemplate(project, virtualFile)
 }
 
-fun findFunctionsFromTemplate(project: Project, file: VirtualFile): List<Function> {
-    return CloudFormationTemplate.parse(project, file).resources()
-        .filterIsInstance<Function>()
-        .toList()
-}
+fun findFunctionsFromTemplate(project: Project, file: VirtualFile): List<Function> = CloudFormationTemplate.parse(project, file).resources()
+    .filterIsInstance<Function>()
+    .toList()
 
 fun functionFromElement(element: PsiElement): Function? =
     CloudFormationTemplate.convertPsiToResource(element) as? Function

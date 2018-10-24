@@ -13,9 +13,7 @@ interface ToolkitRegionProvider {
     fun regions(): Map<String, AwsRegion>
     fun defaultRegion(): AwsRegion
 
-    fun lookupRegionById(regionId: String?): AwsRegion {
-        return regions()[regionId] ?: defaultRegion()
-    }
+    fun lookupRegionById(regionId: String?): AwsRegion = regions()[regionId] ?: defaultRegion()
 
     fun isServiceSupported(region: AwsRegion, serviceName: String): Boolean
 }

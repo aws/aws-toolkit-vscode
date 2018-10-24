@@ -59,11 +59,9 @@ class LambdaFunctionNode(
 
     fun functionName(): String = function.name
 
-    fun handlerPsi(): Array<NavigatablePsiElement> {
-        return Lambda.findPsiElementsForHandler(
-            super.getProject()!!,
-            function.runtime,
-            function.handler
-        )
-    }
+    fun handlerPsi(): Array<NavigatablePsiElement> = Lambda.findPsiElementsForHandler(
+        super.getProject()!!,
+        function.runtime,
+        function.handler
+    )
 }

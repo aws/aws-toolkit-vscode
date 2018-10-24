@@ -46,8 +46,6 @@ class AwsSdkClient : Disposable {
     companion object {
         private val LOG = Logger.getInstance(AwsSdkClient::class.java)
 
-        fun getInstance(): AwsSdkClient {
-            return ServiceManager.getService(AwsSdkClient::class.java)
-        }
+        fun getInstance(): AwsSdkClient = ServiceManager.getService(AwsSdkClient::class.java)
     }
 }

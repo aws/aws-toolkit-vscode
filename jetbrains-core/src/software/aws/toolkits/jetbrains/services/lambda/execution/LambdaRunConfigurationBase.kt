@@ -43,25 +43,23 @@ abstract class LambdaRunConfigurationBase<T : LambdaRunConfigurationBase.Mutable
         var input: String?,
         var inputIsFile: Boolean
     ) {
-        protected fun resolveInputText(input: String?, inputIsFile: Boolean): String {
-            return if (inputIsFile && input?.isNotEmpty() == true) {
-                try {
-                    LocalFileSystem.getInstance()
-                        .refreshAndFindFileByPath(input)
-                        ?.contentsToByteArray(false)
-                        ?.toString(StandardCharsets.UTF_8)
-                            ?: throw RuntimeConfigurationError(
-                                message(
-                                    "lambda.run_configuration.input_file_error",
-                                    input
-                                )
+        protected fun resolveInputText(input: String?, inputIsFile: Boolean): String = if (inputIsFile && input?.isNotEmpty() == true) {
+            try {
+                LocalFileSystem.getInstance()
+                    .refreshAndFindFileByPath(input)
+                    ?.contentsToByteArray(false)
+                    ?.toString(StandardCharsets.UTF_8)
+                        ?: throw RuntimeConfigurationError(
+                            message(
+                                "lambda.run_configuration.input_file_error",
+                                input
                             )
-                } catch (e: Exception) {
-                    throw RuntimeConfigurationError(message("lambda.run_configuration.input_file_error", input))
-                }
-            } else {
-                input ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_input_specified"))
+                        )
+            } catch (e: Exception) {
+                throw RuntimeConfigurationError(message("lambda.run_configuration.input_file_error", input))
             }
+        } else {
+            input ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_input_specified"))
         }
     }
 }

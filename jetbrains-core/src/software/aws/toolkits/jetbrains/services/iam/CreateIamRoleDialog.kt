@@ -42,13 +42,9 @@ class CreateIamRoleDialog(
         init()
     }
 
-    override fun createCenterPanel(): JComponent? {
-        return view.component
-    }
+    override fun createCenterPanel(): JComponent? = view.component
 
-    override fun getPreferredFocusedComponent(): JComponent? {
-        return view.roleName
-    }
+    override fun getPreferredFocusedComponent(): JComponent? = view.roleName
 
     override fun doValidate(): ValidationInfo? {
         if (roleName().isEmpty()) {
@@ -116,9 +112,7 @@ class CreateIamRoleDialog(
     }
 
     @TestOnly
-    fun getViewForTesting(): CreateRolePanel {
-        return view
-    }
+    fun getViewForTesting(): CreateRolePanel = view
 
     private companion object {
         val LOGGER = Logger.getInstance(CreateIamRoleDialog::class.java)

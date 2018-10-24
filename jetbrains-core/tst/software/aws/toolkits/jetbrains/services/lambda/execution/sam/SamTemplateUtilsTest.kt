@@ -52,26 +52,24 @@ class SamTemplateUtilsTest {
         assertFunction(function, "MySamFunction", "hello.zip", "helloworld.App::handleRequest", "java8")
     }
 
-    private fun yamlFile(): YAMLFile {
-        return runInEdtAndGet {
-            PsiFileFactory.getInstance(projectRule.project).createFileFromText(
-                YAMLLanguage.INSTANCE, """
-    Resources:
-        MySamFunction:
-            Type: AWS::Serverless::Function
-            Properties:
-                CodeUri: hello.zip
-                Handler: helloworld.App::handleRequest
-                Runtime: java8
-        MyLambdaFunction:
-            Type: AWS::Lambda::Function
-            Properties:
-                Code: foo.zip
-                Handler: foobar.App::handleRequest
-                Runtime: java8
-            """.trimIndent()
-            ) as YAMLFile
-        }
+    private fun yamlFile(): YAMLFile = runInEdtAndGet {
+        PsiFileFactory.getInstance(projectRule.project).createFileFromText(
+            YAMLLanguage.INSTANCE, """
+Resources:
+    MySamFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: hello.zip
+            Handler: helloworld.App::handleRequest
+            Runtime: java8
+    MyLambdaFunction:
+        Type: AWS::Lambda::Function
+        Properties:
+            Code: foo.zip
+            Handler: foobar.App::handleRequest
+            Runtime: java8
+        """.trimIndent()
+        ) as YAMLFile
     }
 
     private fun assertFunction(
@@ -90,8 +88,7 @@ class SamTemplateUtilsTest {
     }
 }
 
-fun YAMLFile.findByLocation(location: String): YAMLKeyValue? =
-    (documents.firstOrNull()?.topLevelValue as? YAMLMapping)?.findByLocation(location)
+fun YAMLFile.findByLocation(location: String): YAMLKeyValue? = (documents.firstOrNull()?.topLevelValue as? YAMLMapping)?.findByLocation(location)
 
 fun YAMLMapping.findByLocation(location: String): YAMLKeyValue? {
     val parts = location.split('.')

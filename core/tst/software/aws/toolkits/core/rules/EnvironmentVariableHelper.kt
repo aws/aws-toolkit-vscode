@@ -27,26 +27,22 @@ class EnvironmentVariableHelper : ExternalResource() {
         modifiableMap[key] = value
     }
 
-    private fun getEnvMap(): MutableMap<String, String> {
-        return getField(System.getenv().javaClass, System.getenv(), "m")!!
-    }
+    private fun getEnvMap(): MutableMap<String, String> = getField(System.getenv().javaClass, System.getenv(), "m")!!
 
     private fun getProcessEnvMap(): MutableMap<String, String>? {
         val processEnvironment = Class.forName("java.lang.ProcessEnvironment")
         return getField(processEnvironment, null, "theCaseInsensitiveEnvironment")
     }
 
-    private fun getField(processEnvironment: Class<*>, obj: Any?, fieldName: String): MutableMap<String, String>? {
-        return try {
-            val declaredField = processEnvironment.getDeclaredField(fieldName)
-            AccessController.doPrivileged(PrivilegedAction<Unit> {
-                declaredField.isAccessible = true
-            })
-            @Suppress("UNCHECKED_CAST")
-            declaredField.get(obj) as MutableMap<String, String>
-        } catch (_: NoSuchFieldException) {
-            null
-        }
+    private fun getField(processEnvironment: Class<*>, obj: Any?, fieldName: String): MutableMap<String, String>? = try {
+        val declaredField = processEnvironment.getDeclaredField(fieldName)
+        AccessController.doPrivileged(PrivilegedAction<Unit> {
+            declaredField.isAccessible = true
+        })
+        @Suppress("UNCHECKED_CAST")
+        declaredField.get(obj) as MutableMap<String, String>
+    } catch (_: NoSuchFieldException) {
+        null
     }
 
     private fun reset() {

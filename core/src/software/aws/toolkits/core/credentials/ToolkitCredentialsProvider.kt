@@ -28,13 +28,9 @@ abstract class ToolkitCredentialsProvider : AwsCredentialsProvider {
         return true
     }
 
-    override fun hashCode(): Int {
-        return id.hashCode()
-    }
+    override fun hashCode(): Int = id.hashCode()
 
-    override fun toString(): String {
-        return "${this::class.simpleName}(id='$id')"
-    }
+    override fun toString(): String = "${this::class.simpleName}(id='$id')"
 }
 
 /**

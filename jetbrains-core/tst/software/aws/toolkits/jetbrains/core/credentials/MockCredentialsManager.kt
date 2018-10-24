@@ -11,28 +11,21 @@ import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 class MockCredentialsManager : CredentialManager {
     private val providers = mutableMapOf<String, ToolkitCredentialsProvider>()
 
-    override fun getCredentialProviders(): List<ToolkitCredentialsProvider> {
-        return providers.values.toList()
-    }
+    override fun getCredentialProviders(): List<ToolkitCredentialsProvider> = providers.values.toList()
 
-    override fun getCredentialProvider(providerId: String): ToolkitCredentialsProvider {
-        return providers[providerId] ?: throw CredentialProviderNotFound("$providerId not found")
-    }
+    override fun getCredentialProvider(providerId: String): ToolkitCredentialsProvider = providers[providerId]
+        ?: throw CredentialProviderNotFound("$providerId not found")
 
     fun reset() {
         providers.clear()
     }
 
-    fun addCredentials(id: String, credentials: AwsCredentials): ToolkitCredentialsProvider {
-        return MockCredentialsProvider(id, id, credentials).also {
-            providers[id] = it
-        }
+    fun addCredentials(id: String, credentials: AwsCredentials): ToolkitCredentialsProvider = MockCredentialsProvider(id, id, credentials).also {
+        providers[id] = it
     }
 
     companion object {
-        fun getInstance(): MockCredentialsManager {
-            return ServiceManager.getService(CredentialManager::class.java) as MockCredentialsManager
-        }
+        fun getInstance(): MockCredentialsManager = ServiceManager.getService(CredentialManager::class.java) as MockCredentialsManager
     }
 
     private inner class MockCredentialsProvider(
@@ -40,8 +33,6 @@ class MockCredentialsManager : CredentialManager {
         override val displayName: String,
         private val credentials: AwsCredentials
     ) : ToolkitCredentialsProvider() {
-        override fun resolveCredentials(): AwsCredentials {
-            return credentials
-        }
+        override fun resolveCredentials(): AwsCredentials = credentials
     }
 }

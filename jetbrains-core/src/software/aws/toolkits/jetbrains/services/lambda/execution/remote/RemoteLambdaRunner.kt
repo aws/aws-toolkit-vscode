@@ -10,7 +10,8 @@ import com.intellij.execution.runners.DefaultProgramRunner
 class RemoteLambdaRunner : DefaultProgramRunner() {
     override fun getRunnerId(): String = "Remote AWS Lambda"
 
-    override fun canRun(executorId: String, profile: RunProfile): Boolean {
-        return DefaultRunExecutor.EXECUTOR_ID == executorId && profile is LambdaRemoteRunConfiguration
-    }
+    override fun canRun(
+        executorId: String,
+        profile: RunProfile
+    ): Boolean = DefaultRunExecutor.EXECUTOR_ID == executorId && profile is LambdaRemoteRunConfiguration
 }

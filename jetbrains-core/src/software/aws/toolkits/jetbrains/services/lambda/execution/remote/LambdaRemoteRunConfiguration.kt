@@ -33,9 +33,7 @@ class LambdaRemoteRunConfigurationFactory(configuration: LambdaRunConfiguration)
     override fun createTemplateConfiguration(project: Project): RunConfiguration =
         LambdaRemoteRunConfiguration(project, this)
 
-    override fun getName(): String {
-        return "Remote"
-    }
+    override fun getName(): String = "Remote"
 }
 
 class LambdaRemoteRunConfiguration(project: Project, factory: ConfigurationFactory) :
@@ -49,9 +47,10 @@ class LambdaRemoteRunConfiguration(project: Project, factory: ConfigurationFacto
         settings.validateAndCreateImmutable()
     }
 
-    override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState {
-        return RemoteLambdaState(environment, settings.validateAndCreateImmutable())
-    }
+    override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState = RemoteLambdaState(
+        environment,
+        settings.validateAndCreateImmutable()
+    )
 
     override fun suggestedName() = "[${message("lambda.run_configuration.remote")}] ${settings.functionName}"
 

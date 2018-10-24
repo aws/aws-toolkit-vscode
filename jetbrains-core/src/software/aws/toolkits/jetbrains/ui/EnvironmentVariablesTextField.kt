@@ -34,13 +34,9 @@ class EnvironmentVariablesTextField : TextFieldWithBrowseButton() {
         }
     }
 
-    private fun convertToVariables(envVars: Map<String, String>, readOnly: Boolean): List<EnvironmentVariable> {
-        return envVars.map { (key, value) ->
-            object : EnvironmentVariable(key, value, readOnly) {
-                override fun getNameIsWriteable(): Boolean {
-                    return !readOnly
-                }
-            }
+    private fun convertToVariables(envVars: Map<String, String>, readOnly: Boolean): List<EnvironmentVariable> = envVars.map { (key, value) ->
+        object : EnvironmentVariable(key, value, readOnly) {
+            override fun getNameIsWriteable(): Boolean = !readOnly
         }
     }
 
@@ -70,9 +66,7 @@ class EnvironmentVariablesTextField : TextFieldWithBrowseButton() {
             init()
         }
 
-        override fun createCenterPanel(): JComponent {
-            return envVarTable.component
-        }
+        override fun createCenterPanel(): JComponent = envVarTable.component
 
         override fun doOKAction() {
             envVarTable.stopEditing()

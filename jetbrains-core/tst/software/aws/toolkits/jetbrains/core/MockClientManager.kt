@@ -13,9 +13,8 @@ class MockClientManager(private val project: Project) : AwsClientManager(project
     private val mockClients = mutableMapOf<KClass<out SdkClient>, SdkClient>()
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T : SdkClient> createNewClient(key: AwsClientKey): T {
-        return mockClients[key.serviceClass] as? T ?: throw IllegalStateException("No mock registered for $key")
-    }
+    override fun <T : SdkClient> createNewClient(key: AwsClientKey): T = mockClients[key.serviceClass] as? T
+        ?: throw IllegalStateException("No mock registered for $key")
 
     override fun dispose() {
         mockClients.clear()
@@ -31,8 +30,6 @@ class MockClientManager(private val project: Project) : AwsClientManager(project
 
     companion object {
         @JvmStatic
-        fun getInstance(project: Project): MockClientManager {
-            return ServiceManager.getService(project, ToolkitClientManager::class.java) as MockClientManager
-        }
+        fun getInstance(project: Project): MockClientManager = ServiceManager.getService(project, ToolkitClientManager::class.java) as MockClientManager
     }
 }

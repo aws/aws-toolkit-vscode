@@ -109,16 +109,14 @@ open class NewChange : ChangeLogTask() {
         return createChange(changeType, description)
     }
 
-    private fun promptForChangeType(console: Console): ChangeType {
-        return console.readLine(
-            "\n\n%s\n> Please enter change type (1): ",
-            ChangeType.values().mapIndexed { index, changeType -> "${index + 1}. ${changeType.sectionTitle}" }.joinToString("\n")
-        ).let {
-            if (it.isNotBlank()) {
-                ChangeType.values()[it.toInt() - 1]
-            } else {
-                ChangeType.FEATURE
-            }
+    private fun promptForChangeType(console: Console): ChangeType = console.readLine(
+        "\n\n%s\n> Please enter change type (1): ",
+        ChangeType.values().mapIndexed { index, changeType -> "${index + 1}. ${changeType.sectionTitle}" }.joinToString("\n")
+    ).let {
+        if (it.isNotBlank()) {
+            ChangeType.values()[it.toInt() - 1]
+        } else {
+            ChangeType.FEATURE
         }
     }
 

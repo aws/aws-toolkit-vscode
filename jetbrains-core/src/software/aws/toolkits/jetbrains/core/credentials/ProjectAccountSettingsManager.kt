@@ -40,13 +40,11 @@ interface ProjectAccountSettingsManager {
     var activeCredentialProvider: ToolkitCredentialsProvider
         @Throws(CredentialProviderNotFound::class) get
 
-    fun hasActiveCredentials(): Boolean {
-        return try {
-            activeCredentialProvider
-            true
-        } catch (_: CredentialProviderNotFound) {
-            false
-        }
+    fun hasActiveCredentials(): Boolean = try {
+        activeCredentialProvider
+        true
+    } catch (_: CredentialProviderNotFound) {
+        false
     }
 
     /**
@@ -116,22 +114,16 @@ class DefaultProjectAccountSettingsManager(private val project: Project) :
             project.messageBus.syncPublisher(ACCOUNT_SETTINGS_CHANGED).activeCredentialsChanged(value)
         }
 
-    override fun recentlyUsedRegions(): List<AwsRegion> {
-        return recentlyUsedRegions.elements()
-    }
+    override fun recentlyUsedRegions(): List<AwsRegion> = recentlyUsedRegions.elements()
 
-    override fun recentlyUsedCredentials(): List<ToolkitCredentialsProvider> {
-        return recentlyUsedProfiles.elements()
-    }
+    override fun recentlyUsedCredentials(): List<ToolkitCredentialsProvider> = recentlyUsedProfiles.elements()
 
-    override fun getState(): AccountState {
-        return AccountState(
-            activeProfile = if (hasActiveCredentials()) activeCredentialProvider.id else null,
-            activeRegion = activeRegionInternal.id,
-            recentlyUsedProfiles = recentlyUsedProfiles.elements().map { it.id },
-            recentlyUsedRegions = recentlyUsedRegions.elements().map { it.id }
-        )
-    }
+    override fun getState(): AccountState = AccountState(
+        activeProfile = if (hasActiveCredentials()) activeCredentialProvider.id else null,
+        activeRegion = activeRegionInternal.id,
+        recentlyUsedProfiles = recentlyUsedProfiles.elements().map { it.id },
+        recentlyUsedRegions = recentlyUsedRegions.elements().map { it.id }
+    )
 
     override fun loadState(state: AccountState) {
         activeRegionInternal = regionProvider.lookupRegionById(state.activeRegion)

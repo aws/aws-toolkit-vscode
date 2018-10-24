@@ -26,14 +26,10 @@ class CredentialProviderFactoryEP : AbstractExtensionPointBean() {
     lateinit var implementation: String
 
     private val instance = object : LazyInstance<CredentialProviderFactory>() {
-        override fun getInstanceClass(): Class<CredentialProviderFactory> {
-            return findClass(implementation)
-        }
+        override fun getInstanceClass(): Class<CredentialProviderFactory> = findClass(implementation)
     }
 
-    fun getHandler(): CredentialProviderFactory {
-        return instance.value
-    }
+    fun getHandler(): CredentialProviderFactory = instance.value
 }
 
 class ExtensionPointCredentialsProviderRegistry : ToolkitCredentialsProviderRegistry {

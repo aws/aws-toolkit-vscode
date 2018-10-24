@@ -23,13 +23,11 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 
 object LambdaCreatorFactory {
-    fun create(clientManager: ToolkitClientManager, packager: LambdaPackager): LambdaCreator {
-        return LambdaCreator(
-            packager,
-            CodeUploader(clientManager.getClient()),
-            LambdaFunctionCreator(clientManager.getClient())
-        )
-    }
+    fun create(clientManager: ToolkitClientManager, packager: LambdaPackager): LambdaCreator = LambdaCreator(
+        packager,
+        CodeUploader(clientManager.getClient()),
+        LambdaFunctionCreator(clientManager.getClient())
+    )
 }
 
 class LambdaCreator internal constructor(
@@ -41,11 +39,9 @@ class LambdaCreator internal constructor(
         functionDetails: FunctionUploadDetails,
         module: Module,
         file: PsiFile
-    ): CompletionStage<LambdaFunction> {
-        return packager.createPackage(module, file)
-            .thenCompose { uploader.upload(functionDetails, it.location) }
-            .thenCompose { functionCreator.create(module.project, functionDetails, it) }
-    }
+    ): CompletionStage<LambdaFunction> = packager.createPackage(module, file)
+        .thenCompose { uploader.upload(functionDetails, it.location) }
+        .thenCompose { functionCreator.create(module.project, functionDetails, it) }
 }
 
 internal class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {

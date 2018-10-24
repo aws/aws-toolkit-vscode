@@ -23,9 +23,7 @@ class DefaultRemoteResourceResolver(
     private val executor: (Callable<Path>) -> CompletionStage<Path>
 ) : RemoteResourceResolver {
 
-    override fun resolve(resource: RemoteResource): CompletionStage<Path> {
-        return executor(Callable { internalResolve(resource) })
-    }
+    override fun resolve(resource: RemoteResource): CompletionStage<Path> = executor(Callable { internalResolve(resource) })
 
     private fun internalResolve(resource: RemoteResource): Path {
         val expectedLocation = cacheBasePath.resolve(resource.name)

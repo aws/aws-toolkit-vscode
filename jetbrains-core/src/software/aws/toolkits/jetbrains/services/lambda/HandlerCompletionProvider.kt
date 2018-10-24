@@ -24,11 +24,9 @@ class HandlerCompletionProvider(private val project: Project) : TextCompletionPr
         result.stopHere()
     }
 
-    override fun acceptChar(c: Char): CharFilter.Result? {
-        return if (c.isWhitespace()) {
-            CharFilter.Result.SELECT_ITEM_AND_FINISH_LOOKUP
-        } else {
-            CharFilter.Result.ADD_TO_PREFIX
-        }
+    override fun acceptChar(c: Char): CharFilter.Result? = if (c.isWhitespace()) {
+        CharFilter.Result.SELECT_ITEM_AND_FINISH_LOOKUP
+    } else {
+        CharFilter.Result.ADD_TO_PREFIX
     }
 }

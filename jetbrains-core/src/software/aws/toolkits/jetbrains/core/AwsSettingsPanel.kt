@@ -116,15 +116,13 @@ class SettingsSelector(project: Project) {
         return settingsPopup(dataContext, showRegions)
     }
 
-    fun settingsPopup(dataContext: DataContext, showRegions: Boolean = true): ListPopup {
-        return JBPopupFactory.getInstance().createActionGroupPopup(
-            tooltipText,
-            ChangeAccountSettingsAction(accountSettingsManager, showRegions).createPopupActionGroup(),
-            dataContext,
-            JBPopupFactory.ActionSelectionAid.SPEEDSEARCH,
-            true
-        )
-    }
+    fun settingsPopup(dataContext: DataContext, showRegions: Boolean = true): ListPopup = JBPopupFactory.getInstance().createActionGroupPopup(
+        tooltipText,
+        ChangeAccountSettingsAction(accountSettingsManager, showRegions).createPopupActionGroup(),
+        dataContext,
+        JBPopupFactory.ActionSelectionAid.SPEEDSEARCH,
+        true
+    )
 
     companion object {
         internal val tooltipText = message("settings.title")
@@ -136,9 +134,7 @@ private class ChangeAccountSettingsAction(
     private val showRegions: Boolean
 ) : ComboBoxAction(), DumbAware {
 
-    fun createPopupActionGroup(): DefaultActionGroup {
-        return createPopupActionGroup(null)
-    }
+    fun createPopupActionGroup(): DefaultActionGroup = createPopupActionGroup(null)
 
     override fun createPopupActionGroup(button: JComponent?): DefaultActionGroup {
         val group = DefaultActionGroup()

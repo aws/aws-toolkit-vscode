@@ -48,14 +48,10 @@ open class AwsClientManager(project: Project, sdkClient: AwsSdkClient) :
         }
     }
 
-    override fun getRegion(): AwsRegion {
-        return accountSettingsManager.activeRegion
-    }
+    override fun getRegion(): AwsRegion = accountSettingsManager.activeRegion
 
     companion object {
         @JvmStatic
-        fun getInstance(project: Project): ToolkitClientManager {
-            return ServiceManager.getService(project, ToolkitClientManager::class.java)
-        }
+        fun getInstance(project: Project): ToolkitClientManager = ServiceManager.getService(project, ToolkitClientManager::class.java)
     }
 }

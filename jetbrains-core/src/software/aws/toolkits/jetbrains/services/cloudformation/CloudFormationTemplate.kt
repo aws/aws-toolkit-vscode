@@ -25,18 +25,14 @@ interface CloudFormationTemplate {
     fun text(): String
 
     companion object {
-        fun parse(project: Project, templateFile: VirtualFile): CloudFormationTemplate {
-            return when (templateFile.fileType) {
-                YAMLFileType.YML -> YamlCloudFormationTemplate(project, templateFile)
-                else -> throw UnsupportedOperationException("Only YAML CloudFormation templates are supported")
-            }
+        fun parse(project: Project, templateFile: VirtualFile): CloudFormationTemplate = when (templateFile.fileType) {
+            YAMLFileType.YML -> YamlCloudFormationTemplate(project, templateFile)
+            else -> throw UnsupportedOperationException("Only YAML CloudFormation templates are supported")
         }
 
-        fun convertPsiToResource(psiElement: PsiElement): Resource? {
-            return when (psiElement.language) {
-                YAMLLanguage.INSTANCE -> YamlCloudFormationTemplate.convertPsiToResource(psiElement)
-                else -> throw UnsupportedOperationException("Only YAML CloudFormation templates are supported")
-            }
+        fun convertPsiToResource(psiElement: PsiElement): Resource? = when (psiElement.language) {
+            YAMLLanguage.INSTANCE -> YamlCloudFormationTemplate.convertPsiToResource(psiElement)
+            else -> throw UnsupportedOperationException("Only YAML CloudFormation templates are supported")
         }
     }
 }

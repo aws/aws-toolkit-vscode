@@ -330,33 +330,26 @@ class ProfileToolkitCredentialsProviderFactoryTest {
             .hasMessage("A circular profile dependency was found between role->source_profile->source_profile2->source_profile3->source_profile")
     }
 
-    private fun profiles(): MutableMap<String, Profile> {
-        return ProfileFile.builder()
-            .content(profileFile.toPath())
-            .type(ProfileFile.Type.CONFIGURATION)
-            .build()
-            .profiles()
-    }
+    private fun profiles(): MutableMap<String, Profile> = ProfileFile.builder()
+        .content(profileFile.toPath())
+        .type(ProfileFile.Type.CONFIGURATION)
+        .build()
+        .profiles()
 
-    private fun correctProfile(expectedProfile: Profile): Condition<Iterable<ToolkitCredentialsProvider>> {
-        return object : Condition<Iterable<ToolkitCredentialsProvider>>(expectedProfile.toString()) {
-            override fun matches(value: Iterable<ToolkitCredentialsProvider>): Boolean {
-                return value.filterIsInstance<ProfileToolkitCredentialsProvider>()
-                    .any { it.profile == expectedProfile }
-            }
+    private fun correctProfile(expectedProfile: Profile): Condition<Iterable<ToolkitCredentialsProvider>> =
+        object : Condition<Iterable<ToolkitCredentialsProvider>>(expectedProfile.toString()) {
+            override fun matches(value: Iterable<ToolkitCredentialsProvider>): Boolean =
+                value.filterIsInstance<ProfileToolkitCredentialsProvider>().any { it.profile == expectedProfile }
         }
-    }
 
     private val mfaProvider: (String, String) -> String = { _, _ -> MFA_TOKEN }
 
-    private fun createProviderFactory(): ProfileToolkitCredentialsProviderFactory {
-        return ProfileToolkitCredentialsProviderFactory(
-            mockSdkHttpClient,
-            mockRegionProvider,
-            mfaProvider,
-            profileFile.toPath()
-        )
-    }
+    private fun createProviderFactory() = ProfileToolkitCredentialsProviderFactory(
+        mockSdkHttpClient,
+        mockRegionProvider,
+        mfaProvider,
+        profileFile.toPath()
+    )
 
     private fun createAssumeRoleResponse(
         accessKey: String,
@@ -431,9 +424,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 private fun SdkHttpFullResponse.toAbortable(): AbortableCallable<SdkHttpFullResponse> {
     val result = this
     return object : AbortableCallable<SdkHttpFullResponse> {
-        override fun call(): SdkHttpFullResponse {
-            return result
-        }
+        override fun call(): SdkHttpFullResponse = result
 
         override fun abort() {}
     }

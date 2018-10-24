@@ -22,12 +22,10 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        fun data(): Collection<Array<Runtime>> {
-            return listOf(
-                arrayOf(Runtime.PYTHON2_7),
-                arrayOf(Runtime.PYTHON3_6)
-            )
-        }
+        fun data(): Collection<Array<Runtime>> = listOf(
+            arrayOf(Runtime.PYTHON2_7),
+            arrayOf(Runtime.PYTHON3_6)
+        )
     }
 
     @Rule
@@ -95,12 +93,10 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
         assertThat(debuggerIsHit.get()).isTrue()
     }
 
-    private fun runConfiguration(): SamRunConfiguration {
-        return createRunConfiguration(
-            project = projectRule.project,
-            input = "\"Hello World\"",
-            handler = "hello_world.app.lambda_handler",
-            runtime = runtime
-        )
-    }
+    private fun runConfiguration(): SamRunConfiguration = createRunConfiguration(
+        project = projectRule.project,
+        input = "\"Hello World\"",
+        handler = "hello_world.app.lambda_handler",
+        runtime = runtime
+    )
 }

@@ -12,9 +12,7 @@ import com.intellij.openapi.components.Storage
 class SamSettings : PersistentStateComponent<SamConfiguration> {
     private var state = SamConfiguration()
 
-    override fun getState(): SamConfiguration {
-        return state
-    }
+    override fun getState(): SamConfiguration = state
 
     override fun loadState(state: SamConfiguration) {
         this.state = state

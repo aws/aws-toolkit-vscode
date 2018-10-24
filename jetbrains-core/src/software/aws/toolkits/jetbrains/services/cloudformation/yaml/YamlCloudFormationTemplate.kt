@@ -44,58 +44,46 @@ class YamlCloudFormationTemplate(template: YAMLFile) : CloudFormationTemplate {
 
     private class YamlResource(override val logicalName: String, private val delegate: YAMLMapping) :
         YAMLMapping by delegate, Resource {
-        override fun isType(requestedType: String): Boolean {
-            return try {
-                type() == requestedType
-            } catch (_: Exception) {
-                false
-            }
+        override fun isType(requestedType: String): Boolean = try {
+            type() == requestedType
+        } catch (_: Exception) {
+            false
         }
 
-        override fun type(): String? {
-            return delegate.getKeyValueByKey("Type")?.valueText
-        }
+        override fun type(): String? = delegate.getKeyValueByKey("Type")?.valueText
 
-        override fun getScalarProperty(key: String): String {
-            return properties().getKeyValueByKey(key)?.valueText
-                    ?: throw IllegalStateException(message("cloudformation.missing_property", key, logicalName))
-        }
+        override fun getScalarProperty(key: String): String = properties().getKeyValueByKey(key)?.valueText
+                ?: throw IllegalStateException(message("cloudformation.missing_property", key, logicalName))
 
         override fun setScalarProperty(key: String, value: String) {
             val newKeyValue = YAMLElementGenerator.getInstance(project).createYamlKeyValue(key, value)
             properties().putKeyValue(newKeyValue)
         }
 
-        private fun properties(): YAMLMapping {
-            return delegate.getKeyValueByKey("Properties")?.value as? YAMLMapping
-                    ?: throw RuntimeException(message("cloudformation.key_not_found", "Properties", logicalName))
-        }
+        private fun properties(): YAMLMapping = delegate.getKeyValueByKey("Properties")?.value as? YAMLMapping
+                ?: throw RuntimeException(message("cloudformation.key_not_found", "Properties", logicalName))
     }
 
     companion object {
-        private fun loadYamlFile(project: Project, templateFile: VirtualFile): YAMLFile {
-            return PsiFileFactory.getInstance(project).createFileFromText(
-                "template_temp.yaml",
-                YAMLLanguage.INSTANCE,
-                VfsUtil.loadText(templateFile),
-                false,
-                false,
-                true
-            ) as YAMLFile
-        }
+        private fun loadYamlFile(project: Project, templateFile: VirtualFile): YAMLFile = PsiFileFactory.getInstance(project).createFileFromText(
+            "template_temp.yaml",
+            YAMLLanguage.INSTANCE,
+            VfsUtil.loadText(templateFile),
+            false,
+            false,
+            true
+        ) as YAMLFile
 
         fun convertPsiToResource(psiElement: PsiElement): Resource? {
             val yamlKeyValue = psiElement as? YAMLKeyValue ?: return null
             return yamlKeyValue.asResource()
         }
 
-        private fun YAMLKeyValue.asResource(): Resource? {
-            return if (PsiTreeUtil.getParentOfType(this, YAMLKeyValue::class.java)?.keyText == "Resources") {
-                val lowLevelResource = YamlResource(this.keyText, this.value as YAMLMapping)
-                return RESOURCE_MAPPINGS[lowLevelResource.type()]?.invoke(lowLevelResource) ?: lowLevelResource
-            } else {
-                null
-            }
+        private fun YAMLKeyValue.asResource(): Resource? = if (PsiTreeUtil.getParentOfType(this, YAMLKeyValue::class.java)?.keyText == "Resources") {
+            val lowLevelResource = YamlResource(this.keyText, this.value as YAMLMapping)
+            RESOURCE_MAPPINGS[lowLevelResource.type()]?.invoke(lowLevelResource) ?: lowLevelResource
+        } else {
+            null
         }
     }
 }

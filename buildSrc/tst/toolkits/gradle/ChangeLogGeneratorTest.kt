@@ -150,9 +150,7 @@ class ChangeLogGeneratorTest {
         verify(secondWriter).flush()
     }
 
-    private fun createFile(@Language("JSON") input: String): Path {
-        return folder.newFile().apply {
-            writeText(input.trimIndent())
-        }.toPath()
-    }
+    private fun createFile(@Language("JSON") input: String): Path = folder.newFile().apply {
+        writeText(input.trimIndent())
+    }.toPath()
 }

@@ -287,6 +287,4 @@ private fun String.toElement(): Element {
     return builder.build(stream).rootElement
 }
 
-private fun Element?.string(): String {
-    return XMLOutputter().outputString(this)
-}
+private fun Element?.string(): String = XMLOutputter().outputString(this)

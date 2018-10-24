@@ -9,14 +9,10 @@ class ToolkitCredentialsProviderManager(
     private val registry: ToolkitCredentialsProviderRegistry
 ) {
     @Throws(CredentialProviderNotFound::class)
-    fun getCredentialProvider(id: String): ToolkitCredentialsProvider {
-        return registry.listFactories().asSequence().mapNotNull { it.get(id) }.firstOrNull()
-            ?: throw CredentialProviderNotFound("No ToolkitCredentialsProvider found represented by $id")
-    }
+    fun getCredentialProvider(id: String): ToolkitCredentialsProvider = registry.listFactories().asSequence().mapNotNull { it.get(id) }.firstOrNull()
+        ?: throw CredentialProviderNotFound("No ToolkitCredentialsProvider found represented by $id")
 
-    fun getCredentialProviders(): List<ToolkitCredentialsProvider> {
-        return registry.listFactories().flatMap { it.listCredentialProviders() }.toList()
-    }
+    fun getCredentialProviders(): List<ToolkitCredentialsProvider> = registry.listFactories().flatMap { it.listCredentialProviders() }.toList()
 
     /**
      * Shuts down the manager and all registered factories

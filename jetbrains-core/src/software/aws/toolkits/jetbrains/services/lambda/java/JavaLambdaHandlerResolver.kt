@@ -47,22 +47,18 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
         }
     }
 
-    override fun determineHandler(element: PsiElement): String? {
-        return when (element) {
-            is PsiClass -> findByClass(element)
-            is PsiMethod -> findByMethod(element)
-            is PsiIdentifier -> determineHandler(element.parent)
-            else -> null
-        }
+    override fun determineHandler(element: PsiElement): String? = when (element) {
+        is PsiClass -> findByClass(element)
+        is PsiMethod -> findByMethod(element)
+        is PsiIdentifier -> determineHandler(element.parent)
+        else -> null
     }
 
-    override fun determineHandlers(element: PsiElement, file: VirtualFile): Set<String> {
-        return when (element) {
-            is PsiClass -> findHandlersByClass(element, file)
-            is PsiMethod -> findHandlersByMethod(element, file)
-            is PsiIdentifier -> determineHandlers(element.parent, file)
-            else -> emptySet()
-        }
+    override fun determineHandlers(element: PsiElement, file: VirtualFile): Set<String> = when (element) {
+        is PsiClass -> findHandlersByClass(element, file)
+        is PsiMethod -> findHandlersByMethod(element, file)
+        is PsiIdentifier -> determineHandlers(element.parent, file)
+        else -> emptySet()
     }
 
     /**
@@ -102,8 +98,7 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
         return findByMethod(method, file)
     }
 
-    private fun findHandlersByMethod(method: PsiMethod, file: VirtualFile): Set<String> =
-        findByMethod(method, file)?.let { setOf(it) }.orEmpty()
+    private fun findHandlersByMethod(method: PsiMethod, file: VirtualFile): Set<String> = findByMethod(method, file)?.let { setOf(it) }.orEmpty()
 
     private fun findByMethod(method: PsiMethod, file: VirtualFile): String? {
         val parentClass = method.parent as? PsiClass ?: return null
@@ -142,8 +137,7 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
         return handlers
     }
 
-    private fun PsiClass.canBeInstantiatedByLambda() =
-        this.isPublic && this.isConcrete && this.hasPublicNoArgsConstructor()
+    private fun PsiClass.canBeInstantiatedByLambda() = this.isPublic && this.isConcrete && this.hasPublicNoArgsConstructor()
 
     private val PsiModifierListOwner.isPublic get() = this.hasModifier(JvmModifier.PUBLIC)
 
@@ -166,15 +160,12 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
         }
     }
 
-    private fun PsiMethod.isValidHandler(parentClass: PsiClass, file: VirtualFile): Boolean {
-        return this.isPublic &&
-            this.hasRequiredParameters() &&
-            (this.isStatic || parentClass.canBeInstantiatedByLambda()) &&
-            !(parentClass.implementsLambdaHandlerInterface(file) && this.name == HANDLER_NAME)
-    }
+    private fun PsiMethod.isValidHandler(parentClass: PsiClass, file: VirtualFile) = this.isPublic &&
+        this.hasRequiredParameters() &&
+        (this.isStatic || parentClass.canBeInstantiatedByLambda()) &&
+        !(parentClass.implementsLambdaHandlerInterface(file) && this.name == HANDLER_NAME)
 
-    private fun PsiMethod.hasRequiredParameters(): Boolean =
-        when (this.parameters.size) {
+    private fun PsiMethod.hasRequiredParameters(): Boolean = when (this.parameters.size) {
             1 -> true
             2 -> (this.parameterList.parameters[0].isInputStreamParameter() &&
                     this.parameterList.parameters[1].isOutputStreamParameter()) ||

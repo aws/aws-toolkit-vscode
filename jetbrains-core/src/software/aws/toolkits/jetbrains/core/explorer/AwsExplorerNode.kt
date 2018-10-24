@@ -91,9 +91,7 @@ abstract class AwsExplorerResourceNode<T>(
 class AwsTruncatedResultNode(private val parentNode: AwsExplorerServiceRootNode, private val paginationToken: String) :
         AwsExplorerNode<String>(parentNode.project!!, MESSAGE, null) {
 
-    override fun getChildren(): Collection<AbstractTreeNode<Any>> {
-        return emptyList()
-    }
+    override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
     override fun update(presentation: PresentationData?) {
         presentation?.addText(value, SimpleTextAttributes.GRAYED_ATTRIBUTES)
@@ -157,9 +155,7 @@ class AwsTruncatedResultNode(private val parentNode: AwsExplorerServiceRootNode,
 class AwsExplorerLoadingNode(project: Project) :
         AwsExplorerNode<String>(project, IdeBundle.message("treenode.loading"), null) {
 
-    override fun getChildren(): Collection<AbstractTreeNode<Any>> {
-        return emptyList()
-    }
+    override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
     override fun update(presentation: PresentationData?) {
         presentation?.addText(value, SimpleTextAttributes.GRAYED_ATTRIBUTES)
@@ -169,9 +165,7 @@ class AwsExplorerLoadingNode(project: Project) :
 class AwsExplorerErrorNode(project: Project, exception: Exception) :
         AwsExplorerNode<Exception>(project, exception, null) {
 
-    override fun getChildren(): Collection<AbstractTreeNode<Any>> {
-        return emptyList()
-    }
+    override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
     override fun update(presentation: PresentationData?) {
         super.update(presentation)
@@ -188,9 +182,7 @@ class AwsExplorerErrorNode(project: Project, exception: Exception) :
 }
 
 class AwsExplorerEmptyNode(project: Project) : AwsExplorerNode<String>(project, message("explorer.empty_node"), awsIcon = null) {
-    override fun getChildren(): Collection<AbstractTreeNode<Any>> {
-        return emptyList()
-    }
+    override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
     override fun update(presentation: PresentationData?) {
         super.update(presentation)

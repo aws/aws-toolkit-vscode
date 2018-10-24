@@ -72,18 +72,12 @@ internal class PythonModuleFixtureBuilder(fixtureBuilder: TestFixtureBuilder<out
     ModuleFixtureBuilderImpl<ModuleFixture>(PlatformPythonModuleType(), fixtureBuilder),
     ModuleFixtureBuilder<ModuleFixture> {
 
-    override fun instantiateFixture(): ModuleFixture {
-        return ModuleFixtureImpl(this)
-    }
+    override fun instantiateFixture(): ModuleFixture = ModuleFixtureImpl(this)
 }
 
 internal class PlatformPythonModuleType : PythonModuleTypeBase<EmptyModuleBuilder>() {
-    override fun createModuleBuilder(): EmptyModuleBuilder {
-        return object : EmptyModuleBuilder() {
-            override fun getModuleType(): ModuleType<EmptyModuleBuilder> {
-                return instance
-            }
-        }
+    override fun createModuleBuilder(): EmptyModuleBuilder = object : EmptyModuleBuilder() {
+        override fun getModuleType(): ModuleType<EmptyModuleBuilder> = instance
     }
 
     companion object {
@@ -92,16 +86,12 @@ internal class PlatformPythonModuleType : PythonModuleTypeBase<EmptyModuleBuilde
     }
 }
 
-class PyTestSdk2x() : PyTestSdk("PyTestSdk2x") {
-    override fun getVersionString(): String? {
-        return "FakeCPython 2.6.0"
-    }
+class PyTestSdk2x : PyTestSdk("PyTestSdk2x") {
+    override fun getVersionString(): String? = "FakeCPython 2.6.0"
 }
 
-class PyTestSdk3x() : PyTestSdk("PyTestSdk3x") {
-    override fun getVersionString(): String? {
-        return "FakeCPython 3.7.0"
-    }
+class PyTestSdk3x : PyTestSdk("PyTestSdk3x") {
+    override fun getVersionString(): String? = "FakeCPython 3.7.0"
 }
 
 class PyVirtualEnvSdk(module: Module) : PyTestSdk("PyVirtEnv") {
@@ -121,25 +111,19 @@ class PyVirtualEnvSdk(module: Module) : PyTestSdk("PyVirtEnv") {
         homePath = pythonExecutable.toString()
     }
 
-    override fun getVersionString(): String? {
-        return "FakeCPython 3.7.0 [virtual-env]"
-    }
+    override fun getVersionString(): String? = "FakeCPython 3.7.0 [virtual-env]"
 
     fun addSitePackage(libName: String) {
         assertThat(createFileIfNotExists(envSitePackages.resolve(libName).resolve("__init__.py").toFile()))
             .isTrue()
     }
 
-    private fun createFileIfNotExists(file: File): Boolean {
-        return createDirIfNotExists(file.parentFile) && FileUtil.createIfNotExists(file).also {
-            LocalFileSystem.getInstance().refreshAndFindFileByIoFile(file)
-        }
+    private fun createFileIfNotExists(file: File) = createDirIfNotExists(file.parentFile) && FileUtil.createIfNotExists(file).also {
+        LocalFileSystem.getInstance().refreshAndFindFileByIoFile(file)
     }
 
-    private fun createDirIfNotExists(dir: File): Boolean {
-        return FileUtil.createDirectory(dir).also {
-            LocalFileSystem.getInstance().refreshAndFindFileByIoFile(dir)
-        }
+    private fun createDirIfNotExists(dir: File) = FileUtil.createDirectory(dir).also {
+        LocalFileSystem.getInstance().refreshAndFindFileByIoFile(dir)
     }
 }
 
@@ -151,7 +135,5 @@ abstract class PyTestSdk(name: String) : ProjectJdkImpl(name, PythonSdkType.getI
 
 internal class FakeCPython : CPythonSdkFlavor() {
     @NotNull
-    override fun getName(): String {
-        return "FakeCPython"
-    }
+    override fun getName(): String = "FakeCPython"
 }

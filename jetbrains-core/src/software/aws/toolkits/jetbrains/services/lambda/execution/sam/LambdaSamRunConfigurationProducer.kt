@@ -7,7 +7,6 @@ import com.intellij.execution.RunManager
 import com.intellij.execution.RunnerAndConfigurationSettings
 import com.intellij.execution.actions.ConfigurationContext
 import com.intellij.execution.actions.RunConfigurationProducer
-import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.Ref
@@ -20,10 +19,9 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfig
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 
 class LambdaSamRunConfigurationProducer : RunConfigurationProducer<SamRunConfiguration>(getFactory()) {
-    override fun getConfigurationSettingsList(runManager: RunManager): List<RunnerAndConfigurationSettings> {
-        // Filter all Lambda run CONFIGURATIONS down to only ones that are Lambda SAM for this run producer
-        return super.getConfigurationSettingsList(runManager).filter { it.configuration is SamRunConfiguration }
-    }
+    // Filter all Lambda run CONFIGURATIONS down to only ones that are Lambda SAM for this run producer
+    override fun getConfigurationSettingsList(runManager: RunManager): List<RunnerAndConfigurationSettings> =
+        super.getConfigurationSettingsList(runManager).filter { it.configuration is SamRunConfiguration }
 
     override fun setupConfigurationFromContext(configuration: SamRunConfiguration, context: ConfigurationContext, sourceElement: Ref<PsiElement>): Boolean {
         val element = context.psiLocation ?: return false
@@ -88,9 +86,6 @@ class LambdaSamRunConfigurationProducer : RunConfigurationProducer<SamRunConfigu
     }
 
     companion object {
-        private fun getFactory(): ConfigurationFactory {
-            return LambdaRunConfiguration.getInstance()
-                .configurationFactories.first { it is SamRunConfigurationFactory }
-        }
+        private fun getFactory() = LambdaRunConfiguration.getInstance().configurationFactories.first { it is SamRunConfigurationFactory }
     }
 }

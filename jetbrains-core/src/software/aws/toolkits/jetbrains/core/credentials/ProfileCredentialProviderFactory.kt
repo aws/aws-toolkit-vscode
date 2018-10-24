@@ -15,23 +15,19 @@ import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.resources.message
 
 class ProfileCredentialProviderFactory : CredentialProviderFactory {
-    override fun createToolkitCredentialProviderFactory(): ToolkitCredentialsProviderFactory {
-        return ProfileToolkitCredentialsProviderFactory(
-            AwsSdkClient.getInstance().sdkHttpClient,
-            AwsRegionProvider.getInstance(),
-            { profileName, mfaDevice ->
-                invokeAndWaitIfNeed(ModalityState.any()) {
-                    promptForMfa(profileName, mfaDevice)
-                }
-            })
-    }
+    override fun createToolkitCredentialProviderFactory(): ToolkitCredentialsProviderFactory = ProfileToolkitCredentialsProviderFactory(
+        AwsSdkClient.getInstance().sdkHttpClient,
+        AwsRegionProvider.getInstance(),
+        { profileName, mfaDevice ->
+            invokeAndWaitIfNeed(ModalityState.any()) {
+                promptForMfa(profileName, mfaDevice)
+            }
+        })
 
     @CalledInAwt
-    private fun promptForMfa(profileName: String, mfaDevice: String): String {
-        return Messages.showInputDialog(
-            message("credentials.profile.mfa.message", mfaDevice),
-            message("credentials.profile.mfa.title", profileName),
-            AwsIcons.Logos.IAM_LARGE
-        ) ?: throw IllegalStateException("MFA challenge is required")
-    }
+    private fun promptForMfa(profileName: String, mfaDevice: String): String = Messages.showInputDialog(
+        message("credentials.profile.mfa.message", mfaDevice),
+        message("credentials.profile.mfa.title", profileName),
+        AwsIcons.Logos.IAM_LARGE
+    ) ?: throw IllegalStateException("MFA challenge is required")
 }
