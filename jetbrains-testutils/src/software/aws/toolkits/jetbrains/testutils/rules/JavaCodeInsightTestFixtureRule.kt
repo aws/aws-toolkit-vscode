@@ -11,6 +11,7 @@ import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiFileFactory
@@ -100,6 +101,15 @@ fun JavaCodeInsightTestFixture.openClass(@Language("JAVA") javaClass: String): P
         this.openFileInEditor(psiClass.containingFile.virtualFile)
     }
     return psiClass
+}
+
+fun CodeInsightTestFixture.openFile(relativePath: String, fileText: String): VirtualFile {
+    val file = this.addFileToProject(relativePath, fileText).virtualFile
+    runInEdtAndWait {
+        this.openFileInEditor(file)
+    }
+
+    return file
 }
 
 /**

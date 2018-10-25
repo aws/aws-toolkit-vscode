@@ -13,14 +13,13 @@ import assertk.assertions.isNotNull
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiIdentifier
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
-import com.intellij.testFramework.fixtures.JavaCodeInsightTestFixture
 import com.intellij.testFramework.runInEdtAndWait
-import org.intellij.lang.annotations.Language
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker
 import software.aws.toolkits.jetbrains.testutils.rules.JavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.testutils.rules.openClass
 
 class JavaLambdaLineMarkerTest {
     @Rule
@@ -340,13 +339,6 @@ class JavaLambdaLineMarkerTest {
         this.isNotNull {
             it.isInstanceOf(PsiIdentifier::class)
             assert(it.actual.text).isEqualTo(name)
-        }
-    }
-
-    private fun JavaCodeInsightTestFixture.openClass(@Language("JAVA") javaClass: String) {
-        val psiClass = this.addClass(javaClass)
-        runInEdtAndWait {
-            projectRule.fixture.openFileInEditor(psiClass.containingFile.virtualFile)
         }
     }
 }
