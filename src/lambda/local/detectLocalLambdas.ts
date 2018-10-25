@@ -9,10 +9,11 @@ import * as schema from 'cloudformation-schema-js-yaml'
 import * as yaml from 'js-yaml'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { accessAsync, readFileAsyncAsString } from '../../shared/filesystem'
+import { fileExists, readFileAsString } from '../../shared/filesystemUtilities'
 
 export interface LocalLambda {
     lambda: string
+    workspaceFolder: vscode.WorkspaceFolder
     templatePath?: string
 }
 
@@ -45,17 +46,20 @@ async function detectLambdasFromWorkspaceFolder(
     workspaceFolder: vscode.WorkspaceFolder
 ): Promise<LocalLambda[]> {
     return [
-        ...await detectLambdasFromTemplate(path.join(workspaceFolder.uri.fsPath, 'template.yml')),
-        ...await detectLambdasFromTemplate(path.join(workspaceFolder.uri.fsPath, 'template.yaml'))
+        ...await detectLambdasFromTemplate(workspaceFolder, path.join(workspaceFolder.uri.fsPath, 'template.yml')),
+        ...await detectLambdasFromTemplate(workspaceFolder, path.join(workspaceFolder.uri.fsPath, 'template.yaml'))
     ]
 }
 
-async function detectLambdasFromTemplate(templatePath: string): Promise<LocalLambda[]> {
-    if (!await accessAsync(templatePath)) {
+async function detectLambdasFromTemplate(
+    workspaceFolder: vscode.WorkspaceFolder,
+    templatePath: string
+): Promise<LocalLambda[]> {
+    if (!await fileExists(templatePath)) {
         return []
     }
 
-    const templateContent = await readFileAsyncAsString(templatePath)
+    const templateContent = await readFileAsString(templatePath)
     const template = yaml.safeLoad(templateContent, {
         filename: templatePath,
         schema
@@ -70,6 +74,7 @@ async function detectLambdasFromTemplate(templatePath: string): Promise<LocalLam
         .filter(key => resources[key].Type === 'AWS::Serverless::Function')
         .map(key => ({
             lambda: key,
+            workspaceFolder,
             templatePath
         }))
 }

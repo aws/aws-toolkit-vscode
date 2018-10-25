@@ -15,7 +15,8 @@ import { copy } from 'fs-extra'
 import { homedir } from 'os'
 import { join, sep } from 'path'
 import { EnvironmentVariables } from '../environmentVariables'
-import { accessAsync, readFileAsync, writeFileAsync } from '../filesystem'
+import { readFileAsync, writeFileAsync } from '../filesystem'
+import { fileExists } from '../filesystemUtilities'
 
 export interface SharedConfigInit {
     /**
@@ -68,7 +69,7 @@ async function loadConfigFile(
         configFilePath = env.AWS_CONFIG_FILE || join(getHomeDir(), '.aws', 'config')
     }
 
-    if (!await accessAsync(configFilePath)) {
+    if (!await fileExists(configFilePath)) {
         return {}
     }
 
@@ -83,7 +84,7 @@ async function loadCredentialsFile(
         credentialsFilePath = env.AWS_SHARED_CREDENTIALS_FILE || join(getHomeDir(), '.aws', 'credentials')
     }
 
-    if (!await accessAsync(credentialsFilePath)) {
+    if (!await fileExists(credentialsFilePath)) {
         return {}
     }
 

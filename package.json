@@ -26,7 +26,8 @@
         "onCommand:aws.invokeLambda",
         "onCommand:aws.deployLambda",
         "onCommand:aws.getLambdaConfig",
-        "onCommand:aws.getLambdaPolicy"
+        "onCommand:aws.getLambdaPolicy",
+        "onDebug"
     ],
     "main": "./out/src/extension",
     "contributes": {
@@ -56,6 +57,12 @@
                 }
             }
         },
+        "debuggers": [
+            {
+                "type": "lambda-node",
+                "label": "Lambda"
+            }
+        ],
         "viewsContainers": {
             "activitybar": [
                 {
