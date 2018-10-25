@@ -29,7 +29,17 @@ class LambdaHandlerIndex : ScalarIndexExtension<String>() {
 
     override fun getName() = NAME
 
-    override fun getVersion() = 1
+    override fun getVersion(): Int {
+        var version = 1 // Base version that is tied to the version of getIndexer
+
+        val runtimeGroups = LambdaHandlerResolver.supportedRuntimeGroups
+        for (runtimeGroup in runtimeGroups) {
+            val resolver = LambdaHandlerResolver.getInstance(runtimeGroup) ?: continue
+            version = version * 31 + (resolver.version() xor resolver::class.java.name.hashCode())
+        }
+
+        return version
+    }
 
     override fun dependsOnFileContent() = true
 

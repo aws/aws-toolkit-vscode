@@ -16,6 +16,10 @@ import software.amazon.awssdk.services.lambda.model.Runtime
  * Used to expose Lambda handler information for different [Language]s / [Runtime]s
  */
 interface LambdaHandlerResolver {
+    /**
+     * The version of this indexer. It should be incremented with the indexing logic has been modified
+     */
+    fun version(): Int
 
     /**
      * Converts the handler string into PSI elements that represent it. I.e. if the Handler points to a file, return the

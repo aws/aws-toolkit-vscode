@@ -50,7 +50,7 @@ class LambdaSamRunConfigurationProducer : RunConfigurationProducer<SamRunConfigu
         if (runtimeGroup !in LambdaHandlerResolver.supportedRuntimeGroups) {
             return false
         }
-        val resolver = LambdaHandlerResolver.getInstance(runtimeGroup)
+        val resolver = LambdaHandlerResolver.getInstanceOrThrow(runtimeGroup)
         val handler = resolver.determineHandler(element) ?: return false
 
         val sdk = ModuleRootManager.getInstance(context.module).sdk ?: ProjectRootManager.getInstance(context.project).projectSdk
@@ -72,7 +72,7 @@ class LambdaSamRunConfigurationProducer : RunConfigurationProducer<SamRunConfigu
         if (runtimeGroup !in LambdaHandlerResolver.supportedRuntimeGroups) {
             return false
         }
-        val resolver = LambdaHandlerResolver.getInstance(runtimeGroup)
+        val resolver = LambdaHandlerResolver.getInstanceOrThrow(runtimeGroup)
         val handler = resolver.determineHandler(element) ?: return false
         return configuration.settings.handler == handler
     }

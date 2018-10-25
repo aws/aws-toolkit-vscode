@@ -22,6 +22,8 @@ import com.intellij.psi.search.GlobalSearchScope
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 
 class JavaLambdaHandlerResolver : LambdaHandlerResolver {
+    override fun version(): Int = 1
+
     override fun findPsiElements(
         project: Project,
         handler: String,

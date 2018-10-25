@@ -62,7 +62,7 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
 
         samState.runner = runner
 
-        val packager = LambdaPackager.getInstance(state.settings.runtimeGroup)
+        val packager = LambdaPackager.getInstanceOrThrow(state.settings.runtimeGroup)
         packager.createPackage(module, psiFile)
             .thenAccept {
                 runInEdt {
@@ -112,12 +112,12 @@ internal class SamDebugger : SamRunner() {
     }
 
     override fun patchCommandLine(state: SamRunningState, commandLine: GeneralCommandLine) {
-        SamDebugSupport.getInstance(state.settings.runtimeGroup)
+        SamDebugSupport.getInstanceOrThrow(state.settings.runtimeGroup)
             .patchCommandLine(debugPort, state, commandLine)
     }
 
     override fun run(environment: ExecutionEnvironment, state: SamRunningState): RunContentDescriptor {
-        val debugSupport = SamDebugSupport.getInstance(state.settings.runtimeGroup)
+        val debugSupport = SamDebugSupport.getInstanceOrThrow(state.settings.runtimeGroup)
         val debugProcess = debugSupport.createDebugProcess(environment, state, debugPort)
         val debugManager = XDebuggerManager.getInstance(environment.project)
         return debugProcess?.let {

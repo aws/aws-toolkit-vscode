@@ -91,7 +91,8 @@ class RuntimeGroupExtensionPoint<T> : AbstractExtensionPointBean(), KeyedLazyIns
  */
 abstract class RuntimeGroupExtensionPointObject<T>(private val extensionPointName: ExtensionPointName<RuntimeGroupExtensionPoint<T>>) {
     protected val collector = KeyedExtensionCollector<T, RuntimeGroup>(extensionPointName.name)
-    fun getInstance(runtimeGroup: RuntimeGroup): T = collector.findSingle(runtimeGroup)
+    fun getInstance(runtimeGroup: RuntimeGroup): T? = collector.findSingle(runtimeGroup)
+    fun getInstanceOrThrow(runtimeGroup: RuntimeGroup): T = getInstance(runtimeGroup) ?: throw IllegalStateException("Attempted to retrieve feature for unsupported runtime group $runtimeGroup")
     val supportedRuntimeGroups: Set<RuntimeGroup> by lazy { extensionPointName.extensions.map { it.runtimeGroup }.toSet() }
     val supportedLanguages: Set<Language> by lazy { supportedRuntimeGroups.flatMap { it.languageIds }.mapNotNull { Language.findLanguageByID(it) }.toSet() }
 }

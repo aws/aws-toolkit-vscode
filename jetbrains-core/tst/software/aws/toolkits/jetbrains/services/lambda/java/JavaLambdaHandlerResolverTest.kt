@@ -342,7 +342,7 @@ class JavaLambdaHandlerResolverTest {
 
     @Test
     fun handlerDisplayNames() {
-        val sut = LambdaHandlerResolver.getInstance(RuntimeGroup.JAVA)
+        val sut = LambdaHandlerResolver.getInstanceOrThrow(RuntimeGroup.JAVA)
 
         assertThat(sut.handlerDisplayName("com.example.LambdaHandler::handleRequest")).isEqualTo("LambdaHandler.handleRequest")
         assertThat(sut.handlerDisplayName("com.example.LambdaHandler")).isEqualTo("LambdaHandler")
