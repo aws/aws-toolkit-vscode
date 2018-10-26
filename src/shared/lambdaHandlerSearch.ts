@@ -8,6 +8,8 @@
 export interface LambdaHandlerCandidate {
     handlerName: string,
     filename: string,
+    positionStart: number,
+    positionEnd: number,
 }
 
 export interface LambdaHandlerSearch {

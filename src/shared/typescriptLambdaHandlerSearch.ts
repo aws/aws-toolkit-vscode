@@ -153,6 +153,8 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                 return {
                     filename: this._filename,
                     handlerName: `${this._baseFilename}.${exportsTarget}`,
+                    positionStart: candidate.pos,
+                    positionEnd: candidate.end,
                 }
             })
     }
@@ -173,6 +175,8 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                             handlers.push({
                                 filename: this._filename,
                                 handlerName: `${this._baseFilename}.${exportedFunction}`,
+                                positionStart: clause.pos,
+                                positionEnd: clause.end,
                             })
                         }
                     }
@@ -197,6 +201,8 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                 handlers.push({
                     filename: this._filename,
                     handlerName: `${this._baseFilename}.${exportNode.name.getText()}`,
+                    positionStart: exportNode.pos,
+                    positionEnd: exportNode.end,
                 })
             } else if (ts.isVariableStatement(exportNode)) {
                 exportNode.declarationList.forEachChild(declaration => {
@@ -211,6 +217,8 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                         handlers.push({
                             filename: this._filename,
                             handlerName: `${this._baseFilename}.${declaration.name.getText()}`,
+                            positionStart: declaration.pos,
+                            positionEnd: declaration.end,
                         })
                     }
                 })
