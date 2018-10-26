@@ -31,3 +31,19 @@ export function exportedFunctionWithThreeArgs(arg1: string, arg2: string, arg3: 
 function functionWithFourArgs(arg1: string, arg2: string, arg3: string, arg4: string): void { }
 
 export function exportedFunctionWithFourArgs(arg1: string, arg2: string, arg3: string, arg4: string): void { }
+
+export const exportedArrowFunction = (arg1: string) => { }
+
+export const exportedArrowFunctionWithFourArgs = (arg1: string, arg2: string, arg3: string, arg4: string) => { }
+
+function exportedViaDeclaration(arg1: string) { }
+
+const exportedArrowViaDeclaration = (arg1: string) => { }
+const exportedArrowViaDeclarationAlt: (x: string) => void = (arg1) => { }
+
+const exportedArrowViaDeclarationWithFourArgs = (arg1: string, arg2: string, arg3: string, arg4: string) => { }
+const exportedArrowViaDeclarationWithFourArgsAlt:
+    (arg1: string, arg2: string, arg3: string, arg4: string) => void = (arg1, arg2, arg3, arg4) => { }
+
+export { exportedViaDeclaration, exportedArrowViaDeclaration, exportedArrowViaDeclarationAlt }
+export { functionWithFourArgs, exportedArrowViaDeclarationWithFourArgs, exportedArrowViaDeclarationWithFourArgsAlt }
