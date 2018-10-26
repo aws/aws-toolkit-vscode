@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.upload
 
-import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
@@ -27,7 +26,6 @@ import software.aws.toolkits.jetbrains.utils.ui.populateValues
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
 import java.util.concurrent.TimeUnit
-import javax.swing.DefaultComboBoxModel
 import javax.swing.JComponent
 
 private val DEFAULT_TIMEOUT = TimeUnit.MINUTES.toSeconds(1)
@@ -131,6 +129,7 @@ class UploadToLambdaController(
                 .map { IamRole(name = it.roleName(), arn = it.arn()) }
                 .toList()
         }
+
         view.sourceBucket.populateValues {
             val activeRegionId = ProjectAccountSettingsManager.getInstance(project).activeRegion.id
             s3Client.listBuckets().buckets()
@@ -151,13 +150,7 @@ class UploadToLambdaController(
                 defaultPolicyDocument = DEFAULT_POLICY
             )
             if (iamRoleDialog.showAndGet()) {
-                iamRoleDialog.iamRole?.let { iamRole ->
-                    runInEdt {
-                        val comboBoxModel = view.iamRole.model as DefaultComboBoxModel<IamRole>
-                        comboBoxModel.addElement(iamRole)
-                        comboBoxModel.selectedItem = iamRole
-                    }
-                }
+                view.iamRole.addAndSelectValue { iamRoleDialog.iamRole }
             }
         }
 

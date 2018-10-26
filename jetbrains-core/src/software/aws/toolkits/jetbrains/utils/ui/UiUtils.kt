@@ -21,7 +21,7 @@ import javax.swing.JComponent
 import javax.swing.JTextField
 import javax.swing.ListModel
 
-fun <T> ComboBox<T>.populateValues(selected: T? = null, block: () -> List<T>) {
+fun <T> ComboBox<T>.populateValues(selected: T? = null, updateStatus: Boolean = true, block: () -> List<T>) {
     ApplicationManager.getApplication().executeOnPooledThread {
         val values = block()
         ApplicationManager.getApplication().invokeLater({
@@ -29,18 +29,19 @@ fun <T> ComboBox<T>.populateValues(selected: T? = null, block: () -> List<T>) {
             model.removeAllElements()
             values.forEach { model.addElement(it) }
             this.selectedItem = selected
-            this.isEnabled = values.isNotEmpty()
+            this.isEnabled = updateStatus && values.isNotEmpty()
         }, ModalityState.any())
     }
 }
 
-fun <T> ComboBox<T>.addAndSelectValue(fetch: () -> T) {
+fun <T> ComboBox<T>.addAndSelectValue(updateStatus: Boolean = true, fetch: () -> T) {
     ApplicationManager.getApplication().executeOnPooledThread {
         val value = fetch()
         ApplicationManager.getApplication().invokeLater({
             val model = this.model as DefaultComboBoxModel<T>
             model.addElement(value)
             model.selectedItem = value
+            this.isEnabled = updateStatus
         }, ModalityState.any())
     }
 }

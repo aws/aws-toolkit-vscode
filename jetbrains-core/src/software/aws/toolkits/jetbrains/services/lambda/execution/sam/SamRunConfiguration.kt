@@ -228,7 +228,7 @@ class SamRunSettingsEditor(project: Project) : SettingsEditor<SamRunConfiguratio
             ?.let { RuntimeGroup.runtimeForSdk(it) }
             ?.let { if (it in supported) it else null }
 
-        view.runtime.populateValues(selected = selected) { supported }
+        view.runtime.populateValues(selected = selected, updateStatus = false) { supported }
 
         view.regionSelector.setRegions(regionProvider.regions().values.toMutableList())
         view.regionSelector.selectedRegion = ProjectAccountSettingsManager.getInstance(project).activeRegion
