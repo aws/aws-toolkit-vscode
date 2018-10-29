@@ -9,7 +9,9 @@ import com.intellij.psi.search.GlobalSearchScope
 import software.amazon.awssdk.services.lambda.model.CreateFunctionResponse
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.amazon.awssdk.services.lambda.model.UpdateFunctionConfigurationResponse
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.services.iam.IamRole
 
 object Lambda {
     fun findPsiElementsForHandler(project: Project, runtime: Runtime, handler: String): Array<NavigatablePsiElement> {
@@ -25,6 +27,9 @@ data class LambdaFunction(
     val lastModified: String,
     val handler: String,
     val runtime: Runtime,
+    val envVariables: Map<String, String>?,
+    val timeout: Int,
+    val role: IamRole,
     val region: AwsRegion,
     val credentialProviderId: String
 )
@@ -36,6 +41,9 @@ fun FunctionConfiguration.toDataClass(credentialProviderId: String, region: AwsR
     lastModified = this.lastModified(),
     handler = this.handler(),
     runtime = this.runtime(),
+    envVariables = this.environment()?.variables(),
+    timeout = this.timeout(),
+    role = IamRole(this.role()),
     credentialProviderId = credentialProviderId,
     region = region
 )
@@ -47,6 +55,23 @@ fun CreateFunctionResponse.toDataClass(credentialProviderId: String, region: Aws
     lastModified = this.lastModified(),
     handler = this.handler(),
     runtime = this.runtime(),
+    envVariables = this.environment()?.variables(),
+    timeout = this.timeout(),
+    role = IamRole(this.role()),
+    credentialProviderId = credentialProviderId,
+    region = region
+)
+
+fun UpdateFunctionConfigurationResponse.toDataClass(credentialProviderId: String, region: AwsRegion) = LambdaFunction(
+    name = this.functionName(),
+    description = this.description(),
+    arn = this.functionArn(),
+    lastModified = this.lastModified(),
+    handler = this.handler(),
+    runtime = this.runtime(),
+    envVariables = this.environment()?.variables(),
+    timeout = this.timeout(),
+    role = IamRole(this.role()),
     credentialProviderId = credentialProviderId,
     region = region
 )

@@ -21,7 +21,7 @@ import javax.swing.JComponent
 import javax.swing.JTextField
 import javax.swing.ListModel
 
-fun <T> ComboBox<T>.populateValues(selected: T? = null, updateStatus: Boolean = true, block: () -> List<T>) {
+fun <T> ComboBox<T>.populateValues(selected: T? = null, updateStatus: Boolean = true, block: () -> Collection<T>) {
     ApplicationManager.getApplication().executeOnPooledThread {
         val values = block()
         ApplicationManager.getApplication().invokeLater({

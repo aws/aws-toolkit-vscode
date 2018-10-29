@@ -6,17 +6,19 @@ package software.aws.toolkits.jetbrains.services.lambda.upload;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.EditorTextField;
+import com.intellij.ui.IdeBorderFactory;
 import com.intellij.util.textCompletion.TextFieldWithCompletion;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.lambda.model.Runtime;
+import software.aws.toolkits.jetbrains.services.iam.IamRole;
 import software.aws.toolkits.jetbrains.services.lambda.HandlerCompletionProvider;
 import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField;
 
 @SuppressWarnings("NullableProblems")
-public final class CreateLambdaPanel {
+public final class EditLambdaPanel {
     @NotNull JTextField name;
     @NotNull JTextField description;
     @NotNull EditorTextField handler;
@@ -28,11 +30,14 @@ public final class CreateLambdaPanel {
     @NotNull ComboBox<String> sourceBucket;
     @NotNull EnvironmentVariablesTextField envVars;
     @NotNull JTextField timeout;
+    @NotNull JPanel deploySettings;
 
     private final Project project;
 
-    CreateLambdaPanel(Project project) {
+    EditLambdaPanel(Project project) {
         this.project = project;
+
+        deploySettings.setBorder(IdeBorderFactory.createTitledBorder("Deployment Settings", false));
     }
 
     private void createUIComponents() {

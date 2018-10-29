@@ -16,6 +16,7 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 
 class LambdaRemoteRunConfigurationProducerTest {
@@ -36,6 +37,9 @@ class LambdaRemoteRunConfigurationProducerTest {
             lastModified = "someDate",
             handler = "someHandler",
             runtime = Runtime.values().first(),
+            role = IamRole("DummyRoleArn"),
+            envVariables = emptyMap(),
+            timeout = 60,
             credentialProviderId = credentialProviderId,
             region = region
         )

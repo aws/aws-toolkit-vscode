@@ -58,5 +58,8 @@ class LambdaServiceNodeTest {
             .lastModified("A ways back")
             .handler("blah:blah")
             .runtime(Runtime.JAVA8)
+            .role("SomeRoleArn")
+            .environment { it.variables(emptyMap()) }
+            .timeout(60)
             .build()
 }

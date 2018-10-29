@@ -10,6 +10,8 @@ import com.intellij.psi.PsiFile
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.CreateFunctionRequest
 import software.amazon.awssdk.services.lambda.model.FunctionCode
+import software.amazon.awssdk.services.lambda.model.UpdateFunctionCodeRequest
+import software.amazon.awssdk.services.lambda.model.UpdateFunctionConfigurationRequest
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.aws.toolkits.core.ToolkitClientManager
@@ -36,15 +38,25 @@ class LambdaCreator internal constructor(
     private val functionCreator: LambdaFunctionCreator
 ) {
     fun createLambda(
-        functionDetails: FunctionUploadDetails,
         module: Module,
-        file: PsiFile
+        file: PsiFile,
+        functionDetails: FunctionUploadDetails,
+        s3Bucket: String
     ): CompletionStage<LambdaFunction> = packager.createPackage(module, file)
-        .thenCompose { uploader.upload(functionDetails, it.location) }
+        .thenCompose { uploader.upload(functionDetails, it.location, s3Bucket) }
         .thenCompose { functionCreator.create(module.project, functionDetails, it) }
+
+    fun updateLambda(
+        module: Module,
+        file: PsiFile,
+        functionDetails: FunctionUploadDetails,
+        s3Bucket: String
+    ): CompletionStage<LambdaFunction> = packager.createPackage(module, file)
+        .thenCompose { uploader.upload(functionDetails, it.location, s3Bucket) }
+        .thenCompose { functionCreator.update(module.project, functionDetails, it) }
 }
 
-internal class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
+class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
     fun create(
         project: Project,
         details: FunctionUploadDetails,
@@ -53,7 +65,7 @@ internal class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
         val future = CompletableFuture<LambdaFunction>()
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
-                val code = FunctionCode.builder().s3Bucket(details.s3Bucket).s3Key(uploadedCode.key)
+                val code = FunctionCode.builder().s3Bucket(uploadedCode.bucket).s3Key(uploadedCode.key)
                 uploadedCode.version?.run { code.s3ObjectVersion(this) }
                 val req = CreateFunctionRequest.builder()
                     .handler(details.handler)
@@ -82,17 +94,80 @@ internal class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
         }
         return future
     }
+
+    fun update(
+        project: Project,
+        details: FunctionUploadDetails,
+        uploadedCode: UploadedCode
+    ): CompletionStage<LambdaFunction> {
+        val future = CompletableFuture<LambdaFunction>()
+        ApplicationManager.getApplication().executeOnPooledThread {
+            try {
+                val req = UpdateFunctionCodeRequest.builder()
+                    .functionName(details.name)
+                    .s3Bucket(uploadedCode.bucket)
+                    .s3Key(uploadedCode.key)
+
+                uploadedCode.version?.let { version -> req.s3ObjectVersion(version) }
+
+                lambdaClient.updateFunctionCode(req.build())
+
+                future.complete(updateInternally(project, details))
+            } catch (e: Exception) {
+                future.completeExceptionally(e)
+            }
+        }
+        return future
+    }
+
+    fun update(
+        project: Project,
+        details: FunctionUploadDetails
+    ): CompletionStage<LambdaFunction> {
+        val future = CompletableFuture<LambdaFunction>()
+        ApplicationManager.getApplication().executeOnPooledThread {
+            try {
+                future.complete(updateInternally(project, details))
+            } catch (e: Exception) {
+                future.completeExceptionally(e)
+            }
+        }
+        return future
+    }
+
+    private fun updateInternally(project: Project, details: FunctionUploadDetails): LambdaFunction {
+        val req = UpdateFunctionConfigurationRequest.builder()
+            .handler(details.handler)
+            .functionName(details.name)
+            .role(details.iamRole.arn)
+            .runtime(details.runtime)
+            .description(details.description)
+            .timeout(details.timeout)
+            .environment {
+                it.variables(details.envVars)
+            }
+            .build()
+
+        val settingsManager = ProjectAccountSettingsManager.getInstance(project)
+        val result = lambdaClient.updateFunctionConfiguration(req)
+
+        return result.toDataClass(settingsManager.activeCredentialProvider.id, settingsManager.activeRegion)
+    }
 }
 
-internal class CodeUploader(private val s3Client: S3Client) {
-    fun upload(functionDetails: FunctionUploadDetails, code: Path): CompletionStage<UploadedCode> {
+class CodeUploader(private val s3Client: S3Client) {
+    fun upload(
+        functionDetails: FunctionUploadDetails,
+        code: Path,
+        s3Bucket: String
+    ): CompletionStage<UploadedCode> {
         val future = CompletableFuture<UploadedCode>()
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
                 val key = "${functionDetails.name}.zip"
-                val por = PutObjectRequest.builder().bucket(functionDetails.s3Bucket).key(key).build()
+                val por = PutObjectRequest.builder().bucket(s3Bucket).key(key).build()
                 val result = s3Client.putObject(por, code)
-                future.complete(UploadedCode(key, result.versionId()))
+                future.complete(UploadedCode(s3Bucket, key, result.versionId()))
             } catch (e: Exception) {
                 future.completeExceptionally(RuntimeException(message("lambda.create.failed_to_upload"), e))
             }
@@ -101,4 +176,4 @@ internal class CodeUploader(private val s3Client: S3Client) {
     }
 }
 
-internal data class UploadedCode(val key: String, val version: String?)
+data class UploadedCode(val bucket: String, val key: String, val version: String?)

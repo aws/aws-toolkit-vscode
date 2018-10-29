@@ -115,7 +115,7 @@ class CreateIamRoleDialogTest {
 
     private companion object {
         const val TEST_ROLE_NAME = "TetRole"
-        const val TEST_ROLE_ARN = "TestRoleArn"
+        const val TEST_ROLE_ARN = "arn:aws:iam::123456789012:role/TetRole"
         const val TEST_POLICY = "{\"hello\": \"world\"}"
         const val TEST_ASSUME_ROLE = "{\"foo\": \"bar\"}"
     }

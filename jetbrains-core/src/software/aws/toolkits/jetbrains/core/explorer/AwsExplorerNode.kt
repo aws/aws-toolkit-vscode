@@ -11,6 +11,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.ui.LoadingNode
 import com.intellij.ui.SimpleTextAttributes
 import icons.AwsIcons
+import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.resources.message
@@ -68,6 +69,7 @@ abstract class AwsExplorerServiceRootNode(project: Project, value: String) :
     fun loadData(paginationToken: String? = null): Collection<AwsExplorerNode<*>> = try {
         loadResources(paginationToken)
     } catch (e: Exception) {
+        LOG.warn("Failed to load explorer nodes", e)
         // Return the ErrorNode as the single Node of the list
         listOf(AwsExplorerErrorNode(project!!, e))
     }
@@ -75,6 +77,10 @@ abstract class AwsExplorerServiceRootNode(project: Project, value: String) :
     abstract fun serviceName(): String
 
     protected abstract fun loadResources(paginationToken: String? = null): Collection<AwsExplorerNode<*>>
+
+    private companion object {
+        private val LOG = getLogger<AwsExplorerServiceRootNode>()
+    }
 }
 
 abstract class AwsExplorerResourceNode<T>(
