@@ -5,25 +5,17 @@
 
 'use strict'
 
-import {
-    join
-} from 'path'
-import {
-    CancellationToken,
-    DebugConfiguration,
-    DebugConfigurationProvider,
-    WorkspaceFolder
-} from 'vscode'
-import {
-    mkdirAsync,
-    readdirAsync,
-    statAsync,
-    writeFileAsync
-} from '../../shared/filesystem'
+import * as path from 'path'
+import * as vscode from 'vscode'
+import * as filesystem from '../../shared/filesystem'
 import { fileExists, readFileAsString } from '../../shared/filesystemUtilities'
+import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 import { detectLocalLambdas, LocalLambda } from './detectLocalLambdas'
 
-interface NodeDebugConfiguration extends DebugConfiguration {
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
+interface NodeDebugConfiguration extends vscode.DebugConfiguration {
     readonly type: 'node'
     readonly request: 'attach' | 'launch'
     readonly name: string
@@ -48,18 +40,18 @@ interface TasksConfig {
     }[]
 }
 
-export class NodeDebugConfigurationProvider implements DebugConfigurationProvider {
+export class NodeDebugConfigurationProvider implements vscode.DebugConfigurationProvider {
     public async resolveDebugConfiguration(
-        folder: WorkspaceFolder | undefined,
-        debugConfiguration: DebugConfiguration,
-        token?: CancellationToken
+        folder: vscode.WorkspaceFolder | undefined,
+        debugConfiguration: vscode.DebugConfiguration,
+        token?: vscode.CancellationToken
     ): Promise<NodeDebugConfiguration> {
         throw new Error('Not Implemented')
     }
 
     public async provideDebugConfigurations(
-        folder: WorkspaceFolder | undefined,
-        token?: CancellationToken
+        folder: vscode.WorkspaceFolder | undefined,
+        token?: vscode.CancellationToken
     ): Promise<NodeDebugConfiguration[]> {
         if (!folder) {
             console.error('Cannot provide debug configuration if no workspace is open.')
@@ -69,7 +61,7 @@ export class NodeDebugConfigurationProvider implements DebugConfigurationProvide
 
         const npmProject = await this.findNpmProject(folder, token)
         // tslint:disable-next-line:no-invalid-template-strings
-        const localRoot = !!npmProject ? join('${workspaceFolder}', npmProject) : '${workspaceFolder}'
+        const localRoot = !!npmProject ? path.join('${workspaceFolder}', npmProject) : '${workspaceFolder}'
 
         const localLambdas: LambdaWithPreLaunchTask[] = await Promise.all(
             (await detectLocalLambdas([ folder ])).map(async localLambda => ({
@@ -84,13 +76,17 @@ export class NodeDebugConfigurationProvider implements DebugConfigurationProvide
                     {
                         type: 'node',
                         request: 'launch',
-                        name: `Lambda: Debug ${localLamdba.lambda.lambda} locally`,
+                        name: localize(
+                            'AWS.lambda.debug.node.launchConfig.name',
+                            'Lambda: Debug {0} locally',
+                            localLamdba.lambda.lambda
+                        ),
                         preLaunchTask: localLamdba.task,
                         address: 'localhost',
                         port: 5858,
                         localRoot,
                         remoteRoot: '/var/task',
-                        protocol: 'inspector',
+                        protocol: localLamdba.lambda.protocol,
                         skipFiles: [
                             '/var/runtime/node_modules/**/*.js',
                             '<node_internals>/**/*.js'
@@ -99,13 +95,17 @@ export class NodeDebugConfigurationProvider implements DebugConfigurationProvide
                     {
                         type: 'node',
                         request: 'attach',
-                        name: `Lambda: Attach to ${localLamdba.lambda.lambda} locally`,
+                        name: localize(
+                            'AWS.lambda.debug.node.attachConfig.name',
+                            'Lambda: Attach to {0} locally"',
+                            localLamdba.lambda.lambda
+                        ),
                         preLaunchTask: undefined,
                         address: 'localhost',
                         port: 5858,
                         localRoot,
                         remoteRoot: '/var/task',
-                        protocol: 'inspector',
+                        protocol: localLamdba.lambda.protocol,
                         skipFiles: [
                             '/var/runtime/node_modules/**/*.js',
                             '<node_internals>/**/*.js'
@@ -124,22 +124,25 @@ export class NodeDebugConfigurationProvider implements DebugConfigurationProvide
      * for child folders that contain a package.json file. If the root workspace folder does not contain
      * package.json, AND exactly one of its direct children contains package.json, use that child as the
      * local root.
+     *
+     * @returns If `folder` does not contain `package.json`, and exactly one of `folder`'s children returns
+     *          package.json, returns path to `subfolder/package.json`. Otherwise, returns undefined.
      */
     private async findNpmProject(
-        folder: WorkspaceFolder,
-        token?: CancellationToken
+        folder: vscode.WorkspaceFolder,
+        token?: vscode.CancellationToken
     ): Promise<string | undefined> {
         // The root directory is an npm package, so we don't need to look in subdirectories.
-        if (await fileExists(join(folder.uri.fsPath, 'package.json'))) {
+        if (await fileExists(path.join(folder.uri.fsPath, 'package.json'))) {
             return undefined
         }
 
-        const entries: string[] = await readdirAsync(folder.uri.fsPath)
+        const entries: string[] = await filesystem.readdirAsync(folder.uri.fsPath)
 
         const candidates: string[] = (await Promise.all(entries.map(async entry => {
-            const entryPath = join(folder.uri.fsPath, entry)
-            if (await fileExists(entryPath) && (await statAsync(entryPath)).isDirectory()) {
-                return await fileExists(join(entryPath, 'package.json')) ? entry : undefined
+            const entryPath = path.join(folder.uri.fsPath, entry)
+            if (await fileExists(entryPath) && (await filesystem.statAsync(entryPath)).isDirectory()) {
+                return await fileExists(path.join(entryPath, 'package.json')) ? entry : undefined
             }
 
             return undefined
@@ -149,18 +152,22 @@ export class NodeDebugConfigurationProvider implements DebugConfigurationProvide
     }
 
     private getTaskLabel(functionName: string): string {
-        return `Lambda: Invoke ${functionName} locally`
+        return localize(
+            'AWS.lambda.debug.node.invokeTask.label"',
+            'Lambda: Invoke {0} locally',
+            functionName
+        )
     }
 
     private async addPreLaunchTask(
-        folder: WorkspaceFolder,
+        folder: vscode.WorkspaceFolder,
         functionName: string,
         event: { [ key: string ]: string } = {},
         debugPort: number = 5858
     ): Promise<string> {
         const label = this.getTaskLabel(functionName)
-        const configRoot = join(folder.uri.fsPath, '.vscode')
-        const tasksPath = join(configRoot, 'tasks.json')
+        const configRoot = path.join(folder.uri.fsPath, '.vscode')
+        const tasksPath = path.join(configRoot, 'tasks.json')
 
         let tasks: TasksConfig | undefined
         if (await fileExists(tasksPath)) {
@@ -177,22 +184,28 @@ export class NodeDebugConfigurationProvider implements DebugConfigurationProvide
             tasks.tasks = []
         }
 
+        // TODO: If there is already a matching task, should we attempt to update it?
         if (!tasks.tasks.some(t => t.label === label)) {
             tasks.tasks.push(this.createPreLaunchTask(functionName, event, debugPort))
         }
 
-        if (!await fileExists(configRoot) || !(await statAsync(configRoot)).isDirectory()) {
-            await mkdirAsync(configRoot)
+        if (!await fileExists(configRoot) || !(await filesystem.statAsync(configRoot)).isDirectory()) {
+            await filesystem.mkdirAsync(configRoot)
         }
+
         // TODO: Read user's tab-width setting and use that instead of hard-coding '4'.
-        await writeFileAsync(tasksPath, JSON.stringify(tasks, undefined, 4))
+        const config = new DefaultSettingsConfiguration('editor')
+        await filesystem.writeFileAsync(
+            tasksPath,
+            JSON.stringify(tasks, undefined, config.readSetting<number>('tabSize', 4))
+        )
 
         return label
     }
 
     private createPreLaunchTask(
         functionName: string,
-        event: { [ key: string ]: string } = {},
+        event: { [ key: string ]: any } = {},
         debugPort: number = 5858
     ) {
         return {
@@ -245,6 +258,8 @@ export class NodeDebugConfigurationProvider implements DebugConfigurationProvide
                 ],
                 background: {
                     activeOnStart: true,
+                    // TODO: The SAM CLI is not currently (10/30/18) localized. If/when it becomes localized,
+                    // these patterns should be updated.
                     beginsPattern: String.raw`^Fetching lambci\/lambda:nodejs\d+\.\d+ Docker container image......$`,
                     // tslint:disable-next-line:max-line-length
                     endsPattern: String.raw`^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} Mounting ((\w:)?([\\\/][^\\\/]+)*) as ((\w:)?([\\\/][^\\\/]+)*:ro) inside runtime container$`

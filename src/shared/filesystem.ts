@@ -5,20 +5,11 @@
 
 'use strict'
 
-import {
-    access,
-    mkdir,
-    mkdtemp,
-    readdir,
-    readFile,
-    stat,
-    Stats,
-    writeFile
-} from 'fs'
+import * as fs from 'fs'
 
 /* tslint:disable promise-function-async */
 export function accessAsync(path: string | Buffer): Promise<void> {
-    return new Promise((resolve, reject) => access(path, err => {
+    return new Promise((resolve, reject) => fs.access(path, err => {
         if (!err) {
             resolve()
         } else {
@@ -28,7 +19,7 @@ export function accessAsync(path: string | Buffer): Promise<void> {
 }
 
 export function mkdirAsync(path: string | Buffer, mode?: number | string) {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
         const handler = (err?: NodeJS.ErrnoException) => {
             if (!err) {
                 resolve()
@@ -38,18 +29,18 @@ export function mkdirAsync(path: string | Buffer, mode?: number | string) {
         }
 
         if (!mode) {
-            mkdir(path, handler)
+            fs.mkdir(path, handler)
         } else if (typeof mode === 'number') {
-            mkdir(path, mode as number, handler)
+            fs.mkdir(path, mode as number, handler)
         } else {
-            mkdir(path, mode as string, handler)
+            fs.mkdir(path, mode as string, handler)
         }
     })
 }
 
 export function mkdtempAsync(prefix: string): Promise<string> {
     return new Promise((resolve, reject) => {
-        mkdtemp(prefix, (err, folder) => {
+        fs.mkdtemp(prefix, (err, folder) => {
             if (!err) {
                 resolve(folder)
             } else {
@@ -70,16 +61,16 @@ export function readdirAsync(path: string | Buffer, options?: string | {}): Prom
         }
 
         if (!!options) {
-            readdir(path, options, handler)
+            fs.readdir(path, options, handler)
         } else {
-            readdir(path, handler)
+            fs.readdir(path, handler)
         }
     })
 }
 
 export function readFileAsync(filename: string, encoding: string | null): Promise<string | Buffer> {
     return new Promise((resolve, reject) => {
-        readFile(filename, encoding, (err, data) => {
+        fs.readFile(filename, encoding, (err, data) => {
             if (!err) {
                 resolve(data)
             } else {
@@ -89,9 +80,9 @@ export function readFileAsync(filename: string, encoding: string | null): Promis
     })
 }
 
-export function statAsync(path: string | Buffer): Promise<Stats> {
+export function statAsync(path: string | Buffer): Promise<fs.Stats> {
     return new Promise((resolve, reject) => {
-        stat(path, (err, stats) => {
+        fs.stat(path, (err, stats) => {
             if (!err) {
                 resolve(stats)
             } else {
@@ -122,13 +113,13 @@ export function writeFileAsync(
         }
 
         if (!options) {
-            writeFile(filename, data, callback)
+            fs.writeFile(filename, data, callback)
         } else if (typeof options === 'string') {
-            writeFile(filename, data, options, callback)
+            fs.writeFile(filename, data, options, callback)
         } else if (!!options.mode && typeof options.mode === 'number')  {
-            writeFile(filename, data, options as WriteFileOptions<number>, callback)
+            fs.writeFile(filename, data, options as WriteFileOptions<number>, callback)
         } else {
-            writeFile(filename, data, options as WriteFileOptions<string>, callback)
+            fs.writeFile(filename, data, options as WriteFileOptions<string>, callback)
         }
     })
 }
