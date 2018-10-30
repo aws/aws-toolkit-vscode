@@ -13,6 +13,7 @@ import { LambdaProvider } from './lambda/lambdaProvider'
 import { NodeDebugConfigurationProvider } from './lambda/local/debugConfigurationProvider'
 import { AWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
+import { TypescriptCodeLensProvider } from './shared/codelens/typescriptCodeLensProvider'
 import { extensionSettingsPrefix } from './shared/constants'
 import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
@@ -48,6 +49,8 @@ export async function activate(context: vscode.ExtensionContext) {
     ext.sdkClientBuilder = new AWSClientBuilder(awsContext)
     ext.statusBar = new AWSStatusBar(awsContext, context)
 
+    context.subscriptions.push(...activateCodeLensProviders())
+
     vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
     vscode.commands.registerCommand(
         'aws.credential.profile.create',
@@ -82,4 +85,28 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
+}
+
+function activateCodeLensProviders(): vscode.Disposable[] {
+    const disposables: vscode.Disposable[] = []
+
+    TypescriptCodeLensProvider.initialize()
+
+    disposables.push(
+        vscode.languages.registerCodeLensProvider(
+            [
+                {
+                    language: 'javascript',
+                    scheme: 'file',
+                },
+                {
+                    language: 'typescript',
+                    scheme: 'file',
+                }
+            ],
+            new TypescriptCodeLensProvider()
+        )
+    )
+
+    return disposables
 }
