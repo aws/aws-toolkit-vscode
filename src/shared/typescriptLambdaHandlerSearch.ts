@@ -8,7 +8,7 @@
 import * as path from 'path'
 import * as ts from 'typescript'
 import * as vscode from 'vscode'
-import * as filesystem from './filesystem'
+import { readFileAsString } from './filesystemUtilities'
 import { LambdaHandlerCandidate, LambdaHandlerSearch } from './lambdaHandlerSearch'
 
 /**
@@ -50,7 +50,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
     }
 
     private async getCandidateHandlers(): Promise<LambdaHandlerCandidate[]> {
-        const fileContents = await filesystem.readFileAsyncAsString(this._filename)
+        const fileContents = await readFileAsString(this._filename)
 
         const sourceFile = ts.createSourceFile(this._filename, fileContents, ts.ScriptTarget.Latest, true)
 
