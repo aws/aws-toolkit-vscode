@@ -57,4 +57,4 @@ open class AwsClientManager(project: Project, sdkClient: AwsSdkClient) :
     }
 }
 
-inline fun <reified T : SdkClient> Project.awsClient(): T = AwsClientManager.getInstance(this).getClient<T>()
+inline fun <reified T : SdkClient> Project.awsClient(): T = AwsClientManager.getInstance(this).getClient()
