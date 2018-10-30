@@ -16,6 +16,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import software.aws.toolkits.jetbrains.services.cloudformation.Function
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamTemplateUtils.findFunctionsFromTemplate
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamTemplateUtils.functionFromElement
 
 class SamTemplateUtilsTest {
 

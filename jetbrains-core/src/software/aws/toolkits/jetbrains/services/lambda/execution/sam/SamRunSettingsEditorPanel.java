@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.sam;
 
-import static software.aws.toolkits.jetbrains.services.lambda.execution.sam.TemplateUtils.findFunctionsFromTemplate;
 import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.addQuickSelect;
 import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.find;
 
@@ -95,20 +94,22 @@ public final class SamRunSettingsEditorPanel {
     public void setTemplateFile(@Nullable String file) {
         if (file == null) {
             templateFile.setText("");
-            updateFunctionModel(Collections.emptyList());
+            updateFunctionModel(Collections.emptyList(), false);
         } else {
             templateFile.setText(file);
-            List<Function> functions = findFunctionsFromTemplate(project, new File(file));
-            updateFunctionModel(functions);
+            List<Function> functions = SamTemplateUtils.findFunctionsFromTemplate(project, new File(file));
+            updateFunctionModel(functions, false);
         }
     }
 
-    private void updateFunctionModel(List<Function> functions) {
+    private void updateFunctionModel(List<Function> functions, boolean selectSingle) {
         functionModels.removeAllElements();
         function.setEnabled(!functions.isEmpty());
         functions.forEach(functionModels::addElement);
-        if (functions.size() == 1) {
+        if (selectSingle && functions.size() == 1) {
             functionModels.setSelectedItem(functions.get(0));
+        } else {
+            function.setSelectedIndex(-1);
         }
         updateComponents();
     }
@@ -117,7 +118,7 @@ public final class SamRunSettingsEditorPanel {
         if (logicalFunctionName == null) return;
         Function function = find(functionModels, f -> f.getLogicalName().equals(logicalFunctionName));
         if (function != null) {
-            functionModels.setSelectedItem(function);
+            functionModels.setSelectedItem(logicalFunctionName);
             updateComponents();
         }
     }
@@ -135,8 +136,8 @@ public final class SamRunSettingsEditorPanel {
         @Override
         protected void onFileChosen(@NotNull VirtualFile chosenFile) {
             templateFile.setText(chosenFile.getPath());
-            List<Function> functions = TemplateUtils.findFunctionsFromTemplate(project, chosenFile);
-            updateFunctionModel(functions);
+            List<Function> functions = SamTemplateUtils.findFunctionsFromTemplate(project, chosenFile);
+            updateFunctionModel(functions, true);
         }
     }
 }

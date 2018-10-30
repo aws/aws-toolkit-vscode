@@ -35,6 +35,7 @@ import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationBase
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunConfiguration.MutableLambdaSamRunSettings
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamTemplateUtils.findFunctionsFromTemplate
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
 import software.aws.toolkits.jetbrains.settings.SamSettings
@@ -157,6 +158,10 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
             val myTemplateFile = templateFile
             val myLogicalFunctionName = logicalFunctionName
             val (handler, runtime, templateDetails) = if (myTemplateFile != null) {
+                if (myTemplateFile.isEmpty()) {
+                    throw RuntimeConfigurationError(message("lambda.run_configuration.sam.no_template_specified", myTemplateFile))
+                }
+
                 myLogicalFunctionName ?: throw RuntimeConfigurationError(message("lambda.run_configuration.sam.no_function_specified", myTemplateFile))
                 val function = findFunctionsFromTemplate(project, File(templateFile)).find { it.logicalName == myLogicalFunctionName }
                     ?: throw RuntimeConfigurationError(message("lambda.run_configuration.sam.no_such_function", myLogicalFunctionName, myTemplateFile))

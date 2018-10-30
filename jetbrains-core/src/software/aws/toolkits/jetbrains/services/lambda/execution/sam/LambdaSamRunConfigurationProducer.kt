@@ -16,6 +16,7 @@ import org.jetbrains.yaml.psi.YAMLPsiElement
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamTemplateUtils.functionFromElement
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 
 class LambdaSamRunConfigurationProducer : RunConfigurationProducer<SamRunConfiguration>(getFactory()) {
