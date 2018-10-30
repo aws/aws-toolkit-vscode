@@ -12,11 +12,11 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import software.amazon.awssdk.core.SdkClient
 import software.aws.toolkits.core.ToolkitClientManager
+import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
-import javax.security.auth.login.CredentialNotFoundException
 
 open class AwsClientManager(project: Project, sdkClient: AwsSdkClient) :
     ToolkitClientManager(sdkClient.sdkHttpClient), Disposable {
@@ -41,7 +41,7 @@ open class AwsClientManager(project: Project, sdkClient: AwsSdkClient) :
     override fun getCredentialsProvider(): ToolkitCredentialsProvider {
         try {
             return accountSettingsManager.activeCredentialProvider
-        } catch (e: CredentialNotFoundException) {
+        } catch (e: CredentialProviderNotFound) {
             // TODO: Notify user
 
             // Throw canceled exception to stop any task relying on this call
