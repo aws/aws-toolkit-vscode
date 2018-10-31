@@ -7,9 +7,10 @@ import com.intellij.openapi.projectRoots.Sdk
 import com.jetbrains.python.PythonLanguage
 import com.jetbrains.python.sdk.PythonSdkType
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupInformation
+import software.aws.toolkits.jetbrains.services.lambda.SdkBasedRuntimeGroupInformation
 
-class PythonRuntimeGroup : RuntimeGroupInformation {
+class PythonRuntimeGroup : SdkBasedRuntimeGroupInformation() {
+
     override val runtimes: Set<Runtime> = setOf(
         Runtime.PYTHON2_7,
         Runtime.PYTHON3_6

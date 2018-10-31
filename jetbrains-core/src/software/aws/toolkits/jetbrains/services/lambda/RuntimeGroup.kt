@@ -6,7 +6,11 @@ package software.aws.toolkits.jetbrains.services.lambda
 import com.intellij.lang.Language
 import com.intellij.openapi.extensions.AbstractExtensionPointBean
 import com.intellij.openapi.extensions.ExtensionPointName
+import com.intellij.openapi.module.Module
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.Sdk
+import com.intellij.openapi.roots.ModuleRootManager
+import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.KeyedExtensionCollector
 import com.intellij.openapi.util.LazyInstance
 import com.intellij.util.KeyedLazyInstance
@@ -29,7 +33,9 @@ enum class RuntimeGroup {
 
     val runtimes: Set<Runtime> by lazy { info.flatMap { it.runtimes }.toSet() }
     val languageIds: Set<String> by lazy { info.flatMap { it.languageIds }.toSet() }
-    fun runtimeForSdk(sdk: Sdk): Runtime? = info.asSequence().mapNotNull { it.runtimeForSdk(sdk) }.firstOrNull()
+
+    fun determineRuntime(project: Project): Runtime? = info.asSequence().mapNotNull { it.determineRuntime(project) }.firstOrNull()
+    fun determineRuntime(module: Module): Runtime? = info.asSequence().mapNotNull { it.determineRuntime(module) }.firstOrNull()
 
     internal companion object {
         /**
@@ -37,7 +43,8 @@ enum class RuntimeGroup {
          */
         fun find(predicate: (RuntimeGroup) -> Boolean): RuntimeGroup? = RuntimeGroup.values().asSequence().filter(predicate).firstOrNull()
 
-        fun runtimeForSdk(sdk: Sdk): Runtime? = values().asSequence().mapNotNull { it.runtimeForSdk(sdk) }.firstOrNull()
+        fun determineRuntime(project: Project): Runtime? = values().asSequence().mapNotNull { it.determineRuntime(project) }.firstOrNull()
+        fun determineRuntime(module: Module): Runtime? = values().asSequence().mapNotNull { it.determineRuntime(module) }.firstOrNull()
     }
 }
 
@@ -48,11 +55,29 @@ enum class RuntimeGroup {
 interface RuntimeGroupInformation {
     val runtimes: Set<Runtime>
     val languageIds: Set<String>
-    fun runtimeForSdk(sdk: Sdk): Runtime?
+
+    /**
+     * Attempt to determine the runtime from the [project] level scope.
+     */
+    fun determineRuntime(project: Project): Runtime?
+
+    /**
+     * Attempt to determine the runtime from the [module] level scope.
+     * Do not fall back to [Project] level scope; logic controlling fallback to [Project] scope should be done at the call-site.
+     */
+    fun determineRuntime(module: Module): Runtime?
 
     companion object : RuntimeGroupExtensionPointObject<RuntimeGroupInformation>(ExtensionPointName("aws.toolkit.lambda.runtimeGroup")) {
         fun getInstances(runtimeGroup: RuntimeGroup): List<RuntimeGroupInformation> = collector.forKey(runtimeGroup)
     }
+}
+
+abstract class SdkBasedRuntimeGroupInformation : RuntimeGroupInformation {
+    protected abstract fun runtimeForSdk(sdk: Sdk): Runtime?
+
+    override fun determineRuntime(project: Project): Runtime? = ProjectRootManager.getInstance(project).projectSdk?.let { runtimeForSdk(it) }
+
+    override fun determineRuntime(module: Module): Runtime? = ModuleRootManager.getInstance(module).sdk?.let { runtimeForSdk(it) }
 }
 
 val Runtime.runtimeGroup: RuntimeGroup? get() = RuntimeGroup.find { this in it.runtimes }

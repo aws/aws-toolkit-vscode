@@ -7,8 +7,6 @@ import com.intellij.execution.RunManager
 import com.intellij.execution.RunnerAndConfigurationSettings
 import com.intellij.execution.actions.ConfigurationContext
 import com.intellij.execution.actions.RunConfigurationProducer
-import com.intellij.openapi.roots.ModuleRootManager
-import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiElement
 import org.jetbrains.yaml.psi.YAMLKeyValue
@@ -54,9 +52,7 @@ class LambdaSamRunConfigurationProducer : RunConfigurationProducer<SamRunConfigu
         val resolver = LambdaHandlerResolver.getInstanceOrThrow(runtimeGroup)
         val handler = resolver.determineHandler(element) ?: return false
 
-        val sdk = ModuleRootManager.getInstance(context.module).sdk ?: ProjectRootManager.getInstance(context.project).projectSdk
-
-        val runtime = sdk?.let { RuntimeGroup.runtimeForSdk(it) }
+        val runtime = RuntimeGroup.determineRuntime(context.module) ?: RuntimeGroup.determineRuntime(context.project)
         configuration.configure(runtime, handler)
         return true
     }

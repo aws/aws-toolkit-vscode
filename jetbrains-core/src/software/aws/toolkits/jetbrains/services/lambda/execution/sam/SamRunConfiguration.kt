@@ -13,7 +13,6 @@ import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
@@ -229,9 +228,7 @@ class SamRunSettingsEditor(project: Project) : SettingsEditor<SamRunConfiguratio
             .flatMap { it.runtimes }
             .sorted()
 
-        val selected = ProjectRootManager.getInstance(project).projectSdk
-            ?.let { RuntimeGroup.runtimeForSdk(it) }
-            ?.let { if (it in supported) it else null }
+        val selected = RuntimeGroup.determineRuntime(project)?.let { if (it in supported) it else null }
 
         view.runtime.populateValues(selected = selected, updateStatus = false) { supported }
 
