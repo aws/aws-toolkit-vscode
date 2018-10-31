@@ -393,6 +393,30 @@ class JavaLambdaHandlerResolverTest {
     }
 
     @Test
+    fun testDetermineHandlersWorksInDumbMode() {
+        val psiClass = projectRule.fixture.openClass(
+            """
+            package com.example;
+
+            public class LambdaHandler {
+                public static void handleRequest(Object input) { }
+            }
+            """
+        )
+
+        runInDumbMode {
+            runInEdtAndWait {
+                val handler = JavaLambdaHandlerResolver()
+                    .determineHandlers(
+                        psiClass.findMethodsByName("handleRequest", false)[0],
+                        psiClass.containingFile.virtualFile
+                    )
+                assertThat(handler).containsExactly("com.example.LambdaHandler::handleRequest")
+            }
+        }
+    }
+
+    @Test
     fun handlerDisplayNames() {
         val sut = LambdaHandlerResolver.getInstanceOrThrow(RuntimeGroup.JAVA)
 

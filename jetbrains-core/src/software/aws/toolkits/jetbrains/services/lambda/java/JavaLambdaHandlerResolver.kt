@@ -35,12 +35,9 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
         val methodName = if (split.size >= 2) split[1] else null
 
         val psiFacade = JavaPsiFacade.getInstance(project)
-        val dumbService = DumbService.getInstance(project)
-        // Enabling the lookup even in dumb mode
-        dumbService.isAlternativeResolveEnabled = true
-        try {
+        return DumbService.getInstance(project).computeWithAlternativeResolveEnabled<Array<NavigatablePsiElement>, Exception> {
             val classes = psiFacade.findClasses(className, searchScope).toList()
-            return if (methodName.isNullOrEmpty()) {
+            return@computeWithAlternativeResolveEnabled if (methodName.isNullOrEmpty()) {
                 classes.filterIsInstance<NavigatablePsiElement>().toTypedArray()
             } else {
                 val handlerMethod = classes.asSequence()
@@ -48,37 +45,32 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
                     .flatMap { it.asSequence() }
                     .filter { it.body != null } // Filter out interfaces
                     .pickMostSpecificHandler()
-                return handlerMethod?.let {
+                handlerMethod?.let {
                     arrayOf(it)
                 } ?: NavigatablePsiElement.EMPTY_NAVIGATABLE_ELEMENT_ARRAY
             }
-        } finally {
-            dumbService.isAlternativeResolveEnabled = false
         }
     }
 
-    override fun determineHandler(element: PsiElement): String? {
-        val dumbService = DumbService.getInstance(element.project)
-        // Enabling the lookup even in dumb mode
-        dumbService.isAlternativeResolveEnabled = true
-        try {
-            return when (element) {
+    override fun determineHandler(element: PsiElement): String? =
+        DumbService.getInstance(element.project).computeWithAlternativeResolveEnabled<String, Exception> {
+            when (element) {
                 is PsiClass -> findByClass(element)
                 is PsiMethod -> findByMethod(element)
                 is PsiIdentifier -> determineHandler(element.parent)
                 else -> null
             }
-        } finally {
-            dumbService.isAlternativeResolveEnabled = false
         }
-    }
 
-    override fun determineHandlers(element: PsiElement, file: VirtualFile): Set<String> = when (element) {
-        is PsiClass -> findHandlersByClass(element, file)
-        is PsiMethod -> findHandlersByMethod(element, file)
-        is PsiIdentifier -> determineHandlers(element.parent, file)
-        else -> emptySet()
-    }
+    override fun determineHandlers(element: PsiElement, file: VirtualFile): Set<String> =
+        DumbService.getInstance(element.project).computeWithAlternativeResolveEnabled<Set<String>, Exception> {
+            when (element) {
+                is PsiClass -> findHandlersByClass(element, file)
+                is PsiMethod -> findHandlersByMethod(element, file)
+                is PsiIdentifier -> determineHandlers(element.parent, file)
+                else -> emptySet()
+            }
+        }
 
     /**
      * https://docs.aws.amazon.com/lambda/latest/dg/java-programming-model-handler-types.html
