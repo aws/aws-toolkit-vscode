@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.lambda.java
 
 import com.intellij.lang.jvm.JvmModifier
 import com.intellij.openapi.module.ModuleUtilCore
+import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.JavaPsiFacade
@@ -34,26 +35,42 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
         val methodName = if (split.size >= 2) split[1] else null
 
         val psiFacade = JavaPsiFacade.getInstance(project)
-        val classes = psiFacade.findClasses(className, searchScope).toList()
-        return if (methodName.isNullOrEmpty()) {
-            classes.filterIsInstance<NavigatablePsiElement>().toTypedArray()
-        } else {
-            val handlerMethod = classes.asSequence()
-                .map { it.findMethodsByName(methodName, true) }
-                .flatMap { it.asSequence() }
-                .filter { it.body != null } // Filter out interfaces
-                .pickMostSpecificHandler()
-            return handlerMethod?.let {
-                arrayOf(it)
-            } ?: NavigatablePsiElement.EMPTY_NAVIGATABLE_ELEMENT_ARRAY
+        val dumbService = DumbService.getInstance(project)
+        // Enabling the lookup even in dumb mode
+        dumbService.isAlternativeResolveEnabled = true
+        try {
+            val classes = psiFacade.findClasses(className, searchScope).toList()
+            return if (methodName.isNullOrEmpty()) {
+                classes.filterIsInstance<NavigatablePsiElement>().toTypedArray()
+            } else {
+                val handlerMethod = classes.asSequence()
+                    .map { it.findMethodsByName(methodName, true) }
+                    .flatMap { it.asSequence() }
+                    .filter { it.body != null } // Filter out interfaces
+                    .pickMostSpecificHandler()
+                return handlerMethod?.let {
+                    arrayOf(it)
+                } ?: NavigatablePsiElement.EMPTY_NAVIGATABLE_ELEMENT_ARRAY
+            }
+        } finally {
+            dumbService.isAlternativeResolveEnabled = false
         }
     }
 
-    override fun determineHandler(element: PsiElement): String? = when (element) {
-        is PsiClass -> findByClass(element)
-        is PsiMethod -> findByMethod(element)
-        is PsiIdentifier -> determineHandler(element.parent)
-        else -> null
+    override fun determineHandler(element: PsiElement): String? {
+        val dumbService = DumbService.getInstance(element.project)
+        // Enabling the lookup even in dumb mode
+        dumbService.isAlternativeResolveEnabled = true
+        try {
+            return when (element) {
+                is PsiClass -> findByClass(element)
+                is PsiMethod -> findByMethod(element)
+                is PsiIdentifier -> determineHandler(element.parent)
+                else -> null
+            }
+        } finally {
+            dumbService.isAlternativeResolveEnabled = false
+        }
     }
 
     override fun determineHandlers(element: PsiElement, file: VirtualFile): Set<String> = when (element) {

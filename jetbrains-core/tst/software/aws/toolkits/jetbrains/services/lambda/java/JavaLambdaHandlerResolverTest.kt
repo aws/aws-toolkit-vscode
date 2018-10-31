@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.java
 
+import com.intellij.openapi.project.DumbService
+import com.intellij.openapi.project.DumbServiceImpl
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiMethod
 import com.intellij.testFramework.runInEdtAndWait
@@ -341,11 +343,71 @@ class JavaLambdaHandlerResolverTest {
     }
 
     @Test
+    fun testFindWorksInDumbMode() {
+        projectRule.fixture.openClass(
+            """
+            package com.example;
+
+            import com.amazonaws.services.lambda.runtime.Context;
+
+            // This enters the realm of undefined behavior, return nothing?
+            public class LambdaHandler {
+                public static void handleRequest(Object input) { }
+
+                public static void handleRequest(InputStream input) { }
+            }
+            """
+        )
+
+        runInDumbMode {
+            runInEdtAndWait {
+                val elements = Lambda.findPsiElementsForHandler(
+                    projectRule.project,
+                    Runtime.JAVA8,
+                    "com.example.LambdaHandler::handleRequest"
+                )
+                assertThat(elements).isEmpty()
+            }
+        }
+    }
+
+    @Test
+    fun testDetermineHandlerWorksInDumbMode() {
+        val psiClass = projectRule.fixture.openClass(
+            """
+            package com.example;
+
+            public class LambdaHandler {
+                public static void handleRequest(Object input) { }
+            }
+            """
+        )
+
+        runInDumbMode {
+            runInEdtAndWait {
+                val handler = JavaLambdaHandlerResolver()
+                    .determineHandler(psiClass.findMethodsByName("handleRequest", false)[0])
+                assertThat(handler).isEqualTo("com.example.LambdaHandler::handleRequest")
+            }
+        }
+    }
+
+    @Test
     fun handlerDisplayNames() {
         val sut = LambdaHandlerResolver.getInstanceOrThrow(RuntimeGroup.JAVA)
 
         assertThat(sut.handlerDisplayName("com.example.LambdaHandler::handleRequest")).isEqualTo("LambdaHandler.handleRequest")
         assertThat(sut.handlerDisplayName("com.example.LambdaHandler")).isEqualTo("LambdaHandler")
         assertThat(sut.handlerDisplayName("LambdaHandler::handleRequest")).isEqualTo("LambdaHandler.handleRequest")
+    }
+
+    private fun runInDumbMode(block: () -> Unit) {
+        val dumbServiceImpl = DumbService.getInstance(projectRule.project) as DumbServiceImpl
+        try {
+            runInEdtAndWait { dumbServiceImpl.isDumb = true }
+            block()
+        } finally {
+            runInEdtAndWait { dumbServiceImpl.isDumb = false }
+        }
     }
 }
