@@ -15,7 +15,10 @@ import { detectLocalLambdas, LocalLambda } from './detectLocalLambdas'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-interface NodeDebugConfiguration extends vscode.DebugConfiguration {
+import * as AsyncLock from 'async-lock'
+const lock = new AsyncLock()
+
+export interface NodeDebugConfiguration extends vscode.DebugConfiguration {
     readonly type: 'node'
     readonly request: 'attach' | 'launch'
     readonly name: string
@@ -51,7 +54,8 @@ export class NodeDebugConfigurationProvider implements vscode.DebugConfiguration
 
     public async provideDebugConfigurations(
         folder: vscode.WorkspaceFolder | undefined,
-        token?: vscode.CancellationToken
+        token?: vscode.CancellationToken,
+        event: any = {}
     ): Promise<NodeDebugConfiguration[]> {
         if (!folder) {
             console.error('Cannot provide debug configuration if no workspace is open.')
@@ -66,7 +70,7 @@ export class NodeDebugConfigurationProvider implements vscode.DebugConfiguration
         const localLambdas: LambdaWithPreLaunchTask[] = await Promise.all(
             (await detectLocalLambdas([ folder ])).map(async localLambda => ({
                 lambda: localLambda,
-                task: await this.addPreLaunchTask(folder, localLambda.lambda, {}, 5858)
+                task: await this.addPreLaunchTask(folder, localLambda.lambda, event, 5858)
             }))
         )
 
@@ -162,7 +166,7 @@ export class NodeDebugConfigurationProvider implements vscode.DebugConfiguration
     private async addPreLaunchTask(
         folder: vscode.WorkspaceFolder,
         functionName: string,
-        event: { [ key: string ]: string } = {},
+        event: any,
         debugPort: number = 5858
     ): Promise<string> {
         const label = this.getTaskLabel(functionName)
@@ -189,11 +193,19 @@ export class NodeDebugConfigurationProvider implements vscode.DebugConfiguration
             tasks.tasks.push(this.createPreLaunchTask(functionName, event, debugPort))
         }
 
-        if (!await fileExists(configRoot) || !(await filesystem.statAsync(configRoot)).isDirectory()) {
-            await filesystem.mkdirAsync(configRoot)
+        // If this function is called twice in succession (for instance, if multiple lambdas
+        // were detected), multiple calls to mkdirAsync can be added to the event queue,
+        // leading to a pseudo-race condition despite node's single-threaded nature.
+        await lock.acquire('create .vscode', async () => {
+            if (!await fileExists(configRoot)) {
+                await filesystem.mkdirAsync(configRoot)
+            }
+        })
+
+        if (!(await filesystem.statAsync(configRoot)).isDirectory()) {
+            throw new Error(`${configRoot} exists, but is not a directory`)
         }
 
-        // TODO: Read user's tab-width setting and use that instead of hard-coding '4'.
         const config = new DefaultSettingsConfiguration('editor')
         await filesystem.writeFileAsync(
             tasksPath,
@@ -205,7 +217,7 @@ export class NodeDebugConfigurationProvider implements vscode.DebugConfiguration
 
     private createPreLaunchTask(
         functionName: string,
-        event: { [ key: string ]: any } = {},
+        event: any,
         debugPort: number = 5858
     ) {
         return {

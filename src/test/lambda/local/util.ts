@@ -32,14 +32,14 @@ export async function createTemporaryDirectory(prefix: string): Promise<string> 
     return await filesystem.mkdtempAsync(fullPrefix)
 }
 
-export async function saveTemplate(templatePath: string, ...functionNames: string[]) {
+export async function saveTemplate(templatePath: string, runtime: string, ...functionNames: string[]) {
     const functionResources = functionNames.map(
         functionName => `    ${functionName}:
         Type: AWS::Serverless::Function
         Properties:
             CodeUri: hello_world/
             Handler: app.lambdaHandler
-            Runtime: nodejs8.10
+            Runtime: ${runtime}
             Environment:
                 Variables:
                     PARAM1: VALUE
