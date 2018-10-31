@@ -44,8 +44,11 @@ describe('filesystem', () => {
             } catch (err) {
                 error = err as NodeJS.ErrnoException | undefined
             }
+
             assert.ok(error)
-            assert.equal(error!.errno, -4058) // ENOENT: no such file or directory
+
+            const expected = os.platform() === 'win32' ? -4058 : -2 // ENOENT: no such file or directory
+            assert.equal(error!.errno, expected)
         })
 
         it('accepts Buffer-based paths', async () => {
