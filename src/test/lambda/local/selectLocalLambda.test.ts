@@ -23,7 +23,7 @@ describe('selectLocalLambda tests', () => {
         workspaceFolders.push(workspaceFolder)
 
         templatePath = path.join(workspaceFolder.uri.fsPath, 'template.yml')
-        await saveTemplate(templatePath, 'MyFunction')
+        await saveTemplate(templatePath, 'nodejs8.10', 'MyFunction')
     })
 
     afterEach(async () => {

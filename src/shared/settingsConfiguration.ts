@@ -22,7 +22,8 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
     }
 
     public readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
-        const settings = vscode.workspace.getConfiguration(this.extensionSettingsPrefix)
+        // tslint:disable-next-line:no-null-keyword
+        const settings = vscode.workspace.getConfiguration(this.extensionSettingsPrefix, null)
         if (settings) {
             const val = settings.get<T>(settingKey)
             if (val) {
@@ -34,7 +35,8 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
     }
 
     public async writeSetting<T>(settingKey: string, value: T, target: vscode.ConfigurationTarget): Promise<void> {
-        const settings = vscode.workspace.getConfiguration(this.extensionSettingsPrefix)
+        // tslint:disable-next-line:no-null-keyword
+        const settings = vscode.workspace.getConfiguration(this.extensionSettingsPrefix, null)
 
         await settings.update(settingKey, value, target)
     }

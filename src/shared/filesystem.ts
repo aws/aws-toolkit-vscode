@@ -5,16 +5,42 @@
 
 'use strict'
 
-import { access, mkdtemp, readFile, writeFile } from 'fs'
+import * as fs from 'fs'
 
 /* tslint:disable promise-function-async */
-export function accessAsync(path: string | Buffer): Promise<boolean> {
-    return new Promise((resolve, reject) => access(path, err => resolve(!err)))
+export function accessAsync(path: string | Buffer): Promise<void> {
+    return new Promise((resolve, reject) => fs.access(path, err => {
+        if (!err) {
+            resolve()
+        } else {
+            reject(err)
+        }
+    }))
+}
+
+export function mkdirAsync(path: string | Buffer, mode?: number | string) {
+    return new Promise<void>((resolve, reject) => {
+        const handler = (err?: NodeJS.ErrnoException) => {
+            if (!err) {
+                resolve()
+            } else {
+                reject(err)
+            }
+        }
+
+        if (!mode) {
+            fs.mkdir(path, handler)
+        } else if (typeof mode === 'number') {
+            fs.mkdir(path, mode as number, handler)
+        } else {
+            fs.mkdir(path, mode as string, handler)
+        }
+    })
 }
 
 export function mkdtempAsync(prefix: string): Promise<string> {
     return new Promise((resolve, reject) => {
-        mkdtemp(prefix, (err, folder) => {
+        fs.mkdtemp(prefix, (err, folder) => {
             if (!err) {
                 resolve(folder)
             } else {
@@ -24,9 +50,27 @@ export function mkdtempAsync(prefix: string): Promise<string> {
     })
 }
 
+export function readdirAsync(path: string | Buffer, options?: string | {}): Promise<string[]> {
+    return new Promise((resolve, reject) => {
+        const handler = (err: NodeJS.ErrnoException, files: string[]) => {
+            if (!err) {
+                resolve(files)
+            } else {
+                reject(err)
+            }
+        }
+
+        if (!!options) {
+            fs.readdir(path, options, handler)
+        } else {
+            fs.readdir(path, handler)
+        }
+    })
+}
+
 export function readFileAsync(filename: string, encoding: string | null): Promise<string | Buffer> {
     return new Promise((resolve, reject) => {
-        readFile(filename, encoding, (err, data) => {
+        fs.readFile(filename, encoding, (err, data) => {
             if (!err) {
                 resolve(data)
             } else {
@@ -36,33 +80,48 @@ export function readFileAsync(filename: string, encoding: string | null): Promis
     })
 }
 
-/**
- * @description Wraps readFileAsync and resolves the Buffer to a string for convenience
- *
- * @param path filename to read
- * @param encoding Optional - file encoding
- *
- * @returns the contents of the file as a string
- */
-export async function readFileAsyncAsString(path: string, encoding?: string): Promise<string> {
-    // tslint:disable-next-line:no-null-keyword
-    const result = await readFileAsync(path, encoding || null)
-    if (result instanceof Buffer) {
-        return result.toString(encoding || undefined)
-    }
-
-    return result
-}
-
-export function writeFileAsync(filename: string, data: any, encoding: string): Promise<void> {
+export function statAsync(path: string | Buffer): Promise<fs.Stats> {
     return new Promise((resolve, reject) => {
-        writeFile(filename, data, encoding, err => {
+        fs.stat(path, (err, stats) => {
             if (!err) {
-                resolve()
+                resolve(stats)
             } else {
                 reject(err)
             }
         })
     })
 }
+
+interface WriteFileOptions<TMode extends number | string> {
+    encoding?: string
+    mode?: TMode
+    flag?: string
+}
+
+export function writeFileAsync(
+    filename: string,
+    data: any,
+    options?: string | WriteFileOptions<number> | WriteFileOptions<string>
+): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const callback = (err: NodeJS.ErrnoException) => {
+            if (!err) {
+                resolve()
+            } else {
+                reject(err)
+            }
+        }
+
+        if (!options) {
+            fs.writeFile(filename, data, callback)
+        } else if (typeof options === 'string') {
+            fs.writeFile(filename, data, options, callback)
+        } else if (!!options.mode && typeof options.mode === 'number')  {
+            fs.writeFile(filename, data, options as WriteFileOptions<number>, callback)
+        } else {
+            fs.writeFile(filename, data, options as WriteFileOptions<string>, callback)
+        }
+    })
+}
+
 /* tslint:enable promise-function-async */

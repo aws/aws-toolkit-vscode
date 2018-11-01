@@ -10,6 +10,7 @@ import * as nls from 'vscode-nls'
 
 import { RegionNode } from './lambda/explorer/regionNode'
 import { LambdaProvider } from './lambda/lambdaProvider'
+import { NodeDebugConfigurationProvider } from './lambda/local/debugConfigurationProvider'
 import { AWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { extensionSettingsPrefix } from './shared/constants'
@@ -71,6 +72,11 @@ export async function activate(context: vscode.ExtensionContext) {
         p.initialize()
         context.subscriptions.push(vscode.window.registerTreeDataProvider(p.viewProviderId, p))
     })
+
+    context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider(
+        'lambda-node',
+        new NodeDebugConfigurationProvider()
+    ))
 
     await ext.statusBar.updateContext(undefined)
 }
