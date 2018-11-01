@@ -9,21 +9,16 @@ import com.intellij.openapi.actionSystem.LangDataKeys
 import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.iam.IamRole
-import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
-import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
+import software.aws.toolkits.jetbrains.services.lambda.orThrow
+import software.aws.toolkits.jetbrains.services.lambda.runtime
 import software.aws.toolkits.resources.message
 
 class UploadLambdaFunction(private val handlerName: String) : AnAction(message("lambda.create_new"), null, AwsIcons.Actions.LAMBDA_FUNCTION_NEW) {
-    override fun actionPerformed(event: AnActionEvent?) {
-        val module = event?.getData(LangDataKeys.MODULE) ?: return
-        val psiFile = event.getData(LangDataKeys.PSI_FILE) ?: return
-        val packager = psiFile.language.runtimeGroup?.let { LambdaPackager.getInstance(it) } ?: return
-        EditLambdaDialog(
-            project = module.project,
-            isUpdate = false,
-            runtime = packager.determineRuntime(module, psiFile),
-            handlerName = handlerName
-        ).show()
+    override fun actionPerformed(event: AnActionEvent) {
+        val project = event.getRequiredData(LangDataKeys.PROJECT)
+        val runtime = event.runtime().orThrow
+
+        EditLambdaDialog(project = project, isUpdate = false, runtime = runtime, handlerName = handlerName).show()
     }
 }
 

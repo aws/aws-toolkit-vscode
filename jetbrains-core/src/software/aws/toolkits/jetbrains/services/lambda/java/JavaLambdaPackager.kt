@@ -17,7 +17,6 @@ import com.intellij.util.io.exists
 import com.intellij.util.io.inputStream
 import com.intellij.util.io.isDirectory
 import com.intellij.util.io.isHidden
-import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.createTemporaryZipFile
 import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
@@ -72,9 +71,6 @@ class JavaLambdaPackager : LambdaPackager {
         }
         return future
     }
-
-    override fun determineRuntime(module: Module, file: PsiFile): Runtime =
-        Runtime.JAVA8
 
     private fun entriesForModule(module: Module, entries: MutableSet<ZipEntry>) {
         productionRuntimeEntries(module).forEach {

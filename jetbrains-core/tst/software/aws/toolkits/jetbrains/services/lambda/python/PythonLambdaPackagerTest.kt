@@ -12,10 +12,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.zipEntries
-import software.aws.toolkits.jetbrains.utils.rules.PyTestSdk2x
-import software.aws.toolkits.jetbrains.utils.rules.PyTestSdk3x
 import software.aws.toolkits.jetbrains.utils.rules.PyVirtualEnvSdk
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import java.util.concurrent.TimeUnit
@@ -38,22 +35,6 @@ class PythonLambdaPackagerTest {
                 return "HelloWorld"
             """.trimIndent()
         )
-    }
-
-    @Test
-    fun testRuntimeDetection2x() {
-        val module = projectRule.module
-        ModuleRootModificationUtil.setModuleSdk(module, PyTestSdk2x())
-
-        assertThat(packager.determineRuntime(module, psiFile)).isEqualTo(Runtime.PYTHON2_7)
-    }
-
-    @Test
-    fun testRuntimeDetection3x() {
-        val module = projectRule.module
-        ModuleRootModificationUtil.setModuleSdk(module, PyTestSdk3x())
-
-        assertThat(packager.determineRuntime(module, psiFile)).isEqualTo(Runtime.PYTHON3_6)
     }
 
     @Test

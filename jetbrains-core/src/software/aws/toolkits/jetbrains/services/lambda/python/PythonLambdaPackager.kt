@@ -11,9 +11,7 @@ import com.intellij.openapi.roots.OrderRootType
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.psi.PsiFile
-import com.jetbrains.extensions.getSdk
 import com.jetbrains.python.sdk.PythonSdkType
-import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.createTemporaryZipFile
 import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
@@ -79,11 +77,4 @@ class PythonLambdaPackager : LambdaPackager {
 
         return future
     }
-
-    override fun determineRuntime(module: Module, file: PsiFile): Runtime =
-        if (PythonSdkType.getLanguageLevelForSdk(module.getSdk()).isPy3K) {
-            Runtime.PYTHON3_6
-        } else {
-            Runtime.PYTHON2_7
-        }
 }
