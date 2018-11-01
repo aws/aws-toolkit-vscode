@@ -22,7 +22,8 @@ class BannedPatternRule(private val patterns: List<BannedPattern>) : Rule("banne
 
     companion object {
         val DEFAULT_PATTERNS = listOf(
-            BannedPattern("Runtime\\.valueOf".toRegex(), "Runtime.valueOf banned, use Runtime.fromValue instead.")
+            BannedPattern("Runtime\\.valueOf".toRegex(), "Runtime.valueOf banned, use Runtime.fromValue instead."),
+            BannedPattern("com\\.intellij\\.openapi\\.actionSystem\\.DataKeys".toRegex(), "DataKeys is not available in all IDEs, use LangDataKeys instead")
         )
     }
 }
