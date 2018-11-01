@@ -18,7 +18,6 @@ import com.intellij.openapi.util.LazyInstance
 import com.intellij.util.KeyedLazyInstance
 import com.intellij.util.xmlb.annotations.Attribute
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.resources.message
 
 /**
  * Grouping of Lambda [Runtime] by parent language.
@@ -89,11 +88,6 @@ val Runtime.runtimeGroup: RuntimeGroup? get() = RuntimeGroup.find { this in it.r
  * For a given [com.intellij.lang.Language] determine the corresponding Lambda [RuntimeGroup]
  */
 val Language.runtimeGroup: RuntimeGroup? get() = RuntimeGroup.find { this.id in it.languageIds }
-
-/**
- * For places where [Runtime] should never be null, use this for consistent exception messaging
- */
-val Runtime?.orThrow: Runtime get() = this ?: throw RuntimeException(message("lambda.runtime_information.runtime_missing"))
 
 /**
  * Given [AnActionEvent] attempt to determine the [Runtime]

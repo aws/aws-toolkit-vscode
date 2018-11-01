@@ -95,6 +95,10 @@
     </extensions>
 
     <actions>
+        <group id="aws.toolkit.explorer.lambda" popup="true" compact="false">
+            <action id="lambda.function.create"
+                    class="software.aws.toolkits.jetbrains.services.lambda.upload.CreateLambdaFunction"/>
+        </group>
         <group id="aws.toolkit.explorer.lambda.function" popup="true" compact="false">
             <reference ref="RunContextGroupInner"/>
             <separator/>
