@@ -45,7 +45,7 @@ class RuntimeGroupTest {
 
         runInEdtAndWait {
             runWriteAction {
-                ProjectJdkTable.getInstance().addJdk(sdk)
+                ProjectJdkTable.getInstance().addJdk(sdk, projectRule.fixture.projectDisposable)
                 ProjectRootManager.getInstance(project).projectSdk = sdk
             }
 
@@ -56,10 +56,6 @@ class RuntimeGroupTest {
             }
 
             assertThat(event.runtime()).isEqualTo(Runtime.PYTHON3_6)
-
-            runWriteAction {
-                ProjectJdkTable.getInstance().removeJdk(sdk)
-            }
         }
     }
 }
