@@ -37,7 +37,7 @@ public class CreateRolePanel {
         policyDocument.setBorder(
             IdeBorderFactory.createTitledBorder(Localization.message("iam.create.role.policy.editor.name"), false, insets));
 
-        assumeRolePolicyDocument = textFieldProvider.getEditorField(JsonLanguage.INSTANCE, project, Collections.emptyList());;
+        assumeRolePolicyDocument = textFieldProvider.getEditorField(JsonLanguage.INSTANCE, project, Collections.emptyList());
         assumeRolePolicyDocument.setBorder(IdeBorderFactory.createTitledBorder(Localization.message("iam.create.role.trust.editor.name"), false, insets));
     }
 }

@@ -20,6 +20,7 @@ import org.junit.Test
 import software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker
 import software.aws.toolkits.jetbrains.testutils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.testutils.rules.openClass
+import software.aws.toolkits.jetbrains.testutils.rules.openFile
 
 class JavaLambdaLineMarkerTest {
     @Rule
@@ -61,6 +62,16 @@ class JavaLambdaLineMarkerTest {
             }
             """
         )
+
+        projectRule.fixture.openFile("template.yaml", """
+Resources:
+  UpperCase:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: foo
+      Handler: com.example.UsefulUtils::upperCase
+      Runtime: java8
+""")
     }
 
     @Test

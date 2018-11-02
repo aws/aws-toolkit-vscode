@@ -62,5 +62,10 @@ interface LambdaHandlerResolver {
      */
     fun handlerDisplayName(handler: String): String = handler
 
+    /**
+     * Given a handler, return whether to show this handler all the time
+     */
+    fun shouldShowLineMarker(handler: String): Boolean = false
+
     companion object : RuntimeGroupExtensionPointObject<LambdaHandlerResolver>(ExtensionPointName.create("aws.toolkit.lambda.handlerResolver"))
 }

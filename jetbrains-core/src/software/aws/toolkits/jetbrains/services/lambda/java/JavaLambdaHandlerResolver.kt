@@ -73,6 +73,11 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
         }
 
     /**
+     * Always show line marker for handler if it is a class which means it implements Lambda interface.
+     */
+    override fun shouldShowLineMarker(handler: String): Boolean = !handler.contains("::")
+
+    /**
      * https://docs.aws.amazon.com/lambda/latest/dg/java-programming-model-handler-types.html
      * Handler Overload Resolution
      *
