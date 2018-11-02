@@ -7,10 +7,13 @@ import com.intellij.execution.RunManager
 import com.intellij.execution.RunnerAndConfigurationSettings
 import com.intellij.execution.actions.ConfigurationContext
 import com.intellij.execution.actions.RunConfigurationProducer
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiElement
 import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLPsiElement
+import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
@@ -53,14 +56,21 @@ class LambdaSamRunConfigurationProducer : RunConfigurationProducer<SamRunConfigu
         val handler = resolver.determineHandler(element) ?: return false
 
         val runtime = RuntimeGroup.determineRuntime(context.module) ?: RuntimeGroup.determineRuntime(context.project)
-        configuration.configure(runtime, handler)
+        val settings = accountSettings(element.project)
+        configuration.configure(runtime, handler, credentialsProviderId = settings.first, region = settings.second)
         return true
     }
 
     private fun setupFromTemplate(element: YAMLPsiElement, configuration: SamRunConfiguration): Boolean {
         val file = element.containingFile?.virtualFile?.path ?: return false
         val function = functionFromElement(element) ?: return false
-        configuration.configure(templateFile = file, logicalFunctionName = function.logicalName)
+        val settings = accountSettings(element.project)
+        configuration.configure(
+            templateFile = file,
+            logicalFunctionName = function.logicalName,
+            credentialsProviderId = settings.first,
+            region = settings.second
+        )
         return true
     }
 
@@ -84,5 +94,21 @@ class LambdaSamRunConfigurationProducer : RunConfigurationProducer<SamRunConfigu
 
     companion object {
         private fun getFactory() = LambdaRunConfiguration.getInstance().configurationFactories.first { it is SamRunConfigurationFactory }
+        private fun accountSettings(project: Project): Pair<String?, AwsRegion?> {
+            val settingsManager = ProjectAccountSettingsManager.getInstance(project)
+            val region = try {
+                settingsManager.activeRegion
+            } catch (_: Exception) {
+                null
+            }
+
+            val credentialProviderId = try {
+                settingsManager.activeCredentialProvider.id
+            } catch (_: Exception) {
+                null
+            }
+
+            return credentialProviderId to region
+        }
     }
 }
