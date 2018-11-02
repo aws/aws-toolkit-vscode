@@ -335,6 +335,7 @@ describe('SamTemplateGenerator', () => {
 
     async function assertThrowsError(fn: Function): Promise<Error> {
         try {
+            // tslint:disable-next-line:no-unsafe-any
             await fn()
         } catch (err) {
             if (err instanceof Error) {

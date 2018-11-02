@@ -234,6 +234,7 @@
         "@types/archiver": "^2.1.2",
         "@types/handlebars": "^4.0.39",
         "@types/js-yaml": "^3.11.2",
+        "@types/jszip": "^3.1.4",
         "@types/opn": "^5.1.0",
         "archiver": "^3.0.0",
         "async-lock": "^1.1.3",

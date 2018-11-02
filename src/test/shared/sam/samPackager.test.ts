@@ -8,13 +8,12 @@
 import * as assert from 'assert'
 import * as del from 'del'
 import * as fs from 'fs'
+import * as JSZip from 'jszip'
 import * as os from 'os'
 import * as path from 'path'
 import * as filesystem from '../../../shared/filesystem'
 import { SamPackager } from '../../../shared/sam/packagers/samPackager'
 import { SystemUtilities } from '../../../shared/systemUtilities'
-
-import JSZip = require('jszip')
 
 describe('SamPackager', () => {
 
@@ -41,8 +40,7 @@ describe('SamPackager', () => {
 
         assert.equal(await SystemUtilities.fileExists(packageFilename), true)
 
-        // @ts-ignore
-        const zip = new JSZip()
+        const zip: JSZip = new JSZip()
         // tslint:disable-next-line:no-null-keyword
         await zip.loadAsync(await filesystem.readFileAsync(packageFilename, null))
 
@@ -63,7 +61,6 @@ describe('SamPackager', () => {
 
         assert.equal(await SystemUtilities.fileExists(packageFilename), true)
 
-        // @ts-ignore
         const zip = new JSZip()
         // tslint:disable-next-line:no-null-keyword
         await zip.loadAsync(await filesystem.readFileAsync(packageFilename, null))
@@ -130,6 +127,7 @@ describe('SamPackager', () => {
 
     async function assertThrowsError(fn: Function): Promise<Error> {
         try {
+            // tslint:disable-next-line:no-unsafe-any
             await fn()
         } catch (err) {
             if (err instanceof Error) {

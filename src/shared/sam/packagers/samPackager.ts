@@ -81,7 +81,7 @@ export class SamPackager {
     private async validateFoldersExist(): Promise<void> {
         const missingFolders: boolean[] = (await Promise.all(
             Object.keys(this._folderMap)
-                .map(folder => SystemUtilities.fileExists(folder))
+                .map(async folder => SystemUtilities.fileExists(folder))
         )).filter(result => !result)
 
         if (missingFolders.length > 0) {
