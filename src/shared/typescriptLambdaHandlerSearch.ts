@@ -153,7 +153,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                 return {
                     filename: this._filename,
                     handlerName: `${this._baseFilename}.${exportsTarget}`,
-                    positionStart: candidate.pos,
+                    positionStart: candidate.getStart(),
                     positionEnd: candidate.end,
                 }
             })
@@ -175,7 +175,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                             handlers.push({
                                 filename: this._filename,
                                 handlerName: `${this._baseFilename}.${exportedFunction}`,
-                                positionStart: clause.pos,
+                                positionStart: clause.getStart(),
                                 positionEnd: clause.end,
                             })
                         }
@@ -201,7 +201,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                 handlers.push({
                     filename: this._filename,
                     handlerName: `${this._baseFilename}.${exportNode.name.getText()}`,
-                    positionStart: exportNode.pos,
+                    positionStart: exportNode.getStart(),
                     positionEnd: exportNode.end,
                 })
             } else if (ts.isVariableStatement(exportNode)) {
@@ -217,7 +217,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                         handlers.push({
                             filename: this._filename,
                             handlerName: `${this._baseFilename}.${declaration.name.getText()}`,
-                            positionStart: declaration.pos,
+                            positionStart: declaration.getStart(),
                             positionEnd: declaration.end,
                         })
                     }
