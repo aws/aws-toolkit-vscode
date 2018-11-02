@@ -5,28 +5,10 @@
 
 'use strict'
 
-import * as schema from 'cloudformation-schema-js-yaml'
 import * as yaml from 'js-yaml'
 import * as filesystem from '../../../shared/filesystem'
-import * as filesystemUtilities from '../../../shared/filesystemUtilities'
+import { CloudFormation } from '../../cloudformation/cloudformation'
 import { SystemUtilities } from '../../systemUtilities'
-
-// TODO : CC : MP change will come in, then use that definition
-export interface CloudFormationResource {
-    Type: string,
-    Properties?: {
-        Handler: string,
-        CodeUri: string,
-        Runtime?: string,
-        Timeout?: number
-    }
-}
-
-export interface CloudFormationTemplate {
-    Resources?: {
-        [key: string]: CloudFormationResource
-    }
-}
 
 export class SamTemplateGenerator {
     private _resourceName?: string
@@ -68,7 +50,7 @@ export class SamTemplateGenerator {
     public async generate(filename: string): Promise<void> {
         await this.validate()
 
-        const template: CloudFormationTemplate = !!this._existingTemplateFilename
+        const template: CloudFormation.Template = !!this._existingTemplateFilename
             ? await this.createTemplateFromExistingTemplate()
             : this.createTemplateFromScratch()
 
@@ -99,7 +81,7 @@ export class SamTemplateGenerator {
             throw new Error(`Template file not found: ${this._existingTemplateFilename}`)
         }
 
-        const template: CloudFormationTemplate = await this.loadTemplate(this._existingTemplateFilename)
+        const template: CloudFormation.Template = await CloudFormation.load(this._existingTemplateFilename)
         const templateResourceNames: Set<string> = !!template.Resources
             ? new Set(Object.keys(template.Resources))
             : new Set()
@@ -108,7 +90,7 @@ export class SamTemplateGenerator {
             throw new Error(`Resource not found: ${this._resourceName}`)
         }
 
-        const resource: CloudFormationResource = template.Resources![this._resourceName!]
+        const resource: CloudFormation.Resource = template.Resources![this._resourceName!]
         if (!this._functionHandler && (!resource.Properties || !resource.Properties.Handler)) {
             if (!this._functionHandler) { throw new Error('Missing value: FunctionHandler') }
         }
@@ -119,18 +101,9 @@ export class SamTemplateGenerator {
 
     }
 
-    // Todo : CC : move I/O to concrete class
-    private async loadTemplate(filename: string): Promise<CloudFormationTemplate> {
-        const templateAsYaml: string = await filesystemUtilities.readFileAsString(filename, 'utf8')
-
-        return yaml.safeLoad(templateAsYaml, {
-            schema
-        }) as CloudFormationTemplate
-    }
-
-    private createTemplateFromScratch(): CloudFormationTemplate {
+    private createTemplateFromScratch(): CloudFormation.Template {
         const resources: {
-            [key: string]: CloudFormationResource
+            [key: string]: CloudFormation.Resource
         } = {}
 
         resources[this._resourceName!] = {
@@ -147,9 +120,9 @@ export class SamTemplateGenerator {
         }
     }
 
-    private async createTemplateFromExistingTemplate(): Promise<CloudFormationTemplate> {
-        const template: CloudFormationTemplate = await this.loadTemplate(this._existingTemplateFilename!)
-        const resource: CloudFormationResource = template.Resources![this._resourceName!]
+    private async createTemplateFromExistingTemplate(): Promise<CloudFormation.Template> {
+        const template: CloudFormation.Template = await CloudFormation.load(this._existingTemplateFilename!)
+        const resource: CloudFormation.Resource = template.Resources![this._resourceName!]
 
         resource.Properties!.CodeUri = this._codeUri!
 

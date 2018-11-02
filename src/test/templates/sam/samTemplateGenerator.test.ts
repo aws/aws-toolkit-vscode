@@ -6,19 +6,13 @@
 'use strict'
 
 import * as assert from 'assert'
-import * as schema from 'cloudformation-schema-js-yaml'
 import * as del from 'del'
-import * as yaml from 'js-yaml'
 import * as os from 'os'
 import * as path from 'path'
+import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import * as filesystem from '../../../shared/filesystem'
-import * as filesystemUtilities from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
-import {
-    CloudFormationResource,
-    CloudFormationTemplate,
-    SamTemplateGenerator
-} from '../../../shared/templates/sam/samTemplateGenerator'
+import { SamTemplateGenerator } from '../../../shared/templates/sam/samTemplateGenerator'
 
 describe('SamTemplateGenerator', () => {
 
@@ -54,11 +48,11 @@ describe('SamTemplateGenerator', () => {
 
             assert.equal(await SystemUtilities.fileExists(templateFilename), true)
 
-            const template: CloudFormationTemplate = await loadTemplate(templateFilename)
+            const template: CloudFormation.Template = await CloudFormation.load(templateFilename)
             assert.ok(template.Resources)
             assert.notEqual(Object.keys(template.Resources!).length, 0)
 
-            const resource: CloudFormationResource = template.Resources![sampleResourceNameValue]
+            const resource: CloudFormation.Resource = template.Resources![sampleResourceNameValue]
             assert.equal(resource.Properties!.CodeUri, sampleCodeUriValue)
             assert.equal(resource.Properties!.Handler, sampleFunctionHandlerValue)
             assert.equal(resource.Properties!.Runtime, sampleRuntimeValue)
@@ -138,20 +132,20 @@ describe('SamTemplateGenerator', () => {
             sourceTemplateFilename = path.join(tempFolder, 'src-template.yml')
             destinationTemplateFilename = path.join(tempFolder, 'dst-template.yml')
 
-            const templateContents: CloudFormationTemplate = createSampleTemplate(
+            const templateContents: CloudFormation.Template = createSampleTemplate(
                 [sampleResourceNameValue]
             )
 
-            await saveTemplate(templateContents, sourceTemplateFilename)
+            await CloudFormation.save(templateContents, sourceTemplateFilename)
         })
 
         it('Produces a template given valid inputs', async () => {
-            const expectedTemplateContents: CloudFormationTemplate = createSampleTemplate(
+            const expectedTemplateContents: CloudFormation.Template = createSampleTemplate(
                 [sampleResourceNameValue, 'Function2']
             )
             const expectedTemplateResourceKeys: string[] = Object.keys(expectedTemplateContents.Resources!)
 
-            await saveTemplate(expectedTemplateContents, sourceTemplateFilename)
+            await CloudFormation.save(expectedTemplateContents, sourceTemplateFilename)
 
             await new SamTemplateGenerator()
                 .withCodeUri(sampleCodeUriValue)
@@ -163,7 +157,7 @@ describe('SamTemplateGenerator', () => {
 
             assert.equal(await SystemUtilities.fileExists(destinationTemplateFilename), true)
 
-            const template: CloudFormationTemplate = await loadTemplate(destinationTemplateFilename)
+            const template: CloudFormation.Template = await CloudFormation.load(destinationTemplateFilename)
             assert.ok(template.Resources)
             const actualTemplateResourceKeys: string[] = Object.keys(template.Resources!)
             assert.equal(actualTemplateResourceKeys.length, expectedTemplateResourceKeys.length)
@@ -173,18 +167,18 @@ describe('SamTemplateGenerator', () => {
                 true
             )
 
-            const resource: CloudFormationResource = template.Resources![sampleResourceNameValue]
+            const resource: CloudFormation.Resource = template.Resources![sampleResourceNameValue]
             assert.equal(resource.Properties!.CodeUri, sampleCodeUriValue)
             assert.equal(resource.Properties!.Handler, sampleFunctionHandlerValue)
             assert.equal(resource.Properties!.Runtime, sampleRuntimeValue)
         })
 
         it('Produces a template using existing function handler value', async () => {
-            const expectedTemplateContents: CloudFormationTemplate = createSampleTemplate(
+            const expectedTemplateContents: CloudFormation.Template = createSampleTemplate(
                 [sampleResourceNameValue]
             )
 
-            await saveTemplate(expectedTemplateContents, sourceTemplateFilename)
+            await CloudFormation.save(expectedTemplateContents, sourceTemplateFilename)
 
             await new SamTemplateGenerator()
                 .withCodeUri(sampleCodeUriValue)
@@ -195,8 +189,8 @@ describe('SamTemplateGenerator', () => {
 
             assert.equal(await SystemUtilities.fileExists(destinationTemplateFilename), true)
 
-            const template: CloudFormationTemplate = await loadTemplate(destinationTemplateFilename)
-            const resource: CloudFormationResource = template.Resources![sampleResourceNameValue]
+            const template: CloudFormation.Template = await CloudFormation.load(destinationTemplateFilename)
+            const resource: CloudFormation.Resource = template.Resources![sampleResourceNameValue]
             assert.equal(resource.Properties!.CodeUri, sampleCodeUriValue)
             assert.equal(resource.Properties!.Handler, `${sampleResourceNameValue}-handler`)
         })
@@ -218,13 +212,13 @@ describe('SamTemplateGenerator', () => {
         })
 
         it('errs if function handler is not in existing template and not provided', async () => {
-            const expectedTemplateContents: CloudFormationTemplate = createSampleTemplate(
+            const expectedTemplateContents: CloudFormation.Template = createSampleTemplate(
                 [sampleResourceNameValue]
             )
 
             delete expectedTemplateContents.Resources![sampleResourceNameValue].Properties!.Handler
 
-            await saveTemplate(expectedTemplateContents, sourceTemplateFilename)
+            await CloudFormation.save(expectedTemplateContents, sourceTemplateFilename)
 
             const error: Error = await assertThrowsError(
                 async () => {
@@ -242,13 +236,13 @@ describe('SamTemplateGenerator', () => {
         })
 
         it('errs if runtime is not in existing template and not provided', async () => {
-            const expectedTemplateContents: CloudFormationTemplate = createSampleTemplate(
+            const expectedTemplateContents: CloudFormation.Template = createSampleTemplate(
                 [sampleResourceNameValue]
             )
 
             delete expectedTemplateContents.Resources![sampleResourceNameValue].Properties!.Runtime
 
-            await saveTemplate(expectedTemplateContents, sourceTemplateFilename)
+            await CloudFormation.save(expectedTemplateContents, sourceTemplateFilename)
 
             const error: Error = await assertThrowsError(
                 async () => {
@@ -318,19 +312,9 @@ describe('SamTemplateGenerator', () => {
         })
     })
 
-    // Todo : CC : move I/O to concrete class
-    async function loadTemplate(filename: string): Promise<CloudFormationTemplate> {
-        const templateAsYaml: string = await filesystemUtilities.readFileAsString(filename, 'utf8')
-
-        return yaml.safeLoad(templateAsYaml, {
-            // filename: templatePath,
-            schema
-        }) as CloudFormationTemplate
-    }
-
-    function createSampleTemplate(resourceNames: string[]): CloudFormationTemplate {
+    function createSampleTemplate(resourceNames: string[]): CloudFormation.Template {
         const resources: {
-            [key: string]: CloudFormationResource
+            [key: string]: CloudFormation.Resource
         } = {}
 
         resourceNames.forEach(resourceName => {
@@ -349,14 +333,6 @@ describe('SamTemplateGenerator', () => {
         }
     }
 
-    async function saveTemplate(
-        template: CloudFormationTemplate,
-        filename: string
-    ): Promise<void> {
-        const templateAsYaml: string = yaml.safeDump(template)
-
-        await filesystem.writeFileAsync(filename, templateAsYaml, 'utf8')
-    }
     async function assertThrowsError(fn: Function): Promise<Error> {
         try {
             await fn()
