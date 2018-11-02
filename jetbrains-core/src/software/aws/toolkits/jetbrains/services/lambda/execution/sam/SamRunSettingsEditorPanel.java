@@ -118,7 +118,7 @@ public final class SamRunSettingsEditorPanel {
         if (logicalFunctionName == null) return;
         Function function = find(functionModels, f -> f.getLogicalName().equals(logicalFunctionName));
         if (function != null) {
-            functionModels.setSelectedItem(logicalFunctionName);
+            functionModels.setSelectedItem(function);
             updateComponents();
         }
     }
