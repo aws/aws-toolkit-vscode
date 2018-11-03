@@ -29,6 +29,7 @@ data class LambdaFunction(
     val runtime: Runtime,
     val envVariables: Map<String, String>?,
     val timeout: Int,
+    val memorySize: Int,
     val role: IamRole,
     val region: AwsRegion,
     val credentialProviderId: String
@@ -43,6 +44,7 @@ fun FunctionConfiguration.toDataClass(credentialProviderId: String, region: AwsR
     runtime = this.runtime(),
     envVariables = this.environment()?.variables(),
     timeout = this.timeout(),
+    memorySize = this.memorySize(),
     role = IamRole(this.role()),
     credentialProviderId = credentialProviderId,
     region = region
@@ -57,6 +59,7 @@ fun CreateFunctionResponse.toDataClass(credentialProviderId: String, region: Aws
     runtime = this.runtime(),
     envVariables = this.environment()?.variables(),
     timeout = this.timeout(),
+    memorySize = this.memorySize(),
     role = IamRole(this.role()),
     credentialProviderId = credentialProviderId,
     region = region
@@ -71,6 +74,7 @@ fun UpdateFunctionConfigurationResponse.toDataClass(credentialProviderId: String
     runtime = this.runtime(),
     envVariables = this.environment()?.variables(),
     timeout = this.timeout(),
+    memorySize = this.memorySize(),
     role = IamRole(this.role()),
     credentialProviderId = credentialProviderId,
     region = region

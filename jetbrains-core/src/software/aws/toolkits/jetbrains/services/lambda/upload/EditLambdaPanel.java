@@ -31,6 +31,7 @@ public final class EditLambdaPanel {
     @NotNull EnvironmentVariablesTextField envVars;
     @NotNull JTextField timeout;
     @NotNull JPanel deploySettings;
+    @NotNull JTextField memorySize;
 
     private final Project project;
 

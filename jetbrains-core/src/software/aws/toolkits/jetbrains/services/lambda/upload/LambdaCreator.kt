@@ -74,6 +74,7 @@ class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
                     .runtime(details.runtime)
                     .description(details.description)
                     .timeout(details.timeout)
+                    .memorySize(details.memorySize)
                     .code(code.build())
                     .environment {
                         it.variables(details.envVars)
@@ -143,6 +144,7 @@ class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
             .runtime(details.runtime)
             .description(details.description)
             .timeout(details.timeout)
+            .memorySize(details.memorySize)
             .environment {
                 it.variables(details.envVars)
             }

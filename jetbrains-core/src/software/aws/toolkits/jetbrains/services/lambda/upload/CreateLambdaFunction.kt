@@ -34,5 +34,6 @@ data class FunctionUploadDetails(
     val runtime: Runtime,
     val description: String?,
     val envVars: Map<String, String>,
-    val timeout: Int
+    val timeout: Int,
+    val memorySize: Int
 )

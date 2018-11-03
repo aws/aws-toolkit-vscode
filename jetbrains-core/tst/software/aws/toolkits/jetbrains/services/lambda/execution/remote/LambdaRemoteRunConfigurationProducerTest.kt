@@ -41,7 +41,8 @@ class LambdaRemoteRunConfigurationProducerTest {
             envVariables = emptyMap(),
             timeout = 60,
             credentialProviderId = credentialProviderId,
-            region = region
+            region = region,
+            memorySize = 128
         )
 
         runInEdtAndWait {

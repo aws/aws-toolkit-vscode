@@ -40,6 +40,10 @@ import java.util.function.Function
 import javax.swing.Action
 import javax.swing.JComponent
 
+private const val MIN_MEMORY = 128
+private const val MAX_MEMORY = 3008
+private const val MEMORY_INCREMENT = 64
+private const val DEFAULT_MEMORY = 128
 private val DEFAULT_TIMEOUT = TimeUnit.MINUTES.toSeconds(1).toInt()
 private val MAX_TIMEOUT = TimeUnit.MINUTES.toSeconds(15).toInt()
 private const val MIN_TIMEOUT = 1
@@ -53,6 +57,7 @@ class EditLambdaDialog(
     handlerName: String = "",
     envVariables: Map<String, String> = emptyMap(),
     timeout: Int = DEFAULT_TIMEOUT,
+    memorySize: Int = DEFAULT_MEMORY,
     role: IamRole? = null
 ) : DialogWrapper(project) {
 
@@ -66,6 +71,7 @@ class EditLambdaDialog(
                 handlerName = lambdaFunction.handler,
                 envVariables = lambdaFunction.envVariables ?: emptyMap(),
                 timeout = lambdaFunction.timeout,
+                memorySize = lambdaFunction.memorySize,
                 role = lambdaFunction.role
             )
 
@@ -91,6 +97,7 @@ class EditLambdaDialog(
 
         view.handler.text = handlerName
         view.timeout.text = timeout.toString()
+        view.memorySize.text = memorySize.toString()
         view.description.text = description
         view.envVars.envVars = envVariables
 
@@ -229,7 +236,8 @@ class EditLambdaDialog(
         runtime = view.runtime.selected()!!,
         description = view.description.text,
         envVars = view.envVars.envVars,
-        timeout = view.timeout.text.toInt()
+        timeout = view.timeout.text.toInt(),
+        memorySize = view.memorySize.text.toInt()
     )
 
     private inner class DeployLambdaAction : OkAction() {
@@ -277,6 +285,13 @@ class UploadToLambdaValidator {
                 return ValidationInfo(
                     message("lambda.upload_validation.timeout", MIN_TIMEOUT, MAX_TIMEOUT),
                     view.timeout
+                )
+            }
+        }
+        view.memorySize.text.toIntOrNull().let {
+            if (it == null || it < MIN_MEMORY || it > MAX_MEMORY || it.rem(MEMORY_INCREMENT) != 0) {
+                return ValidationInfo(
+                    message("lambda.upload_validation.memory", MIN_MEMORY, MAX_MEMORY, MEMORY_INCREMENT), view.memorySize
                 )
             }
         }

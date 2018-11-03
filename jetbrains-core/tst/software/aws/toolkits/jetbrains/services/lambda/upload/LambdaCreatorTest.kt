@@ -50,7 +50,8 @@ class LambdaCreatorTest {
         runtime = Runtime.JAVA8,
         description = "TestDescription",
         envVars = mapOf("TestKey" to "TestValue"),
-        timeout = 60
+        timeout = 60,
+        memorySize = 512
     )
 
     @Before
@@ -82,6 +83,7 @@ class LambdaCreatorTest {
                 .handler(functionDetails.handler)
                 .runtime(functionDetails.runtime)
                 .timeout(functionDetails.timeout)
+                .memorySize(functionDetails.memorySize)
                 .environment(EnvironmentResponse.builder().variables(functionDetails.envVars).build())
                 .role(functionDetails.iamRole.arn)
                 .build()
@@ -123,6 +125,7 @@ class LambdaCreatorTest {
         assertThat(createRequest.role()).isEqualTo(functionDetails.iamRole.arn)
         assertThat(createRequest.runtime()).isEqualTo(functionDetails.runtime)
         assertThat(createRequest.timeout()).isEqualTo(functionDetails.timeout)
+        assertThat(createRequest.memorySize()).isEqualTo(functionDetails.memorySize)
         assertThat(createRequest.code().s3Bucket()).isEqualTo(s3Bucket)
         assertThat(createRequest.code().s3Key()).isEqualTo("${functionDetails.name}.zip")
         assertThat(createRequest.code().s3ObjectVersion()).isEqualTo("VersionFoo")
@@ -155,6 +158,7 @@ class LambdaCreatorTest {
                 .handler(functionDetails.handler)
                 .runtime(functionDetails.runtime)
                 .timeout(functionDetails.timeout)
+                .memorySize(functionDetails.memorySize)
                 .environment(EnvironmentResponse.builder().variables(functionDetails.envVars).build())
                 .role(functionDetails.iamRole.arn)
                 .build()
@@ -196,6 +200,7 @@ class LambdaCreatorTest {
         assertThat(configurationRequest.role()).isEqualTo(functionDetails.iamRole.arn)
         assertThat(configurationRequest.runtime()).isEqualTo(functionDetails.runtime)
         assertThat(configurationRequest.timeout()).isEqualTo(functionDetails.timeout)
+        assertThat(configurationRequest.memorySize()).isEqualTo(functionDetails.memorySize)
 
         val codeRequest = updateCodeCaptor.firstValue
         assertThat(codeRequest.s3Bucket()).isEqualTo(s3Bucket)
@@ -215,6 +220,7 @@ class LambdaCreatorTest {
                 .handler(functionDetails.handler)
                 .runtime(functionDetails.runtime)
                 .timeout(functionDetails.timeout)
+                .memorySize(functionDetails.memorySize)
                 .environment(EnvironmentResponse.builder().variables(functionDetails.envVars).build())
                 .role(functionDetails.iamRole.arn)
                 .build()
@@ -232,5 +238,6 @@ class LambdaCreatorTest {
         assertThat(configurationRequest.role()).isEqualTo(functionDetails.iamRole.arn)
         assertThat(configurationRequest.runtime()).isEqualTo(functionDetails.runtime)
         assertThat(configurationRequest.timeout()).isEqualTo(functionDetails.timeout)
+        assertThat(configurationRequest.memorySize()).isEqualTo(functionDetails.memorySize)
     }
 }
