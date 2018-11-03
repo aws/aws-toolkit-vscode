@@ -15,7 +15,7 @@ import { DefaultSamCliLocationProvider } from './samCliLocator'
  * Represents a call to sam cli
  * Callers are expected to ensure SAM CLI is installed and has been configured
  */
-abstract class SamCliCommand<T> {
+export abstract class SamCliCommand<T> {
 
     protected readonly samCliLocation: string | undefined
 

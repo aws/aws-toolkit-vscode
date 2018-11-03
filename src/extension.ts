@@ -29,6 +29,7 @@ import * as SamCliDetection from './shared/sam/cli/samCliDetection'
 import { SamCliVersionValidator } from './shared/sam/cli/samCliVersionValidator'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { AWSStatusBar } from './shared/statusBar'
+import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { PromiseSharer } from './shared/utilities/promiseUtilities'
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -40,8 +41,14 @@ export async function activate(context: vscode.ExtensionContext) {
         nls.config()()
     }
 
+    const localize = nls.loadMessageBundle()
+
     ext.lambdaOutputChannel = vscode.window.createOutputChannel('AWS Lambda')
     ext.context = context
+
+    const toolkitOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel(
+        localize('AWS.channel.aws.toolkit', 'AWS Toolkit')
+    )
 
     await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
 
@@ -54,7 +61,7 @@ export async function activate(context: vscode.ExtensionContext) {
     ext.sdkClientBuilder = new AWSClientBuilder(awsContext)
     ext.statusBar = new AWSStatusBar(awsContext, context)
 
-    context.subscriptions.push(...activateCodeLensProviders())
+    context.subscriptions.push(...activateCodeLensProviders(toolkitOutputChannel))
 
     vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
     vscode.commands.registerCommand(
@@ -93,15 +100,19 @@ export async function activate(context: vscode.ExtensionContext) {
     await ext.statusBar.updateContext(undefined)
 
     await initializeSamCli()
+
+    await ExtensionDisposableFiles.initialize(context)
 }
 
 export function deactivate() {
 }
 
-function activateCodeLensProviders(): vscode.Disposable[] {
+function activateCodeLensProviders(
+    toolkitOutputChannel: vscode.OutputChannel
+): vscode.Disposable[] {
     const disposables: vscode.Disposable[] = []
 
-    TypescriptCodeLensProvider.initialize()
+    TypescriptCodeLensProvider.initialize(toolkitOutputChannel)
 
     disposables.push(
         vscode.languages.registerCodeLensProvider(
