@@ -9,10 +9,8 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
-import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.util.text.nullize
-import icons.AwsIcons
 import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.Runtime
@@ -28,6 +26,7 @@ import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsFor
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
+import software.aws.toolkits.jetbrains.services.s3.CreateS3BucketDialog
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.jetbrains.utils.ui.addAndSelectValue
@@ -105,16 +104,14 @@ class EditLambdaDialog(
         }
 
         view.createBucket.addActionListener {
-            val bucket = Messages.showInputDialog(
-                message("lambda.upload.create_s3_dialog.input"),
-                message("lambda.upload.create_s3_dialog.title"),
-                AwsIcons.Logos.S3_LARGE
+            val bucketDialog = CreateS3BucketDialog(
+                project = project,
+                s3Client = s3Client,
+                parent = view.content
             )
-            bucket?.run {
-                view.sourceBucket.addAndSelectValue {
-                    s3Client.createBucket { request -> request.bucket(bucket) }
-                    bucket
-                }
+
+            if (bucketDialog.showAndGet()) {
+                bucketDialog.bucketName().let { newBucket -> view.sourceBucket.addAndSelectValue { newBucket } }
             }
         }
 
