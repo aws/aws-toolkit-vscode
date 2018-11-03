@@ -61,5 +61,6 @@ class LambdaServiceNodeTest {
             .role("SomeRoleArn")
             .environment { it.variables(emptyMap()) }
             .timeout(60)
+            .memorySize(128)
             .build()
 }

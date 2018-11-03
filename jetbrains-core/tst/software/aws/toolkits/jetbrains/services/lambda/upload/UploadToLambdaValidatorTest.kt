@@ -51,6 +51,7 @@ class UploadToLambdaValidatorTest {
         view.sourceBucket.model = DefaultComboBoxModel(arrayOf(bucket))
         view.sourceBucket.selectedItem = bucket
         view.timeout.text = "30"
+        view.memorySize.text = "512"
 
         projectRule.fixture.openClass(
             """
@@ -126,6 +127,36 @@ class UploadToLambdaValidatorTest {
     fun timeoutMustBeWithinUpperBound() {
         view.timeout.text = Integer.MAX_VALUE.toString()
         assert(sut.validateSettings(view)).containsMessage("Timeout must be between")
+    }
+
+    @Test
+    fun memoryMustBeSpecified() {
+        view.memorySize.text = ""
+        assert(sut.validateSettings(view)).containsMessage("Memory must be between")
+    }
+
+    @Test
+    fun memoryMustBeNumeric() {
+        view.memorySize.text = "foo"
+        assert(sut.validateSettings(view)).containsMessage("Memory must be between")
+    }
+
+    @Test
+    fun memoryMustBeWithinLowerBound() {
+        view.memorySize.text = "0"
+        assert(sut.validateSettings(view)).containsMessage("Memory must be between")
+    }
+
+    @Test
+    fun memoryMustBeAnIncrementOf64() {
+        view.memorySize.text = "13"
+        assert(sut.validateSettings(view)).containsMessage("Memory must be between")
+    }
+
+    @Test
+    fun memoryMustBeWithinUpperBound() {
+        view.memorySize.text = Integer.MAX_VALUE.toString()
+        assert(sut.validateSettings(view)).containsMessage("Memory must be between")
     }
 
     @Test
