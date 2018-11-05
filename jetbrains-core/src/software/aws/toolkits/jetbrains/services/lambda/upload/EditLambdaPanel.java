@@ -10,6 +10,7 @@ import com.intellij.ui.IdeBorderFactory;
 import com.intellij.util.textCompletion.TextFieldWithCompletion;
 import javax.swing.JButton;
 import javax.swing.JPanel;
+import javax.swing.JSlider;
 import javax.swing.JTextField;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.lambda.model.Runtime;
@@ -32,6 +33,7 @@ public final class EditLambdaPanel {
     @NotNull JTextField timeout;
     @NotNull JPanel deploySettings;
     @NotNull JTextField memorySize;
+    @NotNull JSlider memorySlider;
 
     private final Project project;
 

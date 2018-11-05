@@ -35,6 +35,8 @@ import software.aws.toolkits.jetbrains.utils.ui.populateValues
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
 import java.awt.event.ActionEvent
+import java.awt.event.FocusAdapter
+import java.awt.event.FocusEvent
 import java.util.concurrent.TimeUnit
 import java.util.function.Function
 import javax.swing.Action
@@ -144,6 +146,22 @@ class EditLambdaDialog(
                 iamRoleDialog.iamRole?.let { newRole -> view.iamRole.addAndSelectValue { newRole } }
             }
         }
+
+        view.memorySlider.majorTickSpacing = MEMORY_INCREMENT * 5
+        view.memorySlider.minorTickSpacing = MEMORY_INCREMENT
+        view.memorySlider.maximum = MAX_MEMORY
+        view.memorySlider.minimum = MIN_MEMORY
+        view.memorySlider.paintLabels = true
+        view.memorySlider.snapToTicks = true
+        view.memorySlider.value = memorySize
+        view.memorySlider.addChangeListener {
+            view.memorySize.text = view.memorySlider.value.toString()
+        }
+        view.memorySize.addFocusListener(object : FocusAdapter() {
+            override fun focusLost(e: FocusEvent?) {
+                view.memorySlider.value = view.memorySize.text.toIntOrNull() ?: return
+            }
+        })
     }
 
     override fun createCenterPanel(): JComponent? = view.content
