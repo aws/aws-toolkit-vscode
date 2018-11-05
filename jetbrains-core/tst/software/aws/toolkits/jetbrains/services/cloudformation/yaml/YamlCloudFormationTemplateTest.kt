@@ -31,6 +31,29 @@ class YamlCloudFormationTemplateTest {
     }
 
     @Test
+    fun noResourcesReturnsEmpty() {
+        val template = yamlTemplate("""
+Description: "Some description"
+        """.trimIndent())
+        runInEdtAndWait {
+            assertThat(template.resources().toList()).isEmpty()
+        }
+    }
+
+    @Test
+    fun emptyResourcesReturnsEmpty() {
+        val template = yamlTemplate("""
+Description: "Some description"
+Resources:
+
+
+        """.trimIndent())
+        runInEdtAndWait {
+            assertThat(template.resources().toList()).isEmpty()
+        }
+    }
+
+    @Test
     fun canUpdateAScalarValue() {
         val updatedTemplate = runInEdtAndGet {
             val template = yamlTemplate()
@@ -81,8 +104,8 @@ Resources:
         assertThat(tempFile).hasContent(TEST_TEMPLATE)
     }
 
-    private fun yamlTemplate(): CloudFormationTemplate = runInEdtAndGet {
-        val file = projectRule.fixture.addFileToProject("template.yaml", TEST_TEMPLATE)
+    private fun yamlTemplate(template: String = TEST_TEMPLATE): CloudFormationTemplate = runInEdtAndGet {
+        val file = projectRule.fixture.addFileToProject("template.yaml", template)
         CloudFormationTemplate.parse(projectRule.project, file.virtualFile)
     }
 

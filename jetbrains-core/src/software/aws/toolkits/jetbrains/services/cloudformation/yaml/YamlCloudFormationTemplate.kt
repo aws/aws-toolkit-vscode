@@ -35,8 +35,8 @@ class YamlCloudFormationTemplate(template: YAMLFile) : CloudFormationTemplate {
     }
 
     override fun resources(): Sequence<Resource> {
-        val resourcesBlock = templateRoot.getKeyValueByKey("Resources") as YAMLKeyValue
-        val resources = resourcesBlock.value as YAMLMapping
+        val resourcesBlock = templateRoot.getKeyValueByKey("Resources") ?: return emptySequence()
+        val resources = PsiTreeUtil.findChildOfAnyType(resourcesBlock, YAMLMapping::class.java) ?: return emptySequence()
         return resources.keyValues.asSequence().mapNotNull { it.asResource() }
     }
 
