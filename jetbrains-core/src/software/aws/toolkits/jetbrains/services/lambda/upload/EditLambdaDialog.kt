@@ -291,6 +291,7 @@ class EditLambdaDialog(
             // to deploy so start validating that too
             validateDeploySettings = true
             super.doAction(e)
+            if (doValidateAll().isNotEmpty()) return
             deployLambda()
         }
     }
@@ -304,7 +305,10 @@ class EditLambdaDialog(
 
         override fun doAction(e: ActionEvent?) {
             super.doAction(e)
-            updateLambda()
+            // Only validate the lambda settings part
+            if (validator.validateSettings(view) == null) {
+                updateLambda()
+            }
         }
     }
 }
