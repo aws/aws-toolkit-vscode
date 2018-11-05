@@ -10,6 +10,7 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.options.SearchableConfigurable;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
+import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.labels.LinkLabel;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -25,6 +26,7 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
     private JPanel panel;
     private TextFieldWithBrowseButton samExecutablePath;
     private LinkLabel samHelp;
+    private JBCheckBox showAllHandlerGutterIcons;
 
     public AwsSettingsConfigurable(Project project) {
         this.project = project;
@@ -62,18 +64,21 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
     @Override
     public boolean isModified() {
         SamSettings samSettings = SamSettings.getInstance();
-        return isModified(samExecutablePath.getTextField(), samSettings.getExecutablePath());
+        return isModified(samExecutablePath.getTextField(), samSettings.getExecutablePath()) ||
+            isModified(showAllHandlerGutterIcons, samSettings.getShowAllHandlerGutterIcons());
     }
 
     @Override
     public void apply() {
         SamSettings samSettings = SamSettings.getInstance();
         samSettings.setExecutablePath(samExecutablePath.getText().trim());
+        samSettings.setShowAllHandlerGutterIcons(showAllHandlerGutterIcons.isSelected());
     }
 
     @Override
     public void reset() {
         SamSettings samSettings = SamSettings.getInstance();
         samExecutablePath.setText(samSettings.getExecutablePath());
+        showAllHandlerGutterIcons.setSelected(samSettings.getShowAllHandlerGutterIcons());
     }
 }

@@ -22,6 +22,7 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplateIndex.Companion.listFunctions
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
+import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.resources.message
 import javax.swing.Icon
 
@@ -73,6 +74,7 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
     }
 
     private fun shouldShowLineMarker(element: PsiElement, handler: String, runtime: Runtime): Boolean =
+        SamSettings.getInstance().showAllHandlerGutterIcons ||
         listFunctions(element.project).any { it.handler() == handler && it.runtime() == runtime.toString() } || // Handler defined in template is valid
         AwsResourceCache.getInstance(element.project).lambdaFunctions().any { it.handler == handler && it.runtime == runtime } // Handler in remote Lambda is valid
 

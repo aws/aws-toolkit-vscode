@@ -24,6 +24,12 @@ class SamSettings : PersistentStateComponent<SamConfiguration> {
             state.executablePath = value
         }
 
+    var showAllHandlerGutterIcons: Boolean
+        get() = state.showAllHandlerGutterIcons
+        set(value) {
+            state.showAllHandlerGutterIcons = value
+        }
+
     companion object {
         @JvmStatic
         fun getInstance(): SamSettings = ServiceManager.getService(SamSettings::class.java)
@@ -31,5 +37,6 @@ class SamSettings : PersistentStateComponent<SamConfiguration> {
 }
 
 data class SamConfiguration(
-    var executablePath: String = ""
+    var executablePath: String = "",
+    var showAllHandlerGutterIcons: Boolean = false
 )
