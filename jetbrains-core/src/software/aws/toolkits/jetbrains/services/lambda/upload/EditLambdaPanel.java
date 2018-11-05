@@ -34,6 +34,7 @@ public final class EditLambdaPanel {
     @NotNull JPanel deploySettings;
     @NotNull JTextField memorySize;
     @NotNull JSlider memorySlider;
+    @NotNull JSlider timeoutSlider;
 
     private final Project project;
 

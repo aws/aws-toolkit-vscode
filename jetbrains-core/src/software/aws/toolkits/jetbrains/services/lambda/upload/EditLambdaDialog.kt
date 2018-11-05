@@ -41,6 +41,8 @@ import java.util.concurrent.TimeUnit
 import java.util.function.Function
 import javax.swing.Action
 import javax.swing.JComponent
+import javax.swing.JSlider
+import javax.swing.JTextField
 
 private const val MIN_MEMORY = 128
 private const val MAX_MEMORY = 3008
@@ -147,19 +149,40 @@ class EditLambdaDialog(
             }
         }
 
-        view.memorySlider.majorTickSpacing = MEMORY_INCREMENT * 5
-        view.memorySlider.minorTickSpacing = MEMORY_INCREMENT
-        view.memorySlider.maximum = MAX_MEMORY
-        view.memorySlider.minimum = MIN_MEMORY
-        view.memorySlider.paintLabels = true
-        view.memorySlider.snapToTicks = true
-        view.memorySlider.value = memorySize
-        view.memorySlider.addChangeListener {
-            view.memorySize.text = view.memorySlider.value.toString()
+        bindSliderToTextBox(view.memorySlider, view.memorySize, MIN_MEMORY, MAX_MEMORY, MEMORY_INCREMENT, MEMORY_INCREMENT * 5, true)
+        bindSliderToTextBox(view.timeoutSlider, view.timeout, 0, MAX_TIMEOUT, 10, 100, false) {
+            if (view.timeoutSlider.value < MIN_TIMEOUT) {
+                MIN_TIMEOUT
+            } else {
+                view.timeoutSlider.value
+            }
         }
-        view.memorySize.addFocusListener(object : FocusAdapter() {
+    }
+
+    private fun bindSliderToTextBox(
+        slider: JSlider,
+        textbox: JTextField,
+        min: Int,
+        max: Int,
+        minorTick: Int,
+        majorTick: Int,
+        snap: Boolean,
+        validate: (Int) -> Int = { it }
+    ) {
+        slider.majorTickSpacing = majorTick
+        slider.minorTickSpacing = minorTick
+        slider.maximum = max
+        slider.minimum = min
+        slider.paintLabels = true
+        slider.snapToTicks = snap
+        slider.labelTable
+        slider.value = textbox.text.toInt()
+        slider.addChangeListener {
+            textbox.text = validate(slider.value).toString()
+        }
+        textbox.addFocusListener(object : FocusAdapter() {
             override fun focusLost(e: FocusEvent?) {
-                view.memorySlider.value = view.memorySize.text.toIntOrNull() ?: return
+                slider.value = textbox.text.toIntOrNull() ?: return
             }
         })
     }
