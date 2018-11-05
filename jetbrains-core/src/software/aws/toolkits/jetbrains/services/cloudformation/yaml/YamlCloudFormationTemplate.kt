@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.cloudformation.yaml
 
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
@@ -68,7 +69,7 @@ class YamlCloudFormationTemplate(template: YAMLFile) : CloudFormationTemplate {
         private fun loadYamlFile(project: Project, templateFile: VirtualFile): YAMLFile = PsiFileFactory.getInstance(project).createFileFromText(
             "template_temp.yaml",
             YAMLLanguage.INSTANCE,
-            VfsUtil.loadText(templateFile),
+            StringUtil.convertLineSeparators(VfsUtil.loadText(templateFile)),
             false,
             false,
             true
