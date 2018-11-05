@@ -14,10 +14,12 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiIdentifier
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
 import com.intellij.testFramework.runInEdtAndWait
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker
+import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.testutils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.testutils.rules.openClass
 import software.aws.toolkits.jetbrains.testutils.rules.openFile
@@ -26,9 +28,12 @@ class JavaLambdaLineMarkerTest {
     @Rule
     @JvmField
     val projectRule = JavaCodeInsightTestFixtureRule()
+    var previousShowAllGutters: Boolean = false
 
     @Before
     fun setUp() {
+        previousShowAllGutters = SamSettings.getInstance().showAllHandlerGutterIcons
+        SamSettings.getInstance().showAllHandlerGutterIcons = true
         projectRule.fixture.addClass(
             """
             package com.amazonaws.services.lambda.runtime;
@@ -72,6 +77,11 @@ Resources:
       Handler: com.example.UsefulUtils::upperCase
       Runtime: java8
 """)
+    }
+
+    @After
+    fun tearDown() {
+        SamSettings.getInstance().showAllHandlerGutterIcons = previousShowAllGutters
     }
 
     @Test
@@ -186,6 +196,25 @@ Resources:
 
                  private String upperCase(String input) {
                      return input.toUpperCase();
+                 }
+             }
+             """
+        )
+
+        findAndAssertMarks(fixture) { assert(it).isEmpty() }
+    }
+
+    @Test
+    fun javaMainMethodIsNotMarked() {
+        val fixture = projectRule.fixture
+
+        fixture.openClass(
+            """
+             package com.example;
+
+             public class UsefulUtils {
+
+                 public static void main(String[] args) {
                  }
              }
              """

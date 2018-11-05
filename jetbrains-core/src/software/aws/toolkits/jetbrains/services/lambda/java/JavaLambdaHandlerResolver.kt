@@ -178,6 +178,7 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
 
     private fun PsiMethod.isValidHandler(parentClass: PsiClass, file: VirtualFile) = this.isPublic &&
         this.hasRequiredParameters() &&
+        (!this.isStatic || this.name != "main") &&
         (this.isStatic || parentClass.canBeInstantiatedByLambda()) &&
         !(parentClass.implementsLambdaHandlerInterface(file) && this.name == HANDLER_NAME)
 
