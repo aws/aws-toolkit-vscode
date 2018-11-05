@@ -20,7 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class AwsSettingsConfigurable implements SearchableConfigurable {
-    private static final String SAM_HELP_LINK = "https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html";
+    private static final String SAM_HELP_LINK = message("lambda.sam.cli.install_url");
 
     private final Project project;
     private JPanel panel;
