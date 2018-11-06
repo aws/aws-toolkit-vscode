@@ -205,6 +205,32 @@ Resources:
     }
 
     @Test
+    fun constructorAreNotMarked() {
+        val fixture = projectRule.fixture
+
+        fixture.openClass(
+                """
+             package com.example;
+
+             public class UsefulUtils {
+
+                 public UsefulUtils() {}
+
+                 public UsefulUtils(String abc) {
+                     System.out.println(abc);
+                 }
+
+                 private String upperCase(String input) {
+                     return input.toUpperCase();
+                 }
+             }
+             """
+        )
+
+        findAndAssertMarks(fixture) { assert(it).isEmpty() }
+    }
+
+    @Test
     fun javaMainMethodIsNotMarked() {
         val fixture = projectRule.fixture
 
