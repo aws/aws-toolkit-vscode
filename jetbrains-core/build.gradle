@@ -49,5 +49,6 @@ dependencies {
     compile("software.amazon.awssdk:iam:$awsSdkVersion") {
         exclude group: 'org.slf4j'
     }
+    testCompile project(path: ":core", configuration: 'testArtifacts')
     testCompile project(":jetbrains-testutils")
 }

@@ -16,6 +16,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
+import software.aws.toolkits.core.rules.EnvironmentVariableHelper
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.testutils.rules.JavaCodeInsightTestFixtureRule
@@ -26,9 +27,13 @@ class SamRunConfigurationTest {
     @JvmField
     val projectRule = JavaCodeInsightTestFixtureRule()
 
+    @Rule
+    @JvmField
+    val envHelper = EnvironmentVariableHelper()
+
     @Before
     fun setUp() {
-        SamSettings.getInstance().executablePath = "sam"
+        SamSettings.getInstance().savedExecutablePath = "sam"
         MockCredentialsManager.getInstance().reset()
 
         projectRule.fixture.addClass(
@@ -46,7 +51,8 @@ class SamRunConfigurationTest {
 
     @Test
     fun samIsNotSet() {
-        SamSettings.getInstance().executablePath = ""
+        SamSettings.getInstance().savedExecutablePath = null
+        envHelper.remove("PATH")
 
         runInEdtAndWait {
             val runConfiguration = createRunConfiguration(project = projectRule.project)

@@ -9,3 +9,16 @@ dependencies {
     compile("software.amazon.awssdk:sts:$awsSdkVersion")
     testCompile("software.amazon.awssdk:service-test-utils:$awsSdkVersion")
 }
+
+configurations {
+    testArtifacts
+}
+
+task testJar (type: Jar) {
+    baseName = "${project.name}-test"
+    from sourceSets.test.output
+}
+
+artifacts {
+    testArtifacts testJar
+}

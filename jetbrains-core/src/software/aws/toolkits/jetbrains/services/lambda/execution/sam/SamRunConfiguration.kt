@@ -148,7 +148,7 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
         var logicalFunctionName: String? = null
     ) : MutableLambdaRunSettings(input, inputIsFile) {
         fun validateAndCreateImmutable(project: Project): SamRunSettings {
-            if (SamSettings.getInstance().executablePath.isEmpty()) {
+            if (SamSettings.getInstance().executablePath.isNullOrEmpty()) {
                 throw RuntimeConfigurationError(message("lambda.run_configuration.sam.not_specified")) {
                     ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsConfigurable::class.java)
                 }

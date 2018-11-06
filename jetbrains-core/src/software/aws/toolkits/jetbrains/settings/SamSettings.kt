@@ -18,10 +18,24 @@ class SamSettings : PersistentStateComponent<SamConfiguration> {
         this.state = state
     }
 
-    var executablePath: String
-        get() = state.executablePath
+    /**
+     * Returns the path to the SAM CLI executable by first using the manual value,
+     * if it is not set attempts to auto-detect it
+     */
+    val executablePath: String?
+        get() = if (state.savedExecutablePath.isNullOrEmpty()) {
+            SamExecutableDetector().detect()
+        } else {
+            state.savedExecutablePath
+        }
+
+    /**
+     * Exposes the saved (aka manually set) path to SAM CLI executable
+     */
+    var savedExecutablePath: String?
+        get() = state.savedExecutablePath
         set(value) {
-            state.executablePath = value
+            state.savedExecutablePath = value
         }
 
     companion object {
@@ -31,5 +45,5 @@ class SamSettings : PersistentStateComponent<SamConfiguration> {
 }
 
 data class SamConfiguration(
-    var executablePath: String = ""
+    var savedExecutablePath: String? = null
 )
