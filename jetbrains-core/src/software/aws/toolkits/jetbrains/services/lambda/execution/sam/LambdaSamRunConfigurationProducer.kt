@@ -12,6 +12,7 @@ import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiElement
 import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLPsiElement
+import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
@@ -68,6 +69,7 @@ class LambdaSamRunConfigurationProducer : RunConfigurationProducer<SamRunConfigu
         configuration.configure(
             templateFile = file,
             logicalFunctionName = function.logicalName,
+            runtime = Runtime.fromValue(function.runtime()),
             credentialsProviderId = settings.first,
             region = settings.second
         )
