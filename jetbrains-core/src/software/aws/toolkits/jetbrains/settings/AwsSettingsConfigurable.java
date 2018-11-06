@@ -64,21 +64,25 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
     @Override
     public boolean isModified() {
         SamSettings samSettings = SamSettings.getInstance();
+        LambdaSettings lambdaSettings = LambdaSettings.getInstance(project);
         return isModified(samExecutablePath.getTextField(), samSettings.getExecutablePath()) ||
-            isModified(showAllHandlerGutterIcons, samSettings.getShowAllHandlerGutterIcons());
+            isModified(showAllHandlerGutterIcons, lambdaSettings.getShowAllHandlerGutterIcons());
     }
 
     @Override
     public void apply() {
         SamSettings samSettings = SamSettings.getInstance();
+        LambdaSettings lambdaSettings = LambdaSettings.getInstance(project);
+
         samSettings.setExecutablePath(samExecutablePath.getText().trim());
-        samSettings.setShowAllHandlerGutterIcons(showAllHandlerGutterIcons.isSelected());
+        lambdaSettings.setShowAllHandlerGutterIcons(showAllHandlerGutterIcons.isSelected());
     }
 
     @Override
     public void reset() {
         SamSettings samSettings = SamSettings.getInstance();
+        LambdaSettings lambdaSettings = LambdaSettings.getInstance(project);
         samExecutablePath.setText(samSettings.getExecutablePath());
-        showAllHandlerGutterIcons.setSelected(samSettings.getShowAllHandlerGutterIcons());
+        showAllHandlerGutterIcons.setSelected(lambdaSettings.getShowAllHandlerGutterIcons());
     }
 }

@@ -59,6 +59,7 @@
                             serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultCredentialManager"
                             testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.SamSettings"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.settings.LambdaSettings"/>
 
         <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager"
                         serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultProjectAccountSettingsManager"
