@@ -8,6 +8,7 @@ import icons.AwsIcons
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.DeleteResourceAction
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerPageableNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerResourceNode
@@ -39,5 +40,12 @@ class ServerlessApplicationsNode(project: Project) : AwsExplorerPageableNode<Str
     }
 }
 
-class ServerlessApplicationNode(project: Project, stackName: String) :
+class ServerlessApplicationNode(project: Project, val stackName: String) :
     AwsExplorerResourceNode<String>(project, LambdaClient.SERVICE_NAME, "application", stackName, AwsIcons.Resources.LAMBDA_FUNCTION)
+
+class DeleteApplicationAction : DeleteResourceAction<ServerlessApplicationNode>() {
+    override fun performDelete(selected: ServerlessApplicationNode) {
+        val client: CloudFormationClient = AwsClientManager.getInstance(selected.nodeProject).getClient()
+        client.deleteStack { it.stackName(selected.stackName) }
+    }
+}

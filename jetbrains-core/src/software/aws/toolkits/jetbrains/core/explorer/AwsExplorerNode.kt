@@ -20,7 +20,7 @@ import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.MutableTreeNode
 
-abstract class AwsExplorerNode<T>(protected val nodeProject: Project, value: T, private val awsIcon: Icon?) : AbstractTreeNode<T>(nodeProject, value) {
+abstract class AwsExplorerNode<T>(val nodeProject: Project, value: T, private val awsIcon: Icon?) : AbstractTreeNode<T>(nodeProject, value) {
 
     override fun update(presentation: PresentationData?) {
         presentation?.setIcon(awsIcon)
