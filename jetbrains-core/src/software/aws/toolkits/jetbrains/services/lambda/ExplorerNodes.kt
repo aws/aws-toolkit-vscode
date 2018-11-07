@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.lambda
 
-import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.project.Project
 import com.intellij.psi.NavigatablePsiElement
 import icons.AwsIcons
@@ -13,13 +12,23 @@ import software.amazon.awssdk.services.lambda.model.ListFunctionsRequest
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerNode
+import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerPageableNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsTruncatedResultNode
+import software.aws.toolkits.jetbrains.services.lambda.applications.ServerlessApplicationsNode
 import software.aws.toolkits.resources.message
 
 class LambdaServiceNode(project: Project) : AwsExplorerServiceRootNode(project, message("lambda.service_name")) {
     override fun serviceName() = LambdaClient.SERVICE_NAME
+
+    override fun loadResources(paginationToken: String?): Collection<AwsExplorerNode<*>> = listOf(
+        ServerlessApplicationsNode(nodeProject),
+        LambdaFunctionsNode(nodeProject)
+    )
+}
+
+class LambdaFunctionsNode(project: Project) : AwsExplorerPageableNode<String>(project, message("lambda.functions"), null) {
 
     private val client: LambdaClient = AwsClientManager.getInstance(project).getClient()
 
@@ -37,23 +46,17 @@ class LambdaServiceNode(project: Project) : AwsExplorerServiceRootNode(project, 
         return resources
     }
 
-    private fun mapResourceToNode(resource: FunctionConfiguration) =
-        LambdaFunctionNode(project!!, client, this, resource)
+    private fun mapResourceToNode(resource: FunctionConfiguration) = LambdaFunctionNode(project!!, client, resource)
 }
 
 class LambdaFunctionNode(
     project: Project,
     val client: LambdaClient,
-    serviceNode: LambdaServiceNode,
     functionConfiguration: FunctionConfiguration
-) : AwsExplorerResourceNode<FunctionConfiguration>(project, serviceNode, functionConfiguration, AwsIcons.Resources.LAMBDA_FUNCTION) {
+) : AwsExplorerResourceNode<FunctionConfiguration>(project, LambdaClient.SERVICE_NAME, "function", functionConfiguration, AwsIcons.Resources.LAMBDA_FUNCTION) {
     private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
 
     val function = functionConfiguration.toDataClass(accountSettingsManager.activeCredentialProvider.id, accountSettingsManager.activeRegion)
-
-    override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
-
-    override fun resourceType(): String = "function"
 
     override fun toString(): String = functionName()
 

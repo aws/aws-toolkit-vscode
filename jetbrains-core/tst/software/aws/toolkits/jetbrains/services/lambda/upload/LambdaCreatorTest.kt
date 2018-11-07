@@ -9,7 +9,6 @@ import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.LambdaClient
@@ -24,7 +23,7 @@ import software.amazon.awssdk.services.lambda.model.UpdateFunctionConfigurationR
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
-import software.aws.toolkits.jetbrains.core.MockClientManager
+import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
@@ -41,7 +40,9 @@ class LambdaCreatorTest {
     @JvmField
     val projectRule = JavaCodeInsightTestFixtureRule()
 
-    private lateinit var mockClientManager: MockClientManager
+    @Rule
+    @JvmField
+    val mockClientManager = MockClientManagerRule { projectRule.project }
 
     private val functionDetails = FunctionUploadDetails(
         name = "TestFunction",
@@ -53,12 +54,6 @@ class LambdaCreatorTest {
         timeout = 60,
         memorySize = 512
     )
-
-    @Before
-    fun setUp() {
-        mockClientManager = MockClientManager.getInstance(projectRule.project)
-        mockClientManager.reset()
-    }
 
     @Test
     fun testCreation() {
@@ -109,7 +104,7 @@ class LambdaCreatorTest {
             """
         ).containingFile
 
-        val lambdaCreator = LambdaCreatorFactory.create(mockClientManager, packager)
+        val lambdaCreator = LambdaCreatorFactory.create(mockClientManager.manager(), packager)
         lambdaCreator.createLambda(projectRule.module, psiFile, functionDetails, s3Bucket).toCompletableFuture()
             .get(5, TimeUnit.SECONDS)
 
@@ -184,7 +179,7 @@ class LambdaCreatorTest {
             """
         ).containingFile
 
-        val lambdaCreator = LambdaCreatorFactory.create(mockClientManager, packager)
+        val lambdaCreator = LambdaCreatorFactory.create(mockClientManager.manager(), packager)
         lambdaCreator.updateLambda(projectRule.module, psiFile, functionDetails, s3Bucket).toCompletableFuture()
             .get(5, TimeUnit.SECONDS)
 

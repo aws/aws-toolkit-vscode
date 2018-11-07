@@ -20,8 +20,7 @@ import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.MutableTreeNode
 
-abstract class AwsExplorerNode<T>(project: Project, value: T, private val awsIcon: Icon?) :
-        AbstractTreeNode<T>(project, value) {
+abstract class AwsExplorerNode<T>(protected val nodeProject: Project, value: T, private val awsIcon: Icon?) : AbstractTreeNode<T>(nodeProject, value) {
 
     override fun update(presentation: PresentationData?) {
         presentation?.setIcon(awsIcon)
@@ -32,8 +31,7 @@ abstract class AwsExplorerNode<T>(project: Project, value: T, private val awsIco
     open fun onDoubleClick(model: DefaultTreeModel, selectedElement: DefaultMutableTreeNode) {}
 }
 
-class AwsExplorerRootNode(project: Project) :
-        AwsExplorerNode<String>(project, "ROOT", AwsIcons.Logos.AWS) {
+class AwsExplorerRootNode(project: Project) : AwsExplorerNode<String>(project, "ROOT", AwsIcons.Logos.AWS) {
 
     private val regionProvider = AwsRegionProvider.getInstance()
     private val settings = ProjectAccountSettingsManager.getInstance(project)
@@ -50,8 +48,7 @@ class AwsExplorerRootNode(project: Project) :
     }
 }
 
-abstract class AwsExplorerServiceRootNode(project: Project, value: String) :
-        AwsExplorerNode<String>(project, value, null) {
+abstract class AwsExplorerPageableNode<T>(project: Project, value: T, icon: Icon?) : AwsExplorerNode<T>(project, value, icon) {
     private val childNodes: MutableList<AwsExplorerNode<*>> by lazy {
         val initialList = mutableListOf<AwsExplorerNode<*>>()
 
@@ -64,9 +61,7 @@ abstract class AwsExplorerServiceRootNode(project: Project, value: String) :
         initialList
     }
 
-    override fun getChildren(): MutableList<AwsExplorerNode<*>> = childNodes
-
-    fun loadData(paginationToken: String? = null): Collection<AwsExplorerNode<*>> = try {
+    internal fun loadData(paginationToken: String? = null): Collection<AwsExplorerNode<*>> = try {
         loadResources(paginationToken)
     } catch (e: Exception) {
         LOG.warn("Failed to load explorer nodes", e)
@@ -74,27 +69,32 @@ abstract class AwsExplorerServiceRootNode(project: Project, value: String) :
         listOf(AwsExplorerErrorNode(project!!, e))
     }
 
-    abstract fun serviceName(): String
-
     protected abstract fun loadResources(paginationToken: String? = null): Collection<AwsExplorerNode<*>>
 
+    final override fun getChildren(): MutableList<AwsExplorerNode<*>> = childNodes
+
     private companion object {
-        private val LOG = getLogger<AwsExplorerServiceRootNode>()
+        private val LOG = getLogger<AwsExplorerPageableNode<*>>()
     }
+}
+
+abstract class AwsExplorerServiceRootNode(project: Project, value: String) : AwsExplorerPageableNode<String>(project, value, null) {
+    abstract fun serviceName(): String
 }
 
 abstract class AwsExplorerResourceNode<T>(
     project: Project,
-    private val serviceNode: AwsExplorerServiceRootNode,
+    val serviceName: String,
+    val resourceType: String,
     value: T,
     awsIcon: Icon
 ) : AwsExplorerNode<T>(project, value, awsIcon) {
-    fun serviceName() = serviceNode.serviceName()
+    final override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
-    abstract fun resourceType(): String
+    override fun isAlwaysLeaf() = true
 }
 
-class AwsTruncatedResultNode(private val parentNode: AwsExplorerServiceRootNode, private val paginationToken: String) :
+class AwsTruncatedResultNode(private val parentNode: AwsExplorerPageableNode<*>, private val paginationToken: String) :
         AwsExplorerNode<String>(parentNode.project!!, MESSAGE, null) {
 
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
@@ -153,6 +153,8 @@ class AwsTruncatedResultNode(private val parentNode: AwsExplorerServiceRootNode,
         }
     }
 
+    override fun isAlwaysLeaf() = true
+
     companion object {
         val MESSAGE get() = message("explorer.results_truncated")
     }
@@ -166,6 +168,8 @@ class AwsExplorerLoadingNode(project: Project) :
     override fun update(presentation: PresentationData?) {
         presentation?.addText(value, SimpleTextAttributes.GRAYED_ATTRIBUTES)
     }
+
+    override fun isAlwaysLeaf() = true
 }
 
 class AwsExplorerErrorNode(project: Project, exception: Exception) :
@@ -182,6 +186,8 @@ class AwsExplorerErrorNode(project: Project, exception: Exception) :
         }
     }
 
+    override fun isAlwaysLeaf() = true
+
     companion object {
         val MSG get() = message("explorer.error_loading_resources")
     }
@@ -194,4 +200,6 @@ class AwsExplorerEmptyNode(project: Project) : AwsExplorerNode<String>(project, 
         super.update(presentation)
         presentation?.addText(toString(), SimpleTextAttributes.GRAYED_ATTRIBUTES)
     }
+
+    override fun isAlwaysLeaf() = true
 }

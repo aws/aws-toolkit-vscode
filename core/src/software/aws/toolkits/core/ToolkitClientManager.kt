@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.core
 
+import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.awscore.client.builder.AwsDefaultClientBuilder
 import software.amazon.awssdk.core.SdkClient
 import software.amazon.awssdk.core.client.config.SdkAdvancedClientOption
@@ -78,6 +79,12 @@ abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
     protected fun shutdown() {
         cachedClients.values.mapNotNull { it as? AutoCloseable }.forEach { it.close() }
     }
+
+    /**
+     * Used by [software.aws.toolkits.jetbrains.core.MockClientManager]
+     */
+    @TestOnly
+    protected fun clear() = cachedClients.clear()
 
     /**
      * Creates a new client for the requested [AwsClientKey]

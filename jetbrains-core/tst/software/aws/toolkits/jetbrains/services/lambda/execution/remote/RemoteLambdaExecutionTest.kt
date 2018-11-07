@@ -28,7 +28,7 @@ import software.amazon.awssdk.services.lambda.model.InvokeResponse
 import software.amazon.awssdk.services.lambda.model.LambdaException
 import software.amazon.awssdk.services.lambda.model.LogType
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
-import software.aws.toolkits.jetbrains.core.MockClientManager
+import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
@@ -44,12 +44,12 @@ class RemoteLambdaExecutionTest {
     @JvmField
     val projectRule = HeavyJavaCodeInsightTestFixtureRule()
 
-    private lateinit var mockClientManager: MockClientManager
+    @Rule
+    @JvmField
+    val mockClientManager = MockClientManagerRule { projectRule.project }
 
     @Before
     fun setUp() {
-        mockClientManager = MockClientManager.getInstance(projectRule.project)
-
         createMockCredentials()
     }
 

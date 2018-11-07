@@ -28,11 +28,13 @@ class DelegateSdkConsumers : Answer<Any> {
     }
 }
 
-inline fun <reified T : Any> delegateMock(stubbing: KStubbing<T>.(T) -> Unit): T = Mockito.mock(
+inline fun <reified T : Any> delegateMock(): T = Mockito.mock(
     T::class.java,
     withSettings(
         defaultAnswer = DelegateSdkConsumers()
     )
-).apply {
+)
+
+inline fun <reified T : Any> delegateMock(stubbing: KStubbing<T>.(T) -> Unit): T = delegateMock<T>().apply {
     KStubbing(this).stubbing(this)
 }

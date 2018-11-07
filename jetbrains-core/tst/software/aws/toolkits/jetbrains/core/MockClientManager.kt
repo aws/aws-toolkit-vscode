@@ -5,11 +5,13 @@ package software.aws.toolkits.jetbrains.core
 
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
+import com.intellij.testFramework.ProjectRule
+import org.junit.rules.ExternalResource
 import software.amazon.awssdk.core.SdkClient
 import software.aws.toolkits.core.ToolkitClientManager
 import kotlin.reflect.KClass
 
-class MockClientManager(private val project: Project) : AwsClientManager(project, AwsSdkClient.getInstance()) {
+class MockClientManager(project: Project) : AwsClientManager(project, AwsSdkClient.getInstance()) {
     private val mockClients = mutableMapOf<KClass<out SdkClient>, SdkClient>()
 
     @Suppress("UNCHECKED_CAST")
@@ -25,6 +27,7 @@ class MockClientManager(private val project: Project) : AwsClientManager(project
     }
 
     fun reset() {
+        super.clear()
         mockClients.clear()
     }
 
@@ -32,4 +35,22 @@ class MockClientManager(private val project: Project) : AwsClientManager(project
         @JvmStatic
         fun getInstance(project: Project): MockClientManager = ServiceManager.getService(project, ToolkitClientManager::class.java) as MockClientManager
     }
+}
+
+class MockClientManagerRule(private val project: () -> Project) : ExternalResource() {
+    constructor(projectRule: ProjectRule) : this({ projectRule.project })
+
+    private lateinit var mockClientManager: MockClientManager
+
+    override fun before() {
+        mockClientManager = MockClientManager.getInstance(project())
+    }
+
+    override fun after() {
+        mockClientManager.reset()
+    }
+
+    fun manager() = mockClientManager
+
+    fun <T : SdkClient> register(clazz: KClass<out T>, sdkClient: T): T = mockClientManager.register(clazz, sdkClient).let { sdkClient }
 }

@@ -119,7 +119,7 @@ class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, tru
                     is AwsExplorerServiceRootNode ->
                         "aws.toolkit.explorer.${explorerNode.serviceName()}"
                     is AwsExplorerResourceNode<*> ->
-                        "aws.toolkit.explorer.${explorerNode.serviceName()}.${explorerNode.resourceType()}"
+                        "aws.toolkit.explorer.${explorerNode.serviceName}.${explorerNode.resourceType}"
                     else ->
                         return
                 }

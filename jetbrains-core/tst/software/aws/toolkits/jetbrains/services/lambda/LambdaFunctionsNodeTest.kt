@@ -6,10 +6,8 @@ package software.aws.toolkits.jetbrains.services.lambda
 import com.intellij.testFramework.ProjectRule
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.reset
 import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.LambdaClient
@@ -17,24 +15,19 @@ import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.amazon.awssdk.services.lambda.model.ListFunctionsRequest
 import software.amazon.awssdk.services.lambda.model.ListFunctionsResponse
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.core.MockClientManager
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerErrorNode
+import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 
-class LambdaServiceNodeTest {
+class LambdaFunctionsNodeTest {
 
     @JvmField
     @Rule
     val projectRule = ProjectRule()
 
-    private val mockClient: LambdaClient = mock()
+    @JvmField
+    @Rule
+    val mockClientManagerRule = MockClientManagerRule(projectRule)
 
-    @Before
-    fun setup() {
-        val mockClientManager = AwsClientManager.getInstance(projectRule.project) as MockClientManager
-        reset(mockClient)
-        mockClientManager.register(LambdaClient::class, mockClient)
-    }
+    private val mockClient: LambdaClient by lazy { mockClientManagerRule.register(LambdaClient::class, mock()) }
 
     @Test
     fun lambdaFunctionsAreSortedAlphabetically() {
@@ -45,9 +38,9 @@ class LambdaServiceNodeTest {
                 functionConfiguration("AEF"))
         }.build())
 
-        val children = LambdaServiceNode(projectRule.project).children
+        val children = LambdaFunctionsNode(projectRule.project).children
 
-        assertThat(children.filterIsInstance<AwsExplorerErrorNode>()).isEmpty()
+        assertThat(children).allMatch { it is LambdaFunctionNode }
         assertThat(children.filterIsInstance<LambdaFunctionNode>().map { it.functionName() }).containsExactly("abc", "AEF", "bcd", "zzz")
     }
 
