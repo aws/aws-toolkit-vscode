@@ -112,6 +112,46 @@ Resources:
     }
 
     @Test
+    fun listResources_nullType() {
+        val fixture = projectRule.fixture
+
+        fixture.openFile("template.yaml", """
+Resources:
+  ServerlessFunction:
+    Properties:
+      CodeUri: target/HelloWorld-1.0.jar
+      Handler: bar
+      Runtime: java8
+""")
+
+        runInEdtAndWait {
+            val resources = CloudFormationTemplateIndex.listResources(projectRule.project)
+            assertThat(resources).isEmpty()
+        }
+    }
+
+    @Test
+    fun nullHandlerAndRuntime() {
+        val fixture = projectRule.fixture
+
+        fixture.openFile("template.yaml", """
+Resources:
+  ServerlessFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: target/HelloWorld-1.0.jar
+""")
+
+        runInEdtAndWait {
+            val functions = CloudFormationTemplateIndex.listFunctions(projectRule.project)
+            assertThat(functions).hasSize(1)
+            val indexedFunction = functions.toList()[0]
+            assertThat(indexedFunction.handler()).isNull()
+            assertThat(indexedFunction.runtime()).isNull()
+        }
+    }
+
+    @Test
     fun emptyHandlerAndRuntime() {
         val fixture = projectRule.fixture
 
