@@ -34,7 +34,7 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
 
     @Before
     fun setUp() {
-        SamSettings.getInstance().executablePath = System.getenv().getOrDefault("SAM_CLI_EXEC", "sam")
+        SamSettings.getInstance().savedExecutablePath = System.getenv().getOrDefault("SAM_CLI_EXEC", "sam")
 
         val fixture = projectRule.fixture
         fixture.addFileToProject(

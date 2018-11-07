@@ -137,7 +137,8 @@ subprojects {
         kotlinOptions.jvmTarget = "1.8"
     }
 
-    build.dependsOn(integrationTestClasses)
+    // Force us to compile the integration tests even during check even though we don't run them
+    check.dependsOn(integrationTestClasses)
 
     // Remove the tasks added in by gradle-intellij-plugin so that we don't publish/verify multiple times
     project.afterEvaluate {

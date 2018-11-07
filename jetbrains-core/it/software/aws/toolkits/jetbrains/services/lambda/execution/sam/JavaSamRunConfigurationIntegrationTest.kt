@@ -31,7 +31,7 @@ class JavaSamRunConfigurationIntegrationTest {
 
     @Before
     fun setUp() {
-        SamSettings.getInstance().executablePath = System.getenv().getOrDefault("SAM_CLI_EXEC", "sam")
+        SamSettings.getInstance().savedExecutablePath = System.getenv().getOrDefault("SAM_CLI_EXEC", "sam")
 
         val fixture = projectRule.fixture
         val module = fixture.addModule("main")
