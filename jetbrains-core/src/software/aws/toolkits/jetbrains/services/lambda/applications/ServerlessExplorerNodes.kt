@@ -43,7 +43,7 @@ class ServerlessApplicationsNode(project: Project) : AwsExplorerPageableNode<Str
 class ServerlessApplicationNode(project: Project, val stackName: String) :
     AwsExplorerResourceNode<String>(project, LambdaClient.SERVICE_NAME, "application", stackName, AwsIcons.Resources.LAMBDA_FUNCTION)
 
-class DeleteApplicationAction : DeleteResourceAction<ServerlessApplicationNode>() {
+class DeleteApplicationAction : DeleteResourceAction<ServerlessApplicationNode>(message("lambda.application.delete.action")) {
     override fun performDelete(selected: ServerlessApplicationNode) {
         val client: CloudFormationClient = AwsClientManager.getInstance(selected.nodeProject).getClient()
         client.deleteStack { it.stackName(selected.stackName) }

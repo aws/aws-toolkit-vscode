@@ -5,8 +5,9 @@ package software.aws.toolkits.jetbrains.services.lambda.actions
 
 import software.aws.toolkits.jetbrains.core.DeleteResourceAction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
+import software.aws.toolkits.resources.message
 
-class DeleteFunctionAction : DeleteResourceAction<LambdaFunctionNode>() {
+class DeleteFunctionAction : DeleteResourceAction<LambdaFunctionNode>(message("lambda.function.delete.action")) {
     override fun performDelete(selected: LambdaFunctionNode) {
         selected.client.deleteFunction { it.functionName(selected.functionName()) }
     }

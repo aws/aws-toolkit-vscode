@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core
 
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.DumbAware
@@ -14,7 +15,8 @@ import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 
-abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>> : SingleResourceNodeAction<T>(), DumbAware {
+abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>>(text: String) : SingleResourceNodeAction<T>(text, icon = AllIcons.Actions.Cancel),
+    DumbAware {
     final override fun actionPerformed(selected: T, e: AnActionEvent) {
         val resourceName = selected.toString()
         ApplicationManager.getApplication().invokeLater {

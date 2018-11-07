@@ -99,8 +99,7 @@
 
     <actions>
         <group id="aws.toolkit.explorer.lambda" popup="true" compact="false">
-            <action id="lambda.function.create"
-                    class="software.aws.toolkits.jetbrains.services.lambda.upload.CreateLambdaFunction"/>
+            <action id="lambda.function.create" class="software.aws.toolkits.jetbrains.services.lambda.upload.CreateLambdaFunction"/>
         </group>
         <group id="aws.toolkit.explorer.lambda.function" popup="true" compact="false">
             <reference ref="RunContextGroupInner"/>
@@ -109,18 +108,13 @@
                     class="software.aws.toolkits.jetbrains.services.lambda.actions.GoToHandlerAction"/>
             <separator/>
             <action id="lambda.function.edit"
-                    class="software.aws.toolkits.jetbrains.services.lambda.actions.EditFunctionAction"
-                    text="Edit Function"/>
+                    class="software.aws.toolkits.jetbrains.services.lambda.actions.EditFunctionAction"/>
             <action id="lambda.function.delete"
-                    class="software.aws.toolkits.jetbrains.services.lambda.actions.DeleteFunctionAction"
-                    text="Delete Function"
-                    icon="AllIcons.Actions.Cancel"/>
+                    class="software.aws.toolkits.jetbrains.services.lambda.actions.DeleteFunctionAction"/>
         </group>
         <group id="aws.toolkit.explorer.lambda.application" popup="true" compact="false">
             <action id="lambda.application.delete"
-                    class="software.aws.toolkits.jetbrains.services.lambda.applications.DeleteApplicationAction"
-                    text="Delete Application"
-                    icon="AllIcons.Actions.Cancel"/>
+                    class="software.aws.toolkits.jetbrains.services.lambda.applications.DeleteApplicationAction"/>
         </group>
         <action class="software.aws.toolkits.jetbrains.core.SettingsSelectorAction" id="aws.settings.selector" icon="AwsIcons.Logos.AWS"/>
         <action class="software.aws.toolkits.jetbrains.core.credentials.CreateOrUpdateCredentialProfilesAction" id="aws.settings.upsertCredentials" icon="AwsIcons.Logos.AWS"/>

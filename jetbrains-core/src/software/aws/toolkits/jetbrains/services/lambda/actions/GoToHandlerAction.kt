@@ -11,14 +11,12 @@ import com.intellij.util.OpenSourceUtil
 import software.aws.toolkits.jetbrains.core.explorer.ResourceNodeAction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 
-class GoToHandlerAction : ResourceNodeAction<LambdaFunctionNode>() {
+class GoToHandlerAction : ResourceNodeAction<LambdaFunctionNode>(ActionsBundle.actionText("EditSource"), description = ActionsBundle.actionText("EditSource")) {
     override fun update(selected: List<LambdaFunctionNode>, e: AnActionEvent) {
         super.update(selected, e)
 
         val presentation = e.presentation
         presentation.icon = AllIcons.Actions.EditSource
-        presentation.text = ActionsBundle.actionText("EditSource")
-        presentation.description = ActionsBundle.actionText("EditSource")
         if (selected.size == 1) {
             presentation.isEnabled = getHandler(selected.first())?.isNotEmpty() ?: false
         } else {

@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.core.explorer
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import javax.swing.Icon
 
 /**
  * An action from a [AwsExplorerResourceNode] that only operates on a single resource.
@@ -13,7 +14,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
  *
  * @see ResourceNodeAction
  */
-abstract class SingleResourceNodeAction<in T : AwsExplorerResourceNode<*>> : ResourceNodeAction<T>() {
+abstract class SingleResourceNodeAction<in T : AwsExplorerResourceNode<*>>(text: String, description: String? = null, icon: Icon? = null) : ResourceNodeAction<T>(text, description, icon) {
 
     /**
      * If only a single item is selected [update] will be invoked with that selection periodically.
@@ -44,7 +45,7 @@ abstract class SingleResourceNodeAction<in T : AwsExplorerResourceNode<*>> : Res
 /**
  * Converts generic [ResourceNodeAction] list into [T] typed nodes
  */
-abstract class ResourceNodeAction<in T : AwsExplorerResourceNode<*>> : AnAction() {
+abstract class ResourceNodeAction<in T : AwsExplorerResourceNode<*>>(text: String, description: String? = null, icon: Icon? = null) : AnAction(text, description, icon) {
 
     /**
      * Invoked periodically with the selected items of type [T].
