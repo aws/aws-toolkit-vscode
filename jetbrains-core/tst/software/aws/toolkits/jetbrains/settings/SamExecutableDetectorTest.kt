@@ -42,12 +42,10 @@ abstract class SamExecutableDetectorTestBase {
         }
     }
 
-    private fun sanitizePath(original: String): String = original
-        .trimStart(File.separatorChar)
-        .replace(":", "_")
+    private fun sanitizePath(original: String): String = original.trimStart(File.separatorChar).replace("^(\\w):".toRegex()) { "${it.groupValues[1]}_" }
 
     private fun unsanitizePath(sanitized: String?): String? {
-        val suffix = sanitized?.removePrefix(tempFolder)?.replace("_", ":")
+        val suffix = sanitized?.removePrefix(tempFolder)?.replace("^(\\w)_".toRegex()) { "${it.groupValues[1]}:" }
         return suffix?.let { "${File.separator}$suffix" }
     }
 
