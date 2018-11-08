@@ -112,6 +112,11 @@
             <action id="lambda.function.delete"
                     class="software.aws.toolkits.jetbrains.services.lambda.actions.DeleteFunctionAction"/>
         </group>
+        <group id="aws.toolkit.explorer.lambda.stackFunction" popup="true" compact="false">
+            <reference ref="RunContextGroupInner"/>
+            <separator/>
+            <action id="lambda.stackFunction.gotohandler" class="software.aws.toolkits.jetbrains.services.lambda.actions.GoToHandlerAction"/>
+        </group>
         <group id="aws.toolkit.explorer.lambda.application" popup="true" compact="false">
             <action id="lambda.application.delete"
                     class="software.aws.toolkits.jetbrains.services.lambda.applications.DeleteApplicationAction"/>

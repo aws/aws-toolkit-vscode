@@ -13,6 +13,8 @@ import com.intellij.ui.SimpleTextAttributes
 import icons.AwsIcons
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
+import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.resources.message
 import javax.swing.Icon
@@ -29,6 +31,9 @@ abstract class AwsExplorerNode<T>(val nodeProject: Project, value: T, private va
     override fun toString() = value.toString()
 
     open fun onDoubleClick(model: DefaultTreeModel, selectedElement: DefaultMutableTreeNode) {}
+
+    protected val region by lazy { nodeProject.activeRegion() }
+    protected val credentialProvider by lazy { nodeProject.activeCredentialProvider() }
 }
 
 class AwsExplorerRootNode(project: Project) : AwsExplorerNode<String>(project, "ROOT", AwsIcons.Logos.AWS) {
@@ -85,13 +90,12 @@ abstract class AwsExplorerServiceRootNode(project: Project, value: String) : Aws
 abstract class AwsExplorerResourceNode<T>(
     project: Project,
     val serviceName: String,
-    val resourceType: String,
     value: T,
     awsIcon: Icon
 ) : AwsExplorerNode<T>(project, value, awsIcon) {
-    final override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
+    override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
-    override fun isAlwaysLeaf() = true
+    abstract fun resourceType(): String
 }
 
 class AwsTruncatedResultNode(private val parentNode: AwsExplorerPageableNode<*>, private val paginationToken: String) :
