@@ -5,15 +5,24 @@ package software.aws.toolkits.jetbrains.testutils.rules
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.runReadAction
+import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.ModuleRootManager
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiManager
 import com.intellij.testFramework.ApplicationRule
 import com.intellij.testFramework.LightProjectDescriptor
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
 import com.intellij.testFramework.fixtures.IdeaTestFixtureFactory
 import com.intellij.testFramework.fixtures.impl.LightTempDirTestFixtureImpl
+import com.intellij.testFramework.runInEdtAndGet
+import com.intellij.testFramework.runInEdtAndWait
+import com.intellij.testFramework.writeChild
 import org.junit.rules.TestWatcher
 import org.junit.runner.Description
 import java.nio.file.Paths
@@ -65,7 +74,7 @@ open class CodeInsightTestFixtureRule(protected val testDescription: LightProjec
     val testName: String
         get() = PlatformTestUtil.getTestName(description.methodName, true)
 
-    val testClass: Class<*>
+    private val testClass: Class<*>
         get() = description.testClass
 
     val module: Module
@@ -114,11 +123,39 @@ class ClearableLazy<out T>(private val initializer: () -> T) {
 internal fun <T> invokeAndWait(action: () -> T): T {
     val application = ApplicationManager.getApplication()
 
-    if (application.isDispatchThread) {
-        return action()
+    return if (application.isDispatchThread) {
+        action()
     } else {
         var ref: T? = null
         application.invokeAndWait({ ref = action() }, ModalityState.NON_MODAL)
-        return ref!!
+        ref!!
+    }
+}
+
+fun CodeInsightTestFixture.openFile(relativePath: String, fileText: String): VirtualFile {
+    val file = this.addFileToProject(relativePath, fileText).virtualFile
+    runInEdtAndWait {
+        this.openFileInEditor(file)
+    }
+
+    return file
+}
+
+fun CodeInsightTestFixture.addFileToModule(
+    module: Module,
+    relativePath: String,
+    fileText: String
+): PsiFile = runInEdtAndGet {
+    val file = try {
+        val contentRoot = ModuleRootManager.getInstance(module).contentRoots[0]
+        runWriteAction {
+            contentRoot.writeChild(relativePath, fileText)
+        }
+    } finally {
+        PsiManager.getInstance(project).dropPsiCaches()
+    }
+
+    runReadAction {
+        PsiManager.getInstance(project).findFile(file)!!
     }
 }
