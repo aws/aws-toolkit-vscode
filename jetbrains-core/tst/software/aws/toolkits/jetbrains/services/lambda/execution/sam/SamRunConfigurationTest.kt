@@ -12,12 +12,14 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.aws.toolkits.core.rules.EnvironmentVariableHelper
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
+import software.aws.toolkits.jetbrains.settings.SamExecutableDetector
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.testutils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.resources.message
@@ -53,6 +55,7 @@ class SamRunConfigurationTest {
     fun samIsNotSet() {
         SamSettings.getInstance().savedExecutablePath = null
         envHelper.remove("PATH")
+        assumeTrue(SamExecutableDetector().detect() == null)
 
         runInEdtAndWait {
             val runConfiguration = createRunConfiguration(project = projectRule.project)

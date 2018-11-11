@@ -31,12 +31,12 @@ class UploadToLambdaValidatorTest {
     val ruleChain = RuleChain(projectRule, EdtRule())
 
     private val sut = UploadToLambdaValidator()
-    private lateinit var view: EditLambdaPanel
+    private lateinit var view: EditFunctionPanel
 
     @Before
     fun wireMocksTogetherWithValidOptions() {
         view = runInEdtAndGet {
-            EditLambdaPanel(projectRule.project)
+            EditFunctionPanel(projectRule.project)
         }
 
         view.name.text = "name"
@@ -66,115 +66,115 @@ class UploadToLambdaValidatorTest {
 
     @Test
     fun validFunctionReturnsNull() {
-        assert(sut.validateSettings(view)).isNull()
+        assert(sut.validateConfigurationSettings(view)).isNull()
     }
 
     @Test
     fun nameMustBeSpecified() {
         view.name.text = ""
-        assert(sut.validateSettings(view)).containsMessage("Function Name must be specified")
+        assert(sut.validateConfigurationSettings(view)).containsMessage("Function Name must be specified")
     }
 
     @Test
     fun validFunctionNameLength() {
         view.name.text = "aStringThatIsGreaterThanSixtyFourCharactersInLengthAndIsThereforeInvalid"
-        assert(sut.validateSettings(view)).containsMessage("must not exceed 64 characters")
+        assert(sut.validateConfigurationSettings(view)).containsMessage("must not exceed 64 characters")
     }
 
     @Test
     fun validFunctionCanOnlyContainAlphanumerics() {
         view.name.text = "a string"
-        assert(sut.validateSettings(view)).containsMessage("alphanumerics")
+        assert(sut.validateConfigurationSettings(view)).containsMessage("alphanumerics")
     }
 
     @Test
     fun handlerCannotBeBlank() {
         view.handler.text = ""
-        assert(sut.validateSettings(view)).containsMessage("Handler must be specified")
+        assert(sut.validateConfigurationSettings(view)).containsMessage("Handler must be specified")
     }
 
     @Test
     fun runtimeMustBeSelected() {
         view.runtime.selectedItem = null
-        assert(sut.validateSettings(view)).containsMessage("Runtime must be specified")
+        assert(sut.validateConfigurationSettings(view)).containsMessage("Runtime must be specified")
     }
 
     @Test
     fun iamRoleMustBeSelected() {
         view.iamRole.selectedItem = null
-        assert(sut.validateSettings(view)).containsMessage("IAM role must be specified")
+        assert(sut.validateConfigurationSettings(view)).containsMessage("IAM role must be specified")
     }
 
     @Test
     fun timeoutMustBeSpecified() {
         view.timeout.text = ""
-        assert(sut.validateSettings(view)).containsMessage("Timeout must be between")
+        assert(sut.validateConfigurationSettings(view)).containsMessage("Timeout must be between")
     }
 
     @Test
     fun timeoutMustBeNumeric() {
         view.timeout.text = "foo"
-        assert(sut.validateSettings(view)).containsMessage("Timeout must be between")
+        assert(sut.validateConfigurationSettings(view)).containsMessage("Timeout must be between")
     }
 
     @Test
     fun timeoutMustBeWithinLowerBound() {
         view.timeout.text = "0"
-        assert(sut.validateSettings(view)).containsMessage("Timeout must be between")
+        assert(sut.validateConfigurationSettings(view)).containsMessage("Timeout must be between")
     }
 
     @Test
     fun timeoutMustBeWithinUpperBound() {
         view.timeout.text = Integer.MAX_VALUE.toString()
-        assert(sut.validateSettings(view)).containsMessage("Timeout must be between")
+        assert(sut.validateConfigurationSettings(view)).containsMessage("Timeout must be between")
     }
 
     @Test
     fun memoryMustBeSpecified() {
         view.memorySize.text = ""
-        assert(sut.validateSettings(view)).containsMessage("Memory must be between")
+        assert(sut.validateConfigurationSettings(view)).containsMessage("Memory must be between")
     }
 
     @Test
     fun memoryMustBeNumeric() {
         view.memorySize.text = "foo"
-        assert(sut.validateSettings(view)).containsMessage("Memory must be between")
+        assert(sut.validateConfigurationSettings(view)).containsMessage("Memory must be between")
     }
 
     @Test
     fun memoryMustBeWithinLowerBound() {
         view.memorySize.text = "0"
-        assert(sut.validateSettings(view)).containsMessage("Memory must be between")
+        assert(sut.validateConfigurationSettings(view)).containsMessage("Memory must be between")
     }
 
     @Test
     fun memoryMustBeAnIncrementOf64() {
         view.memorySize.text = "13"
-        assert(sut.validateSettings(view)).containsMessage("Memory must be between")
+        assert(sut.validateConfigurationSettings(view)).containsMessage("Memory must be between")
     }
 
     @Test
     fun memoryMustBeWithinUpperBound() {
         view.memorySize.text = Integer.MAX_VALUE.toString()
-        assert(sut.validateSettings(view)).containsMessage("Memory must be between")
+        assert(sut.validateConfigurationSettings(view)).containsMessage("Memory must be between")
     }
 
     @Test
     fun sourceBucketMustBeSelectedToDeploy() {
         view.sourceBucket.selectedItem = null
-        assert(sut.validateDeploymentSettings(projectRule.project, view)).containsMessage("Bucket must be specified")
+        assert(sut.validateCodeSettings(projectRule.project, view)).containsMessage("Bucket must be specified")
     }
 
     @Test
     fun handlerMustBeInProjectToDeploy() {
         view.handler.text = "Foo"
-        assert(sut.validateDeploymentSettings(projectRule.project, view)).containsMessage("Must be able to locate the handler")
+        assert(sut.validateCodeSettings(projectRule.project, view)).containsMessage("Must be able to locate the handler")
     }
 
     @Test
     fun runtimeMustBeSupportedToDeploy() {
         view.runtime.selectedItem = Runtime.NODEJS4_3
-        assert(sut.validateDeploymentSettings(projectRule.project, view)).containsMessage("Deploying using the runtime")
+        assert(sut.validateCodeSettings(projectRule.project, view)).containsMessage("Deploying using the runtime")
     }
 
     private fun Assert<ValidationInfo?>.containsMessage(expectedMessage: String) {

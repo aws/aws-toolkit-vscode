@@ -222,8 +222,7 @@ class LambdaCreatorTest {
         }
 
         val lambdaCreator = LambdaFunctionCreator((lambdaClient))
-        lambdaCreator.update(projectRule.project, functionDetails).toCompletableFuture()
-            .get(5, TimeUnit.SECONDS)
+        lambdaCreator.update(functionDetails).toCompletableFuture().get(5, TimeUnit.SECONDS)
 
         val configurationRequest = updateConfigCaptor.firstValue
         assertThat(configurationRequest.functionName()).isEqualTo(functionDetails.name)

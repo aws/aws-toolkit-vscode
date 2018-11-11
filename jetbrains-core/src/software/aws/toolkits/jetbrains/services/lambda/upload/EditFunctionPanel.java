@@ -3,12 +3,15 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.upload;
 
+import static software.aws.toolkits.resources.Localization.message;
+
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.EditorTextField;
 import com.intellij.ui.IdeBorderFactory;
 import com.intellij.util.textCompletion.TextFieldWithCompletion;
 import javax.swing.JButton;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JTextField;
@@ -19,7 +22,7 @@ import software.aws.toolkits.jetbrains.services.lambda.HandlerCompletionProvider
 import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField;
 
 @SuppressWarnings("NullableProblems")
-public final class EditLambdaPanel {
+public class EditFunctionPanel {
     @NotNull JTextField name;
     @NotNull JTextField description;
     @NotNull EditorTextField handler;
@@ -35,13 +38,16 @@ public final class EditLambdaPanel {
     @NotNull JTextField memorySize;
     @NotNull JSlider memorySlider;
     @NotNull JSlider timeoutSlider;
+    @NotNull JPanel configurationSettings;
+    @NotNull JLabel handlerLabel;
 
     private final Project project;
 
-    EditLambdaPanel(Project project) {
+    EditFunctionPanel(Project project) {
         this.project = project;
 
-        deploySettings.setBorder(IdeBorderFactory.createTitledBorder("Deployment Settings", false));
+        deploySettings.setBorder(IdeBorderFactory.createTitledBorder(message("lambda.upload.deployment_settings"), false));
+        configurationSettings.setBorder(IdeBorderFactory.createTitledBorder(message("lambda.upload.configuration_settings"), false));
     }
 
     private void createUIComponents() {

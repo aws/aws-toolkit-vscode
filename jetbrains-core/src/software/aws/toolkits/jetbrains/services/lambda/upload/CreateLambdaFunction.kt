@@ -10,6 +10,7 @@ import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.services.lambda.runtime
+import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode.NEW
 import software.aws.toolkits.resources.message
 
 class CreateLambdaFunction(private val handlerName: String? = null) : AnAction(message("lambda.create_new"), null, AwsIcons.Actions.LAMBDA_FUNCTION_NEW) {
@@ -18,9 +19,9 @@ class CreateLambdaFunction(private val handlerName: String? = null) : AnAction(m
         val runtime = event.runtime()
 
         val dialog = if (handlerName != null) {
-            EditLambdaDialog(project = project, isUpdate = false, runtime = runtime, handlerName = handlerName)
+            EditFunctionDialog(project = project, mode = NEW, runtime = runtime, handlerName = handlerName)
         } else {
-            EditLambdaDialog(project = project, isUpdate = false, runtime = runtime)
+            EditFunctionDialog(project = project, mode = NEW, runtime = runtime)
         }
 
         dialog.show()

@@ -25,11 +25,8 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 
 object LambdaCreatorFactory {
-    fun create(clientManager: ToolkitClientManager, packager: LambdaPackager): LambdaCreator = LambdaCreator(
-        packager,
-        CodeUploader(clientManager.getClient()),
-        LambdaFunctionCreator(clientManager.getClient())
-    )
+    fun create(clientManager: ToolkitClientManager, packager: LambdaPackager): LambdaCreator =
+        LambdaCreator(packager, CodeUploader(clientManager.getClient()), LambdaFunctionCreator(clientManager.getClient()))
 }
 
 class LambdaCreator internal constructor(
@@ -50,10 +47,11 @@ class LambdaCreator internal constructor(
         module: Module,
         file: PsiFile,
         functionDetails: FunctionUploadDetails,
-        s3Bucket: String
-    ): CompletionStage<LambdaFunction> = packager.createPackage(module, file)
+        s3Bucket: String,
+        replaceConfiguration: Boolean = true
+    ): CompletionStage<Nothing> = packager.createPackage(module, file)
         .thenCompose { uploader.upload(functionDetails, it.location, s3Bucket) }
-        .thenCompose { functionCreator.update(module.project, functionDetails, it) }
+        .thenCompose { functionCreator.update(functionDetails, it, replaceConfiguration) }
 }
 
 class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
@@ -96,12 +94,8 @@ class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
         return future
     }
 
-    fun update(
-        project: Project,
-        details: FunctionUploadDetails,
-        uploadedCode: UploadedCode
-    ): CompletionStage<LambdaFunction> {
-        val future = CompletableFuture<LambdaFunction>()
+    fun update(details: FunctionUploadDetails, uploadedCode: UploadedCode, replaceConfiguration: Boolean): CompletionStage<Nothing> {
+        val future = CompletableFuture<Nothing>()
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
                 val req = UpdateFunctionCodeRequest.builder()
@@ -112,8 +106,10 @@ class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
                 uploadedCode.version?.let { version -> req.s3ObjectVersion(version) }
 
                 lambdaClient.updateFunctionCode(req.build())
-
-                future.complete(updateInternally(project, details))
+                if (replaceConfiguration) {
+                    updateInternally(details)
+                }
+                future.complete(null)
             } catch (e: Exception) {
                 future.completeExceptionally(e)
             }
@@ -121,14 +117,12 @@ class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
         return future
     }
 
-    fun update(
-        project: Project,
-        details: FunctionUploadDetails
-    ): CompletionStage<LambdaFunction> {
-        val future = CompletableFuture<LambdaFunction>()
+    fun update(details: FunctionUploadDetails): CompletionStage<Nothing> {
+        val future = CompletableFuture<Nothing>()
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
-                future.complete(updateInternally(project, details))
+                updateInternally(details)
+                future.complete(null)
             } catch (e: Exception) {
                 future.completeExceptionally(e)
             }
@@ -136,7 +130,7 @@ class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
         return future
     }
 
-    private fun updateInternally(project: Project, details: FunctionUploadDetails): LambdaFunction {
+    private fun updateInternally(details: FunctionUploadDetails) {
         val req = UpdateFunctionConfigurationRequest.builder()
             .handler(details.handler)
             .functionName(details.name)
@@ -150,10 +144,7 @@ class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
             }
             .build()
 
-        val settingsManager = ProjectAccountSettingsManager.getInstance(project)
-        val result = lambdaClient.updateFunctionConfiguration(req)
-
-        return result.toDataClass(settingsManager.activeCredentialProvider.id, settingsManager.activeRegion)
+        lambdaClient.updateFunctionConfiguration(req)
     }
 }
 
