@@ -12,6 +12,8 @@ import org.junit.rules.TemporaryFolder
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.testutils.rules.CodeInsightTestFixtureRule
 import java.io.File
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class YamlCloudFormationTemplateTest {
     @Rule
@@ -54,6 +56,50 @@ Resources:
     }
 
     @Test
+    fun canListParameters() {
+        val template = yamlTemplate()
+        runInEdtAndWait {
+            assertThat(template.parameters().toList()).hasSize(2)
+        }
+    }
+
+    @Test
+    fun noParametersReturnsEmpty() {
+        val template = yamlTemplate("""
+Description: "Some description"
+        """.trimIndent())
+        runInEdtAndWait {
+            assertThat(template.parameters().toList()).isEmpty()
+        }
+    }
+
+    @Test
+    fun emptyParametersReturnsEmpty() {
+        val template = yamlTemplate("""
+Description: "Some description"
+Parameters:
+
+
+        """.trimIndent())
+        runInEdtAndWait {
+            assertThat(template.parameters().toList()).isEmpty()
+        }
+    }
+
+    @Test
+    fun nullProperties() {
+        val template = yamlTemplate()
+        runInEdtAndWait {
+            assertThat(template.parameters().toList()).hasSize(2)
+            val tableTag = template.parameters().firstOrNull { it.logicalName == "TableTag" }
+            assertNotNull(tableTag)
+            assertNull(tableTag!!.defaultValue())
+            assertNotNull(tableTag.description())
+            assertNull(tableTag.constraintDescription())
+        }
+    }
+
+    @Test
     fun canUpdateAScalarValue() {
         val updatedTemplate = runInEdtAndGet {
             val template = yamlTemplate()
@@ -65,6 +111,13 @@ Resources:
         assertThat(updatedTemplate).isEqualTo(
             """
 Description: "Some description"
+Parameters:
+    TableName:
+        Default: someTable
+        Description: Storage for your data
+        ConstraintDescription: No emojis
+    TableTag:
+        Description: Tag to add to the DynamoDb table
 Resources:
     MyFunction:
         Type: AWS::Serverless::Function
@@ -113,6 +166,13 @@ Resources:
         val TEST_TEMPLATE =
             """
 Description: "Some description"
+Parameters:
+    TableName:
+        Default: someTable
+        Description: Storage for your data
+        ConstraintDescription: No emojis
+    TableTag:
+        Description: Tag to add to the DynamoDb table
 Resources:
     MyFunction:
         Type: AWS::Serverless::Function

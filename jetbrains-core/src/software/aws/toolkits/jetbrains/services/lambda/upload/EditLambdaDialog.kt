@@ -15,7 +15,7 @@ import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.S3Client
-import software.aws.toolkits.core.s3.regionForBucket
+import software.aws.toolkits.core.utils.listBucketsByRegion
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
@@ -107,10 +107,8 @@ class EditLambdaDialog(
 
         view.sourceBucket.populateValues {
             val activeRegionId = ProjectAccountSettingsManager.getInstance(project).activeRegion.id
-            s3Client.listBuckets().buckets()
-                .asSequence()
-                .mapNotNull { it?.name() }
-                .filter { s3Client.regionForBucket(it) == activeRegionId }
+            s3Client.listBucketsByRegion(activeRegionId)
+                .mapNotNull { it.name() }
                 .sortedWith(String.CASE_INSENSITIVE_ORDER)
                 .toList()
         }

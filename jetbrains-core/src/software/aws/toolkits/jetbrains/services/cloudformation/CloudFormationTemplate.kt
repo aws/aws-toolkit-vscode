@@ -14,6 +14,7 @@ import java.io.File
 
 interface CloudFormationTemplate {
     fun resources(): Sequence<Resource>
+    fun parameters(): Sequence<Parameter>
 
     fun getResourceByName(logicalName: String): Resource? = resources().firstOrNull { it.logicalName == logicalName }
 
@@ -37,11 +38,30 @@ interface CloudFormationTemplate {
     }
 }
 
-interface Resource {
+interface NamedMap {
     val logicalName: String
 
+    fun getScalarProperty(key: String): String
+    fun getOptionalScalarProperty(key: String): String?
+    fun setScalarProperty(key: String, value: String)
+}
+
+interface Resource : NamedMap {
     fun isType(requestedType: String): Boolean
     fun type(): String?
-    fun getScalarProperty(key: String): String
-    fun setScalarProperty(key: String, value: String)
+}
+
+interface Parameter : NamedMap {
+    fun defaultValue(): String?
+    fun description(): String?
+    fun constraintDescription(): String?
+}
+
+class CloudFormationParameter(private val delegate: NamedMap) : NamedMap by delegate, Parameter {
+
+    override fun defaultValue(): String? = getOptionalScalarProperty("Default")
+
+    override fun description(): String? = getOptionalScalarProperty("Description")
+
+    override fun constraintDescription(): String? = getOptionalScalarProperty("ConstraintDescription")
 }
