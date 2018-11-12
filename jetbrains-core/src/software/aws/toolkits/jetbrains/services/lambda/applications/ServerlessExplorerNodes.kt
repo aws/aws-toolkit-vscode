@@ -14,6 +14,7 @@ import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerPageableNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsTruncatedResultNode
 import software.aws.toolkits.jetbrains.services.cloudformation.LAMBDA_FUNCTION_TYPE
+import software.aws.toolkits.jetbrains.services.cloudformation.waitForStackDeletionComplete
 import software.aws.toolkits.resources.message
 
 class ServerlessApplicationsNode(project: Project) : AwsExplorerPageableNode<String>(project, message("lambda.applications"), null) {
@@ -47,5 +48,6 @@ class DeleteApplicationAction : DeleteResourceAction<ServerlessApplicationNode>(
     override fun performDelete(selected: ServerlessApplicationNode) {
         val client: CloudFormationClient = AwsClientManager.getInstance(selected.nodeProject).getClient()
         client.deleteStack { it.stackName(selected.stackName) }
+        client.waitForStackDeletionComplete(selected.stackName)
     }
 }
