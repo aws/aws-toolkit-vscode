@@ -39,7 +39,7 @@ class CredentialProviderSelector() : ComboBox<Any>() {
         }
     }
 
-    fun setSelectedInvalidCredentialsProvider(provider: ToolkitCredentialsProvider) {
+    fun setSelectedCredentialsProvider(provider: ToolkitCredentialsProvider) {
         selectedItem = provider
     }
 
