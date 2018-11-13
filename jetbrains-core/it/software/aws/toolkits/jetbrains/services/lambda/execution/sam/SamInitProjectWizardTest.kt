@@ -64,7 +64,7 @@ class SamInitProjectWizardTest : NewProjectWizardTestCase() {
     }
 
     private fun helloWorldTest(runtime: Runtime, sdkType: KClass<out SdkType>) {
-        SamSettings.getInstance().savedExecutablePath = "sam"
+        SamSettings.getInstance().savedExecutablePath = System.getenv().getOrDefault("SAM_CLI_EXEC", "sam")
 
         createProject { step ->
             val stepNum = myWizard.currentStep
