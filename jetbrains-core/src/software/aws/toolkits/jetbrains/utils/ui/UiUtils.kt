@@ -21,14 +21,28 @@ import javax.swing.JComponent
 import javax.swing.JTextField
 import javax.swing.ListModel
 
-fun <T> ComboBox<T>.populateValues(selected: T? = null, updateStatus: Boolean = true, block: () -> Collection<T>) {
+/**
+ * @param default The default selected item
+ * @param updateStatus If enabled, disable the combo box if the item collection is empty or enable it if the item collection
+ * is not empty. Otherwise, the status of the combo box is not changed.
+ * @param forceSelectDefault If disabled, override the [default] by selecting previously selected item if it
+ * is not null, otherwise still falls back to select [default]
+ * @param block Lambda function that returns a new set of items for the combo box.
+ */
+fun <T> ComboBox<T>.populateValues(
+    default: T? = null,
+    updateStatus: Boolean = true,
+    forceSelectDefault: Boolean = true,
+    block: () -> Collection<T>
+) {
     ApplicationManager.getApplication().executeOnPooledThread {
         val values = block()
         ApplicationManager.getApplication().invokeLater({
             val model = this.model as DefaultComboBoxModel<T>
+            val previouslySelected = model.selectedItem
             model.removeAllElements()
             values.forEach { model.addElement(it) }
-            this.selectedItem = selected
+            this.selectedItem = if (forceSelectDefault || previouslySelected == null) default else previouslySelected
             if (updateStatus) {
                 this.isEnabled = values.isNotEmpty()
             }

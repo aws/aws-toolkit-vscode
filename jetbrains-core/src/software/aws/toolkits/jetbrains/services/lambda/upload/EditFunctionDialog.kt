@@ -146,9 +146,9 @@ class EditFunctionDialog(
         if (mode == UPDATE_CODE) {
             UIUtil.uiChildren(view.configurationSettings).filter { it !== view.handler && it !== view.handlerLabel }.forEach { it.isVisible = false }
         }
-        view.runtime.populateValues(selected = runtime) { Runtime.knownValues() }
+        view.runtime.populateValues(default = runtime) { Runtime.knownValues() }
 
-        view.iamRole.populateValues(selected = role) {
+        view.iamRole.populateValues(default = role) {
             iamClient.listRolesFilter { it.assumeRolePolicyDocument().contains(LAMBDA_PRINCIPAL) }
                 .map { IamRole(it.arn()) }
                 .sortedWith(Comparator.comparing<IamRole, String>(Function { it.toString() }, String.CASE_INSENSITIVE_ORDER))
