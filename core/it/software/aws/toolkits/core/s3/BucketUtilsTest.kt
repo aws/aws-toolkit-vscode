@@ -12,6 +12,7 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
+import software.aws.toolkits.core.rules.S3TemporaryBucketRule
 
 class BucketUtilsTest {
     private val s3Client = S3Client.builder().region(Region.US_WEST_1).build()

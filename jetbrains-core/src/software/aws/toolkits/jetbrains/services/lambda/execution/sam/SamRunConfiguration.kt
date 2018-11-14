@@ -19,12 +19,12 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.refactoring.listeners.RefactoringElementAdapter
 import com.intellij.refactoring.listeners.RefactoringElementListener
 import org.jetbrains.annotations.TestOnly
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.services.lambda.HandlerCompletionProvider
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
@@ -149,7 +149,7 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
     ) : MutableLambdaRunSettings(input, inputIsFile) {
         fun validateAndCreateImmutable(project: Project): SamRunSettings {
             if (SamSettings.getInstance().executablePath.isNullOrEmpty()) {
-                throw RuntimeConfigurationError(message("lambda.run_configuration.sam.not_specified")) {
+                throw RuntimeConfigurationError(message("sam.cli_not_configured")) {
                     ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsConfigurable::class.java)
                 }
             }
@@ -183,16 +183,7 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
                 try {
                     val credentialProvider = CredentialManager.getInstance().getCredentialProvider(it)
                     val awsCredentials = credentialProvider.resolveCredentials()
-
-                    envVarsCopy["AWS_ACCESS_KEY"] = awsCredentials.accessKeyId()
-                    envVarsCopy["AWS_ACCESS_KEY_ID"] = awsCredentials.accessKeyId()
-                    envVarsCopy["AWS_SECRET_KEY"] = awsCredentials.secretAccessKey()
-                    envVarsCopy["AWS_SECRET_ACCESS_KEY"] = awsCredentials.secretAccessKey()
-
-                    if (awsCredentials is AwsSessionCredentials) {
-                        envVarsCopy["AWS_SESSION_TOKEN"] = awsCredentials.sessionToken()
-                        envVarsCopy["AWS_SECURITY_TOKEN"] = awsCredentials.sessionToken()
-                    }
+                    envVarsCopy.putAll(awsCredentials.toEnvironmentVariables())
                 } catch (e: CredentialProviderNotFound) {
                     throw RuntimeConfigurationError(message("lambda.run_configuration.credential_not_found_error", it))
                 } catch (e: Exception) {
