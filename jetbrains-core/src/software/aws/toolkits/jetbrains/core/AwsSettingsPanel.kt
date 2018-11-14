@@ -11,6 +11,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.PlatformDataKeys
+import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.actionSystem.ex.ComboBoxAction
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.DumbAware
@@ -196,16 +197,27 @@ private class ChangeAccountSettingsAction(
     }
 }
 
-private class ChangeRegionAction(val region: AwsRegion) : AnAction(region.displayName), DumbAware {
-    override fun actionPerformed(e: AnActionEvent) {
-        val accountSettingsManager = ProjectAccountSettingsManager.getInstance(e.getRequiredData(PlatformDataKeys.PROJECT))
-        accountSettingsManager.activeRegion = region
+private class ChangeRegionAction(val region: AwsRegion) : ToggleAction(region.displayName), DumbAware {
+
+    override fun isSelected(e: AnActionEvent): Boolean = getAccountSetting(e).activeRegion == region
+
+    override fun setSelected(e: AnActionEvent, seletected: Boolean) {
+        if (seletected) {
+            getAccountSetting(e).activeRegion = region
+        }
     }
 }
 
-private class ChangeCredentialsAction(val credentialsProvider: ToolkitCredentialsProvider) : AnAction(credentialsProvider.displayName), DumbAware {
-    override fun actionPerformed(e: AnActionEvent) {
-        val accountSettingsManager = ProjectAccountSettingsManager.getInstance(e.getRequiredData(PlatformDataKeys.PROJECT))
-        accountSettingsManager.activeCredentialProvider = credentialsProvider
+private class ChangeCredentialsAction(val credentialsProvider: ToolkitCredentialsProvider) : ToggleAction(credentialsProvider.displayName), DumbAware {
+
+    override fun isSelected(e: AnActionEvent): Boolean = getAccountSetting(e).activeCredentialProvider == credentialsProvider
+
+    override fun setSelected(e: AnActionEvent, selected: Boolean) {
+        if (selected) {
+            getAccountSetting(e).activeCredentialProvider = credentialsProvider
+        }
     }
 }
+
+private fun getAccountSetting(e: AnActionEvent): ProjectAccountSettingsManager =
+        ProjectAccountSettingsManager.getInstance(e.getRequiredData(PlatformDataKeys.PROJECT))
