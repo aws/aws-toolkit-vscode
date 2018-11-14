@@ -18,8 +18,8 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.iam.IamRole
-import software.aws.toolkits.jetbrains.testutils.rules.JavaCodeInsightTestFixtureRule
-import software.aws.toolkits.jetbrains.testutils.rules.openClass
+import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.openClass
 import javax.swing.DefaultComboBoxModel
 
 @RunsInEdt

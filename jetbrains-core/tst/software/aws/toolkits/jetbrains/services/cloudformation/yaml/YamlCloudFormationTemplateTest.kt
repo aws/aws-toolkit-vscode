@@ -10,7 +10,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
-import software.aws.toolkits.jetbrains.testutils.rules.CodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
 import java.io.File
 
 class YamlCloudFormationTemplateTest {
