@@ -24,6 +24,7 @@ import software.aws.toolkits.jetbrains.services.cloudformation.waitForStackDelet
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
+import software.aws.toolkits.jetbrains.utils.toHumanReadable
 import software.aws.toolkits.resources.message
 
 class ServerlessApplicationsNode(project: Project) : AwsExplorerPageableNode<String>(project, message("lambda.applications"), null) {
@@ -84,7 +85,7 @@ class ServerlessApplicationNode(project: Project, val stackName: String, private
         }.toList() as Collection<AbstractTreeNode<Any>>
     }
 
-    override fun statusText(): String? = stackStatus.toString()
+    override fun statusText(): String? = stackStatus.toString().toHumanReadable()
 
     private companion object {
         val FAILED_STACK_STATES = setOf(StackStatus.CREATE_FAILED, StackStatus.DELETE_FAILED, StackStatus.ROLLBACK_FAILED)

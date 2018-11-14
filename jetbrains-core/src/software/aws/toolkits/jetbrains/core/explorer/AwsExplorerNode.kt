@@ -190,7 +190,6 @@ class AwsExplorerErrorNode(project: Project, exception: Exception) :
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
     override fun update(presentation: PresentationData?) {
-        super.update(presentation)
         presentation?.apply {
             // If we don't have a message, at least give them the error type
             tooltip = value.message ?: value.javaClass.simpleName
@@ -209,7 +208,6 @@ class AwsExplorerEmptyNode(project: Project) : AwsExplorerNode<String>(project, 
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
     override fun update(presentation: PresentationData?) {
-        super.update(presentation)
         presentation?.addText(displayName(), SimpleTextAttributes.GRAYED_ATTRIBUTES)
     }
 
