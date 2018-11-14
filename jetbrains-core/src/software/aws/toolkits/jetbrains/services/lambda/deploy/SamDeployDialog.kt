@@ -31,9 +31,10 @@ open class SamDeployDialog(
     project: Project,
     private val stackName: String,
     private val template: VirtualFile,
+    private val parameters: Map<String, String>,
     private val region: AwsRegion,
     private val s3Bucket: String,
-    private val execute: Boolean = true
+    execute: Boolean = true
 ) : DialogWrapper(project) {
     private val progressIndicator = ProgressIndicatorBase()
     private val view = SamDeployView(project, progressIndicator)
@@ -94,6 +95,13 @@ open class SamDeployDialog(
             .withParameters("--capabilities")
             .withParameters("CAPABILITY_IAM", "CAPABILITY_NAMED_IAM")
             .withParameters("--no-execute-changeset")
+
+        if (parameters.isNotEmpty()) {
+            command.withParameters("--parameter-overrides")
+            parameters.forEach { key, value ->
+                command.withParameters("$key=$value")
+            }
+        }
 
         return runCommand(message("serverless.application.deploy.step_name.create_change_set"), command) { output ->
             changeSetRegex.find(output.stdout)?.value

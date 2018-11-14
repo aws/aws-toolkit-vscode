@@ -5,10 +5,11 @@ package software.aws.toolkits.jetbrains.services.lambda.deploy
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
-import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.util.text.nullize
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.s3.S3Client
+import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.listBucketsByRegion
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
@@ -18,15 +19,12 @@ import software.aws.toolkits.jetbrains.utils.ui.addAndSelectValue
 import software.aws.toolkits.jetbrains.utils.ui.populateValues
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
-import java.awt.event.ActionEvent
-import javax.swing.Action
 import javax.swing.JComponent
 
 class DeployServerlessApplicationDialog(
     private val project: Project,
-    private val parameters: Sequence<Parameter>
+    parameters: Sequence<Parameter>
 ) : DialogWrapper(project) {
-
     private val view = DeployServerlessApplicationPanel()
     private val validator = DeploySamApplicationValidator()
     private val s3Client: S3Client = project.awsClient()
@@ -35,12 +33,13 @@ class DeployServerlessApplicationDialog(
 
     private val regionProvider = AwsRegionProvider.getInstance()
 
-    private val deployAction = DeployServerlessApplicationAction()
-
     init {
-        super.init()
-
         title = message("serverless.application.deploy.title")
+
+        setOKButtonText(message("serverless.application.deploy.action.name"))
+        setOKButtonTooltip(message("serverless.application.deploy.action.description"))
+
+        super.init()
 
         view.withTemplateParameters(parameters.toList())
 
@@ -55,7 +54,7 @@ class DeployServerlessApplicationDialog(
         setNewStackUIVisibility(isNewStack)
 
         // S3 selector only shows buckets for region of interest
-        view.region.addActionListener {
+        view.region.addActionListener { _ ->
             view.createS3BucketButton.isEnabled = view.region.selectedRegion != null
             val selectedRegionId = view.region.selectedRegion?.id
 
@@ -119,61 +118,28 @@ class DeployServerlessApplicationDialog(
 
     override fun getPreferredFocusedComponent(): JComponent? = view.region
 
-    override fun doValidate(): ValidationInfo? {
-        val validateSettings = validator.validateSettings(view)
-        okAction.isEnabled = validateSettings == null // We can call update settings, but not deploy lambda
+    override fun doValidate(): ValidationInfo? = validator.validateSettings(view)
 
-        return validateSettings
-    }
+    val stackName: String
+        get() = if (view.stacks.selected() == getStackSelectionTextForCreateStack()) {
+            view.newStackName.text.nullize()
+        } else {
+            view.stacks.selected()
+        } ?: throw RuntimeException(message("serverless.application.deploy.validation.stack.missing"))
 
-    override fun getOKAction(): Action = deployAction
+    val bucket: String
+        get() = view.s3Bucket.selected()
+                ?: throw RuntimeException(message("serverless.application.deploy.validation.s3.bucket.empty"))
 
-    override fun createActions(): Array<Action> {
-        val actions = mutableListOf<Action>()
-        actions.add(okAction)
-        actions.add(cancelAction)
+    val region: AwsRegion
+        get() = view.region.selectedRegion
+                ?: throw RuntimeException(message("serverless.application.deploy.validation.region.empty"))
 
-        return actions.toTypedArray()
-    }
-
-    override fun doOKAction() {
-        // Do nothing, close logic is handled separately
-    }
+    val parameters: Map<String, String> = view.templateParameters
 
     private fun setNewStackUIVisibility(showNewStackControls: Boolean) {
         view.newStackNameLabel.isVisible = showNewStackControls
         view.newStackName.isVisible = showNewStackControls
-    }
-
-    private fun deployServerlessApplication() {
-        if (okAction.isEnabled) {
-
-            // TODO : Iterate through the template, publishing functions to AWS (https://github.com/aws/aws-toolkit-jetbrains/issues/395)
-            Messages.showWarningDialog(
-                    project,
-                    "SAM Deployment is coming soon",
-                    "Not Implemented"
-            )
-
-            close(OK_EXIT_CODE)
-        }
-    }
-
-    private inner class DeployServerlessApplicationAction : OkAction() {
-        init {
-            putValue(Action.NAME, message("serverless.application.deploy.action.name"))
-            putValue(Action.SHORT_DESCRIPTION, message("serverless.application.deploy.action.description"))
-        }
-
-        override fun doAction(e: ActionEvent?) {
-            super.doAction(e)
-
-            if (doValidateAll().isNotEmpty()) {
-                return
-            }
-
-            deployServerlessApplication()
-        }
     }
 
     companion object {
@@ -209,15 +175,14 @@ class DeploySamApplicationValidator {
             }
 
             // Validate stack name
-            validateStackName(view.newStackName.text)?.run {
-                return@validateSettings ValidationInfo(this, view.newStackName)
+            validateStackName(view.newStackName.text)?.let {
+                return ValidationInfo(it, view.newStackName)
             }
         }
 
         // Are any Template Parameters missing
-        val parametersValidation = validateParameters(view)
-        if (parametersValidation != null) {
-            return parametersValidation
+        validateParameters(view)?.let {
+            return it
         }
 
         // Has the user selected a bucket
@@ -240,7 +205,7 @@ class DeploySamApplicationValidator {
         if (unsetParameters.any()) {
             return ValidationInfo(
                     message("serverless.application.deploy.validation.template.values.missing", unsetParameters.joinToString(", ")),
-                    view.getTemplateEditorComponent()
+                    view.templateEditorComponent
             )
         }
 

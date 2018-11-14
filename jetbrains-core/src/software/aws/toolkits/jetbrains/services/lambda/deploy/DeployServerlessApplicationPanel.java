@@ -30,7 +30,6 @@ public class DeployServerlessApplicationPanel {
     @NotNull ComboBox<String> stacks;
     @NotNull JLabel newStackNameLabel;
     @NotNull Wrapper stackParameters;
-    private JLabel templateParametersLabel;
 
     public DeployServerlessApplicationPanel withTemplateParameters(final Collection<Parameter> parameters) {
 

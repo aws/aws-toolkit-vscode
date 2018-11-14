@@ -9,6 +9,7 @@ import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.Key
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.util.ExceptionUtil
 import org.assertj.core.api.Assertions.assertThat
@@ -16,6 +17,7 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
+import software.amazon.awssdk.services.cloudformation.model.Parameter
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.rules.S3TemporaryBucketRule
@@ -38,36 +40,85 @@ class SamDeployTest {
 
     @Test
     fun deployAppUsingSam() {
+        val templateFile = setUpProject()
+        val changeSetArn = createChangeSet(templateFile)
+
+        assertThat(changeSetArn).isNotNull()
+        runAssertsAndClean(changeSetArn!!) {
+            val describeChangeSetResponse = cfnClient.describeChangeSet {
+                it.stackName(stackName)
+                it.changeSetName(changeSetArn)
+            }
+
+            assertThat(describeChangeSetResponse).isNotNull
+            assertThat(describeChangeSetResponse.parameters()).contains(Parameter.builder()
+                .parameterKey("TestParameter")
+                .parameterValue("HelloWorld")
+                .build())
+        }
+    }
+
+    @Test
+    fun deployAppUsingSamWithParameters() {
+        val templateFile = setUpProject()
+        val changeSetArn = createChangeSet(templateFile, mapOf("TestParameter" to "FooBar"))
+
+        assertThat(changeSetArn).isNotNull()
+        runAssertsAndClean(changeSetArn!!) {
+            val describeChangeSetResponse = cfnClient.describeChangeSet {
+                it.stackName(stackName)
+                it.changeSetName(changeSetArn)
+            }
+
+            assertThat(describeChangeSetResponse).isNotNull
+            assertThat(describeChangeSetResponse.parameters()).contains(Parameter.builder()
+                .parameterKey("TestParameter")
+                .parameterValue("FooBar")
+                .build())
+        }
+    }
+
+    private fun setUpProject(): VirtualFile {
         projectRule.fixture.addFileToProject(
             "hello_world/app.py",
             """
-            def lambda_handler(event, context):
-                return "Hello world"
-            """.trimIndent()
+                def lambda_handler(event, context):
+                    return "Hello world"
+                """.trimIndent()
         )
 
-        val file = projectRule.fixture.addFileToProject(
+        return projectRule.fixture.addFileToProject(
             "template.yaml",
             """
-            AWSTemplateFormatVersion: '2010-09-09'
-            Transform: AWS::Serverless-2016-10-31
-            Resources:
-              SomeFunction:
-                Type: AWS::Serverless::Function
-                Properties:
-                  Handler: hello_world/app.lambda_handler
-                  CodeUri: .
-                  Runtime: python3.6
-                  Timeout: 900
-            """.trimIndent()
+                AWSTemplateFormatVersion: '2010-09-09'
+                Transform: AWS::Serverless-2016-10-31
+                Parameters:
+                  TestParameter:
+                    Type: String
+                    Default: HelloWorld
+                    AllowedValues:
+                      - HelloWorld
+                      - FooBar
+                Resources:
+                  SomeFunction:
+                    Type: AWS::Serverless::Function
+                    Properties:
+                      Handler: hello_world/app.lambda_handler
+                      CodeUri: .
+                      Runtime: python3.6
+                      Timeout: 900
+                """.trimIndent()
         ).virtualFile
+    }
 
+    private fun createChangeSet(templateFile: VirtualFile, parameters: Map<String, String> = emptyMap()): String? {
         val deployDialog = runInEdtAndGet {
             runUnderRealCredentials(projectRule.project) {
                 object : SamDeployDialog(
                     projectRule.project,
                     stackName,
-                    file,
+                    templateFile,
+                    parameters,
                     AwsRegion(Region.US_WEST_2.id(), "us-west-2"),
                     bucketRule.createBucket(stackName),
                     false
@@ -82,22 +133,18 @@ class SamDeployTest {
                                     }
                                 })
                         }
+                }.also {
+                    Disposer.register(projectRule.fixture.testRootDisposable, it.disposable)
                 }
             }
         }
 
-        Disposer.register(projectRule.fixture.testRootDisposable, deployDialog.disposable)
+        return deployDialog.executeDeployment().toCompletableFuture().get(5, TimeUnit.MINUTES)
+    }
 
-        val changeSetArn = deployDialog.executeDeployment().toCompletableFuture().get(5, TimeUnit.MINUTES)
+    private fun runAssertsAndClean(changeSetArn: String, asserts: () -> Unit) {
         try {
-            assertThat(changeSetArn).isNotNull()
-
-            val describeChangeSetResponse = cfnClient.describeChangeSet {
-                it.stackName(stackName)
-                it.changeSetName(changeSetArn)
-            }
-
-            assertThat(describeChangeSetResponse).isNotNull
+            asserts.invoke()
         } finally {
             try {
                 cfnClient.deleteChangeSet {

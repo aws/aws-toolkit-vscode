@@ -12,24 +12,39 @@ import com.intellij.openapi.vfs.VirtualFile
 import icons.AwsIcons
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationDialog
+import software.aws.toolkits.jetbrains.services.lambda.deploy.SamDeployDialog
 import software.aws.toolkits.resources.message
 
 class DeployServerlessApplicationAction : AnAction(
-        message("serverless.application.deploy"),
-        null,
-        AwsIcons.Resources.LAMBDA_FUNCTION) {
+    message("serverless.application.deploy"),
+    null,
+    AwsIcons.Resources.LAMBDA_FUNCTION
+) {
     private val templateYamlRegex = Regex("template\\.y[a]?ml", RegexOption.IGNORE_CASE)
 
     override fun actionPerformed(e: AnActionEvent) {
-
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
 
-        val samTemplateFile = getSamTemplateFile(e) ?: throw Exception("Could not detect template file")
-        val template = CloudFormationTemplate.parse(project, samTemplateFile)
+        val templateFile = getSamTemplateFile(e) ?: throw Exception("Could not detect template file")
+        val template = CloudFormationTemplate.parse(project, templateFile)
 
-        // TODO : Validate the template file (this is likely too slow to do in update())
+        val stackDialog = DeployServerlessApplicationDialog(project, template.parameters())
+        stackDialog.show()
+        if (!stackDialog.isOK) return
 
-        DeployServerlessApplicationDialog(project, template.parameters()).show()
+        val deployDialog = SamDeployDialog(
+            project,
+            stackDialog.stackName,
+            templateFile,
+            stackDialog.parameters,
+            stackDialog.region,
+            stackDialog.bucket
+        )
+
+        deployDialog.show()
+        if (!deployDialog.isOK) return
+
+        // TODO: Execute change set
     }
 
     override fun update(e: AnActionEvent) {
