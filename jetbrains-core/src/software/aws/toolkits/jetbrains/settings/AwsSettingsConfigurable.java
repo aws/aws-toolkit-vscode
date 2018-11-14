@@ -33,13 +33,6 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
 
     public AwsSettingsConfigurable(Project project) {
         this.project = project;
-
-        samExecutablePath.addBrowseFolderListener(
-            message("aws.settings.sam.find.title"),
-            message("aws.settings.sam.find.description"),
-            project,
-            FileChooserDescriptorFactory.createSingleLocalFileDescriptor()
-        );
     }
 
     @Nullable
