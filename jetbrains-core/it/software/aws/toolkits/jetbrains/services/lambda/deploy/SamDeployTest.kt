@@ -20,7 +20,7 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.rules.S3TemporaryBucketRule
 import software.aws.toolkits.jetbrains.core.credentials.runUnderRealCredentials
-import software.aws.toolkits.jetbrains.testutils.rules.HeavyJavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import java.util.concurrent.TimeUnit
 
 class SamDeployTest {

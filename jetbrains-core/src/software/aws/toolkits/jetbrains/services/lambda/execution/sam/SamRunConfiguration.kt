@@ -221,12 +221,13 @@ class SamRunSettingsEditor(project: Project) : SettingsEditor<SamRunConfiguratio
 
         val selected = RuntimeGroup.determineRuntime(project)?.let { if (it in supported) it else null }
 
-        view.runtime.populateValues(selected = selected, updateStatus = false) { supported }
+        view.runtime.populateValues(default = selected, updateStatus = false, forceSelectDefault = false) { supported }
 
         view.regionSelector.setRegions(regionProvider.regions().values.toMutableList())
         view.regionSelector.selectedRegion = ProjectAccountSettingsManager.getInstance(project).activeRegion
 
         view.credentialSelector.setCredentialsProviders(credentialManager.getCredentialProviders())
+        view.credentialSelector.setSelectedCredentialsProvider(ProjectAccountSettingsManager.getInstance(project).activeCredentialProvider)
     }
 
     override fun createEditor(): JPanel = view.panel
@@ -241,7 +242,7 @@ class SamRunSettingsEditor(project: Project) : SettingsEditor<SamRunConfiguratio
             view.selectFunction(settings.logicalFunctionName)
         } else {
             view.useTemplate.isSelected = false
-            view.runtime.selectedItem = settings.runtime?.let { Runtime.fromValue(it) }
+            view.runtime.model.selectedItem = settings.runtime?.let { Runtime.fromValue(it) }
             view.handler.setText(settings.handler)
         }
         view.environmentVariables.envVars = settings.environmentVariables
@@ -249,7 +250,7 @@ class SamRunSettingsEditor(project: Project) : SettingsEditor<SamRunConfiguratio
 
         settings.credentialProviderId?.let {
             try {
-                view.credentialSelector.setSelectedInvalidCredentialsProvider(credentialManager.getCredentialProvider(it))
+                view.credentialSelector.setSelectedCredentialsProvider(credentialManager.getCredentialProvider(it))
             } catch (e: CredentialProviderNotFound) {
                 // Use the raw string here to not munge what the customer had, will also allow it to show the error
                 // that it could not be found

@@ -21,8 +21,8 @@ abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>>(text: Str
         val resourceName = selected.toString()
         ApplicationManager.getApplication().invokeLater {
             val response = Messages.showInputDialog(selected.project,
-                    message("delete_resource.message", selected.resourceType, resourceName),
-                    message("delete_resource.title", selected.resourceType, resourceName),
+                    message("delete_resource.message", selected.resourceType(), resourceName),
+                    message("delete_resource.title", selected.resourceType(), resourceName),
                     Messages.getWarningIcon(),
                     null,
                     object : InputValidator {
@@ -36,9 +36,9 @@ abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>>(text: Str
                 ApplicationManager.getApplication().executeOnPooledThread {
                     try {
                         performDelete(selected)
-                        notifyInfo(message("delete_resource.deleted", selected.resourceType, resourceName))
+                        notifyInfo(message("delete_resource.deleted", selected.resourceType(), resourceName))
                     } catch (e: Exception) {
-                        e.notifyError(message("delete_resource.delete_failed", selected.resourceType, resourceName), selected.project)
+                        e.notifyError(message("delete_resource.delete_failed", selected.resourceType(), resourceName), selected.project)
                     }
                 }
             }

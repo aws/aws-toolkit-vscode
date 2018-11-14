@@ -13,7 +13,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.testutils.rules.JavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 
 @RunWith(Parameterized::class)
 class JavaRuntimeGroupTest(

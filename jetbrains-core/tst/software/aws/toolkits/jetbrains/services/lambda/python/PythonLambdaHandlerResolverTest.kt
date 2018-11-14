@@ -13,7 +13,7 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.Lambda
-import software.aws.toolkits.jetbrains.testutils.rules.addFileToModule
+import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 
 class PythonLambdaHandlerResolverTest {

@@ -72,6 +72,9 @@ interface ProjectAccountSettingsManager {
     }
 }
 
+fun Project.activeRegion(): AwsRegion = ProjectAccountSettingsManager.getInstance(this).activeRegion
+fun Project.activeCredentialProvider(): ToolkitCredentialsProvider = ProjectAccountSettingsManager.getInstance(this).activeCredentialProvider
+
 data class AccountState(
     var activeProfile: String? = null,
     var activeRegion: String = AwsRegionProvider.getInstance().defaultRegion().id,

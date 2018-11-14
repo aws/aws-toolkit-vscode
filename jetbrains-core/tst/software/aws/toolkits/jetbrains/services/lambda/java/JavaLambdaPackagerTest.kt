@@ -25,11 +25,11 @@ import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.core.utils.zipEntries
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
-import software.aws.toolkits.jetbrains.testutils.rules.HeavyJavaCodeInsightTestFixtureRule
-import software.aws.toolkits.jetbrains.testutils.rules.addClass
-import software.aws.toolkits.jetbrains.testutils.rules.addModule
-import software.aws.toolkits.jetbrains.testutils.rules.addResourceFile
-import software.aws.toolkits.jetbrains.testutils.rules.addTestClass
+import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.addClass
+import software.aws.toolkits.jetbrains.utils.rules.addModule
+import software.aws.toolkits.jetbrains.utils.rules.addResourceFile
+import software.aws.toolkits.jetbrains.utils.rules.addTestClass
 import java.io.File
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage

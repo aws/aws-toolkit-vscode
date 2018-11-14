@@ -10,7 +10,6 @@ import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.amazon.awssdk.services.lambda.model.ListFunctionsRequest
 import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerPageableNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerResourceNode
@@ -46,25 +45,21 @@ class LambdaFunctionsNode(project: Project) : AwsExplorerPageableNode<String>(pr
         return resources
     }
 
-    private fun mapResourceToNode(resource: FunctionConfiguration) = LambdaFunctionNode(project!!, client, resource)
+    private fun mapResourceToNode(resource: FunctionConfiguration) = LambdaFunctionNode(project!!, client, resource.toDataClass(credentialProvider.id, region))
 }
 
-class LambdaFunctionNode(
+open class LambdaFunctionNode(
     project: Project,
     val client: LambdaClient,
-    functionConfiguration: FunctionConfiguration
-) : AwsExplorerResourceNode<FunctionConfiguration>(project, LambdaClient.SERVICE_NAME, "function", functionConfiguration, AwsIcons.Resources.LAMBDA_FUNCTION) {
-    private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
-
-    val function = functionConfiguration.toDataClass(accountSettingsManager.activeCredentialProvider.id, accountSettingsManager.activeRegion)
+    val function: LambdaFunction
+) : AwsExplorerResourceNode<LambdaFunction>(project, LambdaClient.SERVICE_NAME, function, AwsIcons.Resources.LAMBDA_FUNCTION) {
+    override fun resourceType() = "function"
 
     override fun toString(): String = functionName()
 
+    override fun displayName() = functionName()
+
     fun functionName(): String = function.name
 
-    fun handlerPsi(): Array<NavigatablePsiElement> = Lambda.findPsiElementsForHandler(
-        super.getProject()!!,
-        function.runtime,
-        function.handler
-    )
+    fun handlerPsi(): Array<NavigatablePsiElement> = Lambda.findPsiElementsForHandler(super.getProject()!!, function.runtime, function.handler)
 }

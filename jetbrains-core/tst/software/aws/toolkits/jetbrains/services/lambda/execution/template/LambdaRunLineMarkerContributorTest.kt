@@ -10,8 +10,8 @@ import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import software.aws.toolkits.jetbrains.testutils.rules.JavaCodeInsightTestFixtureRule
-import software.aws.toolkits.jetbrains.testutils.rules.openFile
+import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.openFile
 
 class LambdaRunLineMarkerContributorTest {
 

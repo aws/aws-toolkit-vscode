@@ -20,9 +20,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.settings.SamSettings
-import software.aws.toolkits.jetbrains.testutils.rules.HeavyJavaCodeInsightTestFixtureRule
-import software.aws.toolkits.jetbrains.testutils.rules.addClass
-import software.aws.toolkits.jetbrains.testutils.rules.addModule
+import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.addClass
+import software.aws.toolkits.jetbrains.utils.rules.addModule
 
 class JavaSamRunConfigurationIntegrationTest {
     @Rule

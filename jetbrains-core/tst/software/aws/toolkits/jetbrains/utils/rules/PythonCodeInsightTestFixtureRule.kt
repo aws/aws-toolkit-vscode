@@ -30,7 +30,6 @@ import com.jetbrains.python.sdk.PythonSdkType
 import com.jetbrains.python.sdk.flavors.CPythonSdkFlavor
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.annotations.NotNull
-import software.aws.toolkits.jetbrains.testutils.rules.CodeInsightTestFixtureRule
 import java.io.File
 import java.nio.file.Paths
 
