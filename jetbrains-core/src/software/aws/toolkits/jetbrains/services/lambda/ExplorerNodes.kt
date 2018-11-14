@@ -57,6 +57,8 @@ open class LambdaFunctionNode(
 
     override fun toString(): String = functionName()
 
+    override fun displayName() = functionName()
+
     fun functionName(): String = function.name
 
     fun handlerPsi(): Array<NavigatablePsiElement> = Lambda.findPsiElementsForHandler(super.getProject()!!, function.runtime, function.handler)

@@ -46,7 +46,7 @@ class ServerlessApplicationsNodeTest {
 
         val node = ServerlessApplicationsNode(projectRule.project)
 
-        assertThat(node.children).hasOnlyOneElementSatisfying { assertThat(it.toString()).isEqualTo("Stack") }
+        assertThat(node.children).hasOnlyOneElementSatisfying { assertThat(it.displayName()).isEqualTo("Stack") }
     }
 
     @Test

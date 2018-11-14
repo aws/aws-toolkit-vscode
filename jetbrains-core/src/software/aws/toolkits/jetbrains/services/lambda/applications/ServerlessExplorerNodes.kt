@@ -84,6 +84,8 @@ class ServerlessApplicationNode(project: Project, val stackName: String, private
         }.toList() as Collection<AbstractTreeNode<Any>>
     }
 
+    override fun statusText(): String? = stackStatus.toString()
+
     private companion object {
         val FAILED_STACK_STATES = setOf(StackStatus.CREATE_FAILED, StackStatus.DELETE_FAILED, StackStatus.ROLLBACK_FAILED)
         val IN_PROGRESS_STACK_STATES = setOf(

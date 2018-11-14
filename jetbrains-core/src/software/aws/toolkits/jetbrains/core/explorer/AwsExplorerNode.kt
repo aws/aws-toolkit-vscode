@@ -25,10 +25,18 @@ import javax.swing.tree.MutableTreeNode
 abstract class AwsExplorerNode<T>(val nodeProject: Project, value: T, private val awsIcon: Icon?) : AbstractTreeNode<T>(nodeProject, value) {
 
     override fun update(presentation: PresentationData?) {
-        presentation?.setIcon(awsIcon)
+        presentation?.let {
+            it.setIcon(awsIcon)
+            it.addText(displayName(), SimpleTextAttributes.REGULAR_ATTRIBUTES)
+            statusText()?.let { status ->
+                it.addText(" [$status]", SimpleTextAttributes.GRAY_ATTRIBUTES)
+            }
+        }
     }
 
-    override fun toString() = value.toString()
+    open fun displayName() = value.toString()
+
+    open fun statusText(): String? = null
 
     open fun onDoubleClick(model: DefaultTreeModel, selectedElement: DefaultMutableTreeNode) {}
 
@@ -202,7 +210,7 @@ class AwsExplorerEmptyNode(project: Project) : AwsExplorerNode<String>(project, 
 
     override fun update(presentation: PresentationData?) {
         super.update(presentation)
-        presentation?.addText(toString(), SimpleTextAttributes.GRAYED_ATTRIBUTES)
+        presentation?.addText(displayName(), SimpleTextAttributes.GRAYED_ATTRIBUTES)
     }
 
     override fun isAlwaysLeaf() = true
