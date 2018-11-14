@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.Nls.Capitalization;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamInitRunner;
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon;
 
 public class AwsSettingsConfigurable implements SearchableConfigurable {
     private static final String SAM_HELP_LINK = message("lambda.sam.cli.install_url");
@@ -99,7 +99,7 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
 
         // if path is set and it is a bad executable
         String error;
-        if ((error = SamInitRunner.Companion.validate(path)) != null) {
+        if ((error = SamCommon.Companion.validate(path)) != null) {
             throw new ConfigurationException(message("lambda.run_configuration.sam.invalid_executable", error));
         }
 

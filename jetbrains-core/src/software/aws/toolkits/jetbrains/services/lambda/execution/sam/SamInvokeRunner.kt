@@ -50,6 +50,10 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
     }
 
     override fun execute(environment: ExecutionEnvironment, state: RunProfileState): Promise<RunContentDescriptor?> {
+        val validationMessage = SamCommon.validate()
+        if (validationMessage != null) {
+            throw IllegalStateException(validationMessage)
+        }
         val buildingPromise = AsyncPromise<RunContentDescriptor>()
         val samState = state as SamRunningState
         val psiFile = samState.settings.handlerElement.containingFile
