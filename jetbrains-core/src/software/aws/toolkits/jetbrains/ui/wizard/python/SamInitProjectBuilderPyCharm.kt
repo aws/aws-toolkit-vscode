@@ -18,7 +18,7 @@ import software.aws.toolkits.resources.message
 import java.io.File
 
 class SamInitProjectBuilderPyCharm : PythonProjectGenerator<PyNewProjectSettings>() {
-    val settingsPanel = SamInitDirectoryBasedSettingsPanel(SAM_TEMPLATES)
+    val settingsPanel = SamInitDirectoryBasedSettingsPanel(SAM_TEMPLATES, this)
 
     override fun getName() = SamModuleType.ID
 
@@ -26,6 +26,8 @@ class SamInitProjectBuilderPyCharm : PythonProjectGenerator<PyNewProjectSettings
     override fun getSettingsPanel(baseDir: File?) = settingsPanel.component
 
     override fun getLogo() = AwsIcons.Resources.SERVERLESS_APP
+
+    override fun validate(baseDirPath: String) = settingsPanel.validate()
 
     override fun configureProject(project: Project, baseDir: VirtualFile, settings: PyNewProjectSettings, module: Module, synchronizer: PyProjectSynchronizer?) {
         val runtime = PythonRuntimeGroup.determineRuntimeForSdk(settings.sdk

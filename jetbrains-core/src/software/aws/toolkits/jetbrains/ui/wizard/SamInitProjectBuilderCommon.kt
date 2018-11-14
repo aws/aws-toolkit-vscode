@@ -1,5 +1,6 @@
 // Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
+@file:JvmName("SamInitProjectBuilderCommon")
 
 package software.aws.toolkits.jetbrains.ui.wizard
 
@@ -17,6 +18,7 @@ import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.ui.wizard.java.SamInitModuleBuilder
 import software.aws.toolkits.resources.message
 import javax.swing.JButton
+import javax.swing.JComponent
 import javax.swing.JTextField
 
 class SamProjectTemplateWrapper(
@@ -67,11 +69,19 @@ class SamModuleType : ModuleType<SamInitModuleBuilder>(ID) {
     }
 }
 
-fun setupSamSelectionElements(samExecutableField: JTextField, editButton: JButton) {
+@JvmOverloads
+fun setupSamSelectionElements(samExecutableField: JTextField, editButton: JButton, label: JComponent, postEditCallback: Runnable? = null) {
     samExecutableField.text = SamSettings.getInstance().executablePath
 
     editButton.addActionListener {
         ShowSettingsUtil.getInstance().showSettingsDialog(DefaultProjectFactory.getInstance().defaultProject, AwsSettingsConfigurable::class.java)
         samExecutableField.text = SamSettings.getInstance().executablePath
+        postEditCallback?.run()
+    }
+
+    if (samExecutableField.text.isNotEmpty()) {
+        samExecutableField.isVisible = false
+        editButton.isVisible = false
+        label.isVisible = false
     }
 }

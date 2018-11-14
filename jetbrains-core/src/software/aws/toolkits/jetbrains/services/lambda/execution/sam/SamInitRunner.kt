@@ -49,4 +49,16 @@ class SamInitRunner(
         // copy from temp dir to output dir
         VfsUtil.copyDirectory(null, VfsUtil.getChildren(tempDir)[0], outputDir, null)
     }
+
+    companion object {
+        fun validate(path: String): String? {
+            val commandLine = GeneralCommandLine(path).withParameters("--version")
+            return try {
+                val process = CapturingProcessHandler(commandLine).runProcess()
+                if (process.exitCode != 0) process.stderr else null
+            } catch (e: Exception) {
+                e.localizedMessage
+            }
+        }
+    }
 }

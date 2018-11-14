@@ -19,7 +19,7 @@ import com.intellij.uiDesigner.core.GridConstraints;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.lambda.model.Runtime;
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager;
-import software.aws.toolkits.jetbrains.ui.wizard.SamInitProjectBuilderCommonKt;
+import software.aws.toolkits.jetbrains.ui.wizard.SamInitProjectBuilderCommon;
 
 import static software.aws.toolkits.resources.Localization.message;
 
@@ -28,6 +28,7 @@ public class SamInitRuntimeSelectionPanel extends ModuleWizardStep {
     private ComboBox<Runtime> runtime;
     private JTextField samExecutableField;
     private JButton editSamExecutableButton;
+    private JBLabel samLabel;
 
     private SamInitModuleBuilder builder;
     private WizardContext context;
@@ -46,7 +47,7 @@ public class SamInitRuntimeSelectionPanel extends ModuleWizardStep {
                 .sorted()
                 .forEach(y -> runtime.addItem(y));
 
-        SamInitProjectBuilderCommonKt.setupSamSelectionElements(samExecutableField, editSamExecutableButton);
+        SamInitProjectBuilderCommon.setupSamSelectionElements(samExecutableField, editSamExecutableButton, samLabel);
 
         runtime.addItemListener(l -> {
             if (l.getStateChange() == ItemEvent.SELECTED) {
@@ -54,6 +55,8 @@ public class SamInitRuntimeSelectionPanel extends ModuleWizardStep {
                 buildSdkSettingsPanel();
             }
         });
+
+        mainPanel.validate();
     }
 
     private void buildSdkSettingsPanel() {
