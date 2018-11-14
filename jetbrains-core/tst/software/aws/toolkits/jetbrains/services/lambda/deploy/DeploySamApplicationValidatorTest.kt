@@ -18,7 +18,7 @@ import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.services.cloudformation.Parameter
-import software.aws.toolkits.jetbrains.testutils.rules.JavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.resources.message
 import javax.swing.DefaultComboBoxModel
 
