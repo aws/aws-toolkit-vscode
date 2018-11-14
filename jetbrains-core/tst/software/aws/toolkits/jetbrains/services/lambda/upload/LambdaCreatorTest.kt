@@ -27,7 +27,7 @@ import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
-import software.aws.toolkits.jetbrains.testutils.rules.JavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.delegateMock
 import java.nio.file.Path
 import java.time.LocalDateTime
@@ -222,8 +222,7 @@ class LambdaCreatorTest {
         }
 
         val lambdaCreator = LambdaFunctionCreator((lambdaClient))
-        lambdaCreator.update(projectRule.project, functionDetails).toCompletableFuture()
-            .get(5, TimeUnit.SECONDS)
+        lambdaCreator.update(functionDetails).toCompletableFuture().get(5, TimeUnit.SECONDS)
 
         val configurationRequest = updateConfigCaptor.firstValue
         assertThat(configurationRequest.functionName()).isEqualTo(functionDetails.name)

@@ -107,10 +107,16 @@
             <action id="lambda.function.gotohandler"
                     class="software.aws.toolkits.jetbrains.services.lambda.actions.GoToHandlerAction"/>
             <separator/>
-            <action id="lambda.function.edit"
-                    class="software.aws.toolkits.jetbrains.services.lambda.actions.EditFunctionAction"/>
+            <action id="lambda.function.updateConfiguration"
+                    class="software.aws.toolkits.jetbrains.services.lambda.actions.UpdateFunctionConfigurationAction"/>
+            <action id="lambda.function.updateCode" class="software.aws.toolkits.jetbrains.services.lambda.actions.UpdateFunctionCodeAction"/>
             <action id="lambda.function.delete"
                     class="software.aws.toolkits.jetbrains.services.lambda.actions.DeleteFunctionAction"/>
+        </group>
+        <group id="aws.toolkit.explorer.lambda.stackFunction" popup="true" compact="false">
+            <reference ref="RunContextGroupInner"/>
+            <separator/>
+            <action id="lambda.stackFunction.gotohandler" class="software.aws.toolkits.jetbrains.services.lambda.actions.GoToHandlerAction"/>
         </group>
         <group id="aws.toolkit.explorer.lambda.application" popup="true" compact="false">
             <action id="lambda.application.delete"
@@ -119,7 +125,8 @@
         <action class="software.aws.toolkits.jetbrains.core.SettingsSelectorAction" id="aws.settings.selector" icon="AwsIcons.Logos.AWS"/>
         <action class="software.aws.toolkits.jetbrains.core.credentials.CreateOrUpdateCredentialProfilesAction" id="aws.settings.upsertCredentials" icon="AwsIcons.Logos.AWS"/>
 
-        <group id="aws.toolkit.serverless.template">
+        <!-- Uncomment when 'feature/deploy-application' is merged -->
+        <!-- group id="aws.toolkit.serverless.template">
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
             <add-to-group group-id="EditorTabPopupMenu" anchor="last"/>
@@ -128,7 +135,7 @@
             <action id="serverless.application.deploy"
                     class="software.aws.toolkits.jetbrains.services.lambda.actions.DeployServerlessApplicationAction"/>
             <separator/>
-        </group>
+        </group-->
     </actions>
 
 </idea-plugin>

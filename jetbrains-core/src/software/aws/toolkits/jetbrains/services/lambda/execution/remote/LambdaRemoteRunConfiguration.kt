@@ -180,7 +180,7 @@ class RemoteLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaRem
 
         settings.credentialProviderId?.let {
             try {
-                view.credentialSelector.setSelectedInvalidCredentialsProvider(credentialManager.getCredentialProvider(it))
+                view.credentialSelector.setSelectedCredentialsProvider(credentialManager.getCredentialProvider(it))
             } catch (e: CredentialProviderNotFound) {
                 // Use the raw string here to not munge what the customer had, will also allow it to show the error
                 // that it could not be found

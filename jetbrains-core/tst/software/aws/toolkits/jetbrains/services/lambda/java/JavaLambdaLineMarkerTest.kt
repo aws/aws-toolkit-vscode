@@ -19,9 +19,9 @@ import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker
 import software.aws.toolkits.jetbrains.settings.LambdaSettings
-import software.aws.toolkits.jetbrains.testutils.rules.JavaCodeInsightTestFixtureRule
-import software.aws.toolkits.jetbrains.testutils.rules.openClass
-import software.aws.toolkits.jetbrains.testutils.rules.openFile
+import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.openClass
+import software.aws.toolkits.jetbrains.utils.rules.openFile
 
 class JavaLambdaLineMarkerTest {
     @Rule

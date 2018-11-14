@@ -11,7 +11,7 @@ import com.intellij.openapi.project.Project
 
 const val GROUP_DISPLAY_ID = "AWS Toolkit"
 
-fun Exception.notifyError(title: String, project: Project? = null) =
+fun Exception.notifyError(title: String = "", project: Project? = null) =
         notify(
                 Notification(
                         GROUP_DISPLAY_ID,
@@ -20,8 +20,6 @@ fun Exception.notifyError(title: String, project: Project? = null) =
                         NotificationType.ERROR
                 ), project
         )
-
-fun notifyError(title: String, project: Project? = null) = notify(Notification(GROUP_DISPLAY_ID, title, "", NotificationType.ERROR), project)
 
 fun notifyInfo(title: String, content: String = "", project: Project? = null, listener: NotificationListener? = null) =
         notify(Notification(GROUP_DISPLAY_ID, title, content, NotificationType.INFORMATION, listener), project)
