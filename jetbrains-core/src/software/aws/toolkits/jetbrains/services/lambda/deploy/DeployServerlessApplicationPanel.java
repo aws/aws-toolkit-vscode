@@ -25,11 +25,11 @@ public class DeployServerlessApplicationPanel {
     @NotNull JButton createS3BucketButton;
     private EnvVariablesTable environmentVariablesTable;
     @NotNull JPanel content;
-    @NotNull RegionSelector region;
     @NotNull ComboBox<String> s3Bucket;
     @NotNull ComboBox<String> stacks;
-    @NotNull JLabel newStackNameLabel;
     @NotNull Wrapper stackParameters;
+    @NotNull JRadioButton selectStack;
+    @NotNull JRadioButton newStack;
 
     public DeployServerlessApplicationPanel withTemplateParameters(final Collection<Parameter> parameters) {
 

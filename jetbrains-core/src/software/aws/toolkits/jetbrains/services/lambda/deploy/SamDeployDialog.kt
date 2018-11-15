@@ -17,7 +17,6 @@ import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.ExceptionUtil
-import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
@@ -35,7 +34,6 @@ open class SamDeployDialog(
     private val stackName: String,
     private val template: VirtualFile,
     private val parameters: Map<String, String>,
-    private val region: AwsRegion,
     private val s3Bucket: String,
     execute: Boolean = true
 ) : DialogWrapper(project) {
@@ -43,6 +41,7 @@ open class SamDeployDialog(
     private val view = SamDeployView(project, progressIndicator)
     private var currentStep = 0
     private val credentialsProvider = ProjectAccountSettingsManager.getInstance(project).activeCredentialProvider
+    private val region = ProjectAccountSettingsManager.getInstance(project).activeRegion
     private val changeSetRegex = "(arn:aws:cloudformation:.*changeSet/[^\\s]*)".toRegex()
     lateinit var changeSetName: String
         private set

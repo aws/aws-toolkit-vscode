@@ -16,7 +16,6 @@ import com.intellij.testFramework.runInEdtAndGet
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.services.cloudformation.Parameter
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.resources.message
@@ -47,14 +46,8 @@ class DeploySamApplicationValidatorTest {
 
         view.withTemplateParameters(parameters)
 
-        val region = AwsRegion("us-west-2", "Oregon")
-        view.region.model = DefaultComboBoxModel(arrayOf(region))
-        view.region.selectedRegion = region
-
-        view.stacks.model = DefaultComboBoxModel(arrayOf(
-                message("serverless.application.stack.selection.create.stack"),
-                "stack123"
-        ))
+        view.selectStack.isSelected = true
+        view.stacks.model = DefaultComboBoxModel(arrayOf("stack123"))
         view.stacks.selectedItem = "stack123"
 
         view.s3Bucket.model = DefaultComboBoxModel(arrayOf("bucket123"))
@@ -68,7 +61,7 @@ class DeploySamApplicationValidatorTest {
 
     @Test
     fun validInputsWithNewStackReturnsNull() {
-        view.stacks.selectedItem = message("serverless.application.stack.selection.create.stack")
+        view.newStack.isSelected = true
         view.newStackName.text = "newStack"
         assert(sut.validateSettings(view)).isNull()
 
@@ -80,12 +73,6 @@ class DeploySamApplicationValidatorTest {
     }
 
     @Test
-    fun regionMustBeSpecified() {
-        view.region.selectedRegion = null
-        assert(sut.validateSettings(view)).containsMessage(message("serverless.application.deploy.validation.region.empty"))
-    }
-
-    @Test
     fun stackMustBeSpecified() {
         view.stacks.selectedItem = null
         assert(sut.validateSettings(view)).containsMessage(message("serverless.application.deploy.validation.stack.missing"))
@@ -93,14 +80,14 @@ class DeploySamApplicationValidatorTest {
 
     @Test
     fun newStackNameMustBeSpecified() {
-        view.stacks.selectedItem = message("serverless.application.stack.selection.create.stack")
+        view.newStack.isSelected = true
         view.newStackName.text = null
         assert(sut.validateSettings(view)).containsMessage(message("serverless.application.deploy.validation.new.stack.name.missing"))
     }
 
     @Test
     fun invalidStackName_TooLong() {
-        view.stacks.selectedItem = message("serverless.application.stack.selection.create.stack")
+        view.newStack.isSelected = true
         view.newStackName.text = "x".repeat(DeploySamApplicationValidator.MAX_STACK_NAME_LENGTH + 1)
         assert(sut.validateSettings(view)).containsMessage(
                 message("serverless.application.deploy.validation.new.stack.name.too.long", DeploySamApplicationValidator.MAX_STACK_NAME_LENGTH)
@@ -109,7 +96,7 @@ class DeploySamApplicationValidatorTest {
 
     @Test
     fun invalidStackName_InvalidChars() {
-        view.stacks.selectedItem = message("serverless.application.stack.selection.create.stack")
+        view.newStack.isSelected = true
         view.newStackName.text = "stack_1"
         assert(sut.validateSettings(view)).containsMessage(message("serverless.application.deploy.validation.new.stack.name.invalid"))
 

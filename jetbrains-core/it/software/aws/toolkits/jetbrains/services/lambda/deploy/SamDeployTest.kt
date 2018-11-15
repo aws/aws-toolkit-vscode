@@ -14,6 +14,7 @@ import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.util.ExceptionUtil
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Ignore
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.regions.Region
@@ -22,6 +23,7 @@ import software.amazon.awssdk.services.cloudformation.model.Parameter
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.rules.S3TemporaryBucketRule
+import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.runUnderRealCredentials
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import java.util.concurrent.TimeUnit
@@ -39,6 +41,11 @@ class SamDeployTest {
     @Rule
     @JvmField
     val bucketRule = S3TemporaryBucketRule(s3Client)
+
+    @Before
+    fun setUp() {
+        MockProjectAccountSettingsManager.getInstance(projectRule.project).activeRegion = AwsRegion(Region.US_WEST_2.id(), "us-west-2")
+    }
 
     @Test
     fun deployAppUsingSam() {
@@ -121,7 +128,6 @@ class SamDeployTest {
                     stackName,
                     templateFile,
                     parameters,
-                    AwsRegion(Region.US_WEST_2.id(), "us-west-2"),
                     bucketRule.createBucket(stackName),
                     false
                 ) {
