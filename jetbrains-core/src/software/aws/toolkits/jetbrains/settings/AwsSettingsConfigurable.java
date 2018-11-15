@@ -12,6 +12,7 @@ import com.intellij.openapi.options.SearchableConfigurable;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.openapi.util.text.StringUtil;
+import com.intellij.ui.IdeBorderFactory;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.ui.components.labels.LinkLabel;
@@ -32,9 +33,15 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
     private TextFieldWithBrowseButton samExecutablePath;
     private LinkLabel samHelp;
     private JBCheckBox showAllHandlerGutterIcons;
+    private JBCheckBox enableTelemetry;
+    private JPanel projectLevelSettings;
+    private JPanel applicationLevelSettings;
 
     public AwsSettingsConfigurable(Project project) {
         this.project = project;
+
+        applicationLevelSettings.setBorder(IdeBorderFactory.createTitledBorder(message("aws.settings.global_level_label")));
+        projectLevelSettings.setBorder(IdeBorderFactory.createTitledBorder(message("aws.settings.project_level_label")));
     }
 
     @Nullable
@@ -75,10 +82,13 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
 
     @Override
     public boolean isModified() {
+        AwsSettings awsSettings = AwsSettings.getInstance();
         SamSettings samSettings = SamSettings.getInstance();
         LambdaSettings lambdaSettings = LambdaSettings.getInstance(project);
+
         return !Objects.equals(getSamExecutablePath(), samSettings.getSavedExecutablePath()) ||
-               isModified(showAllHandlerGutterIcons, lambdaSettings.getShowAllHandlerGutterIcons());
+                isModified(showAllHandlerGutterIcons, lambdaSettings.getShowAllHandlerGutterIcons()) ||
+                isModified(enableTelemetry, awsSettings.isTelemetryEnabled());
     }
 
     @Override
@@ -103,9 +113,12 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
             throw new ConfigurationException(message("lambda.run_configuration.sam.invalid_executable", error));
         }
 
-        LambdaSettings lambdaSettings = LambdaSettings.getInstance(project);
         // preserve user's null input if we autodetected the path
         samSettings.setSavedExecutablePath(getSamExecutablePath());
+
+        AwsSettings awsSettings = AwsSettings.getInstance();
+        awsSettings.setTelemetryEnabled(enableTelemetry.isSelected());
+        LambdaSettings lambdaSettings = LambdaSettings.getInstance(project);
         lambdaSettings.setShowAllHandlerGutterIcons(showAllHandlerGutterIcons.isSelected());
     }
 
@@ -116,8 +129,10 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
 
     @Override
     public void reset() {
+        AwsSettings awsSettings = AwsSettings.getInstance();
         SamSettings samSettings = SamSettings.getInstance();
         LambdaSettings lambdaSettings = LambdaSettings.getInstance(project);
+        enableTelemetry.setSelected(awsSettings.isTelemetryEnabled());
         samExecutablePath.setText(samSettings.getSavedExecutablePath());
         showAllHandlerGutterIcons.setSelected(lambdaSettings.getShowAllHandlerGutterIcons());
     }
