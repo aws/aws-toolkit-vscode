@@ -7,12 +7,18 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.actionSystem.PlatformDataKeys
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.vfs.VirtualFile
 import icons.AwsIcons
+import software.amazon.awssdk.services.cloudformation.CloudFormationClient
+import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
+import software.aws.toolkits.jetbrains.services.cloudformation.executeChangeSetAndWait
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationDialog
 import software.aws.toolkits.jetbrains.services.lambda.deploy.SamDeployDialog
+import software.aws.toolkits.jetbrains.utils.notifyError
+import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 
 class DeployServerlessApplicationAction : AnAction(
@@ -32,9 +38,10 @@ class DeployServerlessApplicationAction : AnAction(
         stackDialog.show()
         if (!stackDialog.isOK) return
 
+        val stackName = stackDialog.stackName
         val deployDialog = SamDeployDialog(
             project,
-            stackDialog.stackName,
+            stackName,
             templateFile,
             stackDialog.parameters,
             stackDialog.region,
@@ -44,7 +51,19 @@ class DeployServerlessApplicationAction : AnAction(
         deployDialog.show()
         if (!deployDialog.isOK) return
 
-        // TODO: Execute change set
+        val cfnClient = project.awsClient<CloudFormationClient>()
+        ApplicationManager.getApplication().executeOnPooledThread {
+            try {
+                cfnClient.executeChangeSetAndWait(stackName, deployDialog.changeSetName)
+                notifyInfo(
+                    message("cloudformation.execute_change_set.success.title"),
+                    message("cloudformation.execute_change_set.success", stackName),
+                    project
+                )
+            } catch (e: Exception) {
+                e.notifyError(message("cloudformation.execute_change_set.failed", stackName), project)
+            }
+        }
     }
 
     override fun update(e: AnActionEvent) {

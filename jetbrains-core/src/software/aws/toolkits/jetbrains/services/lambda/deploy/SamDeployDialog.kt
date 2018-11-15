@@ -41,6 +41,8 @@ open class SamDeployDialog(
     private var currentStep = 0
     private val credentialsProvider = ProjectAccountSettingsManager.getInstance(project).activeCredentialProvider
     private val changeSetRegex = "(arn:aws:cloudformation:.*changeSet/[^\\s]*)".toRegex()
+    lateinit var changeSetName: String
+        private set
 
     init {
         Disposer.register(disposable, view)
@@ -110,6 +112,7 @@ open class SamDeployDialog(
     }
 
     private fun finish(changeSet: String): String = changeSet.also {
+        changeSetName = changeSet
         progressIndicator.fraction = 1.0
         currentStep = NUMBER_OF_STEPS.toInt()
         okAction.isEnabled = true
