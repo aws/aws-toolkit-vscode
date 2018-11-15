@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.openapi.project.Project
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
@@ -14,6 +15,8 @@ class MockProjectAccountSettingsManager : ProjectAccountSettingsManager {
 
     var internalProvider: ToolkitCredentialsProvider? = DUMMY_PROVIDER
 
+    val internalRecentlyUsedRegions = mutableListOf<AwsRegion>()
+
     override var activeRegion = AwsRegionProvider.getInstance().defaultRegion()
 
     override var activeCredentialProvider: ToolkitCredentialsProvider
@@ -22,13 +25,9 @@ class MockProjectAccountSettingsManager : ProjectAccountSettingsManager {
             internalProvider = value
         }
 
-    override fun recentlyUsedRegions(): List<AwsRegion> {
-        TODO("not implemented")
-    }
+    override fun recentlyUsedRegions(): List<AwsRegion> = internalRecentlyUsedRegions
 
-    override fun recentlyUsedCredentials(): List<ToolkitCredentialsProvider> {
-        TODO("not implemented")
-    }
+    override fun recentlyUsedCredentials(): List<ToolkitCredentialsProvider> = mutableListOf()
 
     companion object {
         val DUMMY_PROVIDER = object : ToolkitCredentialsProvider() {
@@ -37,5 +36,7 @@ class MockProjectAccountSettingsManager : ProjectAccountSettingsManager {
 
             override fun resolveCredentials(): AwsCredentials = AwsBasicCredentials.create("Foo", "Bar")
         }
+
+        fun getInstance(project: Project) = ProjectAccountSettingsManager.getInstance(project) as MockProjectAccountSettingsManager
     }
 }
