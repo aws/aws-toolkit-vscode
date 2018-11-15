@@ -3,11 +3,11 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.actions
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.vfs.VirtualFile
 import icons.AwsIcons
@@ -21,7 +21,7 @@ import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 
-class DeployServerlessApplicationAction : AnAction(
+class DeployServerlessApplicationAction : DumbAwareAction(
     message("serverless.application.deploy"),
     null,
     AwsIcons.Resources.LAMBDA_FUNCTION
