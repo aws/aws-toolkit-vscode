@@ -30,37 +30,24 @@ class PythonLambdaHandlerResolver : LambdaHandlerResolver {
         handler: String,
         searchScope: GlobalSearchScope
     ): Array<NavigatablePsiElement> {
-        // <f/old/ers>.<par.ent.module.s.<module>.<function>
+        if (!handler.contains('.')) {
+            return NavigatablePsiElement.EMPTY_NAVIGATABLE_ELEMENT_ARRAY
+        }
+        // [par/rent/fold/ers/][module.folders.]moduleFile.functionName
         val functionName = handler.substringAfterLast('.')
-        var remainder = handler.substringBeforeLast('.')
+        val parentFolders = handler.substringBeforeLast('/', "").nullize(true)?.split("/") ?: emptyList()
 
-        val moduleStartIndex = remainder.lastIndexOfAny(charArrayOf('.', '/'))
-        if (moduleStartIndex < 0) return NavigatablePsiElement.EMPTY_NAVIGATABLE_ELEMENT_ARRAY
-
-        val moduleName = remainder.substring(moduleStartIndex + 1)
-        val isReferencedByModule = remainder[moduleStartIndex] == '.'
-
-        remainder = remainder.substring(0, remainder.length - moduleName.length - 1)
-
-        val parentModules = if (isReferencedByModule) {
-            remainder.substringAfterLast("/").split('.')
-        } else {
-            emptyList()
-        }
-
-        val parentFolders = if (isReferencedByModule) {
-            remainder.substringBeforeLast("/", "").nullize(true)?.split('/') ?: emptyList()
-        } else {
-            remainder.split('/')
-        }
+        val fullyQualifiedModule = handler.substringAfterLast('/').substringBeforeLast('.').split('.')
+        val moduleFile = fullyQualifiedModule.last()
+        val moduleFolders = fullyQualifiedModule.take(fullyQualifiedModule.size - 1)
 
         // Find the module by the name
-        PyModuleNameIndex.find(moduleName, project, true).forEach { pyModule ->
+        PyModuleNameIndex.find(moduleFile, project, true).forEach { pyModule ->
             val lambdaFunctionCandidate = pyModule.findTopLevelFunction(functionName) ?: return@forEach
 
             val module = ModuleUtilCore.findModuleForFile(lambdaFunctionCandidate.containingFile)
 
-            if (validateHandlerPath(module, pyModule, isReferencedByModule, parentModules, parentFolders)) {
+            if (validateHandlerPath(module, pyModule, moduleFolders, parentFolders)) {
                 return arrayOf(lambdaFunctionCandidate)
             }
         }
@@ -71,20 +58,14 @@ class PythonLambdaHandlerResolver : LambdaHandlerResolver {
     private fun validateHandlerPath(
         module: Module?,
         pyModule: PyFile,
-        isReferencedByModule: Boolean,
-        parentModules: List<String>,
+        parentModuleFolders: List<String>,
         parentFolders: List<String>
     ): Boolean {
         // Start matching to see if the parent folders align
         var directory = pyModule.containingDirectory
 
-        // If we are accessing the handler by module (aka with a .), it needs an init
-        if (isReferencedByModule && !directoryHasInitPy(directory)) {
-            return false
-        }
-
         // Go from deepest back up
-        parentModules.reversed().forEach { parentModule ->
+        parentModuleFolders.reversed().forEach { parentModule ->
             if (parentModule != directory?.name || !directoryHasInitPy(directory)) {
                 return false
             }
