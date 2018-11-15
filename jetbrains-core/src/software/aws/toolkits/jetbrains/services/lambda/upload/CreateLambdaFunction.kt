@@ -6,14 +6,30 @@ package software.aws.toolkits.jetbrains.services.lambda.upload
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
+import com.intellij.psi.PsiElement
 import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplateIndex
 import software.aws.toolkits.jetbrains.services.iam.IamRole
+import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.runtime
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode.NEW
 import software.aws.toolkits.resources.message
 
-class CreateLambdaFunction(private val handlerName: String? = null) : AnAction(message("lambda.create_new"), null, AwsIcons.Actions.LAMBDA_FUNCTION_NEW) {
+class CreateLambdaFunction(
+    private val handlerName: String?,
+    private val element: PsiElement?,
+    private val lambdaHandlerResolver: LambdaHandlerResolver?
+) : AnAction(message("lambda.create_new"), null, AwsIcons.Actions.LAMBDA_FUNCTION_NEW) {
+
+    init {
+        if (handlerName != null) {
+            element ?: throw IllegalArgumentException("element must be provided if handlerName is provided")
+            lambdaHandlerResolver
+                ?: throw IllegalArgumentException("lambdaHandlerResolver must be provided if handlerName is provided")
+        }
+    }
+
     override fun actionPerformed(event: AnActionEvent) {
         val project = event.getRequiredData(LangDataKeys.PROJECT)
         val runtime = event.runtime()
@@ -25,6 +41,23 @@ class CreateLambdaFunction(private val handlerName: String? = null) : AnAction(m
         }
 
         dialog.show()
+    }
+
+    override fun update(e: AnActionEvent?) {
+        super.update(e)
+
+        if (handlerName == null || element == null || lambdaHandlerResolver == null) {
+            return
+        }
+
+        val templateFunctionHandlers = CloudFormationTemplateIndex.listFunctions(element.project)
+            .mapNotNull { it.handler() }
+            .toSet()
+
+        val allowAction = lambdaHandlerResolver.determineHandlers(element, element.containingFile.virtualFile)
+            .none { it in templateFunctionHandlers }
+
+        e?.presentation?.isVisible = allowAction
     }
 }
 
