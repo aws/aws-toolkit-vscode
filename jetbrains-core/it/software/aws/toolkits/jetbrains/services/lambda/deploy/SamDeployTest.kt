@@ -13,6 +13,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.util.ExceptionUtil
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.regions.Region
@@ -25,6 +26,7 @@ import software.aws.toolkits.jetbrains.core.credentials.runUnderRealCredentials
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import java.util.concurrent.TimeUnit
 
+@Ignore // Ignored due to using SAM build which isn't on CI/CD box
 class SamDeployTest {
     private val stackName = "SamDeployTest"
     private val s3Client = S3Client.builder().region(Region.US_WEST_2).build()

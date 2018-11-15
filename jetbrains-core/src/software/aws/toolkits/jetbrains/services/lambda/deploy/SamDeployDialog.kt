@@ -23,6 +23,9 @@ import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsMa
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.resources.message
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import javax.swing.JComponent
@@ -66,32 +69,49 @@ open class SamDeployDialog(
         okAction.isEnabled = false
         cancelAction.isEnabled = false
 
-        return runSamPackage()
+        return runSamBuild()
+            .thenCompose { builtTemplate -> runSamPackage(builtTemplate) }
             .thenCompose { packageTemplate -> runSamDeploy(packageTemplate) }
             .thenApply { changeSet -> finish(changeSet) }
             .exceptionally { e -> handleError(e) }
     }
 
-    private fun runSamPackage(): CompletionStage<String> {
-        val packagedTemplate = "packaged-${template.name}"
+    private fun runSamBuild(): CompletionStage<Path> {
+        val buildDir = Paths.get(template.parent.path, ".sam", "build")
+
+        Files.createDirectories(buildDir)
+
+        val command = createBaseCommand()
+            .withParameters("build")
+            .withParameters("--template")
+            .withParameters(template.path)
+            .withParameters("--build-dir")
+            .withParameters(buildDir.toString())
+
+        val builtTemplate = buildDir.resolve("built-${template.name}")
+        return runCommand(message("serverless.application.deploy.step_name.build"), command) { builtTemplate }
+    }
+
+    private fun runSamPackage(builtTemplateFile: Path): CompletionStage<Path> {
+        val packagedTemplatePath = builtTemplateFile.parent.resolve("packaged-${builtTemplateFile.fileName}")
         val command = createBaseCommand()
             .withParameters("package")
             .withParameters("--template-file")
-            .withParameters(template.path)
+            .withParameters(builtTemplateFile.toString())
             .withParameters("--output-template-file")
-            .withParameters(packagedTemplate)
+            .withParameters(packagedTemplatePath.toString())
             .withParameters("--s3-bucket")
             .withParameters(s3Bucket)
 
-        return runCommand(message("serverless.application.deploy.step_name.package"), command) { packagedTemplate }
+        return runCommand(message("serverless.application.deploy.step_name.package"), command) { packagedTemplatePath }
     }
 
-    private fun runSamDeploy(packageTemplate: String): CompletionStage<String> {
+    private fun runSamDeploy(packagedTemplateFile: Path): CompletionStage<String> {
         advanceStep()
         val command = createBaseCommand()
             .withParameters("deploy")
             .withParameters("--template-file")
-            .withParameters(packageTemplate)
+            .withParameters(packagedTemplateFile.toString())
             .withParameters("--stack-name")
             .withParameters(stackName)
             .withParameters("--capabilities")
