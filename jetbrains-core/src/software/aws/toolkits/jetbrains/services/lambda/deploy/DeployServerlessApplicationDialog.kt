@@ -96,6 +96,9 @@ class DeployServerlessApplicationDialog(
         get() = view.s3Bucket.selected()
                 ?: throw RuntimeException(message("serverless.application.deploy.validation.s3.bucket.empty"))
 
+    val autoExecute: Boolean
+        get() = !view.requireReview.isSelected
+
     val parameters: Map<String, String> = view.templateParameters
 }
 

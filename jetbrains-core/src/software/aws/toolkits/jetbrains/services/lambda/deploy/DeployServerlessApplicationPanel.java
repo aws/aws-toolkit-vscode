@@ -3,22 +3,30 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.deploy;
 
+import static software.aws.toolkits.resources.Localization.message;
+
 import com.intellij.execution.util.EnvVariablesTable;
 import com.intellij.execution.util.EnvironmentVariable;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.AnActionButton;
 import com.intellij.ui.CommonActionsPanel;
+import com.intellij.ui.IdeBorderFactory;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.panels.Wrapper;
 import com.intellij.util.ui.UIUtil;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JTextField;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.aws.toolkits.jetbrains.services.cloudformation.Parameter;
-import software.aws.toolkits.jetbrains.ui.RegionSelector;
-
-import javax.swing.*;
-import java.util.*;
-import java.util.stream.Collectors;
 
 public class DeployServerlessApplicationPanel {
     @NotNull JTextField newStackName;
@@ -30,9 +38,11 @@ public class DeployServerlessApplicationPanel {
     @NotNull Wrapper stackParameters;
     @NotNull JRadioButton selectStack;
     @NotNull JRadioButton newStack;
+    @NotNull JCheckBox requireReview;
+    @NotNull JPanel parametersPanel;
 
     public DeployServerlessApplicationPanel withTemplateParameters(final Collection<Parameter> parameters) {
-
+        parametersPanel.setBorder(IdeBorderFactory.createTitledBorder(message("serverless.application.deploy.template.parameters"), false));
         environmentVariablesTable.setValues(
                 parameters.stream().map(parameter -> new EnvironmentVariable(
                         parameter.getLogicalName(),

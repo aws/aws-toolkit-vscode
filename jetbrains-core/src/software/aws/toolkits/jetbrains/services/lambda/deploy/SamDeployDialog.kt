@@ -10,6 +10,8 @@ import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.process.ProcessOutput
+import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.util.ProgressIndicatorBase
 import com.intellij.openapi.project.Project
@@ -27,6 +29,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
+import javax.swing.Action
 import javax.swing.JComponent
 
 open class SamDeployDialog(
@@ -35,6 +38,7 @@ open class SamDeployDialog(
     private val template: VirtualFile,
     private val parameters: Map<String, String>,
     private val s3Bucket: String,
+    private val autoExecute: Boolean,
     execute: Boolean = true
 ) : DialogWrapper(project) {
     private val progressIndicator = ProgressIndicatorBase()
@@ -60,6 +64,12 @@ open class SamDeployDialog(
         if (execute) {
             executeDeployment()
         }
+    }
+
+    override fun createActions(): Array<Action> = if (autoExecute) {
+        emptyArray()
+    } else {
+        super.createActions()
     }
 
     override fun createCenterPanel(): JComponent? = view.content
@@ -137,6 +147,12 @@ open class SamDeployDialog(
         currentStep = NUMBER_OF_STEPS.toInt()
         okAction.isEnabled = true
         cancelAction.isEnabled = true
+
+        runInEdt(ModalityState.any()) {
+            if (autoExecute) {
+                doOKAction()
+            }
+        }
     }
 
     private fun handleError(error: Throwable): String? {

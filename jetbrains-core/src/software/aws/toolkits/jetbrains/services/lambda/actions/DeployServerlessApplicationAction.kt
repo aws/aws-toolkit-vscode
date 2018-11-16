@@ -44,7 +44,8 @@ class DeployServerlessApplicationAction : DumbAwareAction(
             stackName,
             templateFile,
             stackDialog.parameters,
-            stackDialog.bucket
+            stackDialog.bucket,
+            stackDialog.autoExecute
         )
 
         deployDialog.show()
