@@ -83,8 +83,8 @@ class PythonLambdaPackager : LambdaPackager {
 
     private fun addFolder(contentRoot: VirtualFile, excludedRoots: MutableSet<VirtualFile>, mappings: MutableMap<String, String>, zip: ZipOutputStream) {
         contentRoot.walkFiles(excludedRoots) { file ->
-            mappings[contentRoot.path] = "/"
             VfsUtilCore.getRelativeLocation(file, contentRoot)?.let { relativeLocation ->
+                mappings[file.path] = relativeLocation
                 file.inputStream.use { fileContents ->
                     zip.putNextEntry(relativeLocation, fileContents)
                 }
