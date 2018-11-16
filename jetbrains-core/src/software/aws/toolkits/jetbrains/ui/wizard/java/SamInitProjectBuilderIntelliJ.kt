@@ -10,6 +10,7 @@ import com.intellij.ide.util.projectWizard.WizardContext
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.module.JavaModuleType
 import com.intellij.openapi.module.ModuleType
+import com.intellij.openapi.project.rootManager
 import com.intellij.openapi.projectRoots.JavaSdk
 import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.roots.ui.configuration.ModulesProvider
@@ -56,6 +57,7 @@ class SamInitModuleBuilder : ModuleBuilder() {
         } else {
             rootModel.inheritSdk()
         }
+        rootModel.module.rootManager.modifiableModel.inheritSdk()
         val moduleType = getIdeaModuleType().id
         rootModel.module.setModuleType(moduleType)
         val project = rootModel.project
