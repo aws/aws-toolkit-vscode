@@ -10,6 +10,7 @@ import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.roots.OrderRootType
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtilCore
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.jetbrains.python.sdk.PythonSdkType
 import software.aws.toolkits.core.utils.createTemporaryZipFile
@@ -19,6 +20,7 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
 import software.aws.toolkits.jetbrains.utils.filesystem.walkFiles
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
+import java.util.zip.ZipOutputStream
 
 class PythonLambdaPackager : LambdaPackager {
     override fun createPackage(module: Module, file: PsiFile): CompletionStage<LambdaPackage> {
@@ -28,13 +30,13 @@ class PythonLambdaPackager : LambdaPackager {
                 val excludedRoots = mutableSetOf(*module.rootManager.excludeRoots)
 
                 // Keep the SDK out of the zip
-                val rootManager = ModuleRootManager.getInstance(module)
-                for (entry in rootManager.orderEntries) {
+                val moduleRootManager = ModuleRootManager.getInstance(module)
+                for (entry in moduleRootManager.orderEntries) {
                     excludedRoots.addAll(entry.getFiles(OrderRootType.CLASSES))
                 }
 
                 // Keep the venv out too
-                rootManager.sdk?.homeDirectory?.let { home ->
+                moduleRootManager.sdk?.homeDirectory?.let { home ->
                     PythonSdkType.getVirtualEnvRoot(home.path)?.let { root ->
                         LocalFileSystem.getInstance().findFileByIoFile(root)?.let {
                             excludedRoots.add(it)
@@ -43,20 +45,21 @@ class PythonLambdaPackager : LambdaPackager {
                 }
 
                 val mappings = mutableMapOf<String, String>()
+                val allSourceRoots = moduleRootManager.sourceRoots.toSet()
+                val mainSourceRoots = moduleRootManager.getSourceRoots(false).toSet()
+                val testSourceRoots = allSourceRoots - mainSourceRoots
+
+                excludedRoots.addAll(testSourceRoots)
+
+                val roots = (moduleRootManager.contentRoots + mainSourceRoots).toSet()
+
                 val packagedFile = createTemporaryZipFile { zip ->
-                    ModuleRootManager.getInstance(module).contentRoots.forEach { contentRoot ->
-                        contentRoot.walkFiles(excludedRoots) { file ->
-                            mappings[contentRoot.path] = "/"
-                            VfsUtilCore.getRelativeLocation(file, contentRoot)?.let { relativeLocation ->
-                                file.inputStream.use { fileContents ->
-                                    zip.putNextEntry(relativeLocation, fileContents)
-                                }
-                            }
-                        }
+                    roots.forEach { contentRoot ->
+                        addFolder(contentRoot, excludedRoots, mappings, zip)
                     }
 
                     // Adds all the site-packages into the root of the zip and adds the mapping for debugging
-                    ModuleRootManager.getInstance(module).sdk?.let { sdk ->
+                    moduleRootManager.sdk?.let { sdk ->
                         PythonSdkType.getSitePackagesDirectory(sdk)?.let { sitePackagesDirectory ->
                             sitePackagesDirectory.walkFiles { file ->
                                 VfsUtilCore.getRelativeLocation(file, sitePackagesDirectory)?.let { relativeLocation ->
@@ -76,5 +79,16 @@ class PythonLambdaPackager : LambdaPackager {
         }
 
         return future
+    }
+
+    private fun addFolder(contentRoot: VirtualFile, excludedRoots: MutableSet<VirtualFile>, mappings: MutableMap<String, String>, zip: ZipOutputStream) {
+        contentRoot.walkFiles(excludedRoots) { file ->
+            mappings[contentRoot.path] = "/"
+            VfsUtilCore.getRelativeLocation(file, contentRoot)?.let { relativeLocation ->
+                file.inputStream.use { fileContents ->
+                    zip.putNextEntry(relativeLocation, fileContents)
+                }
+            }
+        }
     }
 }

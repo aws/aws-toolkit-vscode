@@ -55,8 +55,11 @@ class PythonCodeInsightTestFixtureRule : CodeInsightTestFixtureRule() {
         val module = newFixture.module
 
         val projectRoot = newFixture.tempDirFixture.getFile(".")
+        val mainContent = newFixture.tempDirFixture.findOrCreateDir("main")
+        val testContent = newFixture.tempDirFixture.findOrCreateDir("test")
         PsiTestUtil.addSourceRoot(module, projectRoot)
-        PsiTestUtil.addContentRoot(module, projectRoot)
+        PsiTestUtil.addContentRoot(module, mainContent)
+        PsiTestUtil.addSourceRoot(module, testContent, true)
 
         ModuleRootModificationUtil.setModuleSdk(module, PyTestSdk3x())
 
