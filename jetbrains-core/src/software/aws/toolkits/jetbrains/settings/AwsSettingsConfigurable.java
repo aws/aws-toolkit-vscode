@@ -99,7 +99,7 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
         // if user path is empty
         if (path == null || path.isEmpty()) {
             // try to autodetect the path
-            path = samSettings.getExecutablePath();
+            path = new SamExecutableDetector().detect();
 
             // if path is still empty pop the error
             if (path == null || path.isEmpty()) {
