@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.lambda.upload
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
+import com.intellij.psi.SmartPsiElementPointer
 import com.intellij.psi.impl.FakePsiElement
 import com.intellij.testFramework.TestActionEvent
 import com.intellij.testFramework.runInEdtAndWait
@@ -27,7 +28,7 @@ class CreateLambdaFunctionTest {
     @JvmField
     val projectRule = JavaCodeInsightTestFixtureRule()
 
-    lateinit var element: PsiElement
+    lateinit var smartElement: SmartPsiElementPointer<PsiElement>
 
     @Before
     fun setup() {
@@ -35,9 +36,13 @@ class CreateLambdaFunctionTest {
             on { virtualFile }.doAnswer { mock<VirtualFile> {} }
         }
 
-        element = mock<FakePsiElement> {
+        val element = mock<FakePsiElement> {
             on { project }.doAnswer { projectRule.project }
             on { containingFile }.doAnswer { psiFile }
+        }
+
+        smartElement = mock<SmartPsiElementPointer<PsiElement>> {
+            on { getElement() }.doAnswer { element }
         }
 
         val fixture = projectRule.fixture
@@ -80,7 +85,7 @@ Resources:
         val handlerName = "helloworld.App::handleRequest"
 
         runInEdtAndWait {
-            assertFails { CreateLambdaFunction(handlerName, element, null) }
+            assertFails { CreateLambdaFunction(handlerName, smartElement, null) }
         }
     }
 
@@ -92,7 +97,7 @@ Resources:
         }
 
         runInEdtAndWait {
-            val action = CreateLambdaFunction(handlerName, element, handlerResolver)
+            val action = CreateLambdaFunction(handlerName, smartElement, handlerResolver)
 
             val actionEvent = TestActionEvent()
             action.update(actionEvent)
@@ -109,7 +114,7 @@ Resources:
         }
 
         runInEdtAndWait {
-            val action = CreateLambdaFunction(handlerName, element, handlerResolver)
+            val action = CreateLambdaFunction(handlerName, smartElement, handlerResolver)
 
             val actionEvent = TestActionEvent()
             action.update(actionEvent)
@@ -126,7 +131,7 @@ Resources:
         }
 
         runInEdtAndWait {
-            val action = CreateLambdaFunction(handlerName, element, handlerResolver)
+            val action = CreateLambdaFunction(handlerName, smartElement, handlerResolver)
 
             val actionEvent = TestActionEvent()
             action.update(actionEvent)
