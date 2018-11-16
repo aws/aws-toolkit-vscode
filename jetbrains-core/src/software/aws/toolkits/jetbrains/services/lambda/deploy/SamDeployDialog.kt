@@ -87,7 +87,7 @@ open class SamDeployDialog(
             .withParameters("--build-dir")
             .withParameters(buildDir.toString())
 
-        val builtTemplate = buildDir.resolve("built-${template.name}")
+        val builtTemplate = buildDir.resolve("template.yaml")
         return runCommand(message("serverless.application.deploy.step_name.build"), command) { builtTemplate }
     }
 
