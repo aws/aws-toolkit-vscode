@@ -24,7 +24,7 @@ import software.aws.toolkits.resources.message
 class DeployServerlessApplicationAction : DumbAwareAction(
     message("serverless.application.deploy"),
     null,
-    AwsIcons.Resources.LAMBDA_FUNCTION
+    AwsIcons.Resources.SERVERLESS_APP
 ) {
     private val templateYamlRegex = Regex("template\\.y[a]?ml", RegexOption.IGNORE_CASE)
 
