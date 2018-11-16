@@ -29,7 +29,7 @@ class PythonLambdaPackagerTest {
     @Before
     fun setUp() {
         psiFile = projectRule.fixture.addFileToProject(
-            "hello_world/app.py",
+            "main/hello_world/app.py",
             """
             def handle(event, context):
                 return "HelloWorld"
@@ -39,7 +39,7 @@ class PythonLambdaPackagerTest {
 
     @Test
     fun testContentRootIsAdded() {
-        runAndVerifyExpectedEntries(projectRule.module, psiFile, "hello_world/app.py")
+        runAndVerifyExpectedEntries(projectRule.module, psiFile, "hello_world/app.py", "main/hello_world/app.py")
     }
 
     @Test
@@ -47,7 +47,17 @@ class PythonLambdaPackagerTest {
         val module = projectRule.module
         ModuleRootModificationUtil.setModuleSdk(module, PyVirtualEnvSdk(module))
 
-        runAndVerifyExpectedEntries(projectRule.module, psiFile, "hello_world/app.py")
+        runAndVerifyExpectedEntries(projectRule.module, psiFile, "hello_world/app.py", "main/hello_world/app.py")
+    }
+
+    @Test
+    fun testRootsAreNotAdded() {
+        projectRule.fixture.addFileToProject("test/hello/test.py", """
+            def blah():
+                pass
+        """.trimIndent())
+
+        runAndVerifyExpectedEntries(projectRule.module, psiFile, "hello_world/app.py", "main/hello_world/app.py")
     }
 
     @Test
@@ -59,7 +69,7 @@ class PythonLambdaPackagerTest {
 
         runAndVerifyExpectedEntries(
             projectRule.module, psiFile,
-            "hello_world/app.py",
+            "hello_world/app.py", "main/hello_world/app.py",
             "someLib/__init__.py"
         )
     }

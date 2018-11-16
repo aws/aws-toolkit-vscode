@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.utils
 import com.intellij.lang.Language
 import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.text.StringUtil
 import com.intellij.psi.PsiFileFactory
 import com.intellij.psi.codeStyle.CodeStyleManager
 
@@ -20,3 +21,9 @@ fun formatText(project: Project, language: Language, content: String): String {
 
     return result
 }
+
+/**
+ * Designed to convert underscore separated words (e.g. UPDATE_COMPLETE) into title cased human readable text
+ * (e.g. Update Complete)
+ */
+fun String.toHumanReadable() = StringUtil.toTitleCase(toLowerCase().replace('_', ' '))

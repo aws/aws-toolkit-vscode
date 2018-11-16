@@ -130,7 +130,7 @@ class SettingsSelector(project: Project) {
     }
 }
 
-private class ChangeAccountSettingsAction(
+class ChangeAccountSettingsAction(
     private val accountSettingsManager: ProjectAccountSettingsManager,
     private val showRegions: Boolean
 ) : ComboBoxAction(), DumbAware {
@@ -194,6 +194,10 @@ private class ChangeAccountSettingsAction(
         showAll.add(ActionManager.getInstance().getAction("aws.settings.upsertCredentials"))
 
         return showAll
+    }
+
+    companion object {
+        operator fun invoke(project: Project) = ChangeAccountSettingsAction(ProjectAccountSettingsManager.getInstance(project), true)
     }
 }
 
