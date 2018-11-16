@@ -18,7 +18,7 @@ import software.aws.toolkits.resources.message
 abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>>(text: String) : SingleResourceNodeAction<T>(text, icon = AllIcons.Actions.Cancel),
     DumbAware {
     final override fun actionPerformed(selected: T, e: AnActionEvent) {
-        val resourceName = selected.toString()
+        val resourceName = selected.displayName()
         ApplicationManager.getApplication().invokeLater {
             val response = Messages.showInputDialog(selected.project,
                     message("delete_resource.message", selected.resourceType(), resourceName),
