@@ -92,6 +92,7 @@ open class SamDeployDialog(
     }
 
     private fun runSamPackage(builtTemplateFile: Path): CompletionStage<Path> {
+        advanceStep()
         val packagedTemplatePath = builtTemplateFile.parent.resolve("packaged-${builtTemplateFile.fileName}")
         val command = createBaseCommand()
             .withParameters("package")
@@ -207,7 +208,7 @@ open class SamDeployDialog(
         ProcessHandlerFactory.getInstance().createColoredProcessHandler(command)
 
     private companion object {
-        const val NUMBER_OF_STEPS = 2.0
+        const val NUMBER_OF_STEPS = 3.0
         val LOGGER = getLogger<SamDeployDialog>()
     }
 }
