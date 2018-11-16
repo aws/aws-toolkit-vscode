@@ -3,16 +3,13 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.remote;
 
+import static software.aws.toolkits.resources.Localization.message;
+
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
+import com.intellij.ui.IdeBorderFactory;
 import com.intellij.ui.SortedComboBoxModel;
-import com.intellij.uiDesigner.core.GridConstraints;
-import com.intellij.uiDesigner.core.GridLayoutManager;
-import java.awt.Insets;
 import java.util.List;
-import java.util.ResourceBundle;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -29,9 +26,12 @@ public class LambdaRemoteRunSettingsEditorPanel {
     RegionSelector regionSelector;
     ComboBox<String> functionNames;
     LambdaInputPanel lambdaInput;
+    JPanel lambdaInputPanel;
 
     public LambdaRemoteRunSettingsEditorPanel(Project project) {
         this.project = project;
+
+        lambdaInputPanel.setBorder(IdeBorderFactory.createTitledBorder(message("lambda.input.label")));
     }
 
     private void createUIComponents() {
