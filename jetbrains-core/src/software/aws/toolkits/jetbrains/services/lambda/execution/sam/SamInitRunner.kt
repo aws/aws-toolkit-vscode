@@ -46,7 +46,8 @@ class SamInitRunner(
             throw RuntimeException("${message("sam.init.execution_error")}: ${process.stderrLines.last()}")
         }
 
+        val samOutput = VfsUtil.getChildren(tempDir)[0]
         // copy from temp dir to output dir
-        VfsUtil.copyDirectory(null, VfsUtil.getChildren(tempDir)[0], outputDir, null)
+        VfsUtil.copyDirectory(null, samOutput, outputDir, null)
     }
 }

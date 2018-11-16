@@ -5,7 +5,12 @@ package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.CapturingProcessHandler
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VfsUtil
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.text.SemVer
+import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
+import software.aws.toolkits.jetbrains.services.cloudformation.SERVERLESS_FUNCTION_TYPE
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.resources.message
 
@@ -41,6 +46,27 @@ class SamCommon {
             } catch (e: Exception) {
                 e.localizedMessage
             }
+        }
+
+        fun getTemplateFromDirectory(projectRoot: VirtualFile): VirtualFile? {
+            val yamlFiles = VfsUtil.getChildren(projectRoot).filter { it.name.endsWith("yaml") || it.name.endsWith("yml") }
+            assert(yamlFiles.size == 1) { println(message("cloudformation.yaml.too_many_files", yamlFiles.size)) }
+            return yamlFiles.first()
+        }
+
+        fun getCodeUrisFromTemplate(project: Project, template: VirtualFile?): List<VirtualFile> {
+            template ?: return listOf()
+            val cfTemplate = CloudFormationTemplate.parse(project, template)
+
+            val codeUris = mutableListOf<VirtualFile>()
+
+            cfTemplate.resources().filter { it.isType(SERVERLESS_FUNCTION_TYPE) }.forEach { resource ->
+                val codeUriValue = resource.getScalarProperty("CodeUri")
+                project.baseDir.findFileByRelativePath(codeUriValue)?.takeIf { it.isDirectory }?.let { codeUri ->
+                    codeUris.add(codeUri)
+                }
+            }
+            return codeUris
         }
     }
 }

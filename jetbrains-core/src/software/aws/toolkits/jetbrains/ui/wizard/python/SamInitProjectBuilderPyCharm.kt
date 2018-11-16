@@ -3,13 +3,17 @@
 
 package software.aws.toolkits.jetbrains.ui.wizard.python
 
+import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.jetbrains.python.newProject.PyNewProjectSettings
 import com.jetbrains.python.newProject.PythonProjectGenerator
 import com.jetbrains.python.remote.PyProjectSynchronizer
 import icons.AwsIcons
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.python.PythonRuntimeGroup
 import software.aws.toolkits.jetbrains.ui.wizard.SAM_TEMPLATES
 import software.aws.toolkits.jetbrains.ui.wizard.SamModuleType
@@ -36,7 +40,21 @@ class SamInitProjectBuilderPyCharm : PythonProjectGenerator<PyNewProjectSettings
 
         val template = settingsPanel.templateField.selectedItem as SamProjectTemplate
         template.build(runtime, baseDir)
+        val templateFile = SamCommon.getTemplateFromDirectory(baseDir)
+        val codeUris = SamCommon.getCodeUrisFromTemplate(project, templateFile)
 
         super.configureProject(project, baseDir, settings, module, synchronizer)
+
+        runInEdt {
+            runWriteAction {
+                val rootManager = ModuleRootManager.getInstance(module).modifiableModel
+                rootManager.contentEntries.forEach { contentEntry ->
+                    if (contentEntry.file == baseDir) {
+                        codeUris.forEach { contentEntry.addSourceFolder(it, false) }
+                    }
+                }
+                rootManager.commit()
+            }
+        }
     }
 }
