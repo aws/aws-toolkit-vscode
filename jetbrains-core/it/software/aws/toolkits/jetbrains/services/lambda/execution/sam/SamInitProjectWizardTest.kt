@@ -11,7 +11,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.projectRoots.JavaSdk
 import com.intellij.openapi.projectRoots.ProjectJdkTable
 import com.intellij.openapi.projectRoots.SdkType
-import com.intellij.testFramework.IdeaTestUtil
+import com.intellij.openapi.projectRoots.impl.ProjectJdkImpl
 import com.jetbrains.python.sdk.PythonSdkType
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import software.amazon.awssdk.services.lambda.model.Runtime
@@ -20,6 +20,9 @@ import software.aws.toolkits.jetbrains.ui.wizard.java.SamInitModuleBuilder
 import software.aws.toolkits.jetbrains.ui.wizard.java.SamInitTemplateSelectionStep
 import software.aws.toolkits.jetbrains.utils.rules.PyTestSdk3x
 import kotlin.reflect.KClass
+
+// must be castable to ProjectJdkImpl
+class JavaTestSdk(name: String) : ProjectJdkImpl(name, JavaSdk.getInstance())
 
 // JUnit3-style to take advantage of IDEA's test base
 class SamInitProjectWizardTest : NewProjectWizardTestCase() {
@@ -32,8 +35,8 @@ class SamInitProjectWizardTest : NewProjectWizardTestCase() {
             }
         }
         // and replace with fake ones
-        addSdk(IdeaTestUtil.getMockJdk18())
-        addSdk((PyTestSdk3x()))
+        addSdk(JavaTestSdk("Mock JDK 1.8"))
+        addSdk(PyTestSdk3x())
     }
 
     fun testExceptionIfSamNotConfigured() {

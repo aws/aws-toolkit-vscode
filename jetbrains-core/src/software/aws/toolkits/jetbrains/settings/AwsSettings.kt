@@ -24,6 +24,12 @@ class AwsSettings : PersistentStateComponent<AwsConfiguration> {
             state.isTelemetryEnabled = value
         }
 
+    var promptedForTelemetry: Boolean
+        get() = state.promptedForTelemetry ?: false
+        set(value) {
+            state.promptedForTelemetry = value
+        }
+
     companion object {
         @JvmStatic
         fun getInstance(): AwsSettings = ServiceManager.getService(AwsSettings::class.java)
@@ -31,5 +37,6 @@ class AwsSettings : PersistentStateComponent<AwsConfiguration> {
 }
 
 data class AwsConfiguration(
-    var isTelemetryEnabled: Boolean? = null
+    var isTelemetryEnabled: Boolean? = null,
+    var promptedForTelemetry: Boolean? = null
 )

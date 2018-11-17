@@ -93,7 +93,7 @@ public class SamInitRuntimeSelectionPanel extends ModuleWizardStep {
         if (samExecutableField.getText().isEmpty()) {
             throw new ConfigurationException(message("lambda.run_configuration.sam.not_specified"));
         }
-        return true;
+        return sdkSettingsStep.validate();
     }
 
     @Override
