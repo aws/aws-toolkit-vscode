@@ -3,11 +3,9 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.upload
 
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiFile
+import com.intellij.psi.SmartPointerManager
 import com.intellij.psi.SmartPsiElementPointer
-import com.intellij.psi.impl.FakePsiElement
 import com.intellij.testFramework.TestActionEvent
 import com.intellij.testFramework.runInEdtAndWait
 import com.nhaarman.mockitokotlin2.any
@@ -32,20 +30,19 @@ class CreateLambdaFunctionTest {
 
     @Before
     fun setup() {
-        val psiFile = mock<PsiFile> {
-            on { virtualFile }.doAnswer { mock<VirtualFile> {} }
-        }
-
-        val element = mock<FakePsiElement> {
-            on { project }.doAnswer { projectRule.project }
-            on { containingFile }.doAnswer { psiFile }
-        }
-
-        smartElement = mock<SmartPsiElementPointer<PsiElement>> {
-            on { getElement() }.doAnswer { element }
-        }
-
         val fixture = projectRule.fixture
+
+        val element = fixture.addClass("""
+public class Processor {
+    public void handler() {
+
+    }
+}
+        """).findMethodsByName("handler", false).first()
+
+        runInEdtAndWait {
+            smartElement = SmartPointerManager.createPointer(element)
+        }
 
         fixture.openFile("template.yaml", """
 Resources:
