@@ -25,8 +25,8 @@ interface CloudFormationTemplate {
     fun text(): String
 
     companion object {
-        fun parse(project: Project, templateFile: VirtualFile): CloudFormationTemplate = when (templateFile.fileType) {
-            YAMLFileType.YML -> YamlCloudFormationTemplate(project, templateFile)
+        fun parse(project: Project, templateFile: VirtualFile): CloudFormationTemplate = when {
+            isYaml(templateFile) -> YamlCloudFormationTemplate(project, templateFile)
             else -> throw UnsupportedOperationException("Only YAML CloudFormation templates are supported")
         }
 
@@ -34,6 +34,11 @@ interface CloudFormationTemplate {
             YAMLLanguage.INSTANCE -> YamlCloudFormationTemplate.convertPsiToResource(psiElement)
             else -> throw UnsupportedOperationException("Only YAML CloudFormation templates are supported")
         }
+
+        private fun isYaml(templateFile: VirtualFile): Boolean = templateFile.fileType == YAMLFileType.YML ||
+                templateFile.extension?.toLowerCase() in YAML_EXTENSIONS
+
+        private val YAML_EXTENSIONS = setOf("yaml", "yml")
     }
 }
 

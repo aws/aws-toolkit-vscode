@@ -3,9 +3,13 @@
 
 package software.aws.toolkits.jetbrains.services.cloudformation.yaml
 
+import com.intellij.openapi.fileTypes.ex.FakeFileType
+import com.intellij.openapi.fileTypes.ex.FileTypeManagerEx
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
+import org.jetbrains.annotations.NotNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -102,6 +106,32 @@ Resources:
         }
 
         assertThat(tempFile).hasContent(TEST_TEMPLATE)
+    }
+
+    @Test
+    fun canParseByExtension() {
+        val fakeFileType = object : FakeFileType() {
+            override fun isMyFileType(@NotNull file: VirtualFile): Boolean = true
+
+            @NotNull
+            override fun getName(): String = "foo"
+
+            @NotNull
+            override fun getDescription(): String = ""
+        }
+
+        runInEdtAndWait {
+            try {
+                FileTypeManagerEx.getInstanceEx().registerFileType(fakeFileType)
+                setOf("template.yaml", "template.yml").forEach {
+                    val yamlFile = projectRule.fixture.addFileToProject(it, TEST_TEMPLATE)
+                    assertThat(yamlFile.fileType).isEqualTo(fakeFileType)
+                    assertThat(CloudFormationTemplate.parse(projectRule.project, yamlFile.virtualFile)).isNotNull
+                }
+            } finally {
+                FileTypeManagerEx.getInstanceEx().unregisterFileType(fakeFileType)
+            }
+        }
     }
 
     private fun yamlTemplate(template: String = TEST_TEMPLATE): CloudFormationTemplate = runInEdtAndGet {
