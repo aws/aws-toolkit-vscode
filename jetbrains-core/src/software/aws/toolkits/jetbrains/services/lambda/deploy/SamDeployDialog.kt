@@ -86,7 +86,7 @@ open class SamDeployDialog(
     }
 
     private fun runSamBuild(): CompletionStage<Path> {
-        val buildDir = Paths.get(template.parent.path, ".sam", "build")
+        val buildDir = Paths.get(template.parent.path, ".aws-sam", "build")
 
         Files.createDirectories(buildDir)
 
