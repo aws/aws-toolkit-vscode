@@ -14,6 +14,7 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.openapi.module.ModuleUtilCore.findModuleForPsiElement
 import com.intellij.psi.PsiElement
+import com.intellij.psi.SmartPointerManager
 import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
@@ -48,13 +49,15 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
         return if (handlerResolver.shouldShowLineMarker(handler) || shouldShowLineMarker(element, handler, runtime)) {
             val actionGroup = DefaultActionGroup()
 
+            val smartPsiElementPointer = SmartPointerManager.createPointer(element)
+
             if (element.language in LambdaPackager.supportedLanguages) {
                 val executorActions = ExecutorAction.getActions(1)
                 executorActions.forEach {
                     actionGroup.add(LineMarkerActionWrapper(element, it))
                 }
 
-                actionGroup.add(CreateLambdaFunction(handler, element, handlerResolver))
+                actionGroup.add(CreateLambdaFunction(handler, smartPsiElementPointer, handlerResolver))
             }
 
             object : LineMarkerInfo<PsiElement>(

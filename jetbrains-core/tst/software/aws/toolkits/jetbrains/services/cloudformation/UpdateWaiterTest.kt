@@ -25,7 +25,7 @@ import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.utils.delegateMock
 import java.time.Duration
 
-class CloudformationTest {
+class UpdateWaiterTest {
     @JvmField
     @Rule
     val projectRule = ProjectRule()
@@ -37,85 +37,75 @@ class CloudformationTest {
     private val mockClient by lazy { mockClientManagerRule.register(CloudFormationClient::class, delegateMock()) }
 
     @Test
-    fun deleteSuccessful() {
+    fun updateSuccessful() {
         val describeStacksRequest = argumentCaptor<DescribeStacksRequest>()
 
-        mockClient.stackReturn("foo", 1, StackStatus.DELETE_COMPLETE)
-        mockClient.waitForStackDeletionComplete("foo", delay = DEFAULT_DELAY)
+        mockClient.stackReturn("foo", 1, StackStatus.UPDATE_COMPLETE)
+        mockClient.waitForStackUpdateComplete("foo", delay = DEFAULT_DELAY)
 
         verify(mockClient, times(2)).describeStacks(describeStacksRequest.capture())
         assertThat(describeStacksRequest.allValues).allSatisfy { assertThat(it.stackName()).isEqualTo("foo") }
     }
 
     @Test
-    fun deleteSuccessful_stackNotExist() {
+    fun updateFailedValidationError() {
         val describeStacksRequest = argumentCaptor<DescribeStacksRequest>()
 
         mockClient.stackThrowValidationError("foo", 1)
-        mockClient.waitForStackDeletionComplete("foo", delay = DEFAULT_DELAY)
+        assertThatThrownBy { mockClient.waitForStackUpdateComplete("foo", delay = DEFAULT_DELAY) }
+            .isInstanceOf(WaiterUnrecoverableException::class.java)
+            .hasMessageContaining("validation error")
 
         verify(mockClient, times(2)).describeStacks(describeStacksRequest.capture())
         assertThat(describeStacksRequest.allValues).allSatisfy { assertThat(it.stackName()).isEqualTo("foo") }
-    }
-
-    @Test
-    fun deleteFailedStatus() {
-        assertFailureStatus("foo", 1, StackStatus.DELETE_FAILED)
-    }
-
-    @Test
-    fun rollbackFailedStatus() {
-        assertFailureStatus("bar", 0, StackStatus.ROLLBACK_FAILED)
-    }
-
-    @Test
-    fun updateRollbackInProgressStatus() {
-        assertFailureStatus("foo", 1, StackStatus.UPDATE_ROLLBACK_IN_PROGRESS)
-    }
-
-    @Test
-    fun createFailedStatus() {
-        assertFailureStatus("baz", 2, StackStatus.CREATE_FAILED)
     }
 
     @Test
     fun updateRollbackFailedStatus() {
-        assertFailureStatus("baa", 3, StackStatus.UPDATE_ROLLBACK_FAILED)
+        assertFailureStatus("baz", 2, StackStatus.UPDATE_ROLLBACK_FAILED)
+    }
+
+    @Test
+    fun updateRollbackCompleteStatus() {
+        assertFailureStatus("foo", 1, StackStatus.UPDATE_ROLLBACK_COMPLETE)
     }
 
     @Test
     fun timeoutError() {
-        mockClient.stackReturn("foo", 100000, StackStatus.DELETE_IN_PROGRESS)
+        mockClient.stackReturn("foo", 100000, StackStatus.CREATE_IN_PROGRESS)
         assertThatThrownBy {
-            mockClient.waitForStackDeletionComplete("foo", 1, delay = DEFAULT_DELAY)
+            mockClient.waitForStackUpdateComplete("foo", 1, delay = DEFAULT_DELAY)
         }.isInstanceOf(WaiterTimeoutException::class.java)
     }
 
     private fun assertFailureStatus(stackName: String, times: Int, failureStatus: StackStatus) {
         mockClient.stackReturn(stackName, times, failureStatus)
         val describeStacksRequest = argumentCaptor<DescribeStacksRequest>()
-        assertThatThrownBy { mockClient.waitForStackDeletionComplete(stackName, delay = DEFAULT_DELAY) }
-                .isInstanceOf(WaiterUnrecoverableException::class.java)
-                .hasMessageContaining(failureStatus.toString())
+        assertThatThrownBy { mockClient.waitForStackUpdateComplete(stackName, delay = DEFAULT_DELAY) }
+            .isInstanceOf(WaiterUnrecoverableException::class.java)
+            .hasMessageContaining(failureStatus.toString())
         verify(mockClient, times(times + 1)).describeStacks(describeStacksRequest.capture())
         assertThat(describeStacksRequest.allValues).allSatisfy { assertThat(it.stackName()).isEqualTo(stackName) }
     }
 
     private fun CloudFormationClient.stackReturn(stackName: String, times: Int, status: StackStatus) {
-
         val responses = mutableListOf<DescribeStacksResponse>()
         val inProgressResponseBuilder = DescribeStacksResponse.builder()
-                .stacks(Stack.builder()
-                        .stackName(stackName)
-                        .stackStatus(StackStatus.DELETE_IN_PROGRESS)
-                        .build())
+            .stacks(
+                Stack.builder()
+                    .stackName(stackName)
+                    .stackStatus(StackStatus.UPDATE_IN_PROGRESS)
+                    .build()
+            )
 
         val finalResponse = DescribeStacksResponse.builder()
-                .stacks(Stack.builder()
-                        .stackName(stackName)
-                        .stackStatus(status)
-                        .build())
-                .build()
+            .stacks(
+                Stack.builder()
+                    .stackName(stackName)
+                    .stackStatus(status)
+                    .build()
+            )
+            .build()
 
         val firstResponse = if (times <= 0) finalResponse else inProgressResponseBuilder.build()
 
@@ -126,43 +116,56 @@ class CloudformationTest {
             responses.add(finalResponse)
         }
 
-        whenever(describeStacks(DescribeStacksRequest.builder()
-                .stackName(stackName)
-                .build()))
-                .thenReturn(firstResponse, *responses.toTypedArray())
+        whenever(
+            describeStacks(
+                DescribeStacksRequest.builder()
+                    .stackName(stackName)
+                    .build()
+            )
+        ).thenReturn(firstResponse, *responses.toTypedArray())
     }
 
     private fun CloudFormationClient.stackThrowValidationError(stackName: String, times: Int) {
         val responses = mutableListOf<DescribeStacksResponse>()
         val inProgressResponseBuilder = DescribeStacksResponse.builder()
-                .stacks(Stack.builder()
-                        .stackName(stackName)
-                        .stackStatus(StackStatus.DELETE_IN_PROGRESS)
-                        .build())
+            .stacks(
+                Stack.builder()
+                    .stackName(stackName)
+                    .stackStatus(StackStatus.CREATE_IN_PROGRESS)
+                    .build()
+            )
         val finalResponse = CloudFormationException.builder()
-                .awsErrorDetails(AwsErrorDetails.builder()
-                        .errorCode("ValidationError")
-                        .build())
-                .build()
+            .awsErrorDetails(
+                AwsErrorDetails.builder()
+                    .errorCode("ValidationError")
+                    .build()
+            )
+            .build()
 
         if (times <= 0) {
-            whenever(describeStacks(DescribeStacksRequest.builder()
-                    .stackName(stackName)
-                    .build()))
-                    .thenThrow(finalResponse)
+            whenever(
+                describeStacks(
+                    DescribeStacksRequest.builder()
+                        .stackName(stackName)
+                        .build()
+                )
+            ).thenThrow(finalResponse)
         } else {
             repeat(times - 1) {
                 responses.add(inProgressResponseBuilder.build())
             }
-            whenever(describeStacks(DescribeStacksRequest.builder()
-                    .stackName(stackName)
-                    .build()))
-                    .thenReturn(inProgressResponseBuilder.build(), *responses.toTypedArray())
-                    .thenThrow(finalResponse)
+            whenever(
+                describeStacks(
+                    DescribeStacksRequest.builder()
+                        .stackName(stackName)
+                        .build()
+                )
+            ).thenReturn(inProgressResponseBuilder.build(), *responses.toTypedArray())
+                .thenThrow(finalResponse)
         }
     }
 
     companion object {
-        val DEFAULT_DELAY = Duration.ofMillis(500)
+        private val DEFAULT_DELAY = Duration.ofMillis(5)
     }
 }

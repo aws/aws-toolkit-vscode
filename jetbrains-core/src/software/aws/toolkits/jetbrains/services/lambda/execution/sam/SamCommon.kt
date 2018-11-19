@@ -16,8 +16,7 @@ import software.aws.toolkits.resources.message
 
 class SamCommon {
     companion object {
-        // TODO: change minimum to 0.7.0 before release
-        private val expectedSamMinVersion = SemVer("0.6.0", 0, 6, 0)
+        private val expectedSamMinVersion = SemVer("0.7.0", 0, 7, 0)
         private val expectedSamMaxVersion = SemVer("0.8.0", 0, 8, 0)
 
         fun checkVersion(samVersionLine: String): String? {

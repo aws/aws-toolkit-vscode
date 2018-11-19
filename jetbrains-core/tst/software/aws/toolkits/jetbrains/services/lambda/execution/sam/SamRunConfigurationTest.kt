@@ -62,7 +62,7 @@ class SamRunConfigurationTest {
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
-                .hasMessage(message("lambda.run_configuration.sam.not_specified"))
+                .hasMessage(message("sam.cli_not_configured"))
         }
     }
 

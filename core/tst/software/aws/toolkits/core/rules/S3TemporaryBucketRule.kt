@@ -1,16 +1,15 @@
 // Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.core.s3
+package software.aws.toolkits.core.rules
 
 import org.junit.rules.ExternalResource
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
-import software.amazon.awssdk.testutils.service.S3BucketUtils.temporaryBucketName
+import software.aws.toolkits.core.s3.deleteBucketAndContents
+import java.util.Random
 
-// TODO: this should move to either a test util - or the core SDK.
 class S3TemporaryBucketRule(private val s3Client: S3Client) : ExternalResource() {
-
     private val buckets = mutableListOf<String>()
 
     /**
@@ -20,6 +19,15 @@ class S3TemporaryBucketRule(private val s3Client: S3Client) : ExternalResource()
         val bucketName: String = temporaryBucketName(prefix)
         s3Client.createBucket { it.bucket(bucketName) }
         buckets.add(bucketName)
+        return bucketName
+    }
+
+    private fun temporaryBucketName(prefix: String): String {
+        val userName = System.getProperty("user.name", "unknown")
+        val bucketName = "${prefix.toLowerCase()}-${userName.toLowerCase()}-${Random().nextInt(10000)}"
+        if (bucketName.length > 63) {
+            throw RuntimeException("S3 buckets can only be 63 chars in length, try a shorter prefix")
+        }
         return bucketName
     }
 

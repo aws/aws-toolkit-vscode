@@ -15,9 +15,12 @@ import org.jetbrains.yaml.YAMLLanguage
 import org.jetbrains.yaml.psi.YAMLFile
 import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLMapping
+import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationParameter
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
-import software.aws.toolkits.jetbrains.services.cloudformation.RESOURCE_MAPPINGS
+import software.aws.toolkits.jetbrains.services.cloudformation.NamedMap
+import software.aws.toolkits.jetbrains.services.cloudformation.Parameter
 import software.aws.toolkits.jetbrains.services.cloudformation.Resource
+import software.aws.toolkits.jetbrains.services.cloudformation.RESOURCE_MAPPINGS
 import software.aws.toolkits.resources.message
 
 class YamlCloudFormationTemplate(template: YAMLFile) : CloudFormationTemplate {
@@ -41,6 +44,12 @@ class YamlCloudFormationTemplate(template: YAMLFile) : CloudFormationTemplate {
         return resources.keyValues.asSequence().mapNotNull { it.asResource() }
     }
 
+    override fun parameters(): Sequence<Parameter> {
+        val parametersBlock = templateRoot.getKeyValueByKey("Parameters") ?: return emptySequence()
+        val parameters = PsiTreeUtil.findChildOfAnyType(parametersBlock, YAMLMapping::class.java) ?: return emptySequence()
+        return parameters.keyValues.asSequence().mapNotNull { it.asProperty() }
+    }
+
     override fun text(): String = templateRoot.text
 
     private class YamlResource(override val logicalName: String, private val delegate: YAMLMapping) :
@@ -53,8 +62,10 @@ class YamlCloudFormationTemplate(template: YAMLFile) : CloudFormationTemplate {
 
         override fun type(): String? = delegate.getKeyValueByKey("Type")?.valueText
 
-        override fun getScalarProperty(key: String): String = properties().getKeyValueByKey(key)?.valueText
+        override fun getScalarProperty(key: String): String = getOptionalScalarProperty(key)
                 ?: throw IllegalStateException(message("cloudformation.missing_property", key, logicalName))
+
+        override fun getOptionalScalarProperty(key: String): String? = properties().getKeyValueByKey(key)?.valueText
 
         override fun setScalarProperty(key: String, value: String) {
             val newKeyValue = YAMLElementGenerator.getInstance(project).createYamlKeyValue(key, value)
@@ -63,6 +74,18 @@ class YamlCloudFormationTemplate(template: YAMLFile) : CloudFormationTemplate {
 
         private fun properties(): YAMLMapping = delegate.getKeyValueByKey("Properties")?.value as? YAMLMapping
                 ?: throw RuntimeException(message("cloudformation.key_not_found", "Properties", logicalName))
+    }
+
+    private class YamlCloudFormationParameter(override val logicalName: String, private val delegate: YAMLMapping) :
+        YAMLMapping by delegate, NamedMap {
+        override fun getScalarProperty(key: String): String = getOptionalScalarProperty(key)
+                ?: throw IllegalStateException(message("cloudformation.missing_property", key, logicalName))
+
+        override fun getOptionalScalarProperty(key: String): String? = delegate.getKeyValueByKey(key)?.valueText
+
+        override fun setScalarProperty(key: String, value: String) {
+            throw NotImplementedError()
+        }
     }
 
     companion object {
@@ -83,6 +106,13 @@ class YamlCloudFormationTemplate(template: YAMLFile) : CloudFormationTemplate {
         private fun YAMLKeyValue.asResource(): Resource? = if (PsiTreeUtil.getParentOfType(this, YAMLKeyValue::class.java)?.keyText == "Resources") {
             val lowLevelResource = YamlResource(this.keyText, this.value as YAMLMapping)
             RESOURCE_MAPPINGS[lowLevelResource.type()]?.invoke(lowLevelResource) ?: lowLevelResource
+        } else {
+            null
+        }
+
+        private fun YAMLKeyValue.asProperty(): Parameter? = if (PsiTreeUtil.getParentOfType(this, YAMLKeyValue::class.java)?.keyText == "Parameters") {
+            val lowLevelParameter = YamlCloudFormationParameter(this.keyText, this.value as YAMLMapping)
+            CloudFormationParameter(lowLevelParameter)
         } else {
             null
         }

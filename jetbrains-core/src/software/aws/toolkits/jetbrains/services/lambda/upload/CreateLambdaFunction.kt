@@ -7,6 +7,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.psi.PsiElement
+import com.intellij.psi.SmartPsiElementPointer
 import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplateIndex
@@ -18,13 +19,13 @@ import software.aws.toolkits.resources.message
 
 class CreateLambdaFunction(
     private val handlerName: String?,
-    private val element: PsiElement?,
+    private val elementPointer: SmartPsiElementPointer<PsiElement>?,
     private val lambdaHandlerResolver: LambdaHandlerResolver?
 ) : AnAction(message("lambda.create_new"), null, AwsIcons.Actions.LAMBDA_FUNCTION_NEW) {
 
     init {
         if (handlerName != null) {
-            element ?: throw IllegalArgumentException("element must be provided if handlerName is provided")
+            elementPointer ?: throw IllegalArgumentException("elementPointer must be provided if handlerName is provided")
             lambdaHandlerResolver
                 ?: throw IllegalArgumentException("lambdaHandlerResolver must be provided if handlerName is provided")
         }
@@ -46,6 +47,7 @@ class CreateLambdaFunction(
     override fun update(e: AnActionEvent?) {
         super.update(e)
 
+        val element: PsiElement? = elementPointer?.element
         if (handlerName == null || element == null || lambdaHandlerResolver == null) {
             return
         }

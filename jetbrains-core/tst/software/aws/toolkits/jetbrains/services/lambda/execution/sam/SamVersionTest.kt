@@ -11,7 +11,6 @@ class SamVersionTest {
     @Test
     fun compatableSamVersion() {
         val versions = arrayOf(
-            "SAM CLI, version 0.6.0",
             "SAM CLI, version 0.7.0",
             "SAM CLI, version 0.7.123",
             "SAM CLI, version 0.7.999999999",
@@ -41,7 +40,8 @@ class SamVersionTest {
         val versions = arrayOf(
                 "SAM CLI, version 0.5.9",
                 "SAM CLI, version 0.0.1",
-                "SAM CLI, version 0.5.9-dev"
+                "SAM CLI, version 0.5.9-dev",
+                "SAM CLI, version 0.6.2"
         )
         for (version in versions) {
             val message = SamCommon.checkVersion(version)
