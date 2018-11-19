@@ -63,7 +63,7 @@ class SamModuleType : ModuleType<SamInitModuleBuilder>(ID) {
     override fun getDescription() = DESCRIPTION
 
     companion object {
-        const val ID = "SAM"
+        val ID = message("sam.init.name")
         val DESCRIPTION = message("sam.init.description")
         val instance = SamModuleType()
     }
