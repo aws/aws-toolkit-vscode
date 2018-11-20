@@ -66,6 +66,8 @@ class SamInitModuleBuilder : ModuleBuilder() {
         template.samProjectTemplate.build(runtime ?: throw RuntimeException(message("sam.init.null_runtime")), project.baseDir)
         rootModel.addContentEntry(project.baseDir)
 
+        SamCommon.excludeSamDirectory(rootModel.project.baseDir, rootModel)
+
         if (rootModel.sdk?.sdkType is PythonSdkType) {
             SamCommon.setSourceRoots(rootModel.project.baseDir, rootModel.project, rootModel)
         }

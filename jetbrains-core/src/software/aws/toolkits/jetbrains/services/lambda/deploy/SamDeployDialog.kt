@@ -22,6 +22,7 @@ import com.intellij.util.ExceptionUtil
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.resources.message
 import java.nio.file.Files
@@ -86,7 +87,7 @@ open class SamDeployDialog(
     }
 
     private fun runSamBuild(): CompletionStage<Path> {
-        val buildDir = Paths.get(template.parent.path, ".aws-sam", "build")
+        val buildDir = Paths.get(template.parent.path, SamCommon.SAM_BUILD_DIR, "build")
 
         Files.createDirectories(buildDir)
 

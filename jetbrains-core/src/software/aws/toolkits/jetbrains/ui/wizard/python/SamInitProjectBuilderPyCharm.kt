@@ -46,6 +46,7 @@ class SamInitProjectBuilderPyCharm : PythonProjectGenerator<PyNewProjectSettings
         runInEdt {
             runWriteAction {
                 val rootModel = ModuleRootManager.getInstance(module).modifiableModel
+                SamCommon.excludeSamDirectory(baseDir, rootModel)
                 SamCommon.setSourceRoots(baseDir, project, rootModel)
 
                 rootModel.commit()

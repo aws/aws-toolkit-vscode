@@ -8,15 +8,19 @@ import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.vfs.VfsUtil
+import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.text.SemVer
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.cloudformation.SERVERLESS_FUNCTION_TYPE
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.resources.message
+import java.nio.file.Paths
 
 class SamCommon {
     companion object {
+        val SAM_BUILD_DIR = ".aws-sam"
+
         val expectedSamMinVersion = SemVer("0.7.0", 0, 7, 0)
         private val expectedSamMaxVersion = SemVer("0.8.0", 0, 8, 0)
 
@@ -76,6 +80,14 @@ class SamCommon {
             modifiableModel.contentEntries.forEach { contentEntry ->
                 if (contentEntry.file == projectRoot) {
                     codeUris.forEach { contentEntry.addSourceFolder(it, false) }
+                }
+            }
+        }
+
+        fun excludeSamDirectory(projectRoot: VirtualFile, modifiableModel: ModifiableRootModel) {
+            modifiableModel.contentEntries.forEach { contentEntry ->
+                if (contentEntry.file == projectRoot) {
+                    contentEntry.addExcludeFolder(VfsUtilCore.pathToUrl(Paths.get(projectRoot.path, SAM_BUILD_DIR).toString()))
                 }
             }
         }
