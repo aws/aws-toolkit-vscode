@@ -7,6 +7,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
@@ -35,6 +36,9 @@ class DeployServerlessApplicationAction : DumbAwareAction(
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
 
         val templateFile = getSamTemplateFile(e) ?: throw Exception("Could not detect template file")
+
+        // Force save before we deploy
+        FileDocumentManager.getInstance().saveAllDocuments()
 
         val stackDialog = DeployServerlessApplicationDialog(project, templateFile)
         stackDialog.show()
