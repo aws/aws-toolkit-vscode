@@ -46,7 +46,7 @@ class DeploySamApplicationValidatorTest {
 
         view.withTemplateParameters(parameters)
 
-        view.selectStack.isSelected = true
+        view.updateStack.isSelected = true
         view.stacks.model = DefaultComboBoxModel(arrayOf("stack123"))
         view.stacks.selectedItem = "stack123"
 
@@ -61,8 +61,8 @@ class DeploySamApplicationValidatorTest {
 
     @Test
     fun validInputsWithNewStackReturnsNull() {
-        view.newStack.isSelected = true
-        view.newStackName.text = "newStack"
+        view.createStack.isSelected = true
+        view.newStackName.text = "createStack"
         assert(sut.validateSettings(view)).isNull()
 
         view.newStackName.text = "n"
@@ -80,14 +80,14 @@ class DeploySamApplicationValidatorTest {
 
     @Test
     fun newStackNameMustBeSpecified() {
-        view.newStack.isSelected = true
+        view.createStack.isSelected = true
         view.newStackName.text = null
         assert(sut.validateSettings(view)).containsMessage(message("serverless.application.deploy.validation.new.stack.name.missing"))
     }
 
     @Test
     fun invalidStackName_TooLong() {
-        view.newStack.isSelected = true
+        view.createStack.isSelected = true
         view.newStackName.text = "x".repeat(DeploySamApplicationValidator.MAX_STACK_NAME_LENGTH + 1)
         assert(sut.validateSettings(view)).containsMessage(
                 message("serverless.application.deploy.validation.new.stack.name.too.long", DeploySamApplicationValidator.MAX_STACK_NAME_LENGTH)
@@ -96,7 +96,7 @@ class DeploySamApplicationValidatorTest {
 
     @Test
     fun invalidStackName_InvalidChars() {
-        view.newStack.isSelected = true
+        view.createStack.isSelected = true
         view.newStackName.text = "stack_1"
         assert(sut.validateSettings(view)).containsMessage(message("serverless.application.deploy.validation.new.stack.name.invalid"))
 

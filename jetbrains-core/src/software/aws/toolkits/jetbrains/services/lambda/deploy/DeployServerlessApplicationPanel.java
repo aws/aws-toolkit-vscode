@@ -36,8 +36,8 @@ public class DeployServerlessApplicationPanel {
     @NotNull ComboBox<String> s3Bucket;
     @NotNull ComboBox<String> stacks;
     @NotNull Wrapper stackParameters;
-    @NotNull JRadioButton selectStack;
-    @NotNull JRadioButton newStack;
+    @NotNull JRadioButton updateStack;
+    @NotNull JRadioButton createStack;
     @NotNull JCheckBox requireReview;
     @NotNull JPanel parametersPanel;
 

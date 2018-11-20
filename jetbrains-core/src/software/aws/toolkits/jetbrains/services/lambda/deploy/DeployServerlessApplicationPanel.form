@@ -36,7 +36,7 @@
           <enabled value="false"/>
         </properties>
       </component>
-      <component id="fc392" class="javax.swing.JRadioButton" binding="selectStack">
+      <component id="fc392" class="javax.swing.JRadioButton" binding="updateStack">
         <constraints>
           <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
@@ -102,7 +102,7 @@
           </component>
         </children>
       </grid>
-      <component id="f0b38" class="javax.swing.JRadioButton" binding="newStack">
+      <component id="f0b38" class="javax.swing.JRadioButton" binding="createStack">
         <constraints>
           <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>

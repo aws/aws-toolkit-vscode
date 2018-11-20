@@ -62,6 +62,8 @@
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.SamSettings"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.settings.LambdaSettings"/>
 
+        <moduleService serviceImplementation="software.aws.toolkits.jetbrains.settings.DeploySettings"/>
+
         <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager"
                         serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultProjectAccountSettingsManager"
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager"/>

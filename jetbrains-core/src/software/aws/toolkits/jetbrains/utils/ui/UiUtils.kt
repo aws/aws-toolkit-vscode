@@ -36,15 +36,20 @@ fun <T> ComboBox<T>.populateValues(
     block: () -> Collection<T>
 ) {
     ApplicationManager.getApplication().executeOnPooledThread {
+        val previouslySelected = this.model.selectedItem
+        val previousState = this.isEnabled
+        this.model.selectedItem = "Loading..."
+        this.isEnabled = false
         val values = block()
         ApplicationManager.getApplication().invokeLater({
             val model = this.model as DefaultComboBoxModel<T>
-            val previouslySelected = model.selectedItem
             model.removeAllElements()
             values.forEach { model.addElement(it) }
             this.selectedItem = if (forceSelectDefault || previouslySelected == null) default else previouslySelected
             if (updateStatus) {
                 this.isEnabled = values.isNotEmpty()
+            } else {
+                this.isEnabled = previousState
             }
         }, ModalityState.any())
     }
