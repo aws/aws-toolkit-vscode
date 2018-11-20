@@ -47,14 +47,12 @@ class DeployServerlessApplicationDialog(
         setOKButtonText(message("serverless.application.deploy.action.name"))
         setOKButtonTooltip(message("serverless.application.deploy.action.description"))
 
-        view.createStack.addActionListener {
-            view.newStackName.isEnabled = true
-            view.stacks.isEnabled = false
+        view.createStack.addChangeListener {
+            updateStackEnabledStates()
         }
 
-        view.updateStack.addActionListener {
-            view.newStackName.isEnabled = false
-            view.stacks.isEnabled = true
+        view.updateStack.addChangeListener {
+            updateStackEnabledStates()
         }
 
         // If the module has been deployed once, select the updateStack radio instead
@@ -119,6 +117,11 @@ class DeployServerlessApplicationDialog(
 
     val parameters: Map<String, String>
         get() = view.templateParameters
+
+    private fun updateStackEnabledStates() {
+        view.newStackName.isEnabled = view.createStack.isSelected
+        view.stacks.isEnabled = view.updateStack.isSelected
+    }
 }
 
 class DeploySamApplicationValidator {
