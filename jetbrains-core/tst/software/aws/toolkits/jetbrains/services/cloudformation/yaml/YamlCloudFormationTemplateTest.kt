@@ -60,6 +60,18 @@ Resources:
     }
 
     @Test
+    fun partialResourceIsIgnored() {
+        val template = yamlTemplate("""
+Description: "Some description"
+Resources:
+    Foo:
+        """.trimIndent())
+        runInEdtAndWait {
+            assertThat(template.resources().toList()).isEmpty()
+        }
+    }
+
+    @Test
     fun canListParameters() {
         val template = yamlTemplate()
         runInEdtAndWait {

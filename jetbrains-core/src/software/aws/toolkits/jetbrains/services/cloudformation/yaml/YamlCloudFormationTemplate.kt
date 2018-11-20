@@ -19,8 +19,8 @@ import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationPar
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.cloudformation.NamedMap
 import software.aws.toolkits.jetbrains.services.cloudformation.Parameter
-import software.aws.toolkits.jetbrains.services.cloudformation.Resource
 import software.aws.toolkits.jetbrains.services.cloudformation.RESOURCE_MAPPINGS
+import software.aws.toolkits.jetbrains.services.cloudformation.Resource
 import software.aws.toolkits.resources.message
 
 class YamlCloudFormationTemplate(template: YAMLFile) : CloudFormationTemplate {
@@ -103,11 +103,13 @@ class YamlCloudFormationTemplate(template: YAMLFile) : CloudFormationTemplate {
             return yamlKeyValue.asResource()
         }
 
-        private fun YAMLKeyValue.asResource(): Resource? = if (PsiTreeUtil.getParentOfType(this, YAMLKeyValue::class.java)?.keyText == "Resources") {
-            val lowLevelResource = YamlResource(this.keyText, this.value as YAMLMapping)
-            RESOURCE_MAPPINGS[lowLevelResource.type()]?.invoke(lowLevelResource) ?: lowLevelResource
-        } else {
-            null
+        private fun YAMLKeyValue.asResource(): Resource? {
+            if (PsiTreeUtil.getParentOfType(this, YAMLKeyValue::class.java)?.keyText == "Resources") {
+                val yamlValue = this.value as? YAMLMapping ?: return null
+                val lowLevelResource = YamlResource(this.keyText, yamlValue)
+                return RESOURCE_MAPPINGS[lowLevelResource.type()]?.invoke(lowLevelResource) ?: lowLevelResource
+            }
+            return null
         }
 
         private fun YAMLKeyValue.asProperty(): Parameter? = if (PsiTreeUtil.getParentOfType(this, YAMLKeyValue::class.java)?.keyText == "Parameters") {
