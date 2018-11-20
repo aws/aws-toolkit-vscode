@@ -171,7 +171,7 @@ public class LambdaInputPanel {
     }
 
     public String getInputText() {
-        return inputText.getText().trim();
+        return StringUtil.nullize(inputText.getText().trim(), true);
     }
 
     private class InputTemplateBrowseAction extends ComponentWithBrowseButton.BrowseFolderActionListener<JComboBox> {
