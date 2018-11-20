@@ -3,17 +3,19 @@
 
 package software.aws.toolkits.jetbrains.ui.wizard.python;
 
+import com.intellij.facet.ui.ValidationResult;
+import com.intellij.openapi.ui.ComboBox;
+import com.intellij.openapi.util.text.StringUtil;
+import com.intellij.ui.components.JBLabel;
+import org.jetbrains.annotations.NotNull;
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon;
+import software.aws.toolkits.jetbrains.ui.wizard.SamInitProjectBuilderCommon;
+import software.aws.toolkits.jetbrains.ui.wizard.SamProjectTemplate;
+
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import java.util.List;
-import com.intellij.facet.ui.ValidationResult;
-import com.intellij.openapi.ui.ComboBox;
-import com.intellij.ui.components.JBLabel;
-import org.jetbrains.annotations.NotNull;
-import software.aws.toolkits.jetbrains.ui.wizard.SamInitProjectBuilderCommon;
-import software.aws.toolkits.jetbrains.ui.wizard.SamProjectTemplate;
-import static software.aws.toolkits.resources.Localization.message;
 
 public class SamInitDirectoryBasedSettingsPanel {
     private JTextField samExecutableField;
@@ -44,8 +46,9 @@ public class SamInitDirectoryBasedSettingsPanel {
 
     @NotNull
     public ValidationResult validate() {
-        if (samExecutableField.getText().isEmpty()) {
-            return new ValidationResult(message("lambda.run_configuration.sam.not_specified"));
+        String validationMessage = SamCommon.Companion.validate(StringUtil.nullize(samExecutableField.getText()));
+        if (validationMessage != null) {
+            return new ValidationResult(validationMessage);
         }
         return ValidationResult.OK;
     }

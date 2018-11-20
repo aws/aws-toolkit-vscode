@@ -8,10 +8,12 @@ import com.intellij.ide.util.projectWizard.ModuleBuilder
 import com.intellij.openapi.module.ModuleType
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.DefaultProjectFactory
+import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.ProjectTemplate
 import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamInitRunner
 import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
 import software.aws.toolkits.jetbrains.settings.SamSettings
@@ -79,7 +81,7 @@ fun setupSamSelectionElements(samExecutableField: JTextField, editButton: JButto
         postEditCallback?.run()
     }
 
-    if (samExecutableField.text.isNotEmpty()) {
+    if (SamCommon.validate(StringUtil.nullize(samExecutableField.text)) == null) {
         samExecutableField.isVisible = false
         editButton.isVisible = false
         label.isVisible = false

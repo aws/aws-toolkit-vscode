@@ -14,11 +14,13 @@ import com.intellij.ide.util.projectWizard.WizardContext;
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.projectRoots.Sdk;
 import com.intellij.openapi.ui.ComboBox;
+import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.uiDesigner.core.GridConstraints;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.lambda.model.Runtime;
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager;
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon;
 import software.aws.toolkits.jetbrains.ui.wizard.SamInitProjectBuilderCommon;
 
 import static software.aws.toolkits.resources.Localization.message;
@@ -90,8 +92,9 @@ public class SamInitRuntimeSelectionPanel extends ModuleWizardStep {
 
     @Override
     public boolean validate() throws ConfigurationException {
-        if (samExecutableField.getText().isEmpty()) {
-            throw new ConfigurationException(message("lambda.run_configuration.sam.not_specified"));
+        String validationMessage = SamCommon.Companion.validate(StringUtil.nullize(samExecutableField.getText()));
+        if (validationMessage != null) {
+            throw new ConfigurationException(validationMessage);
         }
         return sdkSettingsStep.validate();
     }
