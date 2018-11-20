@@ -19,6 +19,7 @@ import com.jetbrains.python.sdk.PythonSdkType
 import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.ui.wizard.SAM_TEMPLATES
 import software.aws.toolkits.jetbrains.ui.wizard.SamModuleType
@@ -64,6 +65,11 @@ class SamInitModuleBuilder : ModuleBuilder() {
 
         template.samProjectTemplate.build(runtime ?: throw RuntimeException(message("sam.init.null_runtime")), project.baseDir)
         rootModel.addContentEntry(project.baseDir)
+
+        if (rootModel.sdk?.sdkType is PythonSdkType) {
+            SamCommon.setSourceRoots(rootModel.project.baseDir, rootModel.project, rootModel)
+        }
+        // don't commit because it will be done for us
     }
 
     override fun getPresentableName() = SamModuleType.ID

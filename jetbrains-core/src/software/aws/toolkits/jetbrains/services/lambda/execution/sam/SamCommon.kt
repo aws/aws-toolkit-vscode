@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.text.SemVer
@@ -66,6 +67,16 @@ class SamCommon {
                 }
             }
             return codeUris
+        }
+
+        fun setSourceRoots(projectRoot: VirtualFile, project: Project, modifiableModel: ModifiableRootModel) {
+            val template = SamCommon.getTemplateFromDirectory(projectRoot)
+            val codeUris = SamCommon.getCodeUrisFromTemplate(project, template)
+            modifiableModel.contentEntries.forEach { contentEntry ->
+                if (contentEntry.file == projectRoot) {
+                    codeUris.forEach { contentEntry.addSourceFolder(it, false) }
+                }
+            }
         }
     }
 }

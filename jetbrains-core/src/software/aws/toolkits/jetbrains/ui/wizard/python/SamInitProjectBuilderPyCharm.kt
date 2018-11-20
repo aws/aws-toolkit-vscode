@@ -40,20 +40,15 @@ class SamInitProjectBuilderPyCharm : PythonProjectGenerator<PyNewProjectSettings
 
         val template = settingsPanel.templateField.selectedItem as SamProjectTemplate
         template.build(runtime, baseDir)
-        val templateFile = SamCommon.getTemplateFromDirectory(baseDir)
-        val codeUris = SamCommon.getCodeUrisFromTemplate(project, templateFile)
 
         super.configureProject(project, baseDir, settings, module, synchronizer)
 
         runInEdt {
             runWriteAction {
-                val rootManager = ModuleRootManager.getInstance(module).modifiableModel
-                rootManager.contentEntries.forEach { contentEntry ->
-                    if (contentEntry.file == baseDir) {
-                        codeUris.forEach { contentEntry.addSourceFolder(it, false) }
-                    }
-                }
-                rootManager.commit()
+                val rootModel = ModuleRootManager.getInstance(module).modifiableModel
+                SamCommon.setSourceRoots(baseDir, project, rootModel)
+
+                rootModel.commit()
             }
         }
     }
