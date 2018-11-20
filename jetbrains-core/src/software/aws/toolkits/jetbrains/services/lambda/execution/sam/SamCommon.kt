@@ -17,7 +17,7 @@ import software.aws.toolkits.resources.message
 
 class SamCommon {
     companion object {
-        private val expectedSamMinVersion = SemVer("0.7.0", 0, 7, 0)
+        val expectedSamMinVersion = SemVer("0.7.0", 0, 7, 0)
         private val expectedSamMaxVersion = SemVer("0.8.0", 0, 8, 0)
 
         fun checkVersion(samVersionLine: String): String? {
@@ -40,9 +40,10 @@ class SamCommon {
                 val process = CapturingProcessHandler(commandLine).runProcess()
                 if (process.exitCode != 0) {
                     process.stderr
+                } else {
+                    val samVersionLine = process.stdoutLines.first()
+                    checkVersion(samVersionLine)
                 }
-                val samVersionLine = process.stdoutLines.first()
-                checkVersion(samVersionLine)
             } catch (e: Exception) {
                 e.localizedMessage
             }

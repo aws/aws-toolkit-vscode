@@ -5,20 +5,73 @@ package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.application.runWriteAction
+import com.intellij.openapi.util.SystemInfo
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assume
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
+import software.aws.toolkits.resources.message
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.attribute.PosixFilePermissions
 
 class SamCommonTest {
     @Rule
     @JvmField
     val projectRule = HeavyJavaCodeInsightTestFixtureRule()
+
+    @Test
+    fun testValidate_noPath() {
+        val result = SamCommon.validate(null)
+        println(result)
+        assertEquals(message("lambda.run_configuration.sam.not_specified"), result)
+    }
+
+    @Test
+    fun testValidate_pathNotExists() {
+        Assume.assumeTrue(SystemInfo.isUnix)
+        val result = SamCommon.validate("dasfasdfjlkakjsdf_not_a_real_path")
+        println(result)
+        assertTrue(result?.contains("No such file or directory") == true)
+    }
+
+    @Test
+    fun testValidate_exception() {
+        Assume.assumeTrue(SystemInfo.isUnix)
+        val path = projectRule.fixture.addFileToProject("badexe", "").virtualFile.path
+        val result = SamCommon.validate(path)
+        println(result)
+        assertTrue(result?.contains("Permission denied") == true)
+    }
+
+    @Test
+    fun testValidate_exitNonZero() {
+        Assume.assumeTrue(SystemInfo.isUnix)
+        val path = projectRule.fixture.addFileToProject("badexe", "echo stderr >&2; exit 100;").virtualFile.path
+        Files.setPosixFilePermissions(Paths.get(path), PosixFilePermissions.fromString("r-xr-xr-x"))
+
+        val result = SamCommon.validate(path)
+        println(result)
+        assertTrue(result?.contains("stderr") == true)
+    }
+
+    @Test
+    fun testValidate_ok() {
+        Assume.assumeTrue(SystemInfo.isUnix)
+        val path = projectRule.fixture.addFileToProject("good", "echo ${SamCommon.expectedSamMinVersion}").virtualFile.path
+        Files.setPosixFilePermissions(Paths.get(path), PosixFilePermissions.fromString("r-xr-xr-x"))
+
+        val result = SamCommon.validate(path)
+        println(result)
+        assertNull(result)
+    }
 
     @Test(expected = java.lang.AssertionError::class)
     fun getTemplateFromDirectory_noYaml() {
