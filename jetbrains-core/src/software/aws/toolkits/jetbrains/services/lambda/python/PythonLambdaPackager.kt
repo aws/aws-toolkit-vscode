@@ -12,6 +12,7 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
+import com.intellij.util.containers.isNullOrEmpty
 import com.jetbrains.python.sdk.PythonSdkType
 import software.aws.toolkits.core.utils.createTemporaryZipFile
 import software.aws.toolkits.core.utils.putNextEntry
@@ -51,7 +52,11 @@ class PythonLambdaPackager : LambdaPackager {
 
                 excludedRoots.addAll(testSourceRoots)
 
-                val roots = (moduleRootManager.contentRoots + mainSourceRoots).toSet()
+                val roots = if (mainSourceRoots.isNullOrEmpty()) {
+                    moduleRootManager.contentRoots.toSet()
+                } else {
+                    mainSourceRoots
+                }
 
                 val packagedFile = createTemporaryZipFile { zip ->
                     roots.forEach { contentRoot ->

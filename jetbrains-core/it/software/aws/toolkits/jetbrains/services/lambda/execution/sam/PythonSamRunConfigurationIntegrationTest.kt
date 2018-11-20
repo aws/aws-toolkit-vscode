@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 
 import com.intellij.execution.executors.DefaultDebugExecutor
+import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.xdebugger.XDebuggerUtil
 import com.jetbrains.python.psi.PyFile
@@ -38,12 +39,12 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
 
         val fixture = projectRule.fixture
         fixture.addFileToProject(
-            "hello_world/__init__.py",
+            "src/hello_world/__init__.py",
             ""
         )
 
         val psiClass = fixture.addFileToProject(
-            "hello_world/app.py",
+            "src/hello_world/app.py",
             """
             def lambda_handler(event, context):
                 return "Hello world"
@@ -57,7 +58,7 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
 
     @Test
     fun samIsExecuted() {
-        val runConfiguration = runConfiguration()
+        val runConfiguration = runConfiguration("src/hello_world.app.lambda_handler")
         assertThat(runConfiguration).isNotNull
 
         val executeLambda = executeLambda(runConfiguration)
@@ -80,7 +81,7 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
             )
         }
 
-        val runConfiguration = runConfiguration()
+        val runConfiguration = runConfiguration("src/hello_world.app.lambda_handler")
         assertThat(runConfiguration).isNotNull
 
         val debuggerIsHit = checkBreakPointHit(projectRule.project)
@@ -93,10 +94,41 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
         assertThat(debuggerIsHit.get()).isTrue()
     }
 
-    private fun runConfiguration(): SamRunConfiguration = createRunConfiguration(
+    @Test
+    fun samIsExecutedWithDebuggerSourceRoot() {
+        runInEdtAndWait {
+            val document = projectRule.fixture.editor.document
+            val lambdaClass = projectRule.fixture.file as PyFile
+            val lambdaBody = lambdaClass.topLevelFunctions[0].statementList.statements[0]
+            val lineNumber = document.getLineNumber(lambdaBody.textOffset)
+
+            XDebuggerUtil.getInstance().toggleLineBreakpoint(
+                projectRule.project,
+                projectRule.fixture.file.virtualFile,
+                lineNumber
+            )
+        }
+
+        val srcRoot = projectRule.fixture.file.virtualFile.parent.parent
+        PsiTestUtil.addSourceRoot(projectRule.module, srcRoot)
+
+        val runConfiguration = runConfiguration("hello_world.app.lambda_handler")
+        assertThat(runConfiguration).isNotNull
+
+        val debuggerIsHit = checkBreakPointHit(projectRule.project)
+
+        val executeLambda = executeLambda(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
+
+        // assertThat(executeLambda.exitCode).isEqualTo(0) TODO: When debugging, always exits with 137
+        assertThat(executeLambda.stdout).contains("Hello world")
+
+        assertThat(debuggerIsHit.get()).isTrue()
+    }
+
+    private fun runConfiguration(handler: String): SamRunConfiguration = createRunConfiguration(
         project = projectRule.project,
         input = "\"Hello World\"",
-        handler = "hello_world.app.lambda_handler",
+        handler = handler,
         runtime = runtime
     )
 }
