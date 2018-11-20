@@ -117,7 +117,8 @@ class DeployServerlessApplicationDialog(
     val autoExecute: Boolean
         get() = !view.requireReview.isSelected
 
-    val parameters: Map<String, String> = view.templateParameters
+    val parameters: Map<String, String>
+        get() = view.templateParameters
 }
 
 class DeploySamApplicationValidator {
