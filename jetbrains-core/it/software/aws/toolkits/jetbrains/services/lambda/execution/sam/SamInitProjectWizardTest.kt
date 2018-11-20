@@ -19,6 +19,7 @@ import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.ui.wizard.java.SamInitModuleBuilder
 import software.aws.toolkits.jetbrains.ui.wizard.java.SamInitTemplateSelectionStep
 import software.aws.toolkits.jetbrains.utils.rules.PyTestSdk3x
+import software.aws.toolkits.resources.message
 import kotlin.reflect.KClass
 
 // must be castable to ProjectJdkImpl
@@ -43,7 +44,7 @@ class SamInitProjectWizardTest : NewProjectWizardTestCase() {
         assertThatExceptionOfType(RuntimeException::class.java).isThrownBy {
             createProject { step ->
                 if (step is ProjectTypeStep) {
-                    assertTrue(step.setSelectedTemplate("SAM", null))
+                    assertTrue(step.setSelectedTemplate(message("sam.init.name"), null))
                     val builder = myWizard.projectBuilder as SamInitModuleBuilder
                     builder.runtimeSelectionPanel.samExecutableField.text = ""
                 }
@@ -74,7 +75,7 @@ class SamInitProjectWizardTest : NewProjectWizardTestCase() {
             when (step) {
                 is ProjectTypeStep -> { // Wizard first page
                     assertEquals(0, stepNum)
-                    assertTrue(step.setSelectedTemplate("SAM", null))
+                    assertTrue(step.setSelectedTemplate(message("sam.init.name"), null))
                     // step count changes after we select SAM
                     assertEquals("Found steps: ${myWizard.sequence.selectedSteps}.", 4, myWizard.sequence.selectedSteps.size)
 
@@ -94,7 +95,7 @@ class SamInitProjectWizardTest : NewProjectWizardTestCase() {
                     val builder = myWizard.projectBuilder as SamInitModuleBuilder
                     assertEquals(runtime, builder.runtimeSelectionPanel.runtime.selectedItem)
                     assertInstanceOf(builder.getSdkType(), sdkType.java)
-                    assertEquals("AWS SAM Hello World", step.templateSelectionPanel.selectedTemplate!!.name)
+                    assertEquals(message("sam.init.template.hello_world.name"), step.templateSelectionPanel.selectedTemplate!!.name)
                 }
                 is ProjectSettingsStep -> {
                     assertEquals(3, stepNum)
