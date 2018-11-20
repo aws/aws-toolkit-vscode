@@ -6,13 +6,13 @@ package software.aws.toolkits.jetbrains.ui.wizard.python;
 import com.intellij.facet.ui.ValidationResult;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.util.text.StringUtil;
+import com.intellij.openapi.ui.FixedSizeButton;
 import com.intellij.ui.components.JBLabel;
 import org.jetbrains.annotations.NotNull;
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon;
 import software.aws.toolkits.jetbrains.ui.wizard.SamInitProjectBuilderCommon;
 import software.aws.toolkits.jetbrains.ui.wizard.SamProjectTemplate;
 
-import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import java.util.List;
@@ -21,7 +21,7 @@ public class SamInitDirectoryBasedSettingsPanel {
     private JTextField samExecutableField;
     private ComboBox<SamProjectTemplate> templateField;
     private JPanel mainPanel;
-    private JButton editSamExecutableButton;
+    private FixedSizeButton editSamExecutableButton;
     private JBLabel samLabel;
 
     private SamInitProjectBuilderPyCharm builder;
