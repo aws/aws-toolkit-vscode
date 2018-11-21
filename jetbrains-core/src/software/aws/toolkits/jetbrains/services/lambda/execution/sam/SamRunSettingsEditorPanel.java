@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.lambda.execution.sam;
 
 import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.addQuickSelect;
 import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.find;
+import static software.aws.toolkits.resources.Localization.message;
 
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.project.Project;
@@ -14,6 +15,7 @@ import com.intellij.openapi.ui.TextComponentAccessor;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.EditorTextField;
+import com.intellij.ui.IdeBorderFactory;
 import com.intellij.util.textCompletion.TextCompletionProvider;
 import com.intellij.util.textCompletion.TextFieldWithCompletion;
 import com.intellij.util.ui.UIUtil;
@@ -34,12 +36,13 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaInputPane
 import software.aws.toolkits.jetbrains.ui.CredentialProviderSelector;
 import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField;
 import software.aws.toolkits.jetbrains.ui.RegionSelector;
+import software.aws.toolkits.jetbrains.ui.ResourceSelector;
 
 public final class SamRunSettingsEditorPanel {
     public JPanel panel;
     public EditorTextField handler;
     public EnvironmentVariablesTextField environmentVariables;
-    public ComboBox<Runtime> runtime;
+    public ResourceSelector<Runtime> runtime;
     public RegionSelector regionSelector;
     public CredentialProviderSelector credentialSelector;
     public LambdaInputPanel lambdaInput;
@@ -47,6 +50,7 @@ public final class SamRunSettingsEditorPanel {
     public JComboBox<Function> function;
     private DefaultComboBoxModel<Function> functionModels;
     public TextFieldWithBrowseButton templateFile;
+    JPanel lambdaInputPanel;
 
     private final Project project;
     private final TextCompletionProvider handlerCompletionProvider;
@@ -55,6 +59,7 @@ public final class SamRunSettingsEditorPanel {
         this.project = project;
         this.handlerCompletionProvider = handlerCompletionProvider;
 
+        lambdaInputPanel.setBorder(IdeBorderFactory.createTitledBorder(message("lambda.input.label")));
         useTemplate.addActionListener(e -> updateComponents());
         addQuickSelect(templateFile.getTextField(), useTemplate, this::updateComponents);
         templateFile.addActionListener(new TemplateFileBrowseListener());

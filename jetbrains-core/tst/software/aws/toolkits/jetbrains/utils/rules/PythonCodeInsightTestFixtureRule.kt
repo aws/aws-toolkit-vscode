@@ -30,7 +30,6 @@ import com.jetbrains.python.sdk.PythonSdkType
 import com.jetbrains.python.sdk.flavors.CPythonSdkFlavor
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.annotations.NotNull
-import software.aws.toolkits.jetbrains.testutils.rules.CodeInsightTestFixtureRule
 import java.io.File
 import java.nio.file.Paths
 
@@ -56,7 +55,6 @@ class PythonCodeInsightTestFixtureRule : CodeInsightTestFixtureRule() {
         val module = newFixture.module
 
         val projectRoot = newFixture.tempDirFixture.getFile(".")
-        PsiTestUtil.addSourceRoot(module, projectRoot)
         PsiTestUtil.addContentRoot(module, projectRoot)
 
         ModuleRootModificationUtil.setModuleSdk(module, PyTestSdk3x())

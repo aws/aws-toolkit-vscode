@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.lambda.upload
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
@@ -17,7 +18,7 @@ import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.S3Client
-import software.aws.toolkits.core.s3.regionForBucket
+import software.aws.toolkits.core.utils.listBucketsByRegion
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
@@ -34,9 +35,7 @@ import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode.U
 import software.aws.toolkits.jetbrains.services.s3.CreateS3BucketDialog
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
-import software.aws.toolkits.jetbrains.utils.ui.addAndSelectValue
 import software.aws.toolkits.jetbrains.utils.ui.blankAsNull
-import software.aws.toolkits.jetbrains.utils.ui.populateValues
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
 import java.awt.event.ActionEvent
@@ -122,10 +121,8 @@ class EditFunctionDialog(
         } else {
             view.sourceBucket.populateValues {
                 val activeRegionId = ProjectAccountSettingsManager.getInstance(project).activeRegion.id
-                s3Client.listBuckets().buckets()
-                    .asSequence()
-                    .mapNotNull { it?.name() }
-                    .filter { s3Client.regionForBucket(it) == activeRegionId }
+                s3Client.listBucketsByRegion(activeRegionId)
+                    .mapNotNull { it.name() }
                     .sortedWith(String.CASE_INSENSITIVE_ORDER)
                     .toList()
             }
@@ -146,9 +143,9 @@ class EditFunctionDialog(
         if (mode == UPDATE_CODE) {
             UIUtil.uiChildren(view.configurationSettings).filter { it !== view.handler && it !== view.handlerLabel }.forEach { it.isVisible = false }
         }
-        view.runtime.populateValues(selected = runtime) { Runtime.knownValues() }
+        view.runtime.populateValues(default = runtime) { Runtime.knownValues() }
 
-        view.iamRole.populateValues(selected = role) {
+        view.iamRole.populateValues(default = role) {
             iamClient.listRolesFilter { it.assumeRolePolicyDocument().contains(LAMBDA_PRINCIPAL) }
                 .map { IamRole(it.arn()) }
                 .sortedWith(Comparator.comparing<IamRole, String>(Function { it.toString() }, String.CASE_INSENSITIVE_ORDER))
@@ -242,6 +239,8 @@ class EditFunctionDialog(
 
             val packager = psiFile.language.runtimeGroup?.let { LambdaPackager.getInstance(it) } ?: return
             val lambdaCreator = LambdaCreatorFactory.create(AwsClientManager.getInstance(project), packager)
+
+            FileDocumentManager.getInstance().saveAllDocuments()
 
             val (future, message) = if (mode == UPDATE_CODE) {
                 lambdaCreator.updateLambda(module, psiFile, functionDetails, s3Bucket, configurationChanged()) to
@@ -353,7 +352,11 @@ class UploadToLambdaValidator {
                 )
             }
         }
-        view.iamRole.selected() ?: return ValidationInfo(message("lambda.upload_validation.iam_role"), view.iamRole)
+        view.iamRole.selected() ?: return view.iamRole.toValidationInfo(
+            loading = message("lambda.upload_validation.iam_role.loading"),
+            notSelected = message("lambda.upload_validation.iam_role")
+        )
+
         return null
     }
 
@@ -372,9 +375,9 @@ class UploadToLambdaValidator {
             view.handler
         )
 
-        view.sourceBucket.selected() ?: return ValidationInfo(
-            message("lambda.upload_validation.source_bucket"),
-            view.sourceBucket
+        view.sourceBucket.selected() ?: return view.sourceBucket.toValidationInfo(
+            loading = message("lambda.upload_validation.source_bucket.loading"),
+            notSelected = message("lambda.upload_validation.source_bucket")
         )
 
         return null

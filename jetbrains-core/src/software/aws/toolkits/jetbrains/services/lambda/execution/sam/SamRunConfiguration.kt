@@ -19,12 +19,12 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.refactoring.listeners.RefactoringElementAdapter
 import com.intellij.refactoring.listeners.RefactoringElementListener
 import org.jetbrains.annotations.TestOnly
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.services.lambda.HandlerCompletionProvider
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
@@ -38,7 +38,6 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamTemplate
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
 import software.aws.toolkits.jetbrains.settings.SamSettings
-import software.aws.toolkits.jetbrains.utils.ui.populateValues
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
 import java.io.File
@@ -149,7 +148,7 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
     ) : MutableLambdaRunSettings(input, inputIsFile) {
         fun validateAndCreateImmutable(project: Project): SamRunSettings {
             if (SamSettings.getInstance().executablePath.isNullOrEmpty()) {
-                throw RuntimeConfigurationError(message("lambda.run_configuration.sam.not_specified")) {
+                throw RuntimeConfigurationError(message("sam.cli_not_configured")) {
                     ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsConfigurable::class.java)
                 }
             }
@@ -183,16 +182,7 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
                 try {
                     val credentialProvider = CredentialManager.getInstance().getCredentialProvider(it)
                     val awsCredentials = credentialProvider.resolveCredentials()
-
-                    envVarsCopy["AWS_ACCESS_KEY"] = awsCredentials.accessKeyId()
-                    envVarsCopy["AWS_ACCESS_KEY_ID"] = awsCredentials.accessKeyId()
-                    envVarsCopy["AWS_SECRET_KEY"] = awsCredentials.secretAccessKey()
-                    envVarsCopy["AWS_SECRET_ACCESS_KEY"] = awsCredentials.secretAccessKey()
-
-                    if (awsCredentials is AwsSessionCredentials) {
-                        envVarsCopy["AWS_SESSION_TOKEN"] = awsCredentials.sessionToken()
-                        envVarsCopy["AWS_SECURITY_TOKEN"] = awsCredentials.sessionToken()
-                    }
+                    envVarsCopy.putAll(awsCredentials.toEnvironmentVariables())
                 } catch (e: CredentialProviderNotFound) {
                     throw RuntimeConfigurationError(message("lambda.run_configuration.credential_not_found_error", it))
                 } catch (e: Exception) {
@@ -230,12 +220,13 @@ class SamRunSettingsEditor(project: Project) : SettingsEditor<SamRunConfiguratio
 
         val selected = RuntimeGroup.determineRuntime(project)?.let { if (it in supported) it else null }
 
-        view.runtime.populateValues(selected = selected, updateStatus = false) { supported }
+        view.runtime.populateValues(default = selected, updateStatus = false, forceSelectDefault = false) { supported }
 
         view.regionSelector.setRegions(regionProvider.regions().values.toMutableList())
         view.regionSelector.selectedRegion = ProjectAccountSettingsManager.getInstance(project).activeRegion
 
         view.credentialSelector.setCredentialsProviders(credentialManager.getCredentialProviders())
+        view.credentialSelector.setSelectedCredentialsProvider(ProjectAccountSettingsManager.getInstance(project).activeCredentialProvider)
     }
 
     override fun createEditor(): JPanel = view.panel
@@ -250,7 +241,7 @@ class SamRunSettingsEditor(project: Project) : SettingsEditor<SamRunConfiguratio
             view.selectFunction(settings.logicalFunctionName)
         } else {
             view.useTemplate.isSelected = false
-            view.runtime.selectedItem = settings.runtime?.let { Runtime.fromValue(it) }
+            view.runtime.model.selectedItem = settings.runtime?.let { Runtime.fromValue(it) }
             view.handler.setText(settings.handler)
         }
         view.environmentVariables.envVars = settings.environmentVariables
@@ -258,7 +249,7 @@ class SamRunSettingsEditor(project: Project) : SettingsEditor<SamRunConfiguratio
 
         settings.credentialProviderId?.let {
             try {
-                view.credentialSelector.setSelectedInvalidCredentialsProvider(credentialManager.getCredentialProvider(it))
+                view.credentialSelector.setSelectedCredentialsProvider(credentialManager.getCredentialProvider(it))
             } catch (e: CredentialProviderNotFound) {
                 // Use the raw string here to not munge what the customer had, will also allow it to show the error
                 // that it could not be found

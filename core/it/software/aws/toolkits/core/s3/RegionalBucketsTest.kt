@@ -9,6 +9,7 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
+import software.aws.toolkits.core.rules.S3TemporaryBucketRule
 
 class RegionalBucketsTest {
     private val usEast2Client = S3Client.builder().region(Region.US_EAST_2).build()

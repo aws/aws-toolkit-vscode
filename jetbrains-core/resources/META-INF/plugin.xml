@@ -10,6 +10,9 @@
       Plugin for interacting with AWS resources.
     ]]></description>
 
+    <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://aws.amazon.com/">Amazon Web Services</vendor>
+    <idea-version since-build="182" until-build="182.*"/>
+
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
     <depends>com.intellij.modules.lang</depends>
@@ -58,13 +61,17 @@
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.CredentialManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultCredentialManager"
                             testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.AwsSettings"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.SamSettings"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.settings.LambdaSettings"/>
+
+        <moduleService serviceImplementation="software.aws.toolkits.jetbrains.settings.DeploySettings"/>
 
         <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager"
                         serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultProjectAccountSettingsManager"
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsSettingsPanelInstaller"/>
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsTelemetryPrompter"/>
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsSdkClient"/>
         <projectService serviceInterface="software.aws.toolkits.core.ToolkitClientManager"
@@ -125,8 +132,7 @@
         <action class="software.aws.toolkits.jetbrains.core.SettingsSelectorAction" id="aws.settings.selector" icon="AwsIcons.Logos.AWS"/>
         <action class="software.aws.toolkits.jetbrains.core.credentials.CreateOrUpdateCredentialProfilesAction" id="aws.settings.upsertCredentials" icon="AwsIcons.Logos.AWS"/>
 
-        <!-- Uncomment when 'feature/deploy-application' is merged -->
-        <!-- group id="aws.toolkit.serverless.template">
+        <group id="aws.toolkit.serverless.template">
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
             <add-to-group group-id="EditorTabPopupMenu" anchor="last"/>
@@ -135,7 +141,7 @@
             <action id="serverless.application.deploy"
                     class="software.aws.toolkits.jetbrains.services.lambda.actions.DeployServerlessApplicationAction"/>
             <separator/>
-        </group-->
+        </group>
     </actions>
 
 </idea-plugin>

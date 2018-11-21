@@ -23,6 +23,11 @@ data class AwsRegion(val id: String, val name: String) {
         else -> name
     }
 
+    fun toEnvironmentVariables() = mapOf(
+        "AWS_REGION" to id,
+        "AWS_DEFAULT_REGION" to id
+    )
+
     companion object {
         val GLOBAL = AwsRegion(Region.AWS_GLOBAL.id(), "Global")
         private fun String.trimPrefixAndRemoveBrackets(prefix: String) = this.removePrefix(prefix).replace("(", "").replace(")", "").trim()

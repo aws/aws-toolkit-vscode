@@ -128,7 +128,9 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
     override fun handlerDisplayName(handler: String): String = handler.substringAfterLast('.').replace("::", ".")
 
     private fun findByClass(clz: PsiClass): String? =
-        if (clz.canBeInstantiatedByLambda() && clz.implementsLambdaHandlerInterface(clz.containingFile.virtualFile)) {
+        if (clz.canBeInstantiatedByLambda() &&
+            clz.containingFile.virtualFile != null &&
+            clz.implementsLambdaHandlerInterface(clz.containingFile.virtualFile)) {
             clz.qualifiedName
         } else {
             null

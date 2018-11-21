@@ -57,4 +57,7 @@ open class AwsClientManager(project: Project, sdkClient: AwsSdkClient) :
     }
 }
 
-inline fun <reified T : SdkClient> Project.awsClient(): T = AwsClientManager.getInstance(this).getClient()
+inline fun <reified T : SdkClient> Project.awsClient(regionOverride: AwsRegion? = null): T =
+        AwsClientManager
+                .getInstance(this)
+                .getClient(regionOverride = regionOverride)

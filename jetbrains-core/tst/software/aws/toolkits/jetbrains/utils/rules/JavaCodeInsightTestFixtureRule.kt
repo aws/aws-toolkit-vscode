@@ -1,7 +1,7 @@
 // Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.testutils.rules
+package software.aws.toolkits.jetbrains.utils.rules
 
 import com.intellij.ide.highlighter.JavaFileType
 import com.intellij.openapi.application.ReadAction

@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.region
 
+import com.intellij.openapi.components.ServiceManager
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.ToolkitRegionProvider
 
@@ -27,5 +28,6 @@ class MockRegionProvider : ToolkitRegionProvider {
         private val usEast = AwsRegion("us-east-1", "US East (N. Virginia)")
         private var defaultRegionKey = "us-east-1"
         private val regions = mapOf("us-east-1" to usEast)
+        fun getInstance(): MockRegionProvider = ServiceManager.getService(ToolkitRegionProvider::class.java) as MockRegionProvider
     }
 }

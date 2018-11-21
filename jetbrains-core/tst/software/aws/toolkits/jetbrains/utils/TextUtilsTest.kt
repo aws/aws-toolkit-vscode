@@ -38,4 +38,10 @@ class TextUtilsTest {
         }
         assertThat(formatted).isEqualTo(expected)
     }
+
+    @Test
+    fun canConvertToTitleHumanReadable() {
+        assertThat("CREATE_COMPLETE".toHumanReadable()).isEqualTo("Create Complete")
+        assertThat("UPDATE_IN_PROGRESS".toHumanReadable()).isEqualTo("Update In Progress")
+    }
 }

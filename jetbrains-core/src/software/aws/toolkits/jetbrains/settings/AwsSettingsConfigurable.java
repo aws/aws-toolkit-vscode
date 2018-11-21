@@ -7,10 +7,12 @@ import static software.aws.toolkits.resources.Localization.message;
 
 import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
+import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.options.SearchableConfigurable;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.openapi.util.text.StringUtil;
+import com.intellij.ui.IdeBorderFactory;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.ui.components.labels.LinkLabel;
@@ -21,6 +23,7 @@ import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.Nls.Capitalization;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon;
 
 public class AwsSettingsConfigurable implements SearchableConfigurable {
     private static final String SAM_HELP_LINK = message("lambda.sam.cli.install_url");
@@ -30,16 +33,15 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
     private TextFieldWithBrowseButton samExecutablePath;
     private LinkLabel samHelp;
     private JBCheckBox showAllHandlerGutterIcons;
+    private JBCheckBox enableTelemetry;
+    private JPanel projectLevelSettings;
+    private JPanel applicationLevelSettings;
 
     public AwsSettingsConfigurable(Project project) {
         this.project = project;
 
-        samExecutablePath.addBrowseFolderListener(
-            message("aws.settings.sam.find.title"),
-            message("aws.settings.sam.find.description"),
-            project,
-            FileChooserDescriptorFactory.createSingleLocalFileDescriptor()
-        );
+        applicationLevelSettings.setBorder(IdeBorderFactory.createTitledBorder(message("aws.settings.global_level_label")));
+        projectLevelSettings.setBorder(IdeBorderFactory.createTitledBorder(message("aws.settings.project_level_label")));
     }
 
     @Nullable
@@ -80,18 +82,43 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
 
     @Override
     public boolean isModified() {
+        AwsSettings awsSettings = AwsSettings.getInstance();
         SamSettings samSettings = SamSettings.getInstance();
         LambdaSettings lambdaSettings = LambdaSettings.getInstance(project);
+
         return !Objects.equals(getSamExecutablePath(), samSettings.getSavedExecutablePath()) ||
-               isModified(showAllHandlerGutterIcons, lambdaSettings.getShowAllHandlerGutterIcons());
+                isModified(showAllHandlerGutterIcons, lambdaSettings.getShowAllHandlerGutterIcons()) ||
+                isModified(enableTelemetry, awsSettings.isTelemetryEnabled());
     }
 
     @Override
-    public void apply() {
+    public void apply() throws ConfigurationException {
         SamSettings samSettings = SamSettings.getInstance();
-        LambdaSettings lambdaSettings = LambdaSettings.getInstance(project);
 
+        String path = getSamExecutablePath();
+        // if user path is empty
+        if (path == null || path.isEmpty()) {
+            // try to autodetect the path
+            path = new SamExecutableDetector().detect();
+
+            // if path is still empty pop the error
+            if (path == null || path.isEmpty()) {
+                throw new ConfigurationException(message("lambda.run_configuration.sam.not_specified"));
+            }
+        }
+
+        // if path is set and it is a bad executable
+        String error;
+        if ((error = SamCommon.Companion.validate(path)) != null) {
+            throw new ConfigurationException(message("lambda.run_configuration.sam.invalid_executable", error));
+        }
+
+        // preserve user's null input if we autodetected the path
         samSettings.setSavedExecutablePath(getSamExecutablePath());
+
+        AwsSettings awsSettings = AwsSettings.getInstance();
+        awsSettings.setTelemetryEnabled(enableTelemetry.isSelected());
+        LambdaSettings lambdaSettings = LambdaSettings.getInstance(project);
         lambdaSettings.setShowAllHandlerGutterIcons(showAllHandlerGutterIcons.isSelected());
     }
 
@@ -102,8 +129,10 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
 
     @Override
     public void reset() {
+        AwsSettings awsSettings = AwsSettings.getInstance();
         SamSettings samSettings = SamSettings.getInstance();
         LambdaSettings lambdaSettings = LambdaSettings.getInstance(project);
+        enableTelemetry.setSelected(awsSettings.isTelemetryEnabled());
         samExecutablePath.setText(samSettings.getSavedExecutablePath());
         showAllHandlerGutterIcons.setSelected(lambdaSettings.getShowAllHandlerGutterIcons());
     }

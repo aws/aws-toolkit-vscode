@@ -15,6 +15,7 @@ import com.intellij.execution.runners.RunContentBuilder
 import com.intellij.execution.ui.RunContentDescriptor
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.psi.PsiFile
@@ -50,6 +51,13 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
     }
 
     override fun execute(environment: ExecutionEnvironment, state: RunProfileState): Promise<RunContentDescriptor?> {
+        val validationMessage = SamCommon.validate()
+        if (validationMessage != null) {
+            throw IllegalStateException(validationMessage)
+        }
+
+        FileDocumentManager.getInstance().saveAllDocuments()
+
         val buildingPromise = AsyncPromise<RunContentDescriptor>()
         val samState = state as SamRunningState
         val psiFile = samState.settings.handlerElement.containingFile
