@@ -22,7 +22,7 @@ buildscript {
 }
 
 group 'software.aws.toolkits'
-version '0.2-SNAPSHOT'
+version toolkitVersion
 
 allprojects {
     repositories {
