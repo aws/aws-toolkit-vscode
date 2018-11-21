@@ -7,6 +7,7 @@ import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModifiableRootModel
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
@@ -64,12 +65,17 @@ class SamCommon {
             val cfTemplate = CloudFormationTemplate.parse(project, template)
 
             val codeUris = mutableListOf<VirtualFile>()
+            val templatePath = Paths.get(template.parent.path)
+            val localFileSystem = LocalFileSystem.getInstance()
 
             cfTemplate.resources().filter { it.isType(SERVERLESS_FUNCTION_TYPE) }.forEach { resource ->
                 val codeUriValue = resource.getScalarProperty("CodeUri")
-                project.baseDir.findFileByRelativePath(codeUriValue)?.takeIf { it.isDirectory }?.let { codeUri ->
-                    codeUris.add(codeUri)
-                }
+                val codeUriPath = templatePath.resolve(codeUriValue)
+                localFileSystem.refreshAndFindFileByIoFile(codeUriPath.toFile())
+                    ?.takeIf { it.isDirectory }
+                    ?.let { codeUri ->
+                        codeUris.add(codeUri)
+                    }
             }
             return codeUris
         }

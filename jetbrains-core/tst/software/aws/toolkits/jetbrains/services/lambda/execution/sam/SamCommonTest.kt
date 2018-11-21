@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 
 import com.intellij.openapi.application.runReadAction
-import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.runInEdtAndGet
@@ -231,15 +230,8 @@ Resources:
         projectRule.fixture.addFileToProject(filename, template)
     }
 
-    private fun createChildren(directory: String, file: String? = null) {
-        runInEdtAndWait {
-            runWriteAction {
-                val dir = projectRule.project.baseDir.createChildDirectory(null, directory)
-                if (file != null) {
-                    dir.createChildData(null, file)
-                }
-            }
-        }
+    private fun createChildren(directory: String, file: String = "TestFile") {
+        projectRule.fixture.addFileToProject("$directory/$file", "")
     }
 
     private companion object {
