@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.lambda.upload
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
@@ -238,6 +239,8 @@ class EditFunctionDialog(
 
             val packager = psiFile.language.runtimeGroup?.let { LambdaPackager.getInstance(it) } ?: return
             val lambdaCreator = LambdaCreatorFactory.create(AwsClientManager.getInstance(project), packager)
+
+            FileDocumentManager.getInstance().saveAllDocuments()
 
             val (future, message) = if (mode == UPDATE_CODE) {
                 lambdaCreator.updateLambda(module, psiFile, functionDetails, s3Bucket, configurationChanged()) to
