@@ -34,9 +34,7 @@ import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode.U
 import software.aws.toolkits.jetbrains.services.s3.CreateS3BucketDialog
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
-import software.aws.toolkits.jetbrains.utils.ui.addAndSelectValue
 import software.aws.toolkits.jetbrains.utils.ui.blankAsNull
-import software.aws.toolkits.jetbrains.utils.ui.populateValues
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
 import java.awt.event.ActionEvent
@@ -351,7 +349,11 @@ class UploadToLambdaValidator {
                 )
             }
         }
-        view.iamRole.selected() ?: return ValidationInfo(message("lambda.upload_validation.iam_role"), view.iamRole)
+        view.iamRole.selected() ?: return view.iamRole.toValidationInfo(
+            loading = message("lambda.upload_validation.iam_role.loading"),
+            notSelected = message("lambda.upload_validation.iam_role")
+        )
+
         return null
     }
 
@@ -370,9 +372,9 @@ class UploadToLambdaValidator {
             view.handler
         )
 
-        view.sourceBucket.selected() ?: return ValidationInfo(
-            message("lambda.upload_validation.source_bucket"),
-            view.sourceBucket
+        view.sourceBucket.selected() ?: return view.sourceBucket.toValidationInfo(
+            loading = message("lambda.upload_validation.source_bucket.loading"),
+            notSelected = message("lambda.upload_validation.source_bucket")
         )
 
         return null

@@ -20,8 +20,6 @@ import software.aws.toolkits.jetbrains.services.cloudformation.listStackSummarie
 import software.aws.toolkits.jetbrains.services.s3.CreateS3BucketDialog
 import software.aws.toolkits.jetbrains.settings.DeploySettings
 import software.aws.toolkits.jetbrains.settings.relativeSamPath
-import software.aws.toolkits.jetbrains.utils.ui.addAndSelectValue
-import software.aws.toolkits.jetbrains.utils.ui.populateValues
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
 import javax.swing.JComponent
@@ -132,7 +130,10 @@ class DeploySamApplicationValidator {
                 return ValidationInfo(it, view.newStackName)
             }
         } else if (view.updateStack.isSelected && view.stacks.selected() == null) {
-            return ValidationInfo(message("serverless.application.deploy.validation.stack.missing"), view.stacks)
+            return view.stacks.toValidationInfo(
+                loading = message("serverless.application.deploy.validation.stack.loading"),
+                notSelected = message("serverless.application.deploy.validation.stack.missing")
+            )
         }
 
         // Are any Template Parameters missing
@@ -141,9 +142,9 @@ class DeploySamApplicationValidator {
         }
 
         // Has the user selected a bucket
-        view.s3Bucket.selected() ?: return ValidationInfo(
-                message("serverless.application.deploy.validation.s3.bucket.empty"),
-                view.s3Bucket
+        view.s3Bucket.selected() ?: return view.s3Bucket.toValidationInfo(
+            loading = message("serverless.application.deploy.validation.s3.bucket.loading"),
+            notSelected = message("serverless.application.deploy.validation.s3.bucket.empty")
         )
 
         return null

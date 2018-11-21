@@ -36,12 +36,13 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaInputPane
 import software.aws.toolkits.jetbrains.ui.CredentialProviderSelector;
 import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField;
 import software.aws.toolkits.jetbrains.ui.RegionSelector;
+import software.aws.toolkits.jetbrains.ui.ResourceSelector;
 
 public final class SamRunSettingsEditorPanel {
     public JPanel panel;
     public EditorTextField handler;
     public EnvironmentVariablesTextField environmentVariables;
-    public ComboBox<Runtime> runtime;
+    public ResourceSelector<Runtime> runtime;
     public RegionSelector regionSelector;
     public CredentialProviderSelector credentialSelector;
     public LambdaInputPanel lambdaInput;

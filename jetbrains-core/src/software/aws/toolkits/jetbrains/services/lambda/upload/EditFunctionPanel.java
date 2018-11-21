@@ -3,23 +3,24 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.upload;
 
-import static software.aws.toolkits.resources.Localization.message;
-
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.EditorTextField;
 import com.intellij.ui.IdeBorderFactory;
 import com.intellij.util.textCompletion.TextFieldWithCompletion;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JSlider;
-import javax.swing.JTextField;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.lambda.model.Runtime;
 import software.aws.toolkits.jetbrains.services.iam.IamRole;
 import software.aws.toolkits.jetbrains.services.lambda.HandlerCompletionProvider;
 import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField;
+import software.aws.toolkits.jetbrains.ui.ResourceSelector;
+
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JSlider;
+import javax.swing.JTextField;
+
+import static software.aws.toolkits.resources.Localization.message;
 
 @SuppressWarnings("NullableProblems")
 public class EditFunctionPanel {
@@ -29,9 +30,9 @@ public class EditFunctionPanel {
     @NotNull JButton createRole;
     @NotNull JButton createBucket;
     @NotNull JPanel content;
-    @NotNull ComboBox<IamRole> iamRole;
-    @NotNull ComboBox<Runtime> runtime;
-    @NotNull ComboBox<String> sourceBucket;
+    @NotNull ResourceSelector<IamRole> iamRole;
+    @NotNull ResourceSelector<Runtime> runtime;
+    @NotNull ResourceSelector<String> sourceBucket;
     @NotNull EnvironmentVariablesTextField envVars;
     @NotNull JTextField timeout;
     @NotNull JPanel deploySettings;
