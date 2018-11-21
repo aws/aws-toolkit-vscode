@@ -3,13 +3,14 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
-import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.extensions.AbstractExtensionPointBean
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.util.LazyInstance
 import com.intellij.util.xmlb.annotations.Attribute
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProviderFactory
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProviderRegistry
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.tryOrNull
 
 /**
  * Extension point for adding new credential providers to the internal registry
@@ -33,20 +34,21 @@ class CredentialProviderFactoryEP : AbstractExtensionPointBean() {
 }
 
 class ExtensionPointCredentialsProviderRegistry : ToolkitCredentialsProviderRegistry {
-    override fun listFactories(): Collection<ToolkitCredentialsProviderFactory> = EXTENSION_POINT.extensions
-        .mapNotNull {
-            try {
-                it.getHandler()
-            } catch (e: Exception) {
-                LOG.error(e)
-                null
-            }
-        }
-        .map { it.createToolkitCredentialProviderFactory() }
+    override fun listFactories(): Collection<ToolkitCredentialsProviderFactory> = factories
 
     companion object {
-        private val LOG = Logger.getInstance(ExtensionPointCredentialsProviderRegistry::class.java)
+        private val LOG = getLogger<ExtensionPointCredentialsProviderRegistry>()
         private const val EP_NAME = "aws.toolkit.credentialProviderFactory"
-        val EXTENSION_POINT = ExtensionPointName.create<CredentialProviderFactoryEP>(EP_NAME)
+        private val EXTENSION_POINT = ExtensionPointName.create<CredentialProviderFactoryEP>(EP_NAME)
+
+        private val factories by lazy {
+            EXTENSION_POINT.extensions
+                .mapNotNull {
+                    LOG.tryOrNull("Failed td load CredentialProviderFactory") {
+                        it.getHandler()
+                    }
+                }
+                .map { it.createToolkitCredentialProviderFactory() }
+        }
     }
 }

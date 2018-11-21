@@ -26,6 +26,7 @@ import com.intellij.util.Consumer
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier
@@ -214,7 +215,8 @@ private class ChangeRegionAction(val region: AwsRegion) : ToggleAction(region.di
 
 private class ChangeCredentialsAction(val credentialsProvider: ToolkitCredentialsProvider) : ToggleAction(credentialsProvider.displayName), DumbAware {
 
-    override fun isSelected(e: AnActionEvent): Boolean = getAccountSetting(e).activeCredentialProvider == credentialsProvider
+    override fun isSelected(e: AnActionEvent): Boolean =
+        tryOrNull { getAccountSetting(e).activeCredentialProvider == credentialsProvider } ?: false
 
     override fun setSelected(e: AnActionEvent, selected: Boolean) {
         if (selected) {
