@@ -17,9 +17,10 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import java.util.List;
 
+@SuppressWarnings("NullableProblems")
 public class SamInitDirectoryBasedSettingsPanel {
-    private JTextField samExecutableField;
-    private ComboBox<SamProjectTemplate> templateField;
+    @NotNull JTextField samExecutableField;
+    @NotNull ComboBox<SamProjectTemplate> templateField;
     private JPanel mainPanel;
     private FixedSizeButton editSamExecutableButton;
     private JBLabel samLabel;
@@ -40,12 +41,6 @@ public class SamInitDirectoryBasedSettingsPanel {
     public JPanel getComponent() {
         return mainPanel;
     }
-
-    @NotNull
-    public JTextField getSamExecutableField() { return samExecutableField; }
-
-    @NotNull
-    public ComboBox<SamProjectTemplate> getTemplateField() { return templateField; }
 
     @NotNull
     public ValidationResult validate() {

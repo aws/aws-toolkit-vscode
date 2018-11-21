@@ -23,12 +23,11 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager;
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon;
 import software.aws.toolkits.jetbrains.ui.wizard.SamInitProjectBuilderCommon;
 
-import static software.aws.toolkits.resources.Localization.message;
-
+@SuppressWarnings("NullableProblems")
 public class SamInitRuntimeSelectionPanel extends ModuleWizardStep {
-    private JPanel mainPanel;
-    private ComboBox<Runtime> runtime;
-    private JTextField samExecutableField;
+    @NotNull JPanel mainPanel;
+    @NotNull public ComboBox<Runtime> runtime;
+    @NotNull public JTextField samExecutableField;
     private JButton editSamExecutableButton;
     private JBLabel samLabel;
 
@@ -110,10 +109,4 @@ public class SamInitRuntimeSelectionPanel extends ModuleWizardStep {
     public JComponent getComponent() {
         return mainPanel;
     }
-
-    @NotNull
-    public ComboBox<Runtime> getRuntime() { return runtime; }
-
-    @NotNull
-    public JTextField getSamExecutableField() { return samExecutableField; }
 }
