@@ -42,6 +42,9 @@ public class SamInitDirectoryBasedSettingsPanel {
     }
 
     @NotNull
+    public JTextField getSamExecutableField() { return samExecutableField; }
+
+    @NotNull
     public ComboBox<SamProjectTemplate> getTemplateField() { return templateField; }
 
     @NotNull

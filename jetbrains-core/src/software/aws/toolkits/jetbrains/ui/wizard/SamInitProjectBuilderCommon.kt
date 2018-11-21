@@ -81,9 +81,8 @@ fun setupSamSelectionElements(samExecutableField: JTextField, editButton: JButto
         postEditCallback?.run()
     }
 
-    if (SamCommon.validate(StringUtil.nullize(samExecutableField.text)) == null) {
-        samExecutableField.isVisible = false
-        editButton.isVisible = false
-        label.isVisible = false
-    }
+    val validSamPath = (SamCommon.validate(StringUtil.nullize(samExecutableField.text)) == null)
+    samExecutableField.isVisible = !validSamPath
+    editButton.isVisible = !validSamPath
+    label.isVisible = !validSamPath
 }

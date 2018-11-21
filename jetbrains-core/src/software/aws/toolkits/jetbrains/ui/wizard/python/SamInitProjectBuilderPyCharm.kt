@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.ui.wizard.python
 
+import com.intellij.facet.ui.ValidationResult
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.module.Module
@@ -22,7 +23,9 @@ import software.aws.toolkits.resources.message
 import java.io.File
 
 class SamInitProjectBuilderPyCharm : PythonProjectGenerator<PyNewProjectSettings>() {
-    val settingsPanel = SamInitDirectoryBasedSettingsPanel(SAM_TEMPLATES, this)
+    private val settingsPanel = SamInitDirectoryBasedSettingsPanel(SAM_TEMPLATES, this)
+    private var lastSamPath: String? = null
+    private var lastValidationResult: ValidationResult = ValidationResult.OK
 
     override fun getName() = SamModuleType.ID
 
@@ -31,7 +34,14 @@ class SamInitProjectBuilderPyCharm : PythonProjectGenerator<PyNewProjectSettings
 
     override fun getLogo() = AwsIcons.Resources.SERVERLESS_APP
 
-    override fun validate(baseDirPath: String) = settingsPanel.validate()
+    override fun validate(baseDirPath: String): ValidationResult {
+        val currSamPath = settingsPanel.samExecutableField.text
+        if (currSamPath != lastSamPath) {
+            lastSamPath = currSamPath
+            lastValidationResult = settingsPanel.validate()
+        }
+        return lastValidationResult
+    }
 
     override fun configureProject(project: Project, baseDir: VirtualFile, settings: PyNewProjectSettings, module: Module, synchronizer: PyProjectSynchronizer?) {
         val runtime = PythonRuntimeGroup.determineRuntimeForSdk(settings.sdk
