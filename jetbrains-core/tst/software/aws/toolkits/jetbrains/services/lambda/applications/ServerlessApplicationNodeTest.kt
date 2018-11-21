@@ -16,6 +16,8 @@ import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.GetFunctionConfigurationRequest
 import software.amazon.awssdk.services.lambda.model.GetFunctionConfigurationResponse
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.amazon.awssdk.services.lambda.model.TracingConfigResponse
+import software.amazon.awssdk.services.lambda.model.TracingMode
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 import software.aws.toolkits.jetbrains.utils.delegateMock
@@ -42,6 +44,7 @@ class ServerlessApplicationNodeTest {
                 .handler("hello")
                 .timeout(1234)
                 .memorySize(123)
+                .tracingConfig(TracingConfigResponse.builder().mode(TracingMode.PASS_THROUGH).build())
                 .role("abc")
                 .build()
         )

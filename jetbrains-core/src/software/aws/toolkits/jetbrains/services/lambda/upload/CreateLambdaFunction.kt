@@ -10,6 +10,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.SmartPsiElementPointer
 import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.amazon.awssdk.services.lambda.model.TracingMode
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplateIndex
 import software.aws.toolkits.jetbrains.services.iam.IamRole
@@ -78,5 +79,13 @@ data class FunctionUploadDetails(
     val description: String?,
     val envVars: Map<String, String>,
     val timeout: Int,
-    val memorySize: Int
-)
+    val memorySize: Int,
+    val xrayEnabled: Boolean
+) {
+    val tracingMode: TracingMode =
+        if (xrayEnabled) {
+            TracingMode.ACTIVE
+        } else {
+            TracingMode.PASS_THROUGH
+        }
+}

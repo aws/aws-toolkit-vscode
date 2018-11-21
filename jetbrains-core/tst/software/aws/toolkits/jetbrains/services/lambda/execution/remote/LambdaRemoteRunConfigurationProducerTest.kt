@@ -42,7 +42,8 @@ class LambdaRemoteRunConfigurationProducerTest {
             timeout = 60,
             credentialProviderId = credentialProviderId,
             region = region,
-            memorySize = 128
+            memorySize = 128,
+            xrayEnabled = false
         )
 
         runInEdtAndWait {

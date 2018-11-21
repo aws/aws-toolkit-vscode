@@ -10,6 +10,7 @@ import software.amazon.awssdk.services.lambda.model.CreateFunctionResponse
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.amazon.awssdk.services.lambda.model.GetFunctionConfigurationResponse
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.amazon.awssdk.services.lambda.model.TracingMode
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionConfigurationResponse
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.services.iam.IamRole
@@ -31,6 +32,7 @@ data class LambdaFunction(
     val envVariables: Map<String, String>?,
     val timeout: Int,
     val memorySize: Int,
+    val xrayEnabled: Boolean,
     val role: IamRole,
     val region: AwsRegion,
     val credentialProviderId: String
@@ -48,6 +50,7 @@ fun FunctionConfiguration.toDataClass(credentialProviderId: String, region: AwsR
     memorySize = this.memorySize(),
     role = IamRole(this.role()),
     credentialProviderId = credentialProviderId,
+    xrayEnabled = this.tracingConfig().mode() == TracingMode.ACTIVE,
     region = region
 )
 
@@ -63,7 +66,8 @@ fun CreateFunctionResponse.toDataClass(credentialProviderId: String, region: Aws
     memorySize = this.memorySize(),
     role = IamRole(this.role()),
     credentialProviderId = credentialProviderId,
-    region = region
+    region = region,
+    xrayEnabled = this.tracingConfig().mode() == TracingMode.ACTIVE
 )
 
 fun UpdateFunctionConfigurationResponse.toDataClass(credentialProviderId: String, region: AwsRegion) = LambdaFunction(
@@ -78,7 +82,8 @@ fun UpdateFunctionConfigurationResponse.toDataClass(credentialProviderId: String
     memorySize = this.memorySize(),
     role = IamRole(this.role()),
     credentialProviderId = credentialProviderId,
-    region = region
+    region = region,
+    xrayEnabled = this.tracingConfig().mode() == TracingMode.ACTIVE
 )
 
 fun GetFunctionConfigurationResponse.toDataClass(credentialProviderId: String, region: AwsRegion) = LambdaFunction(
@@ -93,5 +98,6 @@ fun GetFunctionConfigurationResponse.toDataClass(credentialProviderId: String, r
     memorySize = this.memorySize(),
     role = IamRole(this.role()),
     credentialProviderId = credentialProviderId,
-    region = region
+    region = region,
+    xrayEnabled = this.tracingConfig().mode() == TracingMode.ACTIVE
 )
