@@ -23,7 +23,7 @@ class SamCommon {
         val SAM_BUILD_DIR = ".aws-sam"
 
         val expectedSamMinVersion = SemVer("0.7.0", 0, 7, 0)
-        private val expectedSamMaxVersion = SemVer("0.8.0", 0, 8, 0)
+        val expectedSamMaxVersion = SemVer("0.8.0", 0, 8, 0)
 
         fun checkVersion(samVersionLine: String): String? {
             val parsedSemVer = SemVer.parseFromText(samVersionLine.split(" ").last())
@@ -46,6 +46,9 @@ class SamCommon {
                 if (process.exitCode != 0) {
                     process.stderr
                 } else {
+                    if (process.stdoutLines.size == 0) {
+                        return message("lambda.run_configuration.sam.empty_info")
+                    }
                     val samVersionLine = process.stdoutLines.first()
                     checkVersion(samVersionLine)
                 }
