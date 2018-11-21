@@ -102,11 +102,11 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
     }
 }
 
-class SettingsSelectorAction : AnAction(message("configure.toolkit")), DumbAware {
+class SettingsSelectorAction(private val showRegions: Boolean = true) : AnAction(message("configure.toolkit")), DumbAware {
     override fun actionPerformed(e: AnActionEvent?) {
         val project = e?.project ?: return
         val settingsSelector = SettingsSelector(project)
-        settingsSelector.settingsPopup(e.dataContext).showCenteredInCurrentWindow(project)
+        settingsSelector.settingsPopup(e.dataContext, showRegions = showRegions).showCenteredInCurrentWindow(project)
     }
 }
 

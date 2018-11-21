@@ -16,11 +16,13 @@ import com.intellij.openapi.vfs.VirtualFile
 import icons.AwsIcons
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.cloudformation.executeChangeSetAndWait
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationDialog
 import software.aws.toolkits.jetbrains.services.lambda.deploy.SamDeployDialog
 import software.aws.toolkits.jetbrains.settings.DeploySettings
 import software.aws.toolkits.jetbrains.settings.relativeSamPath
+import software.aws.toolkits.jetbrains.utils.notifyNoActiveCredentialsError
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
@@ -35,7 +37,17 @@ class DeployServerlessApplicationAction : DumbAwareAction(
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
 
-        val templateFile = getSamTemplateFile(e) ?: throw Exception("Could not detect template file")
+        if (!ProjectAccountSettingsManager.getInstance(project).hasActiveCredentials()) {
+            notifyNoActiveCredentialsError(project = project)
+            return
+        }
+
+        val templateFile = getSamTemplateFile(e)
+        if (templateFile == null) {
+            Exception(message("serverless.application.deploy.toast.template_file_failure"))
+                    .notifyError(message("aws.notification.title"), project)
+            return
+        }
 
         // Force save before we deploy
         FileDocumentManager.getInstance().saveAllDocuments()

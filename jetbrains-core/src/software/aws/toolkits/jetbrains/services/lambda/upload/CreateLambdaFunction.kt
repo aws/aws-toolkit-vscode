@@ -10,11 +10,13 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.SmartPsiElementPointer
 import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplateIndex
 import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.runtime
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode.NEW
+import software.aws.toolkits.jetbrains.utils.notifyNoActiveCredentialsError
 import software.aws.toolkits.resources.message
 
 class CreateLambdaFunction(
@@ -34,6 +36,11 @@ class CreateLambdaFunction(
     override fun actionPerformed(event: AnActionEvent) {
         val project = event.getRequiredData(LangDataKeys.PROJECT)
         val runtime = event.runtime()
+
+        if (!ProjectAccountSettingsManager.getInstance(project).hasActiveCredentials()) {
+            notifyNoActiveCredentialsError(project = project)
+            return
+        }
 
         val dialog = if (handlerName != null) {
             EditFunctionDialog(project = project, mode = NEW, runtime = runtime, handlerName = handlerName)
