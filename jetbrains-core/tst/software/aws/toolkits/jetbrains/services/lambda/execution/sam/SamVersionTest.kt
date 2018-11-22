@@ -11,11 +11,11 @@ class SamVersionTest {
     @Test
     fun compatableSamVersion() {
         val versions = arrayOf(
-            "SAM CLI, version 0.7.0",
-            "SAM CLI, version 0.7.123",
-            "SAM CLI, version 0.7.999999999",
-            "SAM CLI, version 0.7.0-beta",
-            "SAM CLI, version 0.7.0-beta+build"
+            "0.7.0",
+            "0.7.123",
+            "0.7.999999999",
+            "0.7.0-beta",
+            "0.7.0-beta+build"
         )
         for (version in versions) {
             assertNull(SamCommon.checkVersion(version))
@@ -38,10 +38,10 @@ class SamVersionTest {
     @Test
     fun incompatableSamVersion_tooLow() {
         val versions = arrayOf(
-                "SAM CLI, version 0.5.9",
-                "SAM CLI, version 0.0.1",
-                "SAM CLI, version 0.5.9-dev",
-                "SAM CLI, version 0.6.2"
+                "0.5.9",
+                "0.0.1",
+                "0.5.9-dev",
+                "0.6.2"
         )
         for (version in versions) {
             val message = SamCommon.checkVersion(version)
@@ -53,10 +53,10 @@ class SamVersionTest {
     @Test
     fun incompatableSamVersion_tooHigh() {
         val versions = arrayOf(
-                "SAM CLI, version 0.8.0",
-                "SAM CLI, version 1.0.0",
-                "SAM CLI, version 1.5.9",
-                "SAM CLI, version 1.5.9-dev"
+                "0.8.0",
+                "1.0.0",
+                "1.5.9",
+                "1.5.9-dev"
         )
         for (version in versions) {
             val message = SamCommon.checkVersion(version)

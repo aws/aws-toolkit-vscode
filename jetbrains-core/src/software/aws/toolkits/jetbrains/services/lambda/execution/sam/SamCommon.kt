@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.openapi.project.Project
@@ -20,13 +21,15 @@ import java.nio.file.Paths
 
 class SamCommon {
     companion object {
+        val mapper = jacksonObjectMapper()
         val SAM_BUILD_DIR = ".aws-sam"
+        val SAM_INFO_VERSION_KEY = "version"
 
         val expectedSamMinVersion = SemVer("0.7.0", 0, 7, 0)
         val expectedSamMaxVersion = SemVer("0.8.0", 0, 8, 0)
 
         fun checkVersion(samVersionLine: String): String? {
-            val parsedSemVer = SemVer.parseFromText(samVersionLine.split(" ").last())
+            val parsedSemVer = SemVer.parseFromText(samVersionLine)
                     ?: return message("sam.executable.version_parse_error", samVersionLine)
 
             val samVersionOutOfRangeMessage = message("sam.executable.version_wrong", expectedSamMinVersion, expectedSamMaxVersion, parsedSemVer)
@@ -40,17 +43,18 @@ class SamCommon {
 
         fun validate(path: String? = SamSettings.getInstance().executablePath): String? {
             path ?: return message("lambda.run_configuration.sam.not_specified")
-            val commandLine = GeneralCommandLine(path).withParameters("--version")
+            val commandLine = GeneralCommandLine(path).withParameters("--info")
             return try {
                 val process = CapturingProcessHandler(commandLine).runProcess()
                 if (process.exitCode != 0) {
                     process.stderr
                 } else {
-                    if (process.stdoutLines.size == 0) {
+                    if (process.stdout.isEmpty()) {
                         return message("lambda.run_configuration.sam.empty_info")
                     }
-                    val samVersionLine = process.stdoutLines.first()
-                    checkVersion(samVersionLine)
+                    val tree = mapper.readTree(process.stdout)
+                    val version = tree.get(SAM_INFO_VERSION_KEY).asText()
+                    checkVersion(version)
                 }
             } catch (e: Exception) {
                 e.localizedMessage

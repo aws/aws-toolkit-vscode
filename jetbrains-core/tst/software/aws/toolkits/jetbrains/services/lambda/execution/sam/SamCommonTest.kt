@@ -8,6 +8,7 @@ import com.intellij.openapi.util.SystemInfo
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
+import com.intellij.util.text.SemVer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -64,7 +65,7 @@ class SamCommonTest {
     @Test
     fun testValidate_ok() {
         Assume.assumeTrue(SystemInfo.isUnix)
-        val path = projectRule.fixture.addFileToProject("good", "echo ${SamCommon.expectedSamMinVersion}").virtualFile.path
+        val path = projectRule.fixture.addFileToProject("good", "echo '${SamCommonTestUtils.getMinVersionAsJson()}'").virtualFile.path
         Files.setPosixFilePermissions(Paths.get(path), PosixFilePermissions.fromString("r-xr-xr-x"))
 
         val result = SamCommon.validate(path)
@@ -262,5 +263,19 @@ Resources:
                 ReadCapacityUnits: 1
                 WriteCapacityUnits: 1
             """.trimIndent()
+    }
+}
+
+class SamCommonTestUtils {
+    companion object {
+        private fun getVersionAsJson(version: SemVer): String {
+            val tree = SamCommon.mapper.createObjectNode()
+            tree.put(SamCommon.SAM_INFO_VERSION_KEY, version.parsedVersion)
+            return SamCommon.mapper.writeValueAsString(tree)
+        }
+
+        fun getMinVersionAsJson() = getVersionAsJson(SamCommon.expectedSamMinVersion)
+
+        fun getMaxVersionAsJson() = getVersionAsJson(SamCommon.expectedSamMaxVersion)
     }
 }

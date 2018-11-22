@@ -10,7 +10,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assume
 import org.junit.Rule
 import org.junit.Test
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommonTestUtils
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -54,7 +54,7 @@ class AwsSettingsConfigurableTest : SamExecutableDetectorTestBase() {
         Assume.assumeTrue(SystemInfo.isUnix)
 
         val sam = tempFolderRule.newFile().toPath()
-        Files.write(sam, mutableListOf("echo ${SamCommon.expectedSamMinVersion}"))
+        Files.write(sam, mutableListOf("echo '${SamCommonTestUtils.getMinVersionAsJson()}'"))
         setPathAsExecutable(sam)
 
         val settings = AwsSettingsConfigurable(projectRule.project)
@@ -65,7 +65,7 @@ class AwsSettingsConfigurableTest : SamExecutableDetectorTestBase() {
     @Test
     fun validate_ok_autodetectBadSam() {
         // allow users to save if their autodetected sam executable is bad
-        makeASam(SamCommon.expectedSamMaxVersion.toString())
+        makeASam(SamCommonTestUtils.getMaxVersionAsJson())
 
         val settings = AwsSettingsConfigurable(projectRule.project)
         assertNotNull(detector.detect())
@@ -74,7 +74,7 @@ class AwsSettingsConfigurableTest : SamExecutableDetectorTestBase() {
 
     @Test
     fun validate_ok_autodetectValidSam() {
-        makeASam(SamCommon.expectedSamMinVersion.toString())
+        makeASam(SamCommonTestUtils.getMinVersionAsJson())
 
         val settings = AwsSettingsConfigurable(projectRule.project)
         assertNotNull(detector.detect())
@@ -88,7 +88,7 @@ class AwsSettingsConfigurableTest : SamExecutableDetectorTestBase() {
         assertExecutable(path)
 
         val sam = Paths.get(tempFolder, path)
-        Files.write(sam, mutableListOf("echo $version"))
+        Files.write(sam, mutableListOf("echo '$version'"))
         setPathAsExecutable(sam)
     }
 }
