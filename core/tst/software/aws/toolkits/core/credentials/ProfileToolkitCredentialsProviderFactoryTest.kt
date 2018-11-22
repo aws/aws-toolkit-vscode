@@ -19,10 +19,11 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
-import software.amazon.awssdk.http.AbortableCallable
 import software.amazon.awssdk.http.AbortableInputStream
+import software.amazon.awssdk.http.ExecutableHttpRequest
+import software.amazon.awssdk.http.HttpExecuteRequest
+import software.amazon.awssdk.http.HttpExecuteResponse
 import software.amazon.awssdk.http.SdkHttpClient
-import software.amazon.awssdk.http.SdkHttpFullRequest
 import software.amazon.awssdk.http.SdkHttpFullResponse
 import software.amazon.awssdk.profiles.Profile
 import software.amazon.awssdk.profiles.ProfileFile
@@ -108,7 +109,11 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 
         val providerFactory = createProviderFactory()
 
-        assertThat(providerFactory.listCredentialProviders()).hasOnlyOneElementSatisfying { assertThat(it.id).isEqualTo("profile:another_profile") }
+        assertThat(providerFactory.listCredentialProviders()).hasOnlyOneElementSatisfying {
+            assertThat(it.id).isEqualTo(
+                "profile:another_profile"
+            )
+        }
     }
 
     @Test
@@ -128,19 +133,14 @@ class ProfileToolkitCredentialsProviderFactoryTest {
         )
 
         mockSdkHttpClient.stub {
-            on { prepareRequest(any(), any()) }
+            on { prepareRequest(any()) }
                 .thenReturn(
-                    SdkHttpFullResponse.builder()
-                        .statusCode(200)
-                        .content(
-                            createAssumeRoleResponse(
-                                "AccessKey",
-                                "SecretKey",
-                                "SessionToken",
-                                ZonedDateTime.now().plus(1, ChronoUnit.HOURS)
-                            )
-                        )
-                        .build().toAbortable()
+                    createAssumeRoleResponse(
+                        "AccessKey",
+                        "SecretKey",
+                        "SessionToken",
+                        ZonedDateTime.now().plus(1, ChronoUnit.HOURS)
+                    )
                 )
         }
 
@@ -174,22 +174,17 @@ class ProfileToolkitCredentialsProviderFactoryTest {
         """.trimIndent()
         )
 
-        val captor = argumentCaptor<SdkHttpFullRequest>()
+        val captor = argumentCaptor<HttpExecuteRequest>()
 
         mockSdkHttpClient.stub {
-            on { prepareRequest(captor.capture(), any()) }
+            on { prepareRequest(captor.capture()) }
                 .thenReturn(
-                    SdkHttpFullResponse.builder()
-                        .statusCode(200)
-                        .content(
-                            createAssumeRoleResponse(
-                                "AccessKey",
-                                "SecretKey",
-                                "SessionToken",
-                                ZonedDateTime.now().plus(1, ChronoUnit.HOURS)
-                            )
-                        )
-                        .build().toAbortable()
+                    createAssumeRoleResponse(
+                        "AccessKey",
+                        "SecretKey",
+                        "SessionToken",
+                        ZonedDateTime.now().plus(1, ChronoUnit.HOURS)
+                    )
                 )
         }
 
@@ -205,7 +200,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
                 assertThat(sessionCredentials.sessionToken()).isEqualTo("SessionToken")
             }
 
-        val content = captor.firstValue.content().get().bufferedReader().use { it.readText() }
+        val content = captor.firstValue.contentStreamProvider().get().newStream().bufferedReader().use { it.readText() }
         assertThat(content).contains("TokenCode=MfaToken")
             .contains("SerialNumber=someSerialArn")
     }
@@ -230,30 +225,20 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 
         // In reverse order, since chain is built bottom up
         mockSdkHttpClient.stub {
-            on { prepareRequest(any(), any()) }
+            on { prepareRequest(any()) }
                 .thenReturn(
-                    SdkHttpFullResponse.builder()
-                        .statusCode(200)
-                        .content(
-                            createAssumeRoleResponse(
-                                "AccessKey2",
-                                "SecretKey2",
-                                "SessionToken2",
-                                ZonedDateTime.now().plus(1, ChronoUnit.HOURS)
-                            )
-                        )
-                        .build().toAbortable(),
-                    SdkHttpFullResponse.builder()
-                        .statusCode(200)
-                        .content(
-                            createAssumeRoleResponse(
-                                "AccessKey",
-                                "SecretKey",
-                                "SessionToken",
-                                ZonedDateTime.now().plus(1, ChronoUnit.HOURS)
-                            )
-                        )
-                        .build().toAbortable()
+                    createAssumeRoleResponse(
+                        "AccessKey2",
+                        "SecretKey2",
+                        "SessionToken2",
+                        ZonedDateTime.now().plus(1, ChronoUnit.HOURS)
+                    ),
+                    createAssumeRoleResponse(
+                        "AccessKey",
+                        "SecretKey",
+                        "SessionToken",
+                        ZonedDateTime.now().plus(1, ChronoUnit.HOURS)
+                    )
                 )
         }
 
@@ -269,7 +254,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
                 assertThat(sessionCredentials.sessionToken()).isEqualTo("SessionToken")
             }
 
-        verify(mockSdkHttpClient, times(2)).prepareRequest(any(), any())
+        verify(mockSdkHttpClient, times(2)).prepareRequest(any())
     }
 
     @Test
@@ -356,7 +341,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
         secretKey: String,
         sessionToken: String,
         expiration: TemporalAccessor
-    ): AbortableInputStream {
+    ): ExecutableHttpRequest {
         val expirationString = DateTimeFormatter.ISO_INSTANT.format(expiration)
 
         val body = """
@@ -372,7 +357,16 @@ class ProfileToolkitCredentialsProviderFactoryTest {
                     </AssumeRoleResponse>
                     """.trimIndent()
 
-        return AbortableInputStream.create(body.toByteArray().inputStream())
+        return object : ExecutableHttpRequest {
+            override fun call(): HttpExecuteResponse = HttpExecuteResponse.builder()
+                .response(SdkHttpFullResponse.builder()
+                    .statusCode(200)
+                    .build())
+                .responseBody(AbortableInputStream.create(body.toByteArray().inputStream()))
+                .build()
+
+            override fun abort() {}
+        }
     }
 
     companion object {
@@ -418,14 +412,5 @@ class ProfileToolkitCredentialsProviderFactoryTest {
                 )
             )
             .build()
-    }
-}
-
-private fun SdkHttpFullResponse.toAbortable(): AbortableCallable<SdkHttpFullResponse> {
-    val result = this
-    return object : AbortableCallable<SdkHttpFullResponse> {
-        override fun call(): SdkHttpFullResponse = result
-
-        override fun abort() {}
     }
 }

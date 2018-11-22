@@ -22,10 +22,8 @@ import software.amazon.awssdk.awscore.client.builder.AwsDefaultClientBuilder
 import software.amazon.awssdk.core.SdkClient
 import software.amazon.awssdk.core.client.config.SdkAdvancedClientOption
 import software.amazon.awssdk.core.client.config.SdkClientOption
-import software.amazon.awssdk.core.interceptor.ExecutionAttributes
 import software.amazon.awssdk.core.signer.Signer
 import software.amazon.awssdk.http.SdkHttpClient
-import software.amazon.awssdk.http.SdkHttpFullRequest
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import kotlin.reflect.full.declaredMemberProperties
@@ -115,7 +113,9 @@ class AwsClientManagerTest {
     }
 
     class DummyServiceClientBuilder : TestClientBuilder<DummyServiceClientBuilder, DummyServiceClient>() {
-        override fun signingName(): String = "DummyService"
+        override fun serviceName(): String = "DummyService"
+
+        override fun signingName(): String = serviceName()
 
         override fun buildClient() = DummyServiceClient(syncClientConfiguration().option(SdkClientOption.SYNC_HTTP_CLIENT))
     }
@@ -130,7 +130,9 @@ class AwsClientManagerTest {
 
     class SecondDummyServiceClientBuilder :
         TestClientBuilder<SecondDummyServiceClientBuilder, SecondDummyServiceClient>() {
-        override fun signingName(): String = "SecondDummyService"
+        override fun serviceName(): String = "SecondDummyService"
+
+        override fun signingName(): String = serviceName()
 
         override fun buildClient() = SecondDummyServiceClient(syncClientConfiguration().option(SdkClientOption.SYNC_HTTP_CLIENT))
     }
@@ -156,14 +158,7 @@ class AwsClientManagerTest {
     abstract class TestClientBuilder<B : AwsClientBuilder<B, C>, C> : AwsDefaultClientBuilder<B, C>() {
         init {
             overrideConfiguration {
-                it.advancedOptions(mapOf(SdkAdvancedClientOption.SIGNER to object : Signer {
-                    override fun sign(
-                        request: SdkHttpFullRequest?,
-                        executionAttributes: ExecutionAttributes?
-                    ): SdkHttpFullRequest {
-                        throw NotImplementedError()
-                    }
-                }))
+                it.advancedOptions(mapOf(SdkAdvancedClientOption.SIGNER to Signer { _, _ -> throw NotImplementedError() }))
             }
         }
 

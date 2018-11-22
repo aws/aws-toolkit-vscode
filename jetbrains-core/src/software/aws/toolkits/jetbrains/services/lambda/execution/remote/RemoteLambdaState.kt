@@ -17,6 +17,7 @@ import com.intellij.execution.runners.ProgramRunner
 import com.intellij.json.JsonLanguage
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
+import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.LogType
 import software.aws.toolkits.jetbrains.core.AwsClientManager
@@ -75,7 +76,7 @@ class RemoteLambdaState(
         try {
             val response = client.invoke {
                 it.logType(LogType.TAIL)
-                it.payload(runSettings.input)
+                it.payload(SdkBytes.fromUtf8String(runSettings.input))
                 it.functionName(runSettings.functionName)
             }
 

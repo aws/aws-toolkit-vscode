@@ -8,11 +8,9 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.util.Disposer
-import software.amazon.awssdk.http.AbortableCallable
+import software.amazon.awssdk.http.ExecutableHttpRequest
+import software.amazon.awssdk.http.HttpExecuteRequest
 import software.amazon.awssdk.http.SdkHttpClient
-import software.amazon.awssdk.http.SdkHttpFullRequest
-import software.amazon.awssdk.http.SdkHttpFullResponse
-import software.amazon.awssdk.http.SdkRequestContext
 import software.amazon.awssdk.http.apache.ApacheHttpClient
 
 class AwsSdkClient : Disposable {
@@ -29,17 +27,14 @@ class AwsSdkClient : Disposable {
     }
 
     private class ValidateCorrectThreadClient(private val base: SdkHttpClient) : SdkHttpClient by base {
-        override fun prepareRequest(
-            request: SdkHttpFullRequest?,
-            requestContext: SdkRequestContext?
-        ): AbortableCallable<SdkHttpFullResponse> {
+        override fun prepareRequest(request: HttpExecuteRequest?): ExecutableHttpRequest {
             LOG.assertTrue(
                 !ApplicationManager.getApplication().isDispatchThread ||
                         !ApplicationManager.getApplication().isWriteAccessAllowed,
                 "Network calls shouldn't be made on EDT or inside write action"
             )
 
-            return base.prepareRequest(request, requestContext)
+            return base.prepareRequest(request)
         }
     }
 
