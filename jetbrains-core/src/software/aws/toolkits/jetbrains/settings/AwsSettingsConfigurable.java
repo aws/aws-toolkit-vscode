@@ -101,8 +101,8 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
         SamSettings samSettings = SamSettings.getInstance();
 
         String path = getSamExecutablePath();
-        // only validate if path has changed
-        boolean changed = (path != null && !path.equals(samSettings.getExecutablePath()));
+        // only validate if path is not empty and has changed since last save
+        boolean changed = (path != null && !path.equals(samSettings.getSavedExecutablePath()));
         if (changed) {
             // if path is set and it is a bad executable
             String error;

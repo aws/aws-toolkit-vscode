@@ -10,6 +10,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assume
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExpectedException
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommonTestUtils
 import java.nio.file.Files
 import java.nio.file.Path
@@ -24,6 +25,10 @@ class AwsSettingsConfigurableTest : SamExecutableDetectorTestBase() {
     @JvmField
     @Rule
     val projectRule = ProjectRule()
+
+    @JvmField
+    @Rule
+    val expectedException: ExpectedException = ExpectedException.none()
 
     @Test
     fun validate_ok_noOp() {
@@ -73,6 +78,20 @@ class AwsSettingsConfigurableTest : SamExecutableDetectorTestBase() {
     }
 
     @Test
+    fun validate_fail_autodetectBadSam_andManuallySetToBadSam() {
+        val sam = makeASam(SamCommonTestUtils.getMaxVersionAsJson())
+        val settings = AwsSettingsConfigurable(projectRule.project)
+        assertNotNull(detector.detect())
+        settings.apply(detector)
+
+        // use a rule instead of the annotation to ensure that test passes
+        // only if exception is thrown on the second invocation of `apply`
+        settings.samExecutablePath.text = sam.toAbsolutePath().toString()
+        expectedException.expect(ConfigurationException::class.java)
+        settings.apply(detector)
+    }
+
+    @Test
     fun validate_ok_autodetectValidSam() {
         makeASam(SamCommonTestUtils.getMinVersionAsJson())
 
@@ -81,7 +100,7 @@ class AwsSettingsConfigurableTest : SamExecutableDetectorTestBase() {
         settings.apply(detector)
     }
 
-    private fun makeASam(version: String) {
+    private fun makeASam(version: String): Path {
         Assume.assumeTrue(SystemInfo.isUnix)
         val path = "/usr/local/bin/sam"
         touch(path)
@@ -90,5 +109,6 @@ class AwsSettingsConfigurableTest : SamExecutableDetectorTestBase() {
         val sam = Paths.get(tempFolder, path)
         Files.write(sam, mutableListOf("echo '$version'"))
         setPathAsExecutable(sam)
+        return sam
     }
 }
