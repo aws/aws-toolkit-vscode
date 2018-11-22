@@ -17,6 +17,7 @@ fun createRunConfiguration(
     inputIsFile: Boolean = false,
     credentialsProviderId: String? = null,
     region: AwsRegion? = AwsRegion("us-east-1", "us-east-1"),
+    environmentVariables: Map<String, String> = emptyMap(),
     templateFile: String? = null,
     logicalFunctionName: String? = null
 ): SamRunConfiguration {
@@ -27,7 +28,7 @@ fun createRunConfiguration(
     val runConfiguration = runConfigurationAndSettings.configuration as SamRunConfiguration
     runManager.addConfiguration(runConfigurationAndSettings)
 
-    runConfiguration.configure(runtime, handler, input, inputIsFile, mutableMapOf(), credentialsProviderId, region, templateFile, logicalFunctionName)
+    runConfiguration.configure(runtime, handler, input, inputIsFile, environmentVariables, credentialsProviderId, region, templateFile, logicalFunctionName)
 
     return runConfiguration
 }

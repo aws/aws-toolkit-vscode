@@ -16,7 +16,6 @@ import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.aws.toolkits.core.rules.EnvironmentVariableHelper
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.settings.SamExecutableDetector
@@ -108,40 +107,6 @@ class SamRunConfigurationTest {
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
                 .hasMessage(message("lambda.run_configuration.no_region_specified"))
-        }
-    }
-
-    @Test
-    fun regionIsAdded() {
-        runInEdtAndWait {
-            val runConfiguration = createRunConfiguration(project = projectRule.project)
-            assertThat(runConfiguration).isNotNull
-            val environmentVariables = getState(runConfiguration).settings.environmentVariables
-            assertThat(environmentVariables)
-                .containsEntry("AWS_REGION", "us-east-1")
-                .containsEntry("AWS_DEFAULT_REGION", "us-east-1")
-        }
-    }
-
-    @Test
-    fun credentialsGetAdded() {
-        val awsCredentials = AwsSessionCredentials.create("Access", "Secret", "Session")
-        val credentialsProvider = MockCredentialsManager.getInstance().addCredentials("SomeId", awsCredentials)
-
-        runInEdtAndWait {
-            val runConfiguration = createRunConfiguration(
-                project = projectRule.project,
-                credentialsProviderId = credentialsProvider.id
-            )
-            assertThat(runConfiguration).isNotNull
-            val environmentVariables = getState(runConfiguration).settings.environmentVariables
-            assertThat(environmentVariables)
-                .containsEntry("AWS_ACCESS_KEY", awsCredentials.accessKeyId())
-                .containsEntry("AWS_ACCESS_KEY_ID", awsCredentials.accessKeyId())
-                .containsEntry("AWS_SECRET_KEY", awsCredentials.secretAccessKey())
-                .containsEntry("AWS_SECRET_ACCESS_KEY", awsCredentials.secretAccessKey())
-                .containsEntry("AWS_SESSION_TOKEN", awsCredentials.sessionToken())
-                .containsEntry("AWS_SECURITY_TOKEN", awsCredentials.sessionToken())
         }
     }
 

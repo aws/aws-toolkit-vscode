@@ -3,18 +3,24 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.xdebugger.XDebuggerUtil
 import com.jetbrains.python.psi.PyFile
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 
@@ -33,6 +39,9 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
     @JvmField
     val projectRule = PythonCodeInsightTestFixtureRule()
 
+    private val mockId = "MockCredsId"
+    private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
+
     @Before
     fun setUp() {
         SamSettings.getInstance().savedExecutablePath = System.getenv().getOrDefault("SAM_CLI_EXEC", "sam")
@@ -46,14 +55,27 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
         val psiClass = fixture.addFileToProject(
             "src/hello_world/app.py",
             """
+            import os
+
             def lambda_handler(event, context):
+                print(os.environ)
                 return "Hello world"
+
+            def env_print(event, context):
+                return dict(**os.environ)
             """.trimIndent()
         )
 
         runInEdtAndWait {
             fixture.openFileInEditor(psiClass.containingFile.virtualFile)
         }
+
+        MockCredentialsManager.getInstance().addCredentials(mockId, mockCreds)
+    }
+
+    @After
+    fun tearDown() {
+        MockCredentialsManager.getInstance().reset()
     }
 
     @Test
@@ -64,6 +86,46 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
         val executeLambda = executeLambda(runConfiguration)
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(executeLambda.stdout).contains("Hello world")
+    }
+
+    @Test
+    fun envVarsArePassed() {
+        val envVars = mapOf("Foo" to "Bar", "Bat" to "Baz")
+
+        val runConfiguration = runConfiguration(
+            handler = "src/hello_world.app.env_print",
+            environmentVariables = envVars
+        )
+        assertThat(runConfiguration).isNotNull
+
+        val executeLambda = executeLambda(runConfiguration)
+        assertThat(executeLambda.exitCode).isEqualTo(0)
+        assertThat(jsonToMap(executeLambda.stdout))
+            .containsEntry("Foo", "Bar")
+            .containsEntry("Bat", "Baz")
+    }
+
+    @Test
+    fun regionIsPassed() {
+        val runConfiguration = runConfiguration("src/hello_world.app.env_print")
+        assertThat(runConfiguration).isNotNull
+
+        val executeLambda = executeLambda(runConfiguration)
+        assertThat(executeLambda.exitCode).isEqualTo(0)
+        assertThat(jsonToMap(executeLambda.stdout))
+            .containsEntry("AWS_REGION", "us-west-2")
+    }
+
+    @Test
+    fun credentialsArePassed() {
+        val runConfiguration = runConfiguration("src/hello_world.app.env_print")
+        assertThat(runConfiguration).isNotNull
+
+        val executeLambda = executeLambda(runConfiguration)
+        assertThat(executeLambda.exitCode).isEqualTo(0)
+        assertThat(jsonToMap(executeLambda.stdout))
+            .containsEntry("AWS_ACCESS_KEY_ID", mockCreds.accessKeyId())
+            .containsEntry("AWS_SECRET_ACCESS_KEY", mockCreds.secretAccessKey())
     }
 
     @Test
@@ -125,10 +187,19 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
         assertThat(debuggerIsHit.get()).isTrue()
     }
 
-    private fun runConfiguration(handler: String): SamRunConfiguration = createRunConfiguration(
-        project = projectRule.project,
-        input = "\"Hello World\"",
-        handler = handler,
-        runtime = runtime
-    )
+    private fun runConfiguration(
+        handler: String,
+        environmentVariables: Map<String, String> = emptyMap()
+    ): SamRunConfiguration =
+        createRunConfiguration(
+            project = projectRule.project,
+            input = "\"Hello World\"",
+            handler = handler,
+            runtime = runtime,
+            credentialsProviderId = mockId,
+            region = AwsRegion("us-west-2", "us-west-2"),
+            environmentVariables = environmentVariables
+        )
+
+    private fun jsonToMap(data: String) = jacksonObjectMapper().readValue<Map<String, String>>(data)
 }

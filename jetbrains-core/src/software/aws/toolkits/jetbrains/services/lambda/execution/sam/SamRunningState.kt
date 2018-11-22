@@ -10,8 +10,10 @@ import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
+import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.cloudformation.Function
+import software.aws.toolkits.jetbrains.services.cloudformation.SERVERLESS_FUNCTION_TYPE
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import java.io.File
@@ -25,6 +27,14 @@ class SamRunningState(
 
     override fun startProcess(): ProcessHandler {
         val samCliExecutable = SamSettings.getInstance().executablePath
+        val totalEnvVars = settings.environmentVariables.toMutableMap()
+        settings.credentials?.let {
+            totalEnvVars += it.toEnvironmentVariables()
+        }
+
+        totalEnvVars["AWS_REGION"] = settings.regionId
+        totalEnvVars["AWS_DEFAULT_REGION"] = settings.regionId
+
         val commandLine = GeneralCommandLine(samCliExecutable)
             .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.CONSOLE)
             .withParameters("local")
@@ -34,7 +44,7 @@ class SamRunningState(
             .withParameters("--event")
             .withParameters(createEventFile())
             .apply { settings.templateDetails?.run { withParameters(logicalName) } }
-            .withEnvironment(settings.environmentVariables)
+            .withEnvironment(totalEnvVars)
             .withEnvironment("PYTHONUNBUFFERED", "1") // Force SAM to not buffer stdout/stderr so it gets shown in IDE
 
         runner.patchCommandLine(this, commandLine)
@@ -64,18 +74,29 @@ class SamRunningState(
     }
 
     private fun writeDummySamTemplate(tempFile: File) {
-        val template = """
-            Resources:
-              Function:
-                Type: AWS::Serverless::Function
-                Properties:
-                  Handler: ${settings.handler}
-                  CodeUri: ${lambdaPackage.location}
-                  Runtime: ${settings.runtime}
-                  Timeout: 900
-        """.trimIndent()
+        tempFile.writeText(yamlWriter {
+            mapping("Resources") {
+                mapping("Function") {
+                    keyValue("Type", SERVERLESS_FUNCTION_TYPE)
+                    mapping("Properties") {
+                        keyValue("Handler", settings.handler)
+                        keyValue("CodeUri", lambdaPackage.location.toString())
+                        keyValue("Runtime", settings.runtime.toString())
+                        keyValue("Timeout", "900")
 
-        tempFile.writeText(template)
+                        if (settings.environmentVariables.isNotEmpty()) {
+                            mapping("Environment") {
+                                mapping("Variables") {
+                                    settings.environmentVariables.forEach { key, value ->
+                                        keyValue(key, value)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        })
     }
 
     private fun createEventFile(): String {

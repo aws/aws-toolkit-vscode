@@ -19,12 +19,12 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.refactoring.listeners.RefactoringElementAdapter
 import com.intellij.refactoring.listeners.RefactoringElementListener
 import org.jetbrains.annotations.TestOnly
+import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
-import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.services.lambda.HandlerCompletionProvider
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
@@ -111,7 +111,7 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
         handler: String? = null,
         input: String? = null,
         inputIsFile: Boolean = false,
-        envVars: MutableMap<String, String> = mutableMapOf(),
+        envVars: Map<String, String> = mutableMapOf(),
         credentialsProviderId: String? = null,
         region: AwsRegion? = null,
         templateFile: String? = null,
@@ -140,7 +140,7 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
         var handler: String? = null,
         input: String? = null,
         inputIsFile: Boolean = false,
-        var environmentVariables: MutableMap<String, String> = mutableMapOf(),
+        var environmentVariables: Map<String, String> = mapOf(),
         var regionId: String? = null,
         var credentialProviderId: String? = null,
         var templateFile: String? = null,
@@ -172,17 +172,12 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
                 ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
             val regionId =
                 regionId ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
-            val envVarsCopy = environmentVariables.toMutableMap()
             val inputText = resolveInputText(input, inputIsFile)
 
-            envVarsCopy["AWS_REGION"] = regionId
-            envVarsCopy["AWS_DEFAULT_REGION"] = regionId
-
-            credentialProviderId?.let {
+            val credentials = credentialProviderId?.let {
                 try {
                     val credentialProvider = CredentialManager.getInstance().getCredentialProvider(it)
-                    val awsCredentials = credentialProvider.resolveCredentials()
-                    envVarsCopy.putAll(awsCredentials.toEnvironmentVariables())
+                    credentialProvider.resolveCredentials()
                 } catch (e: CredentialProviderNotFound) {
                     throw RuntimeConfigurationError(message("lambda.run_configuration.credential_not_found_error", it))
                 } catch (e: Exception) {
@@ -195,7 +190,7 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
                 }
             }
 
-            return SamRunSettings(runtime, handler, inputText, envVarsCopy, element, templateDetails)
+            return SamRunSettings(runtime, handler, inputText, environmentVariables, credentials, regionId, element, templateDetails)
         }
 
         private fun validateHandlerRuntime(): Triple<String, Runtime, SamTemplateDetails?> {
@@ -296,6 +291,8 @@ class SamRunSettings(
     val handler: String,
     val input: String,
     val environmentVariables: Map<String, String>,
+    val credentials: AwsCredentials?,
+    val regionId: String,
     val handlerElement: NavigatablePsiElement,
     val templateDetails: SamTemplateDetails?
 ) {
