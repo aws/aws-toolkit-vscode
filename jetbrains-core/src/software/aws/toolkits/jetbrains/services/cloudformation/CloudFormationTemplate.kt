@@ -70,3 +70,48 @@ class CloudFormationParameter(private val delegate: NamedMap) : NamedMap by dele
 
     override fun constraintDescription(): String? = getOptionalScalarProperty("ConstraintDescription")
 }
+
+class MutableParameter(private val copyFrom: Parameter) : Parameter {
+    private var defaultValue: String? = copyFrom.defaultValue()
+    private val description: String? = copyFrom.description()
+    private val constraintDescription: String? = copyFrom.constraintDescription()
+
+    override val logicalName: String
+        get() = copyFrom.logicalName
+
+    override fun getScalarProperty(key: String): String {
+        throw NotImplementedError()
+    }
+
+    override fun getOptionalScalarProperty(key: String): String? {
+        throw NotImplementedError()
+    }
+
+    override fun setScalarProperty(key: String, value: String) {
+        throw NotImplementedError()
+    }
+
+    override fun defaultValue(): String? = defaultValue
+
+    override fun description(): String? = description
+
+    override fun constraintDescription(): String? = constraintDescription
+
+    fun setDefaultValue(value: String?) {
+        defaultValue = value
+    }
+}
+
+/**
+ * Merge remote parameters from a CloudFormation stack to construct a preferred [Parameter] list.
+ *
+ * @return The merged preferred [Parameter] list
+ */
+fun List<Parameter>.mergeRemoteParameters(remoteParameters: List<software.amazon.awssdk.services.cloudformation.model.Parameter>): List<Parameter> =
+    this.map { templateParameter ->
+        val mutableParameter = MutableParameter(templateParameter)
+        remoteParameters.find { it.parameterKey() == templateParameter.logicalName }?.let {
+            mutableParameter.setDefaultValue(it.parameterValue())
+        }
+        mutableParameter
+    }.toList()
