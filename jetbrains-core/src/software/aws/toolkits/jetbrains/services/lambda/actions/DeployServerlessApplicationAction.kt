@@ -20,11 +20,13 @@ import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsMa
 import software.aws.toolkits.jetbrains.services.cloudformation.executeChangeSetAndWait
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationDialog
 import software.aws.toolkits.jetbrains.services.lambda.deploy.SamDeployDialog
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon
 import software.aws.toolkits.jetbrains.settings.DeploySettings
 import software.aws.toolkits.jetbrains.settings.relativeSamPath
-import software.aws.toolkits.jetbrains.utils.notifyNoActiveCredentialsError
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
+import software.aws.toolkits.jetbrains.utils.notifyNoActiveCredentialsError
+import software.aws.toolkits.jetbrains.utils.notifySamCliNotValidError
 import software.aws.toolkits.resources.message
 
 class DeployServerlessApplicationAction : DumbAwareAction(
@@ -39,6 +41,11 @@ class DeployServerlessApplicationAction : DumbAwareAction(
 
         if (!ProjectAccountSettingsManager.getInstance(project).hasActiveCredentials()) {
             notifyNoActiveCredentialsError(project = project)
+            return
+        }
+
+        SamCommon.validate()?.let {
+            notifySamCliNotValidError(project = project, content = it)
             return
         }
 
