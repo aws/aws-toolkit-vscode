@@ -125,7 +125,7 @@ class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, tru
                 }
                 val actionGroup = actionManager.getAction(actionGroupName) as? ActionGroup ?: return
                 val popupMenu = actionManager.createActionPopupMenu(ActionPlaces.UNKNOWN, actionGroup)
-                popupMenu.component.show(component, x, y)
+                popupMenu.component.show(comp, x, y)
             }
         })
 
