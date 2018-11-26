@@ -138,9 +138,9 @@
             <separator/>
             <action id="lambda.stackFunction.gotohandler" class="software.aws.toolkits.jetbrains.services.lambda.actions.GoToHandlerAction"/>
         </group>
-        <group id="aws.toolkit.explorer.lambda.application" popup="true" compact="false">
-            <action id="lambda.application.delete"
-                    class="software.aws.toolkits.jetbrains.services.lambda.applications.DeleteApplicationAction"/>
+        <group id="aws.toolkit.explorer.cloudformation.stack" popup="true" compact="false">
+            <action id="cloudformation.stack.delete"
+                    class="software.aws.toolkits.jetbrains.services.cloudformation.DeleteCloudFormationStackAction"/>
         </group>
         <action class="software.aws.toolkits.jetbrains.core.SettingsSelectorAction" id="aws.settings.selector" icon="AwsIcons.Logos.AWS"/>
         <action class="software.aws.toolkits.jetbrains.core.credentials.CreateOrUpdateCredentialProfilesAction" id="aws.settings.upsertCredentials" icon="AwsIcons.Logos.AWS"/>

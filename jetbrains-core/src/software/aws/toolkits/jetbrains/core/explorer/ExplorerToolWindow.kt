@@ -37,6 +37,8 @@ import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.JPanel
 import javax.swing.JTree
+import javax.swing.event.TreeExpansionEvent
+import javax.swing.event.TreeWillExpandListener
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
@@ -108,6 +110,33 @@ class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, tru
                     awsExplorerNode.onDoubleClick(model, selectedElement)
                 }
             }
+        })
+
+        // If it is the first time a CloudFormationStackNode node is expanded, take a moment to load and cache
+        // the Stack Resources. This prevents potential DescribeStackResources spamming on tree construction.
+        awsTree.addTreeWillExpandListener(object : TreeWillExpandListener {
+            override fun treeWillExpand(e: TreeExpansionEvent?) {
+                if (e == null) {
+                    return
+                }
+
+                val selectedElement = e.path.lastPathComponent as? DefaultMutableTreeNode ?: return
+                val node = selectedElement.userObject as? AwsNodeChildCache ?: return
+
+                if (node.isInitialChildState()) {
+                    // Node currently has a placeholder node
+                    // Load the Resources for this Stack and swap the placeholder for this data before the node expands
+                    val children = node.getChildren(true)
+
+                    selectedElement.removeAllChildren()
+                    children.forEach {
+                        it.update()
+                        model.insertNodeInto(DefaultMutableTreeNode(it), selectedElement, selectedElement.childCount)
+                    }
+                }
+            }
+
+            override fun treeWillCollapse(event: TreeExpansionEvent?) {}
         })
 
         awsTree.addMouseListener(object : PopupHandler() {

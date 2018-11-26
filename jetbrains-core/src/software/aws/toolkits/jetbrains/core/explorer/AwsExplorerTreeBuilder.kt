@@ -20,5 +20,7 @@ class AwsExplorerTreeBuilder(tree: JTree, treeModel: DefaultTreeModel, project: 
         runnable.run()
     }
 
-    override fun isAlwaysShowPlus(descriptor: NodeDescriptor<*>?) = descriptor is AwsExplorerServiceRootNode
+    override fun isSmartExpand() = false
+
+    override fun isAlwaysShowPlus(descriptor: NodeDescriptor<*>?) = descriptor is AwsExplorerServiceRootNode || descriptor is AwsNodeAlwaysExpandable
 }
