@@ -14,6 +14,8 @@ import com.intellij.openapi.project.rootManager
 import com.intellij.openapi.projectRoots.JavaSdk
 import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.roots.ui.configuration.ModulesProvider
+import com.intellij.ui.IdeBorderFactory
+import com.intellij.uiDesigner.core.GridConstraints
 import com.jetbrains.python.module.PythonModuleType
 import com.jetbrains.python.sdk.PythonSdkType
 import icons.AwsIcons
@@ -25,6 +27,8 @@ import software.aws.toolkits.jetbrains.ui.wizard.SAM_TEMPLATES
 import software.aws.toolkits.jetbrains.ui.wizard.SamModuleType
 import software.aws.toolkits.jetbrains.ui.wizard.SamProjectTemplateWrapper
 import software.aws.toolkits.resources.message
+import java.awt.GridLayout
+import javax.swing.JPanel
 
 class SamInitModuleBuilder : ModuleBuilder() {
     var runtime: Runtime? = null
@@ -94,9 +98,12 @@ class SamInitTemplateSelectionStep(
     val context: WizardContext
 ) : ModuleWizardStep() {
     val templateSelectionPanel = ProjectTemplateList()
+    private val parentPanel = JPanel(GridLayout(0, 1))
 
     init {
         templateSelectionPanel.setTemplates(SAM_TEMPLATES.map { it.getModuleBuilderProjectTemplate(builder) }, true)
+        templateSelectionPanel.border = IdeBorderFactory.createTitledBorder(message("sam.init.select_sam_template_step_label"), false)
+        parentPanel.add(templateSelectionPanel, GridConstraints())
     }
 
     override fun updateDataModel() {
@@ -104,5 +111,5 @@ class SamInitTemplateSelectionStep(
         builder.template = templateSelectionPanel.selectedTemplate as SamProjectTemplateWrapper
     }
 
-    override fun getComponent() = templateSelectionPanel
+    override fun getComponent() = parentPanel
 }
