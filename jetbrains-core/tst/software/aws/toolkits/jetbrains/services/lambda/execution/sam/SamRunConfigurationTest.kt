@@ -12,7 +12,6 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.jdom.input.SAXBuilder
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
@@ -22,8 +21,8 @@ import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.settings.SamExecutableDetector
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.toElement
 import software.aws.toolkits.resources.message
-import java.io.StringReader
 
 class SamRunConfigurationTest {
     @Rule
@@ -139,15 +138,15 @@ class SamRunConfigurationTest {
 
     @Test
     fun readExternalDoesNotThrowException() {
-        val element = SAXBuilder().build(StringReader("""
-<configuration name="[Local] HelloWorldFunction (1)" type="aws.lambda" factoryName="Local" temporary="true" nameIsGenerated="true">
-    <option name="credentialProviderId" value="profile:default" />
-    <option name="environmentVariables">
-        <map />
-    </option>
-    <option name="handler" value="helloworld.App::handleRequest" />
-</configuration>
-            """.trimIndent())).rootElement
+        val element = """
+            <configuration name="[Local] HelloWorldFunction (1)" type="aws.lambda" factoryName="Local" temporary="true" nameIsGenerated="true">
+                <option name="credentialProviderId" value="profile:default" />
+                <option name="environmentVariables">
+                    <map />
+                </option>
+                <option name="handler" value="helloworld.App::handleRequest" />
+            </configuration>
+        """.toElement()
 
         runInEdtAndWait {
             val runConfiguration =
