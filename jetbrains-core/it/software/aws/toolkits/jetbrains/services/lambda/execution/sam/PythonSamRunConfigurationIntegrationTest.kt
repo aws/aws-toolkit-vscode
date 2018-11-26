@@ -90,7 +90,7 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
 
     @Test
     fun envVarsArePassed() {
-        val envVars = mapOf("Foo" to "Bar", "Bat" to "Baz")
+        val envVars = mutableMapOf("Foo" to "Bar", "Bat" to "Baz")
 
         val runConfiguration = runConfiguration(
             handler = "src/hello_world.app.env_print",
@@ -189,7 +189,7 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
 
     private fun runConfiguration(
         handler: String,
-        environmentVariables: Map<String, String> = emptyMap()
+        environmentVariables: MutableMap<String, String> = mutableMapOf()
     ): SamRunConfiguration =
         createRunConfiguration(
             project = projectRule.project,

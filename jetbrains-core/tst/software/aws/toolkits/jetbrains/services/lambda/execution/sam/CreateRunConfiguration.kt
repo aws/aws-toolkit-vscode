@@ -17,7 +17,7 @@ fun createRunConfiguration(
     inputIsFile: Boolean = false,
     credentialsProviderId: String? = null,
     region: AwsRegion? = AwsRegion("us-east-1", "us-east-1"),
-    environmentVariables: Map<String, String> = emptyMap(),
+    environmentVariables: MutableMap<String, String> = mutableMapOf(),
     templateFile: String? = null,
     logicalFunctionName: String? = null
 ): SamRunConfiguration {

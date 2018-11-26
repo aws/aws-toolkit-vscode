@@ -79,6 +79,9 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
     @TestOnly
     fun getHandler(): String? = settings.handler
 
+    @TestOnly
+    fun getEnvironmentVariables(): Map<String, String> = settings.environmentVariables
+
     override fun getRefactoringElementListener(element: PsiElement?): RefactoringElementListener? {
         element?.run {
             val handlerResolver = element.language.runtimeGroup?.let { runtimeGroup ->
@@ -111,7 +114,7 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
         handler: String? = null,
         input: String? = null,
         inputIsFile: Boolean = false,
-        envVars: Map<String, String> = mutableMapOf(),
+        envVars: MutableMap<String, String> = mutableMapOf(),
         credentialsProviderId: String? = null,
         region: AwsRegion? = null,
         templateFile: String? = null,
@@ -140,7 +143,7 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
         var handler: String? = null,
         input: String? = null,
         inputIsFile: Boolean = false,
-        var environmentVariables: Map<String, String> = mapOf(),
+        var environmentVariables: MutableMap<String, String> = mutableMapOf(),
         var regionId: String? = null,
         var credentialProviderId: String? = null,
         var templateFile: String? = null,
