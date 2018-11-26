@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Ability to package & deploy Java, Go and Python lambda's from an editor using the Lambda gutter icon."
-}

@@ -182,6 +182,7 @@ intellij {
 
 generateChangeLog {
     generateJetbrains = false
+    generateGithub = false //Switch back on when change log comes back
 }
 
 task ktlint(type: JavaExec, group: "verification") {
