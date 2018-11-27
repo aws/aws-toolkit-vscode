@@ -12,7 +12,6 @@ import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiElement
 import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLPsiElement
-import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
@@ -58,7 +57,12 @@ class LambdaSamRunConfigurationProducer : RunConfigurationProducer<SamRunConfigu
 
         val runtime = RuntimeGroup.determineRuntime(context.module) ?: RuntimeGroup.determineRuntime(context.project)
         val settings = accountSettings(element.project)
-        configuration.configure(runtime, handler, credentialsProviderId = settings.first, region = settings.second)
+        configuration.configureForHandler(
+            runtime = runtime,
+            handler = handler,
+            credentialsProviderId = settings.first,
+            region = settings.second
+        )
         return true
     }
 
@@ -66,10 +70,9 @@ class LambdaSamRunConfigurationProducer : RunConfigurationProducer<SamRunConfigu
         val file = element.containingFile?.virtualFile?.path ?: return false
         val function = functionFromElement(element) ?: return false
         val settings = accountSettings(element.project)
-        configuration.configure(
+        configuration.configureForTemplate(
             templateFile = file,
             logicalFunctionName = function.logicalName,
-            runtime = Runtime.fromValue(function.runtime()),
             credentialsProviderId = settings.first,
             region = settings.second
         )

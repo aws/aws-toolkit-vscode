@@ -45,7 +45,7 @@ class LambdaSamRunConfigurationProducerTest {
             val runConfiguration = createRunConfiguration(lambdaMethod)
             assertThat(runConfiguration).isNotNull
             val configuration = runConfiguration?.configuration as SamRunConfiguration
-            assertThat(configuration.getHandler()).isEqualTo("com.example.LambdaHandler::handleRequest")
+            assertThat(configuration.settings().handler).isEqualTo("com.example.LambdaHandler::handleRequest")
             assertThat(configuration.name).isEqualTo("[Local] LambdaHandler.handleRequest")
         }
     }

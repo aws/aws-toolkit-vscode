@@ -191,7 +191,7 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
         handler: String,
         environmentVariables: MutableMap<String, String> = mutableMapOf()
     ): SamRunConfiguration =
-        createRunConfiguration(
+        createHandlerBasedRunConfiguration(
             project = projectRule.project,
             input = "\"Hello World\"",
             handler = handler,
