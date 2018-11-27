@@ -13,10 +13,36 @@ import javax.swing.DefaultComboBoxModel
 
 class ResourceSelector<T> : ComboBox<T>() {
 
-    private var loadingStatus: ResourceLoadingStatus = ResourceLoadingStatus.SUCCESSFUL
+    var loadingStatus: ResourceLoadingStatus = ResourceLoadingStatus.SUCCESSFUL
+        private set
+
+    private var shouldBeEnabled: Boolean = isEnabled
 
     var loadingException: Exception? = null
         private set
+
+    /**
+     * Postpone the ComboBox enability changing when it is still in loading status. Ie. when the ComboBox is in
+     * [ResourceLoadingStatus.LOADING]    - always disable it, and change to the desired status after successfully loaded.
+     * [ResourceLoadingStatus.SUCCESSFUL] - same as the standard [setEnabled] behavior.
+     * [ResourceLoadingStatus.FAILED]     - always disable it, and always set the desired status to false.
+     */
+    @Synchronized override fun setEnabled(enabled: Boolean) {
+        shouldBeEnabled = when (loadingStatus) {
+            ResourceLoadingStatus.SUCCESSFUL -> {
+                super.setEnabled(enabled)
+                enabled
+            }
+            ResourceLoadingStatus.LOADING -> {
+                super.setEnabled(false)
+                enabled
+            }
+            else -> {
+                super.setEnabled(false)
+                false
+            }
+        }
+    }
 
     /**
      * @param default The default selected item
@@ -35,8 +61,8 @@ class ResourceSelector<T> : ComboBox<T>() {
         ApplicationManager.getApplication().executeOnPooledThread {
             val previouslySelected = this.model.selectedItem
             val previousState = this.isEnabled
-            this.isEnabled = false
             loadingStatus = ResourceLoadingStatus.LOADING
+            isEnabled = previousState
 
             val model = this.model as DefaultComboBoxModel<T>
             model.removeAllElements()
@@ -58,7 +84,7 @@ class ResourceSelector<T> : ComboBox<T>() {
                 if (updateStatus) {
                     this.isEnabled = values.isNotEmpty()
                 } else {
-                    this.isEnabled = previousState
+                    this.isEnabled = shouldBeEnabled
                 }
             }, ModalityState.any())
         }
@@ -67,8 +93,8 @@ class ResourceSelector<T> : ComboBox<T>() {
     fun addAndSelectValue(updateStatus: Boolean = true, fetch: () -> T) {
         ApplicationManager.getApplication().executeOnPooledThread {
             val previousState = this.isEnabled
-            this.isEnabled = false
             loadingStatus = ResourceLoadingStatus.LOADING
+            isEnabled = previousState
 
             val value = try {
                 fetch().apply {
@@ -88,7 +114,7 @@ class ResourceSelector<T> : ComboBox<T>() {
                 if (updateStatus) {
                     this.isEnabled = true
                 } else {
-                    this.isEnabled = previousState
+                    this.isEnabled = shouldBeEnabled
                 }
             }, ModalityState.any())
         }
@@ -105,7 +131,7 @@ class ResourceSelector<T> : ComboBox<T>() {
         }
     }
 
-    private enum class ResourceLoadingStatus {
+    enum class ResourceLoadingStatus {
         LOADING,
         FAILED,
         SUCCESSFUL
