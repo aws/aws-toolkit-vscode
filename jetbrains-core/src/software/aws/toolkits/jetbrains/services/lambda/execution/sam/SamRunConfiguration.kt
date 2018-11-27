@@ -36,6 +36,7 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfig
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunConfiguration.MutableLambdaSamRunSettings
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamTemplateUtils.findFunctionsFromTemplate
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
+import software.aws.toolkits.jetbrains.services.lambda.validOrNull
 import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.utils.ui.selected
@@ -201,11 +202,10 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
                             )
                         )
 
-                Triple(
-                    function.handler(),
-                    Runtime.fromValue(function.runtime()),
-                    SamTemplateDetails(template, functionName)
-                )
+                val runtime = function.runtime().let { Runtime.fromValue(it).validOrNull }
+                        ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
+
+                Triple(function.handler(), runtime, SamTemplateDetails(template, functionName))
             } else {
                 val handler = handler
                         ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
@@ -267,7 +267,7 @@ class SamRunSettingsEditor(project: Project) : SettingsEditor<SamRunConfiguratio
             view.selectFunction(settings.logicalFunctionName)
         } else {
             view.setTemplateFile(null) // Also clears the functions selector
-            view.runtime.model.selectedItem = settings.runtime?.let { Runtime.fromValue(it) }
+            view.runtime.model.selectedItem = settings.runtime?.let { Runtime.fromValue(it).validOrNull }
             view.handler.setText(settings.handler)
         }
 

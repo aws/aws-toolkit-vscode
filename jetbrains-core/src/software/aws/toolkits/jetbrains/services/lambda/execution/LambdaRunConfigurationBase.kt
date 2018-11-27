@@ -6,7 +6,9 @@ package software.aws.toolkits.jetbrains.services.lambda.execution
 import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.execution.configurations.LocatableConfigurationBase
 import com.intellij.execution.configurations.RunConfiguration
+import com.intellij.execution.configurations.RunConfigurationWithSuppressedDefaultDebugAction
 import com.intellij.execution.configurations.RuntimeConfigurationError
+import com.intellij.execution.runners.RunConfigurationWithSuppressedDefaultRunAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.util.xmlb.XmlSerializer
@@ -19,7 +21,10 @@ abstract class LambdaRunConfigurationBase<T : LambdaRunConfigurationBase.Mutable
     project: Project,
     factory: ConfigurationFactory,
     id: String
-) : LocatableConfigurationBase(project, factory, id) {
+) : LocatableConfigurationBase(project, factory, id),
+    RunConfigurationWithSuppressedDefaultRunAction,
+    RunConfigurationWithSuppressedDefaultDebugAction {
+
     internal abstract var settings: T
 
     final override fun writeExternal(element: Element) {

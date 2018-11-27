@@ -16,6 +16,7 @@ import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.rules.EnvironmentVariableHelper
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
@@ -33,6 +34,10 @@ class SamRunConfigurationTest {
     @Rule
     @JvmField
     val envHelper = EnvironmentVariableHelper()
+
+    @Rule
+    @JvmField
+    val tempDir = TemporaryFolder()
 
     @Before
     fun setUp() {
@@ -125,9 +130,9 @@ class SamRunConfigurationTest {
     @Test
     fun functionDoesNotExist() {
         runInEdtAndWait {
-            val template = projectRule.fixture.addFileToProject(
-                "template.yaml",
-                """
+            val template = tempDir.newFile("template.yaml").also {
+                it.writeText(
+                    """
                 Resources:
                   SomeFunction:
                     Type: AWS::Serverless::Function
@@ -137,14 +142,42 @@ class SamRunConfigurationTest {
                       Runtime: java8
                       Timeout: 900
                 """.trimIndent()
-            ).virtualFile
-            val logicalName = "SomeFunction"
+                )
+            }.absolutePath
+            val logicalName = "NotSomeFunction"
 
-            val runConfiguration = createTemplateRunConfiguration(project = projectRule.project, templateFile = template.path, logicalFunctionName = logicalName)
+            val runConfiguration = createTemplateRunConfiguration(project = projectRule.project, templateFile = template, logicalFunctionName = logicalName)
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
-                .hasMessage(message("lambda.run_configuration.sam.no_such_function", logicalName, template.path))
+                .hasMessage(message("lambda.run_configuration.sam.no_such_function", logicalName, template))
+        }
+    }
+
+    @Test
+    fun unsupportedRuntime() {
+        runInEdtAndWait {
+            val template = tempDir.newFile("template.yaml").also {
+                it.writeText(
+                    """
+                Resources:
+                  SomeFunction:
+                    Type: AWS::Serverless::Function
+                    Properties:
+                      Handler: com.example.LambdaHandler::handleRequest
+                      CodeUri: /some/dummy/code/location
+                      Runtime: FAKE
+                      Timeout: 900
+                """.trimIndent()
+                )
+            }.absolutePath
+            val logicalName = "SomeFunction"
+
+            val runConfiguration = createTemplateRunConfiguration(project = projectRule.project, templateFile = template, logicalFunctionName = logicalName)
+            assertThat(runConfiguration).isNotNull
+            assertThatThrownBy { getState(runConfiguration) }
+                .isInstanceOf(ExecutionException::class.java)
+                .hasMessage(message("lambda.run_configuration.no_runtime_specified", logicalName, template))
         }
     }
 

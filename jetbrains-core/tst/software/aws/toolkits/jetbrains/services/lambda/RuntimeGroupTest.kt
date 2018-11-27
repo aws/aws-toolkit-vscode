@@ -58,4 +58,10 @@ class RuntimeGroupTest {
             assertThat(event.runtime()).isEqualTo(Runtime.PYTHON3_6)
         }
     }
+
+    @Test
+    fun unknownRuntimeIsNull() {
+        assertThat(Runtime.fromValue("adsfadsffads")).isEqualTo(Runtime.UNKNOWN_TO_SDK_VERSION)
+        assertThat(Runtime.fromValue("adsfadsffads").validOrNull).isNull()
+    }
 }
