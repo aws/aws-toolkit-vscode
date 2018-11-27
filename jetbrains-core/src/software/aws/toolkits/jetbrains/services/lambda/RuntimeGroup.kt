@@ -1,5 +1,6 @@
 // Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
+@file:JvmName("RuntimeGroupUtil")
 
 package software.aws.toolkits.jetbrains.services.lambda
 
@@ -9,8 +10,10 @@ import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.extensions.AbstractExtensionPointBean
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.module.Module
+import com.intellij.openapi.module.ModuleType
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.Sdk
+import com.intellij.openapi.projectRoots.SdkType
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.KeyedExtensionCollector
@@ -38,6 +41,8 @@ enum class RuntimeGroup {
 
     fun determineRuntime(project: Project): Runtime? = info.asSequence().mapNotNull { it.determineRuntime(project) }.firstOrNull()
     fun determineRuntime(module: Module): Runtime? = info.asSequence().mapNotNull { it.determineRuntime(module) }.firstOrNull()
+    fun getModuleType(): ModuleType<*>? = info.asSequence().mapNotNull { it.getModuleType() }.firstOrNull()
+    fun getIdeSdkType(): SdkType? = info.asSequence().mapNotNull { it.getIdeSdkType() }.firstOrNull()
 
     internal companion object {
         /**
@@ -69,6 +74,16 @@ interface RuntimeGroupInformation {
      */
     fun determineRuntime(module: Module): Runtime?
 
+    /**
+     * The IDE module type that should be associated with this runtime group
+     */
+    fun getModuleType(): ModuleType<*>?
+
+    /**
+     * The IDE SDK type that this runtime group supports
+     */
+    fun getIdeSdkType(): SdkType?
+
     companion object : RuntimeGroupExtensionPointObject<RuntimeGroupInformation>(ExtensionPointName("aws.toolkit.lambda.runtimeGroup")) {
         fun getInstances(runtimeGroup: RuntimeGroup): List<RuntimeGroupInformation> = collector.forKey(runtimeGroup)
     }
@@ -80,6 +95,10 @@ abstract class SdkBasedRuntimeGroupInformation : RuntimeGroupInformation {
     override fun determineRuntime(project: Project): Runtime? = ProjectRootManager.getInstance(project).projectSdk?.let { runtimeForSdk(it) }
 
     override fun determineRuntime(module: Module): Runtime? = ModuleRootManager.getInstance(module).sdk?.let { runtimeForSdk(it) }
+
+    override fun getModuleType(): ModuleType<*>? = null
+
+    override fun getIdeSdkType(): SdkType? = null
 }
 
 val Runtime.runtimeGroup: RuntimeGroup? get() = RuntimeGroup.find { this in it.runtimes }

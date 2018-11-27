@@ -3,8 +3,11 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.python
 
+import com.intellij.openapi.module.ModuleType
 import com.intellij.openapi.projectRoots.Sdk
+import com.intellij.openapi.projectRoots.SdkType
 import com.jetbrains.python.PythonLanguage
+import com.jetbrains.python.module.PythonModuleType
 import com.jetbrains.python.sdk.PythonSdkType
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.SdkBasedRuntimeGroupInformation
@@ -19,6 +22,10 @@ class PythonRuntimeGroup : SdkBasedRuntimeGroupInformation() {
     override val languageIds: Set<String> = setOf(PythonLanguage.INSTANCE.id)
 
     override fun runtimeForSdk(sdk: Sdk): Runtime? = determineRuntimeForSdk(sdk)
+
+    override fun getModuleType(): ModuleType<*> = PythonModuleType.getInstance()
+
+    override fun getIdeSdkType(): SdkType = PythonSdkType.getInstance()
 
     companion object {
         fun determineRuntimeForSdk(sdk: Sdk) = when {

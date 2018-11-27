@@ -13,13 +13,18 @@ import com.intellij.ide.util.projectWizard.SdkSettingsStep;
 import com.intellij.ide.util.projectWizard.WizardContext;
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.projectRoots.Sdk;
+import com.intellij.openapi.projectRoots.SdkTypeId;
 import com.intellij.openapi.ui.ComboBox;
+import com.intellij.openapi.util.Condition;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.uiDesigner.core.GridConstraints;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.lambda.model.Runtime;
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager;
+import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup;
+import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupUtil;
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon;
 import software.aws.toolkits.jetbrains.ui.wizard.SamInitProjectBuilderCommon;
 
@@ -40,13 +45,14 @@ public class SamInitRuntimeSelectionPanel extends ModuleWizardStep {
         this.builder = builder;
         this.context = context;
 
-        buildSdkSettingsPanel();
-
         LambdaPackager.Companion.getSupportedRuntimeGroups()
                 .stream()
                 .flatMap(x -> x.getRuntimes().stream())
                 .sorted()
                 .forEach(y -> runtime.addItem(y));
+
+        // runtime picker MUST be populated before we build the GUI
+        buildSdkSettingsPanel();
 
         SamInitProjectBuilderCommon.setupSamSelectionElements(samExecutableField, editSamExecutableButton, samLabel);
 
@@ -71,7 +77,22 @@ public class SamInitRuntimeSelectionPanel extends ModuleWizardStep {
             mainPanel.add(new JBLabel("Project SDK:"), sdkSelectorLabelConstraints);
         }
 
-        sdkSettingsStep = new SdkSettingsStep(context, builder, id -> builder.getSdkType() == id, null) {
+        // selectedRuntime cannot be null since it is not user editable
+        Runtime selectedRuntime = (Runtime) runtime.getSelectedItem();
+
+        Condition<SdkTypeId> sdkTypeFilter = sdkTypeId -> {
+            try {
+                // runtime group cannot be null since we populated the list of runtimes from the list of supported runtime groups
+                RuntimeGroup runtimeGroup = RuntimeGroupUtil.getRuntimeGroup(selectedRuntime);
+                return sdkTypeId.equals(runtimeGroup.getIdeSdkType());
+            } catch (NullPointerException e) {
+                LoggerFactory.getLogger(getClass()).error("sdkTypeFilter: Got a null runtime or could not determine runtime group. Runtime: " + selectedRuntime, e);
+                // degrade experience instead of failing to draw the UI
+                return true;
+            }
+        };
+
+        sdkSettingsStep = new SdkSettingsStep(context, builder, sdkTypeFilter, null) {
             @Override
             protected void onSdkSelected(Sdk sdk) {
                 builder.setModuleJdk(sdk);

@@ -8,16 +8,12 @@ import com.intellij.ide.util.projectWizard.ModuleBuilder
 import com.intellij.ide.util.projectWizard.ModuleWizardStep
 import com.intellij.ide.util.projectWizard.WizardContext
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.module.JavaModuleType
 import com.intellij.openapi.module.ModuleType
 import com.intellij.openapi.project.rootManager
-import com.intellij.openapi.projectRoots.JavaSdk
 import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.roots.ui.configuration.ModulesProvider
 import com.intellij.ui.IdeBorderFactory
 import com.intellij.uiDesigner.core.GridConstraints
-import com.jetbrains.python.module.PythonModuleType
-import com.jetbrains.python.sdk.PythonSdkType
 import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
@@ -44,35 +40,28 @@ class SamInitModuleBuilder : ModuleBuilder() {
     // we want to use our own custom template selection step
     override fun isTemplateBased() = false
 
-    fun getIdeaModuleType() = when (runtime?.runtimeGroup) {
-        RuntimeGroup.JAVA -> JavaModuleType.getModuleType()
-        RuntimeGroup.PYTHON -> PythonModuleType.getInstance()
-        else -> ModuleType.EMPTY
-    }
-
-    fun getSdkType() = when (runtime?.runtimeGroup) {
-        RuntimeGroup.JAVA -> JavaSdk.getInstance()
-        RuntimeGroup.PYTHON -> PythonSdkType.getInstance()
-        else -> JavaSdk.getInstance()
-    }
+    fun getSdkType() = runtime?.runtimeGroup?.getIdeSdkType()
 
     override fun setupRootModel(rootModel: ModifiableRootModel) {
+        // smart-cast fail workaround due to mutability of `runtime`
+        val selectedRuntime = runtime ?: throw RuntimeException(message("sam.init.null_runtime"))
+        val moduleType = selectedRuntime.runtimeGroup?.getModuleType() ?: ModuleType.EMPTY
+
         if (myJdk != null) {
             rootModel.sdk = myJdk
         } else {
             rootModel.inheritSdk()
         }
         rootModel.module.rootManager.modifiableModel.inheritSdk()
-        val moduleType = getIdeaModuleType().id
-        rootModel.module.setModuleType(moduleType)
+        rootModel.module.setModuleType(moduleType.id)
         val project = rootModel.project
 
-        template.samProjectTemplate.build(runtime ?: throw RuntimeException(message("sam.init.null_runtime")), project.baseDir)
+        template.samProjectTemplate.build(selectedRuntime, project.baseDir)
         rootModel.addContentEntry(project.baseDir)
 
         SamCommon.excludeSamDirectory(rootModel.project.baseDir, rootModel)
 
-        if (rootModel.sdk?.sdkType is PythonSdkType) {
+        if (selectedRuntime.runtimeGroup == RuntimeGroup.PYTHON) {
             SamCommon.setSourceRoots(rootModel.project.baseDir, rootModel.project, rootModel)
         }
         // don't commit because it will be done for us
