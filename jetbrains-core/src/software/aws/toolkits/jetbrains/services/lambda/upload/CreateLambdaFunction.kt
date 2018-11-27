@@ -26,6 +26,9 @@ class CreateLambdaFunction(
     private val lambdaHandlerResolver: LambdaHandlerResolver?
 ) : AnAction(message("lambda.create_new"), null, AwsIcons.Actions.LAMBDA_FUNCTION_NEW) {
 
+    @Suppress("unused") // Used by ActionManager in plugin.xml
+    constructor() : this(null, null, null)
+
     init {
         if (handlerName != null) {
             elementPointer ?: throw IllegalArgumentException("elementPointer must be provided if handlerName is provided")
