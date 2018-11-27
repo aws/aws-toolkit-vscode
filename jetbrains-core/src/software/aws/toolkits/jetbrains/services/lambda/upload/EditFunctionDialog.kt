@@ -378,7 +378,7 @@ class UploadToLambdaValidator {
 
         runtime.runtimeGroup?.let { LambdaPackager.getInstance(it) } ?: return ValidationInfo(
             message("lambda.upload_validation.unsupported_runtime", runtime),
-            view.handler
+            view.runtime
         )
 
         findPsiElementsForHandler(project, runtime, handler).firstOrNull() ?: return ValidationInfo(
