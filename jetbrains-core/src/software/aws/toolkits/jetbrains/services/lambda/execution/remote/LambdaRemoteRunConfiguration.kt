@@ -190,7 +190,6 @@ class RemoteLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaRem
         view.regionSelector.selectedRegion = regionProvider.regions()[settings.regionId]
         view.functionNames.selectedItem = settings.functionName
 
-        view.lambdaInput.isUsingFile = settings.inputIsFile
         if (settings.inputIsFile) {
             view.lambdaInput.inputFile = settings.input
         } else {

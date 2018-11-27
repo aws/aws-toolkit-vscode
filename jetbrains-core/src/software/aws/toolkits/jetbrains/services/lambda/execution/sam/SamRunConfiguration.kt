@@ -245,7 +245,8 @@ class SamRunSettingsEditor(project: Project) : SettingsEditor<SamRunConfiguratio
 
         val selected = RuntimeGroup.determineRuntime(project)?.let { if (it in supported) it else null }
 
-        view.runtime.populateValues(default = selected, updateStatus = false, forceSelectDefault = false) { supported }
+        view.setRuntimes(supported)
+        view.runtime.selectedItem = selected
 
         view.regionSelector.setRegions(regionProvider.regions().values.toMutableList())
         view.regionSelector.selectedRegion = ProjectAccountSettingsManager.getInstance(project).activeRegion
@@ -283,7 +284,6 @@ class SamRunSettingsEditor(project: Project) : SettingsEditor<SamRunConfiguratio
             }
         }
 
-        view.lambdaInput.isUsingFile = settings.inputIsFile
         if (settings.inputIsFile) {
             view.lambdaInput.inputFile = settings.input
         } else {

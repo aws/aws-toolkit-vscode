@@ -16,11 +16,13 @@ import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.EditorTextField;
 import com.intellij.ui.IdeBorderFactory;
+import com.intellij.ui.SortedComboBoxModel;
 import com.intellij.util.textCompletion.TextCompletionProvider;
 import com.intellij.util.textCompletion.TextFieldWithCompletion;
 import com.intellij.util.ui.UIUtil;
 import java.io.File;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JCheckBox;
@@ -36,13 +38,13 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaInputPane
 import software.aws.toolkits.jetbrains.ui.CredentialProviderSelector;
 import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField;
 import software.aws.toolkits.jetbrains.ui.RegionSelector;
-import software.aws.toolkits.jetbrains.ui.ResourceSelector;
 
 public final class SamRunSettingsEditorPanel {
     public JPanel panel;
     public EditorTextField handler;
     public EnvironmentVariablesTextField environmentVariables;
-    public ResourceSelector<Runtime> runtime;
+    private SortedComboBoxModel<Runtime> runtimeModel;
+    public JComboBox runtime;
     public RegionSelector regionSelector;
     public CredentialProviderSelector credentialSelector;
     public LambdaInputPanel lambdaInput;
@@ -69,9 +71,13 @@ public final class SamRunSettingsEditorPanel {
     private void createUIComponents() {
         handler = new TextFieldWithCompletion(project, handlerCompletionProvider, "", true, true, true, true);
         lambdaInput = new LambdaInputPanel(project);
+
         functionModels = new DefaultComboBoxModel<>();
         function = new ComboBox<>(functionModels);
         function.addActionListener(e -> updateComponents());
+
+        runtimeModel = new SortedComboBoxModel<>(Comparator.comparing(Runtime::toString, Comparator.naturalOrder()));
+        runtime = new ComboBox<>(runtimeModel);
     }
 
     private void updateComponents() {
@@ -126,6 +132,10 @@ public final class SamRunSettingsEditorPanel {
             functionModels.setSelectedItem(function);
             updateComponents();
         }
+    }
+
+    public void setRuntimes(List<Runtime> runtimes) {
+        runtimeModel.setAll(runtimes);
     }
 
     private class TemplateFileBrowseListener extends ComponentWithBrowseButton.BrowseFolderActionListener<JTextField> {
