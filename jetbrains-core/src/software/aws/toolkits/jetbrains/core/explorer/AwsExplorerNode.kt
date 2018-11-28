@@ -47,8 +47,8 @@ abstract class AwsExplorerNode<T>(val nodeProject: Project, value: T, private va
 
     open fun onDoubleClick(model: DefaultTreeModel, selectedElement: DefaultMutableTreeNode) {}
 
-    protected val region by lazy { nodeProject.activeRegion() }
-    protected val credentialProvider by lazy { nodeProject.activeCredentialProvider() }
+    protected val region = nodeProject.activeRegion()
+    protected val credentialProvider = nodeProject.activeCredentialProvider()
 }
 
 class AwsExplorerRootNode(project: Project) : AwsExplorerNode<String>(project, "ROOT", AwsIcons.Logos.AWS) {
@@ -106,7 +106,8 @@ abstract class AwsExplorerResourceNode<T>(
     project: Project,
     val serviceName: String,
     value: T,
-    awsIcon: Icon
+    awsIcon: Icon,
+    val immutable: Boolean = false
 ) : AwsExplorerNode<T>(project, value, awsIcon) {
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 

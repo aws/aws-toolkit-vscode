@@ -121,11 +121,16 @@
         <group id="aws.toolkit.explorer.lambda" popup="true" compact="false">
             <action id="lambda.function.create" class="software.aws.toolkits.jetbrains.services.lambda.upload.CreateLambdaFunction"/>
         </group>
-        <group id="aws.toolkit.explorer.lambda.function" popup="true" compact="false">
+
+        <group id="aws.toolkit.explorer.lambda.function.immutable" popup="false" compact="false">
             <reference ref="RunContextGroupInner"/>
             <separator/>
             <action id="lambda.function.gotohandler"
                     class="software.aws.toolkits.jetbrains.services.lambda.actions.GoToHandlerAction"/>
+        </group>
+
+        <group id="aws.toolkit.explorer.lambda.function" popup="false" compact="false">
+            <reference ref="aws.toolkit.explorer.lambda.function.immutable"/>
             <separator/>
             <action id="lambda.function.updateConfiguration"
                     class="software.aws.toolkits.jetbrains.services.lambda.actions.UpdateFunctionConfigurationAction"/>
@@ -133,15 +138,12 @@
             <action id="lambda.function.delete"
                     class="software.aws.toolkits.jetbrains.services.lambda.actions.DeleteFunctionAction"/>
         </group>
-        <group id="aws.toolkit.explorer.lambda.stackFunction" popup="true" compact="false">
-            <reference ref="RunContextGroupInner"/>
-            <separator/>
-            <action id="lambda.stackFunction.gotohandler" class="software.aws.toolkits.jetbrains.services.lambda.actions.GoToHandlerAction"/>
-        </group>
+
         <group id="aws.toolkit.explorer.cloudformation.stack" popup="true" compact="false">
             <action id="cloudformation.stack.delete"
                     class="software.aws.toolkits.jetbrains.services.cloudformation.DeleteCloudFormationStackAction"/>
         </group>
+
         <action class="software.aws.toolkits.jetbrains.core.SettingsSelectorAction" id="aws.settings.selector" icon="AwsIcons.Logos.AWS"/>
         <action class="software.aws.toolkits.jetbrains.core.credentials.CreateOrUpdateCredentialProfilesAction" id="aws.settings.upsertCredentials" icon="AwsIcons.Logos.AWS"/>
 

@@ -147,8 +147,10 @@ class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, tru
                 val actionGroupName = when (explorerNode) {
                     is AwsExplorerServiceRootNode ->
                         "aws.toolkit.explorer.${explorerNode.serviceName()}"
-                    is AwsExplorerResourceNode<*> ->
-                        "aws.toolkit.explorer.${explorerNode.serviceName}.${explorerNode.resourceType()}"
+                    is AwsExplorerResourceNode<*> -> {
+                        val suffix = if (explorerNode.immutable) ".immutable" else ""
+                        "aws.toolkit.explorer.${explorerNode.serviceName}.${explorerNode.resourceType()}$suffix"
+                    }
                     else ->
                         return
                 }

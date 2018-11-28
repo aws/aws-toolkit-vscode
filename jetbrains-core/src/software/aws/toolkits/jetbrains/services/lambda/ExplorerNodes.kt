@@ -43,8 +43,9 @@ class LambdaServiceNode(project: Project) : AwsExplorerServiceRootNode(project, 
 open class LambdaFunctionNode(
     project: Project,
     val client: LambdaClient,
-    val function: LambdaFunction
-) : AwsExplorerResourceNode<LambdaFunction>(project, LambdaClient.SERVICE_NAME, function, AwsIcons.Resources.LAMBDA_FUNCTION) {
+    val function: LambdaFunction,
+    immutable: Boolean = false
+) : AwsExplorerResourceNode<LambdaFunction>(project, LambdaClient.SERVICE_NAME, function, AwsIcons.Resources.LAMBDA_FUNCTION, immutable) {
     override fun resourceType() = "function"
 
     override fun toString(): String = functionName()

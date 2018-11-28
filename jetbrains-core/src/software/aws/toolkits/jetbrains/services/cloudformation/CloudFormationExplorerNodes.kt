@@ -8,7 +8,6 @@ import com.intellij.openapi.project.Project
 import icons.AwsIcons
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.cloudformation.model.ResourceStatus
-import software.amazon.awssdk.services.cloudformation.model.StackResource
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.jetbrains.core.AwsClientManager
@@ -21,6 +20,8 @@ import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsNodeAlwaysExpandable
 import software.aws.toolkits.jetbrains.core.explorer.AwsNodeChildCache
 import software.aws.toolkits.jetbrains.core.explorer.AwsTruncatedResultNode
+import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
+import software.aws.toolkits.jetbrains.services.lambda.toDataClass
 import software.aws.toolkits.jetbrains.utils.toHumanReadable
 import software.aws.toolkits.resources.message
 
@@ -57,10 +58,6 @@ class CloudFormationStackNode(project: Project, val stackName: String, private v
     AwsExplorerResourceNode<String>(project, CloudFormationClient.SERVICE_NAME, stackName, AwsIcons.Resources.SERVERLESS_APP),
     AwsNodeAlwaysExpandable,
     AwsNodeChildCache {
-    init {
-        presentation.tooltip = message("cloudformation.stack.status", stackStatus)
-    }
-
     override fun resourceType() = "stack"
 
     private val cfnClient: CloudFormationClient = project.awsClient()
@@ -108,11 +105,22 @@ class CloudFormationStackNode(project: Project, val stackName: String, private v
         isChildCacheInInitialState = false
     }
 
-    private fun loadServerlessStackResources(): List<CloudFormationStackResourceNode> = cfnClient
+    private fun loadServerlessStackResources(): List<AwsExplorerNode<*>> = cfnClient
         .describeStackResources { it.stackName(stackName) }
         .stackResources()
         .filter { it.resourceType() == LAMBDA_FUNCTION_TYPE && it.resourceStatus() in COMPLETE_RESOURCE_STATES }
-        .map { CloudFormationStackResourceNode(nodeProject, it) }
+        .map { resource ->
+            // TODO: Enable using cache, and a registry for these mappings of CFN -> real resource
+            val client = project!!.awsClient<LambdaClient>(credentialProvider, region)
+            val response = client.getFunction { it.functionName(resource.physicalResourceId()) }
+
+            LambdaFunctionNode(
+                nodeProject,
+                client,
+                response.configuration().toDataClass(credentialProvider.id, region),
+                true
+            )
+        }
         .toList()
 
     override fun statusText(): String? = stackStatus.toString().toHumanReadable()
@@ -128,21 +136,6 @@ class CloudFormationStackNode(project: Project, val stackName: String, private v
             StackStatus.UPDATE_ROLLBACK_IN_PROGRESS
         )
     }
-}
-
-open class CloudFormationStackResourceNode(
-    project: Project,
-    val stackResource: StackResource
-) : AwsExplorerResourceNode<StackResource>(project, LambdaClient.SERVICE_NAME, stackResource, AwsIcons.Resources.LAMBDA_FUNCTION) {
-    override fun resourceType() = "stack.resource"
-
-    override fun toString(): String = functionName()
-
-    override fun displayName() = functionName()
-
-    fun functionName(): String = stackResource.logicalResourceId()
-
-    override fun isAlwaysLeaf() = true
 }
 
 class DeleteCloudFormationStackAction : DeleteResourceAction<CloudFormationStackNode>(message("cloudformation.stack.delete.action")) {
