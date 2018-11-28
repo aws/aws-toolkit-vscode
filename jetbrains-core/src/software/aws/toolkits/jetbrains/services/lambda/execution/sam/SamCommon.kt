@@ -25,8 +25,11 @@ class SamCommon {
         val SAM_BUILD_DIR = ".aws-sam"
         val SAM_INFO_VERSION_KEY = "version"
 
+        // Inclusive
         val expectedSamMinVersion = SemVer("0.7.0", 0, 7, 0)
-        val expectedSamMaxVersion = SemVer("0.8.0", 0, 8, 0)
+
+        // Exclusive
+        val expectedSamMaxVersion = SemVer("0.11.0", 0, 11, 0)
 
         fun checkVersion(samVersionLine: String): String? {
             val parsedSemVer = SemVer.parseFromText(samVersionLine)

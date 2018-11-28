@@ -15,7 +15,10 @@ class SamVersionTest {
             "0.7.123",
             "0.7.999999999",
             "0.7.0-beta",
-            "0.7.0-beta+build"
+            "0.7.0-beta+build",
+            "0.8.0",
+            "0.9.0",
+            "0.10.0"
         )
         for (version in versions) {
             assertNull(SamCommon.checkVersion(version))
@@ -53,7 +56,7 @@ class SamVersionTest {
     @Test
     fun incompatableSamVersion_tooHigh() {
         val versions = arrayOf(
-                "0.8.0",
+                "0.11.0",
                 "1.0.0",
                 "1.5.9",
                 "1.5.9-dev"
