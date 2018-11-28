@@ -23,8 +23,11 @@ import software.aws.toolkits.jetbrains.core.explorer.AwsNodeChildCache
 import software.aws.toolkits.jetbrains.core.explorer.AwsTruncatedResultNode
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
+import software.aws.toolkits.jetbrains.core.stack.openStack
 import software.aws.toolkits.jetbrains.utils.toHumanReadable
 import software.aws.toolkits.resources.message
+import javax.swing.tree.DefaultMutableTreeNode
+import javax.swing.tree.DefaultTreeModel
 
 class CloudFormationServiceNode(project: Project) : AwsExplorerServiceRootNode(project, message("explorer.node.cloudformation")) {
     override fun serviceName() = CloudFormationClient.SERVICE_NAME
@@ -88,6 +91,11 @@ class CloudFormationStackNode(project: Project, val stackName: String, private v
         }
 
         return cachedChildren
+    }
+
+    override fun onDoubleClick(model: DefaultTreeModel, selectedElement: DefaultMutableTreeNode) {
+        super.onDoubleClick(model, selectedElement)
+        openStack(nodeProject, stackName)
     }
 
     private fun updateCachedChildren() {
