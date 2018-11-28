@@ -55,7 +55,7 @@ class CreateLambdaFunction(
         dialog.show()
     }
 
-    override fun update(e: AnActionEvent?) {
+    override fun update(e: AnActionEvent) {
         super.update(e)
 
         val element: PsiElement? = elementPointer?.element
@@ -70,7 +70,7 @@ class CreateLambdaFunction(
         val allowAction = lambdaHandlerResolver.determineHandlers(element, element.containingFile.virtualFile)
             .none { it in templateFunctionHandlers }
 
-        e?.presentation?.isVisible = allowAction
+        e.presentation.isVisible = allowAction
     }
 }
 

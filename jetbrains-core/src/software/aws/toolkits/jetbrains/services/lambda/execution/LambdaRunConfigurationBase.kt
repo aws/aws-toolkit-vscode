@@ -21,7 +21,7 @@ abstract class LambdaRunConfigurationBase<T : LambdaRunConfigurationBase.Mutable
     project: Project,
     factory: ConfigurationFactory,
     id: String
-) : LocatableConfigurationBase(project, factory, id),
+) : LocatableConfigurationBase<T>(project, factory, id),
     RunConfigurationWithSuppressedDefaultRunAction,
     RunConfigurationWithSuppressedDefaultDebugAction {
 

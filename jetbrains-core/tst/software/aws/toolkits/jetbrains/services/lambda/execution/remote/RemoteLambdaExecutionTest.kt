@@ -152,9 +152,8 @@ class RemoteLambdaExecutionTest {
 
     private fun createRunConfiguration(inputText: String, inputFile: Boolean): LambdaRemoteRunConfiguration {
         val runManager = RunManager.getInstance(projectRule.project)
-        val topLevelFactory = runManager.configurationFactories.first { it is LambdaRunConfiguration }
-        val factory = topLevelFactory.configurationFactories.first { it is LambdaRemoteRunConfigurationFactory }
-        val runConfigurationAndSettings = runManager.createRunConfiguration("Test", factory)
+        val factory = LambdaRunConfiguration.getInstance().configurationFactories.first { it is LambdaRemoteRunConfigurationFactory }
+        val runConfigurationAndSettings = runManager.createConfiguration("Test", factory)
         val runConfiguration = runConfigurationAndSettings.configuration as LambdaRemoteRunConfiguration
         runManager.addConfiguration(runConfigurationAndSettings)
 

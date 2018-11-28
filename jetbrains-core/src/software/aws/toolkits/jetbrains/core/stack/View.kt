@@ -27,7 +27,7 @@ enum class Page(val icon: Icon) {
 
 enum class StatusType(val icon: Icon, private val animatedIconStrategy: (() -> AnimatedIcon)? = null) {
     UNKNOWN(AllIcons.Actions.Clear),
-    PROGRESS(AllIcons.Process.ProgressResume, { AnimatedIcon.Grey() }),
+    PROGRESS(AllIcons.Process.ProgressResume, { AnimatedIcon.FS() }),
     COMPLETED(AllIcons.Process.State.GreenOK),
     DELETED(AllIcons.Process.State.YellowStr),
     FAILED(AllIcons.Process.State.RedExcl);

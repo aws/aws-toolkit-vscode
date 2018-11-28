@@ -61,16 +61,12 @@ abstract class ResourceNodeAction<in T : AwsExplorerResourceNode<*>>(text: Strin
      */
     abstract fun actionPerformed(selected: List<T>, e: AnActionEvent)
 
-    final override fun actionPerformed(e: AnActionEvent?) {
-        e?.let {
-            actionPerformed(selectedNodes(e), e)
-        }
+    final override fun actionPerformed(e: AnActionEvent) {
+        actionPerformed(selectedNodes(e), e)
     }
 
-    final override fun update(e: AnActionEvent?) {
-        e?.let {
-            update(selectedNodes(e), e)
-        }
+    final override fun update(e: AnActionEvent) {
+        update(selectedNodes(e), e)
     }
 
     @Suppress("UNCHECKED_CAST")

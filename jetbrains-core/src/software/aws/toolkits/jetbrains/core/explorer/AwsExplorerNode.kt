@@ -31,8 +31,8 @@ interface AwsNodeChildCache {
 
 abstract class AwsExplorerNode<T>(val nodeProject: Project, value: T, private val awsIcon: Icon?) : AbstractTreeNode<T>(nodeProject, value) {
 
-    override fun update(presentation: PresentationData?) {
-        presentation?.let {
+    override fun update(presentation: PresentationData) {
+        presentation.let {
             it.setIcon(awsIcon)
             it.addText(displayName(), SimpleTextAttributes.REGULAR_ATTRIBUTES)
             statusText()?.let { status ->
@@ -119,8 +119,8 @@ class AwsTruncatedResultNode(private val parentNode: AwsExplorerPageableNode<*>,
 
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
-    override fun update(presentation: PresentationData?) {
-        presentation?.addText(value, SimpleTextAttributes.GRAYED_ATTRIBUTES)
+    override fun update(presentation: PresentationData) {
+        presentation.addText(value, SimpleTextAttributes.GRAYED_ATTRIBUTES)
     }
 
     override fun onDoubleClick(model: DefaultTreeModel, selectedElement: DefaultMutableTreeNode) {
@@ -185,8 +185,8 @@ class AwsExplorerLoadingNode(project: Project) :
 
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
-    override fun update(presentation: PresentationData?) {
-        presentation?.addText(value, SimpleTextAttributes.GRAYED_ATTRIBUTES)
+    override fun update(presentation: PresentationData) {
+        presentation.addText(value, SimpleTextAttributes.GRAYED_ATTRIBUTES)
     }
 
     override fun isAlwaysLeaf() = true
@@ -197,8 +197,8 @@ class AwsExplorerErrorNode(project: Project, exception: Exception) :
 
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
-    override fun update(presentation: PresentationData?) {
-        presentation?.apply {
+    override fun update(presentation: PresentationData) {
+        presentation.apply {
             // If we don't have a message, at least give them the error type
             tooltip = value.message ?: value.javaClass.simpleName
             addText(MSG, SimpleTextAttributes.ERROR_ATTRIBUTES)
@@ -215,8 +215,8 @@ class AwsExplorerErrorNode(project: Project, exception: Exception) :
 class AwsExplorerEmptyNode(project: Project, value: String = message("explorer.empty_node")) : AwsExplorerNode<String>(project, value, awsIcon = null) {
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
-    override fun update(presentation: PresentationData?) {
-        presentation?.addText(displayName(), SimpleTextAttributes.GRAYED_ATTRIBUTES)
+    override fun update(presentation: PresentationData) {
+        presentation.addText(displayName(), SimpleTextAttributes.GRAYED_ATTRIBUTES)
     }
 
     override fun isAlwaysLeaf() = true

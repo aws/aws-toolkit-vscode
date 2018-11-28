@@ -3,8 +3,12 @@
 
 package software.aws.toolkits.jetbrains.services.cloudformation.yaml
 
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.runWriteAction
+import com.intellij.openapi.fileTypes.FileTypeManager
 import com.intellij.openapi.fileTypes.ex.FakeFileType
 import com.intellij.openapi.fileTypes.ex.FileTypeManagerEx
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
@@ -109,7 +113,7 @@ Parameters:
             assertThat(template.parameters().toList()).hasSize(2)
             val tableTag = template.parameters().firstOrNull { it.logicalName == "TableTag" }
             assertNotNull(tableTag)
-            assertNull(tableTag!!.defaultValue())
+            assertNull(tableTag.defaultValue())
             assertNotNull(tableTag.description())
             assertNull(tableTag.constraintDescription())
         }
@@ -186,15 +190,25 @@ Resources:
         }
 
         runInEdtAndWait {
-            try {
-                FileTypeManagerEx.getInstanceEx().registerFileType(fakeFileType)
-                setOf("template.yaml", "template.yml").forEach {
-                    val yamlFile = projectRule.fixture.addFileToProject(it, TEST_TEMPLATE)
-                    assertThat(yamlFile.fileType).isEqualTo(fakeFileType)
-                    assertThat(CloudFormationTemplate.parse(projectRule.project, yamlFile.virtualFile)).isNotNull
+            val matchYaml = FileTypeManager.parseFromString("*.canParseByExtension.yaml")
+            val matchYml = FileTypeManager.parseFromString("*.canParseByExtension.yml")
+
+            runWriteAction {
+                FileTypeManagerEx.getInstance().associate(fakeFileType, matchYaml)
+                FileTypeManagerEx.getInstance().associate(fakeFileType, matchYml)
+            }
+
+            Disposer.register(projectRule.fixture.testRootDisposable, Disposable {
+                runWriteAction {
+                    FileTypeManagerEx.getInstance().removeAssociation(fakeFileType, matchYml)
+                    FileTypeManagerEx.getInstance().removeAssociation(fakeFileType, matchYaml)
                 }
-            } finally {
-                FileTypeManagerEx.getInstanceEx().unregisterFileType(fakeFileType)
+            })
+
+            setOf("template.canParseByExtension.yaml", "template.canParseByExtension.yml").forEach {
+                val yamlFile = projectRule.fixture.addFileToProject(it, TEST_TEMPLATE)
+                assertThat(yamlFile.fileType).isEqualTo(fakeFileType)
+                assertThat(CloudFormationTemplate.parse(projectRule.project, yamlFile.virtualFile)).isNotNull
             }
         }
     }

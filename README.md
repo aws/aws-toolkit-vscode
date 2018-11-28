@@ -31,7 +31,7 @@ Currently supported features are:
 ### IDE / Language Specific Features
 These features require some knowledge of the programming language/paradigm your project is authored in and thus are only available in certain contexts (e.g. IntelliJ Java Projects). 
 
-The following table shows the features that are available in various JetBrains IDEs. Minimum supported version of IntelliJ platform is [2018.2](https://blog.jetbrains.com/idea/tag/2018-2/).
+The following table shows the features that are available in various JetBrains IDEs. Minimum supported version of IntelliJ platform is [2018.3](https://blog.jetbrains.com/idea/tag/2018-3/).
 
 | AWS Service | Feature | IntelliJ | PyCharm |
 | --- | --- | --- | --- |

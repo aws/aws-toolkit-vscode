@@ -163,7 +163,7 @@ class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, tru
         return awsTree
     }
 
-    override fun getData(dataId: String?): Any? {
+    override fun getData(dataId: String): Any? {
         if (SELECTED_RESOURCE_NODES.`is`(dataId)) {
             return getSelectedNodesSameType<AwsExplorerResourceNode<*>>()
         }

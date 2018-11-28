@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.util.SystemInfo
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
@@ -75,7 +76,8 @@ class SamCommonTest {
 
     @Test(expected = java.lang.AssertionError::class)
     fun getTemplateFromDirectory_noYaml() {
-        SamCommon.getTemplateFromDirectory(projectRule.project.baseDir)
+        val projectBase = LocalFileSystem.getInstance().findFileByPath(projectRule.project.basePath!!)
+        SamCommon.getTemplateFromDirectory(projectBase!!)
     }
 
     @Test

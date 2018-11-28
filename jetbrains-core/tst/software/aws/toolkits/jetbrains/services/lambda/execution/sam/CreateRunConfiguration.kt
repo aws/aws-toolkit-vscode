@@ -61,9 +61,8 @@ fun createHandlerBasedRunConfiguration(
 
 private fun samRunConfiguration(project: Project): SamRunConfiguration {
     val runManager = RunManager.getInstance(project)
-    val topLevelFactory = runManager.configurationFactories.first { it is LambdaRunConfiguration }
-    val factory = topLevelFactory.configurationFactories.first { it is SamRunConfigurationFactory }
-    val runConfigurationAndSettings = runManager.createRunConfiguration("Test", factory)
+    val factory = LambdaRunConfiguration.getInstance().configurationFactories.first { it is SamRunConfigurationFactory }
+    val runConfigurationAndSettings = runManager.createConfiguration("Test", factory)
     val runConfiguration = runConfigurationAndSettings.configuration as SamRunConfiguration
     runManager.addConfiguration(runConfigurationAndSettings)
     return runConfiguration

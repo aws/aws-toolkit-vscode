@@ -26,7 +26,7 @@ class AwsExplorerFactory : ToolWindowFactory, DumbAware {
         if (toolWindow is ToolWindowEx) {
             toolWindow.setTitleActions(
                 object : DumbAwareAction(message("explorer.refresh.title"), message("explorer.refresh.description"), AllIcons.Actions.Refresh) {
-                    override fun actionPerformed(e: AnActionEvent?) {
+                    override fun actionPerformed(e: AnActionEvent) {
                         explorer.updateModel()
                     }
                 })
