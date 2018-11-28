@@ -25,6 +25,7 @@ import org.jetbrains.concurrency.Promise
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
+import java.io.File
 import java.net.ServerSocket
 
 class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
@@ -35,16 +36,25 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
             return false
         }
 
-        // Only requires LambdaPackager support, which is implicit based on the UI
         if (DefaultRunExecutor.EXECUTOR_ID == executorId) {
-            return true
+            return true // Always true so that the run icon is shown, error is then told to user that runtime doesnt work
         }
 
         // Requires SamDebugSupport too
         if (DefaultDebugExecutor.EXECUTOR_ID == executorId) {
-            profile.settings.runtime?.let {
-                return SamDebugSupport.supportedRuntimeGroups.contains(Runtime.fromValue(it).runtimeGroup)
+            val runtimeValue = if (profile.settings.useTemplate) {
+                SamTemplateUtils.findFunctionsFromTemplate(profile.project, File(profile.settings.templateFile))
+                    .find { it.logicalName == profile.settings.logicalFunctionName }
+                    ?.runtime()
+            } else {
+                profile.settings.runtime
             }
+
+            val runtimeGroup = runtimeValue?.let {
+                Runtime.fromValue(runtimeValue).runtimeGroup
+            }
+
+            return SamDebugSupport.supportedRuntimeGroups.contains(runtimeGroup)
         }
 
         return false

@@ -9,7 +9,6 @@ import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.jdom.Element
-import org.jdom.input.SAXBuilder
 import org.jdom.output.XMLOutputter
 import org.junit.After
 import org.junit.Before
@@ -21,7 +20,7 @@ import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
-import java.io.ByteArrayInputStream
+import software.aws.toolkits.jetbrains.utils.toElement
 
 class DefaultProjectAccountSettingsManagerTest {
     @Rule
@@ -279,12 +278,6 @@ class DefaultProjectAccountSettingsManagerTest {
         assertThatThrownBy { manager.activeCredentialProvider }
             .isInstanceOf(CredentialProviderNotFound::class.java)
     }
-}
-
-private fun String.toElement(): Element {
-    val stream = ByteArrayInputStream(this.toByteArray())
-    val builder = SAXBuilder()
-    return builder.build(stream).rootElement
 }
 
 private fun Element?.string(): String = XMLOutputter().outputString(this)

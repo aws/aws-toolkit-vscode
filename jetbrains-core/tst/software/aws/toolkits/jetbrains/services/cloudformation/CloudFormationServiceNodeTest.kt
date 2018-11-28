@@ -1,7 +1,7 @@
 // Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda.applications
+package software.aws.toolkits.jetbrains.services.cloudformation
 
 import com.intellij.testFramework.ProjectRule
 import com.nhaarman.mockitokotlin2.any
@@ -24,7 +24,7 @@ import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsTruncatedResultNode
 import software.aws.toolkits.jetbrains.utils.delegateMock
 
-class ServerlessApplicationsNodeTest {
+class CloudFormationServiceNodeTest {
 
     @JvmField
     @Rule
@@ -44,7 +44,7 @@ class ServerlessApplicationsNodeTest {
         mockClient.stacksWithNames(listOf("Stack" to StackStatus.CREATE_COMPLETE))
         mockClient.stackWithResourcesOfType("Stack", "AWS::Lambda::Function" to ResourceStatus.CREATE_COMPLETE)
 
-        val node = ServerlessApplicationsNode(projectRule.project)
+        val node = CloudFormationServiceNode(projectRule.project)
 
         assertThat(node.children).hasOnlyOneElementSatisfying { assertThat(it.displayName()).isEqualTo("Stack") }
     }
@@ -54,54 +54,38 @@ class ServerlessApplicationsNodeTest {
         mockClient.stacksWithNames(listOf("Stack" to StackStatus.DELETE_COMPLETE))
         mockClient.stackWithResourcesOfType("Stack", "AWS::Lambda::Function" to ResourceStatus.CREATE_COMPLETE)
 
-        val node = ServerlessApplicationsNode(projectRule.project)
+        val node = CloudFormationServiceNode(projectRule.project)
 
         assertThat(node.children).hasOnlyElementsOfType(AwsExplorerEmptyNode::class.java)
     }
 
     @Test
-    fun completedStacksThatOnlyContainDeletedLambdas_NotShown() {
+    fun completedStacksThatOnlyContainDeletedLambdas_DoShow() {
         mockClient.stacksWithNames(listOf("Stack" to StackStatus.CREATE_COMPLETE))
         mockClient.stackWithResourcesOfType("Stack", "AWS::Lambda::Function" to ResourceStatus.DELETE_COMPLETE)
 
-        val node = ServerlessApplicationsNode(projectRule.project)
+        val node = CloudFormationServiceNode(projectRule.project)
 
-        assertThat(node.children).hasOnlyElementsOfType(AwsExplorerEmptyNode::class.java)
+        assertThat(node.children).hasSize(1)
+        assertThat(node.children).hasOnlyElementsOfType(CloudFormationStackNode::class.java)
     }
 
     @Test
-    fun completedStacksThatDoNotContainLambdas_NotShown() {
+    fun completedStacksThatDoNotContainLambdas_Shown() {
         mockClient.stacksWithNames(listOf("Stack" to StackStatus.CREATE_COMPLETE))
         mockClient.stackWithResourcesOfType("Stack", "AWS::S3::Bucket" to ResourceStatus.CREATE_COMPLETE)
 
-        val node = ServerlessApplicationsNode(projectRule.project)
+        val node = CloudFormationServiceNode(projectRule.project)
 
-        assertThat(node.children).hasOnlyElementsOfType(AwsExplorerEmptyNode::class.java)
-    }
-
-    @Test
-    fun onlyFunctionNamesArePassedToStackResourceNode() {
-        mockClient.stacksWithNames(listOf("Stack" to StackStatus.CREATE_COMPLETE))
-        mockClient.stackWithResourcesOfType(
-            "Stack",
-            "AWS::S3::Bucket" to ResourceStatus.CREATE_COMPLETE,
-            "AWS::Lambda::Function" to ResourceStatus.CREATE_COMPLETE
-        )
-
-        val node = ServerlessApplicationsNode(projectRule.project)
-
-        assertThat(node.children).hasOnlyOneElementSatisfying {
-            assertThat(it).isInstanceOfSatisfying(ServerlessApplicationNode::class.java) {
-                assertThat(it.functions).containsOnly("AWS::Lambda::Function")
-            }
-        }
+        assertThat(node.children).hasSize(1)
+        assertThat(node.children).hasOnlyElementsOfType(CloudFormationStackNode::class.java)
     }
 
     @Test
     fun truncatedNodeIsAddedForPaging() {
         mockClient.stacksWithNames(listOf("Stack1" to StackStatus.CREATE_COMPLETE), nextToken = "blah")
         mockClient.stackWithResourcesOfType("Stack1", "AWS::Lambda::Function" to ResourceStatus.CREATE_COMPLETE)
-        val node = ServerlessApplicationsNode(projectRule.project)
+        val node = CloudFormationServiceNode(projectRule.project)
 
         assertThat(node.children).hasSize(2).last().isInstanceOf(AwsTruncatedResultNode::class.java)
     }
@@ -117,10 +101,10 @@ class ServerlessApplicationsNodeTest {
 
     private fun CloudFormationClient.stackWithResourcesOfType(stackName: String, vararg types: Pair<String, ResourceStatus>) {
         whenever(describeStackResources(
-                DescribeStackResourcesRequest.builder()
-                    .stackName(stackName)
-                    .build()
-            )
+            DescribeStackResourcesRequest.builder()
+                .stackName(stackName)
+                .build()
+        )
         ).thenReturn(
             DescribeStackResourcesResponse.builder()
                 .stackResources(types.map {

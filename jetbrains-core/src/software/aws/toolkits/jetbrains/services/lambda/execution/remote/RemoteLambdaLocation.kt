@@ -29,7 +29,7 @@ class RemoteLambdaLocation(private val project: Project, val lambdaFunction: Lam
     override fun <T : PsiElement?> getAncestors(
         ancestorClass: Class<T>?,
         strict: Boolean
-    ): MutableIterator<Location<T>> = throw UnsupportedOperationException()
+    ): MutableIterator<Location<T>> = mutableListOf<Location<T>>().iterator()
 
     override fun getPsiElement(): PsiLambda = element
 

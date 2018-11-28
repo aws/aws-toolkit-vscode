@@ -16,6 +16,7 @@ import com.intellij.openapi.module.ModuleUtilCore.findModuleForPsiElement
 import com.intellij.psi.PsiElement
 import com.intellij.psi.SmartPointerManager
 import icons.AwsIcons
+import software.amazon.awssdk.services.lambda.model.LambdaException
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplateIndex.Companion.listFunctions
@@ -79,7 +80,7 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
     private fun shouldShowLineMarker(element: PsiElement, handler: String, runtime: Runtime): Boolean =
         LambdaSettings.getInstance(element.project).showAllHandlerGutterIcons ||
         listFunctions(element.project).any { it.handler() == handler && it.runtime() == runtime.toString() } || // Handler defined in template is valid
-        AwsResourceCache.getInstance(element.project).lambdaFunctions().any { it.handler == handler && it.runtime == runtime } // Handler in remote Lambda is valid
+        try { AwsResourceCache.getInstance(element.project).lambdaFunctions().any { it.handler == handler && it.runtime == runtime } } catch (e: LambdaException) { false } // Handler in remote Lambda is valid
 
     class LambdaGutterIcon(markerInfo: LineMarkerInfo<PsiElement>, private val actionGroup: ActionGroup) :
         LineMarkerInfo.LineMarkerGutterIconRenderer<PsiElement>(markerInfo) {

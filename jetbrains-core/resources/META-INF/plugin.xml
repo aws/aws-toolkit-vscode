@@ -7,11 +7,23 @@
     <version>1.0</version>
 
     <description><![CDATA[
-      Plugin for interacting with AWS resources.
+<p>The AWS Toolkit is an open-source plug-in for JetBrains IDEs that makes it easier to develop applications built on AWS. The toolkit helps you create, test, and debug serverless applications built using the AWS Serverless Application Model (<a href="https://aws.amazon.com/serverless/sam/">SAM</a>).
+</p>
+
+<p><h2><strong>Features</strong></h2></p>
+
+<ul>
+    <li><strong>New Project Wizard</strong> - Get started quickly by using one of the quickstart serverless application templates</li>
+    <li><strong>Run/Debug Local Lambda Functions</strong> - Locally test and step-through debug functions in a Lambda-like execution environment provided by the <a href="https://github.com/awslabs/aws-sam-cli">AWS SAM CLI</a></li>
+    <li><strong>Resource Explorer</strong> - View your AWS Lambda remote functions & related CloudFormation stacks</li>
+    <li><strong>Invoke Remote Lambda Functions</strong> - Invoke remote functions using a sharable run-configuration</li>
+    <li><strong>Deploy SAM-based Applications</strong> - (<strong>Python only</strong>) Package, deploy & track SAM-based applications</li>
+</ul>
+</p>
     ]]></description>
 
     <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://aws.amazon.com/">Amazon Web Services</vendor>
-    <idea-version since-build="182" until-build="183.*"/>
+    <idea-version since-build="183" until-build="183.*"/>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
@@ -20,9 +32,10 @@
     <depends optional="true" config-file="ext-java.xml">com.intellij.modules.java</depends>
     <depends optional="true" config-file="ext-python.xml">com.intellij.modules.python</depends>
 
-    <xi:include href="/META-INF/change-notes.xml" xpointer="xpointer(/idea-plugin/*)">
+    <!-- Re-enable when changelog comes back -->
+    <!-- xi:include href="/META-INF/change-notes.xml" xpointer="xpointer(/idea-plugin/*)">
         <xi:fallback/>
-    </xi:include>
+    </xi:include-->
 
     <extensionPoints>
         <extensionPoint qualifiedName="aws.toolkit.credentialProviderFactory"
@@ -108,11 +121,16 @@
         <group id="aws.toolkit.explorer.lambda" popup="true" compact="false">
             <action id="lambda.function.create" class="software.aws.toolkits.jetbrains.services.lambda.upload.CreateLambdaFunction"/>
         </group>
-        <group id="aws.toolkit.explorer.lambda.function" popup="true" compact="false">
+
+        <group id="aws.toolkit.explorer.lambda.function.immutable" popup="false" compact="false">
             <reference ref="RunContextGroupInner"/>
             <separator/>
             <action id="lambda.function.gotohandler"
                     class="software.aws.toolkits.jetbrains.services.lambda.actions.GoToHandlerAction"/>
+        </group>
+
+        <group id="aws.toolkit.explorer.lambda.function" popup="false" compact="false">
+            <reference ref="aws.toolkit.explorer.lambda.function.immutable"/>
             <separator/>
             <action id="lambda.function.updateConfiguration"
                     class="software.aws.toolkits.jetbrains.services.lambda.actions.UpdateFunctionConfigurationAction"/>
@@ -120,15 +138,12 @@
             <action id="lambda.function.delete"
                     class="software.aws.toolkits.jetbrains.services.lambda.actions.DeleteFunctionAction"/>
         </group>
-        <group id="aws.toolkit.explorer.lambda.stackFunction" popup="true" compact="false">
-            <reference ref="RunContextGroupInner"/>
-            <separator/>
-            <action id="lambda.stackFunction.gotohandler" class="software.aws.toolkits.jetbrains.services.lambda.actions.GoToHandlerAction"/>
+
+        <group id="aws.toolkit.explorer.cloudformation.stack" popup="true" compact="false">
+            <action id="cloudformation.stack.delete"
+                    class="software.aws.toolkits.jetbrains.services.cloudformation.DeleteCloudFormationStackAction"/>
         </group>
-        <group id="aws.toolkit.explorer.lambda.application" popup="true" compact="false">
-            <action id="lambda.application.delete"
-                    class="software.aws.toolkits.jetbrains.services.lambda.applications.DeleteApplicationAction"/>
-        </group>
+
         <action class="software.aws.toolkits.jetbrains.core.SettingsSelectorAction" id="aws.settings.selector" icon="AwsIcons.Logos.AWS"/>
         <action class="software.aws.toolkits.jetbrains.core.credentials.CreateOrUpdateCredentialProfilesAction" id="aws.settings.upsertCredentials" icon="AwsIcons.Logos.AWS"/>
 

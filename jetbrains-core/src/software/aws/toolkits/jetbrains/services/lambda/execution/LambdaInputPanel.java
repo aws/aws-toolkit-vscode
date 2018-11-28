@@ -152,13 +152,8 @@ public class LambdaInputPanel {
         return useInputFile.isSelected();
     }
 
-    public void setUsingFile(boolean value) {
-        useInputFile.setSelected(value);
-        useInputText.setSelected(!value);
-        updateComponents();
-    }
-
     public void setInputFile(@Nullable String filePath) {
+        setUsingFile(true);
         inputFile.setText(filePath);
     }
 
@@ -167,7 +162,14 @@ public class LambdaInputPanel {
     }
 
     public void setInputText(@Nullable String text) {
+        setUsingFile(false);
         inputText.setText(text);
+    }
+
+    private void setUsingFile(boolean value) {
+        useInputFile.setSelected(value);
+        useInputText.setSelected(!value);
+        updateComponents();
     }
 
     public String getInputText() {

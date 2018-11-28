@@ -25,15 +25,16 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon;
 
+@SuppressWarnings("NullableProblems")
 public class AwsSettingsConfigurable implements SearchableConfigurable {
     private static final String SAM_HELP_LINK = message("lambda.sam.cli.install_url");
 
     private final Project project;
     private JPanel panel;
-    private TextFieldWithBrowseButton samExecutablePath;
+    @NotNull TextFieldWithBrowseButton samExecutablePath;
     private LinkLabel samHelp;
     private JBCheckBox showAllHandlerGutterIcons;
-    private JBCheckBox enableTelemetry;
+    @NotNull JBCheckBox enableTelemetry;
     private JPanel projectLevelSettings;
     private JPanel applicationLevelSettings;
 
@@ -93,24 +94,21 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
 
     @Override
     public void apply() throws ConfigurationException {
+        apply(new SamExecutableDetector());
+    }
+
+    protected void apply(SamExecutableDetector detector) throws ConfigurationException {
         SamSettings samSettings = SamSettings.getInstance();
 
         String path = getSamExecutablePath();
-        // if user path is empty
-        if (path == null || path.isEmpty()) {
-            // try to autodetect the path
-            path = new SamExecutableDetector().detect();
-
-            // if path is still empty pop the error
-            if (path == null || path.isEmpty()) {
-                throw new ConfigurationException(message("lambda.run_configuration.sam.not_specified"));
+        // only validate if path is not empty and has changed since last save
+        boolean changed = (path != null && !path.equals(samSettings.getSavedExecutablePath()));
+        if (changed) {
+            // if path is set and it is a bad executable
+            String error;
+            if ((error = SamCommon.Companion.validate(path)) != null) {
+                throw new ConfigurationException(message("lambda.run_configuration.sam.invalid_executable", error));
             }
-        }
-
-        // if path is set and it is a bad executable
-        String error;
-        if ((error = SamCommon.Companion.validate(path)) != null) {
-            throw new ConfigurationException(message("lambda.run_configuration.sam.invalid_executable", error));
         }
 
         // preserve user's null input if we autodetected the path

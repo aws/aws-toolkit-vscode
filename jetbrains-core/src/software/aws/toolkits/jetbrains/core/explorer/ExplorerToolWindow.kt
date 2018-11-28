@@ -37,6 +37,8 @@ import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.JPanel
 import javax.swing.JTree
+import javax.swing.event.TreeExpansionEvent
+import javax.swing.event.TreeWillExpandListener
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
@@ -110,6 +112,33 @@ class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, tru
             }
         })
 
+        // If it is the first time a CloudFormationStackNode node is expanded, take a moment to load and cache
+        // the Stack Resources. This prevents potential DescribeStackResources spamming on tree construction.
+        awsTree.addTreeWillExpandListener(object : TreeWillExpandListener {
+            override fun treeWillExpand(e: TreeExpansionEvent?) {
+                if (e == null) {
+                    return
+                }
+
+                val selectedElement = e.path.lastPathComponent as? DefaultMutableTreeNode ?: return
+                val node = selectedElement.userObject as? AwsNodeChildCache ?: return
+
+                if (node.isInitialChildState()) {
+                    // Node currently has a placeholder node
+                    // Load the Resources for this Stack and swap the placeholder for this data before the node expands
+                    val children = node.getChildren(true)
+
+                    selectedElement.removeAllChildren()
+                    children.forEach {
+                        it.update()
+                        model.insertNodeInto(DefaultMutableTreeNode(it), selectedElement, selectedElement.childCount)
+                    }
+                }
+            }
+
+            override fun treeWillCollapse(event: TreeExpansionEvent?) {}
+        })
+
         awsTree.addMouseListener(object : PopupHandler() {
             override fun invokePopup(comp: Component?, x: Int, y: Int) {
                 // Build a right click menu based on the selected first node
@@ -118,21 +147,23 @@ class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, tru
                 val actionGroupName = when (explorerNode) {
                     is AwsExplorerServiceRootNode ->
                         "aws.toolkit.explorer.${explorerNode.serviceName()}"
-                    is AwsExplorerResourceNode<*> ->
-                        "aws.toolkit.explorer.${explorerNode.serviceName}.${explorerNode.resourceType()}"
+                    is AwsExplorerResourceNode<*> -> {
+                        val suffix = if (explorerNode.immutable) ".immutable" else ""
+                        "aws.toolkit.explorer.${explorerNode.serviceName}.${explorerNode.resourceType()}$suffix"
+                    }
                     else ->
                         return
                 }
                 val actionGroup = actionManager.getAction(actionGroupName) as? ActionGroup ?: return
                 val popupMenu = actionManager.createActionPopupMenu(ActionPlaces.UNKNOWN, actionGroup)
-                popupMenu.component.show(component, x, y)
+                popupMenu.component.show(comp, x, y)
             }
         })
 
         return awsTree
     }
 
-    override fun getData(dataId: String?): Any? {
+    override fun getData(dataId: String): Any? {
         if (SELECTED_RESOURCE_NODES.`is`(dataId)) {
             return getSelectedNodesSameType<AwsExplorerResourceNode<*>>()
         }

@@ -11,23 +11,15 @@ import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.amazon.awssdk.services.lambda.model.ListFunctionsRequest
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerNode
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerPageableNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerServiceRootNode
+import software.aws.toolkits.jetbrains.core.explorer.AwsNodeAlwaysExpandable
 import software.aws.toolkits.jetbrains.core.explorer.AwsTruncatedResultNode
-import software.aws.toolkits.jetbrains.services.lambda.applications.ServerlessApplicationsNode
 import software.aws.toolkits.resources.message
 
-class LambdaServiceNode(project: Project) : AwsExplorerServiceRootNode(project, message("lambda.service_name")) {
+class LambdaServiceNode(project: Project) : AwsExplorerServiceRootNode(project, message("explorer.node.lambda")),
+    AwsNodeAlwaysExpandable {
     override fun serviceName() = LambdaClient.SERVICE_NAME
-
-    override fun loadResources(paginationToken: String?): Collection<AwsExplorerNode<*>> = listOf(
-        ServerlessApplicationsNode(nodeProject),
-        LambdaFunctionsNode(nodeProject)
-    )
-}
-
-class LambdaFunctionsNode(project: Project) : AwsExplorerPageableNode<String>(project, message("lambda.functions"), null) {
 
     private val client: LambdaClient = AwsClientManager.getInstance(project).getClient()
 
@@ -51,13 +43,16 @@ class LambdaFunctionsNode(project: Project) : AwsExplorerPageableNode<String>(pr
 open class LambdaFunctionNode(
     project: Project,
     val client: LambdaClient,
-    val function: LambdaFunction
-) : AwsExplorerResourceNode<LambdaFunction>(project, LambdaClient.SERVICE_NAME, function, AwsIcons.Resources.LAMBDA_FUNCTION) {
+    val function: LambdaFunction,
+    immutable: Boolean = false
+) : AwsExplorerResourceNode<LambdaFunction>(project, LambdaClient.SERVICE_NAME, function, AwsIcons.Resources.LAMBDA_FUNCTION, immutable) {
     override fun resourceType() = "function"
 
     override fun toString(): String = functionName()
 
     override fun displayName() = functionName()
+
+    override fun isAlwaysLeaf() = true
 
     fun functionName(): String = function.name
 

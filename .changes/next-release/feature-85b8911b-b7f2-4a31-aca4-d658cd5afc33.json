@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Added gradle tasks that allow automated creation of changelog entries."
-}

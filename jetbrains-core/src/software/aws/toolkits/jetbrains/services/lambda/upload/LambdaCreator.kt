@@ -77,6 +77,9 @@ class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
                     .environment {
                         it.variables(details.envVars)
                     }
+                    .tracingConfig {
+                        it.mode(details.tracingMode)
+                    }
                     .build()
 
                 val settingsManager = ProjectAccountSettingsManager.getInstance(project)
@@ -141,6 +144,9 @@ class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
             .memorySize(details.memorySize)
             .environment {
                 it.variables(details.envVars)
+            }
+            .tracingConfig {
+                it.mode(details.tracingMode)
             }
             .build()
 

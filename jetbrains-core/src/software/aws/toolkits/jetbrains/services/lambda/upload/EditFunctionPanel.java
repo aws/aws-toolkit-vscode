@@ -15,6 +15,7 @@ import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField;
 import software.aws.toolkits.jetbrains.ui.ResourceSelector;
 
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
@@ -41,6 +42,7 @@ public class EditFunctionPanel {
     @NotNull JSlider timeoutSlider;
     @NotNull JPanel configurationSettings;
     @NotNull JLabel handlerLabel;
+    @NotNull JCheckBox xrayEnabled;
 
     private final Project project;
 
@@ -49,6 +51,14 @@ public class EditFunctionPanel {
 
         deploySettings.setBorder(IdeBorderFactory.createTitledBorder(message("lambda.upload.deployment_settings"), false));
         configurationSettings.setBorder(IdeBorderFactory.createTitledBorder(message("lambda.upload.configuration_settings"), false));
+    }
+
+    public void setXrayControlVisibility(boolean visible) {
+        xrayEnabled.setVisible(visible);
+
+        if (!visible) {
+            xrayEnabled.setSelected(false);
+        }
     }
 
     private void createUIComponents() {

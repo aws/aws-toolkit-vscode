@@ -22,10 +22,17 @@ import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.MutableTreeNode
 
+interface AwsNodeAlwaysExpandable
+
+interface AwsNodeChildCache {
+    fun isInitialChildState(): Boolean
+    fun getChildren(refresh: Boolean): Collection<AbstractTreeNode<Any>>
+}
+
 abstract class AwsExplorerNode<T>(val nodeProject: Project, value: T, private val awsIcon: Icon?) : AbstractTreeNode<T>(nodeProject, value) {
 
-    override fun update(presentation: PresentationData?) {
-        presentation?.let {
+    override fun update(presentation: PresentationData) {
+        presentation.let {
             it.setIcon(awsIcon)
             it.addText(displayName(), SimpleTextAttributes.REGULAR_ATTRIBUTES)
             statusText()?.let { status ->
@@ -40,8 +47,8 @@ abstract class AwsExplorerNode<T>(val nodeProject: Project, value: T, private va
 
     open fun onDoubleClick(model: DefaultTreeModel, selectedElement: DefaultMutableTreeNode) {}
 
-    protected val region by lazy { nodeProject.activeRegion() }
-    protected val credentialProvider by lazy { nodeProject.activeCredentialProvider() }
+    protected val region = nodeProject.activeRegion()
+    protected val credentialProvider = nodeProject.activeCredentialProvider()
 }
 
 class AwsExplorerRootNode(project: Project) : AwsExplorerNode<String>(project, "ROOT", AwsIcons.Logos.AWS) {
@@ -99,7 +106,8 @@ abstract class AwsExplorerResourceNode<T>(
     project: Project,
     val serviceName: String,
     value: T,
-    awsIcon: Icon
+    awsIcon: Icon,
+    val immutable: Boolean = false
 ) : AwsExplorerNode<T>(project, value, awsIcon) {
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
@@ -111,8 +119,8 @@ class AwsTruncatedResultNode(private val parentNode: AwsExplorerPageableNode<*>,
 
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
-    override fun update(presentation: PresentationData?) {
-        presentation?.addText(value, SimpleTextAttributes.GRAYED_ATTRIBUTES)
+    override fun update(presentation: PresentationData) {
+        presentation.addText(value, SimpleTextAttributes.GRAYED_ATTRIBUTES)
     }
 
     override fun onDoubleClick(model: DefaultTreeModel, selectedElement: DefaultMutableTreeNode) {
@@ -177,8 +185,8 @@ class AwsExplorerLoadingNode(project: Project) :
 
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
-    override fun update(presentation: PresentationData?) {
-        presentation?.addText(value, SimpleTextAttributes.GRAYED_ATTRIBUTES)
+    override fun update(presentation: PresentationData) {
+        presentation.addText(value, SimpleTextAttributes.GRAYED_ATTRIBUTES)
     }
 
     override fun isAlwaysLeaf() = true
@@ -189,8 +197,8 @@ class AwsExplorerErrorNode(project: Project, exception: Exception) :
 
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
-    override fun update(presentation: PresentationData?) {
-        presentation?.apply {
+    override fun update(presentation: PresentationData) {
+        presentation.apply {
             // If we don't have a message, at least give them the error type
             tooltip = value.message ?: value.javaClass.simpleName
             addText(MSG, SimpleTextAttributes.ERROR_ATTRIBUTES)
@@ -204,11 +212,11 @@ class AwsExplorerErrorNode(project: Project, exception: Exception) :
     }
 }
 
-class AwsExplorerEmptyNode(project: Project) : AwsExplorerNode<String>(project, message("explorer.empty_node"), awsIcon = null) {
+class AwsExplorerEmptyNode(project: Project, value: String = message("explorer.empty_node")) : AwsExplorerNode<String>(project, value, awsIcon = null) {
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
-    override fun update(presentation: PresentationData?) {
-        presentation?.addText(displayName(), SimpleTextAttributes.GRAYED_ATTRIBUTES)
+    override fun update(presentation: PresentationData) {
+        presentation.addText(displayName(), SimpleTextAttributes.GRAYED_ATTRIBUTES)
     }
 
     override fun isAlwaysLeaf() = true

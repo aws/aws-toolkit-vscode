@@ -16,12 +16,14 @@ import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
+import org.junit.rules.TemporaryFolder
+import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.rules.EnvironmentVariableHelper
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.settings.SamExecutableDetector
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.toElement
 import software.aws.toolkits.resources.message
 
 class SamRunConfigurationTest {
@@ -32,6 +34,10 @@ class SamRunConfigurationTest {
     @Rule
     @JvmField
     val envHelper = EnvironmentVariableHelper()
+
+    @Rule
+    @JvmField
+    val tempDir = TemporaryFolder()
 
     @Before
     fun setUp() {
@@ -58,7 +64,7 @@ class SamRunConfigurationTest {
         assumeTrue(SamExecutableDetector().detect() == null)
 
         runInEdtAndWait {
-            val runConfiguration = createRunConfiguration(project = projectRule.project)
+            val runConfiguration = createHandlerBasedRunConfiguration(project = projectRule.project)
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
@@ -69,8 +75,7 @@ class SamRunConfigurationTest {
     @Test
     fun handlerIsNotSet() {
         runInEdtAndWait {
-            val runConfiguration =
-                createRunConfiguration(project = projectRule.project, handler = null)
+            val runConfiguration = createHandlerBasedRunConfiguration(project = projectRule.project, handler = null)
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
@@ -81,7 +86,7 @@ class SamRunConfigurationTest {
     @Test
     fun runtimeIsNotSet() {
         runInEdtAndWait {
-            val runConfiguration = createRunConfiguration(project = projectRule.project, runtime = null)
+            val runConfiguration = createHandlerBasedRunConfiguration(project = projectRule.project, runtime = null)
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
@@ -92,7 +97,7 @@ class SamRunConfigurationTest {
     @Test
     fun handlerDoesNotExist() {
         runInEdtAndWait {
-            val runConfiguration = createRunConfiguration(project = projectRule.project, handler = "Fake")
+            val runConfiguration = createHandlerBasedRunConfiguration(project = projectRule.project, handler = "Fake")
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
@@ -101,9 +106,85 @@ class SamRunConfigurationTest {
     }
 
     @Test
+    fun templateFileNotSet() {
+        runInEdtAndWait {
+            val runConfiguration = createTemplateRunConfiguration(project = projectRule.project, templateFile = null)
+            assertThat(runConfiguration).isNotNull
+            assertThatThrownBy { getState(runConfiguration) }
+                .isInstanceOf(ExecutionException::class.java)
+                .hasMessage(message("lambda.run_configuration.sam.no_template_specified"))
+        }
+    }
+
+    @Test
+    fun logicalFunctionNotSet() {
+        runInEdtAndWait {
+            val runConfiguration = createTemplateRunConfiguration(project = projectRule.project, templateFile = "test", logicalFunctionName = null)
+            assertThat(runConfiguration).isNotNull
+            assertThatThrownBy { getState(runConfiguration) }
+                .isInstanceOf(ExecutionException::class.java)
+                .hasMessage(message("lambda.run_configuration.sam.no_function_specified"))
+        }
+    }
+
+    @Test
+    fun functionDoesNotExist() {
+        runInEdtAndWait {
+            val template = tempDir.newFile("template.yaml").also {
+                it.writeText(
+                    """
+                Resources:
+                  SomeFunction:
+                    Type: AWS::Serverless::Function
+                    Properties:
+                      Handler: com.example.LambdaHandler::handleRequest
+                      CodeUri: /some/dummy/code/location
+                      Runtime: java8
+                      Timeout: 900
+                """.trimIndent()
+                )
+            }.absolutePath
+            val logicalName = "NotSomeFunction"
+
+            val runConfiguration = createTemplateRunConfiguration(project = projectRule.project, templateFile = template, logicalFunctionName = logicalName)
+            assertThat(runConfiguration).isNotNull
+            assertThatThrownBy { getState(runConfiguration) }
+                .isInstanceOf(ExecutionException::class.java)
+                .hasMessage(message("lambda.run_configuration.sam.no_such_function", logicalName, template))
+        }
+    }
+
+    @Test
+    fun unsupportedRuntime() {
+        runInEdtAndWait {
+            val template = tempDir.newFile("template.yaml").also {
+                it.writeText(
+                    """
+                Resources:
+                  SomeFunction:
+                    Type: AWS::Serverless::Function
+                    Properties:
+                      Handler: com.example.LambdaHandler::handleRequest
+                      CodeUri: /some/dummy/code/location
+                      Runtime: FAKE
+                      Timeout: 900
+                """.trimIndent()
+                )
+            }.absolutePath
+            val logicalName = "SomeFunction"
+
+            val runConfiguration = createTemplateRunConfiguration(project = projectRule.project, templateFile = template, logicalFunctionName = logicalName)
+            assertThat(runConfiguration).isNotNull
+            assertThatThrownBy { getState(runConfiguration) }
+                .isInstanceOf(ExecutionException::class.java)
+                .hasMessage(message("lambda.run_configuration.no_runtime_specified", logicalName, template))
+        }
+    }
+
+    @Test
     fun invalidRegion() {
         runInEdtAndWait {
-            val runConfiguration = createRunConfiguration(project = projectRule.project, region = null)
+            val runConfiguration = createHandlerBasedRunConfiguration(project = projectRule.project, region = null)
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
@@ -112,43 +193,9 @@ class SamRunConfigurationTest {
     }
 
     @Test
-    fun regionIsAdded() {
-        runInEdtAndWait {
-            val runConfiguration = createRunConfiguration(project = projectRule.project)
-            assertThat(runConfiguration).isNotNull
-            val environmentVariables = getState(runConfiguration).settings.environmentVariables
-            assertThat(environmentVariables)
-                .containsEntry("AWS_REGION", "us-east-1")
-                .containsEntry("AWS_DEFAULT_REGION", "us-east-1")
-        }
-    }
-
-    @Test
-    fun credentialsGetAdded() {
-        val awsCredentials = AwsSessionCredentials.create("Access", "Secret", "Session")
-        val credentialsProvider = MockCredentialsManager.getInstance().addCredentials("SomeId", awsCredentials)
-
-        runInEdtAndWait {
-            val runConfiguration = createRunConfiguration(
-                project = projectRule.project,
-                credentialsProviderId = credentialsProvider.id
-            )
-            assertThat(runConfiguration).isNotNull
-            val environmentVariables = getState(runConfiguration).settings.environmentVariables
-            assertThat(environmentVariables)
-                .containsEntry("AWS_ACCESS_KEY", awsCredentials.accessKeyId())
-                .containsEntry("AWS_ACCESS_KEY_ID", awsCredentials.accessKeyId())
-                .containsEntry("AWS_SECRET_KEY", awsCredentials.secretAccessKey())
-                .containsEntry("AWS_SECRET_ACCESS_KEY", awsCredentials.secretAccessKey())
-                .containsEntry("AWS_SESSION_TOKEN", awsCredentials.sessionToken())
-                .containsEntry("AWS_SECURITY_TOKEN", awsCredentials.sessionToken())
-        }
-    }
-
-    @Test
     fun inputTextIsResolved() {
         runInEdtAndWait {
-            val runConfiguration = createRunConfiguration(project = projectRule.project, input = "TestInput")
+            val runConfiguration = createHandlerBasedRunConfiguration(project = projectRule.project, input = "TestInput")
             assertThat(runConfiguration).isNotNull
             assertThat(getState(runConfiguration).settings.input).isEqualTo("TestInput")
         }
@@ -160,13 +207,93 @@ class SamRunConfigurationTest {
         tempFile.writeText("TestInputFile")
 
         runInEdtAndWait {
-            val runConfiguration = createRunConfiguration(
+            val runConfiguration = createHandlerBasedRunConfiguration(
                 project = projectRule.project,
                 input = tempFile.absolutePath,
                 inputIsFile = true
             )
             assertThat(runConfiguration).isNotNull
             assertThat(getState(runConfiguration).settings.input).isEqualTo("TestInputFile")
+        }
+    }
+
+    @Test
+    fun readExternalHandlerBasedDoesNotThrowException() {
+        // This tests for backwards compatibility, data should not be changed except in backwards compatible ways
+        val element = """
+            <configuration name="HelloWorldFunction" type="aws.lambda" factoryName="Local" temporary="true" nameIsGenerated="true">
+              <option name="credentialProviderId" value="profile:default" />
+              <option name="environmentVariables">
+                <map>
+                  <entry key="Foo" value="Bar" />
+                </map>
+              </option>
+              <option name="handler" value="helloworld.App::handleRequest" />
+              <option name="input" value="&quot;&quot;" />
+              <option name="inputIsFile" value="false" />
+              <option name="logicalFunctionName" />
+              <option name="regionId" value="us-west-2" />
+              <option name="runtime" value="python3.6" />
+              <option name="templateFile" />
+              <option name="useTemplate" value="false" />
+              <method v="2" />
+            </configuration>
+        """.toElement()
+
+        runInEdtAndWait {
+            val runConfiguration = createHandlerBasedRunConfiguration(project = projectRule.project, handler = null)
+
+            runConfiguration.readExternal(element)
+
+            val settings = runConfiguration.settings()
+            assertThat(settings.useTemplate).isFalse()
+            assertThat(settings.handler).isEqualTo("helloworld.App::handleRequest")
+            assertThat(settings.runtime).isEqualTo(Runtime.PYTHON3_6.toString())
+            assertThat(settings.environmentVariables).containsAllEntriesOf(mapOf("Foo" to "Bar"))
+            assertThat(settings.regionId).isEqualTo("us-west-2")
+            assertThat(settings.credentialProviderId).isEqualTo("profile:default")
+            assertThat(settings.templateFile).isNull()
+            assertThat(settings.logicalFunctionName).isNull()
+        }
+    }
+
+    @Test
+    fun readExternalTemplateBasedDoesNotThrowException() {
+        // This tests for backwards compatibility, data should not be changed except in backwards compatible ways
+        val element = """
+                <configuration name="HelloWorldFunction" type="aws.lambda" factoryName="Local" temporary="true" nameIsGenerated="true">
+                  <option name="credentialProviderId" value="profile:default" />
+                  <option name="environmentVariables">
+                    <map>
+                      <entry key="Foo" value="Bar" />
+                    </map>
+                  </option>
+                  <option name="handler" />
+                  <option name="input" value="&quot;&quot;" />
+                  <option name="inputIsFile" value="false" />
+                  <option name="logicalFunctionName" value="HelloWorldFunction" />
+                  <option name="regionId" value="us-west-2" />
+                  <option name="runtime" />
+                  <option name="templateFile" value="template.yaml" />
+                  <option name="useTemplate" value="true" />
+                  <method v="2" />
+                </configuration>
+        """.toElement()
+
+        runInEdtAndWait {
+            val runConfiguration = createHandlerBasedRunConfiguration(project = projectRule.project, handler = null)
+
+            runConfiguration.readExternal(element)
+
+            val settings = runConfiguration.settings()
+            assertThat(settings.useTemplate).isTrue()
+            assertThat(settings.handler).isNull()
+            assertThat(settings.runtime).isNull()
+            assertThat(settings.environmentVariables).containsAllEntriesOf(mapOf("Foo" to "Bar"))
+            assertThat(settings.regionId).isEqualTo("us-west-2")
+            assertThat(settings.credentialProviderId).isEqualTo("profile:default")
+            assertThat(settings.templateFile).isEqualTo("template.yaml")
+            assertThat(settings.logicalFunctionName).isEqualTo("HelloWorldFunction")
         }
     }
 

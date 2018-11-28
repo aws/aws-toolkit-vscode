@@ -16,6 +16,7 @@ import software.amazon.awssdk.services.lambda.model.CreateFunctionRequest
 import software.amazon.awssdk.services.lambda.model.CreateFunctionResponse
 import software.amazon.awssdk.services.lambda.model.EnvironmentResponse
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.amazon.awssdk.services.lambda.model.TracingConfigResponse
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionCodeRequest
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionCodeResponse
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionConfigurationRequest
@@ -35,7 +36,7 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
-class LambdaCreatorTest {
+abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUploadDetails) {
     @Rule
     @JvmField
     val projectRule = JavaCodeInsightTestFixtureRule()
@@ -43,17 +44,6 @@ class LambdaCreatorTest {
     @Rule
     @JvmField
     val mockClientManager = MockClientManagerRule { projectRule.project }
-
-    private val functionDetails = FunctionUploadDetails(
-        name = "TestFunction",
-        handler = "com.example.UsefulUtils::upperCase",
-        iamRole = IamRole("TestRoleArn"),
-        runtime = Runtime.JAVA8,
-        description = "TestDescription",
-        envVars = mapOf("TestKey" to "TestValue"),
-        timeout = 60,
-        memorySize = 512
-    )
 
     @Test
     fun testCreation() {
@@ -80,6 +70,9 @@ class LambdaCreatorTest {
                 .timeout(functionDetails.timeout)
                 .memorySize(functionDetails.memorySize)
                 .environment(EnvironmentResponse.builder().variables(functionDetails.envVars).build())
+                .tracingConfig {
+                    it.mode(functionDetails.tracingMode)
+                }
                 .role(functionDetails.iamRole.arn)
                 .build()
         }
@@ -121,6 +114,7 @@ class LambdaCreatorTest {
         assertThat(createRequest.runtime()).isEqualTo(functionDetails.runtime)
         assertThat(createRequest.timeout()).isEqualTo(functionDetails.timeout)
         assertThat(createRequest.memorySize()).isEqualTo(functionDetails.memorySize)
+        assertThat(createRequest.tracingConfig().mode()).isEqualTo(functionDetails.tracingMode)
         assertThat(createRequest.code().s3Bucket()).isEqualTo(s3Bucket)
         assertThat(createRequest.code().s3Key()).isEqualTo("${functionDetails.name}.zip")
         assertThat(createRequest.code().s3ObjectVersion()).isEqualTo("VersionFoo")
@@ -155,6 +149,7 @@ class LambdaCreatorTest {
                 .timeout(functionDetails.timeout)
                 .memorySize(functionDetails.memorySize)
                 .environment(EnvironmentResponse.builder().variables(functionDetails.envVars).build())
+                .tracingConfig(TracingConfigResponse.builder().mode(functionDetails.tracingMode).build())
                 .role(functionDetails.iamRole.arn)
                 .build()
         }
@@ -188,14 +183,7 @@ class LambdaCreatorTest {
         assertThat(uploadRequest.key()).isEqualTo("${functionDetails.name}.zip")
 
         val configurationRequest = updateConfigCaptor.firstValue
-        assertThat(configurationRequest.functionName()).isEqualTo(functionDetails.name)
-        assertThat(configurationRequest.description()).isEqualTo(functionDetails.description)
-        assertThat(configurationRequest.handler()).isEqualTo(functionDetails.handler)
-        assertThat(configurationRequest.environment().variables()).isEqualTo(functionDetails.envVars)
-        assertThat(configurationRequest.role()).isEqualTo(functionDetails.iamRole.arn)
-        assertThat(configurationRequest.runtime()).isEqualTo(functionDetails.runtime)
-        assertThat(configurationRequest.timeout()).isEqualTo(functionDetails.timeout)
-        assertThat(configurationRequest.memorySize()).isEqualTo(functionDetails.memorySize)
+        assertConfigurationRequestMatchesFunctionDetails(configurationRequest)
 
         val codeRequest = updateCodeCaptor.firstValue
         assertThat(codeRequest.s3Bucket()).isEqualTo(s3Bucket)
@@ -217,6 +205,7 @@ class LambdaCreatorTest {
                 .timeout(functionDetails.timeout)
                 .memorySize(functionDetails.memorySize)
                 .environment(EnvironmentResponse.builder().variables(functionDetails.envVars).build())
+                .tracingConfig(TracingConfigResponse.builder().mode(functionDetails.tracingMode).build())
                 .role(functionDetails.iamRole.arn)
                 .build()
         }
@@ -225,6 +214,10 @@ class LambdaCreatorTest {
         lambdaCreator.update(functionDetails).toCompletableFuture().get(5, TimeUnit.SECONDS)
 
         val configurationRequest = updateConfigCaptor.firstValue
+        assertConfigurationRequestMatchesFunctionDetails(configurationRequest)
+    }
+
+    private fun assertConfigurationRequestMatchesFunctionDetails(configurationRequest: UpdateFunctionConfigurationRequest) {
         assertThat(configurationRequest.functionName()).isEqualTo(functionDetails.name)
         assertThat(configurationRequest.description()).isEqualTo(functionDetails.description)
         assertThat(configurationRequest.handler()).isEqualTo(functionDetails.handler)
@@ -233,5 +226,34 @@ class LambdaCreatorTest {
         assertThat(configurationRequest.runtime()).isEqualTo(functionDetails.runtime)
         assertThat(configurationRequest.timeout()).isEqualTo(functionDetails.timeout)
         assertThat(configurationRequest.memorySize()).isEqualTo(functionDetails.memorySize)
+        assertThat(configurationRequest.tracingConfig().mode()).isEqualTo(functionDetails.tracingMode)
     }
 }
+
+class LambdaCreatorTestWithoutXray : LambdaCreatorTestBase(
+    FunctionUploadDetails(
+        name = "TestFunction",
+        handler = "com.example.UsefulUtils::upperCase",
+        iamRole = IamRole("TestRoleArn"),
+        runtime = Runtime.JAVA8,
+        description = "TestDescription",
+        envVars = mapOf("TestKey" to "TestValue"),
+        timeout = 60,
+        memorySize = 512,
+        xrayEnabled = false
+    )
+)
+
+class LambdaCreatorTestWithXray : LambdaCreatorTestBase(
+    FunctionUploadDetails(
+        name = "TestFunction",
+        handler = "com.example.UsefulUtils::upperCase",
+        iamRole = IamRole("TestRoleArn"),
+        runtime = Runtime.JAVA8,
+        description = "TestDescription",
+        envVars = mapOf("TestKey" to "TestValue"),
+        timeout = 60,
+        memorySize = 512,
+        xrayEnabled = true
+    )
+)

@@ -69,6 +69,7 @@ public class DeployServerlessApplicationPanel {
     public Map<String, String> getTemplateParameters() {
         Map<String, String> parameters = new HashMap<>();
 
+        environmentVariablesTable.stopEditing();
         environmentVariablesTable.getEnvironmentVariables()
                 .forEach(envVar -> parameters.put(envVar.getName(), envVar.getValue()));
 

@@ -82,7 +82,7 @@ class JavaSamRunConfigurationIntegrationTest {
 
     @Test
     fun samIsExecuted() {
-        val runConfiguration = createRunConfiguration(project = projectRule.project, input = "\"Hello World\"")
+        val runConfiguration = createHandlerBasedRunConfiguration(project = projectRule.project, input = "\"Hello World\"")
         assertThat(runConfiguration).isNotNull
 
         val executeLambda = executeLambda(runConfiguration)
@@ -105,7 +105,7 @@ class JavaSamRunConfigurationIntegrationTest {
         """.trimIndent()
         )
 
-        val runConfiguration = createRunConfiguration(
+        val runConfiguration = createTemplateRunConfiguration(
             project = projectRule.project,
             templateFile = templateFile.containingFile.virtualFile.path,
             logicalFunctionName = "SomeFunction",
@@ -134,7 +134,7 @@ class JavaSamRunConfigurationIntegrationTest {
             )
         }
 
-        val runConfiguration = createRunConfiguration(project = projectRule.project, input = "\"Hello World\"")
+        val runConfiguration = createHandlerBasedRunConfiguration(project = projectRule.project, input = "\"Hello World\"")
         assertThat(runConfiguration).isNotNull
 
         val debuggerIsHit = checkBreakPointHit(projectRule.project)

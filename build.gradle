@@ -65,6 +65,7 @@ subprojects {
     dependencies {
         compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
         compile "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
+        compile "org.jetbrains.kotlin:kotlin-script-runtime:$kotlinVersion"
         // TODO: Replace assertk with assertj
         testCompile("com.willowtreeapps.assertk:assertk:0.9")
         testCompile "com.nhaarman.mockitokotlin2:mockito-kotlin:2.0.0-RC1"
@@ -182,6 +183,7 @@ intellij {
 
 generateChangeLog {
     generateJetbrains = false
+    generateGithub = false //Switch back on when change log comes back
 }
 
 task ktlint(type: JavaExec, group: "verification") {

@@ -17,5 +17,5 @@ class AwsExplorerTreeStructure(project: Project) : AbstractTreeStructureBase(pro
 
     override fun hasSomethingToCommit() = false
 
-    override fun isToBuildChildrenInBackground(element: Any?) = true
+    override fun isToBuildChildrenInBackground(element: Any) = true
 }

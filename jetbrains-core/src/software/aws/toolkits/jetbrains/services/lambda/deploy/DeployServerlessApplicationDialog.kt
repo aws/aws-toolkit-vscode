@@ -17,6 +17,7 @@ import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.cloudformation.listStackSummariesFilter
+import software.aws.toolkits.jetbrains.services.cloudformation.mergeRemoteParameters
 import software.aws.toolkits.jetbrains.services.s3.CreateS3BucketDialog
 import software.aws.toolkits.jetbrains.settings.DeploySettings
 import software.aws.toolkits.jetbrains.settings.relativeSamPath
@@ -37,6 +38,7 @@ class DeployServerlessApplicationDialog(
     private val validator = DeploySamApplicationValidator()
     private val s3Client: S3Client = project.awsClient()
     private val cloudFormationClient: CloudFormationClient = project.awsClient()
+    private val templateParameters = CloudFormationTemplate.parse(project, templateFile).parameters().toList()
 
     init {
         super.init()
@@ -47,17 +49,22 @@ class DeployServerlessApplicationDialog(
 
         view.createStack.addChangeListener {
             updateStackEnabledStates()
+            updateTemplateParameters()
         }
 
         view.updateStack.addChangeListener {
             updateStackEnabledStates()
+            updateTemplateParameters()
         }
 
         // If the module has been deployed once, select the updateStack radio instead
         if (settings?.samStackName(samPath) != null) {
             view.updateStack.isSelected = true
-            view.newStackName.isEnabled = false
-            view.stacks.isEnabled = true
+            updateStackEnabledStates()
+        }
+
+        view.stacks.addActionListener {
+            updateTemplateParameters()
         }
 
         view.stacks.populateValues(default = settings?.samStackName(samPath), updateStatus = false) {
@@ -67,7 +74,7 @@ class DeployServerlessApplicationDialog(
                     .toList()
         }
 
-        view.withTemplateParameters(CloudFormationTemplate.parse(project, templateFile).parameters().toList())
+        updateTemplateParameters()
 
         view.s3Bucket.populateValues(default = settings?.samBucketName(samPath)) {
             val activeRegionId = ProjectAccountSettingsManager.getInstance(project).activeRegion.id
@@ -119,6 +126,20 @@ class DeployServerlessApplicationDialog(
     private fun updateStackEnabledStates() {
         view.newStackName.isEnabled = view.createStack.isSelected
         view.stacks.isEnabled = view.updateStack.isSelected
+    }
+
+    private fun updateTemplateParameters() {
+        if (view.createStack.isSelected) {
+            view.withTemplateParameters(templateParameters)
+        } else if (view.updateStack.isSelected) {
+            val stackName = view.stacks.selected()
+            if (stackName == null) {
+                view.withTemplateParameters(emptyList())
+            } else {
+                val stack = cloudFormationClient.describeStacks { it.stackName(stackName) }.stacks()[0]
+                view.withTemplateParameters(templateParameters.mergeRemoteParameters(stack.parameters()))
+            }
+        }
     }
 }
 
