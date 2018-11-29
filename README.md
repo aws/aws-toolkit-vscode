@@ -49,6 +49,7 @@ code --install-extension aws-toolkit-vscode-<VERSION>.vsix
 3. Run the command `aws configure`, and follow the instructions in the command prompt.
 
 ##### Method Two: Create a profile using the AWS Tools for PowerShell
+
 1. If you haven't already, sign up for AWS. You can create a free account [here](https://aws.amazon.com/free/).
 2. Install the AWS Tools for PowerShell by following the instructions [here](https://aws.amazon.com/powershell/).
 3. Run the command `Set-AWSCredential -AccessKey [access-key-value] -SecretKey [secret-key-value] -StoreAs [profile-name] -ProfileLocation $env:USERPROFILE\.aws\credentials`.
