@@ -21,7 +21,7 @@ The toolkit has not been released to the marketplace, so in order to try it you 
 1. Clone the repository
 
 ```shell
-git clone git@github.com:aws/aws-toolkit-vscode.git
+git clone https://github.com/aws/aws-toolkit-vscode.git
 cd aws-toolkit-vscode
 ```
 
