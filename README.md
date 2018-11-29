@@ -3,7 +3,7 @@
 
 AWS Toolkit for JetBrains - a plugin for interacting with AWS from JetBrains IDEs. The plugin includes features that make it easier to write applications on [Amazon Web Services](https://aws.amazon.com/) using a JetBrains IDE.
 
-The toolkit is in preview and only available if built from [source](#building-from-source). This is pre-release software and we recommend against using it in a production environment.
+The toolkit is generally available for PyCharm and in developer preview for IntelliJ IDEA. It can be installed from the IDE plugin manager or manually from the [JetBrains plugin website](https://plugins.jetbrains.com/plugin/11349-aws-toolkit). It can also be built from [source](#building-from-source).
 
 This is an open source project because we want you to be involved. We love issues, feature requests, code reviews, pull requests or any positive contribution.
 
