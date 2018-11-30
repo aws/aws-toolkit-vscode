@@ -18,13 +18,15 @@ import { LambdaTemplates } from '../templates/lambdaTemplates'
 import { getSelectedLambdaNode } from '../utils'
 
 export async function getLambdaPolicy(awsContext: AwsContext, element?: FunctionNode) {
-    let functionName: string = 'Unknown'
+    let functionName: string = localize('AWS.lambda.policy.unknown.function', 'Unknown')
     let view: vscode.WebviewPanel | undefined
     const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
 
     try {
         const fn: FunctionNode = await getSelectedLambdaNode(awsContext, element)
-        functionName = fn.functionConfiguration.FunctionName || functionName
+        if (!!fn.functionConfiguration.FunctionName) {
+            functionName = fn.functionConfiguration.FunctionName
+        }
 
         view = vscode.window.createWebviewPanel(
             'html',
@@ -36,7 +38,7 @@ export async function getLambdaPolicy(awsContext: AwsContext, element?: Function
             -1
         )
         view.webview.html = baseTemplateFn({
-            content: `<h1>${localize('AWS.lambda.policy.loading', 'Loading ...')}</h1>`
+            content: `<h1>${localize('AWS.lambda.policy.loading', 'Loading...')}</h1>`
         })
 
         const funcResponse = await fn.lambda.getPolicy({

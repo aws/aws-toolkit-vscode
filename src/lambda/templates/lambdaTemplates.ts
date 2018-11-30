@@ -43,7 +43,7 @@ export class LambdaTemplates {
     `
     public static readonly GET_POLICY_TEMPLATE = `
     <h1>
-        Policy for <%= FunctionName %> ...
+        Policy for <%= FunctionName %>...
     </h1>
     <p>Policy:
         <pre><%- JSON.stringify(JSON.parse(Policy), null, 4) %></pre>
@@ -51,7 +51,7 @@ export class LambdaTemplates {
     `
     public static readonly GET_POLICY_TEMPLATE_ERROR = `
     <h1>
-        Policy for <%= FunctionName %> ...
+        Policy for <%= FunctionName %>...
     </h1>
     <p>Error getting Lambda Function Policy:
         <ul>
