@@ -14,37 +14,29 @@ This is an open source project because we want you to be involved. We love issue
 
 ## Features
 
-Features are broken broadly into two categories **All IDEs** and **IDE/Language Specific**.
+The toolkit is compatible [2018.3](https://blog.jetbrains.com/idea/tag/2018-3/) versions of [PyCharm](https://www.jetbrains.com/pycharm/) (Community & Professional) and [IntelliJ IDEA](https://www.jetbrains.com/idea) (Community & Ultimate).
 
-### All IDEs
-These are features that will work in any JetBrains IDE you are using. They do not depend on a specific flavour of the IDE (e.g. IntelliJ, RubyMine).
+### General
 
-Currently supported features are:
-
-#### General
+Features that don't relate to a specific AWS service.
 
 * **Credential management** - the ability to select how you want to authenticate with AWS, management of several credential types and the ability to easily switch between profiles.
 * **Region management** - the ability to switch between viewing resources in different AWS regions.
 * **Resource Explorer** - tree-view of AWS resources available (e.g. [AWS Lambda Functions](https://docs.aws.amazon.com/lambda/latest/dg/lambda-introduction-function.html)) in your selected account/region. This does not represent all resources available in your account, only a sub-set of those resource types supported by the plugin.
 
-#### Services
+### Services
 
-**![AWS Lambda][lambda-icon] AWS Lambda**
+#### ![AWS Lambda][lambda-icon] AWS Lambda
 
-* **Invoke Function (Remote)** - the ability to invoke an AWS Lambda Function that is deployed in your account. You provide the input (or select from a set of event templates), the plugin will invoke the function and display the response.
+Many of these features require the [AWS SAM CLI](https://github.com/awslabs/aws-sam-cli) to be installed, see the Serverless Application Model ([SAM](https://aws.amazon.com/serverless/sam/)) website for more information on installation of the SAM CLI.
 
-### IDE / Language Specific Features
-These features require some knowledge of the programming language/paradigm your project is authored in and thus are only available in certain contexts (e.g. IntelliJ Java Projects). 
+* **New Project Wizard** - Get started quickly by using one of the quickstart serverless application templates.
+* **Run/Debug Local Lambda Functions** - Locally test and step-through debug functions in a Lambda-like execution environment provided by the [AWS SAM CLI](https://github.com/awslabs/aws-sam-cli)
+* **Invoke Remote Lambda Functions** - Invoke remote functions using a sharable run-configuration
+* **Package & Deploy Lambda Functions** - Ability to package a Lambda function zip and create a remote lambda
+* **Deploy SAM-based Applications** - (**Python only**) Package, deploy & track SAM-based applications
 
-The following table shows the features that are available in various JetBrains IDEs. Minimum supported version of IntelliJ platform is [2018.3](https://blog.jetbrains.com/idea/tag/2018-3/).
-
-| AWS Service | Feature | IntelliJ | PyCharm |
-| --- | --- | --- | --- |
-| ![AWS Lambda][lambda-icon] AWS Lambda | Package & Deploy | :white_check_mark: | :white_check_mark: <br> (no native dependencies) |
-| ![AWS Lambda][lambda-icon] AWS Lambda | Invoke / Debug Function (Local) | :white_check_mark: |  :white_check_mark: <br> (no native dependencies) |
-
-
-*NB: If a feature is available in a non-IntelliJ plugin (e.g. PyCharm) it is also available through IntelliJ if the related IntelliJ plugin is available (e.g. [Python Plugin](https://www.jetbrains.com/help/idea/plugin-overview.html))*
+*NB: Python-only features are available in both PyCharm and IntelliJ with the [Python Plugin](https://www.jetbrains.com/help/idea/plugin-overview.html) installed.*
 
 ## Roadmap
 We use a combination of GitHub features to manage our milestones and roadmap.
