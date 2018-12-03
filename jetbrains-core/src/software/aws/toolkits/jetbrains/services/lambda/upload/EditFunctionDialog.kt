@@ -77,7 +77,7 @@ class EditFunctionDialog(
     private val role: IamRole? = null
 ) : DialogWrapper(project) {
 
-    constructor(project: Project, lambdaFunction: LambdaFunction, mode: EditFunctionMode = EditFunctionMode.UPDATE_CONFIGURATION) :
+    constructor(project: Project, lambdaFunction: LambdaFunction, mode: EditFunctionMode = UPDATE_CONFIGURATION) :
             this(
                 project = project,
                 mode = mode,
@@ -99,8 +99,8 @@ class EditFunctionDialog(
 
     private val action: OkAction = when (mode) {
         NEW -> CreateNewLambdaOkAction()
-        EditFunctionMode.UPDATE_CONFIGURATION -> UpdateFunctionOkAction({ validator.validateConfigurationSettings(view) }, ::updateConfiguration)
-        EditFunctionMode.UPDATE_CODE -> UpdateFunctionOkAction({ validator.validateCodeSettings(project, view) }, ::upsertLambdaCode)
+        UPDATE_CONFIGURATION -> UpdateFunctionOkAction({ validator.validateConfigurationSettings(view) }, ::updateConfiguration)
+        UPDATE_CODE -> UpdateFunctionOkAction({ validator.validateCodeSettings(project, view) }, ::upsertLambdaCode)
     }
 
     init {
@@ -155,7 +155,7 @@ class EditFunctionDialog(
 
         val regionProvider = AwsRegionProvider.getInstance()
         val settings = ProjectAccountSettingsManager.getInstance(project)
-        view.setXrayControlVisibility(regionProvider.isServiceSupported(settings.activeRegion, "xray"))
+        view.setXrayControlVisibility(mode != UPDATE_CODE && regionProvider.isServiceSupported(settings.activeRegion, "xray"))
 
         view.iamRole.populateValues(default = role) {
             iamClient.listRolesFilter { it.assumeRolePolicyDocument().contains(LAMBDA_PRINCIPAL) }
