@@ -20,6 +20,8 @@
     <li><strong>Deploy SAM-based Applications</strong> - (<strong>Python only</strong>) Package, deploy & track SAM-based applications</li>
 </ul>
 </p>
+
+If you come across bugs with the toolkit or have feature requests, please raise an <a href="https://github.com/aws/aws-toolkit-jetbrains/issues">issue</a>.
     ]]></description>
 
     <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://aws.amazon.com/">Amazon Web Services</vendor>
