@@ -53,15 +53,19 @@ export async function getLambdaPolicy(awsContext: AwsContext, element?: Function
         })
     } catch (err) {
         const error = err as AWSError
-        console.log(error.message)
+
+        const errorMessage = error.message
+        const errorCode = error.code || localize('AWS.error.no.error.code', 'No error code')
+
+        console.log(errorMessage)
 
         const getPolicyTemplateFn = _.template(LambdaTemplates.GET_POLICY_TEMPLATE_ERROR)
         if (!!view) {
             view.webview.html = baseTemplateFn({
                 content: getPolicyTemplateFn({
                     FunctionName: functionName,
-                    ErrorCode: error.code,
-                    ErrorMessage: error.message
+                    ErrorCode: errorCode,
+                    ErrorMessage: errorMessage
                 })
             })
         }

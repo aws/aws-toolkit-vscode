@@ -19,6 +19,7 @@
     "AWS.command.getLambdaConfig": "Get Lambda Function Configuration",
     "AWS.command.getLambdaPolicy": "Get Lambda Function Policy",
     "AWS.error.mfa.userCancelled": "User cancelled entering authentication code",
+    "AWS.error.no.error.code": "No error code",
     "AWS.explorerNode.addRegion": "Add a region to view functions...",
     "AWS.explorerNode.addRegion.tooltip": "Click to add a region to view functions...",
     "AWS.explorerNode.lambda.noFunctions": "[no functions in this region]",
