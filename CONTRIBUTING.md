@@ -18,6 +18,18 @@ reported the issue. Please try to include as much information as you can. Detail
 * The version of the plugin being used, which JetBrains IDE being used (and version)
 * Anything unusual about your environment (e.g. recently installed plugins etc.)
 
+## Building From Source
+
+#### Requirements
+
+* [Java 8](https://docs.aws.amazon.com/corretto/latest/corretto-8-ug/downloads-list.html)
+* [Git](https://git-scm.com/)
+
+#### Instructions
+
+1. Clone the github repository and run `./gradlew buildPlugin` <br/> (This will produce a plugin zip under `build/distributions`)
+2. In your JetBrains IDE (e.g. IntelliJ) navigate to the `Plugins` preferences and select "Install Plugin from Disk...", navigate to the zip file produced in step 1. 
+4. You will be prompted to restart your IDE.
 
 ## Contributing via Pull Requests
 
