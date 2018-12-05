@@ -47,7 +47,7 @@ class DefaultRemoteResourceResolverProvider @JvmOverloads constructor(private va
 
         object HttpRequestUrlFetcher : UrlFetcher {
             override fun fetch(url: String, file: Path) {
-                HttpRequests.request(url).saveToFile(file.toFile(), null)
+                HttpRequests.request(url).userAgent(userAgent()).saveToFile(file.toFile(), null)
             }
         }
     }
