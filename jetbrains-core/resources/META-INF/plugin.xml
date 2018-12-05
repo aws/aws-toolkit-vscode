@@ -39,6 +39,13 @@ If you come across bugs with the toolkit or have feature requests, please raise 
         <xi:fallback/>
     </xi:include-->
 
+    <application-components>
+        <component>
+            <interface-class>software.aws.toolkits.jetbrains.components.telemetry.ClientTelemetryComponent</interface-class>
+            <implementation-class>software.aws.toolkits.jetbrains.components.telemetry.DefaultClientTelemetryComponent</implementation-class>
+        </component>
+    </application-components>
+
     <extensionPoints>
         <extensionPoint qualifiedName="aws.toolkit.credentialProviderFactory"
                         beanClass="software.aws.toolkits.jetbrains.core.credentials.CredentialProviderFactoryEP">
@@ -89,6 +96,9 @@ If you come across bugs with the toolkit or have feature requests, please raise 
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsTelemetryPrompter"/>
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsSdkClient"/>
+        <applicationService serviceInterface="software.aws.toolkits.jetbrains.services.telemetry.ClientTelemetryService"
+                            serviceImplementation="software.aws.toolkits.jetbrains.services.telemetry.DefaultClientTelemetryService"
+                            testServiceImplementation="software.aws.toolkits.jetbrains.services.telemetry.MockClientTelemetryService" />
         <projectService serviceInterface="software.aws.toolkits.core.ToolkitClientManager"
                         serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientManager"
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.MockClientManager"/>

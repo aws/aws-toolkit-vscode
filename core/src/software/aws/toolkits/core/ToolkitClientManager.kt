@@ -42,7 +42,7 @@ abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
     ): T = this.getClient(T::class, credentialsProviderOverride, regionOverride)
 
     @Suppress("UNCHECKED_CAST")
-    fun <T : SdkClient> getClient(
+    open fun <T : SdkClient> getClient(
         clz: KClass<T>,
         credentialsProviderOverride: ToolkitCredentialsProvider? = null,
         regionOverride: AwsRegion? = null

@@ -3,8 +3,10 @@
 
 dependencies {
     compile(project(":resources"))
+    compile(project(":telemetry-client"))
     compile("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
     compile("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion")
+    compile("software.amazon.awssdk:cognitoidentity:$awsSdkVersion")
     compile("software.amazon.awssdk:s3:$awsSdkVersion")
     compile("software.amazon.awssdk:sts:$awsSdkVersion")
 }

@@ -68,7 +68,7 @@ subprojects {
         compile "org.jetbrains.kotlin:kotlin-script-runtime:$kotlinVersion"
         // TODO: Replace assertk with assertj
         testCompile("com.willowtreeapps.assertk:assertk:0.9")
-        testCompile "com.nhaarman.mockitokotlin2:mockito-kotlin:2.0.0-RC1"
+        testCompile "com.nhaarman.mockitokotlin2:mockito-kotlin:2.0.0"
         testCompile "org.assertj:assertj-core:$assertjVersion"
         testCompile "junit:junit:$junitVersion"
         testCompile "org.hamcrest:hamcrest-all:1.3"

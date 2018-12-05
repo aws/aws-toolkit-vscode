@@ -9,6 +9,8 @@ import com.intellij.openapi.extensions.PluginId
 object AwsToolkit {
     private const val PLUGIN_ID = "aws.toolkit"
 
+    const val PLUGIN_NAME = "AWS Toolkit For JetBrains"
+
     val PLUGIN_VERSION: String by lazy {
         PluginManager.getPlugin(PluginId.getId(PLUGIN_ID))?.version ?: "Unknown"
     }
