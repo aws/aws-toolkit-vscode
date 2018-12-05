@@ -18,6 +18,7 @@ import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.profiles.ProfileFileSystemSetting
 import software.amazon.awssdk.utils.JavaSystemSetting
 import software.amazon.awssdk.utils.StringUtils
+import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import java.io.File
 import java.nio.file.FileSystems
@@ -56,6 +57,9 @@ class CreateOrUpdateCredentialProfilesAction @TestOnly constructor(
         localFileSystem.refreshFiles(listOf(virtualFile), false, false) {
             fileEditorManager.openTextEditor(OpenFileDescriptor(project, virtualFile), true)
                 ?: throw RuntimeException(message("credentials.could_not_open", file))
+
+            // TODO : remove message (and localized string) when credentials auto-refreshing is supported
+            notifyInfo("", message("credentials.notification.restart.ide"))
         }
     }
 

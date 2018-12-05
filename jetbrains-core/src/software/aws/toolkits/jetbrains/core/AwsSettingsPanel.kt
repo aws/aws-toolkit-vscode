@@ -31,6 +31,8 @@ import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
+import software.aws.toolkits.jetbrains.utils.createNotificationExpiringAction
+import software.aws.toolkits.jetbrains.utils.notifyWarn
 import software.aws.toolkits.resources.message
 import java.awt.Component
 import java.awt.event.MouseEvent
@@ -220,10 +222,20 @@ private class ChangeCredentialsAction(val credentialsProvider: ToolkitCredential
 
     override fun setSelected(e: AnActionEvent, selected: Boolean) {
         if (selected) {
-            getAccountSetting(e).activeCredentialProvider = credentialsProvider
+            if (!credentialsProvider.isValid(AwsSdkClient.getInstance().sdkHttpClient)) {
+                notifyWarn(
+                    title = message("credentials.invalid.title"),
+                    content = message("credentials.invalid.notification", credentialsProvider.displayName),
+                    notificationActions = listOf(createNotificationExpiringAction(
+                        ActionManager.getInstance().getAction("aws.settings.upsertCredentials")
+                    ))
+                )
+            } else {
+                getAccountSetting(e).activeCredentialProvider = credentialsProvider
+            }
         }
     }
 }
 
 private fun getAccountSetting(e: AnActionEvent): ProjectAccountSettingsManager =
-        ProjectAccountSettingsManager.getInstance(e.getRequiredData(PlatformDataKeys.PROJECT))
+    ProjectAccountSettingsManager.getInstance(e.getRequiredData(PlatformDataKeys.PROJECT))

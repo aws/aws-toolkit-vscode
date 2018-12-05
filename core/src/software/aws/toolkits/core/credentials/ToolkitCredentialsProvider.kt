@@ -4,6 +4,8 @@
 package software.aws.toolkits.core.credentials
 
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.http.SdkHttpClient
+import software.amazon.awssdk.services.sts.StsClient
 
 abstract class ToolkitCredentialsProvider : AwsCredentialsProvider {
     /**
@@ -31,6 +33,20 @@ abstract class ToolkitCredentialsProvider : AwsCredentialsProvider {
     override fun hashCode(): Int = id.hashCode()
 
     override fun toString(): String = "${this::class.simpleName}(id='$id')"
+
+    open fun isValid(sdkHttpClient: SdkHttpClient): Boolean {
+        val client = StsClient.builder()
+            .httpClient(sdkHttpClient)
+            .credentialsProvider(this)
+            .build()
+
+        try {
+            client.getCallerIdentity()
+            return true
+        } catch (e: Exception) {
+            return false
+        }
+    }
 }
 
 /**

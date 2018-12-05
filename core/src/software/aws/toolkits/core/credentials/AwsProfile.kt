@@ -205,5 +205,6 @@ class ProfileToolkitCredentialsProviderFactory(
         private val LOG = LoggerFactory.getLogger(ProfileToolkitCredentialsProviderFactory::class.java)
 
         const val TYPE = "profile"
+        const val DEFAULT_PROFILE_DISPLAY_NAME = "$TYPE:default"
     }
 }
