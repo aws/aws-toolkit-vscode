@@ -214,4 +214,53 @@ Resources:
             assertThat(resource.indexedProperties).isEmpty()
         }
     }
+
+    @Test
+    fun listResources_fromFile() {
+        val fixture = projectRule.fixture
+
+        val file1 = fixture.openFile("template1.yaml", """
+Resources:
+  ServerlessFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: baz
+      Handler: foo
+      Runtime: bar
+      Environment:
+        Variables:
+          TABLE_NAME: my-table
+""")
+        val file2 = fixture.openFile("template2.yaml", """
+Resources:
+  DynamodbTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName: my-table
+      PrimaryKey:
+        Name: id
+        Type: String
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      Tags:
+        Department: Engineering
+        AppType: Serverless
+      SSESpecification:
+        SSEEnabled: true
+""")
+
+        runInEdtAndWait {
+            val resources = CloudFormationTemplateIndex.listResources(projectRule.project).toList()
+            val resources1 = CloudFormationTemplateIndex.listResources(projectRule.project, virtualFile = file1).toList()
+            val resources2 = CloudFormationTemplateIndex.listResources(projectRule.project, virtualFile = file2).toList()
+
+            assertThat(resources).hasSize(2)
+            assertThat(resources1).hasSize(1)
+            assertThat(resources2).hasSize(1)
+
+            assertThat(resources1[0].type).isEqualTo("AWS::Serverless::Function")
+            assertThat(resources2[0].type).isEqualTo("AWS::Serverless::SimpleTable")
+        }
+    }
 }

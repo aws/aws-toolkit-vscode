@@ -43,6 +43,7 @@ enum class RuntimeGroup {
     fun determineRuntime(module: Module): Runtime? = info.asSequence().mapNotNull { it.determineRuntime(module) }.firstOrNull()
     fun getModuleType(): ModuleType<*>? = info.asSequence().mapNotNull { it.getModuleType() }.firstOrNull()
     fun getIdeSdkType(): SdkType? = info.asSequence().mapNotNull { it.getIdeSdkType() }.firstOrNull()
+    fun supportsSamBuild(): Boolean = info.asSequence().all { it.supportsSamBuild() }
 
     internal companion object {
         /**
@@ -84,6 +85,11 @@ interface RuntimeGroupInformation {
      */
     fun getIdeSdkType(): SdkType?
 
+    /**
+     * Whether this runtime group supports SAM build so that SAM template with runtimes of this type could be deployed to AWS.
+     */
+    fun supportsSamBuild(): Boolean
+
     companion object : RuntimeGroupExtensionPointObject<RuntimeGroupInformation>(ExtensionPointName("aws.toolkit.lambda.runtimeGroup")) {
         fun getInstances(runtimeGroup: RuntimeGroup): List<RuntimeGroupInformation> = collector.forKey(runtimeGroup)
     }
@@ -99,6 +105,8 @@ abstract class SdkBasedRuntimeGroupInformation : RuntimeGroupInformation {
     override fun getModuleType(): ModuleType<*>? = null
 
     override fun getIdeSdkType(): SdkType? = null
+
+    override fun supportsSamBuild(): Boolean = false
 }
 
 val Runtime.validOrNull: Runtime? get() = this.takeUnless { it == Runtime.UNKNOWN_TO_SDK_VERSION }

@@ -27,6 +27,8 @@ class PythonRuntimeGroup : SdkBasedRuntimeGroupInformation() {
 
     override fun getIdeSdkType(): SdkType = PythonSdkType.getInstance()
 
+    override fun supportsSamBuild(): Boolean = true
+
     companion object {
         fun determineRuntimeForSdk(sdk: Sdk) = when {
             sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isPy3K -> Runtime.PYTHON3_6
