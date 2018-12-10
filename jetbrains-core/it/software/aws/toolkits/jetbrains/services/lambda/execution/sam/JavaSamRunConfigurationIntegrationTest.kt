@@ -91,7 +91,7 @@ class JavaSamRunConfigurationIntegrationTest {
     }
 
     @Test
-    fun samIsExecutedWhenRunWithATemplate() {
+    fun samIsExecutedWhenRunWithATemplateServerless() {
         val templateFile = projectRule.fixture.addFileToProject(
             "template.yaml", """
             Resources:
@@ -100,6 +100,35 @@ class JavaSamRunConfigurationIntegrationTest {
                 Properties:
                   Handler: com.example.LambdaHandler::handleRequest
                   CodeUri: /some/dummy/code/location
+                  Runtime: java8
+                  Timeout: 900
+        """.trimIndent()
+        )
+
+        val runConfiguration = createTemplateRunConfiguration(
+            project = projectRule.project,
+            templateFile = templateFile.containingFile.virtualFile.path,
+            logicalFunctionName = "SomeFunction",
+            input = "\"Hello World\""
+        )
+
+        assertThat(runConfiguration).isNotNull
+
+        val executeLambda = executeLambda(runConfiguration)
+        assertThat(executeLambda.exitCode).isEqualTo(0)
+        assertThat(executeLambda.stdout).contains("HELLO WORLD")
+    }
+
+    @Test
+    fun samIsExecutedWhenRunWithATemplateLambda() {
+        val templateFile = projectRule.fixture.addFileToProject(
+            "template.yaml", """
+            Resources:
+              SomeFunction:
+                Type: AWS::Lambda::Function
+                Properties:
+                  Handler: com.example.LambdaHandler::handleRequest
+                  Code: /some/dummy/code/location
                   Runtime: java8
                   Timeout: 900
         """.trimIndent()
