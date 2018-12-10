@@ -13,12 +13,10 @@ import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiIdentifier
-import com.intellij.psi.PsiImportList
-import com.intellij.psi.PsiImportStatement
 import com.intellij.psi.PsiMethod
 import com.intellij.psi.PsiModifierListOwner
 import com.intellij.psi.PsiParameter
-import com.intellij.psi.impl.source.PsiClassReferenceType
+import com.intellij.psi.PsiType
 import com.intellij.psi.search.GlobalSearchScope
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 
@@ -200,16 +198,12 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
     private fun PsiParameter.isInputStreamParameter(): Boolean = isClass(INPUT_STREAM)
     private fun PsiParameter.isOutputStreamParameter(): Boolean = isClass(OUTPUT_STREAM)
 
-    private fun PsiParameter.isClass(classFullName: String): Boolean {
-        val className = (this.type as? PsiClassReferenceType)?.className ?: return false
-        val imports = containingFile.children.filterIsInstance<PsiImportList>()
-            .flatMap { it.children.filterIsInstance<PsiImportStatement>() }
-            .asSequence()
-            .mapNotNull { it.qualifiedName }
-            .map { it.substringAfterLast(".") to it }
-            .toMap()
-        return imports[className] == classFullName
-    }
+    private fun PsiParameter.isClass(classFullName: String): Boolean =
+        PsiType.getTypeByName(
+            classFullName,
+            project,
+            GlobalSearchScope.projectScope(project)
+        ).isAssignableFrom(this.type)
 
     private companion object {
         val LAMBDA_INTERFACES = setOf(
