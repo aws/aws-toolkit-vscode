@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix case where packaging Java code was not releasing file locks #694"
+}

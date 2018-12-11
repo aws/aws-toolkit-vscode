@@ -44,10 +44,12 @@ class JavaLambdaPackager : LambdaPackager {
                     entriesForModule(module, zipContents)
                     val zipFile = createTemporaryZipFile { zip ->
                         zipContents.forEach {
-                            zip.putNextEntry(
-                                it.pathInZip,
-                                it.sourceFile
-                            )
+                            it.sourceFile.use { sourceFile ->
+                                zip.putNextEntry(
+                                    it.pathInZip,
+                                    sourceFile
+                                )
+                            }
                         }
                     }
                     LOG.debug("Created temporary zip: $zipFile")
