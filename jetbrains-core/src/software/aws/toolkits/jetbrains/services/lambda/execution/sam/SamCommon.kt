@@ -8,10 +8,12 @@ import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModifiableRootModel
+import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.util.EnvironmentUtil
 import com.intellij.util.text.SemVer
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.cloudformation.SERVERLESS_FUNCTION_TYPE
@@ -31,6 +33,34 @@ class SamCommon {
         // Exclusive
         val expectedSamMaxVersion = SemVer("0.11.0", 0, 11, 0)
 
+        fun getSamCommandLine(path: String? = SamSettings.getInstance().executablePath): GeneralCommandLine {
+            path ?: throw RuntimeException(message("lambda.run_configuration.sam.not_specified"))
+            // we have some env-hacks that we want to do, so we're building our own environment using the same util as GeneralCommandLine
+            // GeneralCommandLine will apply some more env patches prior to process launch (see startProcess()) so this should be fine
+            val effectiveEnvironment = EnvironmentUtil.getEnvironmentMap().toMutableMap()
+            // apply hacks
+            effectiveEnvironment.apply {
+                // GitHub issue: https://github.com/aws/aws-toolkit-jetbrains/issues/645
+                // strip out any AWS credentials in the parent environment
+                remove("AWS_ACCESS_KEY_ID")
+                remove("AWS_SECRET_ACCESS_KEY")
+                remove("AWS_SESSION_TOKEN")
+                // GitHub issue: https://github.com/aws/aws-toolkit-jetbrains/issues/577
+                // coerce the locale to UTF-8 as specified in PEP 538
+                // this is needed for Python 3.0 up to Python 3.7.0 (inclusive)
+                // we can remove this once our IDE minimum version has a fix for https://youtrack.jetbrains.com/issue/PY-30780
+                // currently only seeing this on OS X, so only scoping to that
+                if (SystemInfo.isMac) {
+                    // on other platforms this could be C.UTF-8 or C.UTF8
+                    this["LC_CTYPE"] = "UTF-8"
+                    // we're not setting PYTHONIOENCODING because we might break SAM on py2.7
+                }
+            }
+            return GeneralCommandLine(path)
+                .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.NONE)
+                .withEnvironment(effectiveEnvironment)
+        }
+
         fun checkVersion(samVersionLine: String): String? {
             val parsedSemVer = SemVer.parseFromText(samVersionLine)
                     ?: return message("sam.executable.version_parse_error", samVersionLine)
@@ -44,16 +74,15 @@ class SamCommon {
             return null
         }
 
-        fun validate(path: String? = SamSettings.getInstance().executablePath): String? {
-            path ?: return message("lambda.run_configuration.sam.not_specified")
-            val commandLine = GeneralCommandLine(path).withParameters("--info")
-            return try {
+        fun validate(path: String? = SamSettings.getInstance().executablePath): String? =
+            try {
+                val commandLine = getSamCommandLine(path).withParameters("--info")
                 val process = CapturingProcessHandler(commandLine).runProcess()
                 if (process.exitCode != 0) {
                     process.stderr
                 } else {
                     if (process.stdout.isEmpty()) {
-                        return message("lambda.run_configuration.sam.empty_info")
+                        message("lambda.run_configuration.sam.empty_info")
                     }
                     val tree = mapper.readTree(process.stdout)
                     val version = tree.get(SAM_INFO_VERSION_KEY).asText()
@@ -62,7 +91,6 @@ class SamCommon {
             } catch (e: Exception) {
                 e.localizedMessage
             }
-        }
 
         fun getTemplateFromDirectory(projectRoot: VirtualFile): VirtualFile? {
             val yamlFiles = VfsUtil.getChildren(projectRoot).filter { it.name.endsWith("yaml") || it.name.endsWith("yml") }

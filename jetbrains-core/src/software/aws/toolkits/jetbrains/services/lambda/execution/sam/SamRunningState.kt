@@ -15,7 +15,6 @@ import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTem
 import software.aws.toolkits.jetbrains.services.cloudformation.Function
 import software.aws.toolkits.jetbrains.services.cloudformation.SERVERLESS_FUNCTION_TYPE
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
-import software.aws.toolkits.jetbrains.settings.SamSettings
 import java.io.File
 
 class SamRunningState(
@@ -26,7 +25,6 @@ class SamRunningState(
     internal lateinit var runner: SamRunner
 
     override fun startProcess(): ProcessHandler {
-        val samCliExecutable = SamSettings.getInstance().executablePath
         val totalEnvVars = settings.environmentVariables.toMutableMap()
         settings.credentials?.let {
             totalEnvVars += it.toEnvironmentVariables()
@@ -35,7 +33,7 @@ class SamRunningState(
         totalEnvVars["AWS_REGION"] = settings.regionId
         totalEnvVars["AWS_DEFAULT_REGION"] = settings.regionId
 
-        val commandLine = GeneralCommandLine(samCliExecutable)
+        val commandLine = SamCommon.getSamCommandLine()
             .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.CONSOLE)
             .withParameters("local")
             .withParameters("invoke")
