@@ -10,8 +10,19 @@ import com.intellij.openapi.components.Storage
 import java.util.prefs.Preferences
 import java.util.UUID
 
+interface AwsSettings {
+    var isTelemetryEnabled: Boolean
+    var promptedForTelemetry: Boolean
+    val clientId: UUID
+
+    companion object {
+        @JvmStatic
+        fun getInstance(): AwsSettings = ServiceManager.getService(AwsSettings::class.java)
+    }
+}
+
 @State(name = "aws", storages = [Storage("aws.xml")])
-class AwsSettings : PersistentStateComponent<AwsConfiguration> {
+class DefaultAwsSettings : PersistentStateComponent<AwsConfiguration>, AwsSettings {
     private val preferences = Preferences.userRoot().node(this.javaClass.canonicalName)
     private var state = AwsConfiguration()
 
@@ -21,27 +32,24 @@ class AwsSettings : PersistentStateComponent<AwsConfiguration> {
         this.state = state
     }
 
-    var isTelemetryEnabled: Boolean
+    override var isTelemetryEnabled: Boolean
         get() = state.isTelemetryEnabled ?: true
         set(value) {
             state.isTelemetryEnabled = value
         }
 
-    var promptedForTelemetry: Boolean
+    override var promptedForTelemetry: Boolean
         get() = state.promptedForTelemetry ?: false
         set(value) {
             state.promptedForTelemetry = value
         }
 
-    val clientId: UUID
+    override val clientId: UUID
         @Synchronized get() = UUID.fromString(preferences.get(CLIENT_ID_KEY, UUID.randomUUID().toString())).also {
             preferences.put(CLIENT_ID_KEY, it.toString())
         }
 
     companion object {
-        @JvmStatic
-        fun getInstance(): AwsSettings = ServiceManager.getService(AwsSettings::class.java)
-
         const val CLIENT_ID_KEY = "CLIENT_ID"
     }
 }

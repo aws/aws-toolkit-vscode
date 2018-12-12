@@ -3,9 +3,9 @@
 
 package software.aws.toolkits.jetbrains.components.telemetry
 
-import software.aws.toolkits.jetbrains.services.telemetry.ClientTelemetryService
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 
-interface ClientTelemetryComponent
+interface TelemetryComponent
 
 // The only purpose of this class is to force the creation of ClientTelemetryService on IDE startup.
-class DefaultClientTelemetryComponent(val service: ClientTelemetryService) : ClientTelemetryComponent
+class DefaultTelemetryComponent(val service: TelemetryService) : TelemetryComponent
