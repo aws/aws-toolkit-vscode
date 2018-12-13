@@ -18,11 +18,12 @@ import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/refreshableAwsTreeProvider'
 import { deployLambda } from './commands/deployLambda'
 import { getLambdaConfig } from './commands/getLambdaConfig'
-import { getLambdaPolicy } from './commands/getLambdaPolicy'
 import { invokeLambda } from './commands/invokeLambda'
 import { newLambda } from './commands/newLambda'
 import { FunctionNode } from './explorer/functionNode'
 import { RegionNode } from './explorer/regionNode'
+import { DefaultLambdaPolicyProvider, LambdaPolicyView } from './lambdaPolicy'
+import * as utils from './utils'
 
 export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
     public viewProviderId: string = 'lambda'
@@ -53,7 +54,17 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
 
         vscode.commands.registerCommand(
             'aws.getLambdaPolicy',
-            async (node: FunctionNode) => await getLambdaPolicy(this.awsContext, node))
+            async (node: FunctionNode) => {
+                const functionNode: FunctionNode = await utils.getSelectedLambdaNode(this.awsContext, node)
+
+                const policyProvider = new DefaultLambdaPolicyProvider(
+                    functionNode.functionConfiguration.FunctionName!,
+                    functionNode.lambda
+                )
+
+                const view = new LambdaPolicyView(policyProvider)
+                await view.load()
+            })
 
         vscode.commands.registerCommand(
             'aws.refreshLambdaProviderNode',
