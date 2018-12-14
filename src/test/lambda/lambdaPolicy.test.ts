@@ -42,34 +42,32 @@ describe('LambdaPolicyView', async () => {
     it('starts initialized', async () => {
         autoDisposeView = new LambdaPolicyView(new DoNothingLambdaPolicyProvider('fn1'))
 
-        assert.equal(autoDisposeView.getStatus(), LambdaPolicyViewStatus.Initialized)
+        assert.equal(autoDisposeView.status, LambdaPolicyViewStatus.Initialized)
     })
 
     it('enters loading state', async () => {
-        const promise = new Promise<void>(async (resolve, reject) => {
-            autoDisposeView = new LambdaPolicyView(
-                {
-                    functionName: 'function1',
-                    getLambdaPolicy: async () => {
-                        assert.equal(autoDisposeView!.getStatus(), LambdaPolicyViewStatus.Loading)
-                        resolve()
+        let expectedStatus: boolean = false
+        autoDisposeView = new LambdaPolicyView(
+            {
+                functionName: 'function1',
+                getLambdaPolicy: async () => {
+                    assert.equal(autoDisposeView!.status, LambdaPolicyViewStatus.Loading)
+                    expectedStatus = true
 
-                        return {}
-                    }
+                    return {}
                 }
-            )
+            }
+        )
 
-            await autoDisposeView.load()
-        })
-
-        await promise
+        await autoDisposeView.load()
+        assert.equal(expectedStatus, true)
     })
 
     it('enters loaded state', async () => {
         autoDisposeView = new LambdaPolicyView(new DoNothingLambdaPolicyProvider('fn1'))
         await autoDisposeView.load()
 
-        assert.equal(autoDisposeView.getStatus(), LambdaPolicyViewStatus.Loaded)
+        assert.equal(autoDisposeView.status, LambdaPolicyViewStatus.Loaded)
     })
 
     it('enters error state', async () => {
@@ -84,14 +82,14 @@ describe('LambdaPolicyView', async () => {
 
         await autoDisposeView.load()
 
-        assert.equal(autoDisposeView.getStatus(), LambdaPolicyViewStatus.Error)
+        assert.equal(autoDisposeView.status, LambdaPolicyViewStatus.Error)
     })
 
     it('enters disposed state', async () => {
         const view: LambdaPolicyView = new LambdaPolicyView(new DoNothingLambdaPolicyProvider('fn1'))
         view.dispose()
 
-        assert.equal(view.getStatus(), LambdaPolicyViewStatus.Disposed)
+        assert.equal(view.status, LambdaPolicyViewStatus.Disposed)
     })
 
     it('enters disposed state when view closes', async () => {
@@ -101,6 +99,7 @@ describe('LambdaPolicyView', async () => {
             }
 
             public closeView() {
+                assert.ok(!!this._view)
                 this._view!.dispose()
             }
         }
@@ -108,7 +107,7 @@ describe('LambdaPolicyView', async () => {
         const view: CloseableLambdaPolicyView = new CloseableLambdaPolicyView(new DoNothingLambdaPolicyProvider('fn1'))
         view.closeView()
 
-        assert.equal(view.getStatus(), LambdaPolicyViewStatus.Disposed)
+        assert.equal(view.status, LambdaPolicyViewStatus.Disposed)
     })
 
 })
@@ -116,8 +115,7 @@ describe('LambdaPolicyView', async () => {
 describe('DefaultLambdaPolicyProvider', async () => {
 
     it('does not accept blank functionName', async () => {
-        // @ts-ignore
-        const lambda: Lambda = {}
+        const lambda: Lambda = {} as any as Lambda
 
         assert.throws(() => {
             // tslint:disable-next-line:no-unused-expression
@@ -129,8 +127,7 @@ describe('DefaultLambdaPolicyProvider', async () => {
     })
 
     it('sets functionName', async () => {
-        // @ts-ignore
-        const lambda: Lambda = {}
+        const lambda: Lambda = {} as any as Lambda
         const provider = new DefaultLambdaPolicyProvider('fn1', lambda)
 
         assert.equal(provider.functionName, 'fn1')

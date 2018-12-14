@@ -27,7 +27,7 @@ export class DefaultLambdaPolicyProvider implements LambdaPolicyProvider {
         functionName: string,
         lambdaClient: Lambda
     ) {
-        if (functionName.length === 0) {
+        if (!functionName) {
             throw new Error('Lambda function name is missing')
         }
 
@@ -91,7 +91,7 @@ export class LambdaPolicyView implements vscode.Disposable {
         }
     }
 
-    public getStatus(): LambdaPolicyViewStatus {
+    public get status(): LambdaPolicyViewStatus {
         return this._status
     }
 
@@ -113,8 +113,9 @@ export class LambdaPolicyView implements vscode.Disposable {
             -1
         )
 
-        view.onDidDispose(() => {
+        const disposeListener = view.onDidDispose(() => {
             this._view = undefined
+            disposeListener.dispose()
             this._status = LambdaPolicyViewStatus.Disposed
         })
 

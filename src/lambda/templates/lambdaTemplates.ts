@@ -59,23 +59,23 @@ export class LambdaTemplates {
 
 export class LambdaPolicyTemplates {
     // This is the constant view frame, regardless of view state
-    public static readonly OUTER_TEMPLATE = `
+    public static readonly OUTER_TEMPLATE = String.raw`
     <h1>
         Lambda Function Policy: <%= FunctionName %>
     </h1>
     <%= innerContent %>
     `
-    public static readonly INNER_TEMPLATE_LOADING = `
+    public static readonly INNER_TEMPLATE_LOADING = String.raw`
     <h2>
         Loading...
     </h2>
     `
-    public static readonly INNER_TEMPLATE_POLICY = `
+    public static readonly INNER_TEMPLATE_POLICY = String.raw`
     <p>Policy:
         <pre><%- Policy %></pre>
     </p>
     `
-    public static readonly INNER_TEMPLATE_ERROR = `
+    public static readonly INNER_TEMPLATE_ERROR = String.raw`
     <p>Error getting Lambda Function Policy:
         <ul>
             <li>Code: <pre><%= ErrorCode %></pre></li>
