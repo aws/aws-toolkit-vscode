@@ -10,7 +10,10 @@ const localize = nls.loadMessageBundle()
 
 import { AWSRegionTreeNode } from '../../shared/treeview/awsRegionTreeNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
-import { getLambdaFunctionsForRegion } from '../utils'
+import { getCloudFormationsForRegion, getLambdaFunctionsForRegion } from '../utils'
+import { CloudFormationNode } from './cloudFormationNode'
+import { ContainerNode } from './containerNode'
+import { FunctionNode } from './functionNode'
 import { NoFunctionsNode } from './noFunctionsNode'
 
 // Collects the regions the user has declared they want to work with;
@@ -24,23 +27,29 @@ export class RegionNode extends AWSRegionTreeNode {
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
-        const lambdaFunctions: AWSTreeNodeBase[] = await getLambdaFunctionsForRegion(this.regionCode)
+        const lambdaFunctions: FunctionNode[] = await getLambdaFunctionsForRegion(this.regionCode)
 
         if (lambdaFunctions.length === 0) {
-            lambdaFunctions.push(new NoFunctionsNode(
-                localize('AWS.explorerNode.lambda.noFunctions', '[no functions in this region]'),
-                'awsLambdaNoFns'
-            ))
+            return [new NoFunctionsNode(
+                localize('AWS.explorerNode.region.noResources', '[no resources in this region]'),
+                'awsRegionNoResources'
+            )]
         }
 
-        return lambdaFunctions
+        const cloudFormations: CloudFormationNode[] =
+            await getCloudFormationsForRegion(this.regionCode, lambdaFunctions)
+
+        const cloudFormationContainer = new ContainerNode('CloudFormation', cloudFormations)
+        const lambdaContainer = new ContainerNode('Lambda', lambdaFunctions)
+
+        return [cloudFormationContainer, lambdaContainer]
     }
 
-    protected getLabel(): string {
+    public getLabel(): string {
         return this.regionName
     }
 
-    protected getTooltip(): string | undefined {
+    public getTooltip(): string | undefined {
         return `${this.getLabel()} [${this.regionCode}]`
     }
 }

@@ -16,10 +16,12 @@ import { ResourceFetcher } from '../shared/resourceFetcher'
 import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/refreshableAwsTreeProvider'
+import { deleteCloudFormation } from './commands/deleteCloudFormation'
 import { deployLambda } from './commands/deployLambda'
 import { getLambdaConfig } from './commands/getLambdaConfig'
 import { invokeLambda } from './commands/invokeLambda'
 import { newLambda } from './commands/newLambda'
+import { CloudFormationNode } from './explorer/cloudFormationNode'
 import { FunctionNode } from './explorer/functionNode'
 import { RegionNode } from './explorer/regionNode'
 import { DefaultLambdaPolicyProvider, LambdaPolicyView } from './lambdaPolicy'
@@ -65,6 +67,10 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
                 const view = new LambdaPolicyView(policyProvider)
                 await view.load()
             })
+
+        vscode.commands.registerCommand(
+            'aws.deleteCloudFormation',
+            async (node: CloudFormationNode) => await deleteCloudFormation(this.awsContext, node))
 
         vscode.commands.registerCommand(
             'aws.refreshLambdaProviderNode',
