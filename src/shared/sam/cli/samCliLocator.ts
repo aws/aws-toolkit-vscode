@@ -109,6 +109,7 @@ class WindowsSamCliLocator extends BaseSamCliLocator {
     public constructor() {
         super()
     }
+
     protected verifyOs(): void {
         if (process.platform !== 'win32') {
             throw new Error('Wrong platform')
@@ -139,6 +140,7 @@ class UnixSamCliLocator extends BaseSamCliLocator {
     public constructor() {
         super()
     }
+
     protected verifyOs(): void {
         if (process.platform === 'win32') {
             throw new Error('Wrong platform')
