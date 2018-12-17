@@ -13,4 +13,4 @@ export const hostedFilesBaseUrl: string = 'https://d3rrggjwfhwld2.cloudfront.net
 export const endpointsFileUrl: string = 'https://aws-toolkit-endpoints.s3.amazonaws.com/endpoints.json'
 export const aboutCredentialsFileUrl: string = 'https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html'
 // tslint:disable-next-line:max-line-length
-export const samAboutInstallUrl: string = 'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html'
+export const samAboutInstallUrl: string = 'https://aws.amazon.com/serverless/sam/'
