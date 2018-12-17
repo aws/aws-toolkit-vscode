@@ -7,6 +7,7 @@
     "AWS.configuration.profileDescription": "The name of the credential profile to obtain credentials from.",
     "AWS.configuration.description.onDefaultRegionMissing": "Action to take when a Profile's default region is hidden in the Explorer. Possible values:\n* `add` - shows region in the explorer\n* `ignore` - does nothing with the region\n* `prompt` - (default) asks the user what they would like to do.",
     "AWS.configuration.description.recentCredentials": "Credentials most recently used to connect to AWS",
+    "AWS.configuration.description.samcli.location": "Location of SAM CLI. SAM CLI is used to create, build, package, and deploy Serverless Applications. [Learn More](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)",
     "AWS.configuration.title": "AWS Configuration",
     "AWS.command.login": "Connect to AWS",
     "AWS.command.logout": "Sign out",
@@ -18,6 +19,7 @@
     "AWS.command.invokeLambda": "Invoke Lambda Function",
     "AWS.command.getLambdaConfig": "Get Lambda Function Configuration",
     "AWS.command.getLambdaPolicy": "Get Lambda Function Policy",
+    "AWS.command.samcli.detect": "Detect SAM CLI",
     "AWS.error.mfa.userCancelled": "User cancelled entering authentication code",
     "AWS.error.no.error.code": "No error code",
     "AWS.explorerNode.addRegion": "Add a region to view functions...",
@@ -55,6 +57,10 @@
     "AWS.placeHolder.newProfileName": "Choose a unique name for the new profile",
     "AWS.placeHolder.selectProfile": "Select a credential profile",
     "AWS.profile.recentlyUsed": "recently used",
+    "AWS.samcli.autodetect.settings.updated": "Settings updated. SAM CLI found at {0}",
+    "AWS.samcli.error.notFound": "The AWS Toolkit was unable to find the SAM CLI. You will not be able to perform certain Serverless Application actions. SAM CLI Custom locations can be configured in your User Settings.",
+    "AWS.samcli.userChoice.edit.settings": "Edit Settings",
+    "AWS.samcli.userChoice.visit.install.url": "Learn more",
     "AWS.generic.response.no": "No",
     "AWS.generic.response.yes": "Yes"
 }

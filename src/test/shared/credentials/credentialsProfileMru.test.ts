@@ -7,24 +7,11 @@
 
 import * as assert from 'assert'
 import { CredentialsProfileMru } from '../../../shared/credentials/credentialsProfileMru'
-import { SettingsConfiguration } from '../../../shared/settingsConfiguration'
+import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 
-class TestSettingsConfiguration implements SettingsConfiguration {
+describe('CredentialsProfileMru', () => {
 
-    private readonly _data: { [key: string]: any } = {}
-
-    public readSetting<T>(settingKey: string, defaultValue?: T | undefined): T | undefined {
-        return this._data[settingKey] as T
-    }
-
-    public async writeSetting<T>(settingKey: string, value: T, target: any): Promise<void> {
-        this._data[settingKey] = value
-    }
-}
-
-describe('CredentialsProfileMru', function(): void {
-
-    it('lists single profile when only one exists', async function() {
+    it('lists single profile when only one exists', async () => {
 
         const credentialsMru = new CredentialsProfileMru(new TestSettingsConfiguration())
 
@@ -37,7 +24,7 @@ describe('CredentialsProfileMru', function(): void {
         assert.equal(mru[0], 'apples')
     })
 
-    it('lists multiple profiles when multiple exist', async function() {
+    it('lists multiple profiles when multiple exist', async () => {
         const credentialsMru = new CredentialsProfileMru(new TestSettingsConfiguration())
 
         await credentialsMru.setMostRecentlyUsedProfile('dogs')
@@ -51,7 +38,7 @@ describe('CredentialsProfileMru', function(): void {
         assert.equal(mru[1], 'dogs')
     })
 
-    it('does not list duplicate profiles', async function() {
+    it('does not list duplicate profiles', async () => {
         const credentialsMru = new CredentialsProfileMru(new TestSettingsConfiguration())
 
         await credentialsMru.setMostRecentlyUsedProfile('bbq')
@@ -68,7 +55,7 @@ describe('CredentialsProfileMru', function(): void {
         assert.equal(mru[2], 'dill')
     })
 
-    it('does not list more than MAX_CRENDTIAL_MRU_SIZE profiles', async function() {
+    it('does not list more than MAX_CRENDTIAL_MRU_SIZE profiles', async () => {
         const credentialsMru = new CredentialsProfileMru(new TestSettingsConfiguration())
 
         for (let i = 0; i < CredentialsProfileMru.MAX_CREDENTIAL_MRU_SIZE + 1; i++) {

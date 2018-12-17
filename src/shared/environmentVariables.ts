@@ -10,6 +10,7 @@ export interface EnvironmentVariables {
     USERPROFILE?: string
     HOMEPATH?: string
     HOMEDRIVE?: string
+    PATH?: string
 
     VSCODE_NLS_CONFIG?: string
     AWS_SDK_LOAD_CONFIG?: boolean | string
