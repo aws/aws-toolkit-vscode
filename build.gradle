@@ -180,6 +180,11 @@ intellij {
         alternativeIdePath = System.env.ALTERNATIVE_IDE
     }
 }
+publishPlugin {
+    username publishUsername
+    password publishPassword
+    channels publishChannel
+}
 
 generateChangeLog {
     generateJetbrains = false
@@ -193,6 +198,7 @@ task ktlint(type: JavaExec, group: "verification") {
     args project.rootDir.absolutePath + "/**/*.kt"
 }
 check.dependsOn ktlint
+check.dependsOn verifyPlugin
 
 def publishedProjects = subprojects.findAll { !it.name.contains("test")}
 
