@@ -93,6 +93,8 @@ export function deactivate() {
 async function initializeSamCli(): Promise<void> {
     vscode.commands.registerCommand(
         'aws.samcli.detect',
-        async () => SamCliDetection.detectSamCli(true)
+        async () => await SamCliDetection.detectSamCli(true)
     )
+
+    await SamCliDetection.detectSamCli(false)
 }
