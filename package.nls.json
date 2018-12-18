@@ -26,7 +26,7 @@
     "AWS.explorerNode.region.noResources": "[no resources in this region]",
     "AWS.explorerNode.lambda.noFunctions": "[no functions in this region]",
     "AWS.explorerNode.cloudFormation.noFunctions": "[no functions in this CloudFormation]",
-    "AWS.explorerNode.container.noItens": "[no items]",
+    "AWS.explorerNode.container.noItems": "[no items]",
     "AWS.explorerNode.lambda.retry": "Unable to load Lambda Functions, click here to retry",
     "AWS.explorerNode.signIn": "Connect to AWS...",
     "AWS.explorerNode.signIn.tooltip": "Connect to AWS using a credential profile",

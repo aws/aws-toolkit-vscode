@@ -25,8 +25,8 @@ export class GenericNode extends AWSTreeNodeBase {
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         if (!this.children || this.children.length === 0) {
             return [new NoFunctionsNode(
-                localize('AWS.explorerNode.container.noItens', '[no items]'),
-                'awsContainerNoItens'
+                localize('AWS.explorerNode.container.noItems', '[no items]'),
+                'awsContainerNoItems'
             )]
         }
 
