@@ -34,7 +34,7 @@ class SamCommon {
         val expectedSamMaxVersion = SemVer("0.11.0", 0, 11, 0)
 
         fun getSamCommandLine(path: String? = SamSettings.getInstance().executablePath): GeneralCommandLine {
-            path ?: throw RuntimeException(message("lambda.run_configuration.sam.not_specified"))
+            path ?: throw RuntimeException(message("sam.cli_not_configured"))
             // we have some env-hacks that we want to do, so we're building our own environment using the same util as GeneralCommandLine
             // GeneralCommandLine will apply some more env patches prior to process launch (see startProcess()) so this should be fine
             val effectiveEnvironment = EnvironmentUtil.getEnvironmentMap().toMutableMap()

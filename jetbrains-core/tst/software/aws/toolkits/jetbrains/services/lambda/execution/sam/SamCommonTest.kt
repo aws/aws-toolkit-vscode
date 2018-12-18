@@ -32,7 +32,7 @@ class SamCommonTest {
     fun testValidate_noPath() {
         val result = SamCommon.validate(null)
         println(result)
-        assertEquals(message("lambda.run_configuration.sam.not_specified"), result)
+        assertEquals(message("sam.cli_not_configured"), result)
     }
 
     @Test

@@ -23,7 +23,6 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon
-import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.resources.message
 import java.nio.file.Files
 import java.nio.file.Path
@@ -176,10 +175,7 @@ open class SamDeployDialog(
         envVars.putAll(region.toEnvironmentVariables())
         envVars.putAll(credentialsProvider.resolveCredentials().toEnvironmentVariables())
 
-        return GeneralCommandLine()
-            .withExePath(
-                SamSettings.getInstance().executablePath ?: throw RuntimeException(message("sam.cli_not_configured"))
-            )
+        return SamCommon.getSamCommandLine()
             .withWorkDirectory(template.parent.path)
             .withEnvironment(envVars)
     }
