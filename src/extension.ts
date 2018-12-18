@@ -22,7 +22,7 @@ import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
 import { safeGet } from './shared/extensionUtilities'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
-import * as SamCliAutoDetection from './shared/sam/cli/samCliAutoDetection'
+import * as SamCliDetection from './shared/sam/cli/samCliDetection'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { AWSStatusBar } from './shared/statusBar'
 
@@ -93,6 +93,6 @@ export function deactivate() {
 async function initializeSamCli(): Promise<void> {
     vscode.commands.registerCommand(
         'aws.samcli.detect',
-        async () => SamCliAutoDetection.autoDetectSamCli(true)
+        async () => SamCliDetection.detectSamCli(true)
     )
 }

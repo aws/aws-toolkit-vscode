@@ -16,8 +16,8 @@ import { DefaultSamCliLocationProvider } from './samCliLocator'
 const localize = nls.loadMessageBundle()
 const lock = new AsyncLock()
 
-export async function autoDetectSamCli(showMessageIfDetected: boolean): Promise<void> {
-    await lock.acquire('autodetect SAM CLI', async () => {
+export async function detectSamCli(showMessageIfDetected: boolean): Promise<void> {
+    await lock.acquire('detect SAM CLI', async () => {
         const samCliConfig = new SamCliConfiguration(
             new DefaultSettingsConfiguration(extensionSettingsPrefix),
             new DefaultSamCliLocationProvider()
@@ -32,7 +32,7 @@ export async function autoDetectSamCli(showMessageIfDetected: boolean): Promise<
         } else if (showMessageIfDetected) {
             vscode.window.showInformationMessage(
                 localize(
-                    'AWS.samcli.autodetect.settings.updated',
+                    'AWS.samcli.detect.settings.updated',
                     'Settings updated. SAM CLI found at {0}',
                     samCliLocation
                 )
