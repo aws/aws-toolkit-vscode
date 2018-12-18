@@ -11,6 +11,16 @@ import { TestSettingsConfiguration } from '../../utilities/testSettingsConfigura
 
 describe('CredentialsProfileMru', () => {
 
+    it('lists no profile when none exist', async () => {
+
+        const credentialsMru = new CredentialsProfileMru(new TestSettingsConfiguration())
+
+        const mru = credentialsMru.getMruList()
+
+        assert(mru)
+        assert.equal(mru.length, 0)
+    })
+
     it('lists single profile when only one exists', async () => {
 
         const credentialsMru = new CredentialsProfileMru(new TestSettingsConfiguration())
