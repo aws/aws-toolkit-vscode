@@ -29,7 +29,7 @@ export class SamCliConfiguration {
         )
     }
 
-    public async setSamCliLocation(location: string): Promise<void> {
+    public async setSamCliLocation(location: string | undefined): Promise<void> {
         await this._configuration.writeSetting(
             SamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION,
             location,
@@ -44,11 +44,6 @@ export class SamCliConfiguration {
         }
 
         const detectedLocation = await this._samCliLocationProvider.getLocation()
-
-        if (!!detectedLocation) {
-            await this.setSamCliLocation(detectedLocation)
-
-            return
-        }
+        await this.setSamCliLocation(detectedLocation)
     }
 }
