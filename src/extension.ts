@@ -81,18 +81,18 @@ export async function activate(context: vscode.ExtensionContext) {
 
     await ext.statusBar.updateContext(undefined)
 
-    await initializeSamCliConfiguration()
+    await initializeSamCli()
 }
 
 export function deactivate() {
 }
 
-async function initializeSamCliConfiguration(): Promise<void> {
-
+/**
+ * Performs SAM CLI relevant extension initialization
+ */
+async function initializeSamCli(): Promise<void> {
     vscode.commands.registerCommand(
         'aws.samcli.detect',
         async () => SamCliAutoDetection.autoDetectSamCli(true)
     )
-
-    await SamCliAutoDetection.autoDetectSamCli(false)
 }

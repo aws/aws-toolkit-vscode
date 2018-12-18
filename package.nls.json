@@ -58,9 +58,9 @@
     "AWS.placeHolder.selectProfile": "Select a credential profile",
     "AWS.profile.recentlyUsed": "recently used",
     "AWS.samcli.autodetect.settings.updated": "Settings updated. SAM CLI found at {0}",
-    "AWS.samcli.error.notFound": "The AWS Toolkit was unable to find the SAM CLI. You will not be able to perform certain Serverless Application actions. SAM CLI Custom locations can be configured in your User Settings.",
+    "AWS.samcli.error.notFound": "Unable to find the SAM CLI, which is required to create new Serverless Applications and debug them locally. If you have already installed the SAM CLI, update your User Settings with its location.",
     "AWS.samcli.userChoice.edit.settings": "Edit Settings",
-    "AWS.samcli.userChoice.visit.install.url": "Learn more",
+    "AWS.samcli.userChoice.visit.install.url": "Get SAM CLI",
     "AWS.generic.response.no": "No",
     "AWS.generic.response.yes": "Yes"
 }

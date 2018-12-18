@@ -39,7 +39,7 @@ export async function autoDetectSamCli(showMessageIfDetected: boolean): Promise<
 function notifyUserSamCliNotDetected(): void {
     const learnMore = localize(
         'AWS.samcli.userChoice.visit.install.url',
-        'Learn more'
+        'Get SAM CLI'
     )
 
     const editSettings = localize(
@@ -52,7 +52,7 @@ function notifyUserSamCliNotDetected(): void {
         localize(
             'AWS.samcli.error.notFound',
             // tslint:disable-next-line:max-line-length
-            'The AWS Toolkit was unable to find the SAM CLI. You will not be able to perform certain Serverless Application actions. SAM CLI Custom locations can be configured in your User Settings.'
+            'Unable to find the SAM CLI, which is required to create new Serverless Applications and debug them locally. If you have already installed the SAM CLI, update your User Settings with its location.'
         ),
         learnMore,
         editSettings
