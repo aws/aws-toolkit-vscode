@@ -59,6 +59,18 @@ describe('CloudFormationNode', () => {
     // Validates that only cloudformation stack lambdas are present
     it('only specific cloudformation stack lambdas', async () => {
 
+        class DerivedCloudFormationNode extends CloudFormationNode {
+
+            public setStackDescribed(value: boolean) {
+                this.stackDescribed = value
+            }
+
+            public addLambdaResource(lambdaName: string) {
+                this.lambdaResources.push(lambdaName)
+            }
+
+        }
+
         const lambda1 = new FunctionNode({
                                             FunctionName: 'lambda1Name',
                                             FunctionArn: 'lambda1ARN'
@@ -76,11 +88,11 @@ describe('CloudFormationNode', () => {
                                          new Lambda())
 
         const testNode =
-            new CloudFormationNode(fakeStackSummary, new CloudFormation(),
-                                   [lambda1, lambda2, lambda3])
-        testNode.stackDescribed = true
-        testNode.lambdaResources.push('lambda1Name')
-        testNode.lambdaResources.push('lambda3Name')
+            new DerivedCloudFormationNode(fakeStackSummary, new CloudFormation(),
+                                          [lambda1, lambda2, lambda3])
+        testNode.setStackDescribed(true)
+        testNode.addLambdaResource('lambda1Name')
+        testNode.addLambdaResource('lambda3Name')
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)

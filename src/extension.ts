@@ -8,6 +8,8 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
+import { deleteCloudFormation } from './lambda/commands/deleteCloudFormation'
+import { CloudFormationNode } from './lambda/explorer/cloudFormationNode'
 import { RegionNode } from './lambda/explorer/regionNode'
 import { LambdaProvider } from './lambda/lambdaProvider'
 import { NodeDebugConfigurationProvider } from './lambda/local/debugConfigurationProvider'
@@ -63,6 +65,10 @@ export async function activate(context: vscode.ExtensionContext) {
         'aws.hideRegion',
         async (node?: RegionNode) => await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
     )
+
+    vscode.commands.registerCommand(
+        'aws.deleteCloudFormation',
+        async (node: CloudFormationNode) => await deleteCloudFormation(awsContext, node))
 
     const providers = [
         new LambdaProvider(awsContext, awsContextTrees, regionProvider, resourceFetcher)

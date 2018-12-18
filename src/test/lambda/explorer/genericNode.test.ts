@@ -6,17 +6,17 @@
 'use strict'
 
 import * as assert from 'assert'
-import { ContainerNode } from '../../../lambda/explorer/containerNode'
+import { GenericNode } from '../../../lambda/explorer/genericNode'
 import { NoFunctionsNode } from '../../../lambda/explorer/noFunctionsNode'
 
-describe('ContainerNode', () => {
+describe('GenericNode', () => {
 
-    const nodeLabel = 'myContainerNode'
+    const nodeLabel = 'myGenericNode'
 
     // Validates we tagged the node correctly
     it('initializes name and tooltip', async () => {
 
-        const testNode = new ContainerNode(nodeLabel, [])
+        const testNode = new GenericNode(nodeLabel, [])
 
         assert.equal(testNode.label, nodeLabel)
         assert.equal(testNode.tooltip, nodeLabel)
@@ -24,7 +24,7 @@ describe('ContainerNode', () => {
 
     // Validates minimum children number
     it('minimum children number', async () => {
-        const testNode = new ContainerNode(nodeLabel, [])
+        const testNode = new GenericNode(nodeLabel, [])
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)

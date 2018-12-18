@@ -35,19 +35,13 @@ export async function deleteCloudFormation(awsContext: AwsContext, element?: Clo
         const req: CloudFormation.DeleteStackInput = { StackName: cloudFormationName }
 
         if (userResponse === responseYes) {
-            cf.cloudFormation.deleteStack(req, async function(err, data) {
-                if (err) {
-                    await vscode.window.showInformationMessage(
-                        localize('AWS.message.error.cloudFormation.delete',
-                                 'An error occured while deleting {0}. Please check the stack events at AWS Console',
-                                 cloudFormationName))
-                } else {
-                    await vscode.window.showInformationMessage(
-                        localize('AWS.message.info.cloudFormation.delete',
-                                 '{0} was deleted. Please check for any retained resources at AWS Console',
-                                 cloudFormationName))
-                }
-            })
+
+            await cf.cloudFormation.deleteStack(req).promise()
+
+            vscode.window.showInformationMessage(
+                localize('AWS.message.info.cloudFormation.delete',
+                         'Deleted CloudFormation Stack {0}',
+                         cloudFormationName))
 
             cf.dispose()
         }
@@ -55,7 +49,11 @@ export async function deleteCloudFormation(awsContext: AwsContext, element?: Clo
     } catch (err) {
         const error = err as Error
 
-        // TODO: Handle error gracefully, possibly add a node that can attempt to retry the operation
+        vscode.window.showInformationMessage(
+            localize('AWS.message.error.cloudFormation.delete',
+                     'An error occurred while deleting {0}. Please check the stack events on the AWS Console',
+                     cloudFormationName))
+
         console.error(error.message)
     }
 }

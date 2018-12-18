@@ -25,8 +25,8 @@ export class CloudFormationNode extends AWSTreeNodeBase implements TreeItem {
     public tooltip?: string
     public iconPath?: { light: Uri; dark: Uri }
 
-    public readonly lambdaResources: string[] = []
-    public stackDescribed: boolean = false
+    protected readonly lambdaResources: string[] = []
+    protected stackDescribed: boolean = false
 
     public constructor(public readonly stackSummary: CloudFormation.StackSummary,
                        public readonly cloudFormation: CloudFormation,
@@ -44,7 +44,7 @@ export class CloudFormationNode extends AWSTreeNodeBase implements TreeItem {
 
         if (!this.regionLambdas || this.regionLambdas.length === 0) {
             return [new NoFunctionsNode(
-                localize('AWS.explorerNode.cloudFormation.noFunctions', '[no functions in this cloudFormation]'),
+                localize('AWS.explorerNode.cloudFormation.noFunctions', '[no functions in this CloudFormation]'),
                 'awsCloudFormationNoFns'
             )]
         }
@@ -52,7 +52,7 @@ export class CloudFormationNode extends AWSTreeNodeBase implements TreeItem {
         return this.resolveLambdaResources().then(() => {
             if (this.lambdaResources.length === 0) {
                 return [new NoFunctionsNode(
-                    localize('AWS.explorerNode.cloudFormation.noFunctions', '[no functions in this cloudFormation]'),
+                    localize('AWS.explorerNode.cloudFormation.noFunctions', '[no functions in this CloudFormation]'),
                     'awsCloudFormationNoFns'
                 )]
             }

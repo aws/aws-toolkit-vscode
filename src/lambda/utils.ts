@@ -5,6 +5,9 @@
 
 'use strict'
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import CloudFormation = require('aws-sdk/clients/cloudformation')
 import Lambda = require('aws-sdk/clients/lambda')
 import { isNullOrUndefined } from 'util'
@@ -72,7 +75,8 @@ export async function listCloudFormations(cloudFormation: CloudFormation,
                                           lambdaFunctions: FunctionNode[]): Promise<CloudFormationNode[]> {
     // TODO: this 'loading' message needs to go under each regional entry
     // in the explorer, and be removed when that region's query completes
-    const status = vscode.window.setStatusBarMessage('Loading CloudFormations...')
+    const status = vscode.window.setStatusBarMessage(
+        localize('AWS.message.statusBar.loading.cloudFormation', 'Loading CloudFormations...'))
     const arr: CloudFormationNode[] = []
 
     try {
@@ -113,7 +117,8 @@ export async function getLambdaFunctionsForRegion(regionCode: string): Promise<F
 export async function listLambdas(lambda: Lambda): Promise<FunctionNode[]> {
     // TODO: this 'loading' message needs to go under each regional entry
     // in the explorer, and be removed when that region's query completes
-    const status = vscode.window.setStatusBarMessage('Loading lambdas...')
+    const status = vscode.window.setStatusBarMessage(
+        localize('AWS.message.statusBar.loading.lambda', 'Loading Lambdas...'))
     const arr: FunctionNode[] = []
 
     try {

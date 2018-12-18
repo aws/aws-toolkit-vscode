@@ -12,8 +12,8 @@ import { TreeItem, TreeItemCollapsibleState } from 'vscode'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 import { NoFunctionsNode } from './noFunctionsNode'
 
-// Simple container node with a label
-export class ContainerNode extends AWSTreeNodeBase {
+// Generic tree node with a label
+export class GenericNode extends AWSTreeNodeBase {
 
     public tooltip?: string
 
@@ -25,7 +25,7 @@ export class ContainerNode extends AWSTreeNodeBase {
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         if (!this.children || this.children.length === 0) {
             return [new NoFunctionsNode(
-                localize('AWS.explorerNode.container.noItens', '[no itens]'),
+                localize('AWS.explorerNode.container.noItens', '[no items]'),
                 'awsContainerNoItens'
             )]
         }

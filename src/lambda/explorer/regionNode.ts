@@ -5,21 +5,16 @@
 
 'use strict'
 
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
-
 import { AWSRegionTreeNode } from '../../shared/treeview/awsRegionTreeNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 import { getCloudFormationsForRegion, getLambdaFunctionsForRegion } from '../utils'
 import { CloudFormationNode } from './cloudFormationNode'
-import { ContainerNode } from './containerNode'
 import { FunctionNode } from './functionNode'
-import { NoFunctionsNode } from './noFunctionsNode'
+import { GenericNode } from './genericNode'
 
 // Collects the regions the user has declared they want to work with;
-// on expansion each region lists the functions the user has available
-// in that region. For regions with no deployed functions we output
-// a placeholder child.
+// on expansion each region lists the functions and CloudFormations
+// the user has available in that region.
 export class RegionNode extends AWSRegionTreeNode {
 
     public constructor(regionCode: string, public regionName: string) {
@@ -29,20 +24,13 @@ export class RegionNode extends AWSRegionTreeNode {
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         const lambdaFunctions: FunctionNode[] = await getLambdaFunctionsForRegion(this.regionCode)
 
-        if (lambdaFunctions.length === 0) {
-            return [new NoFunctionsNode(
-                localize('AWS.explorerNode.region.noResources', '[no resources in this region]'),
-                'awsRegionNoResources'
-            )]
-        }
-
         const cloudFormations: CloudFormationNode[] =
             await getCloudFormationsForRegion(this.regionCode, lambdaFunctions)
 
-        const cloudFormationContainer = new ContainerNode('CloudFormation', cloudFormations)
-        const lambdaContainer = new ContainerNode('Lambda', lambdaFunctions)
+        const cloudFormationTreeNode = new GenericNode('CloudFormation', cloudFormations)
+        const lambdaTreeNode = new GenericNode('Lambda', lambdaFunctions)
 
-        return [cloudFormationContainer, lambdaContainer]
+        return [cloudFormationTreeNode, lambdaTreeNode]
     }
 
     public getLabel(): string {
