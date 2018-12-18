@@ -99,10 +99,8 @@ abstract class BaseSamCliLocator {
 
 class WindowsSamCliLocator extends BaseSamCliLocator {
 
-    private static readonly LOCATION_PATHS: string[] = [
-        String.raw`C:\Program Files\Amazon\AWSSAMCLI\bin`,
-        String.raw`C:\Program Files (x86)\Amazon\AWSSAMCLI\bin`
-    ]
+    // Do not access LOCATION_PATHS directly. Use getExecutableFolders()
+    private static LOCATION_PATHS: string[] | undefined
 
     private static readonly EXECUTABLE_FILENAMES: string[] = [
         'sam.cmd',
@@ -124,6 +122,22 @@ class WindowsSamCliLocator extends BaseSamCliLocator {
     }
 
     protected getExecutableFolders(): string[] {
+        if (!WindowsSamCliLocator.LOCATION_PATHS) {
+            WindowsSamCliLocator.LOCATION_PATHS = []
+
+            const envVars = process.env as EnvironmentVariables
+
+            const programFiles = envVars.PROGRAMFILES
+            if (!!programFiles) {
+                WindowsSamCliLocator.LOCATION_PATHS.push(String.raw`${programFiles}\Amazon\AWSSAMCLI\bin`)
+            }
+
+            const programFilesX86 = envVars['PROGRAMFILES(X86)']
+            if (!!programFilesX86) {
+                WindowsSamCliLocator.LOCATION_PATHS.push(String.raw`${programFilesX86}\Amazon\AWSSAMCLI\bin`)
+            }
+        }
+
         return WindowsSamCliLocator.LOCATION_PATHS
     }
 
