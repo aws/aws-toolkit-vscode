@@ -188,7 +188,7 @@ publishPlugin {
 
 generateChangeLog {
     generateJetbrains = false
-    generateGithub = false //Switch back on when change log comes back
+    generateGithub = true
 }
 
 task ktlint(type: JavaExec, group: "verification") {

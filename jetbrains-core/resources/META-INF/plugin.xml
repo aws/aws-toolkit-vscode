@@ -34,10 +34,9 @@ If you come across bugs with the toolkit or have feature requests, please raise 
     <depends optional="true" config-file="ext-java.xml">com.intellij.modules.java</depends>
     <depends optional="true" config-file="ext-python.xml">com.intellij.modules.python</depends>
 
-    <!-- Re-enable when changelog comes back -->
-    <!-- xi:include href="/META-INF/change-notes.xml" xpointer="xpointer(/idea-plugin/*)">
+    <xi:include href="/META-INF/change-notes.xml" xpointer="xpointer(/idea-plugin/*)">
         <xi:fallback/>
-    </xi:include-->
+    </xi:include>
 
     <application-components>
         <component>
