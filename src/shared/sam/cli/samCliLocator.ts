@@ -63,7 +63,9 @@ abstract class BaseSamCliLocator {
         folders: string[]
     ): Promise<string | undefined> {
         const fullPaths: string[] = files.map(
-            file => folders.map(folder => path.join(folder, file))
+            file => folders
+                .filter(folder => !!folder)
+                .map(folder => path.join(folder, file))
         ).reduce(
             (accumulator, paths) => {
                 accumulator.push(...paths)
@@ -85,7 +87,8 @@ abstract class BaseSamCliLocator {
         const envVars = process.env as EnvironmentVariables
 
         if (!!envVars.PATH) {
-            const systemPaths: string[] = envVars.PATH!.split(path.delimiter)
+            const systemPaths: string[] = envVars.PATH.split(path.delimiter)
+                .filter(folder => !!folder)
 
             return await this.findFileInFolders(this.getExecutableFilenames(), systemPaths)
         }
