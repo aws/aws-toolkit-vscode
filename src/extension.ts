@@ -25,6 +25,7 @@ import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import * as SamCliDetection from './shared/sam/cli/samCliDetection'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { AWSStatusBar } from './shared/statusBar'
+import { PromiseSharer } from './shared/utilities/promiseUtilities'
 
 export async function activate(context: vscode.ExtensionContext) {
 
@@ -93,7 +94,10 @@ export function deactivate() {
 async function initializeSamCli(): Promise<void> {
     vscode.commands.registerCommand(
         'aws.samcli.detect',
-        async () => await SamCliDetection.detectSamCli(true)
+        async () => await PromiseSharer.getExistingPromiseOrCreate(
+            'samcli.detect',
+            async () => await SamCliDetection.detectSamCli(true)
+        )
     )
 
     await SamCliDetection.detectSamCli(false)
