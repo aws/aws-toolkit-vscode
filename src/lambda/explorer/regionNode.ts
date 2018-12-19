@@ -5,7 +5,7 @@
 
 'use strict'
 
-import { AWSRegionTreeNode } from '../../shared/treeview/awsRegionTreeNode'
+import { TreeItem, TreeItemCollapsibleState } from 'vscode'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 import { getCloudFormationsForRegion, getLambdaFunctionsForRegion } from '../utils'
 import { CloudFormationNode } from './cloudFormationNode'
@@ -15,10 +15,11 @@ import { GenericNode } from './genericNode'
 // Collects the regions the user has declared they want to work with;
 // on expansion each region lists the functions and CloudFormations
 // the user has available in that region.
-export class RegionNode extends AWSRegionTreeNode {
+export class RegionNode extends AWSTreeNodeBase {
+    public readonly contextValue: string = 'awsRegion'
 
-    public constructor(regionCode: string, public regionName: string) {
-        super(regionCode)
+    public constructor(public readonly regionCode: string, public readonly regionName: string) {
+        super()
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
@@ -33,11 +34,11 @@ export class RegionNode extends AWSRegionTreeNode {
         return [cloudFormationTreeNode, lambdaTreeNode]
     }
 
-    public getLabel(): string {
-        return this.regionName
-    }
+    public getTreeItem(): TreeItem {
+        const item = new TreeItem(this.regionName, TreeItemCollapsibleState.Expanded)
+        item.tooltip = `${this.regionName} [${this.regionCode}]`
+        item.contextValue = this.contextValue
 
-    public getTooltip(): string | undefined {
-        return `${this.getLabel()} [${this.regionCode}]`
+        return item
     }
 }
