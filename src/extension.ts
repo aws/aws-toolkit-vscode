@@ -68,7 +68,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     vscode.commands.registerCommand(
         'aws.deleteCloudFormation',
-        async (node: CloudFormationNode) => await deleteCloudFormation(awsContext, node))
+        async (node: CloudFormationNode) => await deleteCloudFormation(node))
 
     const providers = [
         new LambdaProvider(awsContext, awsContextTrees, regionProvider, resourceFetcher)

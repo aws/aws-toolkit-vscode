@@ -10,11 +10,10 @@ const localize = nls.loadMessageBundle()
 
 import { CloudFormation } from 'aws-sdk'
 import * as vscode from 'vscode'
-import { AwsContext } from '../../shared/awsContext'
 import { CloudFormationNode } from '../explorer/cloudFormationNode'
 import { getSelectedCloudFormationNode } from '../utils'
 
-export async function deleteCloudFormation(awsContext: AwsContext, element?: CloudFormationNode) {
+export async function deleteCloudFormation(element?: CloudFormationNode) {
     let cloudFormationName: string = localize('AWS.lambda.policy.unknown.function', 'Unknown')
 
     const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
