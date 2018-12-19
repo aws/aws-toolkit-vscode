@@ -131,7 +131,7 @@ open class NewChange : ChangeLogTask() {
 
 open class CreateRelease : ChangeLogTask() {
     @Input
-    var releaseDate: String? = null
+    var releaseDate: String = DateTimeFormatter.ISO_DATE.format(LocalDate.now())
 
     @Input
     var releaseVersion: String = project.version as String
@@ -141,7 +141,7 @@ open class CreateRelease : ChangeLogTask() {
 
     @TaskAction
     fun create() {
-        val releaseDate = releaseDate?.let { DateTimeFormatter.ISO_DATE.parse(it).let { LocalDate.from(it) } } ?: LocalDate.now()
+        val releaseDate = DateTimeFormatter.ISO_DATE.parse(releaseDate).let { LocalDate.from(it) }
         val creator = ReleaseCreator(nextReleaseEntries(), releaseEntry())
         creator.create(releaseVersion, releaseDate)
         if (git != null) {
