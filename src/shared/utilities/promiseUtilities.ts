@@ -25,21 +25,28 @@ export class PromiseSharer {
         promiseName: string,
         promiseGenerator: () => Promise<void>
     ): Promise<void> {
+        // TODO : Come up with a way to prevent using promiseName with an unrelated promise
         let promise: Promise<void>
 
         await lock.acquire(PromiseSharer.LOCK_PROMISE_REUSE, async () => {
             if (!PromiseSharer.PROMISE_CACHE[promiseName]) {
-                PromiseSharer.PROMISE_CACHE[promiseName] = promiseGenerator()
-                    .then(async () => {
-                        await lock.acquire(PromiseSharer.LOCK_PROMISE_REUSE, async () => {
-                            PromiseSharer.PROMISE_CACHE[promiseName] = undefined
-                        })
-                    })
+                PromiseSharer.PROMISE_CACHE[promiseName] = PromiseSharer.createPromise(promiseName, promiseGenerator)
             }
 
             promise = PromiseSharer.PROMISE_CACHE[promiseName]!
         })
 
         return promise!
+    }
+
+    private static async createPromise(
+        promiseName: string,
+        promiseGenerator: () => Promise<void>
+    ): Promise<void> {
+        await promiseGenerator()
+
+        await lock.acquire(PromiseSharer.LOCK_PROMISE_REUSE, async () => {
+            PromiseSharer.PROMISE_CACHE[promiseName] = undefined
+        })
     }
 }
