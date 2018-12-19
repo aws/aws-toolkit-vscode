@@ -33,6 +33,12 @@ enum class StatusType(val icon: Icon, private val animatedIconStrategy: (() -> A
     FAILED(AllIcons.Process.State.RedExcl);
 
     val animatedIconIfPossible: Icon get() = animatedIconStrategy?.let { it() } ?: icon
+
+    companion object {
+        fun fromStatusValue(value: String) =
+            listOf(ResourceStatus.fromValue(value).type, StackStatus.fromValue(value).type).firstOrNull { it != UNKNOWN }
+                ?: UNKNOWN
+    }
 }
 
 internal val StackStatus.type: StatusType
