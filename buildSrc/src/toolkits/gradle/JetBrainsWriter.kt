@@ -52,4 +52,6 @@ class JetBrainsWriter(private val changeNotesFile: File, issueUrl: String? = nul
             </idea-plugin>
         """.trimIndent())
     }
+
+    override fun toString(): String = "JetBrainsWriter(file=$changeNotesFile)"
 }
