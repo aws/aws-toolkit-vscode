@@ -12,7 +12,7 @@ import javax.swing.BoxLayout
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 
-private const val STACK_TOOLWINDOW_ID = "AWS Stack"
+private const val STACK_TOOLWINDOW_ID = "AWS.CloudFormation"
 private const val UPDATE_STACK_STATUS_INTERVAL = 5000
 private const val REDRAW_ANIMATED_ICON_INTERVAL = 70
 private const val TREE_TABLE_INITIAL_PROPORTION = 0.25f

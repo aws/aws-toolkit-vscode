@@ -8,6 +8,8 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindowAnchor
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.content.impl.ContentImpl
+import icons.AwsIcons
+import software.aws.toolkits.resources.message
 import javax.swing.JComponent
 
 /**
@@ -45,10 +47,15 @@ internal class ToolWindowTab(
         }
     }
 
-    private val windowManager get() = ToolWindowManager.getInstance(project)
+    private val windowManager
+        get() = ToolWindowManager.getInstance(project)
     private val window
-        get() = getWindow(toolWindowId, windowManager)
+        get() = getWindow(project, toolWindowId, windowManager)
 }
 
-private fun getWindow(toolWindowId: String, manager: ToolWindowManager) = manager.getToolWindow(toolWindowId)
-    ?: manager.registerToolWindow(toolWindowId, true, ToolWindowAnchor.BOTTOM)
+private fun getWindow(project: Project, toolWindowId: String, manager: ToolWindowManager) =
+    manager.getToolWindow(toolWindowId)
+        ?: manager.registerToolWindow(toolWindowId, true, ToolWindowAnchor.BOTTOM, project, true).also {
+            it.icon = AwsIcons.Logos.CLOUD_FORMATION_TOOL
+            it.stripeTitle = message("cloudformation.toolwindow.label")
+        }
