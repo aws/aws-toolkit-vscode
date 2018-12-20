@@ -7,6 +7,7 @@
     "AWS.configuration.profileDescription": "The name of the credential profile to obtain credentials from.",
     "AWS.configuration.description.onDefaultRegionMissing": "Action to take when a Profile's default region is hidden in the Explorer. Possible values:\n* `add` - shows region in the explorer\n* `ignore` - does nothing with the region\n* `prompt` - (default) asks the user what they would like to do.",
     "AWS.configuration.description.recentCredentials": "Credentials most recently used to connect to AWS",
+    "AWS.configuration.description.samcli.location": "Location of SAM CLI. SAM CLI is used to create, build, package, and deploy Serverless Applications. [Learn More](https://aws.amazon.com/serverless/sam/)",
     "AWS.configuration.title": "AWS Configuration",
     "AWS.command.login": "Connect to AWS",
     "AWS.command.logout": "Sign out",
@@ -18,6 +19,7 @@
     "AWS.command.invokeLambda": "Invoke Lambda Function",
     "AWS.command.getLambdaConfig": "Get Lambda Function Configuration",
     "AWS.command.getLambdaPolicy": "Get Lambda Function Policy",
+    "AWS.command.samcli.detect": "Detect SAM CLI",
     "AWS.command.deleteCloudFormation": "Delete CloudFormation Stack",
     "AWS.error.mfa.userCancelled": "User cancelled entering authentication code",
     "AWS.error.no.error.code": "No error code",
@@ -64,6 +66,12 @@
     "AWS.placeHolder.newProfileName": "Choose a unique name for the new profile",
     "AWS.placeHolder.selectProfile": "Select a credential profile",
     "AWS.profile.recentlyUsed": "recently used",
+    "AWS.samcli.detect.settings.updated": "Settings updated.",
+    "AWS.samcli.detect.settings.not.updated": "No settings changes necessary.",
+    "AWS.samcli.configured.location": "Configured SAM CLI Location: {0}",
+    "AWS.samcli.error.notFound": "Unable to find the SAM CLI, which is required to create new Serverless Applications and debug them locally. If you have already installed the SAM CLI, update your User Settings by locating it.",
+    "AWS.samcli.userChoice.browse": "Locate SAM CLI...",
+    "AWS.samcli.userChoice.visit.install.url": "Get SAM CLI",
     "AWS.generic.response.no": "No",
     "AWS.generic.response.yes": "Yes"
 }

@@ -68,7 +68,7 @@ export class NodeDebugConfigurationProvider implements vscode.DebugConfiguration
         const localRoot = !!npmProject ? path.join('${workspaceFolder}', npmProject) : '${workspaceFolder}'
 
         const localLambdas: LambdaWithPreLaunchTask[] = await Promise.all(
-            (await detectLocalLambdas([ folder ])).map(async localLambda => ({
+            (await detectLocalLambdas([folder])).map(async localLambda => ({
                 lambda: localLambda,
                 task: await this.addPreLaunchTask(folder, localLambda.lambda, event, 5858)
             }))
@@ -101,7 +101,7 @@ export class NodeDebugConfigurationProvider implements vscode.DebugConfiguration
                         request: 'attach',
                         name: localize(
                             'AWS.lambda.debug.node.attachConfig.name',
-                            'Lambda: Attach to {0} locally"',
+                            'Lambda: Attach to {0} locally',
                             localLamdba.lambda.lambda
                         ),
                         preLaunchTask: undefined,
@@ -257,7 +257,7 @@ export class NodeDebugConfigurationProvider implements vscode.DebugConfiguration
             problemMatcher: {
                 owner: 'lambda-node',
                 // tslint:disable-next-line:no-invalid-template-strings
-                fileLocation: [ 'relative', '${workspaceFolder}' ],
+                fileLocation: ['relative', '${workspaceFolder}'],
                 pattern: [
                     {
                         // TODO: For now, use regex that never matches anything.

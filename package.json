@@ -27,6 +27,7 @@
         "onCommand:aws.deployLambda",
         "onCommand:aws.getLambdaConfig",
         "onCommand:aws.getLambdaPolicy",
+        "onCommand:aws.samcli.detect",
         "onCommand:aws.deleteCloudFormation",
         "onDebugInitialConfigurations"
     ],
@@ -55,6 +56,11 @@
                     "type": "array",
                     "default": [],
                     "description": "%AWS.configuration.description.recentCredentials%"
+                },
+                "aws.samcli.location": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "%AWS.configuration.description.samcli.location%"
                 }
             }
         },
@@ -193,6 +199,11 @@
             {
                 "command": "aws.getLambdaPolicy",
                 "title": "%AWS.command.getLambdaPolicy%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.samcli.detect",
+                "title": "%AWS.command.samcli.detect%",
                 "category": "AWS"
             },
             {
