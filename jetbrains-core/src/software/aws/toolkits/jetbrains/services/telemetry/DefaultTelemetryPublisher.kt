@@ -24,8 +24,8 @@ class DefaultTelemetryPublisher(
     private val os: String,
     private val osVersion: String
 ) : TelemetryPublisher {
-    override fun publish(metricEvents: Collection<MetricEvent>): Boolean = try {
-        ApplicationManager.getApplication().executeOnPooledThread {
+    override fun publish(metricEvents: Collection<MetricEvent>): Boolean = ApplicationManager.getApplication().executeOnPooledThread<Boolean> {
+        try {
             client.postMetrics {
                 it.awsProduct(productName)
                 it.awsProductVersion(productVersion)
@@ -36,12 +36,12 @@ class DefaultTelemetryPublisher(
                 it.parentProductVersion(parentProductVersion)
                 it.metricData(metricEvents.toMetricData())
             }
-        }.get()
-        true
-    } catch (e: Exception) {
-        LOG.warn("Failed to publish metrics", e)
-        false
-    }
+            true
+        } catch (e: Exception) {
+            LOG.warn("Failed to publish metrics", e)
+            false
+        }
+    }.get()
 
     private fun Collection<MetricEvent>.toMetricData(): Collection<MetricDatum> = this
         .flatMap { metricEvent ->

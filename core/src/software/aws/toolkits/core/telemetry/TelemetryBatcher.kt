@@ -19,14 +19,14 @@ interface TelemetryBatcher {
     fun shutdown()
 }
 
-class DefaultTelemetryBatcher(
+open class DefaultTelemetryBatcher(
     private val publisher: TelemetryPublisher,
     private val maxBatchSize: Int = DEFAULT_MAX_BATCH_SIZE,
     maxQueueSize: Int = DEFAULT_MAX_QUEUE_SIZE
 ) : TelemetryBatcher {
 
     private val isTelemetryEnabled: AtomicBoolean = AtomicBoolean(false)
-    private val eventQueue: LinkedBlockingDeque<MetricEvent> = LinkedBlockingDeque(maxQueueSize)
+    protected val eventQueue: LinkedBlockingDeque<MetricEvent> = LinkedBlockingDeque(maxQueueSize)
     private val isShuttingDown: AtomicBoolean = AtomicBoolean(false)
 
     override fun shutdown() {
@@ -53,6 +53,7 @@ class DefaultTelemetryBatcher(
         flush(retry, isTelemetryEnabled.get())
     }
 
+    // TODO: This should flush to disk instead of network on shutdown. User should not have to wait for network calls to exit. Also consider handling clock drift
     @Synchronized
     private fun flush(retry: Boolean, publish: Boolean) {
         if (!publish) {
@@ -74,8 +75,10 @@ class DefaultTelemetryBatcher(
             }
 
             if (!publishSucceeded && retry) {
-                LOG.warn("Telemetry metrics failed to publish, retrying...")
+                LOG.warn("Telemetry metrics failed to publish, retrying later...")
                 eventQueue.addAll(batch)
+                // don't want an infinite loop...
+                return
             }
         }
     }

@@ -9,13 +9,15 @@ import com.intellij.testFramework.ProjectRule
 import org.junit.rules.ExternalResource
 import software.amazon.awssdk.core.SdkClient
 import software.aws.toolkits.core.ToolkitClientManager
+import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
+import software.aws.toolkits.core.region.AwsRegion
 import kotlin.reflect.KClass
 
 class MockClientManager(project: Project) : AwsClientManager(project, AwsSdkClient.getInstance()) {
     private val mockClients = mutableMapOf<KClass<out SdkClient>, SdkClient>()
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T : SdkClient> createNewClient(key: AwsClientKey): T = mockClients[key.serviceClass] as? T
+    override fun <T : SdkClient> createNewClient(key: AwsClientKey, region: AwsRegion, credProvider: ToolkitCredentialsProvider): T = mockClients[key.serviceClass] as? T
         ?: throw IllegalStateException("No mock registered for $key")
 
     override fun dispose() {
