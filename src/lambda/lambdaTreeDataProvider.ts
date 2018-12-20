@@ -47,6 +47,7 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
     }
 
     public initialize(): void {
+        vscode.commands.registerCommand('aws.refreshLambdaExplorer', async () => this.refresh())
         vscode.commands.registerCommand('aws.newLambda', async () => await newLambda())
         vscode.commands.registerCommand(
             'aws.deployLambda',
