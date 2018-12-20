@@ -28,6 +28,7 @@
         "onCommand:aws.getLambdaConfig",
         "onCommand:aws.getLambdaPolicy",
         "onCommand:aws.samcli.detect",
+        "onCommand:aws.deleteCloudFormation",
         "onDebugInitialConfigurations"
     ],
     "main": "./out/src/extension",
@@ -126,6 +127,11 @@
                     "group": "0@4"
                 },
                 {
+                    "command": "aws.deleteCloudFormation",
+                    "when": "view == lambda && viewItem == awsCloudFormation",
+                    "group": "0@5"
+                },
+                {
                     "command": "aws.hideRegion",
                     "group": "0@1",
                     "when": "view == lambda && viewItem == awsRegion"
@@ -198,6 +204,11 @@
             {
                 "command": "aws.samcli.detect",
                 "title": "%AWS.command.samcli.detect%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.deleteCloudFormation",
+                "title": "%AWS.command.deleteCloudFormation%",
                 "category": "AWS"
             }
         ]

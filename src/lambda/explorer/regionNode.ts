@@ -5,42 +5,40 @@
 
 'use strict'
 
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
-
-import { AWSRegionTreeNode } from '../../shared/treeview/awsRegionTreeNode'
+import { TreeItem, TreeItemCollapsibleState } from 'vscode'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
-import { getLambdaFunctionsForRegion } from '../utils'
-import { NoFunctionsNode } from './noFunctionsNode'
+import { getCloudFormationsForRegion, getLambdaFunctionsForRegion } from '../utils'
+import { CloudFormationNode } from './cloudFormationNode'
+import { FunctionNode } from './functionNode'
+import { GenericNode } from './genericNode'
 
 // Collects the regions the user has declared they want to work with;
-// on expansion each region lists the functions the user has available
-// in that region. For regions with no deployed functions we output
-// a placeholder child.
-export class RegionNode extends AWSRegionTreeNode {
+// on expansion each region lists the functions and CloudFormations
+// the user has available in that region.
+export class RegionNode extends AWSTreeNodeBase {
+    public readonly contextValue: string = 'awsRegion'
 
-    public constructor(regionCode: string, public regionName: string) {
-        super(regionCode)
+    public constructor(public readonly regionCode: string, public readonly regionName: string) {
+        super()
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
-        const lambdaFunctions: AWSTreeNodeBase[] = await getLambdaFunctionsForRegion(this.regionCode)
+        const lambdaFunctions: FunctionNode[] = await getLambdaFunctionsForRegion(this.regionCode)
 
-        if (lambdaFunctions.length === 0) {
-            lambdaFunctions.push(new NoFunctionsNode(
-                localize('AWS.explorerNode.lambda.noFunctions', '[no functions in this region]'),
-                'awsLambdaNoFns'
-            ))
-        }
+        const cloudFormations: CloudFormationNode[] =
+            await getCloudFormationsForRegion(this.regionCode, lambdaFunctions)
 
-        return lambdaFunctions
+        const cloudFormationTreeNode = new GenericNode('CloudFormation', cloudFormations)
+        const lambdaTreeNode = new GenericNode('Lambda', lambdaFunctions)
+
+        return [cloudFormationTreeNode, lambdaTreeNode]
     }
 
-    protected getLabel(): string {
-        return this.regionName
-    }
+    public getTreeItem(): TreeItem {
+        const item = new TreeItem(this.regionName, TreeItemCollapsibleState.Expanded)
+        item.tooltip = `${this.regionName} [${this.regionCode}]`
+        item.contextValue = this.contextValue
 
-    protected getTooltip(): string | undefined {
-        return `${this.getLabel()} [${this.regionCode}]`
+        return item
     }
 }
