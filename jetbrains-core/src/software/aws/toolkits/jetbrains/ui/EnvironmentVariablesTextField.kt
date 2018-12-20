@@ -6,8 +6,8 @@ package software.aws.toolkits.jetbrains.ui
 import com.intellij.execution.configuration.EnvironmentVariablesData
 import com.intellij.execution.util.EnvVariablesTable
 import com.intellij.execution.util.EnvironmentVariable
-import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
+import software.aws.toolkits.jetbrains.components.telemetry.LoggingDialogWrapper
 import software.aws.toolkits.resources.message
 import java.awt.Component
 import java.util.LinkedHashMap
@@ -56,7 +56,7 @@ class EnvironmentVariablesTextField : TextFieldWithBrowseButton() {
         return buf.toString()
     }
 
-    private inner class EnvironmentVariablesDialog(private val parent: Component) : DialogWrapper(parent, true) {
+    private inner class EnvironmentVariablesDialog(private val parent: Component) : LoggingDialogWrapper(parent, true) {
         private val envVarTable = EnvVariablesTable().apply {
             setValues(convertToVariables(data.envs, false))
         }

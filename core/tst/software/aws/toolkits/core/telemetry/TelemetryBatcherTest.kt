@@ -38,8 +38,7 @@ class TelemetryBatcherTest {
                 .doAnswer(createPublishAnswer(publishCountDown, true))
         }
 
-        batcher.enqueue(DefaultMetricEvent.builder()
-                .namespace(EVENT_NAME)
+        batcher.enqueue(DefaultMetricEvent.builder(EVENT_NAME)
                 .build()
         )
         batcher.flush(false)
@@ -142,8 +141,7 @@ class TelemetryBatcherTest {
         assert(publishCaptor.firstValue.toList()).hasSize(1)
     }
 
-    private fun createEmptyMetricEvent(): MetricEvent = DefaultMetricEvent.builder()
-        .namespace(EVENT_NAME)
+    private fun createEmptyMetricEvent(): MetricEvent = DefaultMetricEvent.builder(EVENT_NAME)
         .build()
 
     private fun waitForPublish(publishCountDown: CountDownLatch) {

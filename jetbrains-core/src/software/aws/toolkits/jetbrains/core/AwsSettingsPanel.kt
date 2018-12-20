@@ -6,13 +6,11 @@ package software.aws.toolkits.jetbrains.core
 import com.intellij.ide.DataManager
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.PlatformDataKeys
-import com.intellij.openapi.actionSystem.ToggleAction
-import com.intellij.openapi.actionSystem.ex.ComboBoxAction
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
@@ -27,6 +25,9 @@ import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
+import software.aws.toolkits.jetbrains.components.telemetry.ComboBoxActionWrapper
+import software.aws.toolkits.jetbrains.components.telemetry.ToogleActionWrapper
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier
@@ -104,8 +105,8 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
     }
 }
 
-class SettingsSelectorAction(private val showRegions: Boolean = true) : AnAction(message("configure.toolkit")), DumbAware {
-    override fun actionPerformed(e: AnActionEvent) {
+class SettingsSelectorAction(private val showRegions: Boolean = true) : AnActionWrapper(message("configure.toolkit")), DumbAware {
+    override fun doActionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
         val settingsSelector = SettingsSelector(project)
         settingsSelector.settingsPopup(e.dataContext, showRegions = showRegions).showCenteredInCurrentWindow(project)
@@ -125,7 +126,8 @@ class SettingsSelector(project: Project) {
         ChangeAccountSettingsAction(accountSettingsManager, showRegions).createPopupActionGroup(),
         dataContext,
         JBPopupFactory.ActionSelectionAid.SPEEDSEARCH,
-        true
+        true,
+        ActionPlaces.STATUS_BAR_PLACE
     )
 
     companion object {
@@ -136,7 +138,7 @@ class SettingsSelector(project: Project) {
 class ChangeAccountSettingsAction(
     private val accountSettingsManager: ProjectAccountSettingsManager,
     private val showRegions: Boolean
-) : ComboBoxAction(), DumbAware {
+) : ComboBoxActionWrapper(), DumbAware {
 
     fun createPopupActionGroup(): DefaultActionGroup = createPopupActionGroup(null)
 
@@ -204,24 +206,24 @@ class ChangeAccountSettingsAction(
     }
 }
 
-private class ChangeRegionAction(val region: AwsRegion) : ToggleAction(region.displayName), DumbAware {
+private class ChangeRegionAction(val region: AwsRegion) : ToogleActionWrapper(region.displayName), DumbAware {
 
-    override fun isSelected(e: AnActionEvent): Boolean = getAccountSetting(e).activeRegion == region
+    override fun doIsSelected(e: AnActionEvent): Boolean = getAccountSetting(e).activeRegion == region
 
-    override fun setSelected(e: AnActionEvent, seletected: Boolean) {
-        if (seletected) {
+    override fun doSetSelected(e: AnActionEvent, state: Boolean) {
+        if (state) {
             getAccountSetting(e).activeRegion = region
         }
     }
 }
 
-private class ChangeCredentialsAction(val credentialsProvider: ToolkitCredentialsProvider) : ToggleAction(credentialsProvider.displayName), DumbAware {
+private class ChangeCredentialsAction(val credentialsProvider: ToolkitCredentialsProvider) : ToogleActionWrapper(credentialsProvider.displayName), DumbAware {
 
-    override fun isSelected(e: AnActionEvent): Boolean =
+    override fun doIsSelected(e: AnActionEvent): Boolean =
         tryOrNull { getAccountSetting(e).activeCredentialProvider == credentialsProvider } ?: false
 
-    override fun setSelected(e: AnActionEvent, selected: Boolean) {
-        if (selected) {
+    override fun doSetSelected(e: AnActionEvent, state: Boolean) {
+        if (state) {
             if (!credentialsProvider.isValid(AwsSdkClient.getInstance().sdkHttpClient)) {
                 notifyWarn(
                     title = message("credentials.invalid.title"),

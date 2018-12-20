@@ -3,6 +3,6 @@
 
 package software.aws.toolkits.core.telemetry
 
-interface TelemetryPublisher {
-    fun publish(metricEvents: Collection<MetricEvent>): Boolean
+interface TelemetryNamespace {
+    fun getNamespace(): String = javaClass.simpleName
 }

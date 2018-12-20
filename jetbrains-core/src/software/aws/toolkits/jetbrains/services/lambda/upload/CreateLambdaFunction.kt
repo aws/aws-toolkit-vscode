@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.upload
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.psi.PsiElement
@@ -11,6 +10,7 @@ import com.intellij.psi.SmartPsiElementPointer
 import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.lambda.model.TracingMode
+import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplateIndex
 import software.aws.toolkits.jetbrains.services.iam.IamRole
@@ -24,7 +24,7 @@ class CreateLambdaFunction(
     private val handlerName: String?,
     private val elementPointer: SmartPsiElementPointer<PsiElement>?,
     private val lambdaHandlerResolver: LambdaHandlerResolver?
-) : AnAction(message("lambda.create_new"), null, AwsIcons.Actions.LAMBDA_FUNCTION_NEW) {
+) : AnActionWrapper(message("lambda.create_new"), null, AwsIcons.Actions.LAMBDA_FUNCTION_NEW) {
 
     @Suppress("unused") // Used by ActionManager in plugin.xml
     constructor() : this(null, null, null)
@@ -37,9 +37,9 @@ class CreateLambdaFunction(
         }
     }
 
-    override fun actionPerformed(event: AnActionEvent) {
-        val project = event.getRequiredData(LangDataKeys.PROJECT)
-        val runtime = event.runtime()
+    override fun doActionPerformed(e: AnActionEvent) {
+        val project = e.getRequiredData(LangDataKeys.PROJECT)
+        val runtime = e.runtime()
 
         if (!ProjectAccountSettingsManager.getInstance(project).hasActiveCredentials()) {
             notifyNoActiveCredentialsError(project = project)

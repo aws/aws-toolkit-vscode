@@ -9,6 +9,7 @@ import com.intellij.openapi.application.ApplicationNamesInfo
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.DefaultProjectFactory
 import com.intellij.openapi.util.SystemInfo
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.toolkittelemetry.ToolkitTelemetryClient
 import software.amazon.awssdk.services.toolkittelemetry.model.AWSProduct
 import software.amazon.awssdk.services.toolkittelemetry.model.Unit
@@ -16,9 +17,7 @@ import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
-import software.aws.toolkits.core.telemetry.AWSCognitoCredentialsProvider
 import software.aws.toolkits.core.telemetry.DefaultTelemetryBatcher
-import software.aws.toolkits.core.telemetry.DefaultTelemetryPublisher
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.AwsToolkit
@@ -33,7 +32,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 interface TelemetryService : Disposable {
-    fun record(buildEvent: MetricEvent.Builder.() -> kotlin.Unit): MetricEvent
+    fun record(namespace: String, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): MetricEvent
 
     companion object {
         @JvmStatic
@@ -58,34 +57,36 @@ class DefaultTelemetryService(
         messageBusService: MessageBusService,
         settings: AwsSettings
     ) : this(
-            messageBusService,
-            settings,
-            DEFAULT_PUBLISH_INTERVAL,
-            DEFAULT_PUBLISH_INTERVAL_UNIT,
-            createDefaultExecutor(),
-            DefaultTelemetryBatcher(DefaultTelemetryPublisher(
-                    AWSProduct.AWS_TOOLKIT_FOR_JET_BRAINS,
-                    AwsToolkit.PLUGIN_VERSION,
-                    settings.clientId.toString(),
-                    ApplicationNamesInfo.getInstance().fullProductNameWithEdition,
-                    ApplicationInfo.getInstance().fullVersion,
-                    ToolkitTelemetryClient
-                            .builder()
-                            .endpointOverride(URI.create("https://client-telemetry.us-east-1.amazonaws.com"))
-                            // TODO: Determine why this client is not picked up by default.
-                            .httpClient(sdkClient.sdkHttpClient)
-                            .credentialsProvider(AWSCognitoCredentialsProvider(
-                                    "us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842",
-                                    ServiceManager.getService(
-                                            DefaultProjectFactory.getInstance().defaultProject,
-                                            ToolkitClientManager::class.java
-                                    ),
-                                    regionProvider
-                            ))
-                            .build(),
-                    SystemInfo.OS_NAME,
-                    SystemInfo.OS_VERSION
-            ))
+        messageBusService,
+        settings,
+        DEFAULT_PUBLISH_INTERVAL,
+        DEFAULT_PUBLISH_INTERVAL_UNIT,
+        createDefaultExecutor(),
+        DefaultTelemetryBatcher(DefaultTelemetryPublisher(
+            AWSProduct.AWS_TOOLKIT_FOR_JET_BRAINS,
+            AwsToolkit.PLUGIN_VERSION,
+            settings.clientId.toString(),
+            ApplicationNamesInfo.getInstance().fullProductNameWithEdition,
+            ApplicationInfo.getInstance().fullVersion,
+            ToolkitTelemetryClient
+                .builder()
+                // TODO: Determine why this client is not picked up by default.
+                .httpClient(sdkClient.sdkHttpClient)
+                .region(Region.US_EAST_1)
+                .endpointOverride(URI.create("https://client-telemetry.us-east-1.amazonaws.com"))
+                .credentialsProvider(AWSCognitoCredentialsProvider(
+                    "us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842",
+                    ServiceManager.getService(
+                        DefaultProjectFactory.getInstance().defaultProject,
+                        ToolkitClientManager::class.java
+                    ),
+                    regionProvider,
+                    region = Region.US_EAST_1
+                ))
+                .build(),
+            SystemInfo.OS_NAME,
+            SystemInfo.OS_VERSION
+        ))
     )
 
     init {
@@ -107,9 +108,7 @@ class DefaultTelemetryService(
                 publishIntervalUnit
         )
 
-        record {
-            namespace("ToolkitStart")
-        }.also {
+        record("ToolkitStart").also {
             startTime = it.createTime
         }
     }
@@ -122,11 +121,9 @@ class DefaultTelemetryService(
         executor.shutdown()
 
         val endTime = Instant.now()
-        record {
-            namespace("ToolkitEnd")
+        record("ToolkitEnd") {
             createTime(endTime)
-            datum {
-                name("duration")
+            datum("duration") {
                 value(Duration.between(startTime, endTime).toMillis().toDouble())
                 unit(Unit.MILLISECONDS)
             }
@@ -135,8 +132,8 @@ class DefaultTelemetryService(
         batcher.shutdown()
     }
 
-    override fun record(buildEvent: MetricEvent.Builder.() -> kotlin.Unit): MetricEvent {
-        val builder = DefaultMetricEvent.builder()
+    override fun record(namespace: String, buildEvent: MetricEvent.Builder.() -> kotlin.Unit): MetricEvent {
+        val builder = DefaultMetricEvent.builder(namespace)
         buildEvent(builder)
         val event = builder.build()
         batcher.enqueue(event)

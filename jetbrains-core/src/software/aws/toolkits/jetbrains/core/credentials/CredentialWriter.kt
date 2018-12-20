@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -18,6 +17,7 @@ import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.profiles.ProfileFileSystemSetting
 import software.amazon.awssdk.utils.JavaSystemSetting
 import software.amazon.awssdk.utils.StringUtils
+import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import java.io.File
@@ -29,13 +29,13 @@ import java.util.regex.Pattern
 class CreateOrUpdateCredentialProfilesAction @TestOnly constructor(
     private val writer: CredentialFileWriter,
     private val file: File
-) : AnAction(message("configure.toolkit.upsert_credentials.action")), DumbAware {
+) : AnActionWrapper(message("configure.toolkit.upsert_credentials.action")), DumbAware {
     @Suppress("unused")
     constructor() : this(DefaultCredentialFileWriter, FileLocation.credentialsFileLocationPath().toFile())
 
     private val localFileSystem = LocalFileSystem.getInstance()
 
-    override fun actionPerformed(e: AnActionEvent) {
+    override fun doActionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
 
         if (!file.exists()) {

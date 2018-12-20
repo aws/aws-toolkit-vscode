@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.core.explorer
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
 import javax.swing.Icon
 
 /**
@@ -45,7 +46,7 @@ abstract class SingleResourceNodeAction<in T : AwsExplorerResourceNode<*>>(text:
 /**
  * Converts generic [ResourceNodeAction] list into [T] typed nodes
  */
-abstract class ResourceNodeAction<in T : AwsExplorerResourceNode<*>>(text: String, description: String? = null, icon: Icon? = null) : AnAction(text, description, icon) {
+abstract class ResourceNodeAction<in T : AwsExplorerResourceNode<*>>(text: String, description: String? = null, icon: Icon? = null) : AnActionWrapper(text, description, icon) {
 
     /**
      * Invoked periodically with the selected items of type [T].
@@ -61,7 +62,7 @@ abstract class ResourceNodeAction<in T : AwsExplorerResourceNode<*>>(text: Strin
      */
     abstract fun actionPerformed(selected: List<T>, e: AnActionEvent)
 
-    final override fun actionPerformed(e: AnActionEvent) {
+    final override fun doActionPerformed(e: AnActionEvent) {
         actionPerformed(selectedNodes(e), e)
     }
 

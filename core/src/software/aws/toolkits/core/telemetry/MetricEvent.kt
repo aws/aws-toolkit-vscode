@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.core.telemetry
 
+import software.aws.toolkits.core.telemetry.MetricEvent.Companion.illegalCharsRegex
 import software.amazon.awssdk.services.toolkittelemetry.model.Unit as MetricUnit
 import software.aws.toolkits.core.utils.getLogger
 import java.time.Instant
@@ -17,7 +18,7 @@ interface MetricEvent {
 
         fun createTime(createTime: Instant): Builder
 
-        fun datum(buildDatum: Datum.Builder.() -> Unit): Builder
+        fun datum(name: String, buildDatum: Datum.Builder.() -> Unit = {}): Builder
 
         fun build(): MetricEvent
     }
@@ -37,18 +38,31 @@ interface MetricEvent {
 
             fun metadata(key: String, value: String): Builder
 
+            fun metadata(key: String, value: Boolean): Builder = metadata(key, value.toString())
+
+            fun count(value: Double = 1.0): Builder {
+                value(value)
+                unit(MetricUnit.COUNT)
+                return this
+            }
+
             fun build(): Datum
         }
     }
+
+    companion object {
+        val illegalCharsRegex = "[^\\w+-.:]".toRegex()
+    }
 }
 
-class DefaultMetricEvent(
+fun String.replaceIllegal(replacement: String = "") = this.replace(illegalCharsRegex, replacement)
+
+class DefaultMetricEvent internal constructor(
     override val namespace: String,
     override val createTime: Instant,
     override val data: Iterable<MetricEvent.Datum>
 ) : MetricEvent {
-    class BuilderImpl : MetricEvent.Builder {
-        private var namespace: String? = null
+    class BuilderImpl(private var namespace: String) : MetricEvent.Builder {
         private var createTime: Instant = Instant.now()
         private var data: MutableCollection<MetricEvent.Datum> = mutableListOf()
 
@@ -62,27 +76,18 @@ class DefaultMetricEvent(
             return this
         }
 
-        override fun datum(buildDatum: MetricEvent.Datum.Builder.() -> Unit): MetricEvent.Builder {
-            val builder = DefaultDatum.builder()
+        override fun datum(name: String, buildDatum: MetricEvent.Datum.Builder.() -> Unit): MetricEvent.Builder {
+            val builder = DefaultDatum.builder(name)
             buildDatum(builder)
             data.add(builder.build())
             return this
         }
 
-        override fun build(): MetricEvent {
-            val namespace: String = this.namespace
-                    ?: throw IllegalArgumentException("Cannot build MetricEvent.Datum without a namespace").also {
-                        LOG.error(it.message, it)
-                    }
-
-            return DefaultMetricEvent(namespace, createTime, data)
-        }
+        override fun build(): MetricEvent = DefaultMetricEvent(namespace.replaceIllegal(), createTime, data)
     }
 
     companion object {
-        private val LOG = getLogger<DefaultMetricEvent>()
-
-        fun builder(): MetricEvent.Builder = BuilderImpl()
+        fun builder(namespace: String): MetricEvent.Builder = BuilderImpl(namespace)
     }
 
     class DefaultDatum(
@@ -91,8 +96,7 @@ class DefaultMetricEvent(
         override val unit: MetricUnit,
         override val metadata: Map<String, String>
     ) : MetricEvent.Datum {
-        class BuilderImpl : MetricEvent.Datum.Builder {
-            private var name: String? = null
+        class BuilderImpl(private var name: String) : MetricEvent.Datum.Builder {
             private var value: Double = 0.0
             private var unit: MetricUnit = MetricUnit.NONE
             private val metadata: MutableMap<String, String> = HashMap()
@@ -127,25 +131,18 @@ class DefaultMetricEvent(
                 return this
             }
 
-            override fun build(): MetricEvent.Datum {
-                val name: String = this.name
-                    ?: throw IllegalArgumentException("Cannot build MetricEvent.Datum without a name").also {
-                        LOG.error(it.message, it)
-                    }
-
-                return DefaultDatum(
-                        name,
-                        this.value,
-                        this.unit,
-                        this.metadata
-                )
-            }
+            override fun build(): MetricEvent.Datum = DefaultDatum(
+                name.replaceIllegal(),
+                this.value,
+                this.unit,
+                this.metadata
+            )
         }
 
         companion object {
             private val LOG = getLogger<DefaultDatum>()
 
-            fun builder(): MetricEvent.Datum.Builder = BuilderImpl()
+            fun builder(name: String): MetricEvent.Datum.Builder = BuilderImpl(name)
 
             const val MAX_METADATA_ENTRIES: Int = 10
         }

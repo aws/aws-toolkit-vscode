@@ -9,7 +9,6 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.util.text.nullize
 import com.intellij.util.ui.UIUtil
@@ -19,6 +18,7 @@ import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.core.utils.listBucketsByRegion
+import software.aws.toolkits.jetbrains.components.telemetry.LoggingDialogWrapper
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
@@ -75,7 +75,7 @@ class EditFunctionDialog(
     private val memorySize: Int = DEFAULT_MEMORY,
     private val xrayEnabled: Boolean = false,
     private val role: IamRole? = null
-) : DialogWrapper(project) {
+) : LoggingDialogWrapper(project) {
 
     constructor(project: Project, lambdaFunction: LambdaFunction, mode: EditFunctionMode = UPDATE_CONFIGURATION) :
             this(
@@ -334,6 +334,8 @@ class EditFunctionDialog(
             }
         }
     }
+
+    override fun getNamespace(): String = "${mode.name}FunctionDialog"
 
     @TestOnly
     fun getViewForTestAssertions() = view
