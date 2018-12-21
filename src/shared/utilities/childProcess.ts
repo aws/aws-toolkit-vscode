@@ -29,7 +29,7 @@ export class ChildProcess {
     private readonly _process: string
     private readonly _args: string[] | undefined
 
-    private _childProcess: child_process.ChildProcess | undefined = undefined
+    private _childProcess: child_process.ChildProcess | undefined
     private readonly _onChildProcessClosed: events.EventEmitter = new events.EventEmitter()
     private readonly _stdoutChunks: string[] = []
     private readonly _stderrChunks: string[] = []

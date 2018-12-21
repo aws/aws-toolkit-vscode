@@ -19,7 +19,7 @@ abstract class SamCliCommand<T> {
 
     protected readonly samCliLocation: string | undefined
 
-    protected constructor(protected readonly config: SamCliConfiguration) {
+    protected constructor(config: SamCliConfiguration) {
         this.samCliLocation = config.getSamCliLocation()
     }
 
