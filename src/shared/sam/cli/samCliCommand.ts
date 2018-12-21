@@ -5,11 +5,14 @@
 
 'use strict'
 
+import * as nls from 'vscode-nls'
 import { extensionSettingsPrefix } from '../../constants'
 import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
 import { SamCliConfiguration } from './samCliConfiguration'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
 import { SamCliProcess } from './samCliProcess'
+
+const localize = nls.loadMessageBundle()
 
 /**
  * Represents a call to sam cli
@@ -45,7 +48,12 @@ export class SamCliCommand {
         const samCliLocation: string | undefined = samCliConfig.getSamCliLocation()
 
         if (!samCliLocation) {
-            throw new Error('Could not get SAM CLI location')
+            throw new Error(
+                localize(
+                    'AWS.samcli.error.notFound.brief',
+                    'Could not get SAM CLI location'
+                )
+            )
         }
 
         return samCliLocation

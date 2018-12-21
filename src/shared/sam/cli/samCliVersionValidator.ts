@@ -31,8 +31,8 @@ export class SamCliVersionValidator {
     )
 
     private static readonly ACTION_GO_TO_AWS_TOOLKIT_PAGE = localize(
-        'AWS.samcli.userChoice.visit.awstoolkit.url',
-        'Get AWS Toolkit'
+        'AWS.samcli.userChoice.update.awstoolkit.url',
+        'Update AWS Toolkit'
     )
 
     private readonly _versionProvider: SamCliVersionProvider

@@ -55,10 +55,10 @@ export class DefaultSamCliVersionProvider implements SamCliVersionProvider {
         const samInfoResults = await process.promise()
 
         if (samInfoResults.exitCode !== 0) {
-            console.log('SAM CLI info failure', samInfoResults)
+            console.error('SAM CLI info failure', samInfoResults)
 
             // tslint:disable-next-line:max-line-length
-            throw new Error(`SAM CLI info call failed with error code ${samInfoResults.exitCode} and stderr ${samInfoResults.stderr}`)
+            throw new Error(`SAM CLI info call failed.\nerror code: ${samInfoResults.exitCode}\nstderr: ${samInfoResults.stderr}`)
         }
 
         const samCliInfoResponse: SamCliInfoResponse | undefined =

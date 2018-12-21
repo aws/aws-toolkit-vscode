@@ -71,13 +71,14 @@
     "AWS.samcli.detect.settings.not.updated": "No settings changes necessary.",
     "AWS.samcli.configured.location": "Configured SAM CLI Location: {0}",
     "AWS.samcli.error.notFound": "Unable to find the SAM CLI, which is required to create new Serverless Applications and debug them locally. If you have already installed the SAM CLI, update your User Settings by locating it.",
+    "AWS.samcli.error.notFound.brief": "Could not get SAM CLI location",
     "AWS.samcli.notification.version.invalid": "Your SAM CLI version {0} does not meet requirements ({1} - {2}). {3}",
     "AWS.samcli.notification.version.valid": "Your SAM CLI version {0} is valid.",
     "AWS.samcli.recommend.update.toolkit": "Please update your AWS Toolkit.",
     "AWS.samcli.recommend.update.samcli": "Please update your SAM CLI.",
     "AWS.samcli.userChoice.browse": "Locate SAM CLI...",
     "AWS.samcli.userChoice.visit.install.url": "Get SAM CLI",
-    "AWS.samcli.userChoice.visit.awstoolkit.url": "Get AWS Toolkit",
+    "AWS.samcli.userChoice.update.awstoolkit.url": "Update AWS Toolkit",
     "AWS.generic.response.no": "No",
     "AWS.generic.response.yes": "Yes"
 }
