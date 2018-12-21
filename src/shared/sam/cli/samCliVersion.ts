@@ -18,8 +18,8 @@ export enum SamCliVersionValidation {
 
 export class SamCliVersion {
 
-    public static readonly MINIMUM_SAM_CLI_VERSION = '0.7.0'
-    public static readonly MAXIMUM_SAM_CLI_VERSION = '0.11.0'
+    public static readonly MINIMUM_SAM_CLI_VERSION_INCLUSIVE = '0.7.0'
+    public static readonly MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE = '0.11.0'
 
     public static validate(version?: string): SamCliVersionValidation {
         if (!version) {
@@ -30,11 +30,11 @@ export class SamCliVersion {
             return SamCliVersionValidation.VersionNotParseable
         }
 
-        if (semver.lt(version, this.MINIMUM_SAM_CLI_VERSION)) {
+        if (semver.lt(version, this.MINIMUM_SAM_CLI_VERSION_INCLUSIVE)) {
             return SamCliVersionValidation.VersionTooLow
         }
 
-        if (semver.gt(version, this.MAXIMUM_SAM_CLI_VERSION)) {
+        if (semver.gte(version, this.MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE)) {
             return SamCliVersionValidation.VersionTooHigh
         }
 
@@ -48,10 +48,6 @@ export interface SamCliVersionProvider {
 }
 
 export class DefaultSamCliVersionProvider implements SamCliVersionProvider {
-    public constructor() {
-
-    }
-
     public async getSamCliVersion(): Promise<string | undefined> {
         const process: SamCliProcess = new SamInfoCliCommand().asSamCliProcess()
         process.start()

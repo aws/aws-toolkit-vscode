@@ -13,12 +13,12 @@ describe('SamCliVersionValidator', async () => {
     it('validates', async () => {
 
         const validator = new SamCliVersionValidator({
-            getSamCliVersion: async () => SamCliVersion.MAXIMUM_SAM_CLI_VERSION
+            getSamCliVersion: async () => SamCliVersion.MINIMUM_SAM_CLI_VERSION_INCLUSIVE
         })
 
         const validationResult: SamCliVersionValidatorResult = await validator.validate()
 
-        assert.equal(validationResult.version, SamCliVersion.MAXIMUM_SAM_CLI_VERSION)
+        assert.equal(validationResult.version, SamCliVersion.MINIMUM_SAM_CLI_VERSION_INCLUSIVE)
         assert.equal(validationResult.validation, SamCliVersionValidation.Valid)
     })
 })

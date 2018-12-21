@@ -17,8 +17,7 @@ describe('SamCliVersion', async () => {
 
     it('validates valid versions', async () => {
         [
-            SamCliVersion.MINIMUM_SAM_CLI_VERSION,
-            SamCliVersion.MAXIMUM_SAM_CLI_VERSION,
+            SamCliVersion.MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
             '0.7.1',
             '0.8.0',
             '0.10.999',
@@ -46,7 +45,8 @@ describe('SamCliVersion', async () => {
 
     it('validates later versions', async () => {
         [
-            semver.parse(SamCliVersion.MAXIMUM_SAM_CLI_VERSION)!.inc('patch').version,
+            SamCliVersion.MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE,
+            semver.parse(SamCliVersion.MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE)!.inc('patch').version,
             '0.11.1',
             '0.999.0',
         ].forEach(version => {

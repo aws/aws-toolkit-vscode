@@ -80,8 +80,8 @@ export class SamCliVersionValidator {
                 'AWS.samcli.notification.version.invalid',
                 'Your SAM CLI version {0} does not meet requirements ({1} - {2}). {3}',
                 validationResult.version,
-                SamCliVersion.MINIMUM_SAM_CLI_VERSION,
-                SamCliVersion.MAXIMUM_SAM_CLI_VERSION,
+                SamCliVersion.MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
+                SamCliVersion.MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE,
                 this.getNotificationRecommendation(validationResult.validation)
             ),
             ...actions
