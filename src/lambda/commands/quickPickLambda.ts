@@ -9,7 +9,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { FunctionNode } from '../explorer/functionNode'
+import { FunctionNode } from '../../explorer/nodes/functionNode'
 
 class QuickPickLambda extends FunctionNode implements vscode.QuickPickItem {
     public label: string

@@ -6,7 +6,7 @@
 'use strict'
 
 import * as assert from 'assert'
-import { RegionNode } from '../../../lambda/explorer/regionNode'
+import { RegionNode } from '../../../explorer/nodes/regionNode'
 
 // TODO: create test for getChildren() after mocking is introduced
 describe('RegionNode', () => {

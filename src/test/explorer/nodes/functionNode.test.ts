@@ -8,7 +8,7 @@
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
 import { Uri } from 'vscode'
-import { FunctionNode } from '../../../lambda/explorer/functionNode'
+import { FunctionNode } from '../../../explorer/nodes/functionNode'
 import { ext } from '../../../shared/extensionGlobals'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
@@ -23,7 +23,7 @@ describe('FunctionNode', () => {
         }
     }
 
-    before(function() {
+    before(() => {
         ext.context = new FakeExtensionContextOverride()
         fakeFunctionConfig = {
             FunctionName: 'testFunctionName',

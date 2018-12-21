@@ -6,8 +6,9 @@
 'use strict'
 
 import { TreeItem, TreeItemCollapsibleState } from 'vscode'
+import { getCloudFormationsForRegion } from '../../cloudformation/utils'
+import { getLambdaFunctionsForRegion } from '../../lambda/utils'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
-import { getCloudFormationsForRegion, getLambdaFunctionsForRegion } from '../utils'
 import { CloudFormationNode } from './cloudFormationNode'
 import { FunctionNode } from './functionNode'
 import { GenericNode } from './genericNode'

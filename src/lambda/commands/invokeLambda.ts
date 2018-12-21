@@ -10,6 +10,7 @@ import _ = require('lodash')
 import path = require('path')
 import * as vscode from 'vscode'
 import xml2js = require('xml2js')
+import { FunctionNode } from '../../explorer/nodes/functionNode'
 import { AwsContext } from '../../shared/awsContext'
 import { ext } from '../../shared/extensionGlobals'
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
@@ -17,7 +18,6 @@ import { ResourceFetcher } from '../../shared/resourceFetcher'
 import { FileResourceLocation, WebResourceLocation } from '../../shared/resourceLocation'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { sampleRequestManifestPath, sampleRequestPath } from '../constants'
-import { FunctionNode } from '../explorer/functionNode'
 import { SampleRequest } from '../models/sampleRequest'
 import { LambdaTemplates } from '../templates/lambdaTemplates'
 import { getSelectedLambdaNode } from '../utils'

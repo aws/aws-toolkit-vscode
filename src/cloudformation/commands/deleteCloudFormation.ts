@@ -10,7 +10,7 @@ const localize = nls.loadMessageBundle()
 
 import { CloudFormation } from 'aws-sdk'
 import * as vscode from 'vscode'
-import { CloudFormationNode } from '../explorer/cloudFormationNode'
+import { CloudFormationNode } from '../../explorer/nodes/cloudFormationNode'
 import { getSelectedCloudFormationNode } from '../utils'
 
 export async function deleteCloudFormation(element?: CloudFormationNode) {

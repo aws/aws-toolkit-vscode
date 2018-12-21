@@ -6,8 +6,8 @@
 'use strict'
 
 import * as assert from 'assert'
-import { GenericNode } from '../../../lambda/explorer/genericNode'
-import { NoFunctionsNode } from '../../../lambda/explorer/noFunctionsNode'
+import { GenericNode } from '../../../explorer/nodes/genericNode'
+import { NoFunctionsNode } from '../../../explorer/nodes/noFunctionsNode'
 
 describe('GenericNode', () => {
 

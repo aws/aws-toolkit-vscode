@@ -7,9 +7,9 @@
 
 import _ = require('lodash')
 import * as vscode from 'vscode'
+import { FunctionNode } from '../../explorer/nodes/functionNode'
 import { AwsContext } from '../../shared/awsContext'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
-import { FunctionNode } from '../explorer/functionNode'
 import { LambdaTemplates } from '../templates/lambdaTemplates'
 import { getSelectedLambdaNode } from '../utils'
 

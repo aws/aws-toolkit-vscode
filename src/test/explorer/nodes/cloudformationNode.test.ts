@@ -8,9 +8,9 @@
 import * as assert from 'assert'
 import { CloudFormation, Lambda } from 'aws-sdk'
 import { Uri } from 'vscode'
-import { CloudFormationNode } from '../../../lambda/explorer/cloudFormationNode'
-import { FunctionNode } from '../../../lambda/explorer/functionNode'
-import { NoFunctionsNode } from '../../../lambda/explorer/noFunctionsNode'
+import { CloudFormationNode } from '../../../explorer/nodes/cloudFormationNode'
+import { FunctionNode } from '../../../explorer/nodes/functionNode'
+import { NoFunctionsNode } from '../../../explorer/nodes/noFunctionsNode'
 import { ext } from '../../../shared/extensionGlobals'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
@@ -25,7 +25,7 @@ describe('CloudFormationNode', () => {
         }
     }
 
-    before(function() {
+    before(() => {
         ext.context = new FakeExtensionContextOverride()
         fakeStackSummary = {
             CreationTime: new Date(),
@@ -71,25 +71,31 @@ describe('CloudFormationNode', () => {
 
         }
 
-        const lambda1 = new FunctionNode({
-                                            FunctionName: 'lambda1Name',
-                                            FunctionArn: 'lambda1ARN'
-                                         },
-                                         new Lambda())
-        const lambda2 = new FunctionNode({
-                                            FunctionName: 'lambda2Name',
-                                            FunctionArn: 'lambda2ARN'
-                                         },
-                                         new Lambda())
-        const lambda3 = new FunctionNode({
-                                            FunctionName: 'lambda3Name',
-                                            FunctionArn: 'lambda3ARN'
-                                         },
-                                         new Lambda())
+        const lambda1 = new FunctionNode(
+            {
+                FunctionName: 'lambda1Name',
+                FunctionArn: 'lambda1ARN'
+            },
+            new Lambda())
+        const lambda2 = new FunctionNode(
+            {
+                FunctionName: 'lambda2Name',
+                FunctionArn: 'lambda2ARN'
+            },
+            new Lambda())
+        const lambda3 = new FunctionNode(
+            {
+                FunctionName: 'lambda3Name',
+                FunctionArn: 'lambda3ARN'
+            },
+            new Lambda())
 
         const testNode =
-            new DerivedCloudFormationNode(fakeStackSummary, new CloudFormation(),
-                                          [lambda1, lambda2, lambda3])
+            new DerivedCloudFormationNode(
+                fakeStackSummary,
+                new CloudFormation(),
+                [lambda1, lambda2, lambda3]
+            )
         testNode.setStackDescribed(true)
         testNode.addLambdaResource('lambda1Name')
         testNode.addLambdaResource('lambda3Name')

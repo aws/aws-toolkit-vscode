@@ -8,10 +8,10 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
+import { deleteCloudFormation } from './cloudformation/commands/deleteCloudFormation'
 import { AwsExplorer } from './explorer/awsExplorer'
-import { deleteCloudFormation } from './lambda/commands/deleteCloudFormation'
-import { CloudFormationNode } from './lambda/explorer/cloudFormationNode'
-import { RegionNode } from './lambda/explorer/regionNode'
+import { CloudFormationNode } from './explorer/nodes/cloudFormationNode'
+import { RegionNode } from './explorer/nodes/regionNode'
 import { NodeDebugConfigurationProvider } from './lambda/local/debugConfigurationProvider'
 import { AWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
