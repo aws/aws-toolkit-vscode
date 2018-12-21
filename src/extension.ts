@@ -8,10 +8,10 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
+import { AwsExplorer } from './explorer/awsExplorer'
 import { deleteCloudFormation } from './lambda/commands/deleteCloudFormation'
 import { CloudFormationNode } from './lambda/explorer/cloudFormationNode'
 import { RegionNode } from './lambda/explorer/regionNode'
-import { LambdaProvider } from './lambda/lambdaProvider'
 import { NodeDebugConfigurationProvider } from './lambda/local/debugConfigurationProvider'
 import { AWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
@@ -72,14 +72,14 @@ export async function activate(context: vscode.ExtensionContext) {
         'aws.deleteCloudFormation',
         async (node: CloudFormationNode) => await deleteCloudFormation(node))
 
-    const providers = [
-        new LambdaProvider(awsContext, awsContextTrees, regionProvider, resourceFetcher)
-    ]
-
-    providers.forEach((p) => {
-        p.initialize()
-        context.subscriptions.push(vscode.window.registerTreeDataProvider(p.viewProviderId, p))
-    })
+    const awsExplorer: AwsExplorer = new AwsExplorer(
+        awsContext,
+        awsContextTrees,
+        regionProvider,
+        resourceFetcher
+    )
+    awsExplorer.initialize()
+    context.subscriptions.push(vscode.window.registerTreeDataProvider(awsExplorer.viewProviderId, awsExplorer))
 
     context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider(
         'lambda-node',

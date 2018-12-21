@@ -6,8 +6,8 @@
 import * as assert from 'assert'
 import * as AWS from 'aws-sdk'
 import * as vscode from 'vscode'
+import { AwsExplorer } from '../../explorer/awsExplorer'
 import { RegionNode } from '../../lambda/explorer/regionNode'
-import { LambdaProvider } from '../../lambda/lambdaProvider'
 import { AwsContext, ContextChangeEventsArgs } from '../../shared/awsContext'
 import { AwsContextTreeCollection } from '../../shared/awsContextTreeCollection'
 import { RegionInfo } from '../../shared/regions/regionInfo'
@@ -15,7 +15,7 @@ import { RegionProvider } from '../../shared/regions/regionProvider'
 import { ResourceFetcher } from '../../shared/resourceFetcher'
 import { ResourceLocation } from '../../shared/resourceLocation'
 
-describe('LambdaProvider', function(): void {
+describe('AwsExplorer', async () => {
 
     it('displays region nodes with user-friendly region names', async () => {
 
@@ -46,7 +46,7 @@ describe('LambdaProvider', function(): void {
             }
 
             public async getExplorerRegions(): Promise<string[]> {
-                return [ regionCode ]
+                return [regionCode]
             }
 
             public async addExplorerRegion(...regions: string[]): Promise<void> {
@@ -69,9 +69,9 @@ describe('LambdaProvider', function(): void {
         const awsContextTreeCollection = new AwsContextTreeCollection()
         const resourceFetcher = new FakeResourceFetcher()
 
-        const lambdaProvider = new LambdaProvider(awsContext, awsContextTreeCollection, regionProvider, resourceFetcher)
+        const awsExplorer = new AwsExplorer(awsContext, awsContextTreeCollection, regionProvider, resourceFetcher)
 
-        const treeNodesPromise = lambdaProvider.getChildren()
+        const treeNodesPromise = awsExplorer.getChildren()
 
         assert(treeNodesPromise)
         const treeNodes = await treeNodesPromise

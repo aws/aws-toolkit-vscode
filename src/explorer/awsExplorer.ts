@@ -9,6 +9,14 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
+import { deployLambda } from '../lambda/commands/deployLambda'
+import { getLambdaConfig } from '../lambda/commands/getLambdaConfig'
+import { invokeLambda } from '../lambda/commands/invokeLambda'
+import { newLambda } from '../lambda/commands/newLambda'
+import { FunctionNode } from '../lambda/explorer/functionNode'
+import { RegionNode } from '../lambda/explorer/regionNode'
+import { DefaultLambdaPolicyProvider, LambdaPolicyView } from '../lambda/lambdaPolicy'
+import * as utils from '../lambda/utils'
 import { AwsContext } from '../shared/awsContext'
 import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
 import { RegionProvider } from '../shared/regions/regionProvider'
@@ -16,18 +24,10 @@ import { ResourceFetcher } from '../shared/resourceFetcher'
 import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/refreshableAwsTreeProvider'
-import { deployLambda } from './commands/deployLambda'
-import { getLambdaConfig } from './commands/getLambdaConfig'
-import { invokeLambda } from './commands/invokeLambda'
-import { newLambda } from './commands/newLambda'
-import { FunctionNode } from './explorer/functionNode'
-import { RegionNode } from './explorer/regionNode'
-import { DefaultLambdaPolicyProvider, LambdaPolicyView } from './lambdaPolicy'
-import * as utils from './utils'
 
-export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
+export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
     public static readonly VIEW_PROVIDER_ID: string = 'aws-explorer'
-    public readonly viewProviderId: string = LambdaProvider.VIEW_PROVIDER_ID
+    public readonly viewProviderId: string = AwsExplorer.VIEW_PROVIDER_ID
     public readonly onDidChangeTreeData: vscode.Event<AWSTreeNodeBase | undefined>
     private readonly _onDidChangeTreeData: vscode.EventEmitter<AWSTreeNodeBase | undefined>
 
@@ -68,9 +68,9 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
             })
 
         vscode.commands.registerCommand(
-            'aws.refreshLambdaProviderNode',
-            async (lambdaProvider: LambdaProvider, element: AWSTreeNodeBase) => {
-                lambdaProvider._onDidChangeTreeData.fire(element)
+            'aws.refreshAwsExplorerNode',
+            async (awsExplorer: AwsExplorer, element: AWSTreeNodeBase) => {
+                awsExplorer._onDidChangeTreeData.fire(element)
             }
         )
 
@@ -92,7 +92,7 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
                             'AWS.explorerNode.lambda.retry',
                             'Unable to load Lambda Functions, click here to retry'
                         ),
-                        'aws.refreshLambdaProviderNode',
+                        'aws.refreshAwsExplorerNode',
                         [this, element],
                     )
                 ])
