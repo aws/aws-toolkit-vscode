@@ -19,10 +19,8 @@ describe('RegionNode', () => {
 
         const testNode = new RegionNode(regionCode, regionName)
 
-        const treeItem = testNode.getTreeItem()
-
-        assert.equal(treeItem.label, regionName)
-        assert.equal(treeItem.tooltip, `${regionName} [${regionCode}]`)
+        assert.equal(testNode.label, regionName)
+        assert.equal(testNode.tooltip, `${regionName} [${regionCode}]`)
     })
 
 })

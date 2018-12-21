@@ -9,21 +9,24 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { FunctionNode } from '../explorer/functionNode'
+import { FunctionNodeBase } from '../explorer/functionNode'
+import { FunctionInfo } from '../functionInfo'
 
-class QuickPickLambda extends FunctionNode implements vscode.QuickPickItem {
-    public label: string
+class QuickPickLambda extends FunctionNodeBase implements vscode.QuickPickItem {
     public description?: string | undefined
     public detail?: string | undefined
     public picked?: boolean | undefined
 
-    public constructor(fn: FunctionNode) {
-        super(fn.functionConfiguration, fn.lambda)
-        this.label = fn.functionConfiguration.FunctionName!
+    public constructor(info: FunctionInfo) {
+        super(info)
+    }
+
+    public get label(): string {
+        return super.label || ''
     }
 }
 
-export async function quickPickLambda(lambdas: FunctionNode[]): Promise<FunctionNode | undefined> {
+export async function quickPickLambda(lambdas: FunctionInfo[]): Promise<FunctionNodeBase | undefined> {
     try {
         if (!lambdas || lambdas.length === 0) {
             vscode.window.showInformationMessage(localize(

@@ -14,12 +14,17 @@
             "group": {
                 "kind": "build",
                 "isDefault": true
-            }
+            },
         },
         {
             "type": "npm",
             "script": "lint",
-            "problemMatcher": []
+            "problemMatcher": "$tslint5"
+        },
+        {
+            "type": "npm",
+            "script": "compile",
+            "problemMatcher": "$tsc"
         }
     ]
 }

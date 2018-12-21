@@ -5,43 +5,34 @@
 
 'use strict'
 
-import { Command, Disposable, TreeItem } from 'vscode'
+import {
+    Disposable,
+    TreeItem,
+    TreeItemCollapsibleState
+} from 'vscode'
 import { AwsContext } from '../awsContext'
 
-export abstract class AWSTreeNodeBase extends Disposable {
-
-    public readonly supportsPaging: boolean = false
-
+export abstract class AWSTreeNodeBase extends TreeItem implements Disposable {
     protected children: AWSTreeNodeBase[] | undefined
-    protected disposable: Disposable | undefined
 
-    public constructor() {
-        super(() => this.dispose())
+    protected constructor(
+        label: string,
+        collapsibleState?: TreeItemCollapsibleState
+    ) {
+        super(label, collapsibleState)
     }
 
     public dispose() {
-        if (this.disposable !== undefined) {
-            this.disposable.dispose()
-            this.disposable = undefined
-        }
-
-        this.resetChildren()
-    }
-
-    public abstract getTreeItem(): TreeItem
-
-    public abstract getChildren(): Thenable<AWSTreeNodeBase[]>
-
-    public getCommand(): Command | undefined {
-        return undefined
-    }
-
-    public refresh(newContext: AwsContext): void { }
-
-    public resetChildren(): void {
         if (this.children !== undefined) {
             this.children.forEach(c => c.dispose())
             this.children = undefined
         }
+    }
+
+    public getChildren(): Thenable<AWSTreeNodeBase[]> {
+        return Promise.resolve([])
+    }
+
+    public refresh(context: AwsContext): void {
     }
 }

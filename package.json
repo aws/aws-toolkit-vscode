@@ -109,33 +109,33 @@
             "view/item/context": [
                 {
                     "command": "aws.invokeLambda",
-                    "when": "view == lambda && viewItem == awsLambdaFn",
+                    "when": "view == lambda && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
                     "group": "0@1"
                 },
                 {
                     "command": "aws.deployLambda",
-                    "when": "view == lambda && viewItem == awsLambdaFn",
+                    "when": "view == lambda && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
                     "group": "0@2"
                 },
                 {
                     "command": "aws.getLambdaConfig",
-                    "when": "view == lambda && viewItem == awsLambdaFn",
+                    "when": "view == lambda && viewItem == =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
                     "group": "0@3"
                 },
                 {
                     "command": "aws.getLambdaPolicy",
-                    "when": "view == lambda && viewItem == awsLambdaFn",
+                    "when": "view == lambda && viewItem == =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
                     "group": "0@4"
                 },
                 {
                     "command": "aws.deleteCloudFormation",
-                    "when": "view == lambda && viewItem == awsCloudFormation",
+                    "when": "view == lambda && viewItem == awsCloudFormationNode",
                     "group": "0@5"
                 },
                 {
                     "command": "aws.hideRegion",
                     "group": "0@1",
-                    "when": "view == lambda && viewItem == awsRegion"
+                    "when": "view == lambda && viewItem == awsRegionNode"
                 }
             ]
         },
