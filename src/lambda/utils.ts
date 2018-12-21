@@ -60,8 +60,10 @@ export async function getSelectedLambdaNode(awsContext: AwsContext, element?: Fu
     throw new Error('No lambda found.')
 }
 
-export async function getCloudFormationsForRegion(regionCode: string,
-                                                  lambdaFunctions: FunctionNode[]): Promise<CloudFormationNode[]> {
+export async function getCloudFormationsForRegion(
+    regionCode: string,
+    lambdaFunctions: FunctionNode[]
+): Promise<CloudFormationNode[]> {
     const client = await ext.sdkClientBuilder.createAndConfigureSdkClient(
         opts => new CloudFormation(opts),
         undefined,
@@ -71,12 +73,14 @@ export async function getCloudFormationsForRegion(regionCode: string,
     return await listCloudFormations(client, lambdaFunctions)
 }
 
-export async function listCloudFormations(cloudFormation: CloudFormation,
-                                          lambdaFunctions: FunctionNode[]): Promise<CloudFormationNode[]> {
+export async function listCloudFormations(
+    cloudFormation: CloudFormation,
+    lambdaFunctions: FunctionNode[]
+): Promise<CloudFormationNode[]> {
     // TODO: this 'loading' message needs to go under each regional entry
     // in the explorer, and be removed when that region's query completes
     const status = vscode.window.setStatusBarMessage(
-        localize('AWS.message.statusBar.loading.cloudFormation', 'Loading CloudFormations...'))
+        localize('AWS.message.statusBar.loading.cloudFormation', 'Loading CloudFormation Stacks...'))
     const arr: CloudFormationNode[] = []
 
     try {

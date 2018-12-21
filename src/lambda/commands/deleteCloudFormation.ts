@@ -26,8 +26,11 @@ export async function deleteCloudFormation(element?: CloudFormationNode) {
         }
 
         const userResponse = await vscode.window.showInformationMessage(
-            localize('AWS.message.prompt.deleteCloudFormation',
-                     'Are you sure you want to delete {0}?', cloudFormationName),
+            localize(
+                'AWS.message.prompt.cloudFormation.delete',
+                'Are you sure you want to delete CloudFormation Stack {0}?',
+                cloudFormationName
+            ),
             responseYes,
             responseNo)
 
@@ -38,9 +41,12 @@ export async function deleteCloudFormation(element?: CloudFormationNode) {
             await cf.cloudFormation.deleteStack(req).promise()
 
             vscode.window.showInformationMessage(
-                localize('AWS.message.info.cloudFormation.delete',
-                         'Deleted CloudFormation Stack {0}',
-                         cloudFormationName))
+                localize(
+                    'AWS.message.info.cloudFormation.delete',
+                    'Deleted CloudFormation Stack {0}',
+                    cloudFormationName
+                )
+            )
 
             cf.dispose()
         }
@@ -49,9 +55,13 @@ export async function deleteCloudFormation(element?: CloudFormationNode) {
         const error = err as Error
 
         vscode.window.showInformationMessage(
-            localize('AWS.message.error.cloudFormation.delete',
-                     'An error occurred while deleting {0}. Please check the stack events on the AWS Console',
-                     cloudFormationName))
+            localize(
+                'AWS.message.error.cloudFormation.delete',
+                // tslint:disable-next-line:max-line-length
+                'An error occurred while deleting CloudFormation Stack {0}. Please check the stack events on the AWS Console.',
+                cloudFormationName
+            )
+        )
 
         console.error(error.message)
     }
