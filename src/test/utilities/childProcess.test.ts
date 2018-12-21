@@ -10,9 +10,9 @@ import * as del from 'del'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { SamCliProcess } from '../../../../shared/sam/cli/samCliProcess'
+import { ChildProcess } from '../../shared/utilities/childProcess'
 
-describe('SamCliProcess', async () => {
+describe('ChildProcess', async () => {
 
     let tempFolder: string
 
@@ -31,13 +31,13 @@ describe('SamCliProcess', async () => {
             const batchFile = path.join(tempFolder, 'test-script.bat')
             writeBatchFile(batchFile)
 
-            const samCliProcess = new SamCliProcess(
+            const childProcess = new ChildProcess(
                 batchFile
             )
 
-            samCliProcess.start()
+            childProcess.start()
 
-            const result = await samCliProcess.promise()
+            const result = await childProcess.promise()
 
             assert.equal(result.exitCode, 0)
             assert.equal(result.stdout, 'hi')
@@ -47,14 +47,14 @@ describe('SamCliProcess', async () => {
             const batchFile = path.join(tempFolder, 'test-script.bat')
             writeBatchFile(batchFile)
 
-            const samCliProcess = new SamCliProcess(
+            const childProcess = new ChildProcess(
                 batchFile
             )
 
-            samCliProcess.start()
+            childProcess.start()
 
             assert.throws(() => {
-                samCliProcess.start()
+                childProcess.start()
             })
         })
     }
@@ -64,13 +64,13 @@ describe('SamCliProcess', async () => {
             const scriptFile = path.join(tempFolder, 'test-script.sh')
             writeShellFile(scriptFile)
 
-            const samCliProcess = new SamCliProcess(
+            const childProcess = new ChildProcess(
                 scriptFile
             )
 
-            samCliProcess.start()
+            childProcess.start()
 
-            const result = await samCliProcess.promise()
+            const result = await childProcess.promise()
 
             assert.equal(result.exitCode, 0)
             assert.equal(result.stdout, 'hi')
@@ -80,14 +80,14 @@ describe('SamCliProcess', async () => {
             const scriptFile = path.join(tempFolder, 'test-script.sh')
             writeShellFile(scriptFile)
 
-            const samCliProcess = new SamCliProcess(
+            const childProcess = new ChildProcess(
                 scriptFile
             )
 
-            samCliProcess.start()
+            childProcess.start()
 
             assert.throws(() => {
-                samCliProcess.start()
+                childProcess.start()
             })
         })
     }
@@ -96,12 +96,12 @@ describe('SamCliProcess', async () => {
         const batchFile = path.join(tempFolder, 'test-script.bat')
         writeBatchFile(batchFile)
 
-        const samCliProcess = new SamCliProcess(
+        const childProcess = new ChildProcess(
             batchFile
         )
 
         try {
-            await samCliProcess.promise()
+            await childProcess.promise()
             assert.equal(true, false, 'error expected')
         } catch (err) {
             assert.notEqual(err, undefined)
@@ -111,13 +111,13 @@ describe('SamCliProcess', async () => {
     it('reports error for missing executable', async () => {
         const batchFile = path.join(tempFolder, 'nonExistentScript')
 
-        const samCliProcess = new SamCliProcess(
+        const childProcess = new ChildProcess(
             batchFile
         )
 
-        samCliProcess.start()
+        childProcess.start()
 
-        const result = await samCliProcess.promise()
+        const result = await childProcess.promise()
 
         assert.notEqual(result.exitCode, 0)
         assert.notEqual(result.error, undefined)

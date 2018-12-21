@@ -7,9 +7,9 @@
 
 import { extensionSettingsPrefix } from '../../constants'
 import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
+import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
 import { SamCliConfiguration } from './samCliConfiguration'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
-import { SamCliProcess, SamCliProcessResult } from './samCliProcess'
 
 /**
  * Represents a call to sam cli
@@ -48,14 +48,14 @@ export class SamCliInfoCommand extends SamCliCommand<SamCliInfoResponse> {
     public async execute(): Promise<SamCliInfoResponse> {
         await this.validate()
 
-        const childProcess: SamCliProcess = new SamCliProcess(
+        const childProcess: ChildProcess = new ChildProcess(
             this.samCliLocation!,
             ['--info']
         )
 
         childProcess.start()
 
-        const childProcessResult: SamCliProcessResult = await childProcess.promise()
+        const childProcessResult: ChildProcessResult = await childProcess.promise()
 
         if (childProcessResult.exitCode === 0) {
             const response = this.convertOutput(childProcessResult.stdout)
