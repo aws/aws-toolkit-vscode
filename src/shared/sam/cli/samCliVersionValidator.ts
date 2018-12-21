@@ -80,7 +80,8 @@ export class SamCliVersionValidator {
         const userResponse = await vscode.window.showErrorMessage(
             localize(
                 'AWS.samcli.notification.version.invalid',
-                'Your SAM CLI version {0} does not meet requirements ({1} - {2}). {3}',
+                // tslint:disable-next-line:max-line-length
+                'Your SAM CLI version {0} does not meet requirements ({1}\u00a0\u2264\u00a0version\u00a0<\u00a0{2}). {3}',
                 validationResult.version,
                 SamCliVersion.MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
                 SamCliVersion.MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE,
