@@ -20,6 +20,7 @@
     "AWS.command.getLambdaConfig": "Get Lambda Function Configuration",
     "AWS.command.getLambdaPolicy": "Get Lambda Function Policy",
     "AWS.command.samcli.detect": "Detect SAM CLI",
+    "AWS.command.samcli.validate.version": "Validate SAM CLI Version",
     "AWS.command.deleteCloudFormation": "Delete CloudFormation Stack",
     "AWS.error.mfa.userCancelled": "User cancelled entering authentication code",
     "AWS.error.no.error.code": "No error code",
@@ -70,8 +71,14 @@
     "AWS.samcli.detect.settings.not.updated": "No settings changes necessary.",
     "AWS.samcli.configured.location": "Configured SAM CLI Location: {0}",
     "AWS.samcli.error.notFound": "Unable to find the SAM CLI, which is required to create new Serverless Applications and debug them locally. If you have already installed the SAM CLI, update your User Settings by locating it.",
+    "AWS.samcli.error.notFound.brief": "Could not get SAM CLI location",
+    "AWS.samcli.notification.version.invalid": "Your SAM CLI version {0} does not meet requirements ({1}\u00a0\u2264\u00a0version\u00a0<\u00a0{2}). {3}",
+    "AWS.samcli.notification.version.valid": "Your SAM CLI version {0} is valid.",
+    "AWS.samcli.recommend.update.toolkit": "Please update your AWS Toolkit.",
+    "AWS.samcli.recommend.update.samcli": "Please update your SAM CLI.",
     "AWS.samcli.userChoice.browse": "Locate SAM CLI...",
     "AWS.samcli.userChoice.visit.install.url": "Get SAM CLI",
+    "AWS.samcli.userChoice.update.awstoolkit.url": "Update AWS Toolkit",
     "AWS.generic.response.no": "No",
     "AWS.generic.response.yes": "Yes"
 }

@@ -25,6 +25,7 @@ import { ext } from './shared/extensionGlobals'
 import { safeGet } from './shared/extensionUtilities'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import * as SamCliDetection from './shared/sam/cli/samCliDetection'
+import { SamCliVersionValidator } from './shared/sam/cli/samCliVersionValidator'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { AWSStatusBar } from './shared/statusBar'
 import { PromiseSharer } from './shared/utilities/promiseUtilities'
@@ -104,6 +105,14 @@ async function initializeSamCli(): Promise<void> {
             'samcli.detect',
             async () => await SamCliDetection.detectSamCli(true)
         )
+    )
+
+    vscode.commands.registerCommand(
+        'aws.samcli.validate.version',
+        async () => {
+            const samCliVersionValidator = new SamCliVersionValidator()
+            await samCliVersionValidator.validateAndNotify()
+        }
     )
 
     await SamCliDetection.detectSamCli(false)
