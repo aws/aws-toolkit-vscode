@@ -18,7 +18,7 @@ import {
 const localize = nls.loadMessageBundle()
 
 export interface SamCliVersionValidatorResult {
-    version: string | undefined,
+    version: string,
     validation: SamCliVersionValidation
 }
 
@@ -57,7 +57,7 @@ export class SamCliVersionValidator {
         const validationResult = await this.validate()
 
         if (validationResult.validation === SamCliVersionValidation.Valid) {
-            await this.notifyVersionIsValid(validationResult.version!)
+            await this.notifyVersionIsValid(validationResult.version)
         } else {
             await this.notifyVersionIsNotValid(validationResult)
         }

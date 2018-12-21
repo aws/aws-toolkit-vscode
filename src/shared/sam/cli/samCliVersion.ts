@@ -6,8 +6,7 @@
 'use strict'
 
 import * as semver from 'semver'
-import { SamCliInfoResponse, SamInfoCliCommand } from './samCliCommand'
-import { SamCliProcess } from './samCliProcess'
+import { SamCliInfoCommand } from './samCliCommand'
 
 export enum SamCliVersionValidation {
     Valid,
@@ -44,30 +43,14 @@ export class SamCliVersion {
 }
 
 export interface SamCliVersionProvider {
-    getSamCliVersion(): Promise<string | undefined>
+    getSamCliVersion(): Promise<string>
 }
 
 export class DefaultSamCliVersionProvider implements SamCliVersionProvider {
-    public async getSamCliVersion(): Promise<string | undefined> {
-        const process: SamCliProcess = new SamInfoCliCommand().asSamCliProcess()
-        process.start()
+    public async getSamCliVersion(): Promise<string> {
+        const command: SamCliInfoCommand = new SamCliInfoCommand()
+        const response = await command.execute()
 
-        const samInfoResults = await process.promise()
-
-        if (samInfoResults.exitCode !== 0) {
-            console.error('SAM CLI info failure', samInfoResults)
-
-            // tslint:disable-next-line:max-line-length
-            throw new Error(`SAM CLI info call failed.\nerror code: ${samInfoResults.exitCode}\nstderr: ${samInfoResults.stderr}`)
-        }
-
-        const samCliInfoResponse: SamCliInfoResponse | undefined =
-            SamInfoCliCommand.convertOutput(samInfoResults.stdout)
-
-        if (!!samCliInfoResponse) {
-            return samCliInfoResponse.version
-        }
-
-        return undefined
+        return response.version
     }
 }

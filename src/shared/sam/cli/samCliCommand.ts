@@ -5,89 +5,88 @@
 
 'use strict'
 
-import * as nls from 'vscode-nls'
 import { extensionSettingsPrefix } from '../../constants'
 import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
 import { SamCliConfiguration } from './samCliConfiguration'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
-import { SamCliProcess } from './samCliProcess'
-
-const localize = nls.loadMessageBundle()
+import { SamCliProcess, SamCliProcessResult } from './samCliProcess'
 
 /**
  * Represents a call to sam cli
+ * Callers are expected to ensure SAM CLI is installed and has been configured
  */
-export class SamCliCommand {
+abstract class SamCliCommand<T> {
 
-    private static SAM_CLI_CONFIGURATION: SamCliConfiguration | undefined
-    private readonly _command: string
-    private readonly _args: string[] | undefined
+    protected readonly samCliLocation: string | undefined
 
-    public constructor(
-        args?: string[]
-    ) {
-        this._command = SamCliCommand.getSamExecutablePath()
-        this._args = args
+    protected constructor(protected readonly config: SamCliConfiguration) {
+        this.samCliLocation = config.getSamCliLocation()
     }
+
+    public abstract execute(): Thenable<T>
 
     /**
-     * Creates an object to invoke and manage the sam cli call
+     * Ensures the command is properly set up to run, throws Error if not.
+     * Derived classes should likely call validate at the start of their execute implementations.
      */
-    public asSamCliProcess(): SamCliProcess {
-        return new SamCliProcess(
-            this._command,
-            this._args
-        )
-    }
-
-    // TODO : In the future when we hook up local lambda invokes, implement asTask() here, creating vscode.Task objs.
-
-    private static getSamExecutablePath(): string {
-        const samCliConfig: SamCliConfiguration = this.getSamCliConfiguration()
-
-        const samCliLocation: string | undefined = samCliConfig.getSamCliLocation()
-
-        if (!samCliLocation) {
-            throw new Error(
-                localize(
-                    'AWS.samcli.error.notFound.brief',
-                    'Could not get SAM CLI location'
-                )
-            )
+    protected async validate(): Promise<void> {
+        if (!this.samCliLocation) {
+            throw new Error('SAM CLI location not configured')
         }
-
-        return samCliLocation
-    }
-
-    private static getSamCliConfiguration(): SamCliConfiguration {
-        if (!this.SAM_CLI_CONFIGURATION) {
-            this.SAM_CLI_CONFIGURATION = new SamCliConfiguration(
-                new DefaultSettingsConfiguration(extensionSettingsPrefix),
-                new DefaultSamCliLocationProvider()
-            )
-        }
-
-        return this.SAM_CLI_CONFIGURATION
     }
 }
 
-/**
- * Represents the `sam --info` call
- */
-export class SamInfoCliCommand extends SamCliCommand {
-    public constructor() {
-        super(['--info'])
+export class SamCliInfoCommand extends SamCliCommand<SamCliInfoResponse> {
+
+    public constructor(config: SamCliConfiguration = new SamCliConfiguration(
+        new DefaultSettingsConfiguration(extensionSettingsPrefix),
+        new DefaultSamCliLocationProvider()
+    )) {
+        super(config)
+    }
+
+    public async execute(): Promise<SamCliInfoResponse> {
+        await this.validate()
+
+        const childProcess: SamCliProcess = new SamCliProcess(
+            this.samCliLocation!,
+            ['--info']
+        )
+
+        childProcess.start()
+
+        const childProcessResult: SamCliProcessResult = await childProcess.promise()
+
+        if (childProcessResult.exitCode === 0) {
+            const response = this.convertOutput(childProcessResult.stdout)
+
+            if (!!response) {
+                return response
+            }
+
+            throw new Error('SAM CLI did not return expected data')
+        }
+
+        console.error(`SAM CLI error\nExit code: ${childProcessResult.exitCode}\n${childProcessResult.error}`)
+
+        let errorMessage: string | undefined
+        if (!!childProcessResult.error && !!childProcessResult.error.message) {
+            errorMessage = childProcessResult.error.message
+        } else if (!!childProcessResult.stderr) {
+            errorMessage = childProcessResult.stderr
+        }
+        throw new Error(`sam --info encountered an error: ${errorMessage}`)
     }
 
     /**
      * Parses the output into a typed object with expected data
      * @param text output from a `sam --info` call
      */
-    public static convertOutput(text: string): SamCliInfoResponse | undefined {
+    protected convertOutput(text: string): SamCliInfoResponse | undefined {
         try {
             return JSON.parse(text) as SamCliInfoResponse
         } catch (err) {
-            console.log(err)
+            console.error(err)
 
             return undefined
         }
