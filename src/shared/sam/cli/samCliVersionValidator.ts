@@ -23,6 +23,8 @@ export interface SamCliVersionValidatorResult {
 }
 
 export class SamCliVersionValidator {
+    private static readonly STATUS_BAR_DURATION_MILLIS: number = 3333
+
     private static readonly ACTION_GO_TO_SAM_CLI_PAGE = localize(
         'AWS.samcli.userChoice.visit.install.url',
         'Get SAM CLI'
@@ -68,7 +70,7 @@ export class SamCliVersionValidator {
                 'Your SAM CLI version {0} is valid.',
                 version
             ),
-            3333
+            SamCliVersionValidator.STATUS_BAR_DURATION_MILLIS
         )
     }
 
