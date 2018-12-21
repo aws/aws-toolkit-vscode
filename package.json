@@ -21,7 +21,7 @@
         "onCommand:aws.logout",
         "onCommand:aws.showRegion",
         "onCommand:aws.hideRegion",
-        "onView:lambda",
+        "onView:aws-explorer",
         "onCommand:aws.newLambda",
         "onCommand:aws.invokeLambda",
         "onCommand:aws.deployLambda",
@@ -73,17 +73,17 @@
         "viewsContainers": {
             "activitybar": [
                 {
-                    "id": "aws-explorer",
+                    "id": "aws-view-container",
                     "title": "%AWS.title%",
                     "icon": "media/aws-logo.svg"
                 }
             ]
         },
         "views": {
-            "aws-explorer": [
+            "aws-view-container": [
                 {
-                    "id": "lambda",
-                    "name": "%AWS.lambda.explorerTitle%"
+                    "id": "aws-explorer",
+                    "name": "%AWS.explorer.title%"
                 }
             ]
         },
@@ -91,50 +91,50 @@
             "view/title": [
                 {
                     "command": "aws.newLambda",
-                    "when": "view == lambda",
+                    "when": "view == aws-explorer",
                     "group": "navigation@2"
                 },
                 {
                     "command": "aws.deployLambda",
-                    "when": "view == lambda",
+                    "when": "view == aws-explorer",
                     "group": "navigation@3"
                 },
                 {
                     "command": "aws.invokeLambda",
-                    "when": "view == lambda",
+                    "when": "view == aws-explorer",
                     "group": "navigation@4"
                 }
             ],
             "view/item/context": [
                 {
                     "command": "aws.invokeLambda",
-                    "when": "view == lambda && viewItem == awsLambdaFn",
+                    "when": "view == aws-explorer && viewItem == awsLambdaFn",
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.deployLambda",
-                    "when": "view == lambda && viewItem == awsLambdaFn",
-                    "group": "0@2"
-                },
-                {
                     "command": "aws.getLambdaConfig",
-                    "when": "view == lambda && viewItem == awsLambdaFn",
-                    "group": "0@3"
+                    "when": "view == aws-explorer && viewItem == awsLambdaFn",
+                    "group": "1@1"
                 },
                 {
                     "command": "aws.getLambdaPolicy",
-                    "when": "view == lambda && viewItem == awsLambdaFn",
-                    "group": "0@4"
+                    "when": "view == aws-explorer && viewItem == awsLambdaFn",
+                    "group": "1@2"
+                },
+                {
+                    "command": "aws.deployLambda",
+                    "when": "view == aws-explorer && viewItem == awsLambdaFn",
+                    "group": "2@1"
                 },
                 {
                     "command": "aws.deleteCloudFormation",
-                    "when": "view == lambda && viewItem == awsCloudFormation",
-                    "group": "0@5"
+                    "when": "view == aws-explorer && viewItem == awsCloudFormation",
+                    "group": "0@1"
                 },
                 {
                     "command": "aws.hideRegion",
                     "group": "0@1",
-                    "when": "view == lambda && viewItem == awsRegion"
+                    "when": "view == aws-explorer && viewItem == awsRegion"
                 }
             ]
         },

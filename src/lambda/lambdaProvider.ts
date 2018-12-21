@@ -26,7 +26,8 @@ import { DefaultLambdaPolicyProvider, LambdaPolicyView } from './lambdaPolicy'
 import * as utils from './utils'
 
 export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
-    public viewProviderId: string = 'lambda'
+    public static readonly VIEW_PROVIDER_ID: string = 'aws-explorer'
+    public readonly viewProviderId: string = LambdaProvider.VIEW_PROVIDER_ID
     public readonly onDidChangeTreeData: vscode.Event<AWSTreeNodeBase | undefined>
     private readonly _onDidChangeTreeData: vscode.EventEmitter<AWSTreeNodeBase | undefined>
 
