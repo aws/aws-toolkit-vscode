@@ -16,11 +16,12 @@ import { ResourceFetcher } from '../shared/resourceFetcher'
 import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/refreshableAwsTreeProvider'
+import { deleteLambda } from './commands/deleteLambda'
 import { deployLambda } from './commands/deployLambda'
 import { getLambdaConfig } from './commands/getLambdaConfig'
 import { invokeLambda } from './commands/invokeLambda'
 import { newLambda } from './commands/newLambda'
-import { FunctionNodeBase } from './explorer/functionNode'
+import { FunctionNodeBase, RegionFunctionNode } from './explorer/functionNode'
 import { RegionNode } from './explorer/regionNode'
 import { DefaultLambdaPolicyProvider, LambdaPolicyView } from './lambdaPolicy'
 import * as utils from './utils'
@@ -46,7 +47,16 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
             'aws.deployLambda',
             async (node: FunctionNodeBase) => await deployLambda(node)
         )
-
+        vscode.commands.registerCommand(
+            'aws.deleteLambda',
+            async (node: RegionFunctionNode) => await deleteLambda(
+                node,
+                // TODO: Refresh only the deleted node's parent, instead of the whole tree.
+                //       Depends on refactoring getChildren to use a single instance per
+                //       region node.
+                () => this.refresh(/*node.parent*/)
+            )
+        )
         vscode.commands.registerCommand(
             'aws.invokeLambda',
             async (node: FunctionNodeBase) => await invokeLambda(this.awsContext, this.resourceFetcher, node)
@@ -88,8 +98,9 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
             try {
                 return await element.getChildren()
             } catch (error) {
-                return Promise.resolve([
+                return [
                     new AWSCommandTreeNode(
+                        element,
                         localize(
                             'AWS.explorerNode.lambda.retry',
                             'Unable to load Lambda Functions, click here to retry'
@@ -97,7 +108,7 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
                         'aws.refreshLambdaProviderNode',
                         [this, element],
                     )
-                ])
+                ]
             }
         }
 
@@ -105,6 +116,7 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
         if (!profileName) {
             return [
                 new AWSCommandTreeNode(
+                    undefined,
                     localize('AWS.explorerNode.signIn', 'Connect to AWS...'),
                     'aws.login',
                     undefined,
@@ -121,13 +133,14 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
             explorerRegionCodes.forEach(explorerRegionCode => {
                 const region = regionDefinitions.find(r => r.regionCode === explorerRegionCode)
                 const regionName = region ? region.regionName : explorerRegionCode
-                regionNodes.push(new RegionNode(explorerRegionCode, regionName))
+                regionNodes.push(new RegionNode(undefined, explorerRegionCode, regionName))
             })
 
             return regionNodes
         } else {
             return [
                 new AWSCommandTreeNode(
+                    undefined,
                     localize('AWS.explorerNode.addRegion', 'Click to add a region to view functions...'),
                     'aws.showRegion',
                     undefined,
@@ -136,7 +149,7 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
         }
     }
 
-    public refresh(context?: AwsContext) {
-        this._onDidChangeTreeData.fire()
+    public refresh(node?: AWSTreeNodeBase) {
+        this._onDidChangeTreeData.fire(node)
     }
 }

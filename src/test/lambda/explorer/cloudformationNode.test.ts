@@ -38,7 +38,7 @@ describe('CloudFormationNode', () => {
     // Validates we tagged the node correctly
     it('initializes name and tooltip', async () => {
         const testNode =
-            new CloudFormationNode(fakeStackSummary, new CloudFormation(), [])
+            new CloudFormationNode(undefined, fakeStackSummary, new CloudFormation(), [])
 
         assert.equal(testNode.label, `${fakeStackSummary.StackName} [${fakeStackSummary.StackStatus}]`)
         assert.equal(testNode.tooltip, `${fakeStackSummary.StackName}-${fakeStackSummary.StackId}`)
@@ -48,7 +48,7 @@ describe('CloudFormationNode', () => {
     it('minimum children number', async () => {
 
         const testNode =
-            new CloudFormationNode(fakeStackSummary, new CloudFormation(), [])
+            new CloudFormationNode(undefined, fakeStackSummary, new CloudFormation(), [])
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)
@@ -94,9 +94,12 @@ describe('CloudFormationNode', () => {
             client: new Lambda()
         }
 
-        const testNode =
-            new DerivedCloudFormationNode(fakeStackSummary, new CloudFormation(),
-                                          [lambda1, lambda2, lambda3])
+        const testNode = new DerivedCloudFormationNode(
+            undefined,
+            fakeStackSummary,
+            new CloudFormation(),
+            [ lambda1, lambda2, lambda3 ]
+        )
         testNode.setStackDescribed(true)
         testNode.addLambdaResource('lambda1Name')
         testNode.addLambdaResource('lambda3Name')
@@ -118,8 +121,12 @@ describe('CloudFormationNode', () => {
         const fileScheme: string = 'file'
         const resourceImageName: string = 'cloudformation.svg'
 
-        const testNode =
-            new CloudFormationNode(fakeStackSummary, new CloudFormation(), [])
+        const testNode = new CloudFormationNode(
+            undefined,
+            fakeStackSummary,
+            new CloudFormation(),
+            []
+        )
 
         const iconPath = testNode.iconPath
         assert(iconPath !== undefined)

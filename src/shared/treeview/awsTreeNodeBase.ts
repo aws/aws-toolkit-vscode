@@ -10,12 +10,12 @@ import {
     TreeItem,
     TreeItemCollapsibleState
 } from 'vscode'
-import { AwsContext } from '../awsContext'
 
 export abstract class AWSTreeNodeBase extends TreeItem implements Disposable {
     protected children: AWSTreeNodeBase[] | undefined
 
     protected constructor(
+        public readonly parent: AWSTreeNodeBase | undefined,
         label: string,
         collapsibleState?: TreeItemCollapsibleState
     ) {
@@ -33,6 +33,6 @@ export abstract class AWSTreeNodeBase extends TreeItem implements Disposable {
         return Promise.resolve([])
     }
 
-    public refresh(context: AwsContext): void {
+    public refresh(): void {
     }
 }

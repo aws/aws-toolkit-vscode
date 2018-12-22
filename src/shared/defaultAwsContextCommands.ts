@@ -131,7 +131,7 @@ export class DefaultAWSContextCommands {
     }
 
     private refresh() {
-        this._awsContextTrees.refreshTrees(this._awsContext)
+        this._awsContextTrees.refreshTrees()
     }
 
     /**

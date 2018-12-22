@@ -9,7 +9,6 @@ import { TreeItemCollapsibleState } from 'vscode'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 import { FunctionInfo } from '../functionInfo'
 import { getCloudFormationNodesForRegion, getLambdaFunctionsForRegion } from '../utils'
-import { CloudFormationNode } from './cloudFormationNode'
 import { RegionFunctionNode } from './functionNode'
 import { GenericNode } from './genericNode'
 
@@ -18,10 +17,11 @@ import { GenericNode } from './genericNode'
 // the user has available in that region.
 export class RegionNode extends AWSTreeNodeBase {
     public constructor(
+        parent: AWSTreeNodeBase | undefined,
         public readonly regionCode: string,
         public readonly regionName: string
     ) {
-        super(regionName, TreeItemCollapsibleState.Expanded)
+        super(parent, regionName, TreeItemCollapsibleState.Expanded)
         this.tooltip = `${this.regionName} [${this.regionCode}]`
         this.contextValue = 'awsRegion'
     }
@@ -29,11 +29,13 @@ export class RegionNode extends AWSTreeNodeBase {
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         const lambdaFunctions: FunctionInfo[] = await getLambdaFunctionsForRegion(this.regionCode)
 
-        const cloudFormationNodes: CloudFormationNode[] =
-            await getCloudFormationNodesForRegion(this.regionCode, lambdaFunctions)
+        const cloudFormationTreeNode = new GenericNode(this, 'CloudFormation')
+        cloudFormationTreeNode.setChildren(
+            await getCloudFormationNodesForRegion(cloudFormationTreeNode, this.regionCode, lambdaFunctions)
+        )
 
-        const cloudFormationTreeNode = new GenericNode('CloudFormation', cloudFormationNodes)
-        const lambdaTreeNode = new GenericNode('Lambda', lambdaFunctions.map(f => new RegionFunctionNode(f)))
+        const lambdaTreeNode = new GenericNode(this, 'Lambda')
+        lambdaTreeNode.setChildren(lambdaFunctions.map(f => new RegionFunctionNode(lambdaTreeNode, f)))
 
         return [cloudFormationTreeNode, lambdaTreeNode]
     }

@@ -16,7 +16,7 @@ describe('GenericNode', () => {
     // Validates we tagged the node correctly
     it('initializes name and tooltip', async () => {
 
-        const testNode = new GenericNode(nodeLabel, [])
+        const testNode = new GenericNode(undefined, nodeLabel)
 
         assert.equal(testNode.label, nodeLabel)
         assert.equal(testNode.tooltip, nodeLabel)
@@ -24,7 +24,7 @@ describe('GenericNode', () => {
 
     // Validates minimum children number
     it('minimum children number', async () => {
-        const testNode = new GenericNode(nodeLabel, [])
+        const testNode = new GenericNode(undefined, nodeLabel)
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)

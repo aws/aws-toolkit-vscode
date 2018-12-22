@@ -9,6 +9,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
+import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 import { FunctionNodeBase } from '../explorer/functionNode'
 import { FunctionInfo } from '../functionInfo'
 
@@ -17,8 +18,8 @@ class QuickPickLambda extends FunctionNodeBase implements vscode.QuickPickItem {
     public detail?: string | undefined
     public picked?: boolean | undefined
 
-    public constructor(info: FunctionInfo) {
-        super(info)
+    public constructor(parent: AWSTreeNodeBase | undefined, info: FunctionInfo) {
+        super(parent, info)
     }
 
     public get label(): string {
@@ -34,7 +35,7 @@ export async function quickPickLambda(lambdas: FunctionInfo[]): Promise<Function
                 '[no functions in this region]'
             ))
         } else {
-            const qpLambdas = lambdas.map(l => new QuickPickLambda(l))
+            const qpLambdas = lambdas.map(l => new QuickPickLambda(undefined, l))
 
             return await vscode.window.showQuickPick(qpLambdas, { placeHolder: 'Choose a lambda' })
         }

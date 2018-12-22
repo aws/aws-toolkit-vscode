@@ -17,7 +17,7 @@ describe('RegionNode', () => {
     // Validates we tagged the node correctly
     it('initializes name and tooltip', async () => {
 
-        const testNode = new RegionNode(regionCode, regionName)
+        const testNode = new RegionNode(undefined, regionCode, regionName)
 
         assert.equal(testNode.label, regionName)
         assert.equal(testNode.tooltip, `${regionName} [${regionCode}]`)
