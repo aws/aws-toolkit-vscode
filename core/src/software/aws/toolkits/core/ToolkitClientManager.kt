@@ -101,7 +101,7 @@ abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
             .credentialsProvider(credProvider)
             .region(Region.of(region.id))
             .overrideConfiguration {
-                it.putAdvancedOption(SdkAdvancedClientOption.USER_AGENT_SUFFIX, userAgent)
+                it.putAdvancedOption(SdkAdvancedClientOption.USER_AGENT_PREFIX, userAgent)
                 if (builder is S3ClientBuilder) {
                     // TODO: Remove after SDK code-gens these instead of uses class loader
                     it.addExecutionInterceptor(EndpointAddressInterceptor())
