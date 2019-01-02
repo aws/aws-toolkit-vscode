@@ -8,7 +8,7 @@
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
 import { Uri } from 'vscode'
-import { FunctionNode } from '../../../lambda/explorer/functionNode'
+import { RegionFunctionNode } from '../../../lambda/explorer/functionNode'
 import { ext } from '../../../shared/extensionGlobals'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
@@ -33,7 +33,10 @@ describe('FunctionNode', () => {
 
     // Validates we tagged the node correctly
     it('initializes name and tooltip', async () => {
-        const testNode = new FunctionNode(fakeFunctionConfig, new Lambda())
+        const testNode = new RegionFunctionNode({
+            configuration: fakeFunctionConfig,
+            client: new Lambda()
+        })
 
         assert.equal(testNode.label, fakeFunctionConfig.FunctionName)
         assert.equal(testNode.tooltip, `${fakeFunctionConfig.FunctionName}-${fakeFunctionConfig.FunctionArn}`)
@@ -45,35 +48,47 @@ describe('FunctionNode', () => {
         const fileScheme: string = 'file'
         const resourceImageName: string = 'lambda_function.svg'
 
-        const testNode = new FunctionNode(fakeFunctionConfig, new Lambda())
+        const testNode = new RegionFunctionNode({
+            configuration: fakeFunctionConfig,
+            client: new Lambda()
+        })
 
-        const iconPath = testNode.iconPath
-        assert(iconPath !== undefined)
+        assert(testNode.iconPath !== undefined)
+        const iconPath = testNode.iconPath! as {
+            light: Uri,
+            dark: Uri
+        }
 
-        assert(iconPath!.light !== undefined)
-        assert(iconPath!.light instanceof Uri)
-        assert.equal(iconPath!.light.scheme, fileScheme)
-        const lightResourcePath: string = iconPath!.light.path
+        assert(iconPath.light !== undefined)
+        assert(iconPath.light instanceof Uri)
+        assert.equal(iconPath.light.scheme, fileScheme)
+        const lightResourcePath: string = iconPath.light.path
         assert(lightResourcePath.endsWith(`/light/${resourceImageName}`))
 
-        assert(iconPath!.dark !== undefined)
-        assert(iconPath!.dark instanceof Uri)
-        assert.equal(iconPath!.dark.scheme, fileScheme)
-        const darkResourcePath: string = iconPath!.dark.path
+        assert(iconPath.dark !== undefined)
+        assert(iconPath.dark instanceof Uri)
+        assert.equal(iconPath.dark.scheme, fileScheme)
+        const darkResourcePath: string = iconPath.dark.path
         assert(darkResourcePath.endsWith(`dark/${resourceImageName}`))
     })
 
     // Validates we don't yield some unexpected value that our command triggers
     // don't recognize
     it('returns expected context value', async () => {
-        const testNode = new FunctionNode(fakeFunctionConfig, new Lambda())
+        const testNode = new RegionFunctionNode({
+            configuration: fakeFunctionConfig,
+            client: new Lambda()
+        })
 
-        assert.equal(testNode.contextValue, FunctionNode.contextValue)
+        assert.equal(testNode.contextValue, 'awsRegionFunctionNode')
     })
 
     // Validates function nodes are leaves
     it('has no children', async () => {
-        const testNode = new FunctionNode(fakeFunctionConfig, new Lambda())
+        const testNode = new RegionFunctionNode({
+            configuration: fakeFunctionConfig,
+            client: new Lambda()
+        })
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)

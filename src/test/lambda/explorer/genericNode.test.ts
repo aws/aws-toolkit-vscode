@@ -7,7 +7,7 @@
 
 import * as assert from 'assert'
 import { GenericNode } from '../../../lambda/explorer/genericNode'
-import { NoFunctionsNode } from '../../../lambda/explorer/noFunctionsNode'
+import { PlaceholderNode } from '../../../lambda/explorer/placeholderNode'
 
 describe('GenericNode', () => {
 
@@ -29,7 +29,7 @@ describe('GenericNode', () => {
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)
         assert.equal(childNodes.length, 1)
-        assert(childNodes[0] instanceof NoFunctionsNode)
+        assert(childNodes[0] instanceof PlaceholderNode)
     })
 
 })

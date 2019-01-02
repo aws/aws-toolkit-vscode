@@ -8,40 +8,25 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { TreeItem, TreeItemCollapsibleState } from 'vscode'
+import { TreeItemCollapsibleState } from 'vscode'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
-import { NoFunctionsNode } from './noFunctionsNode'
+import { PlaceholderNode } from './placeholderNode'
 
 // Generic tree node with a label
 export class GenericNode extends AWSTreeNodeBase {
-
-    public tooltip?: string
-
-    public constructor(public label: string, public children: AWSTreeNodeBase[]) {
-        super()
-        this.tooltip = `${this.label}`
+    public constructor(label: string, children: AWSTreeNodeBase[]) {
+        super(label, TreeItemCollapsibleState.Collapsed)
+        this.children = children
+        this.tooltip = label
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         if (!this.children || this.children.length === 0) {
-            return [new NoFunctionsNode(
-                localize('AWS.explorerNode.container.noItems', '[no items]'),
-                'awsContainerNoItems'
+            return [new PlaceholderNode(
+                localize('AWS.explorerNode.container.noItems', '[no items]')
             )]
         }
 
         return this.children
-    }
-
-    public getTreeItem(): TreeItem {
-        const item = new TreeItem(this.getLabel(), TreeItemCollapsibleState.Collapsed)
-        item.tooltip = this.tooltip
-        item.contextValue = ''
-
-        return item
-    }
-
-    protected getLabel(): string {
-        return this.label
     }
 }

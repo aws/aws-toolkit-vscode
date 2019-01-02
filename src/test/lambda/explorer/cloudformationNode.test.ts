@@ -9,8 +9,8 @@ import * as assert from 'assert'
 import { CloudFormation, Lambda } from 'aws-sdk'
 import { Uri } from 'vscode'
 import { CloudFormationNode } from '../../../lambda/explorer/cloudFormationNode'
-import { FunctionNode } from '../../../lambda/explorer/functionNode'
-import { NoFunctionsNode } from '../../../lambda/explorer/noFunctionsNode'
+import { CloudFormationFunctionNode } from '../../../lambda/explorer/functionNode'
+import { PlaceholderNode } from '../../../lambda/explorer/placeholderNode'
 import { ext } from '../../../shared/extensionGlobals'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
@@ -53,7 +53,7 @@ describe('CloudFormationNode', () => {
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)
         assert.equal(childNodes.length, 1)
-        assert.equal(childNodes[0] instanceof NoFunctionsNode, true)
+        assert.equal(childNodes[0] instanceof PlaceholderNode, true)
     })
 
     // Validates that only cloudformation stack lambdas are present
@@ -66,26 +66,33 @@ describe('CloudFormationNode', () => {
             }
 
             public addLambdaResource(lambdaName: string) {
+                this.lambdaResources = this.lambdaResources || []
                 this.lambdaResources.push(lambdaName)
             }
 
         }
 
-        const lambda1 = new FunctionNode({
-                                            FunctionName: 'lambda1Name',
-                                            FunctionArn: 'lambda1ARN'
-                                         },
-                                         new Lambda())
-        const lambda2 = new FunctionNode({
-                                            FunctionName: 'lambda2Name',
-                                            FunctionArn: 'lambda2ARN'
-                                         },
-                                         new Lambda())
-        const lambda3 = new FunctionNode({
-                                            FunctionName: 'lambda3Name',
-                                            FunctionArn: 'lambda3ARN'
-                                         },
-                                         new Lambda())
+        const lambda1 = {
+            configuration: {
+                FunctionName: 'lambda1Name',
+                FunctionArn: 'lambda1ARN'
+            },
+            client: new Lambda()
+        }
+        const lambda2 = {
+            configuration: {
+                FunctionName: 'lambda2Name',
+                FunctionArn: 'lambda2ARN'
+            },
+            client: new Lambda()
+        }
+        const lambda3 = {
+            configuration: {
+                FunctionName: 'lambda3Name',
+                FunctionArn: 'lambda3ARN'
+            },
+            client: new Lambda()
+        }
 
         const testNode =
             new DerivedCloudFormationNode(fakeStackSummary, new CloudFormation(),
@@ -98,11 +105,11 @@ describe('CloudFormationNode', () => {
         assert(childNodes !== undefined)
         assert.equal(childNodes.length, 2)
 
-        assert(childNodes[0] instanceof FunctionNode)
-        assert.equal((childNodes[0] as FunctionNode).label, lambda1.label)
+        assert(childNodes[0] instanceof CloudFormationFunctionNode)
+        assert.equal((childNodes[0] as CloudFormationFunctionNode).label, lambda1.configuration.FunctionName)
 
-        assert(childNodes[1] instanceof FunctionNode)
-        assert.equal((childNodes[1] as FunctionNode).label, lambda3.label)
+        assert(childNodes[1] instanceof CloudFormationFunctionNode)
+        assert.equal((childNodes[1] as CloudFormationFunctionNode).label, lambda3.configuration.FunctionName)
     })
 
     // Validates we wired up the expected resource for the node icon

@@ -17,10 +17,10 @@ import { ResourceFetcher } from '../../shared/resourceFetcher'
 import { FileResourceLocation, WebResourceLocation } from '../../shared/resourceLocation'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { sampleRequestManifestPath, sampleRequestPath } from '../constants'
-import { FunctionNode } from '../explorer/functionNode'
+import { FunctionNodeBase } from '../explorer/functionNode'
 import { SampleRequest } from '../models/sampleRequest'
 import { LambdaTemplates } from '../templates/lambdaTemplates'
-import { getSelectedLambdaNode } from '../utils'
+import { selectLambdaNode } from '../utils'
 
 interface SampleRequestManifest {
     requests: {
@@ -36,12 +36,16 @@ interface CommandMessage {
     value?: _Blob
 }
 
-export async function invokeLambda(awsContext: AwsContext, resourceFetcher: ResourceFetcher, element?: FunctionNode) {
+export async function invokeLambda(
+    awsContext: AwsContext,
+    resourceFetcher: ResourceFetcher,
+    element?: FunctionNodeBase
+) {
     try {
-        const fn: FunctionNode = await getSelectedLambdaNode(awsContext, element)
+        const fn: FunctionNodeBase = await selectLambdaNode(awsContext, element)
         const view = vscode.window.createWebviewPanel(
             'html',
-            `Invoked ${fn.functionConfiguration.FunctionName}`,
+            `Invoked ${fn.info.configuration.FunctionName}`,
             vscode.ViewColumn.One,
             {
                 // Enable scripts in the webview
@@ -91,7 +95,7 @@ export async function invokeLambda(awsContext: AwsContext, resourceFetcher: Reso
 
             view.webview.html = baseTemplateFn({
                 content: invokeTemplateFn({
-                    FunctionName: fn.functionConfiguration.FunctionName,
+                    FunctionName: fn.info.configuration.FunctionName,
                     InputSamples: inputs,
                     Scripts: loadScripts,
                     Libraries: loadLibs
@@ -122,7 +126,7 @@ function createMessageReceivedFunc(
     resourceFetcher: ResourceFetcher,
     resourcePath: string,
     postMessage: (message: any) => Thenable<boolean>,
-    fn: FunctionNode
+    fn: FunctionNodeBase
 ) {
     return async (message: CommandMessage) => {
         switch (message.command) {
@@ -145,9 +149,9 @@ function createMessageReceivedFunc(
                 console.log('got the following payload:')
                 console.log(message.value)
 
-                const lambdaClient = fn.lambda
+                const lambdaClient = fn.info.client
                 const funcRequest: AWS.Lambda.InvocationRequest = {
-                    FunctionName: fn.functionConfiguration.FunctionArn!,
+                    FunctionName: fn.info.configuration.FunctionArn!,
                     LogType: 'Tail'
                 }
 
@@ -167,7 +171,7 @@ function createMessageReceivedFunc(
                     const payload = funcResponse.Payload ? funcResponse.Payload : JSON.stringify({})
 
                     ext.lambdaOutputChannel.appendLine(
-                        `Invocation result for ${fn.functionConfiguration.FunctionArn}`
+                        `Invocation result for ${fn.info.configuration.FunctionArn}`
                     )
                     ext.lambdaOutputChannel.appendLine('Logs:')
                     ext.lambdaOutputChannel.appendLine(logs)
@@ -179,7 +183,7 @@ function createMessageReceivedFunc(
                     const error = e as Error
 
                     ext.lambdaOutputChannel.appendLine(
-                        `There was an error invoking ${fn.functionConfiguration.FunctionArn}`
+                        `There was an error invoking ${fn.info.configuration.FunctionArn}`
                     )
                     ext.lambdaOutputChannel.appendLine(error.toString())
                     ext.lambdaOutputChannel.appendLine('')

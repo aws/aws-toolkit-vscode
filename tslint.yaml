@@ -2,6 +2,9 @@
 extends:
   - tslint-eslint-rules
   - tslint-no-circular-imports
+linterOptions:
+  exclude:
+    - node_modules/**
 rules:
   # TypeScript-specific
   # These rules find errors related to TypeScript features:
