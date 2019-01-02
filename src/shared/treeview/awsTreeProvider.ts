@@ -5,8 +5,12 @@
 
 'use strict'
 
-export interface AwsTreeProvider {
+interface AwsTreeProvider {
     viewProviderId: string
 
     initialize(): void
+}
+
+export interface RefreshableAwsTreeProvider extends AwsTreeProvider {
+    refresh(): void
 }

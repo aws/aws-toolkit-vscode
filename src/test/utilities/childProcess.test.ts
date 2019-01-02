@@ -39,8 +39,8 @@ describe('ChildProcess', async () => {
 
             const result = await childProcess.promise()
 
-            assert.equal(result.exitCode, 0)
-            assert.equal(result.stdout, 'hi')
+            assert.strictEqual(result.exitCode, 0)
+            assert.strictEqual(result.stdout, 'hi')
         })
 
         it('errs when starting twice - windows', async () => {
@@ -72,8 +72,8 @@ describe('ChildProcess', async () => {
 
             const result = await childProcess.promise()
 
-            assert.equal(result.exitCode, 0)
-            assert.equal(result.stdout, 'hi')
+            assert.strictEqual(result.exitCode, 0)
+            assert.strictEqual(result.stdout, 'hi')
         })
 
         it('errs when starting twice - unix', async () => {
@@ -102,9 +102,9 @@ describe('ChildProcess', async () => {
 
         try {
             await childProcess.promise()
-            assert.equal(true, false, 'error expected')
+            assert.strictEqual(true, false, 'error expected')
         } catch (err) {
-            assert.notEqual(err, undefined)
+            assert.notStrictEqual(err, undefined)
         }
     })
 
@@ -119,8 +119,8 @@ describe('ChildProcess', async () => {
 
         const result = await childProcess.promise()
 
-        assert.notEqual(result.exitCode, 0)
-        assert.notEqual(result.error, undefined)
+        assert.notStrictEqual(result.exitCode, 0)
+        assert.notStrictEqual(result.error, undefined)
     })
 
     function writeBatchFile(filename: string): void {

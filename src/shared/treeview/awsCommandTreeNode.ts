@@ -10,13 +10,13 @@ import { AWSTreeNodeBase } from '../treeview/awsTreeNodeBase'
 
 export class AWSCommandTreeNode extends AWSTreeNodeBase {
     public constructor(
-        parent: AWSTreeNodeBase | undefined,
+        public readonly parent: AWSTreeNodeBase | undefined,
         label: string,
         commandId: string,
         commandArguments?: any[],
         tooltip?: string,
     ) {
-        super(parent, label, TreeItemCollapsibleState.None)
+        super(label, TreeItemCollapsibleState.None)
         this.command = {
             title: label || '',
             command: commandId,

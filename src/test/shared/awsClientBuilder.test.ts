@@ -9,7 +9,7 @@ import * as assert from 'assert'
 import { Service } from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import * as vscode from 'vscode'
-import { AWSClientBuilder } from '../../shared/awsClientBuilder'
+import { DefaultAWSClientBuilder } from '../../shared/awsClientBuilder'
 import { AwsContext, ContextChangeEventsArgs } from '../../shared/awsContext'
 
 describe('AwsClientBuilder', () => {
@@ -59,29 +59,29 @@ describe('AwsClientBuilder', () => {
         )
 
         it('includes custom user-agent if no options are specified', async () => {
-            const builder = new AWSClientBuilder(new FakeAwsContext())
-            const service = await builder.createAndConfigureSdkClient(opts => new FakeService(opts))
+            const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
+            const service = await builder.createAndConfigureServiceClient(opts => new FakeService(opts))
 
-            assert.equal(!!service.config.customUserAgent, true)
-            assert.equal(userAgentRegex.test(service.config.customUserAgent!), true)
+            assert.strictEqual(!!service.config.customUserAgent, true)
+            assert.strictEqual(userAgentRegex.test(service.config.customUserAgent!), true)
         })
 
         it('includes custom user-agent if not specified in options', async () => {
-            const builder = new AWSClientBuilder(new FakeAwsContext())
-            const service = await builder.createAndConfigureSdkClient(opts => new FakeService(opts), {})
+            const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
+            const service = await builder.createAndConfigureServiceClient(opts => new FakeService(opts), {})
 
-            assert.equal(!!service.config.customUserAgent, true)
-            assert.equal(userAgentRegex.test(service.config.customUserAgent!), true)
+            assert.strictEqual(!!service.config.customUserAgent, true)
+            assert.strictEqual(userAgentRegex.test(service.config.customUserAgent!), true)
         })
 
         it('does not override custom user-agent if specified in options', async () => {
-            const builder = new AWSClientBuilder(new FakeAwsContext())
-            const service = await builder.createAndConfigureSdkClient(
+            const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
+            const service = await builder.createAndConfigureServiceClient(
                 opts => new FakeService(opts),
                 { customUserAgent: 'CUSTOM USER AGENT' }
             )
 
-            assert.equal(service.config.customUserAgent, 'CUSTOM USER AGENT')
+            assert.strictEqual(service.config.customUserAgent, 'CUSTOM USER AGENT')
         })
     })
 })

@@ -41,7 +41,7 @@ describe('DefaultAwsContext', () => {
         }
 
         const testContext = new DefaultAwsContext(new TestConfiguration())
-        assert.equal(testContext.getCredentialProfileName(), testProfileValue)
+        assert.strictEqual(testContext.getCredentialProfileName(), testProfileValue)
     })
 
     it('gets single region from config on startup', async () => {
@@ -58,8 +58,8 @@ describe('DefaultAwsContext', () => {
 
         const testContext = new DefaultAwsContext(new TestConfiguration())
         const regions = await testContext.getExplorerRegions()
-        assert.equal(regions.length, 1)
-        assert.equal(regions[0], testRegion1Value)
+        assert.strictEqual(regions.length, 1)
+        assert.strictEqual(regions[0], testRegion1Value)
     })
 
     it('gets multiple regions from config on startup', async () => {
@@ -76,18 +76,20 @@ describe('DefaultAwsContext', () => {
 
         const testContext = new DefaultAwsContext(new TestConfiguration())
         const regions = await testContext.getExplorerRegions()
-        assert.equal(regions.length, 2)
-        assert.equal(regions[0], testRegion1Value)
-        assert.equal(regions[1], testRegion2Value)
+        assert.strictEqual(regions.length, 2)
+        assert.strictEqual(regions[0], testRegion1Value)
+        assert.strictEqual(regions[1], testRegion2Value)
     })
 
     it('updates config on single region change', async () => {
 
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
             public async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
-                assert.equal(settingKey, regionSettingKey)
-                assert.equal(value, testRegion1Value)
-                assert.equal(target, ConfigurationTarget.Global)
+                const array: string[] = value as any
+                assert.strictEqual(settingKey, regionSettingKey)
+                assert.strictEqual(array.length, 1)
+                assert.strictEqual(array[0], testRegion1Value)
+                assert.strictEqual(target, ConfigurationTarget.Global)
             }
         }
 
@@ -99,12 +101,12 @@ describe('DefaultAwsContext', () => {
 
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
             public async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
-                assert.equal(settingKey, regionSettingKey)
+                assert.strictEqual(settingKey, regionSettingKey)
                 assert(value instanceof Array)
                 const values = value as any as string[]
-                assert.equal(values[0], testRegion1Value)
-                assert.equal(values[1], testRegion2Value)
-                assert.equal(target, ConfigurationTarget.Global)
+                assert.strictEqual(values[0], testRegion1Value)
+                assert.strictEqual(values[1], testRegion2Value)
+                assert.strictEqual(target, ConfigurationTarget.Global)
             }
         }
 
@@ -123,9 +125,9 @@ describe('DefaultAwsContext', () => {
                 return super.readSetting<T>(settingKey, defaultValue)
             }
             public async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
-                assert.equal(settingKey, regionSettingKey)
-                assert.deepEqual(value, [ testRegion1Value ])
-                assert.equal(target, ConfigurationTarget.Global)
+                assert.strictEqual(settingKey, regionSettingKey)
+                assert.deepStrictEqual(value, [ testRegion1Value ])
+                assert.strictEqual(target, ConfigurationTarget.Global)
             }
         }
 
@@ -137,9 +139,9 @@ describe('DefaultAwsContext', () => {
 
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
             public async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
-                assert.equal(settingKey, profileSettingKey)
-                assert.equal(value, testProfileValue)
-                assert.equal(target, ConfigurationTarget.Global)
+                assert.strictEqual(settingKey, profileSettingKey)
+                assert.strictEqual(value, testProfileValue)
+                assert.strictEqual(target, ConfigurationTarget.Global)
             }
         }
 
@@ -153,14 +155,14 @@ describe('DefaultAwsContext', () => {
 
         let invocationCount = 0
         testContext.onDidChangeContext((c) => {
-            assert.equal(c.regions.length, 1)
-            assert.equal(c.regions[0], testRegion1Value)
+            assert.strictEqual(c.regions.length, 1)
+            assert.strictEqual(c.regions[0], testRegion1Value)
             invocationCount++
         })
 
         await testContext.addExplorerRegion(testRegion1Value)
 
-        assert.equal(invocationCount, 1)
+        assert.strictEqual(invocationCount, 1)
     })
 
     it('fires event on multi region change', async () => {
@@ -169,15 +171,15 @@ describe('DefaultAwsContext', () => {
 
         let invocationCount = 0
         testContext.onDidChangeContext((c) => {
-            assert.equal(c.regions.length, 2)
-            assert.equal(c.regions[0], testRegion1Value)
-            assert.equal(c.regions[1], testRegion2Value)
+            assert.strictEqual(c.regions.length, 2)
+            assert.strictEqual(c.regions[0], testRegion1Value)
+            assert.strictEqual(c.regions[1], testRegion2Value)
             invocationCount++
         })
 
         await testContext.addExplorerRegion(testRegion1Value, testRegion2Value)
 
-        assert.equal(invocationCount, 1)
+        assert.strictEqual(invocationCount, 1)
     })
 
     it('fires event on profile change', async () => {
@@ -186,12 +188,12 @@ describe('DefaultAwsContext', () => {
 
         let invocationCount = 0
         testContext.onDidChangeContext((c) => {
-            assert.equal(c.profileName, testProfileValue)
+            assert.strictEqual(c.profileName, testProfileValue)
             invocationCount++
         })
 
         await testContext.setCredentialProfileName(testProfileValue)
 
-        assert.equal(invocationCount, 1)
+        assert.strictEqual(invocationCount, 1)
     })
 })

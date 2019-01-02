@@ -11,6 +11,7 @@ const localize = nls.loadMessageBundle()
 import { AWSError, Lambda } from 'aws-sdk'
 import _ = require('lodash')
 import * as vscode from 'vscode'
+import { ext } from '../shared/extensionGlobals'
 import { BaseTemplates } from '../shared/templates/baseTemplates'
 import { LambdaPolicyTemplates } from './templates/lambdaTemplates'
 
@@ -21,26 +22,22 @@ export interface LambdaPolicyProvider {
 
 export class DefaultLambdaPolicyProvider implements LambdaPolicyProvider {
     public functionName: string
-    private readonly _lambdaClient: Lambda
 
     public constructor(
         functionName: string,
-        lambdaClient: Lambda
+        private readonly regionCode: string
     ) {
         if (!functionName) {
             throw new Error('Lambda function name is missing')
         }
 
         this.functionName = functionName
-        this._lambdaClient = lambdaClient
     }
 
     public async getLambdaPolicy(): Promise<Lambda.GetPolicyResponse> {
-        const response = await this._lambdaClient.getPolicy({
-            FunctionName: this.functionName
-        }).promise()
+        const client = ext.toolkitClientBuilder.createLambdaClient(this.regionCode)
 
-        return response
+        return await client.getPolicy(this.functionName)
     }
 }
 

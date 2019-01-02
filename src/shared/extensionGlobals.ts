@@ -8,6 +8,7 @@
 import { ExtensionContext, OutputChannel } from 'vscode'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AWSContextCommands } from './awsContextCommands'
+import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
 import { AWSStatusBar } from './statusBar'
 
 /**
@@ -20,5 +21,6 @@ export namespace ext {
     export let lambdaOutputChannel: OutputChannel
     export let awsContextCommands: AWSContextCommands
     export let sdkClientBuilder: AWSClientBuilder
+    export let toolkitClientBuilder: ToolkitClientBuilder
     export let statusBar: AWSStatusBar
 }

@@ -33,7 +33,7 @@ describe('SystemUtilities', () => {
             const env = process.env as EnvironmentVariables
 
             env.HOME = 'c:\\qwerty'
-            assert.equal(SystemUtilities.getHomeDirectory(), 'c:\\qwerty')
+            assert.strictEqual(SystemUtilities.getHomeDirectory(), 'c:\\qwerty')
         })
 
         it('gets USERPROFILE if set and HOME is not set', async () => {
@@ -41,7 +41,7 @@ describe('SystemUtilities', () => {
 
             delete env.HOME
             env.USERPROFILE = 'c:\\profiles\\qwerty'
-            assert.equal(SystemUtilities.getHomeDirectory(), 'c:\\profiles\\qwerty')
+            assert.strictEqual(SystemUtilities.getHomeDirectory(), 'c:\\profiles\\qwerty')
         })
 
         it('gets HOMEPATH if set and HOME and USERPROFILE are not set', async () => {
@@ -51,7 +51,10 @@ describe('SystemUtilities', () => {
             delete env.USERPROFILE
             delete env.HOMEDRIVE
             env.HOMEPATH = `${path.sep}users${path.sep}homepath`
-            assert.equal(SystemUtilities.getHomeDirectory().toLowerCase(), `c:${path.sep}users${path.sep}homepath`)
+            assert.strictEqual(
+                SystemUtilities.getHomeDirectory().toLowerCase(),
+                `c:${path.sep}users${path.sep}homepath`
+            )
         })
 
         it('prefixes result with HOMEDRIVE if set', async () => {
@@ -61,7 +64,7 @@ describe('SystemUtilities', () => {
             delete env.USERPROFILE
             env.HOMEPATH = `${path.sep}users${path.sep}homepath`
             env.HOMEDRIVE = 'x:'
-            assert.equal(SystemUtilities.getHomeDirectory(), `x:${path.sep}users${path.sep}homepath`)
+            assert.strictEqual(SystemUtilities.getHomeDirectory(), `x:${path.sep}users${path.sep}homepath`)
         })
 
         it('falls back on os.homedir if no environment variables are set', async () => {
@@ -72,7 +75,7 @@ describe('SystemUtilities', () => {
             delete env.HOMEPATH
             delete env.HOMEDRIVE
 
-            assert.equal(SystemUtilities.getHomeDirectory(), os.homedir())
+            assert.strictEqual(SystemUtilities.getHomeDirectory(), os.homedir())
         })
     })
 
@@ -82,12 +85,12 @@ describe('SystemUtilities', () => {
 
             fs.writeFileSync(filename, 'hello world', 'utf8')
 
-            assert.equal(await SystemUtilities.fileExists(filename), true)
+            assert.strictEqual(await SystemUtilities.fileExists(filename), true)
         })
 
         it('returns false if file does not exist', async () => {
             const filename: string = path.join(tempFolder, 'non-existing-file.txt')
-            assert.equal(await SystemUtilities.fileExists(filename), false)
+            assert.strictEqual(await SystemUtilities.fileExists(filename), false)
         })
     })
 })

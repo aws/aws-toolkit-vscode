@@ -15,21 +15,25 @@ import { RegionProvider } from '../shared/regions/regionProvider'
 import { ResourceFetcher } from '../shared/resourceFetcher'
 import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
-import { RefreshableAwsTreeProvider } from '../shared/treeview/refreshableAwsTreeProvider'
+import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
+import { intersection, toMap, updateInPlace } from './collectionUtils'
 import { deleteLambda } from './commands/deleteLambda'
 import { deployLambda } from './commands/deployLambda'
 import { getLambdaConfig } from './commands/getLambdaConfig'
 import { invokeLambda } from './commands/invokeLambda'
 import { newLambda } from './commands/newLambda'
-import { FunctionNodeBase, RegionFunctionNode } from './explorer/functionNode'
+import { DefaultRegionNode } from './explorer/defaultRegionNode'
+import { FunctionNodeBase } from './explorer/functionNode'
 import { RegionNode } from './explorer/regionNode'
+import { StandaloneFunctionNode } from './explorer/standaloneNodes'
 import { DefaultLambdaPolicyProvider, LambdaPolicyView } from './lambdaPolicy'
 import * as utils from './utils'
 
-export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
+export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
     public viewProviderId: string = 'lambda'
     public readonly onDidChangeTreeData: vscode.Event<AWSTreeNodeBase | undefined>
     private readonly _onDidChangeTreeData: vscode.EventEmitter<AWSTreeNodeBase | undefined>
+    private readonly regionNodes: Map<string, RegionNode>
 
     public constructor(
         private readonly awsContext: AwsContext,
@@ -39,6 +43,7 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
     ) {
         this._onDidChangeTreeData = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
         this.onDidChangeTreeData = this._onDidChangeTreeData.event
+        this.regionNodes = new Map<string, RegionNode>()
     }
 
     public initialize(): void {
@@ -49,12 +54,9 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
         )
         vscode.commands.registerCommand(
             'aws.deleteLambda',
-            async (node: RegionFunctionNode) => await deleteLambda(
+            async (node: StandaloneFunctionNode) => await deleteLambda(
                 node,
-                // TODO: Refresh only the deleted node's parent, instead of the whole tree.
-                //       Depends on refactoring getChildren to use a single instance per
-                //       region node.
-                () => this.refresh(/*node.parent*/)
+                () => this.refresh(node.parent)
             )
         )
         vscode.commands.registerCommand(
@@ -63,7 +65,10 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
         )
         vscode.commands.registerCommand(
             'aws.getLambdaConfig',
-            async (node: FunctionNodeBase) => await getLambdaConfig(this.awsContext, node))
+            async (node: FunctionNodeBase) => await getLambdaConfig(
+                this.awsContext,
+                node
+            ))
 
         vscode.commands.registerCommand(
             'aws.getLambdaPolicy',
@@ -71,8 +76,8 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
                 const functionNode: FunctionNodeBase = await utils.selectLambdaNode(this.awsContext, node)
 
                 const policyProvider = new DefaultLambdaPolicyProvider(
-                    functionNode.info.configuration.FunctionName!,
-                    functionNode.info.client
+                    functionNode.configuration.FunctionName!,
+                    functionNode.regionCode
                 )
 
                 const view = new LambdaPolicyView(policyProvider)
@@ -81,7 +86,7 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
 
         vscode.commands.registerCommand(
             'aws.refreshLambdaProviderNode',
-            async (lambdaProvider: LambdaProvider, element: AWSTreeNodeBase) => {
+            async (lambdaProvider: LambdaTreeDataProvider, element: AWSTreeNodeBase) => {
                 lambdaProvider._onDidChangeTreeData.fire(element)
             }
         )
@@ -94,7 +99,7 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
     }
 
     public async getChildren(element?: AWSTreeNodeBase): Promise<AWSTreeNodeBase[]> {
-        if (element) {
+        if (!!element) {
             try {
                 return await element.getChildren()
             } catch (error) {
@@ -124,19 +129,18 @@ export class LambdaProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>,
             ]
         }
 
-        const regionDefinitions = await this.regionProvider.getRegionData()
         const explorerRegionCodes = await this.awsContext.getExplorerRegions()
+        const regionMap = toMap(await this.regionProvider.getRegionData(), r => r.regionCode)
 
-        if (explorerRegionCodes.length !== 0) {
-            const regionNodes: RegionNode[] = []
+        updateInPlace(
+            this.regionNodes,
+            intersection(regionMap.keys(), explorerRegionCodes),
+            key => this.regionNodes.get(key)!.update(regionMap.get(key)!),
+            key => new DefaultRegionNode(regionMap.get(key)!)
+        )
 
-            explorerRegionCodes.forEach(explorerRegionCode => {
-                const region = regionDefinitions.find(r => r.regionCode === explorerRegionCode)
-                const regionName = region ? region.regionName : explorerRegionCode
-                regionNodes.push(new RegionNode(undefined, explorerRegionCode, regionName))
-            })
-
-            return regionNodes
+        if (this.regionNodes.size > 0) {
+            return [...this.regionNodes.values()]
         } else {
             return [
                 new AWSCommandTreeNode(

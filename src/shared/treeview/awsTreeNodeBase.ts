@@ -15,7 +15,6 @@ export abstract class AWSTreeNodeBase extends TreeItem implements Disposable {
     protected children: AWSTreeNodeBase[] | undefined
 
     protected constructor(
-        public readonly parent: AWSTreeNodeBase | undefined,
         label: string,
         collapsibleState?: TreeItemCollapsibleState
     ) {
@@ -31,8 +30,5 @@ export abstract class AWSTreeNodeBase extends TreeItem implements Disposable {
 
     public getChildren(): Thenable<AWSTreeNodeBase[]> {
         return Promise.resolve([])
-    }
-
-    public refresh(): void {
     }
 }

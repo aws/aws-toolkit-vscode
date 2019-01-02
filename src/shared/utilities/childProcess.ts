@@ -59,11 +59,11 @@ export class ChildProcess {
             this._args
         )
 
-        this._childProcess.stdout.on('data', data => {
+        this._childProcess.stdout.on('data', (data: { toString(): string }) => {
             this._stdoutChunks.push(data.toString())
         })
 
-        this._childProcess.stderr.on('data', data => {
+        this._childProcess.stderr.on('data', (data: { toString(): string }) => {
             this._stderrChunks.push(data.toString())
         })
 

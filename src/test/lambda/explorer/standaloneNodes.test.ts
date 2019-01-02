@@ -8,11 +8,13 @@
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
 import { Uri } from 'vscode'
-import { RegionFunctionNode } from '../../../lambda/explorer/functionNode'
+import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
+import { StandaloneFunctionGroupNode, StandaloneFunctionNode } from '../../../lambda/explorer/standaloneNodes'
 import { ext } from '../../../shared/extensionGlobals'
+import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
-describe('FunctionNode', () => {
+describe('StandaloneFunctionNode', () => {
 
     let fakeFunctionConfig: Lambda.FunctionConfiguration
 
@@ -33,16 +35,13 @@ describe('FunctionNode', () => {
 
     // Validates we tagged the node correctly
     it('initializes name and tooltip', async () => {
-        const testNode = new RegionFunctionNode(
-            undefined,
-            {
-                configuration: fakeFunctionConfig,
-                client: new Lambda()
-            }
+        const testNode = new StandaloneFunctionNode(
+            new StandaloneFunctionGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
+            fakeFunctionConfig
         )
 
-        assert.equal(testNode.label, fakeFunctionConfig.FunctionName)
-        assert.equal(testNode.tooltip, `${fakeFunctionConfig.FunctionName}-${fakeFunctionConfig.FunctionArn}`)
+        assert.strictEqual(testNode.label, fakeFunctionConfig.FunctionName)
+        assert.strictEqual(testNode.tooltip, `${fakeFunctionConfig.FunctionName}-${fakeFunctionConfig.FunctionArn}`)
     })
 
     // Validates we wired up the expected resource for the node icon
@@ -51,12 +50,9 @@ describe('FunctionNode', () => {
         const fileScheme: string = 'file'
         const resourceImageName: string = 'lambda_function.svg'
 
-        const testNode = new RegionFunctionNode(
-            undefined,
-            {
-                configuration: fakeFunctionConfig,
-                client: new Lambda()
-            }
+        const testNode = new StandaloneFunctionNode(
+            new StandaloneFunctionGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
+            fakeFunctionConfig
         )
 
         assert(testNode.iconPath !== undefined)
@@ -67,13 +63,13 @@ describe('FunctionNode', () => {
 
         assert(iconPath.light !== undefined)
         assert(iconPath.light instanceof Uri)
-        assert.equal(iconPath.light.scheme, fileScheme)
+        assert.strictEqual(iconPath.light.scheme, fileScheme)
         const lightResourcePath: string = iconPath.light.path
         assert(lightResourcePath.endsWith(`/light/${resourceImageName}`))
 
         assert(iconPath.dark !== undefined)
         assert(iconPath.dark instanceof Uri)
-        assert.equal(iconPath.dark.scheme, fileScheme)
+        assert.strictEqual(iconPath.dark.scheme, fileScheme)
         const darkResourcePath: string = iconPath.dark.path
         assert(darkResourcePath.endsWith(`dark/${resourceImageName}`))
     })
@@ -81,30 +77,24 @@ describe('FunctionNode', () => {
     // Validates we don't yield some unexpected value that our command triggers
     // don't recognize
     it('returns expected context value', async () => {
-        const testNode = new RegionFunctionNode(
-            undefined,
-            {
-                configuration: fakeFunctionConfig,
-                client: new Lambda()
-            }
+        const testNode = new StandaloneFunctionNode(
+            new StandaloneFunctionGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
+            fakeFunctionConfig
         )
 
-        assert.equal(testNode.contextValue, 'awsRegionFunctionNode')
+        assert.strictEqual(testNode.contextValue, 'awsRegionFunctionNode')
     })
 
     // Validates function nodes are leaves
     it('has no children', async () => {
-        const testNode = new RegionFunctionNode(
-            undefined,
-            {
-                configuration: fakeFunctionConfig,
-                client: new Lambda()
-            }
+        const testNode = new StandaloneFunctionNode(
+            new StandaloneFunctionGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
+            fakeFunctionConfig
         )
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)
-        assert.equal(childNodes.length, 0)
+        assert.strictEqual(childNodes.length, 0)
     })
 
 })

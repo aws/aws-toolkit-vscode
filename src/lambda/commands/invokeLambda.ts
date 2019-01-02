@@ -45,7 +45,7 @@ export async function invokeLambda(
         const fn: FunctionNodeBase = await selectLambdaNode(awsContext, element)
         const view = vscode.window.createWebviewPanel(
             'html',
-            `Invoked ${fn.info.configuration.FunctionName}`,
+            `Invoked ${fn.configuration.FunctionName}`,
             vscode.ViewColumn.One,
             {
                 // Enable scripts in the webview
@@ -95,7 +95,7 @@ export async function invokeLambda(
 
             view.webview.html = baseTemplateFn({
                 content: invokeTemplateFn({
-                    FunctionName: fn.info.configuration.FunctionName,
+                    FunctionName: fn.configuration.FunctionName,
                     InputSamples: inputs,
                     Scripts: loadScripts,
                     Libraries: loadLibs
@@ -146,33 +146,28 @@ function createMessageReceivedFunc(
                 return
 
             case 'invokeLambda':
-                console.log('got the following payload:')
+                console.log('invoking lambda function with the following payload:')
                 console.log(message.value)
-
-                const lambdaClient = fn.info.client
-                const funcRequest: AWS.Lambda.InvocationRequest = {
-                    FunctionName: fn.info.configuration.FunctionArn!,
-                    LogType: 'Tail'
-                }
-
-                if (message.value) {
-                    console.log('found a payload')
-                    funcRequest.Payload = message.value
-                }
 
                 ext.lambdaOutputChannel.show()
                 ext.lambdaOutputChannel.appendLine('Loading response...')
 
                 try {
-                    const funcResponse = await lambdaClient.invoke(funcRequest).promise()
+                    if (!fn.configuration.FunctionArn) {
+                        throw new Error(`Could not determine ARN for function ${fn.configuration.FunctionName}`)
+                    }
+
+                    const client = ext.toolkitClientBuilder.createLambdaClient(fn.regionCode)
+                    const funcResponse = await client.invoke(
+                        fn.configuration.FunctionArn,
+                        message.value
+                    )
                     const logs = funcResponse.LogResult ?
                         Buffer.from(funcResponse.LogResult, 'base64').toString() :
                         ''
                     const payload = funcResponse.Payload ? funcResponse.Payload : JSON.stringify({})
 
-                    ext.lambdaOutputChannel.appendLine(
-                        `Invocation result for ${fn.info.configuration.FunctionArn}`
-                    )
+                    ext.lambdaOutputChannel.appendLine(`Invocation result for ${fn.configuration.FunctionArn}`)
                     ext.lambdaOutputChannel.appendLine('Logs:')
                     ext.lambdaOutputChannel.appendLine(logs)
                     ext.lambdaOutputChannel.appendLine('')
@@ -182,9 +177,7 @@ function createMessageReceivedFunc(
                 } catch (e) {
                     const error = e as Error
 
-                    ext.lambdaOutputChannel.appendLine(
-                        `There was an error invoking ${fn.info.configuration.FunctionArn}`
-                    )
+                    ext.lambdaOutputChannel.appendLine(`There was an error invoking ${fn.configuration.FunctionArn}`)
                     ext.lambdaOutputChannel.appendLine(error.toString())
                     ext.lambdaOutputChannel.appendLine('')
                 }
