@@ -119,12 +119,12 @@
                 },
                 {
                     "command": "aws.getLambdaConfig",
-                    "when": "view == lambda && viewItem == =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
+                    "when": "view == lambda && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
                     "group": "0@3"
                 },
                 {
                     "command": "aws.getLambdaPolicy",
-                    "when": "view == lambda && viewItem == =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
+                    "when": "view == lambda && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
                     "group": "0@4"
                 },
                 {

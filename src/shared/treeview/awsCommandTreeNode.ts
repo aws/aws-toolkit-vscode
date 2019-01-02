@@ -9,8 +9,6 @@ import { TreeItemCollapsibleState } from 'vscode'
 import { AWSTreeNodeBase } from '../treeview/awsTreeNodeBase'
 
 export class AWSCommandTreeNode extends AWSTreeNodeBase {
-    public readonly contextValue = 'awsCommandNode'
-
     public constructor(
         label: string,
         commandId: string,
@@ -24,5 +22,6 @@ export class AWSCommandTreeNode extends AWSTreeNodeBase {
             arguments: commandArguments
         }
         this.tooltip = tooltip
+        this.contextValue = 'awsCommandNode'
     }
 }
