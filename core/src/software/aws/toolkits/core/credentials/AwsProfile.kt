@@ -27,7 +27,6 @@ import software.amazon.awssdk.services.sts.StsClient
 import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider
 import software.amazon.awssdk.services.sts.model.AssumeRoleRequest
 import software.aws.toolkits.core.credentials.ProfileToolkitCredentialsProviderFactory.Companion.TYPE
-import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.resources.message
@@ -62,7 +61,7 @@ class ProfileToolkitCredentialsProvider(
                 DefaultAwsRegionProviderChain().region?.let {
                     regionProvider.regions()[it.id()]
                 }
-            } ?: AwsRegion.GLOBAL
+            }
 
             // Override the default SPI for getting the active credentials since we are making an internal
             // to this provider client
@@ -77,7 +76,7 @@ class ProfileToolkitCredentialsProvider(
                         mfaProvider
                     )
                 )
-                .region(Region.of(stsRegion.id))
+                .region(stsRegion?.let { Region.of(it.id) } ?: Region.US_EAST_1)
                 .build()
 
             StsAssumeRoleCredentialsProvider.builder()

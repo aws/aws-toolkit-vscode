@@ -5,6 +5,7 @@ package software.aws.toolkits.core.credentials
 
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.http.SdkHttpClient
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sts.StsClient
 
 abstract class ToolkitCredentialsProvider : AwsCredentialsProvider {
@@ -36,15 +37,16 @@ abstract class ToolkitCredentialsProvider : AwsCredentialsProvider {
 
     open fun isValid(sdkHttpClient: SdkHttpClient): Boolean {
         val client = StsClient.builder()
+            .region(Region.US_EAST_1)
             .httpClient(sdkHttpClient)
             .credentialsProvider(this)
             .build()
 
-        try {
-            client.getCallerIdentity()
-            return true
+        return try {
+            client.callerIdentity
+            true
         } catch (e: Exception) {
-            return false
+            false
         }
     }
 }
