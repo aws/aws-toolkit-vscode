@@ -8,6 +8,8 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
+import { deleteCloudFormation } from './lambda/commands/deleteCloudFormation'
+import { CloudFormationNode } from './lambda/explorer/cloudFormationNode'
 import { RegionNode } from './lambda/explorer/regionNode'
 import { LambdaProvider } from './lambda/lambdaProvider'
 import { NodeDebugConfigurationProvider } from './lambda/local/debugConfigurationProvider'
@@ -23,8 +25,11 @@ import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
 import { safeGet } from './shared/extensionUtilities'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
+import * as SamCliDetection from './shared/sam/cli/samCliDetection'
+import { SamCliVersionValidator } from './shared/sam/cli/samCliVersionValidator'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { AWSStatusBar } from './shared/statusBar'
+import { PromiseSharer } from './shared/utilities/promiseUtilities'
 
 export async function activate(context: vscode.ExtensionContext) {
 
@@ -67,6 +72,10 @@ export async function activate(context: vscode.ExtensionContext) {
         async (node?: RegionNode) => await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
     )
 
+    vscode.commands.registerCommand(
+        'aws.deleteCloudFormation',
+        async (node: CloudFormationNode) => await deleteCloudFormation(node))
+
     const providers = [
         new LambdaProvider(awsContext, awsContextTrees, regionProvider, resourceFetcher)
     ]
@@ -82,6 +91,8 @@ export async function activate(context: vscode.ExtensionContext) {
     ))
 
     await ext.statusBar.updateContext(undefined)
+
+    await initializeSamCli()
 }
 
 export function deactivate() {
@@ -109,4 +120,27 @@ function activateCodeLensProviders(): vscode.Disposable[] {
     )
 
     return disposables
+}
+
+/**
+ * Performs SAM CLI relevant extension initialization
+ */
+async function initializeSamCli(): Promise<void> {
+    vscode.commands.registerCommand(
+        'aws.samcli.detect',
+        async () => await PromiseSharer.getExistingPromiseOrCreate(
+            'samcli.detect',
+            async () => await SamCliDetection.detectSamCli(true)
+        )
+    )
+
+    vscode.commands.registerCommand(
+        'aws.samcli.validate.version',
+        async () => {
+            const samCliVersionValidator = new SamCliVersionValidator()
+            await samCliVersionValidator.validateAndNotify()
+        }
+    )
+
+    await SamCliDetection.detectSamCli(false)
 }

@@ -5,16 +5,34 @@
 
 'use strict'
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
+import CloudFormation = require('aws-sdk/clients/cloudformation')
 import Lambda = require('aws-sdk/clients/lambda')
 import { isNullOrUndefined } from 'util'
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
 import { ext } from '../shared/extensionGlobals'
 import { quickPickLambda } from './commands/quickPickLambda'
-import { FunctionNode } from './explorer/functionNode'
+import { CloudFormationNode } from './explorer/cloudFormationNode'
+import { FunctionNodeBase } from './explorer/functionNode'
+import { FunctionInfo } from './functionInfo'
 
-export async function getSelectedLambdaNode(awsContext: AwsContext, element?: FunctionNode): Promise<FunctionNode> {
-    if (element && element.functionConfiguration) {
+export async function getSelectedCloudFormationNode(element?: CloudFormationNode): Promise<CloudFormationNode> {
+    if (element && element.stackSummary) {
+        console.log('returning preselected node...')
+
+        return element
+    }
+    throw new Error('No CloudFormation found.')
+}
+
+export async function selectLambdaNode(
+    awsContext: AwsContext,
+    element?: FunctionNodeBase
+): Promise<FunctionNodeBase> {
+    if (element && element.info.configuration) {
         console.log('returning preselected node...')
 
         return element
@@ -39,42 +57,49 @@ export async function getSelectedLambdaNode(awsContext: AwsContext, element?: Fu
     // used to show a list of lambdas and allow user to select.
     // this is useful for calling commands from the command palette
     const selection = await quickPickLambda(lambdas)
-    if (selection && selection.functionConfiguration) {
+    if (selection && selection.info.configuration) {
         return selection
     }
 
     throw new Error('No lambda found.')
 }
 
-export async function getLambdaFunctionsForRegion(regionCode: string): Promise<FunctionNode[]> {
+export async function getCloudFormationNodesForRegion(
+    regionCode: string,
+    lambdaFunctions: FunctionInfo[]
+): Promise<CloudFormationNode[]> {
     const client = await ext.sdkClientBuilder.createAndConfigureSdkClient(
-        opts => new Lambda(opts),
+        opts => new CloudFormation(opts),
         undefined,
         regionCode
     )
 
-    return listLambdas(client)
+    return await listCloudFormationNodes(client, lambdaFunctions)
 }
 
-export async function listLambdas(lambda: Lambda): Promise<FunctionNode[]> {
+export async function listCloudFormationNodes(
+    cloudFormation: CloudFormation,
+    lambdaFunctions: FunctionInfo[]
+): Promise<CloudFormationNode[]> {
     // TODO: this 'loading' message needs to go under each regional entry
     // in the explorer, and be removed when that region's query completes
-    const status = vscode.window.setStatusBarMessage('Loading lambdas...')
-    const arr: FunctionNode[] = []
+    const status = vscode.window.setStatusBarMessage(
+        localize('AWS.message.statusBar.loading.cloudFormation', 'Loading CloudFormation Stacks...'))
+    const arr: CloudFormationNode[] = []
 
     try {
-        const request: Lambda.ListFunctionsRequest = {}
+        const request: CloudFormation.ListStacksInput = {
+            StackStatusFilter: ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
+        }
         do {
-            const response: Lambda.ListFunctionsResponse = await lambda.listFunctions(request).promise()
-            request.Marker = response.NextMarker
-            if (response.Functions) {
-                response.Functions.forEach(f => {
-                    const func = new FunctionNode(f, lambda)
-                    func.contextValue = 'awsLambdaFn'
-                    arr.push(func)
+            const response: CloudFormation.ListStacksOutput = await cloudFormation.listStacks(request).promise()
+            request.NextToken = response.NextToken
+            if (response.StackSummaries) {
+                response.StackSummaries.forEach(c => {
+                    arr.push(new CloudFormationNode(c, cloudFormation, lambdaFunctions))
                 })
             }
-        } while (!isNullOrUndefined(request.Marker))
+        } while (!isNullOrUndefined(request.NextToken))
     } catch (err) {
         const error = err as Error
 
@@ -85,4 +110,48 @@ export async function listLambdas(lambda: Lambda): Promise<FunctionNode[]> {
     }
 
     return arr
+}
+
+export async function getLambdaFunctionsForRegion(regionCode: string): Promise<FunctionInfo[]> {
+    const client = await ext.sdkClientBuilder.createAndConfigureSdkClient(
+        opts => new Lambda(opts),
+        undefined,
+        regionCode
+    )
+
+    return listLambdas(client)
+}
+
+export async function listLambdas(client: Lambda): Promise<FunctionInfo[]> {
+    const status = vscode.window.setStatusBarMessage(
+        localize('AWS.message.statusBar.loading.lambda', 'Loading Lambdas...'))
+
+    try {
+        let result: FunctionInfo[] = []
+        const request: Lambda.ListFunctionsRequest = {}
+        do {
+            const response: Lambda.ListFunctionsResponse = await client.listFunctions(request).promise()
+            request.Marker = response.NextMarker
+
+            if (!!response.Functions) {
+                result = result.concat(response.Functions.map(f => ({
+                    configuration: f,
+                    client
+                })))
+            }
+        } while (!!request.Marker)
+
+        return result
+    } catch (err) {
+        const error = err as Error
+
+        // TODO: Handle error gracefully, possibly add a node that can attempt to retry the operation
+        console.error(error.message)
+
+        return []
+    } finally {
+        if (!!status) {
+            status.dispose()
+        }
+    }
 }
