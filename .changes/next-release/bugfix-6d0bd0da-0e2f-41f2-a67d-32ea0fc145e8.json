@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Suppress FileNotFoundException that can be thrown if the endpoints file fails to download"
+}

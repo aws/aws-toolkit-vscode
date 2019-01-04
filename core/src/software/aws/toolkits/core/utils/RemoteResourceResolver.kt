@@ -50,7 +50,7 @@ class DefaultRemoteResourceResolver(
             } catch (e: Exception) {
                 LOG.warn(e) { "Exception occurred downloading" }
                 lastException = e
-                tmpFile.delete()
+                tmpFile.deleteIfExists()
                 return@mapNotNull null
             }
             tmpFile

@@ -11,7 +11,7 @@ import java.nio.file.attribute.FileTime
 
 fun Path.inputStream(): InputStream = Files.newInputStream(this)
 fun Path.exists() = Files.exists(this)
-fun Path.delete() = Files.delete(this)
+fun Path.deleteIfExists() = Files.deleteIfExists(this)
 fun Path.lastModified(): FileTime = Files.getLastModifiedTime(this)
 fun Path.readText(charset: Charset = Charsets.UTF_8) = toFile().readText(charset)
 fun Path.writeText(text: String, charset: Charset = Charsets.UTF_8) = toFile().writeText(text, charset)
