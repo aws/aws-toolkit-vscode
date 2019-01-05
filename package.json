@@ -128,6 +128,11 @@
                     "group": "0@4"
                 },
                 {
+                    "command": "aws.deleteLambda",
+                    "when": "view == lambda && viewItem == awsRegionFunctionNode",
+                    "group": "0@5"
+                },
+                {
                     "command": "aws.deleteCloudFormation",
                     "when": "view == lambda && viewItem == awsCloudFormationNode",
                     "group": "0@5"
@@ -191,6 +196,11 @@
                     "light": "resources/light/invoke_lambda.svg",
                     "dark": "resources/dark/invoke_lambda.svg"
                 }
+            },
+            {
+                "command": "aws.deleteLambda",
+                "title": "%AWS.command.deleteLambda%",
+                "category": "AWS"
             },
             {
                 "command": "aws.getLambdaConfig",

@@ -11,8 +11,11 @@ import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 import { FunctionInfo } from '../functionInfo'
 
 export abstract class FunctionNodeBase extends AWSTreeNodeBase {
-    protected constructor(public readonly info: FunctionInfo) {
-        super(info.configuration.FunctionName || '')
+    protected constructor(
+        parent: AWSTreeNodeBase | undefined,
+        public readonly info: FunctionInfo
+    ) {
+        super(parent, info.configuration.FunctionName || '')
         this.tooltip = `${info.configuration.FunctionName}-${info.configuration.FunctionArn}`
         this.iconPath =  {
             dark: Uri.file(ext.context.asAbsolutePath('resources/dark/lambda_function.svg')),
@@ -22,15 +25,15 @@ export abstract class FunctionNodeBase extends AWSTreeNodeBase {
 }
 
 export class RegionFunctionNode extends FunctionNodeBase {
-    public constructor(info: FunctionInfo) {
-        super(info)
+    public constructor(parent: AWSTreeNodeBase | undefined, info: FunctionInfo) {
+        super(parent, info)
         this.contextValue = 'awsRegionFunctionNode'
     }
 }
 
 export class CloudFormationFunctionNode extends FunctionNodeBase {
-    public constructor(info: FunctionInfo) {
-        super(info)
+    public constructor(parent: AWSTreeNodeBase | undefined, info: FunctionInfo) {
+        super(parent, info)
         this.contextValue = 'awsCloudFormationFunctionNode'
     }
 }

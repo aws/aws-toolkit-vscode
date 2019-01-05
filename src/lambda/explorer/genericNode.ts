@@ -14,15 +14,20 @@ import { PlaceholderNode } from './placeholderNode'
 
 // Generic tree node with a label
 export class GenericNode extends AWSTreeNodeBase {
-    public constructor(label: string, children: AWSTreeNodeBase[]) {
-        super(label, TreeItemCollapsibleState.Collapsed)
-        this.children = children
+    public constructor(parent: AWSTreeNodeBase | undefined, label: string) {
+        super(parent, label, TreeItemCollapsibleState.Collapsed)
         this.tooltip = label
+        this.children = []
+    }
+
+    public setChildren(children: AWSTreeNodeBase[]) {
+        this.children = children
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         if (!this.children || this.children.length === 0) {
             return [new PlaceholderNode(
+                this,
                 localize('AWS.explorerNode.container.noItems', '[no items]')
             )]
         }

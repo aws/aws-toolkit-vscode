@@ -33,10 +33,13 @@ describe('FunctionNode', () => {
 
     // Validates we tagged the node correctly
     it('initializes name and tooltip', async () => {
-        const testNode = new RegionFunctionNode({
-            configuration: fakeFunctionConfig,
-            client: new Lambda()
-        })
+        const testNode = new RegionFunctionNode(
+            undefined,
+            {
+                configuration: fakeFunctionConfig,
+                client: new Lambda()
+            }
+        )
 
         assert.equal(testNode.label, fakeFunctionConfig.FunctionName)
         assert.equal(testNode.tooltip, `${fakeFunctionConfig.FunctionName}-${fakeFunctionConfig.FunctionArn}`)
@@ -48,10 +51,13 @@ describe('FunctionNode', () => {
         const fileScheme: string = 'file'
         const resourceImageName: string = 'lambda_function.svg'
 
-        const testNode = new RegionFunctionNode({
-            configuration: fakeFunctionConfig,
-            client: new Lambda()
-        })
+        const testNode = new RegionFunctionNode(
+            undefined,
+            {
+                configuration: fakeFunctionConfig,
+                client: new Lambda()
+            }
+        )
 
         assert(testNode.iconPath !== undefined)
         const iconPath = testNode.iconPath! as {
@@ -75,20 +81,26 @@ describe('FunctionNode', () => {
     // Validates we don't yield some unexpected value that our command triggers
     // don't recognize
     it('returns expected context value', async () => {
-        const testNode = new RegionFunctionNode({
-            configuration: fakeFunctionConfig,
-            client: new Lambda()
-        })
+        const testNode = new RegionFunctionNode(
+            undefined,
+            {
+                configuration: fakeFunctionConfig,
+                client: new Lambda()
+            }
+        )
 
         assert.equal(testNode.contextValue, 'awsRegionFunctionNode')
     })
 
     // Validates function nodes are leaves
     it('has no children', async () => {
-        const testNode = new RegionFunctionNode({
-            configuration: fakeFunctionConfig,
-            client: new Lambda()
-        })
+        const testNode = new RegionFunctionNode(
+            undefined,
+            {
+                configuration: fakeFunctionConfig,
+                client: new Lambda()
+            }
+        )
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)

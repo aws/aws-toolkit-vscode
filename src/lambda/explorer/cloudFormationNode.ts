@@ -27,11 +27,16 @@ export class CloudFormationNode extends AWSTreeNodeBase {
     protected stackDescribed: boolean = false
 
     public constructor(
+        parent: AWSTreeNodeBase | undefined,
         public readonly stackSummary: CloudFormation.StackSummary,
         public readonly cloudFormation: CloudFormation,
         public readonly regionLambdas: FunctionInfo[]
     ) {
-        super(`${stackSummary.StackName} [${stackSummary.StackStatus}]`, TreeItemCollapsibleState.Collapsed)
+        super(
+            parent,
+            `${stackSummary.StackName} [${stackSummary.StackStatus}]`,
+            TreeItemCollapsibleState.Collapsed
+        )
         this.tooltip = `${this.stackSummary.StackName}-${this.stackSummary.StackId}`
         this.iconPath = {
             dark: Uri.file(ext.context.asAbsolutePath('resources/dark/cloudformation.svg')),
@@ -43,6 +48,7 @@ export class CloudFormationNode extends AWSTreeNodeBase {
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         if (!this.regionLambdas || this.regionLambdas.length === 0) {
             return [new PlaceholderNode(
+                this,
                 localize('AWS.explorerNode.cloudFormation.noFunctions', '[no functions in this CloudFormation]')
             )]
         }
@@ -53,13 +59,14 @@ export class CloudFormationNode extends AWSTreeNodeBase {
 
         if (this.lambdaResources.length === 0) {
             return [new PlaceholderNode(
+                this,
                 localize('AWS.explorerNode.cloudFormation.noFunctions', '[no functions in this CloudFormation]')
             )]
         }
 
         return this.regionLambdas
             .filter(lambdaInfo => this.lambdaResources!.indexOf(lambdaInfo.configuration.FunctionName || '') > -1)
-            .map(lambdaInfo => new CloudFormationFunctionNode(lambdaInfo))
+            .map(lambdaInfo => new CloudFormationFunctionNode(this, lambdaInfo))
     }
 
     private async resolveLambdaResources(): Promise<string[]> {

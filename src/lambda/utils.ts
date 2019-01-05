@@ -14,6 +14,7 @@ import { isNullOrUndefined } from 'util'
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
 import { ext } from '../shared/extensionGlobals'
+import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
 import { quickPickLambda } from './commands/quickPickLambda'
 import { CloudFormationNode } from './explorer/cloudFormationNode'
 import { FunctionNodeBase } from './explorer/functionNode'
@@ -65,6 +66,7 @@ export async function selectLambdaNode(
 }
 
 export async function getCloudFormationNodesForRegion(
+    parent: AWSTreeNodeBase,
     regionCode: string,
     lambdaFunctions: FunctionInfo[]
 ): Promise<CloudFormationNode[]> {
@@ -74,10 +76,11 @@ export async function getCloudFormationNodesForRegion(
         regionCode
     )
 
-    return await listCloudFormationNodes(client, lambdaFunctions)
+    return await listCloudFormationNodes(parent, client, lambdaFunctions)
 }
 
 export async function listCloudFormationNodes(
+    parent: AWSTreeNodeBase,
     cloudFormation: CloudFormation,
     lambdaFunctions: FunctionInfo[]
 ): Promise<CloudFormationNode[]> {
@@ -96,7 +99,7 @@ export async function listCloudFormationNodes(
             request.NextToken = response.NextToken
             if (response.StackSummaries) {
                 response.StackSummaries.forEach(c => {
-                    arr.push(new CloudFormationNode(c, cloudFormation, lambdaFunctions))
+                    arr.push(new CloudFormationNode(parent, c, cloudFormation, lambdaFunctions))
                 })
             }
         } while (!isNullOrUndefined(request.NextToken))
