@@ -7,25 +7,36 @@
 
 import '../shared/utilities/asyncIteratorShim'
 
-export function map<TOld, TNew>(
-    items: Iterable<TOld>,
-    selector: (item: TOld) => TNew
-) {
-    const result: TNew[] = []
+export function union<T>(a: Iterable<T>, b: Iterable<T>): Set<T> {
+    const result = new Set<T>()
 
-    for (const item of items) {
-        result.push(selector(item))
+    for (const item of a) {
+        result.add(item)
     }
-}
 
-export function toArray<T>(items: Iterable<T>) {
-    const result: T[] = []
-
-    for (const item of items) {
-        result.push(item)
+    for (const item of b) {
+        result.add(item)
     }
 
     return result
+}
+
+export function intersection<T>(sequence1: Iterable<T>, sequence2: Iterable<T>): Set<T> {
+    const set2 = new Set(sequence2)
+
+    return filter(sequence1, item => set2.has(item))
+}
+
+export function difference<T>(sequence1: Iterable<T>, sequence2: Iterable<T>): Set<T> {
+    const set2 = new Set(sequence2)
+
+    return filter(sequence1, item => !set2.has(item))
+}
+
+export function complement<T>(sequence1: Iterable<T>, sequence2: Iterable<T>): Set<T> {
+    const set1 = new Set(sequence1)
+
+    return filter(sequence2, item => !set1.has(item))
 }
 
 export async function toArrayAsync<T>(
@@ -94,38 +105,6 @@ export function updateInPlace<TKey, TValue>(
     for (const key of complement(target.keys(), keySet)) {
         target.set(key, create(key))
     }
-}
-
-export function union<T>(a: Iterable<T>, b: Iterable<T>): Set<T> {
-    const result = new Set<T>()
-
-    for (const item of a) {
-        result.add(item)
-    }
-
-    for (const item of b) {
-        result.add(item)
-    }
-
-    return result
-}
-
-export function intersection<T>(sequence1: Iterable<T>, sequence2: Iterable<T>): Iterable<T> {
-    const set2 = new Set(sequence2)
-
-    return filter(sequence1, item => set2.has(item))
-}
-
-export function difference<T>(sequence1: Iterable<T>, sequence2: Iterable<T>): Set<T> {
-    const set2 = new Set(sequence2)
-
-    return filter(sequence1, item => !set2.has(item))
-}
-
-export function complement<T>(sequence1: Iterable<T>, sequence2: Iterable<T>): Set<T> {
-    const set1 = new Set(sequence1)
-
-    return filter(sequence2, item => !set1.has(item))
 }
 
 function filter<T>(sequence: Iterable<T>, condition: (item: T) => boolean): Set<T> {
