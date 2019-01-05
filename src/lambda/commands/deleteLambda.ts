@@ -5,6 +5,9 @@
 
 'use strict'
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import { ext } from '../../shared/extensionGlobals'
 import { RegionFunctionNode } from '../explorer/functionNode'
 
@@ -24,9 +27,12 @@ export async function deleteLambda(node: RegionFunctionNode, refresh: () => void
     } catch (err) {
         const error = err as Error
 
-        ext.lambdaOutputChannel.appendLine(
-            `There was an error deleting ${node.info.configuration.FunctionArn}`
-        )
+        ext.lambdaOutputChannel.show(true)
+        ext.lambdaOutputChannel.appendLine(localize(
+            'AWS.command.deleteLambda.error',
+            "There was an error deleting lambda function '{0}'",
+            node.info.configuration.FunctionArn
+        ))
         ext.lambdaOutputChannel.appendLine(error.toString())
         ext.lambdaOutputChannel.appendLine('')
     }
