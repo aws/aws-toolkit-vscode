@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.python
 
+import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.roots.ModuleRootModificationUtil
@@ -10,6 +11,7 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.runInEdtAndGet
+import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -108,6 +110,22 @@ class PythonLambdaPackagerTest {
             lambdaPackage,
             "%PROJECT_ROOT%/hello_world/app.py" to "hello_world/app.py",
             "%PROJECT_ROOT%/venv/lib/site-packages/someLib/__init__.py" to "someLib/__init__.py"
+        )
+    }
+
+    @Test
+    fun testDSStoreIsIgnored() {
+        val psiFile = addPythonHandler("hello_world/app.py")
+        runInEdtAndWait {
+            runWriteAction {
+                psiFile.containingDirectory.virtualFile.createChildData(null, ".DS_Store")
+            }
+        }
+        val lambdaPackage = runPackager(projectRule.module, psiFile)
+        verifyExpectedEntries(lambdaPackage, "hello_world/app.py")
+        verifyPathMappings(
+            lambdaPackage,
+            "%PROJECT_ROOT%/hello_world/app.py" to "hello_world/app.py"
         )
     }
 
