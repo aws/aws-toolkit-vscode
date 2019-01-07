@@ -10,7 +10,7 @@ import { CloudFormation, Lambda } from 'aws-sdk'
 import { Uri } from 'vscode'
 import {
     CloudFormationFunctionNode,
-    CloudFormationStackGroupNode,
+    CloudFormationNode,
     CloudFormationStackNode
 } from '../../../lambda/explorer/cloudFormationNodes'
 import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
@@ -45,7 +45,7 @@ describe('CloudFormationStackNode', () => {
     // Validates we tagged the node correctly.
     it('initializes name and tooltip', async () => {
         const testNode: CloudFormationStackNode = new CloudFormationStackNode(
-            new CloudFormationStackGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
+            new CloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
             fakeStackSummary
         )
 
@@ -83,7 +83,7 @@ describe('CloudFormationStackNode', () => {
             }
         }
         const testNode = new CloudFormationStackNode(
-            new CloudFormationStackGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
+            new CloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
             fakeStackSummary
         )
 
@@ -168,17 +168,17 @@ describe('CloudFormationStackNode', () => {
         lambdaClient.addLambdaResource(lambda3Name)
 
         ext.toolkitClientBuilder = {
-            createCloudFormationClient(regionCode: string) {
+            createCloudFormationClient(regionCode: string): CloudFormationClient {
                 return cloudFormationClient
             },
 
-            createLambdaClient(regionCode: string) {
+            createLambdaClient(regionCode: string): LambdaClient {
                 return lambdaClient
             }
         }
 
         const testNode = new CloudFormationStackNode(
-            new CloudFormationStackGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
+            new CloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
             fakeStackSummary
         )
 
@@ -200,7 +200,7 @@ describe('CloudFormationStackNode', () => {
         const resourceImageName: string = 'cloudformation.svg'
 
         const testNode = new CloudFormationStackNode(
-            new CloudFormationStackGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
+            new CloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
             fakeStackSummary
         )
 

@@ -8,16 +8,17 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
+import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
 import { StandaloneFunctionNode } from '../explorer/standaloneNodes'
 
 export async function deleteLambda(
     node: StandaloneFunctionNode,
     refresh: () => void
-) {
-    const client = ext.toolkitClientBuilder.createLambdaClient(node.regionCode)
+): Promise<void> {
+    const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(node.regionCode)
 
-    if (!node || !node.configuration.FunctionName) {
+    if (!node.configuration.FunctionName) {
         return
     }
 

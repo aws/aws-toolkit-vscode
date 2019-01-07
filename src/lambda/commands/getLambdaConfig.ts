@@ -8,6 +8,7 @@
 import _ = require('lodash')
 import * as vscode from 'vscode'
 import { AwsContext } from '../../shared/awsContext'
+import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { FunctionNodeBase } from '../explorer/functionNode'
@@ -30,7 +31,7 @@ export async function getLambdaConfig(
         const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
         view.webview.html = baseTemplateFn({ content: '<h1>Loading...</h1>' })
 
-        const client = ext.toolkitClientBuilder.createLambdaClient(fn.regionCode)
+        const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(fn.regionCode)
         const funcResponse = await client.getFunctionConfiguration(fn.configuration.FunctionName!)
 
         const getConfigTemplateFn = _.template(LambdaTemplates.GET_CONFIG_TEMPLATE)

@@ -6,6 +6,7 @@
 'use strict'
 
 import * as assert from 'assert'
+import '../../shared/utilities/asyncIteratorShim'
 import {
     complement,
     difference,
@@ -15,8 +16,7 @@ import {
     toMapAsync,
     union,
     updateInPlace
-} from '../../lambda/collectionUtils'
-import '../../shared/utilities/asyncIteratorShim'
+} from '../../shared/utilities/collectionUtils'
 
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
@@ -150,7 +150,6 @@ describe('CollectionUtils', async () => {
                 [
                     { key: 'a' },
                     { key: 'b' },
-                    { key: 'b' },
                     { key: 'c' }
                 ],
                 item => item.key
@@ -161,6 +160,18 @@ describe('CollectionUtils', async () => {
             assert.ok(result.has('a'))
             assert.ok(result.has('b'))
             assert.ok(result.has('c'))
+        })
+
+        it('throws an error on duplicate keys', async () => {
+            assert.throws(() => toMap<string, { key: string }>(
+                [
+                    { key: 'a' },
+                    { key: 'b' },
+                    { key: 'b' },
+                    { key: 'c' }
+                ],
+                item => item.key
+            ))
         })
     })
 
@@ -180,7 +191,6 @@ describe('CollectionUtils', async () => {
                 asyncGenerator([
                     { key: 'a' },
                     { key: 'b' },
-                    { key: 'b' },
                     { key: 'c' }
                 ]),
                 item => item.key
@@ -191,6 +201,38 @@ describe('CollectionUtils', async () => {
             assert.ok(result.has('a'))
             assert.ok(result.has('b'))
             assert.ok(result.has('c'))
+        })
+
+        it('throws an error on duplicate keys', async () => {
+            // TODO: Why is assert.rejects not found at runtime?
+            async function assertRejects(action: () => Promise<any>) {
+                let threw: boolean = false
+                try {
+                    await action()
+                } catch (err) {
+                    threw = true
+                } finally {
+                    // Use assert.throws here instead of assert.ok(threw) for a more appropriate error message.
+                    assert.throws(() => {
+                        if (threw) {
+                            throw new Error()
+                        }
+                    })
+                }
+            }
+
+            // tslint:disable-next-line:no-floating-promises
+            await assertRejects(async () => {
+                await toMapAsync<string, { key: string }>(
+                    asyncGenerator([
+                        { key: 'a' },
+                        { key: 'b' },
+                        { key: 'b' },
+                        { key: 'c' }
+                    ]),
+                    item => item.key
+                )
+            })
         })
     })
 

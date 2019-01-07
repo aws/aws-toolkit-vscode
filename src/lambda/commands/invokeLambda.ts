@@ -11,6 +11,7 @@ import path = require('path')
 import * as vscode from 'vscode'
 import xml2js = require('xml2js')
 import { AwsContext } from '../../shared/awsContext'
+import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { ResourceFetcher } from '../../shared/resourceFetcher'
@@ -157,7 +158,7 @@ function createMessageReceivedFunc(
                         throw new Error(`Could not determine ARN for function ${fn.configuration.FunctionName}`)
                     }
 
-                    const client = ext.toolkitClientBuilder.createLambdaClient(fn.regionCode)
+                    const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(fn.regionCode)
                     const funcResponse = await client.invoke(
                         fn.configuration.FunctionArn,
                         message.value

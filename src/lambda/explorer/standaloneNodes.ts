@@ -7,9 +7,10 @@
 
 import { Lambda } from 'aws-sdk'
 import * as vscode from 'vscode'
+import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
-import { toArrayAsync, toMap, updateInPlace } from '../collectionUtils'
+import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listLambdaFunctions } from '../utils'
 import { FunctionNodeBase } from './functionNode'
 import { RegionNode } from './regionNode'
@@ -35,7 +36,7 @@ export class StandaloneFunctionGroupNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client = ext.toolkitClientBuilder.createLambdaClient(this.regionCode)
+        const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(this.regionCode)
         const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
             await toArrayAsync(listLambdaFunctions(client)),
             configuration => configuration.FunctionName

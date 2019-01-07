@@ -12,7 +12,7 @@ import * as vscode from 'vscode'
 import { DefaultAWSClientBuilder } from '../../shared/awsClientBuilder'
 import { AwsContext, ContextChangeEventsArgs } from '../../shared/awsContext'
 
-describe('AwsClientBuilder', () => {
+describe('DefaultAwsClientBuilder', () => {
     class FakeAwsContext implements AwsContext {
         public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> =
             new vscode.EventEmitter<ContextChangeEventsArgs>().event

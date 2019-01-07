@@ -8,8 +8,8 @@
 import { TreeItemCollapsibleState } from 'vscode'
 import { RegionInfo } from '../../shared/regions/regionInfo'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
-import { toMap, updateInPlace } from '../collectionUtils'
-import { CloudFormationStackGroupNode } from './cloudFormationNodes'
+import { toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
+import { CloudFormationNode } from './cloudFormationNodes'
 import { RegionNode } from './regionNode'
 import { StandaloneFunctionGroupNode } from './standaloneNodes'
 
@@ -18,7 +18,7 @@ import { StandaloneFunctionGroupNode } from './standaloneNodes'
 // the user has available in that region.
 export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
     private info: RegionInfo
-    private readonly cloudFormationStackGroupNode: CloudFormationStackGroupNode
+    private readonly cloudFormationNode: CloudFormationNode
     private readonly standaloneFunctionGroupNode: StandaloneFunctionGroupNode
 
     public get regionCode(): string {
@@ -35,13 +35,13 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
         this.info = info
         this.update(info)
 
-        this.cloudFormationStackGroupNode = new CloudFormationStackGroupNode(this)
+        this.cloudFormationNode = new CloudFormationNode(this)
         this.standaloneFunctionGroupNode = new StandaloneFunctionGroupNode(this)
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return [
-            this.cloudFormationStackGroupNode,
+            this.cloudFormationNode,
             this.standaloneFunctionGroupNode
         ]
     }

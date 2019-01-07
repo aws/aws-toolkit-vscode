@@ -33,10 +33,12 @@ export class DefaultCloudFormationClient implements CloudFormationClient {
 
         do {
             const response: CloudFormation.ListStacksOutput = await client.listStacks(request).promise()
-            request.NextToken = response.NextToken
+
             if (!!response.StackSummaries) {
                 yield* response.StackSummaries
             }
+
+            request.NextToken = response.NextToken
         } while (!!request.NextToken)
     }
 

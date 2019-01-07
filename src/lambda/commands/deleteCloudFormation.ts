@@ -9,6 +9,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
+import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { ext } from '../../shared/extensionGlobals'
 import { CloudFormationStackNode } from '../explorer/cloudFormationNodes'
 
@@ -36,7 +37,7 @@ export async function deleteCloudFormation(
         )
 
         if (userResponse === responseYes) {
-            const client = ext.toolkitClientBuilder.createCloudFormationClient(element.regionCode)
+            const client: CloudFormationClient = ext.toolkitClientBuilder.createCloudFormationClient(element.regionCode)
 
             await client.deleteStack(stackName)
 

@@ -63,11 +63,12 @@ export class DefaultLambdaClient implements LambdaClient {
         const request: Lambda.ListFunctionsRequest = {}
         do {
             const response: Lambda.ListFunctionsResponse = await client.listFunctions(request).promise()
-            request.Marker = response.NextMarker
 
             if (!!response.Functions) {
                 yield* response.Functions
             }
+
+            request.Marker = response.NextMarker
         } while (!!request.Marker)
     }
 

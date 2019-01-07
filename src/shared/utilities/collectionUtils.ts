@@ -5,7 +5,7 @@
 
 'use strict'
 
-import '../shared/utilities/asyncIteratorShim'
+import './asyncIteratorShim'
 
 export function union<T>(a: Iterable<T>, b: Iterable<T>): Set<T> {
     const result = new Set<T>()
@@ -63,6 +63,10 @@ export function toMap<TKey, TValue>(
     for (const item of items) {
         const key = keySelector(item)
         if (!!key) {
+            if (result.has(key)) {
+                throw new Error(`Conflict: Multiple items have the key '${key}'`)
+            }
+
             result.set(key, item)
         }
     }
@@ -79,6 +83,10 @@ export async function toMapAsync<TKey, TValue>(
     for await (const item of items) {
         const key = keySelector(item)
         if (!!key) {
+            if (result.has(key)) {
+                throw new Error(`Conflict: Multiple items have the key '${key}'`)
+            }
+
             result.set(key, item)
         }
     }
