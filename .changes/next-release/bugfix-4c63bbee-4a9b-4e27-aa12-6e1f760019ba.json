@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Use us-east-1 instead of global endpoint for STS"
-}
