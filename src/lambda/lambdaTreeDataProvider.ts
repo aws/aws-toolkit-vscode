@@ -17,11 +17,13 @@ import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
 import { intersection, toMap, updateInPlace } from '../shared/utilities/collectionUtils'
+import { deleteCloudFormation } from './commands/deleteCloudFormation'
 import { deleteLambda } from './commands/deleteLambda'
 import { deployLambda } from './commands/deployLambda'
 import { getLambdaConfig } from './commands/getLambdaConfig'
 import { invokeLambda } from './commands/invokeLambda'
 import { newLambda } from './commands/newLambda'
+import { CloudFormationStackNode } from './explorer/cloudFormationNodes'
 import { DefaultRegionNode } from './explorer/defaultRegionNode'
 import { FunctionNodeBase } from './explorer/functionNode'
 import { RegionNode } from './explorer/regionNode'
@@ -59,6 +61,14 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
                 () => this.refresh(node.parent)
             )
         )
+        vscode.commands.registerCommand(
+            'aws.deleteCloudFormation',
+            async (node: CloudFormationStackNode) => await deleteCloudFormation(
+                () => this.refresh(node.parent),
+                node
+            )
+        )
+
         vscode.commands.registerCommand(
             'aws.invokeLambda',
             async (node: FunctionNodeBase) => await invokeLambda(this.awsContext, this.resourceFetcher, node)
