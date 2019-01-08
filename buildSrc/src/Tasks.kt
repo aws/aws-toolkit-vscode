@@ -71,8 +71,11 @@ abstract class ChangeLogTask : DefaultTask() {
     @InputDirectory
     var changesDirectory: File = configuration().changesDirectory
 
+    var nextReleasePath: String = configuration().nextReleaseDirectory.absolutePath
+
     @InputDirectory
-    var nextReleaseDirectory: File = configuration().nextReleaseDirectory
+    @Optional
+    var nextReleaseDirectory: File? = configuration().nextReleaseDirectory.takeIf { it.exists() }
 
     private fun configuration(): ChangeLogPluginExtension = project.rootProject.extensions.findByName(NAME) as ChangeLogPluginExtension
 }
@@ -123,7 +126,7 @@ open class NewChange : ChangeLogTask() {
     }
 
     private fun newFile(changeType: ChangeType): File =
-        File(nextReleaseDirectory, "${changeType.name.toLowerCase()}-${UUID.randomUUID()}.json").apply {
+        File(nextReleasePath, "${changeType.name.toLowerCase()}-${UUID.randomUUID()}.json").apply {
             parentFile?.mkdirs()
             createNewFile()
         }
@@ -146,11 +149,11 @@ open class CreateRelease : ChangeLogTask() {
         creator.create(releaseVersion, releaseDate)
         if (git != null) {
             git.stage(releaseEntry())
-            git.stage(nextReleaseDirectory)
+            git.stage(File(nextReleasePath))
         }
     }
 
-    private fun nextReleaseEntries(): List<File> = nextReleaseDirectory.jsonFiles()
+    private fun nextReleaseEntries(): List<File> = nextReleaseDirectory?.jsonFiles() ?: emptyList()
 }
 
 open class GenerateChangeLog : ChangeLogTask() {
@@ -213,7 +216,13 @@ open class GenerateChangeLog : ChangeLogTask() {
         return writers.toTypedArray()
     }
 
-    private fun unreleasedEntries(): List<File> = if (includeUnreleased) nextReleaseDirectory.jsonFiles() else emptyList()
+    private fun unreleasedEntries(): List<File> = nextReleaseDirectory?.let {
+        if (includeUnreleased) {
+            it.jsonFiles()
+        } else {
+            emptyList()
+        }
+    } ?: emptyList()
 
     private fun releaseEntries(): List<File> = changesDirectory.jsonFiles()
 }
