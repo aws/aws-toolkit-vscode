@@ -15,7 +15,7 @@ import {
 } from '../../lambda/lambdaPolicy'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
-import { MockToolkitClientBuilder } from '..//utilities/mockToolkitClientBuilder'
+import { MockToolkitClientBuilder } from '../shared/clients/mockClients'
 
 class DoNothingLambdaPolicyProvider implements LambdaPolicyProvider {
     public readonly functionName: string
@@ -117,7 +117,7 @@ describe('LambdaPolicyView', async () => {
 
 describe('DefaultLambdaPolicyProvider', async () => {
     it('does not accept blank functionName', async () => {
-        ext.toolkitClientBuilder = new MockToolkitClientBuilder(undefined, {} as any as LambdaClient)
+        ext.toolkitClientBuilder = new MockToolkitClientBuilder()
 
         assert.throws(() => {
             // tslint:disable-next-line:no-unused-expression
@@ -126,7 +126,7 @@ describe('DefaultLambdaPolicyProvider', async () => {
     })
 
     it('sets functionName', async () => {
-        ext.toolkitClientBuilder = new MockToolkitClientBuilder(undefined, {} as any as LambdaClient)
+        ext.toolkitClientBuilder = new MockToolkitClientBuilder()
         const provider = new DefaultLambdaPolicyProvider('fn1', '')
 
         assert.strictEqual(provider.functionName, 'fn1')
