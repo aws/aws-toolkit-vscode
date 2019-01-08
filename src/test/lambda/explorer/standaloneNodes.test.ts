@@ -9,12 +9,15 @@ import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
 import { Uri } from 'vscode'
 import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
-import { StandaloneFunctionGroupNode, StandaloneFunctionNode } from '../../../lambda/explorer/standaloneNodes'
+import {
+    DefaultStandaloneFunctionGroupNode,
+    DefaultStandaloneFunctionNode
+} from '../../../lambda/explorer/standaloneNodes'
 import { ext } from '../../../shared/extensionGlobals'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
-describe('StandaloneFunctionNode', () => {
+describe('DefaultStandaloneFunctionNode', () => {
 
     let fakeFunctionConfig: Lambda.FunctionConfiguration
 
@@ -35,8 +38,8 @@ describe('StandaloneFunctionNode', () => {
 
     // Validates we tagged the node correctly
     it('initializes name and tooltip', async () => {
-        const testNode = new StandaloneFunctionNode(
-            new StandaloneFunctionGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
+        const testNode = new DefaultStandaloneFunctionNode(
+            new DefaultStandaloneFunctionGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
             fakeFunctionConfig
         )
 
@@ -50,8 +53,8 @@ describe('StandaloneFunctionNode', () => {
         const fileScheme: string = 'file'
         const resourceImageName: string = 'lambda_function.svg'
 
-        const testNode = new StandaloneFunctionNode(
-            new StandaloneFunctionGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
+        const testNode = new DefaultStandaloneFunctionNode(
+            new DefaultStandaloneFunctionGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
             fakeFunctionConfig
         )
 
@@ -77,8 +80,8 @@ describe('StandaloneFunctionNode', () => {
     // Validates we don't yield some unexpected value that our command triggers
     // don't recognize
     it('returns expected context value', async () => {
-        const testNode = new StandaloneFunctionNode(
-            new StandaloneFunctionGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
+        const testNode = new DefaultStandaloneFunctionNode(
+            new DefaultStandaloneFunctionGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
             fakeFunctionConfig
         )
 
@@ -87,8 +90,8 @@ describe('StandaloneFunctionNode', () => {
 
     // Validates function nodes are leaves
     it('has no children', async () => {
-        const testNode = new StandaloneFunctionNode(
-            new StandaloneFunctionGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
+        const testNode = new DefaultStandaloneFunctionNode(
+            new DefaultStandaloneFunctionGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
             fakeFunctionConfig
         )
 
