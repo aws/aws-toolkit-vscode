@@ -56,7 +56,8 @@ class SamVersionTest {
     @Test
     fun incompatableSamVersion_tooHigh() {
         val versions = arrayOf(
-                "0.11.0",
+                SamCommon.expectedSamMaxVersion.rawVersion,
+                SamCommon.expectedSamMaxVersion.parsedVersion,
                 "1.0.0",
                 "1.5.9",
                 "1.5.9-dev"
