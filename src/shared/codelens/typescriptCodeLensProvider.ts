@@ -215,7 +215,7 @@ class LocalLambdaRunner {
         if (!packageJsonPath) {
             throw new Error(
                 localize(
-                    'AWS.error.sam.local.package.json.not.found',
+                    'AWS.error.sam.local.package_json_not_found',
                     'Unable to find package.json related to {0}',
                     this.localInvokeArgs.document.uri.fsPath
                 )
@@ -249,12 +249,18 @@ class LocalLambdaRunner {
                 'AWS.output.building.sam.application.complete',
                 'Build complete.'
             )
-
         )
 
         return path.join(samBuildOutputFolder, 'template.yaml')
     }
 
+    /**
+     * Runs `sam local invoke` against the provided template file
+     * @param samTemplatePath sam template to run locally
+     * @param debugPort Optional
+     *                  - when omitted, the lambda function is invoked locally
+     *                  - when provided, the debugger will attempt to attach to local invoke
+     */
     private async invokeLambdaFunction(
         samTemplatePath: string,
         debugPort: number | undefined,

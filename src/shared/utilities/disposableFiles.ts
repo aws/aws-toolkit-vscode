@@ -32,33 +32,37 @@ export class DisposableFiles implements vscode.Disposable {
 
     public dispose(): void {
         if (!this._disposed) {
-            del.sync(
-                [...this._filePaths],
-                {
-                    absolute: true,
-                    force: true,
-                    nobrace: false,
-                    nodir: true,
-                    noext: true,
-                    noglobstar: true,
+            try {
+                del.sync(
+                    [...this._filePaths],
+                    {
+                        absolute: true,
+                        force: true,
+                        nobrace: false,
+                        nodir: true,
+                        noext: true,
+                        noglobstar: true,
+                    })
+
+                this._folderPaths.forEach(folder => {
+                    if (fs.existsSync(folder)) {
+                        del.sync(
+                            folder,
+                            {
+                                absolute: true,
+                                force: true,
+                                nobrace: false,
+                                nodir: false,
+                                noext: true,
+                                noglobstar: true,
+                            })
+                    }
                 })
-
-            this._folderPaths.forEach(folder => {
-                if (fs.existsSync(folder)) {
-                    del.sync(
-                        folder,
-                        {
-                            absolute: true,
-                            force: true,
-                            nobrace: false,
-                            nodir: false,
-                            noext: true,
-                            noglobstar: true,
-                        })
-                }
-            })
-
-            this._disposed = true
+            } catch (err) {
+                console.error('Error during DisposableFiles dispose', err)
+            } finally {
+                this._disposed = true
+            }
         }
     }
 }

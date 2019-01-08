@@ -17,34 +17,27 @@ export interface SamCliBuildCommandResponse {
 }
 
 export class SamCliBuildCommand extends SamCliCommand<SamCliBuildCommandResponse> {
-    private readonly _buildDir: string
-    private readonly _baseDir: string
-    private readonly _templatePath: string
-
     public constructor(
-        buildDir: string,
-        baseDir: string,
-        templatePath: string,
+        private readonly buildDir: string,
+        private readonly baseDir: string,
+        private readonly templatePath: string,
         config: SamCliConfiguration = new SamCliConfiguration(
             new DefaultSettingsConfiguration(extensionSettingsPrefix),
             new DefaultSamCliLocationProvider()
         )) {
         super(config)
-        this._buildDir = buildDir
-        this._baseDir = baseDir
-        this._templatePath = templatePath
     }
 
     public async execute(): Promise<SamCliBuildCommandResponse> {
         await this.validate()
 
         const childProcess: ChildProcess = new ChildProcess(
-            this.samCliLocation!,
+            this.samCliLocation,
             [
                 'build',
-                '--build-dir', this._buildDir,
-                '--base-dir', this._baseDir,
-                '--template', this._templatePath,
+                '--build-dir', this.buildDir,
+                '--base-dir', this.baseDir,
+                '--template', this.templatePath,
             ]
         )
 
@@ -58,8 +51,10 @@ export class SamCliBuildCommand extends SamCliCommand<SamCliBuildCommandResponse
             return response
         }
 
-        // tslint:disable-next-line:max-line-length
-        console.error(`SAM CLI error\nExit code: ${childProcessResult.exitCode}\nError: ${childProcessResult.error}\nstdout: ${childProcessResult.stdout}`)
+        console.error('SAM CLI error')
+        console.error(`Exit code: ${childProcessResult.exitCode}`)
+        console.error(`Error: ${childProcessResult.error}`)
+        console.error(`stdout: ${childProcessResult.stdout}`)
 
         let errorMessage: string | undefined
         if (!!childProcessResult.error && !!childProcessResult.error.message) {
@@ -73,16 +68,16 @@ export class SamCliBuildCommand extends SamCliCommand<SamCliBuildCommandResponse
     protected async validate(): Promise<void> {
         await super.validate()
 
-        if (!this._buildDir) {
+        if (!this.buildDir) {
             throw new Error('buildDir is missing or empty')
         }
 
-        if (!this._templatePath) {
+        if (!this.templatePath) {
             throw new Error('template path is missing or empty')
         }
 
-        if (!await fileExists(this._templatePath)) {
-            throw new Error(`template path does not exist: ${this._templatePath}`)
+        if (!await fileExists(this.templatePath)) {
+            throw new Error(`template path does not exist: ${this.templatePath}`)
         }
     }
 }

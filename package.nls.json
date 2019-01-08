@@ -28,7 +28,7 @@
     "AWS.error.during.sam.local": "An error occurred trying to run SAM Application locally: {0}",
     "AWS.error.mfa.userCancelled": "User cancelled entering authentication code",
     "AWS.error.no.error.code": "No error code",
-    "AWS.error.sam.local.package.json.not.found": "Unable to find package.json related to {0}",
+    "AWS.error.sam.local.package_json_not_found": "Unable to find package.json related to {0}",
     "AWS.explorerNode.addRegion": "Add a region to view functions...",
     "AWS.explorerNode.addRegion.tooltip": "Click to add a region to view functions...",
     "AWS.explorerNode.region.noResources": "[no resources in this region]",
