@@ -9,7 +9,7 @@ import { TreeItemCollapsibleState } from 'vscode'
 import { RegionInfo } from '../../shared/regions/regionInfo'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 import { toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
-import { CloudFormationNode } from './cloudFormationNodes'
+import { CloudFormationNode, DefaultCloudFormationNode } from './cloudFormationNodes'
 import { RegionNode } from './regionNode'
 import {
     DefaultStandaloneFunctionGroupNode,
@@ -38,7 +38,7 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
         this.info = info
         this.update(info)
 
-        this.cloudFormationNode = new CloudFormationNode(this)
+        this.cloudFormationNode = new DefaultCloudFormationNode(this)
         this.standaloneFunctionGroupNode = new DefaultStandaloneFunctionGroupNode(this)
     }
 

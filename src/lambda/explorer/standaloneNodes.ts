@@ -61,14 +61,8 @@ export class DefaultStandaloneFunctionGroupNode extends AWSTreeNodeBase implemen
     }
 }
 
-export interface StandaloneFunctionNode extends AWSTreeNodeBase {
-    readonly regionCode: string
-
+export interface StandaloneFunctionNode extends FunctionNodeBase {
     readonly parent: StandaloneFunctionGroupNode
-
-    configuration: Lambda.FunctionConfiguration
-
-    update(configuration: Lambda.FunctionConfiguration): void
 }
 
 export class DefaultStandaloneFunctionNode extends FunctionNodeBase implements StandaloneFunctionNode {
