@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Added AWS Credential validation when changing profiles"
-}

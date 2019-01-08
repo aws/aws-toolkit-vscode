@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fixed issue on OS X where the SAM CLI is unable to use an UTF-8 locale."
-}

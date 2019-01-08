@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix IllegalStateException: context.module must not be null (#643)"
-}
