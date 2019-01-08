@@ -246,7 +246,7 @@
         "@types/glob": "^7.1.1",
         "@types/lodash": "^4.14.110",
         "@types/mocha": "^2.2.48",
-        "@types/node": "^7.0.43",
+        "@types/node": "^10.12.12",
         "@types/request": "^2.47.1",
         "@types/xml2js": "^0.4.3",
         "decache": "^4.4.0",

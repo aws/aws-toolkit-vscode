@@ -8,26 +8,28 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
+import { Lambda } from 'aws-sdk'
 import * as vscode from 'vscode'
-import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 import { FunctionNodeBase } from '../explorer/functionNode'
-import { FunctionInfo } from '../functionInfo'
 
 class QuickPickLambda extends FunctionNodeBase implements vscode.QuickPickItem {
     public description?: string | undefined
     public detail?: string | undefined
     public picked?: boolean | undefined
 
-    public constructor(parent: AWSTreeNodeBase | undefined, info: FunctionInfo) {
-        super(parent, info)
+    public constructor(configuration: Lambda.FunctionConfiguration, public readonly regionCode: string) {
+        super(configuration)
     }
 
     public get label(): string {
-        return super.label || ''
+        return super.label!
     }
 }
 
-export async function quickPickLambda(lambdas: FunctionInfo[]): Promise<FunctionNodeBase | undefined> {
+export async function quickPickLambda(
+    lambdas: Lambda.FunctionConfiguration[],
+    region: string
+): Promise<FunctionNodeBase | undefined> {
     try {
         if (!lambdas || lambdas.length === 0) {
             vscode.window.showInformationMessage(localize(
@@ -35,7 +37,7 @@ export async function quickPickLambda(lambdas: FunctionInfo[]): Promise<Function
                 '[no functions in this region]'
             ))
         } else {
-            const qpLambdas = lambdas.map(l => new QuickPickLambda(undefined, l))
+            const qpLambdas = lambdas.map(lambda => new QuickPickLambda(lambda, region))
 
             return await vscode.window.showQuickPick(qpLambdas, { placeHolder: 'Choose a lambda' })
         }

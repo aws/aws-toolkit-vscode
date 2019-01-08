@@ -8,22 +8,22 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
+import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
-import { RegionFunctionNode } from '../explorer/functionNode'
+import { StandaloneFunctionNode } from '../explorer/standaloneNodes'
 
-export async function deleteLambda(node: RegionFunctionNode, refresh: () => void) {
-    if (!node || !node.info.configuration.FunctionName) {
+export async function deleteLambda(
+    node: StandaloneFunctionNode,
+    refresh: () => void
+): Promise<void> {
+    const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(node.regionCode)
+
+    if (!node.configuration.FunctionName) {
         return
     }
 
     try {
-        const response = await node.info.client.deleteFunction({
-            FunctionName: node.info.configuration.FunctionName
-        }).promise()
-
-        if (!!response.$response.error) {
-            throw response.$response.error
-        }
+        await client.deleteFunction(node.configuration.FunctionName)
     } catch (err) {
         const error = err as Error
 
@@ -31,7 +31,7 @@ export async function deleteLambda(node: RegionFunctionNode, refresh: () => void
         ext.lambdaOutputChannel.appendLine(localize(
             'AWS.command.deleteLambda.error',
             "There was an error deleting lambda function '{0}'",
-            node.info.configuration.FunctionArn
+            node.configuration.FunctionArn
         ))
         ext.lambdaOutputChannel.appendLine(error.toString())
         ext.lambdaOutputChannel.appendLine('')

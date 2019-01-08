@@ -33,8 +33,8 @@ describe('PromiseSharer', async () => {
         await p2
         await p3
 
-        assert.equal(timesCalled, 1)
-        assert.equal(promisesCompleted, 3)
+        assert.strictEqual(timesCalled, 1)
+        assert.strictEqual(promisesCompleted, 3)
     })
 
     it('does not join different promises', async () => {
@@ -54,8 +54,8 @@ describe('PromiseSharer', async () => {
         await p2
         await p3
 
-        assert.equal(timesCalled, 2)
-        assert.equal(promisesCompleted, 3)
+        assert.strictEqual(timesCalled, 2)
+        assert.strictEqual(promisesCompleted, 3)
     })
 
     it('starts a new promise if previous one completed', async () => {
@@ -69,6 +69,6 @@ describe('PromiseSharer', async () => {
         await PromiseSharer.getExistingPromiseOrCreate('abc', doThing)
         await PromiseSharer.getExistingPromiseOrCreate('abc', doThing)
 
-        assert.equal(timesCalled, 2)
+        assert.strictEqual(timesCalled, 2)
     })
 })

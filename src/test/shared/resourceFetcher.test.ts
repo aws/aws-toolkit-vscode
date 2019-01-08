@@ -32,7 +32,7 @@ describe('ResourceFetcher', () => {
 
         await regionProvider.getRegionData()
 
-        assert.equal(fetchCounter.timesCalled, 1)
+        assert.strictEqual(fetchCounter.timesCalled, 1)
     })
 
     it('fetches something the first time only', async () => {
@@ -43,7 +43,7 @@ describe('ResourceFetcher', () => {
         await regionProvider.getRegionData()
         await regionProvider.getRegionData()
 
-        assert.equal(fetchCounter.timesCalled, 1)
+        assert.strictEqual(fetchCounter.timesCalled, 1)
     })
 
 })

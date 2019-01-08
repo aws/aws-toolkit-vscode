@@ -45,7 +45,7 @@ describe('SamCliConfiguration', () => {
 
         await samCliConfig.initialize()
 
-        assert.equal(samCliConfig.getSamCliLocation(), fakeCliLocation)
+        assert.strictEqual(samCliConfig.getSamCliLocation(), fakeCliLocation)
     })
 
     it('calls location provider when config references file that does not exist', async () => {
@@ -71,7 +71,7 @@ describe('SamCliConfiguration', () => {
 
         await samCliConfig.initialize()
 
-        assert.equal(timesCalled, 1)
+        assert.strictEqual(timesCalled, 1)
     })
 
     it('calls location provider when config not set', async () => {
@@ -90,7 +90,7 @@ describe('SamCliConfiguration', () => {
 
         await samCliConfig.initialize()
 
-        assert.equal(timesCalled, 1)
+        assert.strictEqual(timesCalled, 1)
     })
 
     it('location provider detects a file', async () => {
@@ -107,7 +107,7 @@ describe('SamCliConfiguration', () => {
 
         await samCliConfig.initialize()
 
-        assert.equal(samCliConfig.getSamCliLocation(), fakeCliLocation)
+        assert.strictEqual(samCliConfig.getSamCliLocation(), fakeCliLocation)
     })
 
     it('location provider does not detect a file', async () => {
@@ -122,7 +122,7 @@ describe('SamCliConfiguration', () => {
 
         await samCliConfig.initialize()
 
-        assert.equal(samCliConfig.getSamCliLocation(), undefined)
+        assert.strictEqual(samCliConfig.getSamCliLocation(), undefined)
     })
 
     function createSampleFile(filename: string): void {

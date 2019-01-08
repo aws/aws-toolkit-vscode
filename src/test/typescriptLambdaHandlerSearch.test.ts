@@ -114,8 +114,8 @@ describe('TypescriptLambdaHandlerSearch', () => {
     }
 
     function assertCandidateHandlers(actual: LambdaHandlerCandidate[], expectedHandlerNames: Set<string>) {
-        assert.equal(actual.length, expectedHandlerNames.size)
-        assert.equal(
+        assert.strictEqual(actual.length, expectedHandlerNames.size)
+        assert.strictEqual(
             actual
                 .map(handler => handler.handlerName)
                 .every(handlerName => expectedHandlerNames.has(handlerName)),

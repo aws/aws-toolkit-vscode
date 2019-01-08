@@ -5,7 +5,7 @@
 
 'use strict'
 
-import { RefreshableAwsTreeProvider } from './treeview/refreshableAwsTreeProvider'
+import { RefreshableAwsTreeProvider } from './treeview/awsTreeProvider'
 
 export class AwsContextTreeCollection {
     private readonly _trees: RefreshableAwsTreeProvider[]

@@ -5,12 +5,20 @@
 
 'use strict'
 
-import { Service, ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { env, version } from 'vscode'
 import { AwsContext } from './awsContext'
 import { NpmPackage } from './npmPackage'
 
-export class AWSClientBuilder {
+export interface AWSClientBuilder {
+    createAndConfigureServiceClient<T>(
+        awsServiceFactory: (options: ServiceConfigurationOptions) => T,
+        awsServiceOpts?: ServiceConfigurationOptions,
+        region?: string
+    ): Promise<T>
+}
+
+export class DefaultAWSClientBuilder implements AWSClientBuilder {
 
     private readonly _awsContext: AwsContext
 
@@ -21,7 +29,7 @@ export class AWSClientBuilder {
 
     // centralized construction of transient AWS service clients, allowing us
     // to customize requests and/or user agent
-    public async createAndConfigureSdkClient<T extends Service>(
+    public async createAndConfigureServiceClient<T>(
         awsServiceFactory: (options: ServiceConfigurationOptions) => T,
         awsServiceOpts?: ServiceConfigurationOptions,
         region?: string

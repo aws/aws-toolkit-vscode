@@ -48,7 +48,7 @@ describe('filesystem', () => {
             assert.ok(error)
 
             const expected = os.platform() === 'win32' ? -4058 : -2 // ENOENT: no such file or directory
-            assert.equal(error!.errno, expected)
+            assert.strictEqual(error!.errno, expected)
         })
 
         it('accepts Buffer-based paths', async () => {
@@ -63,11 +63,11 @@ describe('filesystem', () => {
         it('creates a directory at the specified path', async () => {
             const myPath = path.join(tempFolder, 'myPath')
             await filesystem.mkdirAsync(myPath)
-            assert.equal(await fileExists(myPath), true)
+            assert.strictEqual(await fileExists(myPath), true)
 
             const stat = await filesystem.statAsync(myPath)
             assert.ok(stat)
-            assert.equal(stat.isDirectory(), true)
+            assert.strictEqual(stat.isDirectory(), true)
         })
 
         it('rejects if path contains invalid characters', async () => {
@@ -88,8 +88,8 @@ describe('filesystem', () => {
             const actual = await filesystem.mkdtempAsync('myPrefix')
 
             assert.ok(actual)
-            assert.equal(path.basename(actual).startsWith('myPrefix'), true)
-            assert.equal(await fileExists(actual), true)
+            assert.strictEqual(path.basename(actual).startsWith('myPrefix'), true)
+            assert.strictEqual(await fileExists(actual), true)
         })
 
         it('rejects if prefix contains invalid path characters', async () => {
@@ -111,15 +111,15 @@ describe('filesystem', () => {
             const actual = await filesystem.readdirAsync(tempFolder)
 
             assert.ok(actual)
-            assert.equal(actual.length, 1)
-            assert.equal(actual[0], filename)
+            assert.strictEqual(actual.length, 1)
+            assert.strictEqual(actual[0], filename)
         })
 
         it('reads empty directories', async () => {
             const actual = await filesystem.readdirAsync(tempFolder)
 
             assert.ok(actual)
-            assert.equal(actual.length, 0)
+            assert.strictEqual(actual.length, 0)
         })
 
         it('rejects if directory does not exist', async () => {
@@ -139,8 +139,8 @@ describe('filesystem', () => {
             const actual = await filesystem.readdirAsync(Buffer.from(tempFolder))
 
             assert.ok(actual)
-            assert.equal(actual.length, 1)
-            assert.equal(actual[0], filename)
+            assert.strictEqual(actual.length, 1)
+            assert.strictEqual(actual[0], filename)
         })
 
         it('interprets options as encoding when it is a string', async () => {
@@ -151,8 +151,8 @@ describe('filesystem', () => {
             )
 
             assert.ok(actual)
-            assert.equal(actual.length, 1)
-            assert.equal(actual[0], Buffer.from(filename).toString('base64'))
+            assert.strictEqual(actual.length, 1)
+            assert.strictEqual(actual[0], Buffer.from(filename).toString('base64'))
         })
     })
 
@@ -161,7 +161,7 @@ describe('filesystem', () => {
             await filesystem.writeFileAsync(filePath, '', 'utf8')
             const actual = await filesystem.readFileAsync(filePath, 'utf8')
 
-            assert.equal(actual, '')
+            assert.strictEqual(actual, '')
         })
 
         it('reads non-empty text files', async () => {
@@ -169,7 +169,7 @@ describe('filesystem', () => {
             const actual = await filesystem.readFileAsync(filePath, 'utf8')
 
             assert.ok(actual)
-            assert.equal(actual, 'Hello, World!')
+            assert.strictEqual(actual, 'Hello, World!')
         })
 
         it('reads empty binary files', async () => {
@@ -178,8 +178,8 @@ describe('filesystem', () => {
             const actual = await filesystem.readFileAsync(filePath, null)
 
             assert.ok(actual)
-            assert.equal(actual instanceof Buffer, true)
-            assert.equal((actual as Buffer).toString('binary'), '')
+            assert.strictEqual(actual instanceof Buffer, true)
+            assert.strictEqual((actual as Buffer).toString('binary'), '')
         })
 
         it('reads non-empty binary files', async () => {
@@ -188,8 +188,8 @@ describe('filesystem', () => {
             const actual = await filesystem.readFileAsync(filePath, null)
 
             assert.ok(actual)
-            assert.equal(actual instanceof Buffer, true)
-            assert.equal((actual as Buffer).toString('binary'), 'Hello, World!')
+            assert.strictEqual(actual instanceof Buffer, true)
+            assert.strictEqual((actual as Buffer).toString('binary'), 'Hello, World!')
         })
 
         it('rejects if file does not exist', async () => {
@@ -210,8 +210,8 @@ describe('filesystem', () => {
             const actual = await filesystem.statAsync(filePath)
 
             assert.ok(actual)
-            assert.equal(actual.isFile(), true)
-            assert.equal(actual.isDirectory(), false)
+            assert.strictEqual(actual.isFile(), true)
+            assert.strictEqual(actual.isDirectory(), false)
         })
 
         it('gets metadata for non-empty file', async () => {
@@ -219,8 +219,8 @@ describe('filesystem', () => {
             const actual = await filesystem.statAsync(filePath)
 
             assert.ok(actual)
-            assert.equal(actual.isFile(), true)
-            assert.equal(actual.isDirectory(), false)
+            assert.strictEqual(actual.isFile(), true)
+            assert.strictEqual(actual.isDirectory(), false)
         })
 
         it('rejects if file does not exist', async () => {
@@ -242,7 +242,7 @@ describe('filesystem', () => {
             const actual = await filesystem.readFileAsync(filePath, 'utf8')
 
             assert.ok(actual)
-            assert.equal(actual, 'Hello, World!')
+            assert.strictEqual(actual, 'Hello, World!')
         })
 
         it('writes binary data to file', async () => {
@@ -251,8 +251,8 @@ describe('filesystem', () => {
             const actual = await filesystem.readFileAsync(filePath, null)
 
             assert.ok(actual)
-            assert.equal(actual instanceof Buffer, true)
-            assert.equal((actual as Buffer).toString('binary'), 'Hello, World!')
+            assert.strictEqual(actual instanceof Buffer, true)
+            assert.strictEqual((actual as Buffer).toString('binary'), 'Hello, World!')
         })
 
         it('overwrites existing file', async () => {
@@ -261,7 +261,7 @@ describe('filesystem', () => {
             const actual = await filesystem.readFileAsync(filePath, 'utf8')
 
             assert.ok(actual)
-            assert.equal(actual, 'Hello, Jane!')
+            assert.strictEqual(actual, 'Hello, Jane!')
         })
 
         it('creates file if it doesn\'t already exist', async () => {
@@ -269,7 +269,7 @@ describe('filesystem', () => {
             const actual = await filesystem.readFileAsync(filePath, 'utf8')
 
             assert.ok(actual)
-            assert.equal(actual, 'Hello, World!')
+            assert.strictEqual(actual, 'Hello, World!')
         })
 
         it('rejects if directory does not exist', async () => {

@@ -66,8 +66,8 @@ describe('defaultCredentialSelectionDataProvider', () => {
 
             assert(state)
             assert(state!.credentialProfile)
-            assert.equal(state!.credentialProfile!.label, profileNames[1])
-            assert.equal(state!.profileName, undefined)
+            assert.strictEqual(state!.credentialProfile!.label, profileNames[1])
+            assert.strictEqual(state!.profileName, undefined)
         })
     })
 
@@ -125,11 +125,11 @@ describe('defaultCredentialSelectionDataProvider', () => {
 
             assert(credentialState)
             assert(credentialState!.accesskey)
-            assert.equal(credentialState!.accesskey, sampleAccessKey)
+            assert.strictEqual(credentialState!.accesskey, sampleAccessKey)
             assert(credentialState!.profileName)
-            assert.equal(credentialState!.profileName, sampleProfileName)
+            assert.strictEqual(credentialState!.profileName, sampleProfileName)
             assert(credentialState!.secretKey)
-            assert.equal(credentialState!.secretKey, sampleSecretKey)
+            assert.strictEqual(credentialState!.secretKey, sampleSecretKey)
         })
     })
 })
