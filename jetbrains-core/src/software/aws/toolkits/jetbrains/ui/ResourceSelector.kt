@@ -7,6 +7,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.ValidationInfo
+import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
 import javax.swing.DefaultComboBoxModel
@@ -73,6 +74,7 @@ class ResourceSelector<T> : ComboBox<T>() {
                     loadingStatus = ResourceLoadingStatus.SUCCESSFUL
                 }
             } catch (e: Exception) {
+                // TODO: We need a way to inform people that this fails sooner then relying on the validation system to be running
                 loadingException = e
                 loadingStatus = ResourceLoadingStatus.FAILED
                 null
@@ -102,6 +104,7 @@ class ResourceSelector<T> : ComboBox<T>() {
                     loadingStatus = ResourceLoadingStatus.SUCCESSFUL
                 }
             } catch (e: Exception) {
+                LOG.warn("Failed to load values", e)
                 loadingException = e
                 loadingStatus = ResourceLoadingStatus.FAILED
                 null
@@ -124,10 +127,13 @@ class ResourceSelector<T> : ComboBox<T>() {
         if (this.selected() != null) {
             return null
         }
+        // Error messages do not work on a disabled component. May be a JetBrains bug?
+        // Revisit after https://github.com/aws/aws-toolkit-jetbrains/issues/726
+        val component = if (super.isEnabled()) this else null
         return when (loadingStatus) {
-            ResourceLoadingStatus.LOADING -> ValidationInfo(loading, this)
-            ResourceLoadingStatus.FAILED -> ValidationInfo(loadingException?.message ?: failed, this)
-            ResourceLoadingStatus.SUCCESSFUL -> ValidationInfo(notSelected, this)
+            ResourceLoadingStatus.LOADING -> ValidationInfo(loading, component)
+            ResourceLoadingStatus.FAILED -> ValidationInfo(loadingException?.message ?: failed, component)
+            ResourceLoadingStatus.SUCCESSFUL -> ValidationInfo(notSelected, component)
         }
     }
 
@@ -135,5 +141,9 @@ class ResourceSelector<T> : ComboBox<T>() {
         LOADING,
         FAILED,
         SUCCESSFUL
+    }
+
+    private companion object {
+        val LOG = getLogger<ResourceSelector<*>>()
     }
 }

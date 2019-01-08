@@ -57,7 +57,7 @@ abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
         )
 
         if (key.region != AwsRegion.GLOBAL && GLOBAL_SERVICES.contains(key.serviceClass.simpleName)) {
-            return cachedClients.computeIfAbsent(key.copy(region = AwsRegion.GLOBAL)) { createNewClient(it, region, credProvider) } as T
+            return cachedClients.computeIfAbsent(key.copy(region = AwsRegion.GLOBAL)) { createNewClient(it, AwsRegion.GLOBAL, credProvider) } as T
         }
 
         return cachedClients.computeIfAbsent(key) { createNewClient(it, region, credProvider) } as T
