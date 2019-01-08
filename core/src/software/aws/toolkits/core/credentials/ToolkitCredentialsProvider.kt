@@ -1,9 +1,12 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.core.credentials
 
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.http.SdkHttpClient
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.sts.StsClient
 
 abstract class ToolkitCredentialsProvider : AwsCredentialsProvider {
     /**
@@ -31,6 +34,21 @@ abstract class ToolkitCredentialsProvider : AwsCredentialsProvider {
     override fun hashCode(): Int = id.hashCode()
 
     override fun toString(): String = "${this::class.simpleName}(id='$id')"
+
+    open fun isValid(sdkHttpClient: SdkHttpClient): Boolean {
+        val client = StsClient.builder()
+            .region(Region.US_EAST_1)
+            .httpClient(sdkHttpClient)
+            .credentialsProvider(this)
+            .build()
+
+        return try {
+            client.callerIdentity
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
 }
 
 /**

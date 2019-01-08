@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.cloudformation
@@ -14,6 +14,7 @@ import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.DeleteResourceAction
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerEmptyNode
+import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerErrorNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerServiceRootNode
@@ -22,8 +23,11 @@ import software.aws.toolkits.jetbrains.core.explorer.AwsNodeChildCache
 import software.aws.toolkits.jetbrains.core.explorer.AwsTruncatedResultNode
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
+import software.aws.toolkits.jetbrains.core.stack.openStack
 import software.aws.toolkits.jetbrains.utils.toHumanReadable
 import software.aws.toolkits.resources.message
+import javax.swing.tree.DefaultMutableTreeNode
+import javax.swing.tree.DefaultTreeModel
 
 class CloudFormationServiceNode(project: Project) : AwsExplorerServiceRootNode(project, message("explorer.node.cloudformation")) {
     override fun serviceName() = CloudFormationClient.SERVICE_NAME
@@ -89,6 +93,11 @@ class CloudFormationStackNode(project: Project, val stackName: String, private v
         return cachedChildren
     }
 
+    override fun onDoubleClick(model: DefaultTreeModel, selectedElement: DefaultMutableTreeNode) {
+        super.onDoubleClick(model, selectedElement)
+        openStack(nodeProject, stackName)
+    }
+
     private fun updateCachedChildren() {
         cachedChildren = if (stackStatus in FAILED_STACK_STATES || stackStatus in IN_PROGRESS_STACK_STATES) {
             emptyList()
@@ -105,23 +114,27 @@ class CloudFormationStackNode(project: Project, val stackName: String, private v
         isChildCacheInInitialState = false
     }
 
-    private fun loadServerlessStackResources(): List<AwsExplorerNode<*>> = cfnClient
-        .describeStackResources { it.stackName(stackName) }
-        .stackResources()
-        .filter { it.resourceType() == LAMBDA_FUNCTION_TYPE && it.resourceStatus() in COMPLETE_RESOURCE_STATES }
-        .map { resource ->
-            // TODO: Enable using cache, and a registry for these mappings of CFN -> real resource
-            val client = project!!.awsClient<LambdaClient>(credentialProvider, region)
-            val response = client.getFunction { it.functionName(resource.physicalResourceId()) }
+    private fun loadServerlessStackResources(): List<AwsExplorerNode<*>> = try {
+        cfnClient
+            .describeStackResources { it.stackName(stackName) }
+            .stackResources()
+            .filter { it.resourceType() == LAMBDA_FUNCTION_TYPE && it.resourceStatus() in COMPLETE_RESOURCE_STATES }
+            .map { resource ->
+                // TODO: Enable using cache, and a registry for these mappings of CFN -> real resource
+                val client = project!!.awsClient<LambdaClient>(credentialProvider, region)
+                val response = client.getFunction { it.functionName(resource.physicalResourceId()) }
 
-            LambdaFunctionNode(
-                nodeProject,
-                client,
-                response.configuration().toDataClass(credentialProvider.id, region),
-                true
-            )
-        }
-        .toList()
+                LambdaFunctionNode(
+                    nodeProject,
+                    client,
+                    response.configuration().toDataClass(credentialProvider.id, region),
+                    true
+                )
+            }
+            .toList()
+    } catch (e: Exception) {
+        listOf(AwsExplorerErrorNode(project!!, e))
+    }
 
     override fun statusText(): String? = stackStatus.toString().toHumanReadable()
 

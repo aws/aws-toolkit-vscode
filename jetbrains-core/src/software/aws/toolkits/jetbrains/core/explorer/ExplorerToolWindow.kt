@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.core.explorer
@@ -8,7 +8,6 @@ import com.intellij.ide.util.treeView.AbstractTreeBuilder
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ide.util.treeView.NodeRenderer
 import com.intellij.openapi.actionSystem.ActionGroup
-import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.DataKey
 import com.intellij.openapi.actionSystem.ex.ActionManagerEx
 import com.intellij.openapi.project.Project
@@ -24,6 +23,7 @@ import com.intellij.util.ui.JBSwingUtilities
 import com.intellij.util.ui.UIUtil
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.components.telemetry.ToolkitActionPlaces
 import software.aws.toolkits.jetbrains.core.SettingsSelector
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier
@@ -155,7 +155,7 @@ class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, tru
                         return
                 }
                 val actionGroup = actionManager.getAction(actionGroupName) as? ActionGroup ?: return
-                val popupMenu = actionManager.createActionPopupMenu(ActionPlaces.UNKNOWN, actionGroup)
+                val popupMenu = actionManager.createActionPopupMenu(ToolkitActionPlaces.EXPLORER_WINDOW, actionGroup)
                 popupMenu.component.show(comp, x, y)
             }
         })

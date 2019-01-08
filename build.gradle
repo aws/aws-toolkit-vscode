@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -68,7 +68,7 @@ subprojects {
         compile "org.jetbrains.kotlin:kotlin-script-runtime:$kotlinVersion"
         // TODO: Replace assertk with assertj
         testCompile("com.willowtreeapps.assertk:assertk:0.9")
-        testCompile "com.nhaarman.mockitokotlin2:mockito-kotlin:2.0.0-RC1"
+        testCompile "com.nhaarman.mockitokotlin2:mockito-kotlin:2.0.0"
         testCompile "org.assertj:assertj-core:$assertjVersion"
         testCompile "junit:junit:$junitVersion"
         testCompile "org.hamcrest:hamcrest-all:1.3"
@@ -180,10 +180,15 @@ intellij {
         alternativeIdePath = System.env.ALTERNATIVE_IDE
     }
 }
+publishPlugin {
+    username publishUsername
+    password publishPassword
+    channels publishChannel
+}
 
 generateChangeLog {
     generateJetbrains = false
-    generateGithub = false //Switch back on when change log comes back
+    generateGithub = true
 }
 
 task ktlint(type: JavaExec, group: "verification") {
@@ -193,6 +198,7 @@ task ktlint(type: JavaExec, group: "verification") {
     args project.rootDir.absolutePath + "/**/*.kt"
 }
 check.dependsOn ktlint
+check.dependsOn verifyPlugin
 
 def publishedProjects = subprojects.findAll { !it.name.contains("test")}
 

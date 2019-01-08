@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.sam
@@ -10,7 +10,6 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.resources.message
 
 class SamInitRunner(
@@ -19,13 +18,11 @@ class SamInitRunner(
     private val runtime: Runtime,
     private val location: String? = null
 ) {
-    private val samCliExecutable = SamSettings.getInstance().executablePath
-
     fun execute() = ApplicationManager.getApplication().runWriteAction {
         // set output to a temp dir
         val tempDir = LocalFileSystem.getInstance().findFileByIoFile(createTempDir())
                 ?: throw RuntimeException("Cannot create temp file")
-        val commandLine = GeneralCommandLine(samCliExecutable)
+        val commandLine = SamCommon.getSamCommandLine()
                 .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.CONSOLE)
                 .withParameters("init")
                 .withParameters("--no-input")

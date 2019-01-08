@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.ui.wizard.java
@@ -9,7 +9,6 @@ import com.intellij.ide.util.projectWizard.ModuleWizardStep
 import com.intellij.ide.util.projectWizard.WizardContext
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.module.ModuleType
-import com.intellij.openapi.project.rootManager
 import com.intellij.openapi.roots.ContentEntry
 import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.roots.ui.configuration.ModulesProvider
@@ -54,7 +53,6 @@ class SamInitModuleBuilder : ModuleBuilder() {
         } else {
             rootModel.inheritSdk()
         }
-        rootModel.module.rootManager.modifiableModel.inheritSdk()
         rootModel.module.setModuleType(moduleType.id)
         val project = rootModel.project
 

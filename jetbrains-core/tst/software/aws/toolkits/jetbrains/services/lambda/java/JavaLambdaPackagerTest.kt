@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.lambda.java
@@ -212,6 +212,38 @@ class JavaLambdaPackagerTest {
         ModuleRootModificationUtil.addModuleLibrary(module, testDependencyJarName, mutableListOf(testDependencyJarPath), mutableListOf(), DependencyScope.TEST)
 
         runAndVerifyExpectedEntries(module, mainClass, "com/example/UsefulUtils.class")
+    }
+
+    @Test
+    fun packagedFilesHaveNoLock() {
+        val fixture = projectRule.fixture
+        val module = fixture.addModule("main")
+
+        val mainClass = fixture.addClass(
+            module, """
+            package com.example;
+
+            public class UsefulUtils {
+                public static String upperCase(String input) {
+                    return input.toUpperCase();
+                }
+            }
+            """
+        )
+
+        val mainClassFile = mainClass.containingFile
+
+        ModuleRootModificationUtil.addModuleLibrary(module, testDependencyJarName, mutableListOf(testDependencyJarPath), mutableListOf(), DependencyScope.TEST)
+
+        runAndVerifyExpectedEntries(module, mainClassFile, "com/example/UsefulUtils.class")
+
+        runInEdt {
+            // Modify the file that was compiled to verify there is no lock remaining
+            fixture.renameElement(
+                mainClass.findMethodsByName("upperCase", false)[0],
+                "foo"
+            )
+        }
     }
 
     private fun runAndVerifyExpectedEntries(module: Module, mainClass: PsiFile, vararg entries: String) {

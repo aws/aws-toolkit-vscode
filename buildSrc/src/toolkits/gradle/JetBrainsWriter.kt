@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package toolkits.gradle
@@ -52,4 +52,6 @@ class JetBrainsWriter(private val changeNotesFile: File, issueUrl: String? = nul
             </idea-plugin>
         """.trimIndent())
     }
+
+    override fun toString(): String = "JetBrainsWriter(file=$changeNotesFile)"
 }

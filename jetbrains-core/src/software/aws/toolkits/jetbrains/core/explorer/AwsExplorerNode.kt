@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.core.explorer
@@ -11,6 +11,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.ui.LoadingNode
 import com.intellij.ui.SimpleTextAttributes
 import icons.AwsIcons
+import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
@@ -59,10 +60,10 @@ class AwsExplorerRootNode(project: Project) : AwsExplorerNode<String>(project, "
     override fun getChildren(): Collection<AbstractTreeNode<String>> {
         val childrenList = mutableListOf<AbstractTreeNode<String>>()
         AwsExplorerService.values()
-                .filter {
-                    regionProvider.isServiceSupported(settings.activeRegion, it.serviceId)
-                }
-                .mapTo(childrenList) { it.buildServiceRootNode(project!!) }
+            .filter {
+                regionProvider.isServiceSupported(settings.activeRegion, it.serviceId)
+            }
+            .mapTo(childrenList) { it.buildServiceRootNode(project!!) }
 
         return childrenList
     }
@@ -84,7 +85,7 @@ abstract class AwsExplorerPageableNode<T>(project: Project, value: T, icon: Icon
     internal fun loadData(paginationToken: String? = null): Collection<AwsExplorerNode<*>> = try {
         loadResources(paginationToken)
     } catch (e: Exception) {
-        LOG.warn("Failed to load explorer nodes", e)
+        LOG.warn("Failed to load AWS Explorer nodes", e)
         // Return the ErrorNode as the single Node of the list
         listOf(AwsExplorerErrorNode(project!!, e))
     }
@@ -115,7 +116,7 @@ abstract class AwsExplorerResourceNode<T>(
 }
 
 class AwsTruncatedResultNode(private val parentNode: AwsExplorerPageableNode<*>, private val paginationToken: String) :
-        AwsExplorerNode<String>(parentNode.project!!, MESSAGE, null) {
+    AwsExplorerNode<String>(parentNode.project!!, MESSAGE, null) {
 
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
@@ -181,7 +182,7 @@ class AwsTruncatedResultNode(private val parentNode: AwsExplorerPageableNode<*>,
 }
 
 class AwsExplorerLoadingNode(project: Project) :
-        AwsExplorerNode<String>(project, IdeBundle.message("treenode.loading"), null) {
+    AwsExplorerNode<String>(project, IdeBundle.message("treenode.loading"), null) {
 
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
@@ -193,7 +194,7 @@ class AwsExplorerLoadingNode(project: Project) :
 }
 
 class AwsExplorerErrorNode(project: Project, exception: Exception) :
-        AwsExplorerNode<Exception>(project, exception, null) {
+    AwsExplorerNode<Exception>(project, exception, null) {
 
     override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
 
@@ -201,14 +202,26 @@ class AwsExplorerErrorNode(project: Project, exception: Exception) :
         presentation.apply {
             // If we don't have a message, at least give them the error type
             tooltip = value.message ?: value.javaClass.simpleName
-            addText(MSG, SimpleTextAttributes.ERROR_ATTRIBUTES)
+
+            val exception = value
+            val errorDetails = if (exception is AwsServiceException) {
+                val awsErrorDetails = exception.awsErrorDetails()
+                "${awsErrorDetails.serviceName()}: ${awsErrorDetails.errorCode()}"
+            } else {
+                message("explorer.error_loading_resources_default_details")
+            }
+
+            addText(
+                nodeText(errorDetails),
+                SimpleTextAttributes.ERROR_ATTRIBUTES
+            )
         }
     }
 
     override fun isAlwaysLeaf() = true
 
     companion object {
-        val MSG get() = message("explorer.error_loading_resources")
+        fun nodeText(details: String): String = message("explorer.error_loading_resources", details)
     }
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.lambda.python
@@ -26,6 +26,8 @@ class PythonRuntimeGroup : SdkBasedRuntimeGroupInformation() {
     override fun getModuleType(): ModuleType<*> = PythonModuleType.getInstance()
 
     override fun getIdeSdkType(): SdkType = PythonSdkType.getInstance()
+
+    override fun supportsSamBuild(): Boolean = true
 
     companion object {
         fun determineRuntimeForSdk(sdk: Sdk) = when {

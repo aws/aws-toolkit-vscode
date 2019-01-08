@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.lambda.deploy
@@ -23,7 +23,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon
-import software.aws.toolkits.jetbrains.settings.SamSettings
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.resources.message
 import java.nio.file.Files
 import java.nio.file.Path
@@ -176,10 +176,7 @@ open class SamDeployDialog(
         envVars.putAll(region.toEnvironmentVariables())
         envVars.putAll(credentialsProvider.resolveCredentials().toEnvironmentVariables())
 
-        return GeneralCommandLine()
-            .withExePath(
-                SamSettings.getInstance().executablePath ?: throw RuntimeException(message("sam.cli_not_configured"))
-            )
+        return SamCommon.getSamCommandLine()
             .withWorkDirectory(template.parent.path)
             .withEnvironment(envVars)
     }
@@ -218,7 +215,15 @@ open class SamDeployDialog(
 
         processHandler.startNotify()
 
-        return future
+        return future.whenComplete { _, exception ->
+            telemetry.record("SamDeploy") {
+                datum(title) {
+                    count()
+                    // exception can be null but is not annotated as nullable
+                    metadata("hasException", exception != null)
+                }
+            }
+        }
     }
 
     protected open fun createProcess(command: GeneralCommandLine): OSProcessHandler =
@@ -227,5 +232,6 @@ open class SamDeployDialog(
     private companion object {
         const val NUMBER_OF_STEPS = 3.0
         val LOGGER = getLogger<SamDeployDialog>()
+        val telemetry = TelemetryService.getInstance()
     }
 }

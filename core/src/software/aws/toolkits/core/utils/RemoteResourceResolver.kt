@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.core.utils
@@ -50,7 +50,7 @@ class DefaultRemoteResourceResolver(
             } catch (e: Exception) {
                 LOG.warn(e) { "Exception occurred downloading" }
                 lastException = e
-                tmpFile.delete()
+                tmpFile.deleteIfExists()
                 return@mapNotNull null
             }
             tmpFile

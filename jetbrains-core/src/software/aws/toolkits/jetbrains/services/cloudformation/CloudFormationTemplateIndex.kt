@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.cloudformation
@@ -19,7 +19,6 @@ import com.intellij.util.indexing.PsiDependentIndex
 import com.intellij.util.io.DataExternalizer
 import com.intellij.util.io.EnumeratorStringDescriptor
 import com.intellij.util.io.KeyDescriptor
-import org.jetbrains.annotations.TestOnly
 import org.jetbrains.yaml.YAMLLanguage
 import org.jetbrains.yaml.psi.YAMLKeyValue
 import software.aws.toolkits.jetbrains.services.cloudformation.yaml.YamlCloudFormationTemplate
@@ -94,24 +93,26 @@ class CloudFormationTemplateIndex : FileBasedIndexExtension<String, MutableList<
             }
         }
 
-        private fun listResources(project: Project, filter: (String) -> Boolean): Collection<IndexedResource> {
+        fun listResources(
+            project: Project,
+            resourceTypeFilter: (String) -> Boolean = { true },
+            virtualFile: VirtualFile? = null
+        ): Collection<IndexedResource> {
             val index = FileBasedIndex.getInstance()
+            val scope = virtualFile?.let { GlobalSearchScope.fileScope(project, it) } ?: GlobalSearchScope.projectScope(project)
             return index.getAllKeys(NAME, project)
                     .asSequence()
-                    .filter(filter)
-                    .mapNotNull { index.getValues(NAME, it, GlobalSearchScope.projectScope(project)) }
+                    .filter(resourceTypeFilter)
+                    .mapNotNull { index.getValues(NAME, it, scope) }
                     .filter { it.isNotEmpty() }
                     .flatten()
                     .flatten()
                     .toList()
         }
 
-        @TestOnly
-        fun listResources(project: Project): Collection<IndexedResource> = listResources(project) { true }
+        fun listResourcesByType(project: Project, type: String): Collection<IndexedResource> = listResources(project, resourceTypeFilter = { it == type })
 
-        fun listResourcesByType(project: Project, type: String): Collection<IndexedResource> = listResources(project) { it == type }
-
-        fun listFunctions(project: Project): Collection<IndexedFunction> =
-                listResources(project).filterIsInstance(IndexedFunction::class.java)
+        fun listFunctions(project: Project, virtualFile: VirtualFile? = null): Collection<IndexedFunction> =
+                listResources(project, virtualFile = virtualFile).filterIsInstance(IndexedFunction::class.java)
     }
 }

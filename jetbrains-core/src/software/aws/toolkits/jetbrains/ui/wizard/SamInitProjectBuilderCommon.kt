@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 @file:JvmName("SamInitProjectBuilderCommon")
 
@@ -15,6 +15,7 @@ import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamInitRunner
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.ui.wizard.java.SamInitModuleBuilder
@@ -47,12 +48,25 @@ abstract class SamProjectTemplate {
 
     fun getIcon() = AwsIcons.Resources.SERVERLESS_APP
 
-    open fun build(runtime: Runtime, outputDir: VirtualFile) {
+    fun build(runtime: Runtime, outputDir: VirtualFile) {
+        doBuild(runtime, outputDir)
+        telemetry.record("SamProjectInit") {
+            datum(getName()) {
+                metadata("runtime", runtime.name)
+            }
+        }
+    }
+
+    protected open fun doBuild(runtime: Runtime, outputDir: VirtualFile) {
         SamInitRunner(SamModuleType.ID, outputDir, runtime).execute()
     }
 
     fun getModuleBuilderProjectTemplate(builder: ModuleBuilder) =
             SamProjectTemplateWrapper(this, builder)
+
+    companion object {
+        private val telemetry = TelemetryService.getInstance()
+    }
 }
 
 class SamModuleType : ModuleType<SamInitModuleBuilder>(ID) {

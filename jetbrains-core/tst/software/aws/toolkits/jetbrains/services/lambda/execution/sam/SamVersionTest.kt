@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.sam
@@ -56,7 +56,8 @@ class SamVersionTest {
     @Test
     fun incompatableSamVersion_tooHigh() {
         val versions = arrayOf(
-                "0.11.0",
+                SamCommon.expectedSamMaxVersion.rawVersion,
+                SamCommon.expectedSamMaxVersion.parsedVersion,
                 "1.0.0",
                 "1.5.9",
                 "1.5.9-dev"

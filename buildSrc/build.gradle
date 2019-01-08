@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 buildscript {
@@ -12,6 +12,7 @@ buildscript {
     ext.jacksonVersion = props.get("jacksonVersion")
     ext.assertjVersion = props.get("assertjVersion")
     ext.junitVersion = props.get("junitVersion")
+    ext.awsSdkVersion = props.get("awsSdkVersion")
 
     repositories {
         mavenCentral()
@@ -43,8 +44,9 @@ dependencies {
     compile "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     compile "org.eclipse.jgit:org.eclipse.jgit:5.0.2.201807311906-r"
     compile "com.atlassian.commonmark:commonmark:0.11.0"
+    compile "software.amazon.awssdk:codegen:$awsSdkVersion"
 
     testCompile "org.assertj:assertj-core:$assertjVersion"
     testCompile "junit:junit:$junitVersion"
-    testCompile "com.nhaarman.mockitokotlin2:mockito-kotlin:2.0.0-RC1"
+    testCompile "com.nhaarman.mockitokotlin2:mockito-kotlin:2.0.0"
 }

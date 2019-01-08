@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.settings;
@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.settings;
 import static software.aws.toolkits.resources.Localization.message;
 
 import com.intellij.ide.BrowserUtil;
+import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.options.SearchableConfigurable;
@@ -19,11 +20,14 @@ import com.intellij.ui.components.labels.LinkLabel;
 import java.util.Objects;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.Nls.Capitalization;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon;
+import software.aws.toolkits.jetbrains.services.telemetry.MessageBusService;
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryEnabledChangedNotifier;
 
 @SuppressWarnings("NullableProblems")
 public class AwsSettingsConfigurable implements SearchableConfigurable {
@@ -38,11 +42,16 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
     private JPanel projectLevelSettings;
     private JPanel applicationLevelSettings;
 
+    private final TelemetryEnabledChangedNotifier publisher;
+
     public AwsSettingsConfigurable(Project project) {
         this.project = project;
 
         applicationLevelSettings.setBorder(IdeBorderFactory.createTitledBorder(message("aws.settings.global_level_label")));
         projectLevelSettings.setBorder(IdeBorderFactory.createTitledBorder(message("aws.settings.project_level_label")));
+
+        MessageBusService messageBusService = ServiceManager.getService(MessageBusService.class);
+        publisher = messageBusService.getMessageBus().syncPublisher(messageBusService.getTelemetryEnabledTopic());
     }
 
     @Nullable
@@ -115,7 +124,16 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
         samSettings.setSavedExecutablePath(getSamExecutablePath());
 
         AwsSettings awsSettings = AwsSettings.getInstance();
-        awsSettings.setTelemetryEnabled(enableTelemetry.isSelected());
+        Boolean oldSetting = awsSettings.isTelemetryEnabled();
+        try {
+            awsSettings.setTelemetryEnabled(enableTelemetry.isSelected());
+        } finally {
+            Boolean newSetting = awsSettings.isTelemetryEnabled();
+            if (newSetting != oldSetting) {
+                publisher.notify(newSetting);
+            }
+        }
+
         LambdaSettings lambdaSettings = LambdaSettings.getInstance(project);
         lambdaSettings.setShowAllHandlerGutterIcons(showAllHandlerGutterIcons.isSelected());
     }

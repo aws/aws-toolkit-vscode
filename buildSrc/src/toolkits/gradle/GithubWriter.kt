@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package toolkits.gradle
@@ -7,7 +7,7 @@ import java.io.BufferedWriter
 import java.nio.file.Path
 import java.time.format.DateTimeFormatter
 
-class GithubWriter(file: Path) : ChangeLogWriter {
+class GithubWriter(private val file: Path) : ChangeLogWriter {
 
     private val writer = file.toFile().bufferedWriter()
 
@@ -21,6 +21,8 @@ class GithubWriter(file: Path) : ChangeLogWriter {
         writer.flush()
         writer.close()
     }
+
+    override fun toString(): String = "GithubWriter(file=$file)"
 
     private companion object {
         fun BufferedWriter.writeLine(text: String) {

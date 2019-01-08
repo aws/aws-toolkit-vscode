@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package icons
@@ -13,9 +13,10 @@ import javax.swing.Icon
  */
 object AwsIcons {
     object Logos {
-        @JvmField val AWS = IconLoader.getIcon("/icons/logos/AWS.svg") // 16x16
-        @JvmField val IAM_LARGE = IconLoader.getIcon("/icons/logos/IAM_large.svg") // 646x64
+        @JvmField val AWS = IconLoader.getIcon("/icons/logos/AWS.svg") // 13x13
+        @JvmField val IAM_LARGE = IconLoader.getIcon("/icons/logos/IAM_large.svg") // 64x64
         @JvmField val S3_LARGE = IconLoader.getIcon("/icons/logos/S3_Large.svg") // 64x64
+        @JvmField val CLOUD_FORMATION_TOOL = IconLoader.getIcon("/icons/logos/CloudFormationTool.svg") // 13x13
     }
 
     object Resources {

@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 apply plugin: 'org.jetbrains.intellij'
@@ -11,8 +11,6 @@ intellij {
     plugins = ["PythonCore:2018.3.183.4284.148", "yaml"]
 }
 
-jar.baseName = 'aws-intellij-toolkit-core'
-
 configurations {
     testArtifacts
 }
@@ -23,14 +21,19 @@ task testJar (type: Jar) {
 }
 
 task pluginChangeLog(type: GenerateChangeLog) {
-    changesDirectory = project.parent.file(".changes")
     includeUnreleased = true
     generateGithub = false
     issuesUrl = "https://github.com/aws/aws-toolkit-jetbrains/issues"
-    jetbrainsChangeNotesFile = project.file("$buildDir/resources/main/META-INF/change-notes.xml")
+    jetbrainsChangeNotesFile = project.file("$buildDir/changelog/change-notes.xml")
 }
 
-processResources.dependsOn(pluginChangeLog)
+jar.dependsOn(pluginChangeLog)
+jar {
+    baseName = 'aws-intellij-toolkit-core'
+    from(pluginChangeLog.jetbrainsChangeNotesFile) {
+        into "META-INF"
+    }
+}
 
 artifacts {
     testArtifacts testJar

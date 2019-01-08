@@ -25,6 +25,8 @@ about: Create a bug report to help us improve the Toolkit
  - JetBrains' Product:
  - JetBrains' Product Version:
  - Toolkit Version:
+ - SAM CLI Version:
+ - JVM/Python Version:
 
 **Additional context**
 <!-- Add any other context about the problem here. -->

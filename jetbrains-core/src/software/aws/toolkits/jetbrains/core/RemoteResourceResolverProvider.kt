@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.core
@@ -47,7 +47,7 @@ class DefaultRemoteResourceResolverProvider @JvmOverloads constructor(private va
 
         object HttpRequestUrlFetcher : UrlFetcher {
             override fun fetch(url: String, file: Path) {
-                HttpRequests.request(url).saveToFile(file.toFile(), null)
+                HttpRequests.request(url).userAgent(userAgent()).saveToFile(file.toFile(), null)
             }
         }
     }

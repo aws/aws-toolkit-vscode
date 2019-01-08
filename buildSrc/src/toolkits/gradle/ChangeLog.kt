@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package toolkits.gradle
@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import org.gradle.api.logging.Logging
 import java.io.File
 import java.nio.file.Path
 import java.time.LocalDate
@@ -31,15 +32,20 @@ class ChangeLogGenerator(private vararg val writers: ChangeLogWriter) {
     fun unreleased(unreleasedFiles: List<Path>) {
         val entries = unreleasedFiles.parallelStream().map { readFile<Entry>(it.toFile()) }.toList().filterNotNull()
         val unreleasedEntry = ReleaseEntry(LocalDate.now(), "Pending Release", entries)
+        LOGGER.info("Adding unreleased entry: $unreleasedEntry")
         writers.forEach { writer -> writer.write(unreleasedEntry) }
     }
 
     fun generate(changelogFiles: List<Path>) {
         val verifier = EnsureVersionUnique()
+        LOGGER.info("Including release change logs: $changelogFiles")
         changelogFiles.parallelStream().map { readFile<ReleaseEntry>(it.toFile()) }.toList()
             .onEach { verifier.verify(it.version) }
             .sortedByDescending { it.date }
-            .forEach { writers.forEach { writer -> writer.write(it) } }
+            .forEach {
+                LOGGER.info("Adding release entry: $it")
+                writers.forEach { writer -> writer.write(it) }
+            }
     }
 
     fun flush() {
@@ -54,6 +60,10 @@ class ChangeLogGenerator(private vararg val writers: ChangeLogWriter) {
                 throw RuntimeException("Duplicate version $version found")
             }
         }
+    }
+
+    companion object {
+        private val LOGGER = Logging.getLogger(ChangeLogGenerator::class.java)
     }
 }
 

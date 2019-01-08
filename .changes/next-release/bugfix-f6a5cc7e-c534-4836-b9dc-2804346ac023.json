@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fixed issue where accounts without Lambda access were unable to open CloudFormation stack nodes"
+}

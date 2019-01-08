@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Ignore .DS_Store files when building Lambda zip (#725)"
+}

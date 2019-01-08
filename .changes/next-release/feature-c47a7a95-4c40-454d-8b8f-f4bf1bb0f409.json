@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Additional information provided when AWS Explorer isn't able to load data - #634 #578"
+}

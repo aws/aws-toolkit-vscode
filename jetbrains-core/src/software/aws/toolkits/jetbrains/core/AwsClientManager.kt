@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.core
@@ -31,12 +31,7 @@ open class AwsClientManager(project: Project, sdkClient: AwsSdkClient) :
         shutdown()
     }
 
-    override val userAgent: String
-        get() {
-            val platformName = ApplicationNamesInfo.getInstance().fullProductNameWithEdition.replace(' ', '-')
-            val platformVersion = ApplicationInfoEx.getInstanceEx().fullVersion.replace(' ', '-')
-            return "AWS-Toolkit-For-JetBrains/${AwsToolkit.PLUGIN_VERSION} $platformName/$platformVersion"
-        }
+    override val userAgent by lazy { userAgent() }
 
     override fun getCredentialsProvider(): ToolkitCredentialsProvider {
         try {
@@ -55,6 +50,12 @@ open class AwsClientManager(project: Project, sdkClient: AwsSdkClient) :
         @JvmStatic
         fun getInstance(project: Project): ToolkitClientManager = ServiceManager.getService(project, ToolkitClientManager::class.java)
     }
+}
+
+fun userAgent(): String {
+    val platformName = ApplicationNamesInfo.getInstance().fullProductNameWithEdition.replace(' ', '-')
+    val platformVersion = ApplicationInfoEx.getInstanceEx().fullVersion.replace(' ', '-')
+    return "AWS-Toolkit-For-JetBrains/${AwsToolkit.PLUGIN_VERSION} $platformName/$platformVersion"
 }
 
 inline fun <reified T : SdkClient> Project.awsClient(

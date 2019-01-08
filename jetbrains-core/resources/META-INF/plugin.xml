@@ -1,4 +1,4 @@
-<!-- Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude">
@@ -20,6 +20,8 @@
     <li><strong>Deploy SAM-based Applications</strong> - (<strong>Python only</strong>) Package, deploy & track SAM-based applications</li>
 </ul>
 </p>
+
+If you come across bugs with the toolkit or have feature requests, please raise an <a href="https://github.com/aws/aws-toolkit-jetbrains/issues">issue</a>.
     ]]></description>
 
     <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://aws.amazon.com/">Amazon Web Services</vendor>
@@ -32,10 +34,16 @@
     <depends optional="true" config-file="ext-java.xml">com.intellij.modules.java</depends>
     <depends optional="true" config-file="ext-python.xml">com.intellij.modules.python</depends>
 
-    <!-- Re-enable when changelog comes back -->
-    <!-- xi:include href="/META-INF/change-notes.xml" xpointer="xpointer(/idea-plugin/*)">
+    <xi:include href="/META-INF/change-notes.xml" xpointer="xpointer(/idea-plugin/*)">
         <xi:fallback/>
-    </xi:include-->
+    </xi:include>
+
+    <application-components>
+        <component>
+            <interface-class>software.aws.toolkits.jetbrains.components.telemetry.TelemetryComponent</interface-class>
+            <implementation-class>software.aws.toolkits.jetbrains.components.telemetry.DefaultTelemetryComponent</implementation-class>
+        </component>
+    </application-components>
 
     <extensionPoints>
         <extensionPoint qualifiedName="aws.toolkit.credentialProviderFactory"
@@ -74,7 +82,8 @@
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.CredentialManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultCredentialManager"
                             testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager"/>
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.AwsSettings"/>
+        <applicationService serviceInterface="software.aws.toolkits.jetbrains.settings.AwsSettings"
+                            serviceImplementation="software.aws.toolkits.jetbrains.settings.DefaultAwsSettings"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.SamSettings"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.settings.LambdaSettings"/>
 
@@ -87,6 +96,12 @@
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsTelemetryPrompter"/>
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsSdkClient"/>
+        <applicationService serviceInterface="software.aws.toolkits.jetbrains.services.telemetry.MessageBusService"
+                            serviceImplementation="software.aws.toolkits.jetbrains.services.telemetry.DefaultMessageBusService"
+                            testServiceImplementation="software.aws.toolkits.jetbrains.services.telemetry.MockMessageBusService"/>
+        <applicationService serviceInterface="software.aws.toolkits.jetbrains.services.telemetry.TelemetryService"
+                            serviceImplementation="software.aws.toolkits.jetbrains.services.telemetry.DefaultTelemetryService"
+                            testServiceImplementation="software.aws.toolkits.jetbrains.services.telemetry.MockTelemetryService" />
         <projectService serviceInterface="software.aws.toolkits.core.ToolkitClientManager"
                         serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientManager"
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.MockClientManager"/>
@@ -135,6 +150,7 @@
             <action id="lambda.function.updateConfiguration"
                     class="software.aws.toolkits.jetbrains.services.lambda.actions.UpdateFunctionConfigurationAction"/>
             <action id="lambda.function.updateCode" class="software.aws.toolkits.jetbrains.services.lambda.actions.UpdateFunctionCodeAction"/>
+            <separator/>
             <action id="lambda.function.delete"
                     class="software.aws.toolkits.jetbrains.services.lambda.actions.DeleteFunctionAction"/>
         </group>

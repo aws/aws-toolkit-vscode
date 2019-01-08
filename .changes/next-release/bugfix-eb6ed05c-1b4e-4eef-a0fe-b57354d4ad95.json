@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix the status message for certain states during CloudFormation stack updates (#702)"
+}

@@ -1,0 +1,150 @@
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+package software.aws.toolkits.core.telemetry
+
+import software.aws.toolkits.core.telemetry.MetricEvent.Companion.illegalCharsRegex
+import software.amazon.awssdk.services.toolkittelemetry.model.Unit as MetricUnit
+import software.aws.toolkits.core.utils.getLogger
+import java.time.Instant
+
+interface MetricEvent {
+    val namespace: String
+    val createTime: Instant
+    val data: Iterable<Datum>
+
+    interface Builder {
+        fun namespace(namespace: String): Builder
+
+        fun createTime(createTime: Instant): Builder
+
+        fun datum(name: String, buildDatum: Datum.Builder.() -> Unit = {}): Builder
+
+        fun build(): MetricEvent
+    }
+
+    interface Datum {
+        val name: String
+        val value: Double
+        val unit: MetricUnit
+        val metadata: Map<String, String>
+
+        interface Builder {
+            fun name(name: String): Builder
+
+            fun value(value: Double): Builder
+
+            fun unit(unit: MetricUnit): Builder
+
+            fun metadata(key: String, value: String): Builder
+
+            fun metadata(key: String, value: Boolean): Builder = metadata(key, value.toString())
+
+            fun count(value: Double = 1.0): Builder {
+                value(value)
+                unit(MetricUnit.COUNT)
+                return this
+            }
+
+            fun build(): Datum
+        }
+    }
+
+    companion object {
+        val illegalCharsRegex = "[^\\w+-.:]".toRegex()
+    }
+}
+
+fun String.replaceIllegal(replacement: String = "") = this.replace(illegalCharsRegex, replacement)
+
+class DefaultMetricEvent internal constructor(
+    override val namespace: String,
+    override val createTime: Instant,
+    override val data: Iterable<MetricEvent.Datum>
+) : MetricEvent {
+    class BuilderImpl(private var namespace: String) : MetricEvent.Builder {
+        private var createTime: Instant = Instant.now()
+        private var data: MutableCollection<MetricEvent.Datum> = mutableListOf()
+
+        override fun namespace(namespace: String): MetricEvent.Builder {
+            this.namespace = namespace
+            return this
+        }
+
+        override fun createTime(createTime: Instant): MetricEvent.Builder {
+            this.createTime = createTime
+            return this
+        }
+
+        override fun datum(name: String, buildDatum: MetricEvent.Datum.Builder.() -> Unit): MetricEvent.Builder {
+            val builder = DefaultDatum.builder(name)
+            buildDatum(builder)
+            data.add(builder.build())
+            return this
+        }
+
+        override fun build(): MetricEvent = DefaultMetricEvent(namespace.replaceIllegal(), createTime, data)
+    }
+
+    companion object {
+        fun builder(namespace: String): MetricEvent.Builder = BuilderImpl(namespace)
+    }
+
+    class DefaultDatum(
+        override val name: String,
+        override val value: Double,
+        override val unit: MetricUnit,
+        override val metadata: Map<String, String>
+    ) : MetricEvent.Datum {
+        class BuilderImpl(private var name: String) : MetricEvent.Datum.Builder {
+            private var value: Double = 0.0
+            private var unit: MetricUnit = MetricUnit.NONE
+            private val metadata: MutableMap<String, String> = HashMap()
+
+            override fun name(name: String): MetricEvent.Datum.Builder {
+                this.name = name
+                return this
+            }
+
+            override fun value(value: Double): MetricEvent.Datum.Builder {
+                this.value = value
+                return this
+            }
+
+            override fun unit(unit: MetricUnit): MetricEvent.Datum.Builder {
+                this.unit = unit
+                return this
+            }
+
+            override fun metadata(key: String, value: String): MetricEvent.Datum.Builder {
+                if (metadata.containsKey(key)) {
+                    LOG.warn("Attempted to add multiple pieces of metadata with the same key")
+                    return this
+                }
+
+                if (metadata.size > MAX_METADATA_ENTRIES) {
+                    LOG.warn("Each metric datum may contain a maximum of $MAX_METADATA_ENTRIES metadata entries")
+                    return this
+                }
+
+                metadata[key] = value
+                return this
+            }
+
+            override fun build(): MetricEvent.Datum = DefaultDatum(
+                name.replaceIllegal(),
+                this.value,
+                this.unit,
+                this.metadata
+            )
+        }
+
+        companion object {
+            private val LOG = getLogger<DefaultDatum>()
+
+            fun builder(name: String): MetricEvent.Datum.Builder = BuilderImpl(name)
+
+            const val MAX_METADATA_ENTRIES: Int = 10
+        }
+    }
+}

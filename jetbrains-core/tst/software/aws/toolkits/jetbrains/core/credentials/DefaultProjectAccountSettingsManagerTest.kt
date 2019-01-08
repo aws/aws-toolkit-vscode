@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.core.credentials
@@ -277,6 +277,38 @@ class DefaultProjectAccountSettingsManagerTest {
         assertThat(manager.recentlyUsedCredentials()).isEmpty()
         assertThatThrownBy { manager.activeCredentialProvider }
             .isInstanceOf(CredentialProviderNotFound::class.java)
+    }
+
+    @Test
+    fun testLoadingInvalidActiveCredentialNotSelected() {
+        val element = """
+            <AccountState>
+                <option name="activeProfile" value="Mock" />
+                <option name="recentlyUsedProfiles">
+                    <list>
+                        <option value="Mock" />
+                    </list>
+                </option>
+            </AccountState>
+        """.toElement()
+
+        mockCredentialManager.addCredentials(
+            "Mock",
+            AwsBasicCredentials.create("Access", "Secret"),
+            false
+        )
+
+        val manager = DefaultProjectAccountSettingsManager(projectRule.project)
+        manager.loadState(element.deserialize())
+
+        assertThat(manager.hasActiveCredentials()).isFalse()
+    }
+
+    @Test
+    fun testInvalidDefaultProfileCredentialNotSelected() {
+        mockCredentialManager.addCredentials("profile:default", AwsBasicCredentials.create("Access", "Secret"), false)
+        val manager = DefaultProjectAccountSettingsManager(projectRule.project)
+        assertThat(manager.hasActiveCredentials()).isFalse()
     }
 }
 

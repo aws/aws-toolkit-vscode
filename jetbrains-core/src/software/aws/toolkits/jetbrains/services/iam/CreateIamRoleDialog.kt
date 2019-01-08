@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.iam
@@ -8,11 +8,11 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import org.intellij.lang.annotations.Language
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.iam.IamClient
+import software.aws.toolkits.jetbrains.components.telemetry.LoggingDialogWrapper
 import software.aws.toolkits.jetbrains.utils.ui.formatAndSet
 import software.aws.toolkits.resources.message
 import java.awt.Component
@@ -24,7 +24,7 @@ class CreateIamRoleDialog(
     private val parent: Component? = null,
     @Language("JSON") defaultPolicyDocument: String,
     @Language("JSON") defaultAssumeRolePolicyDocument: String
-) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
+) : LoggingDialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
 
     private val view = CreateRolePanel(project)
 

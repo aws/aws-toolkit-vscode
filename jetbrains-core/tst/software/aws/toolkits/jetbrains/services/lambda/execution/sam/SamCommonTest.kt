@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.sam
@@ -32,7 +32,7 @@ class SamCommonTest {
     fun testValidate_noPath() {
         val result = SamCommon.validate(null)
         println(result)
-        assertEquals(message("lambda.run_configuration.sam.not_specified"), result)
+        assertEquals(message("sam.cli_not_configured"), result)
     }
 
     @Test

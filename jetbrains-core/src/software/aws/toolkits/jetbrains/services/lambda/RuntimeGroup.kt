@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 @file:JvmName("RuntimeGroupUtil")
 
@@ -43,6 +43,7 @@ enum class RuntimeGroup {
     fun determineRuntime(module: Module): Runtime? = info.asSequence().mapNotNull { it.determineRuntime(module) }.firstOrNull()
     fun getModuleType(): ModuleType<*>? = info.asSequence().mapNotNull { it.getModuleType() }.firstOrNull()
     fun getIdeSdkType(): SdkType? = info.asSequence().mapNotNull { it.getIdeSdkType() }.firstOrNull()
+    fun supportsSamBuild(): Boolean = info.asSequence().all { it.supportsSamBuild() }
 
     internal companion object {
         /**
@@ -50,8 +51,13 @@ enum class RuntimeGroup {
          */
         fun find(predicate: (RuntimeGroup) -> Boolean): RuntimeGroup? = RuntimeGroup.values().asSequence().filter(predicate).firstOrNull()
 
-        fun determineRuntime(project: Project): Runtime? = values().asSequence().mapNotNull { it.determineRuntime(project) }.firstOrNull()
-        fun determineRuntime(module: Module): Runtime? = values().asSequence().mapNotNull { it.determineRuntime(module) }.firstOrNull()
+        fun determineRuntime(project: Project?): Runtime? = project?.let { _ ->
+            values().asSequence().mapNotNull { it.determineRuntime(project) }.firstOrNull()
+        }
+
+        fun determineRuntime(module: Module?): Runtime? = module?.let { _ ->
+            values().asSequence().mapNotNull { it.determineRuntime(module) }.firstOrNull()
+        }
     }
 }
 
@@ -84,6 +90,11 @@ interface RuntimeGroupInformation {
      */
     fun getIdeSdkType(): SdkType?
 
+    /**
+     * Whether this runtime group supports SAM build so that SAM template with runtimes of this type could be deployed to AWS.
+     */
+    fun supportsSamBuild(): Boolean
+
     companion object : RuntimeGroupExtensionPointObject<RuntimeGroupInformation>(ExtensionPointName("aws.toolkit.lambda.runtimeGroup")) {
         fun getInstances(runtimeGroup: RuntimeGroup): List<RuntimeGroupInformation> = collector.forKey(runtimeGroup)
     }
@@ -99,6 +110,8 @@ abstract class SdkBasedRuntimeGroupInformation : RuntimeGroupInformation {
     override fun getModuleType(): ModuleType<*>? = null
 
     override fun getIdeSdkType(): SdkType? = null
+
+    override fun supportsSamBuild(): Boolean = false
 }
 
 val Runtime.validOrNull: Runtime? get() = this.takeUnless { it == Runtime.UNKNOWN_TO_SDK_VERSION }

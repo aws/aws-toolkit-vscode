@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.lambda.python
@@ -66,14 +66,7 @@ class PythonLambdaPackager : LambdaPackager {
                     // Adds all the site-packages into the root of the zip and adds the mapping for debugging
                     moduleRootManager.sdk?.let { sdk ->
                         PythonSdkType.getSitePackagesDirectory(sdk)?.let { sitePackagesDirectory ->
-                            sitePackagesDirectory.walkFiles { file ->
-                                VfsUtilCore.getRelativeLocation(file, sitePackagesDirectory)?.let { relativeLocation ->
-                                    mappings[file.path] = relativeLocation
-                                    file.inputStream.use { fileContents ->
-                                        zip.putNextEntry(relativeLocation, fileContents)
-                                    }
-                                }
-                            }
+                            addFolder(sitePackagesDirectory, emptySet(), mappings, zip)
                         }
                     }
                 }
@@ -86,14 +79,22 @@ class PythonLambdaPackager : LambdaPackager {
         return future
     }
 
-    private fun addFolder(contentRoot: VirtualFile, excludedRoots: MutableSet<VirtualFile>, mappings: MutableMap<String, String>, zip: ZipOutputStream) {
-        contentRoot.walkFiles(excludedRoots) { file ->
-            VfsUtilCore.getRelativeLocation(file, contentRoot)?.let { relativeLocation ->
+    private fun addFolder(folderRoot: VirtualFile, excludedRoots: Set<VirtualFile>, mappings: MutableMap<String, String>, zip: ZipOutputStream) {
+        folderRoot.walkFiles(excludedRoots) { file ->
+            if (FILE_NAME_BLACKLIST.contains(file.name)) {
+                return@walkFiles
+            }
+
+            VfsUtilCore.getRelativeLocation(file, folderRoot)?.let { relativeLocation ->
                 mappings[file.path] = relativeLocation
                 file.inputStream.use { fileContents ->
                     zip.putNextEntry(relativeLocation, fileContents)
                 }
             }
         }
+    }
+
+    private companion object {
+        val FILE_NAME_BLACKLIST = setOf(".DS_Store")
     }
 }

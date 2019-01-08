@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.lambda.actions
@@ -9,15 +9,17 @@ import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.module.ModuleUtil
-import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.vfs.VirtualFile
 import icons.AwsIcons
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
+import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.stack.openStack
 import software.aws.toolkits.jetbrains.services.cloudformation.executeChangeSetAndWait
+import software.aws.toolkits.jetbrains.services.cloudformation.validateSamTemplateLambdaRuntimes
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationDialog
 import software.aws.toolkits.jetbrains.services.lambda.deploy.SamDeployDialog
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon
@@ -29,14 +31,14 @@ import software.aws.toolkits.jetbrains.utils.notifyNoActiveCredentialsError
 import software.aws.toolkits.jetbrains.utils.notifySamCliNotValidError
 import software.aws.toolkits.resources.message
 
-class DeployServerlessApplicationAction : DumbAwareAction(
+class DeployServerlessApplicationAction : AnActionWrapper(
     message("serverless.application.deploy"),
     null,
     AwsIcons.Resources.SERVERLESS_APP
 ) {
     private val templateYamlRegex = Regex("template\\.y[a]?ml", RegexOption.IGNORE_CASE)
 
-    override fun actionPerformed(e: AnActionEvent) {
+    override fun doActionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
 
         if (!ProjectAccountSettingsManager.getInstance(project).hasActiveCredentials()) {
@@ -53,6 +55,11 @@ class DeployServerlessApplicationAction : DumbAwareAction(
         if (templateFile == null) {
             Exception(message("serverless.application.deploy.toast.template_file_failure"))
                     .notifyError(message("aws.notification.title"), project)
+            return
+        }
+
+        validateTemplateFile(project, templateFile)?.let {
+            notifyError(content = it, project = project)
             return
         }
 
@@ -79,6 +86,7 @@ class DeployServerlessApplicationAction : DumbAwareAction(
         if (!deployDialog.isOK) return
 
         val cfnClient = project.awsClient<CloudFormationClient>()
+        openStack(project, stackName)
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
                 cfnClient.executeChangeSetAndWait(stackName, deployDialog.changeSetName)
@@ -137,4 +145,6 @@ class DeployServerlessApplicationAction : DumbAwareAction(
             }
         }
     }
+
+    private fun validateTemplateFile(project: Project, templateFile: VirtualFile): String? = project.validateSamTemplateLambdaRuntimes(templateFile)
 }

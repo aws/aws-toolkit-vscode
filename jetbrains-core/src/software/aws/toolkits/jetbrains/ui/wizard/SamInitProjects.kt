@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.ui.wizard
@@ -21,7 +21,7 @@ class SamDynamoDBCookieCutter : SamProjectTemplate() {
 
     override fun getDescription() = message("sam.init.template.dynamodb_cookiecutter.description")
 
-    override fun build(runtime: Runtime, outputDir: VirtualFile) {
+    override fun doBuild(runtime: Runtime, outputDir: VirtualFile) {
         SamInitRunner(SamModuleType.ID, outputDir, runtime, "gh:aws-samples/cookiecutter-aws-sam-dynamodb-python").execute()
     }
 }

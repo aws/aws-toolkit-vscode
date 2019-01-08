@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.ui
@@ -8,6 +8,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
+import java.util.concurrent.locks.ReentrantLock
 
 class ResourceSelectorTest {
     @Rule
@@ -57,6 +58,32 @@ class ResourceSelectorTest {
 
         waitForPopulationComplete(comboBox, items.size)
         assertThat(comboBox.isEnabled).isEqualTo(false)
+    }
+
+    @Test
+    fun comboBoxPopulation_updateStateToDesired() {
+        val items = listOf("foo", "bar", "baz")
+
+        val lock = ReentrantLock()
+        lock.lock()
+
+        comboBox.isEnabled = false
+        comboBox.populateValues(updateStatus = false) {
+            while (lock.isLocked) {
+                Thread.sleep(100L)
+            }
+            items
+        }
+        // Wait for the ComboBox to be in loading status.
+        while (comboBox.loadingStatus != ResourceSelector.ResourceLoadingStatus.LOADING) {
+            Thread.sleep(100L)
+        }
+        // In the loading status, even enabling the ComboBox, the status will not be changed until the loading finishes.
+        comboBox.isEnabled = true
+        assertThat(comboBox.isEnabled).isEqualTo(false)
+        lock.unlock()
+        waitForPopulationComplete(comboBox, items.size)
+        assertThat(comboBox.isEnabled).isEqualTo(true)
     }
 
     @Test

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="13px" height="13px" id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 13 13">
+  <defs>
+    <style>.cls-1{fill:#6e6e6e;}</style>
+  </defs>
+  <title>AWS-CS-2687_IDE_icons</title>
+  <rect class="cls-1" x="3" y="3" width="3" height="3"/>
+  <rect class="cls-1" x="3" y="7" width="3" height="3"/>
+  <rect class="cls-1" x="7" y="3" width="3" height="3"/>
+  <rect class="cls-1" x="7" y="7" width="3" height="3"/>
+  <rect class="cls-1" width="1" height="5"/>
+  <rect class="cls-1" width="5" height="1"/>
+  <rect class="cls-1" x="8" width="5" height="1"/>
+  <rect class="cls-1" x="12" width="1" height="5"/>
+  <rect class="cls-1" x="12" y="8" width="1" height="5" transform="translate(25 21) rotate(180)"/>
+  <rect class="cls-1" x="8" y="12" width="5" height="1" transform="translate(21 25) rotate(180)"/>
+  <rect class="cls-1" y="12" width="5" height="1" transform="translate(5 25) rotate(180)"/>
+  <rect class="cls-1" y="8" width="1" height="5" transform="translate(1 21) rotate(180)"/>
+</svg>

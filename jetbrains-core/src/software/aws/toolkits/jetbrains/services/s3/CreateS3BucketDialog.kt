@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.s3
@@ -6,10 +6,10 @@ package software.aws.toolkits.jetbrains.services.s3
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.s3.S3Client
+import software.aws.toolkits.jetbrains.components.telemetry.LoggingDialogWrapper
 import software.aws.toolkits.resources.message
 import java.awt.Component
 import javax.swing.JComponent
@@ -18,7 +18,7 @@ class CreateS3BucketDialog(
     private val project: Project,
     private val s3Client: S3Client,
     private val parent: Component? = null
-) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
+) : LoggingDialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
 
     private val view = CreateBucketPanel()
 

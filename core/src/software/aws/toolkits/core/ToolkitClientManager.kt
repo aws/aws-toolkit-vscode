@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.core
@@ -42,7 +42,7 @@ abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
     ): T = this.getClient(T::class, credentialsProviderOverride, regionOverride)
 
     @Suppress("UNCHECKED_CAST")
-    fun <T : SdkClient> getClient(
+    open fun <T : SdkClient> getClient(
         clz: KClass<T>,
         credentialsProviderOverride: ToolkitCredentialsProvider? = null,
         regionOverride: AwsRegion? = null
@@ -57,10 +57,10 @@ abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
         )
 
         if (key.region != AwsRegion.GLOBAL && GLOBAL_SERVICES.contains(key.serviceClass.simpleName)) {
-            return cachedClients.computeIfAbsent(key.copy(region = AwsRegion.GLOBAL)) { createNewClient(it) } as T
+            return cachedClients.computeIfAbsent(key.copy(region = AwsRegion.GLOBAL)) { createNewClient(it, AwsRegion.GLOBAL, credProvider) } as T
         }
 
-        return cachedClients.computeIfAbsent(key) { createNewClient(it) } as T
+        return cachedClients.computeIfAbsent(key) { createNewClient(it, region, credProvider) } as T
     }
 
     /**
@@ -90,7 +90,7 @@ abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
      * Creates a new client for the requested [AwsClientKey]
      */
     @Suppress("UNCHECKED_CAST")
-    protected open fun <T : SdkClient> createNewClient(key: AwsClientKey): T {
+    protected open fun <T : SdkClient> createNewClient(key: AwsClientKey, region: AwsRegion = key.region, credProvider: ToolkitCredentialsProvider = getCredentialsProvider()): T {
         val builderMethod = key.serviceClass.java.methods.find {
             it.name == "builder" && Modifier.isStatic(it.modifiers) && Modifier.isPublic(it.modifiers)
         } ?: throw IllegalArgumentException("Expected service interface to have a public static `builder()` method.")
@@ -98,10 +98,10 @@ abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
 
         return builder
             .httpClient(sdkHttpClient)
-            .credentialsProvider(getCredentialsProvider())
-            .region(Region.of(key.region.id))
+            .credentialsProvider(credProvider)
+            .region(Region.of(region.id))
             .overrideConfiguration {
-                it.putAdvancedOption(SdkAdvancedClientOption.USER_AGENT_SUFFIX, userAgent)
+                it.putAdvancedOption(SdkAdvancedClientOption.USER_AGENT_PREFIX, userAgent)
                 if (builder is S3ClientBuilder) {
                     // TODO: Remove after SDK code-gens these instead of uses class loader
                     it.addExecutionInterceptor(EndpointAddressInterceptor())

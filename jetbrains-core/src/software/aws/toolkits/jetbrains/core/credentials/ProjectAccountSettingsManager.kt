@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.core.credentials
@@ -15,9 +15,11 @@ import software.aws.toolkits.core.credentials.ProfileToolkitCredentialsProviderF
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.jetbrains.core.AwsSdkClient
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.Companion.ACCOUNT_SETTINGS_CHANGED
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.utils.MRUList
+import software.aws.toolkits.jetbrains.utils.notifyWarn
 import software.aws.toolkits.resources.message
 
 interface ProjectAccountSettingsManager {
@@ -94,6 +96,7 @@ class DefaultProjectAccountSettingsManager(private val project: Project) :
     private var activeProfileInternal: ToolkitCredentialsProvider? = null
     private val recentlyUsedProfiles = MRUList<ToolkitCredentialsProvider>(MAX_HISTORY)
     private val recentlyUsedRegions = MRUList<AwsRegion>(MAX_HISTORY)
+    private val knownInvalidProfiles: MutableList<String> = mutableListOf()
 
     override var activeRegion: AwsRegion
         get() = activeRegionInternal
@@ -107,7 +110,9 @@ class DefaultProjectAccountSettingsManager(private val project: Project) :
         @Throws(CredentialProviderNotFound::class)
         get() = activeProfileInternal
             ?: tryOrNull {
-                getCredentialProviderOrNull("${ProfileToolkitCredentialsProviderFactory.TYPE}:default")
+                getCredentialProviderOrNull(ProfileToolkitCredentialsProviderFactory.DEFAULT_PROFILE_DISPLAY_NAME)
+            }?.takeIf {
+                isCredentialsValid(it)
             }?.apply {
                 updateActiveProfile(this)
             }
@@ -130,7 +135,22 @@ class DefaultProjectAccountSettingsManager(private val project: Project) :
 
     override fun loadState(state: AccountState) {
         activeRegionInternal = regionProvider.lookupRegionById(state.activeRegion)
-        activeProfileInternal = state.activeProfile?.let { getCredentialProviderOrNull(it) }
+        state.activeProfile?.let { getCredentialProviderOrNull(it) }?.run {
+            if (this.isValid(AwsSdkClient.getInstance().sdkHttpClient)) {
+                activeProfileInternal = this
+            } else {
+                val content = if (this.displayName.toLowerCase() == ProfileToolkitCredentialsProviderFactory.DEFAULT_PROFILE_DISPLAY_NAME.toLowerCase()) {
+                    message("credentials.default.profile.invalid.no.fallback.notification")
+                } else {
+                    message("credentials.profile.invalid.notification", this.displayName)
+                }
+
+                notifyWarn(
+                    title = message("credentials.invalid.title"),
+                    content = content
+                )
+            }
+        }
 
         state.recentlyUsedRegions.reversed().mapNotNull { regionProvider.regions()[it] }
             .forEach { recentlyUsedRegions.add(it) }
@@ -146,6 +166,20 @@ class DefaultProjectAccountSettingsManager(private val project: Project) :
 
     private fun getCredentialProviderOrNull(id: String): ToolkitCredentialsProvider? = tryOrNull {
         credentialManager.getCredentialProvider(id)
+    }
+
+    private fun isCredentialsValid(toolkitCredentialsProvider: ToolkitCredentialsProvider): Boolean {
+        // Prevent repeated checks when a provider is known to be invalid
+        // TODO : When profile refreshing is supported, this will need to be revisited
+        if (!knownInvalidProfiles.contains(toolkitCredentialsProvider.id)) {
+            if (toolkitCredentialsProvider.isValid(AwsSdkClient.getInstance().sdkHttpClient)) {
+                return true
+            }
+
+            knownInvalidProfiles.add(toolkitCredentialsProvider.id)
+        }
+
+        return false
     }
 
     companion object {

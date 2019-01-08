@@ -1,4 +1,4 @@
-// Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.lambda.upload
@@ -9,7 +9,6 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.util.text.nullize
 import com.intellij.util.ui.UIUtil
@@ -19,6 +18,7 @@ import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.core.utils.listBucketsByRegion
+import software.aws.toolkits.jetbrains.components.telemetry.LoggingDialogWrapper
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
@@ -33,6 +33,7 @@ import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode.NEW
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode.UPDATE_CODE
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode.UPDATE_CONFIGURATION
+import software.aws.toolkits.jetbrains.services.lambda.validOrNull
 import software.aws.toolkits.jetbrains.services.s3.CreateS3BucketDialog
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
@@ -74,9 +75,9 @@ class EditFunctionDialog(
     private val memorySize: Int = DEFAULT_MEMORY,
     private val xrayEnabled: Boolean = false,
     private val role: IamRole? = null
-) : DialogWrapper(project) {
+) : LoggingDialogWrapper(project) {
 
-    constructor(project: Project, lambdaFunction: LambdaFunction, mode: EditFunctionMode = EditFunctionMode.UPDATE_CONFIGURATION) :
+    constructor(project: Project, lambdaFunction: LambdaFunction, mode: EditFunctionMode = UPDATE_CONFIGURATION) :
             this(
                 project = project,
                 mode = mode,
@@ -98,8 +99,8 @@ class EditFunctionDialog(
 
     private val action: OkAction = when (mode) {
         NEW -> CreateNewLambdaOkAction()
-        EditFunctionMode.UPDATE_CONFIGURATION -> UpdateFunctionOkAction({ validator.validateConfigurationSettings(view) }, ::updateConfiguration)
-        EditFunctionMode.UPDATE_CODE -> UpdateFunctionOkAction({ validator.validateCodeSettings(project, view) }, ::upsertLambdaCode)
+        UPDATE_CONFIGURATION -> UpdateFunctionOkAction({ validator.validateConfigurationSettings(view) }, ::updateConfiguration)
+        UPDATE_CODE -> UpdateFunctionOkAction({ validator.validateCodeSettings(project, view) }, ::upsertLambdaCode)
     }
 
     init {
@@ -146,13 +147,15 @@ class EditFunctionDialog(
         if (mode == UPDATE_CODE) {
             UIUtil.uiChildren(view.configurationSettings).filter { it !== view.handler && it !== view.handlerLabel }.forEach { it.isVisible = false }
         }
-        view.runtime.populateValues(default = runtime) { Runtime.knownValues() }
+
+        view.setRuntimes(Runtime.knownValues())
+        view.runtime.selectedItem = runtime?.validOrNull
 
         view.xrayEnabled.isSelected = xrayEnabled
 
         val regionProvider = AwsRegionProvider.getInstance()
         val settings = ProjectAccountSettingsManager.getInstance(project)
-        view.setXrayControlVisibility(regionProvider.isServiceSupported(settings.activeRegion, "xray"))
+        view.setXrayControlVisibility(mode != UPDATE_CODE && regionProvider.isServiceSupported(settings.activeRegion, "xray"))
 
         view.iamRole.populateValues(default = role) {
             iamClient.listRolesFilter { it.assumeRolePolicyDocument().contains(LAMBDA_PRINCIPAL) }
@@ -331,6 +334,8 @@ class EditFunctionDialog(
             }
         }
     }
+
+    override fun getNamespace(): String = "${mode.name}FunctionDialog"
 
     @TestOnly
     fun getViewForTestAssertions() = view
