@@ -14,13 +14,29 @@ import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
-import { intersection, toArrayAsync, toMap, toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
+import {
+    intersection,
+    toArrayAsync,
+    toMap,
+    toMapAsync,
+    updateInPlace
+} from '../../shared/utilities/collectionUtils'
 import { listCloudFormationStacks, listLambdaFunctions } from '../utils'
 import { FunctionNodeBase } from './functionNode'
 import { PlaceholderNode } from './placeholderNode'
 import { RegionNode } from './regionNode'
 
-export class CloudFormationNode extends AWSTreeNodeBase {
+export interface CloudFormationNode extends AWSTreeNodeBase {
+    readonly regionCode: string
+
+    readonly parent: RegionNode
+
+    getChildren(): Promise<CloudFormationStackNode[]>
+
+    updateChildren(): Promise<void>
+}
+
+export class DefaultCloudFormationNode extends AWSTreeNodeBase implements CloudFormationNode {
     private readonly stackNodes: Map<string, CloudFormationStackNode>
 
     public get regionCode(): string {
@@ -32,7 +48,7 @@ export class CloudFormationNode extends AWSTreeNodeBase {
         this.stackNodes = new Map<string, CloudFormationStackNode>()
     }
 
-    public async getChildren() {
+    public async getChildren(): Promise<CloudFormationStackNode[]> {
         await this.updateChildren()
 
         return [...this.stackNodes.values()]
@@ -46,12 +62,22 @@ export class CloudFormationNode extends AWSTreeNodeBase {
             this.stackNodes,
             stacks.keys(),
             key => this.stackNodes.get(key)!.update(stacks.get(key)!),
-            key => new CloudFormationStackNode(this, stacks.get(key)!)
+            key => new DefaultCloudFormationStackNode(this, stacks.get(key)!)
         )
     }
 }
 
-export class CloudFormationStackNode extends AWSTreeNodeBase {
+export interface CloudFormationStackNode extends AWSTreeNodeBase {
+    readonly regionCode: string
+
+    readonly parent: CloudFormationNode
+
+    getChildren(): Promise<(CloudFormationFunctionNode | PlaceholderNode)[]>
+
+    update(stackSummary: CloudFormation.StackSummary): void
+}
+
+export class DefaultCloudFormationStackNode extends AWSTreeNodeBase implements CloudFormationStackNode {
     private readonly functionNodes: Map<string, CloudFormationFunctionNode>
 
     public get regionCode(): string {
@@ -106,7 +132,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase {
             this.functionNodes,
             intersection(resources, functions.keys()),
             key => this.functionNodes.get(key)!.update(functions.get(key)!),
-            key => new CloudFormationFunctionNode(this, functions.get(key)!)
+            key => new DefaultCloudFormationFunctionNode(this, functions.get(key)!)
         )
     }
 
@@ -124,12 +150,19 @@ export class CloudFormationStackNode extends AWSTreeNodeBase {
     }
 }
 
-export class CloudFormationFunctionNode extends FunctionNodeBase {
+export interface CloudFormationFunctionNode extends FunctionNodeBase {
+    readonly parent: CloudFormationStackNode
+}
+
+export class DefaultCloudFormationFunctionNode extends FunctionNodeBase {
     public get regionCode(): string {
         return this.parent.regionCode
     }
 
-    public constructor(public readonly parent: CloudFormationStackNode, configuration: Lambda.FunctionConfiguration) {
+    public constructor(
+        public readonly parent: CloudFormationStackNode,
+        configuration: Lambda.FunctionConfiguration
+    ) {
         super(configuration)
         this.contextValue = 'awsCloudFormationFunctionNode'
     }

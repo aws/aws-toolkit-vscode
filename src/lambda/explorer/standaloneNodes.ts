@@ -15,7 +15,17 @@ import { listLambdaFunctions } from '../utils'
 import { FunctionNodeBase } from './functionNode'
 import { RegionNode } from './regionNode'
 
-export class StandaloneFunctionGroupNode extends AWSTreeNodeBase {
+export interface StandaloneFunctionGroupNode extends AWSTreeNodeBase {
+    readonly regionCode: string
+
+    readonly parent: RegionNode
+
+    getChildren(): Thenable<StandaloneFunctionNode[]>
+
+    updateChildren(): Thenable<void>
+}
+
+export class DefaultStandaloneFunctionGroupNode extends AWSTreeNodeBase implements StandaloneFunctionGroupNode {
     private readonly functionNodes: Map<string, StandaloneFunctionNode>
 
     public get regionCode(): string {
@@ -46,12 +56,16 @@ export class StandaloneFunctionGroupNode extends AWSTreeNodeBase {
             this.functionNodes,
             functions.keys(),
             key => this.functionNodes.get(key)!.update(functions.get(key)!),
-            key => new StandaloneFunctionNode(this, functions.get(key)!)
+            key => new DefaultStandaloneFunctionNode(this, functions.get(key)!)
         )
     }
 }
 
-export class StandaloneFunctionNode extends FunctionNodeBase {
+export interface StandaloneFunctionNode extends FunctionNodeBase {
+    readonly parent: StandaloneFunctionGroupNode
+}
+
+export class DefaultStandaloneFunctionNode extends FunctionNodeBase implements StandaloneFunctionNode {
     public get regionCode(): string {
         return this.parent.regionCode
     }

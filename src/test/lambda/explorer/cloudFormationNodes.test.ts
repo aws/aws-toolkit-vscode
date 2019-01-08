@@ -9,9 +9,10 @@ import * as assert from 'assert'
 import { CloudFormation, Lambda } from 'aws-sdk'
 import { Uri } from 'vscode'
 import {
-    CloudFormationFunctionNode,
-    CloudFormationNode,
-    CloudFormationStackNode
+    CloudFormationStackNode,
+    DefaultCloudFormationFunctionNode,
+    DefaultCloudFormationNode,
+    DefaultCloudFormationStackNode
 } from '../../../lambda/explorer/cloudFormationNodes'
 import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
 import { PlaceholderNode } from '../../../lambda/explorer/placeholderNode'
@@ -21,7 +22,7 @@ import { ext } from '../../../shared/extensionGlobals'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
-describe('CloudFormationStackNode', () => {
+describe('DefaultCloudFormationStackNode', () => {
 
     let fakeStackSummary: CloudFormation.StackSummary
 
@@ -44,8 +45,8 @@ describe('CloudFormationStackNode', () => {
 
     // Validates we tagged the node correctly.
     it('initializes name and tooltip', async () => {
-        const testNode: CloudFormationStackNode = new CloudFormationStackNode(
-            new CloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
+        const testNode: CloudFormationStackNode = new DefaultCloudFormationStackNode(
+            new DefaultCloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
             fakeStackSummary
         )
 
@@ -82,8 +83,8 @@ describe('CloudFormationStackNode', () => {
                 return lambdaClient
             }
         }
-        const testNode = new CloudFormationStackNode(
-            new CloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
+        const testNode = new DefaultCloudFormationStackNode(
+            new DefaultCloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
             fakeStackSummary
         )
 
@@ -177,8 +178,8 @@ describe('CloudFormationStackNode', () => {
             }
         }
 
-        const testNode = new CloudFormationStackNode(
-            new CloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
+        const testNode: CloudFormationStackNode = new DefaultCloudFormationStackNode(
+            new DefaultCloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
             fakeStackSummary
         )
 
@@ -186,11 +187,11 @@ describe('CloudFormationStackNode', () => {
         assert(childNodes !== undefined)
         assert.strictEqual(childNodes.length, 2)
 
-        assert(childNodes[0] instanceof CloudFormationFunctionNode)
-        assert.strictEqual((childNodes[0] as CloudFormationFunctionNode).label, lambda1Name)
+        assert(childNodes[0] instanceof DefaultCloudFormationFunctionNode)
+        assert.strictEqual((childNodes[0] as DefaultCloudFormationFunctionNode).label, lambda1Name)
 
-        assert(childNodes[1] instanceof CloudFormationFunctionNode)
-        assert.strictEqual((childNodes[1] as CloudFormationFunctionNode).label, lambda3Name)
+        assert(childNodes[1] instanceof DefaultCloudFormationFunctionNode)
+        assert.strictEqual((childNodes[1] as DefaultCloudFormationFunctionNode).label, lambda3Name)
     })
 
     // Validates we wired up the expected resource for the node icon
@@ -199,8 +200,8 @@ describe('CloudFormationStackNode', () => {
         const fileScheme: string = 'file'
         const resourceImageName: string = 'cloudformation.svg'
 
-        const testNode = new CloudFormationStackNode(
-            new CloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
+        const testNode = new DefaultCloudFormationStackNode(
+            new DefaultCloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
             fakeStackSummary
         )
 
