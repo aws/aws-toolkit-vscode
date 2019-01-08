@@ -163,7 +163,7 @@ class LocalLambdaRunner {
         if (!this._baseBuildFolder) {
             this._baseBuildFolder = await fileSystem.mkdtempAsync(
                 path.join(
-                    ExtensionDisposableFiles.getToolkitTempFolder(),
+                    ExtensionDisposableFiles.getInstance().toolkitTempFolder,
                     'build-'
                 )
             )

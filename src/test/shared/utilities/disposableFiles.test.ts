@@ -97,8 +97,7 @@ describe('ExtensionDisposableFiles', async () => {
 
     class TestExtensionDisposableFiles extends ExtensionDisposableFiles {
         public static reset() {
-            ExtensionDisposableFiles.INSTANCE = new DisposableFiles()
-            ExtensionDisposableFiles.TOOLKIT_SESSION_DISPOSABLE_TEMP_FOLDER = undefined
+            ExtensionDisposableFiles.INSTANCE = undefined
         }
     }
 
@@ -114,6 +113,15 @@ describe('ExtensionDisposableFiles', async () => {
         TestExtensionDisposableFiles.reset()
     })
 
+    it('getInstance throws error if not initialized', async () => {
+        try {
+            ExtensionDisposableFiles.getInstance()
+            assert.equal(true, false, 'error expected')
+        } catch (err) {
+            assert.notEqual(err, undefined)
+        }
+    })
+
     it('cannot be initialized twice', async () => {
         await ExtensionDisposableFiles.initialize(extensionContext)
 
@@ -125,20 +133,14 @@ describe('ExtensionDisposableFiles', async () => {
         }
     })
 
-    it('cannot provide temp folder before initialization', async () => {
-        try {
-            ExtensionDisposableFiles.getToolkitTempFolder()
-            assert.equal(true, false, 'error expected')
-        } catch (err) {
-            assert.notEqual(err, undefined)
-        }
-    })
-
     it('creates temp folder on initialization', async () => {
         await ExtensionDisposableFiles.initialize(extensionContext)
 
-        assert.ok(ExtensionDisposableFiles.getToolkitTempFolder())
+        assert.ok(ExtensionDisposableFiles.getInstance().toolkitTempFolder)
 
-        assert.equal(await filesystemUtilities.fileExists(ExtensionDisposableFiles.getToolkitTempFolder()), true)
+        assert.equal(
+            await filesystemUtilities.fileExists(ExtensionDisposableFiles.getInstance().toolkitTempFolder),
+            true
+        )
     })
 })

@@ -67,38 +67,41 @@ export class DisposableFiles implements vscode.Disposable {
     }
 }
 
-export class ExtensionDisposableFiles {
-    protected static INSTANCE: DisposableFiles = new DisposableFiles()
-    protected static TOOLKIT_SESSION_DISPOSABLE_TEMP_FOLDER: string | undefined
+export class ExtensionDisposableFiles extends DisposableFiles {
+    protected static INSTANCE?: ExtensionDisposableFiles
+
+    protected constructor(
+        public readonly toolkitTempFolder: string
+    ) {
+        super()
+
+        this.addFolder(this.toolkitTempFolder)
+    }
 
     public static async initialize(
         extensionContext: vscode.ExtensionContext
     ): Promise<void> {
-        if (!!ExtensionDisposableFiles.TOOLKIT_SESSION_DISPOSABLE_TEMP_FOLDER) {
+        if (!!ExtensionDisposableFiles.INSTANCE) {
             throw new Error('ExtensionDisposableFiles already initialized')
         }
 
-        extensionContext.subscriptions.push(ExtensionDisposableFiles.INSTANCE)
-
-        ExtensionDisposableFiles.TOOLKIT_SESSION_DISPOSABLE_TEMP_FOLDER = await filesystem.mkdtempAsync(
+        const toolkitTempFolder: string = await filesystem.mkdtempAsync(
             path.join(
                 os.tmpdir(),
                 'aws-toolkit-vscode-'
             )
         )
 
-        ExtensionDisposableFiles.INSTANCE.addFolder(ExtensionDisposableFiles.TOOLKIT_SESSION_DISPOSABLE_TEMP_FOLDER)
+        ExtensionDisposableFiles.INSTANCE = new ExtensionDisposableFiles(toolkitTempFolder)
+
+        extensionContext.subscriptions.push(ExtensionDisposableFiles.INSTANCE)
     }
 
-    public static getInstance(): DisposableFiles {
-        return ExtensionDisposableFiles.INSTANCE
-    }
-
-    public static getToolkitTempFolder(): string {
-        if (!ExtensionDisposableFiles.TOOLKIT_SESSION_DISPOSABLE_TEMP_FOLDER) {
+    public static getInstance(): ExtensionDisposableFiles {
+        if (!ExtensionDisposableFiles.INSTANCE) {
             throw new Error('ExtensionDisposableFiles not initialized')
         }
 
-        return ExtensionDisposableFiles.TOOLKIT_SESSION_DISPOSABLE_TEMP_FOLDER
+        return ExtensionDisposableFiles.INSTANCE
     }
 }
