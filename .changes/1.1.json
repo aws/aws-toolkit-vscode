@@ -1,0 +1,38 @@
+{
+  "date" : "2019-01-08",
+  "version" : "1.1",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Additional information provided when AWS Explorer isn't able to load data - #634 #578"
+  }, {
+    "type" : "feature",
+    "description" : "Able to view CloudFormation stack details by double clicking it in the Explorer"
+  }, {
+    "type" : "feature",
+    "description" : "Added AWS Credential validation when changing profiles"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix case where packaging Java code was not releasing file locks #694"
+  }, {
+    "type" : "bugfix",
+    "description" : "Suppress FileNotFoundException that can be thrown if the endpoints file fails to download"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fixed issue where accounts without Lambda access were unable to open CloudFormation stack nodes"
+  }, {
+    "type" : "bugfix",
+    "description" : "Use us-east-1 instead of global endpoint for STS"
+  }, {
+    "type" : "bugfix",
+    "description" : "Ignore .DS_Store files when building Lambda zip (#725)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix IllegalStateException: context.module must not be null (#643)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fixed issue on OS X where the SAM CLI is unable to use an UTF-8 locale."
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix the status message for certain states during CloudFormation stack updates (#702)"
+  } ]
+}
