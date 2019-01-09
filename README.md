@@ -8,13 +8,31 @@
 
 AWS Toolkit for JetBrains - a plugin for interacting with AWS from JetBrains IDEs. The plugin includes features that make it easier to write applications on [Amazon Web Services](https://aws.amazon.com/) using a JetBrains IDE.
 
-The toolkit is generally available for PyCharm and in developer preview for IntelliJ IDEA. It can be installed from the IDE plugin manager or manually from the [JetBrains plugin website](https://plugins.jetbrains.com/plugin/11349-aws-toolkit). It can also be built from [source](CONTRIBUTING.md#building-from-source).
+The toolkit is generally available for PyCharm and in developer preview for IntelliJ IDEA. It can be installed from the IDE plugin manager or manually from the [JetBrains plugin website](https://plugins.jetbrains.com/plugin/11349-aws-toolkit).
 
 This is an open source project because we want you to be involved. We love issues, feature requests, code reviews, pull requests or any positive contribution. Please see the the [CONTRIBUTING](CONTRIBUTING.md) guide for how to help.  
 
-## Features
+## Requirements
+Supported IDEs:
+* IntelliJ Community/Ultimate 2018.3+
+* PyCharm Community/Professional 2018.3+
 
-The toolkit is compatible with [2018.3](https://blog.jetbrains.com/idea/tag/2018-3/) versions of [PyCharm](https://www.jetbrains.com/pycharm/) (Community & Professional) and [IntelliJ IDEA](https://www.jetbrains.com/idea) (Community & Ultimate).
+## Installation
+
+### Stable
+In your IDE, open of the Plugins page and search for `AWS Toolkit` and click install.
+
+### EAP Builds
+We also offer opt-in Early Access Preview builds that are built automatically.
+
+In order to opt-in:
+* Add the URL `https://plugins.jetbrains.com/plugins/eap/aws.toolkit` to your IDE's plugin repository preferences by going to **Plugins->Gear Icon->Manage Plugin Repositories** and adding the URL to the list
+* Check for updates.
+
+### From Source
+Please see [CONTRIBUTING](CONTRIBUTING.md#building-from-source) for instructions.
+
+## Features
 
 ### General
 
