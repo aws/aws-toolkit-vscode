@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 
-// Used when an exception occurs while querying AWS resources
+// Used as a child node when an exception occurs while querying AWS resources
 export class ErrorNode extends AWSTreeNodeBase {
     public constructor(
         public readonly parent: AWSTreeNodeBase,
@@ -18,6 +18,7 @@ export class ErrorNode extends AWSTreeNodeBase {
         super(`Error loading resources (${error.name})`,
               vscode.TreeItemCollapsibleState.None)
 
+        this.tooltip = error.message
         this.contextValue = 'awsErrorNode'
         this.iconPath = {
             dark: vscode.Uri.file(ext.context.asAbsolutePath('resources/dark/error.svg')),
