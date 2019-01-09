@@ -14,13 +14,14 @@ import { ext } from '../../shared/extensionGlobals'
 import { CloudFormationStackNode } from '../explorer/cloudFormationNodes'
 
 export async function deleteCloudFormation(
-    element?: CloudFormationStackNode
+    refresh: () => void,
+    node?: CloudFormationStackNode
 ) {
-    if (!element) {
+    if (!node) {
         return
     }
 
-    const stackName = element.label || localize('AWS.lambda.policy.unknown.function', 'Unknown')
+    const stackName = node.label || localize('AWS.lambda.policy.unknown.function', 'Unknown')
 
     const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
     const responseNo: string = localize('AWS.generic.response.no', 'No')
@@ -37,7 +38,7 @@ export async function deleteCloudFormation(
         )
 
         if (userResponse === responseYes) {
-            const client: CloudFormationClient = ext.toolkitClientBuilder.createCloudFormationClient(element.regionCode)
+            const client: CloudFormationClient = ext.toolkitClientBuilder.createCloudFormationClient(node.regionCode)
 
             await client.deleteStack(stackName)
 
@@ -47,7 +48,7 @@ export async function deleteCloudFormation(
                 stackName
             ))
 
-            element.dispose()
+            refresh()
         }
 
     } catch (err) {
