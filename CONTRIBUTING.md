@@ -46,6 +46,10 @@ If you prefer, you can also run tests from the command line:
 
 Note: If you want to run tests from the command line, you must first close all instances of Visual Studio Code.
 
+#### Checking coverage report
+
+After running the tests, the coverage report can be found at ./coverage/index.html
+
 ### Run
 
 You can run directly from Visual Studio Code:
