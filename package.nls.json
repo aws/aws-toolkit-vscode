@@ -24,6 +24,7 @@
     "AWS.command.samcli.detect": "Detect SAM CLI",
     "AWS.command.samcli.validate.version": "Validate SAM CLI Version",
     "AWS.command.deleteCloudFormation": "Delete CloudFormation Stack",
+    "AWS.command.showStackTrace": "Show stack trace",
     "AWS.error.mfa.userCancelled": "User cancelled entering authentication code",
     "AWS.error.no.error.code": "No error code",
     "AWS.explorerNode.addRegion": "Add a region to view functions...",

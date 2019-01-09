@@ -18,7 +18,7 @@ export class ErrorNode extends AWSTreeNodeBase {
         super(`Error loading resources (${error.name})`,
               vscode.TreeItemCollapsibleState.None)
 
-        this.contextValue = 'awsError'
+        this.contextValue = 'awsErrorNode'
         this.iconPath = {
             dark: vscode.Uri.file(ext.context.asAbsolutePath('resources/dark/error.svg')),
             light: vscode.Uri.file(ext.context.asAbsolutePath('resources/light/error.svg'))
