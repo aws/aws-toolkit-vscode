@@ -16,14 +16,14 @@ export async function showStackTrace(element: ErrorNode) {
 
         const view = vscode.window.createWebviewPanel(
             'html',
-            `Getting stack trace for ${element.parent.label}`,
+            `Error information for ${element.parent.label}`,
             -1
         )
 
         const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
         view.webview.html = baseTemplateFn({ content: '<h1>Loading...</h1>' })
 
-        const getConfigTemplateFn = _.template(ErrorTemplates.SHOW_STACK_TRACE)
+        const getConfigTemplateFn = _.template(ErrorTemplates.ERROR_INFORMATION)
         view.webview.html = baseTemplateFn({
             content: getConfigTemplateFn(element)
         })

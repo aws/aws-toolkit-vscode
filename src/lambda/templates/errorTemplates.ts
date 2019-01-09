@@ -4,11 +4,29 @@
  */
 
 export class ErrorTemplates {
-    public static readonly SHOW_STACK_TRACE = `
+    public static readonly ERROR_INFORMATION = `
     <h1>
-        Stack Trace for <%= parent.label %>
+        Error information for <%= parent.label %>
     </h1>
     <p>
+
+    <h2>
+        Error code
+    </h2>
+    <pre>
+        <%= error.code %>
+    </pre>
+
+    <h2>
+        Error message
+    </h2>
+    <pre>
+        <%= error.message %>
+    </pre>
+
+    <h2>
+        Stack trace
+    </h2>
     <pre>
         <%= error.stack %>
     </pre>
