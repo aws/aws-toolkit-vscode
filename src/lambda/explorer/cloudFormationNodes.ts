@@ -57,9 +57,9 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
     }
 
     public async updateChildren(): Promise<void> {
-        this.errorNode = undefined
-
         try {
+            this.clearError()
+
             const client: CloudFormationClient = ext.toolkitClientBuilder.createCloudFormationClient(this.regionCode)
             const stacks = await toMapAsync(listCloudFormationStacks(client), stack => stack.StackId)
 
@@ -70,7 +70,7 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
                 key => new DefaultCloudFormationStackNode(this, stacks.get(key)!)
             )
         } catch (err) {
-            this.handleError(this, err as Error)
+            this.handleError(err as Error)
         }
     }
 }
@@ -129,9 +129,9 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
     }
 
     private async updateChildren(): Promise<void> {
-        this.errorNode = undefined
-
         try {
+            this.clearError()
+
             const resources: string[] = await this.resolveLambdaResources()
             const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(this.regionCode)
             const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
@@ -146,7 +146,7 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
                 key => new DefaultCloudFormationFunctionNode(this, functions.get(key)!)
             )
         } catch (err) {
-            this.handleError(this, err as Error)
+            this.handleError(err as Error)
         }
 
     }

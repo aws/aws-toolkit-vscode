@@ -19,7 +19,11 @@ export abstract class AWSTreeErrorHandlerNode extends AWSTreeNodeBase {
         super(label, collapsibleState)
     }
 
-    protected handleError(parent: AWSTreeNodeBase, error: Error) {
+    protected clearError() {
+        this.errorNode = undefined
+    }
+
+    protected handleError(error: Error) {
         this.errorNode = new ErrorNode(this, error)
 
         // TODO: Make the possibility to ErrorNode attempt to retry the operation

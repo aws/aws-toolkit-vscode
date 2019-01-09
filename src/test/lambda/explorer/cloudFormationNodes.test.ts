@@ -8,6 +8,7 @@
 import * as assert from 'assert'
 import { CloudFormation, Lambda } from 'aws-sdk'
 import { Uri } from 'vscode'
+import { RegionNode } from '../../..//lambda/explorer/regionNode'
 import {
     CloudFormationStackNode,
     DefaultCloudFormationFunctionNode,
@@ -15,6 +16,7 @@ import {
     DefaultCloudFormationStackNode
 } from '../../../lambda/explorer/cloudFormationNodes'
 import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
+import { ErrorNode } from '../../../lambda/explorer/errorNode'
 import { PlaceholderNode } from '../../../lambda/explorer/placeholderNode'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
@@ -222,6 +224,33 @@ describe('DefaultCloudFormationStackNode', () => {
         assert.strictEqual(iconPath!.dark.scheme, fileScheme)
         const darkResourcePath: string = iconPath!.dark.path
         assert(darkResourcePath.endsWith(`dark/${resourceImageName}`))
+    })
+})
+
+describe('DefaultCloudFormationNode', () => {
+
+    it('handle error', async () => {
+
+        class ThrowErrorDefaultCloudFormationNode extends DefaultCloudFormationNode {
+            public constructor(
+                public readonly regionNode: RegionNode
+            ) {
+                super(regionNode)
+            }
+
+            protected clearError() {
+                throw new Error('Hello there!')
+            }
+        }
+
+        const testNode: ThrowErrorDefaultCloudFormationNode = new ThrowErrorDefaultCloudFormationNode(
+            new DefaultRegionNode(new RegionInfo('code', 'name'))
+        )
+
+        const childNodes = await testNode.getChildren()
+        assert(childNodes !== undefined)
+        assert.strictEqual(childNodes.length, 1)
+        assert.strictEqual(childNodes[0] instanceof ErrorNode, true)
     })
 
 })

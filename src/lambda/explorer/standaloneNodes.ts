@@ -48,9 +48,9 @@ export class DefaultStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode 
     }
 
     public async updateChildren(): Promise<void> {
-        this.errorNode = undefined
-
         try {
+            this.clearError()
+
             const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(this.regionCode)
             const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
                 await toArrayAsync(listLambdaFunctions(client)),
@@ -65,7 +65,7 @@ export class DefaultStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode 
             )
 
         } catch (err) {
-            this.handleError(this, err as Error)
+            this.handleError(err as Error)
         }
     }
 }
