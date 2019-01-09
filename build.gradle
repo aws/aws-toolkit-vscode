@@ -16,7 +16,6 @@ buildscript {
     dependencies {
         classpath "com.atlassian.commonmark:commonmark:0.11.0"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
-        classpath "org.jetbrains.dokka:dokka-gradle-plugin:$dokkaVersion"
         classpath "gradle.plugin.org.jetbrains.intellij.plugins:gradle-intellij-plugin:$ideaPluginVersion"
     }
 }
@@ -50,7 +49,6 @@ subprojects {
 
     apply plugin: 'java'
     apply plugin: 'idea'
-    apply plugin: 'org.jetbrains.dokka'
     apply plugin: 'signing'
 
     def isReleaseVersion = !version.endsWith("SNAPSHOT")
