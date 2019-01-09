@@ -6,7 +6,7 @@
 'use strict'
 
 import * as semver from 'semver'
-import { SamCliInfoInvocation } from './samCliInvocation'
+import { SamCliInfoInvocation } from './samCliInfo'
 
 export enum SamCliVersionValidation {
     Valid,
