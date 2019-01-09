@@ -9,7 +9,7 @@ import { TreeItemCollapsibleState } from 'vscode'
 import { ErrorNode } from '../../lambda/explorer/errorNode'
 import { AWSTreeNodeBase } from './awsTreeNodeBase'
 
-export abstract class AwsTreeErrorHandlerNode extends AWSTreeNodeBase {
+export abstract class AWSTreeErrorHandlerNode extends AWSTreeNodeBase {
     protected errorNode?: ErrorNode
 
     protected constructor(
@@ -22,7 +22,7 @@ export abstract class AwsTreeErrorHandlerNode extends AWSTreeNodeBase {
     protected handleError(parent: AWSTreeNodeBase, error: Error) {
         this.errorNode = new ErrorNode(this, error)
 
-        // TODO: Make the option to ErrorNode attempt to retry the operation
+        // TODO: Make the possibility to ErrorNode attempt to retry the operation
         console.error(error.message)
     }
 }

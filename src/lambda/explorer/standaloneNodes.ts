@@ -9,14 +9,14 @@ import { Lambda } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
-import { AwsTreeErrorHandlerNode } from '../../shared/treeview/awsTreeErrorHandlerNode'
+import { AWSTreeErrorHandlerNode } from '../../shared/treeview/awsTreeErrorHandlerNode'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listLambdaFunctions } from '../utils'
 import { ErrorNode } from './errorNode'
 import { FunctionNodeBase } from './functionNode'
 import { RegionNode } from './regionNode'
 
-export interface StandaloneFunctionGroupNode extends AwsTreeErrorHandlerNode {
+export interface StandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode {
     readonly regionCode: string
 
     readonly parent: RegionNode
@@ -26,7 +26,7 @@ export interface StandaloneFunctionGroupNode extends AwsTreeErrorHandlerNode {
     updateChildren(): Thenable<void>
 }
 
-export class DefaultStandaloneFunctionGroupNode extends AwsTreeErrorHandlerNode implements StandaloneFunctionGroupNode {
+export class DefaultStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode implements StandaloneFunctionGroupNode {
     private readonly functionNodes: Map<string, StandaloneFunctionNode>
 
     public get regionCode(): string {

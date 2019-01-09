@@ -13,7 +13,7 @@ import * as vscode from 'vscode'
 import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
-import { AwsTreeErrorHandlerNode } from '../../shared/treeview/awsTreeErrorHandlerNode'
+import { AWSTreeErrorHandlerNode } from '../../shared/treeview/awsTreeErrorHandlerNode'
 import {
     intersection,
     toArrayAsync,
@@ -27,7 +27,7 @@ import { FunctionNodeBase } from './functionNode'
 import { PlaceholderNode } from './placeholderNode'
 import { RegionNode } from './regionNode'
 
-export interface CloudFormationNode extends AwsTreeErrorHandlerNode {
+export interface CloudFormationNode extends AWSTreeErrorHandlerNode {
     readonly regionCode: string
 
     readonly parent: RegionNode
@@ -37,7 +37,7 @@ export interface CloudFormationNode extends AwsTreeErrorHandlerNode {
     updateChildren(): Thenable<void>
 }
 
-export class DefaultCloudFormationNode extends AwsTreeErrorHandlerNode implements CloudFormationNode {
+export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implements CloudFormationNode {
     private readonly stackNodes: Map<string, CloudFormationStackNode>
 
     public get regionCode(): string {
@@ -75,7 +75,7 @@ export class DefaultCloudFormationNode extends AwsTreeErrorHandlerNode implement
     }
 }
 
-export interface CloudFormationStackNode extends AwsTreeErrorHandlerNode {
+export interface CloudFormationStackNode extends AWSTreeErrorHandlerNode {
     readonly regionCode: string
 
     readonly parent: CloudFormationNode
@@ -85,7 +85,7 @@ export interface CloudFormationStackNode extends AwsTreeErrorHandlerNode {
     update(stackSummary: CloudFormation.StackSummary): void
 }
 
-export class DefaultCloudFormationStackNode extends AwsTreeErrorHandlerNode implements CloudFormationStackNode {
+export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode implements CloudFormationStackNode {
     private readonly functionNodes: Map<string, CloudFormationFunctionNode>
 
     public get regionCode(): string {

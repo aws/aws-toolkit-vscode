@@ -13,10 +13,10 @@ import {
 } from '../../../lambda/explorer/cloudFormationNodes'
 import { PlaceholderNode } from '../../../lambda/explorer/placeholderNode'
 import { RegionNode } from '../../../lambda/explorer/regionNode'
-import { AwsTreeErrorHandlerNode } from '../../../shared/treeview/awsTreeErrorHandlerNode'
+import { AWSTreeErrorHandlerNode } from '../../../shared/treeview/awsTreeErrorHandlerNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/awsTreeNodeBase'
 
-export class MockCloudFormationNode extends AwsTreeErrorHandlerNode implements CloudFormationNode {
+export class MockCloudFormationNode extends AWSTreeErrorHandlerNode implements CloudFormationNode {
     public constructor(
         public readonly regionCode: string = '',
         public readonly parent: RegionNode = {} as any as RegionNode,
@@ -27,7 +27,7 @@ export class MockCloudFormationNode extends AwsTreeErrorHandlerNode implements C
     }
 }
 
-export class MockCloudFormationStackNode extends AwsTreeErrorHandlerNode implements CloudFormationStackNode {
+export class MockCloudFormationStackNode extends AWSTreeErrorHandlerNode implements CloudFormationStackNode {
     public constructor(
         public readonly regionCode: string = '',
         public readonly parent: CloudFormationNode = {} as any as CloudFormationNode,
