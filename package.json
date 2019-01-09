@@ -106,7 +106,7 @@
                     "group": "navigation@4"
                 },
                 {
-                    "command": "aws.refreshLambdaExplorer",
+                    "command": "aws.refreshAwsExplorer",
                     "when": "view == lambda",
                     "group": "navigation@5"
                 }
@@ -208,8 +208,8 @@
                 "category": "AWS"
             },
             {
-                "command": "aws.refreshLambdaExplorer",
-                "title": "%AWS.command.refreshLambdaExplorer%",
+                "command": "aws.refreshAwsExplorer",
+                "title": "%AWS.command.refreshAwsExplorer%",
                 "category": "AWS",
                 "icon": {
                     "light": "resources/light/invoke_lambda.svg",
