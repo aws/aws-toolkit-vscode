@@ -9,34 +9,10 @@ import { extensionSettingsPrefix } from '../../constants'
 import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
 import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
 import { SamCliConfiguration } from './samCliConfiguration'
+import { SamCliInvocation } from './samCliInvocation'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
 
-/**
- * Represents a call to sam cli
- * Callers are expected to ensure SAM CLI is installed and has been configured
- */
-abstract class SamCliCommand<T> {
-
-    protected readonly samCliLocation: string | undefined
-
-    protected constructor(config: SamCliConfiguration) {
-        this.samCliLocation = config.getSamCliLocation()
-    }
-
-    public abstract execute(): Thenable<T>
-
-    /**
-     * Ensures the command is properly set up to run, throws Error if not.
-     * Derived classes should likely call validate at the start of their execute implementations.
-     */
-    protected async validate(): Promise<void> {
-        if (!this.samCliLocation) {
-            throw new Error('SAM CLI location not configured')
-        }
-    }
-}
-
-export class SamCliInfoCommand extends SamCliCommand<SamCliInfoResponse> {
+export class SamCliInfoInvocation extends SamCliInvocation<SamCliInfoResponse> {
 
     public constructor(config: SamCliConfiguration = new SamCliConfiguration(
         new DefaultSettingsConfiguration(extensionSettingsPrefix),
@@ -49,7 +25,7 @@ export class SamCliInfoCommand extends SamCliCommand<SamCliInfoResponse> {
         await this.validate()
 
         const childProcess: ChildProcess = new ChildProcess(
-            this.samCliLocation!,
+            this.samCliLocation,
             ['--info']
         )
 
@@ -67,7 +43,10 @@ export class SamCliInfoCommand extends SamCliCommand<SamCliInfoResponse> {
             throw new Error('SAM CLI did not return expected data')
         }
 
-        console.error(`SAM CLI error\nExit code: ${childProcessResult.exitCode}\n${childProcessResult.error}`)
+        console.error('SAM CLI error')
+        console.error(`Exit code: ${childProcessResult.exitCode}`)
+        console.error(`Error: ${childProcessResult.error}`)
+        console.error(`stdout: ${childProcessResult.stdout}`)
 
         let errorMessage: string | undefined
         if (!!childProcessResult.error && !!childProcessResult.error.message) {

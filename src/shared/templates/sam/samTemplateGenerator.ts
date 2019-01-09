@@ -6,7 +6,9 @@
 'use strict'
 
 import * as yaml from 'js-yaml'
+import * as path from 'path'
 import * as filesystem from '../../../shared/filesystem'
+import * as filesystemUtilities from '../../../shared/filesystemUtilities'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import { SystemUtilities } from '../../systemUtilities'
 
@@ -56,6 +58,10 @@ export class SamTemplateGenerator {
 
         const templateAsYaml: string = yaml.safeDump(template)
 
+        const parentDirectory: string = path.dirname(filename)
+        if (!await filesystemUtilities.fileExists(parentDirectory)) {
+            await filesystem.mkdirAsync(parentDirectory)
+        }
         await filesystem.writeFileAsync(filename, templateAsYaml, 'utf8')
     }
 
