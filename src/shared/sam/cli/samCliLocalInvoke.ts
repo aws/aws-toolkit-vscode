@@ -9,15 +9,15 @@ import * as vscode from 'vscode'
 import { extensionSettingsPrefix } from '../../constants'
 import { fileExists } from '../../filesystemUtilities'
 import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
-import { SamCliCommand } from './samCliCommand'
 import { SamCliConfiguration } from './samCliConfiguration'
+import { SamCliInvocation } from './samCliInvocation'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
 
-export interface SamCliLocalInvokeCommandResponse {
+export interface SamCliLocalInvokeResponse {
     taskExecution: vscode.TaskExecution
 }
 
-export class SamCliLocalInvokeCommand extends SamCliCommand<SamCliLocalInvokeCommandResponse> {
+export class SamCliLocalInvokeInvocation extends SamCliInvocation<SamCliLocalInvokeResponse> {
 
     private readonly _taskDefinition: vscode.TaskDefinition = {
         type: 'samLocalInvoke',
@@ -35,7 +35,7 @@ export class SamCliLocalInvokeCommand extends SamCliCommand<SamCliLocalInvokeCom
         super(config)
     }
 
-    public async execute(): Promise<SamCliLocalInvokeCommandResponse> {
+    public async execute(): Promise<SamCliLocalInvokeResponse> {
         await this.validate()
 
         const args: string[] = [

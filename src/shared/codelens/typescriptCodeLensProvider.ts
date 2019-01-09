@@ -14,8 +14,8 @@ import { NodeDebugConfiguration } from '../../lambda/local/debugConfigurationPro
 import * as fileSystem from '../filesystem'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
-import { SamCliBuildCommand } from '../sam/cli/samCliBuildCommand'
-import { SamCliLocalInvokeCommand } from '../sam/cli/samCliLocalInvokeCommand'
+import { SamCliBuildInvocation } from '../sam/cli/samCliBuild'
+import { SamCliLocalInvokeInvocation } from '../sam/cli/samCliLocalInvoke'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
@@ -238,7 +238,7 @@ class LocalLambdaRunner {
 
         const samBuildOutputFolder = path.join(await this.getBaseBuildFolder(), 'output')
 
-        await new SamCliBuildCommand(
+        await new SamCliBuildInvocation(
             samBuildOutputFolder,
             rootCodeFolder,
             inputTemplatePath
@@ -282,7 +282,7 @@ class LocalLambdaRunner {
         const eventPath: string = path.join(await this.getBaseBuildFolder(), 'event.json')
         await fileSystem.writeFileAsync(eventPath, '{}')
 
-        const command: SamCliLocalInvokeCommand = new SamCliLocalInvokeCommand(
+        const command: SamCliLocalInvokeInvocation = new SamCliLocalInvokeInvocation(
             LocalLambdaRunner.TEMPLATE_RESOURCE_NAME,
             samTemplatePath,
             eventPath,

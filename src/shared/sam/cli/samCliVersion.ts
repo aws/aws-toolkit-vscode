@@ -6,7 +6,7 @@
 'use strict'
 
 import * as semver from 'semver'
-import { SamCliInfoCommand } from './samCliCommand'
+import { SamCliInfoInvocation } from './samCliInvocation'
 
 export enum SamCliVersionValidation {
     Valid,
@@ -48,7 +48,7 @@ export interface SamCliVersionProvider {
 
 export class DefaultSamCliVersionProvider implements SamCliVersionProvider {
     public async getSamCliVersion(): Promise<string> {
-        const command: SamCliInfoCommand = new SamCliInfoCommand()
+        const command: SamCliInfoInvocation = new SamCliInfoInvocation()
         const response = await command.execute()
 
         return response.version

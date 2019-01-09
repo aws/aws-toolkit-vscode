@@ -9,14 +9,14 @@ import { extensionSettingsPrefix } from '../../constants'
 import { fileExists } from '../../filesystemUtilities'
 import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
 import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
-import { SamCliCommand } from './samCliCommand'
 import { SamCliConfiguration } from './samCliConfiguration'
+import { SamCliInvocation } from './samCliInvocation'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
 
-export interface SamCliBuildCommandResponse {
+export interface SamCliBuildResponse {
 }
 
-export class SamCliBuildCommand extends SamCliCommand<SamCliBuildCommandResponse> {
+export class SamCliBuildInvocation extends SamCliInvocation<SamCliBuildResponse> {
     public constructor(
         private readonly buildDir: string,
         private readonly baseDir: string,
@@ -28,7 +28,7 @@ export class SamCliBuildCommand extends SamCliCommand<SamCliBuildCommandResponse
         super(config)
     }
 
-    public async execute(): Promise<SamCliBuildCommandResponse> {
+    public async execute(): Promise<SamCliBuildResponse> {
         await this.validate()
 
         const childProcess: ChildProcess = new ChildProcess(
@@ -46,7 +46,7 @@ export class SamCliBuildCommand extends SamCliCommand<SamCliBuildCommandResponse
         const childProcessResult: ChildProcessResult = await childProcess.promise()
 
         if (childProcessResult.exitCode === 0) {
-            const response: SamCliBuildCommandResponse = {}
+            const response: SamCliBuildResponse = {}
 
             return response
         }
