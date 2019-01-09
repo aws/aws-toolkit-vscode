@@ -9,6 +9,7 @@ import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
 import { Uri } from 'vscode'
 import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
+import { ErrorNode } from '../../../lambda/explorer/errorNode'
 import {
     DefaultStandaloneFunctionGroupNode,
     DefaultStandaloneFunctionNode
@@ -100,4 +101,29 @@ describe('DefaultStandaloneFunctionNode', () => {
         assert.strictEqual(childNodes.length, 0)
     })
 
+})
+
+describe('DefaultStandaloneFunctionGroupNode', () => {
+
+    class ThrowErrorDefaultStandaloneFunctionGroupNode extends DefaultStandaloneFunctionGroupNode {
+        public constructor(
+            public readonly parent: DefaultRegionNode
+        ) {
+            super(parent)
+        }
+
+        protected clearError() {
+            throw new Error('Hello there!')
+        }
+    }
+
+    it('handle error', async () => {
+        const testNode = new ThrowErrorDefaultStandaloneFunctionGroupNode(
+            new DefaultRegionNode(new RegionInfo('code', 'name')))
+
+        const childNodes = await testNode.getChildren()
+        assert(childNodes !== undefined)
+        assert.strictEqual(childNodes.length, 1)
+        assert.strictEqual(childNodes[0] instanceof ErrorNode, true)
+    })
 })

@@ -8,7 +8,6 @@
 import * as assert from 'assert'
 import { CloudFormation, Lambda } from 'aws-sdk'
 import { Uri } from 'vscode'
-import { RegionNode } from '../../..//lambda/explorer/regionNode'
 import {
     CloudFormationStackNode,
     DefaultCloudFormationFunctionNode,
@@ -233,7 +232,7 @@ describe('DefaultCloudFormationNode', () => {
 
         class ThrowErrorDefaultCloudFormationNode extends DefaultCloudFormationNode {
             public constructor(
-                public readonly regionNode: RegionNode
+                public readonly regionNode: DefaultRegionNode
             ) {
                 super(regionNode)
             }
