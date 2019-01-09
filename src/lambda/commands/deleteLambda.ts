@@ -35,7 +35,7 @@ export async function deleteLambda(
         ))
         ext.lambdaOutputChannel.appendLine(error.toString())
         ext.lambdaOutputChannel.appendLine('')
+    } finally {
+        refresh()
     }
-
-    refresh()
 }

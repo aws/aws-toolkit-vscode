@@ -31,9 +31,9 @@ export interface CloudFormationNode extends AWSTreeNodeBase {
 
     readonly parent: RegionNode
 
-    getChildren(): Promise<CloudFormationStackNode[]>
+    getChildren(): Thenable<CloudFormationStackNode[]>
 
-    updateChildren(): Promise<void>
+    updateChildren(): Thenable<void>
 }
 
 export class DefaultCloudFormationNode extends AWSTreeNodeBase implements CloudFormationNode {
@@ -72,7 +72,7 @@ export interface CloudFormationStackNode extends AWSTreeNodeBase {
 
     readonly parent: CloudFormationNode
 
-    getChildren(): Promise<(CloudFormationFunctionNode | PlaceholderNode)[]>
+    getChildren(): Thenable<(CloudFormationFunctionNode | PlaceholderNode)[]>
 
     update(stackSummary: CloudFormation.StackSummary): void
 }

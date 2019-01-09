@@ -6,26 +6,16 @@
 'use strict'
 
 import {
-    Disposable,
     TreeItem,
     TreeItemCollapsibleState
 } from 'vscode'
 
-export abstract class AWSTreeNodeBase extends TreeItem implements Disposable {
-    protected children: AWSTreeNodeBase[] | undefined
-
+export abstract class AWSTreeNodeBase extends TreeItem {
     protected constructor(
         label: string,
         collapsibleState?: TreeItemCollapsibleState
     ) {
         super(label, collapsibleState)
-    }
-
-    public dispose() {
-        if (this.children !== undefined) {
-            this.children.forEach(c => c.dispose())
-            this.children = undefined
-        }
     }
 
     public getChildren(): Thenable<AWSTreeNodeBase[]> {
