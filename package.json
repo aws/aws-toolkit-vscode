@@ -104,6 +104,11 @@
                     "command": "aws.invokeLambda",
                     "when": "view == lambda",
                     "group": "navigation@4"
+                },
+                {
+                    "command": "aws.refreshAwsExplorer",
+                    "when": "view == lambda",
+                    "group": "navigation@5"
                 }
             ],
             "view/item/context": [
@@ -201,6 +206,15 @@
                 "command": "aws.deleteLambda",
                 "title": "%AWS.command.deleteLambda%",
                 "category": "AWS"
+            },
+            {
+                "command": "aws.refreshAwsExplorer",
+                "title": "%AWS.command.refreshAwsExplorer%",
+                "category": "AWS",
+                "icon": {
+                    "light": "resources/light/invoke_lambda.svg",
+                    "dark": "resources/dark/invoke_lambda.svg"
+                }
             },
             {
                 "command": "aws.getLambdaConfig",
