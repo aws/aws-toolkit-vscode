@@ -40,11 +40,11 @@ describe('NodeDebugConfigurationProvider', () => {
                 const configurations = await provider.provideDebugConfigurations(workspaceFolder)
 
                 assert.ok(configurations)
-                assert.equal(configurations.length, 2)
+                assert.strictEqual(configurations.length, 2)
 
                 for (const configuration of configurations) {
                     assert.ok(configuration)
-                    assert.equal(configuration.type, 'node')
+                    assert.strictEqual(configuration.type, 'node')
                 }
             })
         })
@@ -58,10 +58,10 @@ describe('NodeDebugConfigurationProvider', () => {
                     .filter(c => c.request === 'launch')
 
                 assert.ok(configurations)
-                assert.equal(configurations.length, 2)
+                assert.strictEqual(configurations.length, 2)
 
-                assert.equal(configurations.filter(c => c.name.includes('MyFunction1')).length, 1)
-                assert.equal(configurations.filter(c => c.name.includes('MyFunction2')).length, 1)
+                assert.strictEqual(configurations.filter(c => c.name.includes('MyFunction1')).length, 1)
+                assert.strictEqual(configurations.filter(c => c.name.includes('MyFunction2')).length, 1)
             })
 
             it('provides an attach configuration for each lambda', async () => {
@@ -72,10 +72,10 @@ describe('NodeDebugConfigurationProvider', () => {
                     .filter(c => c.request === 'attach')
 
                 assert.ok(configurations)
-                assert.equal(configurations.length, 2)
+                assert.strictEqual(configurations.length, 2)
 
-                assert.equal(configurations.filter(c => c.name.includes('MyFunction1')).length, 1)
-                assert.equal(configurations.filter(c => c.name.includes('MyFunction2')).length, 1)
+                assert.strictEqual(configurations.filter(c => c.name.includes('MyFunction1')).length, 1)
+                assert.strictEqual(configurations.filter(c => c.name.includes('MyFunction2')).length, 1)
             })
         })
 
@@ -88,9 +88,9 @@ describe('NodeDebugConfigurationProvider', () => {
                     .filter(c => c.request === 'launch')
 
                 assert.ok(configurations)
-                assert.equal(configurations.length, 1)
+                assert.strictEqual(configurations.length, 1)
                 assert.ok(configurations[0].preLaunchTask)
-                assert.equal(configurations[0].preLaunchTask!.includes('MyFunction'), true)
+                assert.strictEqual(configurations[0].preLaunchTask!.includes('MyFunction'), true)
             })
 
             it('does not include a pre-launch task for attach configurations', async () => {
@@ -101,8 +101,8 @@ describe('NodeDebugConfigurationProvider', () => {
                     .filter(c => c.request === 'attach')
 
                 assert.ok(configurations)
-                assert.equal(configurations.length, 1)
-                assert.equal(configurations[0].preLaunchTask, undefined)
+                assert.strictEqual(configurations.length, 1)
+                assert.strictEqual(configurations[0].preLaunchTask, undefined)
             })
         })
 
@@ -115,12 +115,12 @@ describe('NodeDebugConfigurationProvider', () => {
                 const configurations = await provider.provideDebugConfigurations(workspaceFolder)
 
                 assert.ok(configurations)
-                assert.equal(configurations.length, 2)
+                assert.strictEqual(configurations.length, 2)
 
                 for (const configuration of configurations) {
                     assert.ok(configuration)
                     // tslint:disable-next-line:no-invalid-template-strings
-                    assert.equal(configuration.localRoot, '${workspaceFolder}')
+                    assert.strictEqual(configuration.localRoot, '${workspaceFolder}')
                 }
             })
 
@@ -135,12 +135,12 @@ describe('NodeDebugConfigurationProvider', () => {
                 const configurations = await provider.provideDebugConfigurations(workspaceFolder)
 
                 assert.ok(configurations)
-                assert.equal(configurations.length, 2)
+                assert.strictEqual(configurations.length, 2)
 
                 for (const configuration of configurations) {
                     assert.ok(configuration)
                     // tslint:disable-next-line:no-invalid-template-strings
-                    assert.equal(configuration.localRoot, path.join('${workspaceFolder}', '/my_app'))
+                    assert.strictEqual(configuration.localRoot, path.join('${workspaceFolder}', '/my_app'))
                 }
             })
 
@@ -151,12 +151,12 @@ describe('NodeDebugConfigurationProvider', () => {
                 const configurations = await provider.provideDebugConfigurations(workspaceFolder)
 
                 assert.ok(configurations)
-                assert.equal(configurations.length, 2)
+                assert.strictEqual(configurations.length, 2)
 
                 for (const configuration of configurations) {
                     assert.ok(configuration)
                     // tslint:disable-next-line:no-invalid-template-strings
-                    assert.equal(configuration.localRoot, '${workspaceFolder}')
+                    assert.strictEqual(configuration.localRoot, '${workspaceFolder}')
                 }
             })
 
@@ -174,12 +174,12 @@ describe('NodeDebugConfigurationProvider', () => {
                 const configurations = await provider.provideDebugConfigurations(workspaceFolder)
 
                 assert.ok(configurations)
-                assert.equal(configurations.length, 2)
+                assert.strictEqual(configurations.length, 2)
 
                 for (const configuration of configurations) {
                     assert.ok(configuration)
                     // tslint:disable-next-line:no-invalid-template-strings
-                    assert.equal(configuration.localRoot, '${workspaceFolder}')
+                    assert.strictEqual(configuration.localRoot, '${workspaceFolder}')
                 }
             })
 
@@ -198,12 +198,12 @@ describe('NodeDebugConfigurationProvider', () => {
                 const configurations = await provider.provideDebugConfigurations(workspaceFolder)
 
                 assert.ok(configurations)
-                assert.equal(configurations.length, 2)
+                assert.strictEqual(configurations.length, 2)
 
                 for (const configuration of configurations) {
                     assert.ok(configuration)
                     // tslint:disable-next-line:no-invalid-template-strings
-                    assert.equal(configuration.localRoot, '${workspaceFolder}')
+                    assert.strictEqual(configuration.localRoot, '${workspaceFolder}')
                 }
             })
         })
@@ -216,12 +216,12 @@ describe('NodeDebugConfigurationProvider', () => {
                 const configurations = await provider.provideDebugConfigurations(workspaceFolder)
 
                 assert.ok(configurations)
-                assert.equal(configurations.length, 2)
+                assert.strictEqual(configurations.length, 2)
 
                 for (const configuration of configurations) {
                     assert.ok(configuration)
                     assert.ok(configuration.skipFiles)
-                    assert.equal(
+                    assert.strictEqual(
                         configuration.skipFiles!.filter(f => f === '/var/runtime/node_modules/**/*.js').length,
                         1
                     )
@@ -234,12 +234,12 @@ describe('NodeDebugConfigurationProvider', () => {
                 const configurations = await provider.provideDebugConfigurations(workspaceFolder)
 
                 assert.ok(configurations)
-                assert.equal(configurations.length, 2)
+                assert.strictEqual(configurations.length, 2)
 
                 for (const configuration of configurations) {
                     assert.ok(configuration)
                     assert.ok(configuration.skipFiles)
-                    assert.equal(
+                    assert.strictEqual(
                         configuration.skipFiles!.filter(f => f === '<node_internals>/**/*.js').length,
                         1
                     )
@@ -258,7 +258,7 @@ describe('NodeDebugConfigurationProvider', () => {
                     .filter(c => c.request === 'launch')
 
                 assert.ok(configurations)
-                assert.equal(configurations.length, 1)
+                assert.strictEqual(configurations.length, 1)
 
                 const configuration = configurations[0]
                 assert.ok(configuration)
@@ -272,12 +272,12 @@ describe('NodeDebugConfigurationProvider', () => {
 
                 assert.ok(tasks)
                 assert.ok(tasks.tasks)
-                assert.equal(tasks.tasks.length, 1)
+                assert.strictEqual(tasks.tasks.length, 1)
 
                 const task = tasks.tasks[0]
                 assert.ok(task)
                 assert.ok(task.label)
-                assert.equal(task.label, configuration.preLaunchTask)
+                assert.strictEqual(task.label, configuration.preLaunchTask)
             })
         })
 
@@ -299,13 +299,13 @@ describe('NodeDebugConfigurationProvider', () => {
                 }
 
                 assert.ok(tasks)
-                assert.equal(tasks.tasks.length, 1)
+                assert.strictEqual(tasks.tasks.length, 1)
 
                 const task = tasks.tasks[0]
                 assert.ok(task)
                 assert.ok(task.args)
-                assert.equal(task.args.length > 0, true)
-                assert.equal(task.args[0], "'{\"escapeMe\":\"'\"'\"'\",\"doNotEscapeMe\":\"\\\"\"}'")
+                assert.strictEqual(task.args.length > 0, true)
+                assert.strictEqual(task.args[0], "'{\"escapeMe\":\"'\"'\"'\",\"doNotEscapeMe\":\"\\\"\"}'")
             })
 
             it('specifies a debug port', async () => {
@@ -325,14 +325,14 @@ describe('NodeDebugConfigurationProvider', () => {
                 }
 
                 assert.ok(tasks)
-                assert.equal(tasks.tasks.length, 1)
+                assert.strictEqual(tasks.tasks.length, 1)
 
                 const task = tasks.tasks[0]
                 assert.ok(task)
                 assert.ok(task.args)
 
                 const args: string = task.args.join(' ')
-                assert.equal(args.includes('-d 5858'), true)
+                assert.strictEqual(args.includes('-d 5858'), true)
             })
         })
 
@@ -357,14 +357,14 @@ describe('NodeDebugConfigurationProvider', () => {
                     }
 
                     assert.ok(tasks)
-                    assert.equal(tasks.tasks.length, 1)
+                    assert.strictEqual(tasks.tasks.length, 1)
 
                     const task = tasks.tasks[0]
                     assert.ok(task)
                     assert.ok(task.windows)
                     assert.ok(task.windows.args)
-                    assert.equal(task.windows.args.length > 0, true)
-                    assert.equal(task.windows.args[0], "'{\"escapeMe\":\"''\",\"doNotEscapeMe\":\"\\\"\"}'")
+                    assert.strictEqual(task.windows.args.length > 0, true)
+                    assert.strictEqual(task.windows.args[0], "'{\"escapeMe\":\"''\",\"doNotEscapeMe\":\"\\\"\"}'")
                 })
 
                 it('specifies a debug port', async () => {
@@ -386,7 +386,7 @@ describe('NodeDebugConfigurationProvider', () => {
                     }
 
                     assert.ok(tasks)
-                    assert.equal(tasks.tasks.length, 1)
+                    assert.strictEqual(tasks.tasks.length, 1)
 
                     const task = tasks.tasks[0]
                     assert.ok(task)
@@ -394,7 +394,7 @@ describe('NodeDebugConfigurationProvider', () => {
                     assert.ok(task.windows.args)
 
                     const args: string = task.windows.args.join(' ')
-                    assert.equal(args.includes('-d 5858'), true)
+                    assert.strictEqual(args.includes('-d 5858'), true)
                 })
             })
         })
@@ -424,14 +424,14 @@ describe('NodeDebugConfigurationProvider', () => {
                 }
 
                 assert.ok(tasks)
-                assert.equal(tasks.tasks.length, 1)
+                assert.strictEqual(tasks.tasks.length, 1)
 
                 const task = tasks.tasks[0]
                 assert.ok(task)
-                assert.equal(task.isBackground, true)
+                assert.strictEqual(task.isBackground, true)
                 assert.ok(task.problemMatcher)
                 assert.ok(task.problemMatcher.background)
-                assert.equal(task.problemMatcher.background.activeOnStart, true)
+                assert.strictEqual(task.problemMatcher.background.activeOnStart, true)
                 assert.ok(task.problemMatcher.background.beginsPattern)
                 assert.ok(task.problemMatcher.background.endsPattern)
             })

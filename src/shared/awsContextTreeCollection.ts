@@ -5,8 +5,7 @@
 
 'use strict'
 
-import { AwsContext } from './awsContext'
-import { RefreshableAwsTreeProvider } from './treeview/refreshableAwsTreeProvider'
+import { RefreshableAwsTreeProvider } from './treeview/awsTreeProvider'
 
 export class AwsContextTreeCollection {
     private readonly _trees: RefreshableAwsTreeProvider[]
@@ -19,9 +18,9 @@ export class AwsContextTreeCollection {
         this._trees.push(tree)
     }
 
-    public refreshTrees(awsContext: AwsContext): void {
+    public refreshTrees(): void {
         this._trees.forEach(t => {
-            t.refresh(awsContext)
+            t.refresh()
         })
     }
 }

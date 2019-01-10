@@ -21,7 +21,7 @@ describe('SamInfoCliCommand', async () => {
             .convertOutput('{"version": "1.2.3"}')
 
         assert.ok(response)
-        assert.equal(response!.version, '1.2.3')
+        assert.strictEqual(response!.version, '1.2.3')
     })
 
     it('converts sam info response without version to SamCliInfoResponse', async () => {
@@ -29,7 +29,7 @@ describe('SamInfoCliCommand', async () => {
             .convertOutput('{}')
 
         assert.ok(response)
-        assert.equal(response!.version, undefined)
+        assert.strictEqual(response!.version, undefined)
     })
 
     it('converts non-response to undefined', async () => {
@@ -40,7 +40,7 @@ describe('SamInfoCliCommand', async () => {
             const response: SamCliInfoResponse | undefined = new TestSamCliInfoCommand()
                 .convertOutput(output)
 
-            assert.equal(response, undefined, `Expected text to not parse: ${output}`)
+            assert.strictEqual(response, undefined, `Expected text to not parse: ${output}`)
         })
     })
 })

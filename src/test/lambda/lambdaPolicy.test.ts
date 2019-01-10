@@ -12,7 +12,10 @@ import {
     LambdaPolicyProvider,
     LambdaPolicyView,
     LambdaPolicyViewStatus
-} from '../../../src/lambda/lambdaPolicy'
+} from '../../lambda/lambdaPolicy'
+import { LambdaClient } from '../../shared/clients/lambdaClient'
+import { ext } from '../../shared/extensionGlobals'
+import { MockToolkitClientBuilder } from '../shared/clients/mockClients'
 
 class DoNothingLambdaPolicyProvider implements LambdaPolicyProvider {
     public readonly functionName: string
@@ -42,7 +45,7 @@ describe('LambdaPolicyView', async () => {
     it('starts initialized', async () => {
         autoDisposeView = new LambdaPolicyView(new DoNothingLambdaPolicyProvider('fn1'))
 
-        assert.equal(autoDisposeView.status, LambdaPolicyViewStatus.Initialized)
+        assert.strictEqual(autoDisposeView.status, LambdaPolicyViewStatus.Initialized)
     })
 
     it('enters loading state', async () => {
@@ -51,7 +54,7 @@ describe('LambdaPolicyView', async () => {
             {
                 functionName: 'function1',
                 getLambdaPolicy: async () => {
-                    assert.equal(autoDisposeView!.status, LambdaPolicyViewStatus.Loading)
+                    assert.strictEqual(autoDisposeView!.status, LambdaPolicyViewStatus.Loading)
                     expectedStatus = true
 
                     return {}
@@ -60,14 +63,14 @@ describe('LambdaPolicyView', async () => {
         )
 
         await autoDisposeView.load()
-        assert.equal(expectedStatus, true)
+        assert.strictEqual(expectedStatus, true)
     })
 
     it('enters loaded state', async () => {
         autoDisposeView = new LambdaPolicyView(new DoNothingLambdaPolicyProvider('fn1'))
         await autoDisposeView.load()
 
-        assert.equal(autoDisposeView.status, LambdaPolicyViewStatus.Loaded)
+        assert.strictEqual(autoDisposeView.status, LambdaPolicyViewStatus.Loaded)
     })
 
     it('enters error state', async () => {
@@ -82,14 +85,14 @@ describe('LambdaPolicyView', async () => {
 
         await autoDisposeView.load()
 
-        assert.equal(autoDisposeView.status, LambdaPolicyViewStatus.Error)
+        assert.strictEqual(autoDisposeView.status, LambdaPolicyViewStatus.Error)
     })
 
     it('enters disposed state', async () => {
         const view: LambdaPolicyView = new LambdaPolicyView(new DoNothingLambdaPolicyProvider('fn1'))
         view.dispose()
 
-        assert.equal(view.status, LambdaPolicyViewStatus.Disposed)
+        assert.strictEqual(view.status, LambdaPolicyViewStatus.Disposed)
     })
 
     it('enters disposed state when view closes', async () => {
@@ -107,30 +110,26 @@ describe('LambdaPolicyView', async () => {
         const view: CloseableLambdaPolicyView = new CloseableLambdaPolicyView(new DoNothingLambdaPolicyProvider('fn1'))
         view.closeView()
 
-        assert.equal(view.status, LambdaPolicyViewStatus.Disposed)
+        assert.strictEqual(view.status, LambdaPolicyViewStatus.Disposed)
     })
 
 })
 
 describe('DefaultLambdaPolicyProvider', async () => {
-
     it('does not accept blank functionName', async () => {
-        const lambda: Lambda = {} as any as Lambda
+        ext.toolkitClientBuilder = new MockToolkitClientBuilder()
 
         assert.throws(() => {
             // tslint:disable-next-line:no-unused-expression
-            new DefaultLambdaPolicyProvider(
-                '',
-                lambda
-            )
+            new DefaultLambdaPolicyProvider('', '')
         })
     })
 
     it('sets functionName', async () => {
-        const lambda: Lambda = {} as any as Lambda
-        const provider = new DefaultLambdaPolicyProvider('fn1', lambda)
+        ext.toolkitClientBuilder = new MockToolkitClientBuilder()
+        const provider = new DefaultLambdaPolicyProvider('fn1', '')
 
-        assert.equal(provider.functionName, 'fn1')
+        assert.strictEqual(provider.functionName, 'fn1')
     })
 
     it('gets Lambda Policy', async () => {
@@ -138,17 +137,13 @@ describe('DefaultLambdaPolicyProvider', async () => {
             Policy: ''
         }
 
-        const lambda: Lambda = {
-            // @ts-ignore
-            getPolicy: () => {
-                return {
-                    promise: async () => Promise.resolve(policyResponse)
-                }
-            }
-        }
+        const client: LambdaClient = {
+            getPolicy: async () => policyResponse
+        } as any as LambdaClient
+        ext.toolkitClientBuilder = new MockToolkitClientBuilder(undefined, client)
 
-        const provider = new DefaultLambdaPolicyProvider('fn1', lambda)
+        const provider = new DefaultLambdaPolicyProvider('fn1', '')
 
-        assert.equal(await provider.getLambdaPolicy(), policyResponse)
+        assert.strictEqual(await provider.getLambdaPolicy(), policyResponse)
     })
 })

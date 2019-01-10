@@ -11,6 +11,7 @@ import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 // relevant to the explorer type.
 export class PlaceholderNode extends AWSTreeNodeBase {
     public constructor(
+        public readonly parent: AWSTreeNodeBase,
         label: string,
         tooltip?: string
     ) {

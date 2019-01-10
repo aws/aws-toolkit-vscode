@@ -6,15 +6,11 @@
 'use strict'
 
 import {
-    Disposable,
     TreeItem,
     TreeItemCollapsibleState
 } from 'vscode'
-import { AwsContext } from '../awsContext'
 
-export abstract class AWSTreeNodeBase extends TreeItem implements Disposable {
-    protected children: AWSTreeNodeBase[] | undefined
-
+export abstract class AWSTreeNodeBase extends TreeItem {
     protected constructor(
         label: string,
         collapsibleState?: TreeItemCollapsibleState
@@ -22,17 +18,7 @@ export abstract class AWSTreeNodeBase extends TreeItem implements Disposable {
         super(label, collapsibleState)
     }
 
-    public dispose() {
-        if (this.children !== undefined) {
-            this.children.forEach(c => c.dispose())
-            this.children = undefined
-        }
-    }
-
     public getChildren(): Thenable<AWSTreeNodeBase[]> {
         return Promise.resolve([])
-    }
-
-    public refresh(context: AwsContext): void {
     }
 }

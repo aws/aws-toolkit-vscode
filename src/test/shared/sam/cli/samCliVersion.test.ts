@@ -12,7 +12,7 @@ import { SamCliVersion, SamCliVersionValidation } from '../../../../shared/sam/c
 describe('SamCliVersion', async () => {
 
     it('validates undefined version', async () => {
-        assert.equal(SamCliVersion.validate(), SamCliVersionValidation.VersionNotParseable)
+        assert.strictEqual(SamCliVersion.validate(), SamCliVersionValidation.VersionNotParseable)
     })
 
     it('validates valid versions', async () => {
@@ -23,7 +23,7 @@ describe('SamCliVersion', async () => {
             '0.10.999',
         ].forEach(version => {
             const validation = SamCliVersion.validate(version)
-            assert.equal(
+            assert.strictEqual(
                 validation, SamCliVersionValidation.Valid,
                 `Version: ${version}, Validation: ${SamCliVersionValidation[validation]}`
             )
@@ -36,7 +36,7 @@ describe('SamCliVersion', async () => {
             '0.0.1',
         ].forEach(version => {
             const validation = SamCliVersion.validate(version)
-            assert.equal(
+            assert.strictEqual(
                 validation, SamCliVersionValidation.VersionTooLow,
                 `Version: ${version}, Validation: ${SamCliVersionValidation[validation]}`
             )
@@ -51,7 +51,7 @@ describe('SamCliVersion', async () => {
             '0.999.0',
         ].forEach(version => {
             const validation = SamCliVersion.validate(version)
-            assert.equal(
+            assert.strictEqual(
                 validation, SamCliVersionValidation.VersionTooHigh,
                 `Version: ${version}, Validation: ${SamCliVersionValidation[validation]}`
             )
@@ -65,7 +65,7 @@ describe('SamCliVersion', async () => {
             '0-1-2',
         ].forEach(version => {
             const validation = SamCliVersion.validate(version)
-            assert.equal(
+            assert.strictEqual(
                 validation, SamCliVersionValidation.VersionNotParseable,
                 `Version: ${version}, Validation: ${SamCliVersionValidation[validation]}`
             )

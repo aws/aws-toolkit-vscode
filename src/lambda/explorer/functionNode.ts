@@ -5,32 +5,28 @@
 
 'use strict'
 
+import { Lambda } from 'aws-sdk'
 import { Uri } from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
-import { FunctionInfo } from '../functionInfo'
 
 export abstract class FunctionNodeBase extends AWSTreeNodeBase {
-    protected constructor(public readonly info: FunctionInfo) {
-        super(info.configuration.FunctionName || '')
-        this.tooltip = `${info.configuration.FunctionName}-${info.configuration.FunctionArn}`
+    public abstract readonly regionCode: string
+
+    protected constructor(
+        public configuration: Lambda.FunctionConfiguration
+    ) {
+        super('')
+        this.update(configuration)
         this.iconPath =  {
             dark: Uri.file(ext.context.asAbsolutePath('resources/dark/lambda_function.svg')),
             light: Uri.file(ext.context.asAbsolutePath('resources/light/lambda_function.svg'))
         }
     }
-}
 
-export class RegionFunctionNode extends FunctionNodeBase {
-    public constructor(info: FunctionInfo) {
-        super(info)
-        this.contextValue = 'awsRegionFunctionNode'
-    }
-}
-
-export class CloudFormationFunctionNode extends FunctionNodeBase {
-    public constructor(info: FunctionInfo) {
-        super(info)
-        this.contextValue = 'awsCloudFormationFunctionNode'
+    public update(configuration: Lambda.FunctionConfiguration): void {
+        this.configuration = configuration
+        this.label = this.configuration.FunctionName || ''
+        this.tooltip = `${this.configuration.FunctionName}-${this.configuration.FunctionArn}`
     }
 }

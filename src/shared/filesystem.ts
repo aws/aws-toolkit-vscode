@@ -50,7 +50,13 @@ export function mkdtempAsync(prefix: string): Promise<string> {
     })
 }
 
-export function readdirAsync(path: string | Buffer, options?: string | {}): Promise<string[]> {
+export function readdirAsync(
+    path: string | Buffer,
+    options?: {
+        encoding: BufferEncoding | null
+        withFileTypes?: false
+    } | BufferEncoding | undefined | null
+): Promise<string[]> {
     return new Promise((resolve, reject) => {
         const handler = (err: NodeJS.ErrnoException, files: string[]) => {
             if (!err) {

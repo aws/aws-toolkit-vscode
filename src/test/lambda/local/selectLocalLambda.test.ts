@@ -39,23 +39,23 @@ describe('selectLocalLambda tests', () => {
         const actual = await selectLocalLambda(
             workspaceFolders,
             async (items, options, token) => {
-                assert.equal(showQuickPickInvoked, false)
+                assert.strictEqual(showQuickPickInvoked, false)
                 showQuickPickInvoked = true
 
                 assert.ok(options)
-                assert.equal(options!.placeHolder, 'Select a lambda function')
+                assert.strictEqual(options!.placeHolder, 'Select a lambda function')
 
                 return Array.isArray(items) ? items[0] : (await items)[0]
             }
         )
 
         assert.ok(actual)
-        assert.equal(actual!.description, templatePath)
-        assert.equal(actual!.detail, undefined)
-        assert.equal(actual!.label, 'MyFunction')
-        assert.equal(actual!.lambda, 'MyFunction')
-        assert.equal(actual!.picked, undefined)
-        assert.equal(actual!.templatePath, templatePath)
+        assert.strictEqual(actual!.description, templatePath)
+        assert.strictEqual(actual!.detail, undefined)
+        assert.strictEqual(actual!.label, 'MyFunction')
+        assert.strictEqual(actual!.lambda, 'MyFunction')
+        assert.strictEqual(actual!.picked, undefined)
+        assert.strictEqual(actual!.templatePath, templatePath)
     })
 
     it('returns undefined if no lambda selected', async () => {
@@ -64,16 +64,16 @@ describe('selectLocalLambda tests', () => {
         const actual = await selectLocalLambda(
             workspaceFolders,
             async (items, options, token) => {
-                assert.equal(showQuickPickInvoked, false)
+                assert.strictEqual(showQuickPickInvoked, false)
                 showQuickPickInvoked = true
 
                 assert.ok(options)
-                assert.equal(options!.placeHolder, 'Select a lambda function')
+                assert.strictEqual(options!.placeHolder, 'Select a lambda function')
 
                 return undefined
             }
         )
 
-        assert.equal(actual, undefined)
+        assert.strictEqual(actual, undefined)
     })
 })

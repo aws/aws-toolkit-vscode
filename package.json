@@ -104,6 +104,11 @@
                     "command": "aws.invokeLambda",
                     "when": "view == lambda",
                     "group": "navigation@4"
+                },
+                {
+                    "command": "aws.refreshAwsExplorer",
+                    "when": "view == lambda",
+                    "group": "navigation@5"
                 }
             ],
             "view/item/context": [
@@ -126,6 +131,11 @@
                     "command": "aws.getLambdaPolicy",
                     "when": "view == lambda && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
                     "group": "0@4"
+                },
+                {
+                    "command": "aws.deleteLambda",
+                    "when": "view == lambda && viewItem == awsRegionFunctionNode",
+                    "group": "0@5"
                 },
                 {
                     "command": "aws.deleteCloudFormation",
@@ -193,6 +203,20 @@
                 }
             },
             {
+                "command": "aws.deleteLambda",
+                "title": "%AWS.command.deleteLambda%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.refreshAwsExplorer",
+                "title": "%AWS.command.refreshAwsExplorer%",
+                "category": "AWS",
+                "icon": {
+                    "light": "resources/light/invoke_lambda.svg",
+                    "dark": "resources/dark/invoke_lambda.svg"
+                }
+            },
+            {
                 "command": "aws.getLambdaConfig",
                 "title": "%AWS.command.getLambdaConfig%",
                 "category": "AWS"
@@ -235,7 +259,7 @@
         "@types/glob": "^7.1.1",
         "@types/lodash": "^4.14.110",
         "@types/mocha": "^2.2.48",
-        "@types/node": "^7.0.43",
+        "@types/node": "^10.12.12",
         "@types/request": "^2.47.1",
         "@types/xml2js": "^0.4.3",
         "decache": "^4.4.0",

@@ -8,13 +8,12 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import { deleteCloudFormation } from './lambda/commands/deleteCloudFormation'
-import { CloudFormationNode } from './lambda/explorer/cloudFormationNode'
 import { RegionNode } from './lambda/explorer/regionNode'
-import { LambdaProvider } from './lambda/lambdaProvider'
+import { LambdaTreeDataProvider } from './lambda/lambdaTreeDataProvider'
 import { NodeDebugConfigurationProvider } from './lambda/local/debugConfigurationProvider'
-import { AWSClientBuilder } from './shared/awsClientBuilder'
+import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
+import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
 import { TypescriptCodeLensProvider } from './shared/codelens/typescriptCodeLensProvider'
 import { extensionSettingsPrefix } from './shared/constants'
 import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
@@ -58,7 +57,8 @@ export async function activate(context: vscode.ExtensionContext) {
     const regionProvider = new DefaultRegionProvider(context, resourceFetcher)
 
     ext.awsContextCommands = new DefaultAWSContextCommands(awsContext, awsContextTrees, regionProvider)
-    ext.sdkClientBuilder = new AWSClientBuilder(awsContext)
+    ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
+    ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
     ext.statusBar = new AWSStatusBar(awsContext, context)
 
     context.subscriptions.push(...activateCodeLensProviders(toolkitOutputChannel))
@@ -79,12 +79,8 @@ export async function activate(context: vscode.ExtensionContext) {
         async (node?: RegionNode) => await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
     )
 
-    vscode.commands.registerCommand(
-        'aws.deleteCloudFormation',
-        async (node: CloudFormationNode) => await deleteCloudFormation(node))
-
     const providers = [
-        new LambdaProvider(awsContext, awsContextTrees, regionProvider, resourceFetcher)
+        new LambdaTreeDataProvider(awsContext, awsContextTrees, regionProvider, resourceFetcher)
     ]
 
     providers.forEach((p) => {
