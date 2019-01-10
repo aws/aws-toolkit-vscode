@@ -37,7 +37,7 @@ describe('DisposableFiles', async () => {
 
         disposable.dispose()
 
-        assert.equal(await filesystemUtilities.fileExists(tempFile), false)
+        assert.strictEqual(await filesystemUtilities.fileExists(tempFile), false)
     })
 
     it('deletes folder on dispose', async () => {
@@ -49,7 +49,7 @@ describe('DisposableFiles', async () => {
 
         disposable.dispose()
 
-        assert.equal(await filesystemUtilities.fileExists(testTempFolder), false)
+        assert.strictEqual(await filesystemUtilities.fileExists(testTempFolder), false)
     })
 
     it('deletes folder containing contents on dispose', async () => {
@@ -67,7 +67,7 @@ describe('DisposableFiles', async () => {
 
         disposable.dispose()
 
-        assert.equal(await filesystemUtilities.fileExists(testTempFolder), false)
+        assert.strictEqual(await filesystemUtilities.fileExists(testTempFolder), false)
     })
 
     it('is okay deleting a parent folder before a child folder', async () => {
@@ -88,7 +88,7 @@ describe('DisposableFiles', async () => {
 
         disposable.dispose()
 
-        assert.equal(await filesystemUtilities.fileExists(testTempFolder), false)
+        assert.strictEqual(await filesystemUtilities.fileExists(testTempFolder), false)
     })
 
 })
@@ -116,9 +116,9 @@ describe('ExtensionDisposableFiles', async () => {
     it('getInstance throws error if not initialized', async () => {
         try {
             ExtensionDisposableFiles.getInstance()
-            assert.equal(true, false, 'error expected')
+            assert.strictEqual(true, false, 'error expected')
         } catch (err) {
-            assert.notEqual(err, undefined)
+            assert.notStrictEqual(err, undefined)
         }
     })
 
@@ -127,9 +127,9 @@ describe('ExtensionDisposableFiles', async () => {
 
         try {
             await ExtensionDisposableFiles.initialize(extensionContext)
-            assert.equal(true, false, 'error expected')
+            assert.strictEqual(true, false, 'error expected')
         } catch (err) {
-            assert.notEqual(err, undefined)
+            assert.notStrictEqual(err, undefined)
         }
     })
 
@@ -138,7 +138,7 @@ describe('ExtensionDisposableFiles', async () => {
 
         assert.ok(ExtensionDisposableFiles.getInstance().toolkitTempFolder)
 
-        assert.equal(
+        assert.strictEqual(
             await filesystemUtilities.fileExists(ExtensionDisposableFiles.getInstance().toolkitTempFolder),
             true
         )

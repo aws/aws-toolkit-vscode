@@ -46,16 +46,16 @@ describe('SamTemplateGenerator', () => {
                 .withResourceName(sampleResourceNameValue)
                 .generate(templateFilename)
 
-            assert.equal(await SystemUtilities.fileExists(templateFilename), true)
+            assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
 
             const template: CloudFormation.Template = await CloudFormation.load(templateFilename)
             assert.ok(template.Resources)
-            assert.notEqual(Object.keys(template.Resources!).length, 0)
+            assert.notStrictEqual(Object.keys(template.Resources!).length, 0)
 
             const resource: CloudFormation.Resource = template.Resources![sampleResourceNameValue]
-            assert.equal(resource.Properties!.CodeUri, sampleCodeUriValue)
-            assert.equal(resource.Properties!.Handler, sampleFunctionHandlerValue)
-            assert.equal(resource.Properties!.Runtime, sampleRuntimeValue)
+            assert.strictEqual(resource.Properties!.CodeUri, sampleCodeUriValue)
+            assert.strictEqual(resource.Properties!.Handler, sampleFunctionHandlerValue)
+            assert.strictEqual(resource.Properties!.Runtime, sampleRuntimeValue)
         })
 
         it('errs if resource name is missing', async () => {
@@ -69,8 +69,8 @@ describe('SamTemplateGenerator', () => {
                 })
 
             assert.ok(error)
-            assert.equal(error.message, 'Missing value: ResourceName')
-            assert.equal(await SystemUtilities.fileExists(templateFilename), false)
+            assert.strictEqual(error.message, 'Missing value: ResourceName')
+            assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
         })
 
         it('errs if function handler is missing', async () => {
@@ -84,8 +84,8 @@ describe('SamTemplateGenerator', () => {
                 })
 
             assert.ok(error)
-            assert.equal(error.message, 'Missing value: FunctionHandler')
-            assert.equal(await SystemUtilities.fileExists(templateFilename), false)
+            assert.strictEqual(error.message, 'Missing value: FunctionHandler')
+            assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
         })
 
         it('errs if code uri is missing', async () => {
@@ -99,8 +99,8 @@ describe('SamTemplateGenerator', () => {
                 })
 
             assert.ok(error)
-            assert.equal(error.message, 'Missing value: CodeUri')
-            assert.equal(await SystemUtilities.fileExists(templateFilename), false)
+            assert.strictEqual(error.message, 'Missing value: CodeUri')
+            assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
         })
 
         it('errs if runtime is missing', async () => {
@@ -114,8 +114,8 @@ describe('SamTemplateGenerator', () => {
                 })
 
             assert.ok(error)
-            assert.equal(error.message, 'Missing value: Runtime')
-            assert.equal(await SystemUtilities.fileExists(templateFilename), false)
+            assert.strictEqual(error.message, 'Missing value: Runtime')
+            assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
         })
     })
 
@@ -155,22 +155,22 @@ describe('SamTemplateGenerator', () => {
                 .withExistingTemplate(sourceTemplateFilename)
                 .generate(destinationTemplateFilename)
 
-            assert.equal(await SystemUtilities.fileExists(destinationTemplateFilename), true)
+            assert.strictEqual(await SystemUtilities.fileExists(destinationTemplateFilename), true)
 
             const template: CloudFormation.Template = await CloudFormation.load(destinationTemplateFilename)
             assert.ok(template.Resources)
             const actualTemplateResourceKeys: string[] = Object.keys(template.Resources!)
-            assert.equal(actualTemplateResourceKeys.length, expectedTemplateResourceKeys.length)
-            assert.equal(
+            assert.strictEqual(actualTemplateResourceKeys.length, expectedTemplateResourceKeys.length)
+            assert.strictEqual(
                 expectedTemplateResourceKeys
                     .every(expectedKey => actualTemplateResourceKeys.some(actualKey => actualKey === expectedKey)),
                 true
             )
 
             const resource: CloudFormation.Resource = template.Resources![sampleResourceNameValue]
-            assert.equal(resource.Properties!.CodeUri, sampleCodeUriValue)
-            assert.equal(resource.Properties!.Handler, sampleFunctionHandlerValue)
-            assert.equal(resource.Properties!.Runtime, sampleRuntimeValue)
+            assert.strictEqual(resource.Properties!.CodeUri, sampleCodeUriValue)
+            assert.strictEqual(resource.Properties!.Handler, sampleFunctionHandlerValue)
+            assert.strictEqual(resource.Properties!.Runtime, sampleRuntimeValue)
         })
 
         it('Produces a template using existing function handler value', async () => {
@@ -187,12 +187,12 @@ describe('SamTemplateGenerator', () => {
                 .withExistingTemplate(sourceTemplateFilename)
                 .generate(destinationTemplateFilename)
 
-            assert.equal(await SystemUtilities.fileExists(destinationTemplateFilename), true)
+            assert.strictEqual(await SystemUtilities.fileExists(destinationTemplateFilename), true)
 
             const template: CloudFormation.Template = await CloudFormation.load(destinationTemplateFilename)
             const resource: CloudFormation.Resource = template.Resources![sampleResourceNameValue]
-            assert.equal(resource.Properties!.CodeUri, sampleCodeUriValue)
-            assert.equal(resource.Properties!.Handler, `${sampleResourceNameValue}-handler`)
+            assert.strictEqual(resource.Properties!.CodeUri, sampleCodeUriValue)
+            assert.strictEqual(resource.Properties!.Handler, `${sampleResourceNameValue}-handler`)
         })
 
         it('errs if code uri is missing', async () => {
@@ -207,8 +207,8 @@ describe('SamTemplateGenerator', () => {
                 })
 
             assert.ok(error)
-            assert.equal(error.message, 'Missing value: CodeUri')
-            assert.equal(await SystemUtilities.fileExists(destinationTemplateFilename), false)
+            assert.strictEqual(error.message, 'Missing value: CodeUri')
+            assert.strictEqual(await SystemUtilities.fileExists(destinationTemplateFilename), false)
         })
 
         it('errs if function handler is not in existing template and not provided', async () => {
@@ -231,8 +231,8 @@ describe('SamTemplateGenerator', () => {
                 })
 
             assert.ok(error)
-            assert.equal(error.message, 'Missing value: FunctionHandler')
-            assert.equal(await SystemUtilities.fileExists(destinationTemplateFilename), false)
+            assert.strictEqual(error.message, 'Missing value: FunctionHandler')
+            assert.strictEqual(await SystemUtilities.fileExists(destinationTemplateFilename), false)
         })
 
         it('errs if runtime is not in existing template and not provided', async () => {
@@ -255,8 +255,8 @@ describe('SamTemplateGenerator', () => {
                 })
 
             assert.ok(error)
-            assert.equal(error.message, 'Missing value: Runtime')
-            assert.equal(await SystemUtilities.fileExists(destinationTemplateFilename), false)
+            assert.strictEqual(error.message, 'Missing value: Runtime')
+            assert.strictEqual(await SystemUtilities.fileExists(destinationTemplateFilename), false)
         })
 
         it('errs if resource name is missing', async () => {
@@ -271,8 +271,8 @@ describe('SamTemplateGenerator', () => {
                 })
 
             assert.ok(error)
-            assert.equal(error.message, 'Missing value: ResourceName')
-            assert.equal(await SystemUtilities.fileExists(destinationTemplateFilename), false)
+            assert.strictEqual(error.message, 'Missing value: ResourceName')
+            assert.strictEqual(await SystemUtilities.fileExists(destinationTemplateFilename), false)
         })
 
         it('errs if resource name is not found in the existing template', async () => {
@@ -288,8 +288,8 @@ describe('SamTemplateGenerator', () => {
                 })
 
             assert.ok(error)
-            assert.notEqual(error.message.indexOf('Resource not found'), -1)
-            assert.equal(await SystemUtilities.fileExists(destinationTemplateFilename), false)
+            assert.notStrictEqual(error.message.indexOf('Resource not found'), -1)
+            assert.strictEqual(await SystemUtilities.fileExists(destinationTemplateFilename), false)
         })
 
         it('errs if existing template does not exist', async () => {
@@ -307,8 +307,8 @@ describe('SamTemplateGenerator', () => {
                 })
 
             assert.ok(error)
-            assert.notEqual(error.message.indexOf('Template file not found'), -1)
-            assert.equal(await SystemUtilities.fileExists(destinationTemplateFilename), false)
+            assert.notStrictEqual(error.message.indexOf('Template file not found'), -1)
+            assert.strictEqual(await SystemUtilities.fileExists(destinationTemplateFilename), false)
         })
     })
 

@@ -34,13 +34,13 @@ describe('filesystemUtilities', () => {
     describe('findFileInParentPaths', () => {
 
         it('returns undefined when file not found', async () => {
-            assert.equal(
+            assert.strictEqual(
                 await filesystemUtilities.findFileInParentPaths(tempFolder, nonExistingTargetFilename),
                 undefined)
         })
 
         it('finds the file in the same folder', async () => {
-            assert.equal(
+            assert.strictEqual(
                 await filesystemUtilities.findFileInParentPaths(tempFolder, targetFilename),
                 targetFilePath)
         })
@@ -48,7 +48,7 @@ describe('filesystemUtilities', () => {
         it('finds the file next to another file', async () => {
             const searchLocation = path.join(tempFolder, 'foo.txt')
 
-            assert.equal(
+            assert.strictEqual(
                 await filesystemUtilities.findFileInParentPaths(searchLocation, targetFilename),
                 targetFilePath)
         })
@@ -57,7 +57,7 @@ describe('filesystemUtilities', () => {
             const childFolder = path.join(tempFolder, 'child1')
             await filesystem.mkdirAsync(childFolder)
 
-            assert.equal(
+            assert.strictEqual(
                 await filesystemUtilities.findFileInParentPaths(childFolder, targetFilename),
                 targetFilePath)
         })
@@ -70,7 +70,7 @@ describe('filesystemUtilities', () => {
             childFolder = path.join(tempFolder, 'child3')
             await filesystem.mkdirAsync(childFolder)
 
-            assert.equal(
+            assert.strictEqual(
                 await filesystemUtilities.findFileInParentPaths(childFolder, targetFilename),
                 targetFilePath)
         })
