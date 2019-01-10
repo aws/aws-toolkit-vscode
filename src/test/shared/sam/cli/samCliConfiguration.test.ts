@@ -10,7 +10,7 @@ import * as del from 'del'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { SamCliConfiguration } from '../../../../shared/sam/cli/samCliConfiguration'
+import { DefaultSamCliConfiguration, SamCliConfiguration } from '../../../../shared/sam/cli/samCliConfiguration'
 import { SamCliLocationProvider } from '../../../../shared/sam/cli/samCliLocator'
 import { TestSettingsConfiguration } from '../../../utilities/testSettingsConfiguration'
 
@@ -33,12 +33,12 @@ describe('SamCliConfiguration', () => {
 
         createSampleFile(fakeCliLocation)
         await settingsConfiguration.writeSetting(
-            SamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION,
+            DefaultSamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION,
             fakeCliLocation,
             ''
         )
 
-        const samCliConfig: SamCliConfiguration = new SamCliConfiguration(
+        const samCliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(
             settingsConfiguration,
             {} as any as SamCliLocationProvider
         )
@@ -53,12 +53,12 @@ describe('SamCliConfiguration', () => {
         const fakeCliLocation = path.join(tempFolder, 'fakeSamCli')
 
         await settingsConfiguration.writeSetting(
-            SamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION,
+            DefaultSamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION,
             fakeCliLocation,
             ''
         )
 
-        const samCliConfig: SamCliConfiguration = new SamCliConfiguration(
+        const samCliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(
             settingsConfiguration,
             {
                 getLocation: async (): Promise<string | undefined> => {
@@ -77,7 +77,7 @@ describe('SamCliConfiguration', () => {
     it('calls location provider when config not set', async () => {
         let timesCalled: number = 0
 
-        const samCliConfig: SamCliConfiguration = new SamCliConfiguration(
+        const samCliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(
             settingsConfiguration,
             {
                 getLocation: async (): Promise<string | undefined> => {
@@ -96,7 +96,7 @@ describe('SamCliConfiguration', () => {
     it('location provider detects a file', async () => {
         const fakeCliLocation = path.join(tempFolder, 'fakeSamCli')
 
-        const samCliConfig: SamCliConfiguration = new SamCliConfiguration(
+        const samCliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(
             settingsConfiguration,
             {
                 getLocation: async (): Promise<string | undefined> => {
@@ -111,7 +111,7 @@ describe('SamCliConfiguration', () => {
     })
 
     it('location provider does not detect a file', async () => {
-        const samCliConfig: SamCliConfiguration = new SamCliConfiguration(
+        const samCliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(
             settingsConfiguration,
             {
                 getLocation: async (): Promise<string | undefined> => {

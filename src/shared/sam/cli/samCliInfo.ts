@@ -5,33 +5,20 @@
 
 'use strict'
 
-import { extensionSettingsPrefix } from '../../constants'
-import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
-import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
-import { SamCliConfiguration } from './samCliConfiguration'
+import { ChildProcessResult } from '../../utilities/childProcess'
 import { SamCliInvocation } from './samCliInvocation'
-import { DefaultSamCliLocationProvider } from './samCliLocator'
+import { DefaultSamCliInvoker, SamCliInvoker } from './samCliInvoker'
 
 export class SamCliInfoInvocation extends SamCliInvocation<SamCliInfoResponse> {
 
-    public constructor(config: SamCliConfiguration = new SamCliConfiguration(
-        new DefaultSettingsConfiguration(extensionSettingsPrefix),
-        new DefaultSamCliLocationProvider()
-    )) {
-        super(config)
+    public constructor(invoker: SamCliInvoker = new DefaultSamCliInvoker()) {
+        super(invoker)
     }
 
     public async execute(): Promise<SamCliInfoResponse> {
         await this.validate()
 
-        const childProcess: ChildProcess = new ChildProcess(
-            this.samCliLocation,
-            ['--info']
-        )
-
-        childProcess.start()
-
-        const childProcessResult: ChildProcessResult = await childProcess.promise()
+        const childProcessResult: ChildProcessResult = await this.invoker.info()
 
         if (childProcessResult.exitCode === 0) {
             const response = this.convertOutput(childProcessResult.stdout)
@@ -69,6 +56,9 @@ export class SamCliInfoInvocation extends SamCliInvocation<SamCliInfoResponse> {
 
             return undefined
         }
+    }
+
+    protected async validate(): Promise<void> {
     }
 }
 

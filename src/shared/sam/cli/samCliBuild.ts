@@ -5,13 +5,10 @@
 
 'use strict'
 
-import { extensionSettingsPrefix } from '../../constants'
 import { fileExists } from '../../filesystemUtilities'
-import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
-import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
-import { SamCliConfiguration } from './samCliConfiguration'
+import { ChildProcessResult } from '../../utilities/childProcess'
 import { SamCliInvocation } from './samCliInvocation'
-import { DefaultSamCliLocationProvider } from './samCliLocator'
+import { DefaultSamCliInvoker, SamCliInvoker } from './samCliInvoker'
 
 export interface SamCliBuildResponse {
 }
@@ -21,29 +18,19 @@ export class SamCliBuildInvocation extends SamCliInvocation<SamCliBuildResponse>
         private readonly buildDir: string,
         private readonly baseDir: string,
         private readonly templatePath: string,
-        config: SamCliConfiguration = new SamCliConfiguration(
-            new DefaultSettingsConfiguration(extensionSettingsPrefix),
-            new DefaultSamCliLocationProvider()
-        )) {
-        super(config)
+        invoker: SamCliInvoker = new DefaultSamCliInvoker()
+    ) {
+        super(invoker)
     }
 
     public async execute(): Promise<SamCliBuildResponse> {
         await this.validate()
 
-        const childProcess: ChildProcess = new ChildProcess(
-            this.samCliLocation,
-            [
-                'build',
-                '--build-dir', this.buildDir,
-                '--base-dir', this.baseDir,
-                '--template', this.templatePath,
-            ]
+        const childProcessResult: ChildProcessResult = await this.invoker.build(
+            this.buildDir,
+            this.baseDir,
+            this.templatePath
         )
-
-        childProcess.start()
-
-        const childProcessResult: ChildProcessResult = await childProcess.promise()
 
         if (childProcessResult.exitCode === 0) {
             const response: SamCliBuildResponse = {}
@@ -66,8 +53,6 @@ export class SamCliBuildInvocation extends SamCliInvocation<SamCliBuildResponse>
     }
 
     protected async validate(): Promise<void> {
-        await super.validate()
-
         if (!this.buildDir) {
             throw new Error('buildDir is missing or empty')
         }

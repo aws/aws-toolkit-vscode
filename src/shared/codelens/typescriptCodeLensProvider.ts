@@ -15,6 +15,7 @@ import * as fileSystem from '../filesystem'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { SamCliBuildInvocation } from '../sam/cli/samCliBuild'
+import { DefaultSamCliInvoker, SamCliInvoker } from '../sam/cli/samCliInvoker'
 import { SamCliLocalInvokeInvocation } from '../sam/cli/samCliLocalInvoke'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
@@ -85,14 +86,18 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
         return new vscode.CodeLens(range, command)
     }
 
-    public static initialize(toolkitOutputChannel: vscode.OutputChannel): void {
+    public static initialize(
+        toolkitOutputChannel: vscode.OutputChannel,
+        invoker: SamCliInvoker = new DefaultSamCliInvoker()
+    ): void {
         vscode.commands.registerCommand(
             'aws.lambda.local.invoke',
             async (args: LambdaLocalInvokeArguments) => {
                 const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
                     args,
                     'nodejs8.10',
-                    toolkitOutputChannel
+                    toolkitOutputChannel,
+                    invoker
                 )
 
                 await localLambdaRunner.run()
@@ -111,6 +116,7 @@ class LocalLambdaRunner {
         private readonly localInvokeArgs: LambdaLocalInvokeArguments,
         private readonly runtime: string,
         private readonly outputChannel: vscode.OutputChannel,
+        private readonly invoker: SamCliInvoker
     ) {
     }
 
@@ -241,7 +247,8 @@ class LocalLambdaRunner {
         await new SamCliBuildInvocation(
             samBuildOutputFolder,
             rootCodeFolder,
-            inputTemplatePath
+            inputTemplatePath,
+            this.invoker
         ).execute()
 
         this.outputChannel.appendLine(
@@ -287,6 +294,7 @@ class LocalLambdaRunner {
             samTemplatePath,
             eventPath,
             debugPortStr,
+            this.invoker
         )
 
         await command.execute()
