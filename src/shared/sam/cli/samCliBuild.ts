@@ -25,9 +25,10 @@ export class SamCliBuildInvocation {
         await this.validate()
 
         const childProcessResult: ChildProcessResult = await this.invoker.invoke(
-            this.buildDir,
-            this.baseDir,
-            this.templatePath
+            'build',
+            '--build-dir', this.buildDir,
+            '--base-dir', this.baseDir,
+            '--template', this.templatePath
         )
 
         if (childProcessResult.exitCode === 0) {
