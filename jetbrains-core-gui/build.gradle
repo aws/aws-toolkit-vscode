@@ -6,11 +6,12 @@ dependencies {
 }
 
 intellij {
-    version "IC-2018.3.1"
-    pluginName 'aws-intellij-toolkit'
-    updateSinceUntilBuild false
-    downloadSources = System.getenv("CI") == null
-    plugins = ["PythonCore:2018.3.183.4284.148", "yaml", "com.intellij.testGuiFramework:183.5153.8"]
+    def rootIntelliJTask = project(':jetbrains-core').intellij
+    version rootIntelliJTask.version
+    pluginName rootIntelliJTask.pluginName
+    updateSinceUntilBuild rootIntelliJTask.updateSinceUntilBuild
+    downloadSources = rootIntelliJTask.downloadSources
+    plugins = rootIntelliJTask.plugins + ['com.intellij.testGuiFramework:183.5153.8']
 }
 
 jacoco.applyTo(runIde)

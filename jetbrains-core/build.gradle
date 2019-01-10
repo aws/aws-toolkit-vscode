@@ -4,10 +4,11 @@
 apply plugin: 'org.jetbrains.intellij'
 
 intellij {
-    version "IC-" + ideaVersion
-    pluginName 'aws-intellij-toolkit'
-    updateSinceUntilBuild false
-    downloadSources = System.getenv("CI") == null
+    def rootIntelliJTask = rootProject.intellij
+    version rootIntelliJTask.version
+    pluginName rootIntelliJTask.pluginName
+    updateSinceUntilBuild rootIntelliJTask.updateSinceUntilBuild
+    downloadSources = rootIntelliJTask.downloadSources
     plugins = ["PythonCore:2018.3.183.4284.148", "yaml"]
 }
 
