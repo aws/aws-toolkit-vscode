@@ -6,19 +6,19 @@
 'use strict'
 
 import { ChildProcessResult } from '../../utilities/childProcess'
-import { SamCliInvocation } from './samCliInvocation'
-import { DefaultSamCliInvoker, SamCliInvoker } from './samCliInvoker'
+import { DefaultSamCliProcessInvoker, SamCliProcessInvoker } from './samCliInvoker'
 
-export class SamCliInfoInvocation extends SamCliInvocation<SamCliInfoResponse> {
+export class SamCliInfoInvocation {
 
-    public constructor(invoker: SamCliInvoker = new DefaultSamCliInvoker()) {
-        super(invoker)
+    public constructor(
+        private readonly invoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker()
+    ) {
     }
 
     public async execute(): Promise<SamCliInfoResponse> {
         await this.validate()
 
-        const childProcessResult: ChildProcessResult = await this.invoker.info()
+        const childProcessResult: ChildProcessResult = await this.invoker.invoke('--info')
 
         if (childProcessResult.exitCode === 0) {
             const response = this.convertOutput(childProcessResult.stdout)
@@ -41,6 +41,7 @@ export class SamCliInfoInvocation extends SamCliInvocation<SamCliInfoResponse> {
         } else if (!!childProcessResult.stderr) {
             errorMessage = childProcessResult.stderr
         }
+
         throw new Error(`sam --info encountered an error: ${errorMessage}`)
     }
 

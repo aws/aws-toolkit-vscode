@@ -15,7 +15,12 @@ import * as fileSystem from '../filesystem'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { SamCliBuildInvocation } from '../sam/cli/samCliBuild'
-import { DefaultSamCliInvoker, SamCliInvoker } from '../sam/cli/samCliInvoker'
+import {
+    DefaultSamCliProcessInvoker,
+    DefaultSamCliTaskInvoker,
+    SamCliProcessInvoker,
+    SamCliTaskInvoker
+} from '../sam/cli/samCliInvoker'
 import { SamCliLocalInvokeInvocation } from '../sam/cli/samCliLocalInvoke'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
@@ -88,7 +93,8 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
 
     public static initialize(
         toolkitOutputChannel: vscode.OutputChannel,
-        invoker: SamCliInvoker = new DefaultSamCliInvoker()
+        processInvoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker(),
+        taskInvoker: SamCliTaskInvoker = new DefaultSamCliTaskInvoker()
     ): void {
         vscode.commands.registerCommand(
             'aws.lambda.local.invoke',
@@ -97,7 +103,8 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
                     args,
                     'nodejs8.10',
                     toolkitOutputChannel,
-                    invoker
+                    processInvoker,
+                    taskInvoker
                 )
 
                 await localLambdaRunner.run()
@@ -116,7 +123,8 @@ class LocalLambdaRunner {
         private readonly localInvokeArgs: LambdaLocalInvokeArguments,
         private readonly runtime: string,
         private readonly outputChannel: vscode.OutputChannel,
-        private readonly invoker: SamCliInvoker
+        private readonly processInvoker: SamCliProcessInvoker,
+        private readonly taskInvoker: SamCliTaskInvoker
     ) {
     }
 
@@ -248,7 +256,7 @@ class LocalLambdaRunner {
             samBuildOutputFolder,
             rootCodeFolder,
             inputTemplatePath,
-            this.invoker
+            this.processInvoker
         ).execute()
 
         this.outputChannel.appendLine(
@@ -294,7 +302,7 @@ class LocalLambdaRunner {
             samTemplatePath,
             eventPath,
             debugPortStr,
-            this.invoker
+            this.taskInvoker
         )
 
         await command.execute()

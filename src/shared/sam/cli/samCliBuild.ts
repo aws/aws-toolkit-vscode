@@ -7,26 +7,24 @@
 
 import { fileExists } from '../../filesystemUtilities'
 import { ChildProcessResult } from '../../utilities/childProcess'
-import { SamCliInvocation } from './samCliInvocation'
-import { DefaultSamCliInvoker, SamCliInvoker } from './samCliInvoker'
+import { DefaultSamCliProcessInvoker, SamCliProcessInvoker } from './samCliInvoker'
 
 export interface SamCliBuildResponse {
 }
 
-export class SamCliBuildInvocation extends SamCliInvocation<SamCliBuildResponse> {
+export class SamCliBuildInvocation {
     public constructor(
         private readonly buildDir: string,
         private readonly baseDir: string,
         private readonly templatePath: string,
-        invoker: SamCliInvoker = new DefaultSamCliInvoker()
+        private readonly invoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker()
     ) {
-        super(invoker)
     }
 
     public async execute(): Promise<SamCliBuildResponse> {
         await this.validate()
 
-        const childProcessResult: ChildProcessResult = await this.invoker.build(
+        const childProcessResult: ChildProcessResult = await this.invoker.invoke(
             this.buildDir,
             this.baseDir,
             this.templatePath

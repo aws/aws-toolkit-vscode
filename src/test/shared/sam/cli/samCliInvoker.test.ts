@@ -6,7 +6,7 @@
 'use strict'
 
 import { SamCliConfiguration } from '../../../../shared/sam/cli/samCliConfiguration'
-import { DefaultSamCliInvoker } from '../../../../shared/sam/cli/samCliInvoker'
+import { DefaultSamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvoker'
 import { assertRejects } from '../../utilities/assertUtils'
 
 describe('DefaultSamCliInvoker', async () => {
@@ -15,8 +15,8 @@ describe('DefaultSamCliInvoker', async () => {
             getSamCliLocation: () => undefined
         } as any as SamCliConfiguration
 
-        const invoker = new DefaultSamCliInvoker(config)
+        const invoker = new DefaultSamCliProcessInvoker(config)
 
-        await assertRejects(async () => await invoker.info())
+        await assertRejects(async () => await invoker.invoke())
     })
 })

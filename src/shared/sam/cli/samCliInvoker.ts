@@ -12,79 +12,22 @@ import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliConfiguration, SamCliConfiguration } from './samCliConfiguration'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
 
-export interface SamCliInvoker {
-    build(buildDir: string, baseDir: string, templatePath: string): Promise<ChildProcessResult>
-
-    info(): Promise<ChildProcessResult>
-
-    localInvoke(
-        templateResourceName: string,
-        templatePath: string,
-        eventPath: string,
-        debugPort?: string
-    ): Promise<vscode.TaskExecution>
+export interface SamCliProcessInvoker {
+    invoke(...args: string[]): Promise<ChildProcessResult>
 }
 
-export class DefaultSamCliInvoker implements SamCliInvoker {
+export interface SamCliTaskInvoker {
+    invoke(task: vscode.Task): Promise<vscode.TaskExecution>
+}
+
+export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
     public constructor(private readonly config: SamCliConfiguration = new DefaultSamCliConfiguration(
         new DefaultSettingsConfiguration(extensionSettingsPrefix),
         new DefaultSamCliLocationProvider()
     )) {
     }
 
-    public async build(buildDir: string, baseDir: string, templatePath: string): Promise<ChildProcessResult> {
-        return await this.invoke(
-            'build',
-            '--build-dir', buildDir,
-            '--base-dir', baseDir,
-            '--template', templatePath
-        )
-    }
-
-    public async info(): Promise<ChildProcessResult> {
-        return await this.invoke('--info')
-    }
-
-    public async localInvoke(
-        templateResourceName: string,
-        templatePath: string,
-        eventPath: string,
-        debugPort?: string
-    ): Promise<vscode.TaskExecution> {
-        const args: string[] = [
-            'local',
-            'invoke',
-            templateResourceName,
-            '--template',
-            templatePath,
-            '--event',
-            eventPath,
-        ]
-
-        if (!!debugPort) {
-            args.push('-d', debugPort)
-        }
-
-        const execution: vscode.ShellExecution = new vscode.ShellExecution(
-            'sam',
-            args
-        )
-
-        const task: vscode.Task = new vscode.Task(
-            {
-                type: 'samLocalInvoke',
-            },
-            vscode.TaskScope.Workspace,
-            'LocalLambdaDebug',
-            'SAM CLI',
-            execution,
-            []
-        )
-
-        return await vscode.tasks.executeTask(task)
-    }
-
-    private async invoke(...args: string[]): Promise<ChildProcessResult> {
+    public async invoke(...args: string[]): Promise<ChildProcessResult> {
         const samCliLocation = this.config.getSamCliLocation()
         if (!samCliLocation) {
             throw new Error('SAM CLI location not configured')
@@ -94,5 +37,11 @@ export class DefaultSamCliInvoker implements SamCliInvoker {
         childProcess.start()
 
         return await childProcess.promise()
+    }
+}
+
+export class DefaultSamCliTaskInvoker implements SamCliTaskInvoker {
+    public async invoke(task: vscode.Task): Promise<vscode.TaskExecution> {
+        return await vscode.tasks.executeTask(task)
     }
 }

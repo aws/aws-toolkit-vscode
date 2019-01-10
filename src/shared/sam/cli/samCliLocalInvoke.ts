@@ -5,34 +5,57 @@
 
 'use strict'
 
+import * as vscode from 'vscode'
 import { fileExists } from '../../filesystemUtilities'
-import { SamCliInvocation } from './samCliInvocation'
-import { DefaultSamCliInvoker, SamCliInvoker } from './samCliInvoker'
+import { DefaultSamCliTaskInvoker, SamCliTaskInvoker } from './samCliInvoker'
 
 export interface SamCliLocalInvokeResponse {
 }
 
-export class SamCliLocalInvokeInvocation extends SamCliInvocation<SamCliLocalInvokeResponse> {
-
+export class SamCliLocalInvokeInvocation {
     public constructor(
         private readonly templateResourceName: string,
         private readonly templatePath: string,
         private readonly eventPath: string,
         private readonly debugPort?: string,
-        invoker: SamCliInvoker = new DefaultSamCliInvoker()
+        private readonly invoker: SamCliTaskInvoker = new DefaultSamCliTaskInvoker()
     ) {
-        super(invoker)
     }
 
     public async execute(): Promise<SamCliLocalInvokeResponse> {
         await this.validate()
 
-        await this.invoker.localInvoke(
+        const args: string[] = [
+            'local',
+            'invoke',
             this.templateResourceName,
+            '--template',
             this.templatePath,
+            '--event',
             this.eventPath,
-            this.debugPort
+        ]
+
+        if (!!this.debugPort) {
+            args.push('-d', this.debugPort)
+        }
+
+        const execution: vscode.ShellExecution = new vscode.ShellExecution(
+            'sam',
+            args
         )
+
+        const task: vscode.Task = new vscode.Task(
+            {
+                type: 'samLocalInvoke',
+            },
+            vscode.TaskScope.Workspace,
+            'LocalLambdaDebug',
+            'SAM CLI',
+            execution,
+            []
+        )
+
+        await this.invoker.invoke(task)
 
         return {}
     }
