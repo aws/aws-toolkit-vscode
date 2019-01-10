@@ -5,33 +5,20 @@
 
 'use strict'
 
-import { extensionSettingsPrefix } from '../../constants'
-import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
-import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
-import { SamCliConfiguration } from './samCliConfiguration'
-import { SamCliInvocation } from './samCliInvocation'
-import { DefaultSamCliLocationProvider } from './samCliLocator'
+import { ChildProcessResult } from '../../utilities/childProcess'
+import { DefaultSamCliProcessInvoker, SamCliProcessInvoker } from './samCliInvoker'
 
-export class SamCliInfoInvocation extends SamCliInvocation<SamCliInfoResponse> {
+export class SamCliInfoInvocation {
 
-    public constructor(config: SamCliConfiguration = new SamCliConfiguration(
-        new DefaultSettingsConfiguration(extensionSettingsPrefix),
-        new DefaultSamCliLocationProvider()
-    )) {
-        super(config)
+    public constructor(
+        private readonly invoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker()
+    ) {
     }
 
     public async execute(): Promise<SamCliInfoResponse> {
         await this.validate()
 
-        const childProcess: ChildProcess = new ChildProcess(
-            this.samCliLocation,
-            ['--info']
-        )
-
-        childProcess.start()
-
-        const childProcessResult: ChildProcessResult = await childProcess.promise()
+        const childProcessResult: ChildProcessResult = await this.invoker.invoke('--info')
 
         if (childProcessResult.exitCode === 0) {
             const response = this.convertOutput(childProcessResult.stdout)
@@ -54,6 +41,7 @@ export class SamCliInfoInvocation extends SamCliInvocation<SamCliInfoResponse> {
         } else if (!!childProcessResult.stderr) {
             errorMessage = childProcessResult.stderr
         }
+
         throw new Error(`sam --info encountered an error: ${errorMessage}`)
     }
 
@@ -69,6 +57,9 @@ export class SamCliInfoInvocation extends SamCliInvocation<SamCliInfoResponse> {
 
             return undefined
         }
+    }
+
+    protected async validate(): Promise<void> {
     }
 }
 

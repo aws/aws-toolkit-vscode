@@ -6,33 +6,20 @@
 'use strict'
 
 import * as vscode from 'vscode'
-import { extensionSettingsPrefix } from '../../constants'
 import { fileExists } from '../../filesystemUtilities'
-import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
-import { SamCliConfiguration } from './samCliConfiguration'
-import { SamCliInvocation } from './samCliInvocation'
-import { DefaultSamCliLocationProvider } from './samCliLocator'
+import { DefaultSamCliTaskInvoker, SamCliTaskInvoker } from './samCliInvoker'
 
 export interface SamCliLocalInvokeResponse {
-    taskExecution: vscode.TaskExecution
 }
 
-export class SamCliLocalInvokeInvocation extends SamCliInvocation<SamCliLocalInvokeResponse> {
-
-    private readonly _taskDefinition: vscode.TaskDefinition = {
-        type: 'samLocalInvoke',
-    }
-
+export class SamCliLocalInvokeInvocation {
     public constructor(
         private readonly templateResourceName: string,
         private readonly templatePath: string,
         private readonly eventPath: string,
         private readonly debugPort?: string,
-        config: SamCliConfiguration = new SamCliConfiguration(
-            new DefaultSettingsConfiguration(extensionSettingsPrefix),
-            new DefaultSamCliLocationProvider()
-        )) {
-        super(config)
+        private readonly invoker: SamCliTaskInvoker = new DefaultSamCliTaskInvoker()
+    ) {
     }
 
     public async execute(): Promise<SamCliLocalInvokeResponse> {
@@ -58,7 +45,9 @@ export class SamCliLocalInvokeInvocation extends SamCliInvocation<SamCliLocalInv
         )
 
         const task: vscode.Task = new vscode.Task(
-            this._taskDefinition,
+            {
+                type: 'samLocalInvoke',
+            },
             vscode.TaskScope.Workspace,
             'LocalLambdaDebug',
             'SAM CLI',
@@ -66,16 +55,12 @@ export class SamCliLocalInvokeInvocation extends SamCliInvocation<SamCliLocalInv
             []
         )
 
-        const taskExecution: vscode.TaskExecution = await vscode.tasks.executeTask(task)
+        await this.invoker.invoke(task)
 
-        return {
-            taskExecution: taskExecution
-        }
+        return {}
     }
 
     protected async validate(): Promise<void> {
-        await super.validate()
-
         if (!this.templateResourceName) {
             throw new Error('template resource name is missing or empty')
         }
