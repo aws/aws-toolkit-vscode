@@ -112,7 +112,7 @@ describe('DefaultStandaloneFunctionGroupNode', () => {
             super(parent)
         }
 
-        protected clearError() {
+        protected async doErrorProneOperation(): Promise<void> {
             throw new Error('Hello there!')
         }
     }

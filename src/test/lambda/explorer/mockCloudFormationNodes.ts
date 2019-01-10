@@ -22,6 +22,7 @@ export class MockCloudFormationNode extends AWSTreeErrorHandlerNode implements C
         public readonly parent: RegionNode = {} as any as RegionNode,
         public readonly getChildren: () => Thenable<CloudFormationStackNode[]> = async () => [],
         public readonly updateChildren: () => Thenable<void> = async () => {},
+        public readonly doErrorProneOperation: () => Promise<void> = async () => {},
     ) {
         super('')
     }
@@ -32,7 +33,8 @@ export class MockCloudFormationStackNode extends AWSTreeErrorHandlerNode impleme
         public readonly regionCode: string = '',
         public readonly parent: CloudFormationNode = {} as any as CloudFormationNode,
         public readonly getChildren: () => Thenable<(CloudFormationNode | PlaceholderNode)[]> = async () => [],
-        public readonly update: (stackSummary: CloudFormation.StackSummary) => void = stackSummary => {}
+        public readonly update: (stackSummary: CloudFormation.StackSummary) => void = stackSummary => {},
+        public readonly doErrorProneOperation: () => Promise<void> = async () => {},
     ) {
         super('')
     }

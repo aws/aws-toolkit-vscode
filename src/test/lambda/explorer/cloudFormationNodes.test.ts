@@ -237,7 +237,7 @@ describe('DefaultCloudFormationNode', () => {
                 super(regionNode)
             }
 
-            protected clearError() {
+            protected async doErrorProneOperation(): Promise<void> {
                 throw new Error('Hello there!')
             }
         }

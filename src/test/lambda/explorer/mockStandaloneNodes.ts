@@ -19,7 +19,8 @@ export class MockStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode imp
         public readonly regionCode: string = '',
         public readonly parent: RegionNode = {} as any as RegionNode,
         public readonly getChildren: () => Thenable<StandaloneFunctionNode[]> = async () => [],
-        public readonly updateChildren: () => Thenable<void> = async () => {}
+        public readonly updateChildren: () => Thenable<void> = async () => {},
+        public readonly doErrorProneOperation: () => Promise<void> = async () => {},
    ) {
        super('')
     }

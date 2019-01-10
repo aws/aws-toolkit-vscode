@@ -41,32 +41,30 @@ export class DefaultStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode 
     }
 
     public async getChildren(): Promise<(StandaloneFunctionNode | ErrorNode)[]> {
-        await this.updateChildren()
+        await this.handleErrorProneOperation()
 
         return this.errorNode ? [this.errorNode]
             : [...this.functionNodes.values()]
     }
 
     public async updateChildren(): Promise<void> {
-        try {
-            this.clearError()
 
-            const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(this.regionCode)
-            const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
-                await toArrayAsync(listLambdaFunctions(client)),
-                configuration => configuration.FunctionName
-            )
+        const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(this.regionCode)
+        const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
+            await toArrayAsync(listLambdaFunctions(client)),
+            configuration => configuration.FunctionName
+        )
 
-            updateInPlace(
-                this.functionNodes,
-                functions.keys(),
-                key => this.functionNodes.get(key)!.update(functions.get(key)!),
-                key => new DefaultStandaloneFunctionNode(this, functions.get(key)!)
-            )
+        updateInPlace(
+            this.functionNodes,
+            functions.keys(),
+            key => this.functionNodes.get(key)!.update(functions.get(key)!),
+            key => new DefaultStandaloneFunctionNode(this, functions.get(key)!)
+        )
+    }
 
-        } catch (err) {
-            this.handleError(err as Error)
-        }
+    protected async doErrorProneOperation(): Promise<void> {
+       await this.updateChildren()
     }
 }
 

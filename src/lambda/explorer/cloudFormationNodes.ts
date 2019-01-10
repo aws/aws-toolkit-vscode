@@ -50,29 +50,28 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
     }
 
     public async getChildren(): Promise<(CloudFormationStackNode | ErrorNode)[]> {
-        await this.updateChildren()
+        await this.handleErrorProneOperation()
 
         return this.errorNode ? [this.errorNode]
             : [...this.stackNodes.values()]
     }
 
     public async updateChildren(): Promise<void> {
-        try {
-            this.clearError()
 
-            const client: CloudFormationClient = ext.toolkitClientBuilder.createCloudFormationClient(this.regionCode)
-            const stacks = await toMapAsync(listCloudFormationStacks(client), stack => stack.StackId)
+        const client: CloudFormationClient = ext.toolkitClientBuilder.createCloudFormationClient(this.regionCode)
+        const stacks = await toMapAsync(listCloudFormationStacks(client), stack => stack.StackId)
 
-            updateInPlace(
-                this.stackNodes,
-                stacks.keys(),
-                key => this.stackNodes.get(key)!.update(stacks.get(key)!),
-                key => new DefaultCloudFormationStackNode(this, stacks.get(key)!)
-            )
-        } catch (err) {
-            this.handleError(err as Error)
-        }
+        updateInPlace(
+            this.stackNodes,
+            stacks.keys(),
+            key => this.stackNodes.get(key)!.update(stacks.get(key)!),
+            key => new DefaultCloudFormationStackNode(this, stacks.get(key)!)
+        )
     }
+
+    protected async doErrorProneOperation(): Promise<void> {
+        await this.updateChildren()
+     }
 }
 
 export interface CloudFormationStackNode extends AWSTreeErrorHandlerNode {
@@ -108,18 +107,22 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
     }
 
     public async getChildren(): Promise<(CloudFormationFunctionNode | PlaceholderNode)[]> {
-        await this.updateChildren()
+        await this.handleErrorProneOperation()
+
+        if (this.errorNode) {
+            return [this.errorNode]
+        }
 
         if (this.functionNodes.size > 0) {
             return [...this.functionNodes.values()]
-        } else {
-            return [
-                new PlaceholderNode(
-                    this,
-                    localize('AWS.explorerNode.cloudFormation.noFunctions', '[no functions in this CloudFormation]')
-                )
-            ]
         }
+
+        return [
+            new PlaceholderNode(
+                this,
+                localize('AWS.explorerNode.cloudFormation.noFunctions', '[no functions in this CloudFormation]')
+            )
+        ]
     }
 
     public update(stackSummary: CloudFormation.StackSummary): void {
@@ -128,27 +131,25 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
         this.tooltip = `${stackSummary.StackName}-${stackSummary.StackId}`
     }
 
+    protected async doErrorProneOperation(): Promise<void> {
+        await this.updateChildren()
+     }
+
     private async updateChildren(): Promise<void> {
-        try {
-            this.clearError()
 
-            const resources: string[] = await this.resolveLambdaResources()
-            const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(this.regionCode)
-            const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
-                await toArrayAsync(listLambdaFunctions(client)),
-                functionInfo => functionInfo.FunctionName
-            )
+        const resources: string[] = await this.resolveLambdaResources()
+        const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(this.regionCode)
+        const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
+            await toArrayAsync(listLambdaFunctions(client)),
+            functionInfo => functionInfo.FunctionName
+        )
 
-            updateInPlace(
-                this.functionNodes,
-                intersection(resources, functions.keys()),
-                key => this.functionNodes.get(key)!.update(functions.get(key)!),
-                key => new DefaultCloudFormationFunctionNode(this, functions.get(key)!)
-            )
-        } catch (err) {
-            this.handleError(err as Error)
-        }
-
+        updateInPlace(
+            this.functionNodes,
+            intersection(resources, functions.keys()),
+            key => this.functionNodes.get(key)!.update(functions.get(key)!),
+            key => new DefaultCloudFormationFunctionNode(this, functions.get(key)!)
+        )
     }
 
     private async resolveLambdaResources(): Promise<string[]> {
