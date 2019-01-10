@@ -1,0 +1,70 @@
+apply plugin: 'org.jetbrains.intellij'
+apply plugin: 'jacoco'
+
+dependencies {
+    compile rootProject
+}
+
+intellij {
+    version "IC-2018.3.1"
+    pluginName 'aws-intellij-toolkit'
+    updateSinceUntilBuild false
+    downloadSources = System.getenv("CI") == null
+    plugins = ["PythonCore:2018.3.183.4284.148", "yaml", "com.intellij.testGuiFramework:183.5153.8"]
+}
+
+jacoco.applyTo(runIde)
+runIde {
+    systemProperties System.properties.findAll {(it.key as String).startsWith("idea") || (it.key as String).startsWith("jb")}
+    /* Need to split the space-delimited value in the exec.args */
+    args System.getProperty("exec.args", "").split(",")
+    jacoco {
+        includeNoLocationClasses = true
+        includes = ["software.aws.toolkits.*"]
+    }
+}
+
+test {
+    workingDir = file("..")
+    def sysProps = System.properties.findAll { (it.key as String).startsWith("idea") || (it.key as String).startsWith("jb") }
+    sysProps.put("idea.gui.tests.gradle.runner", true) //Use Gradle Launcher to run GUI tests
+    systemProperties sysProps
+    include '**/*TestSuite*'
+}
+// don't run gui tests automatically
+check.dependsOn.remove(test)
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task classesJar(type: Jar, dependsOn: classes) {
+    classifier = 'classes'
+    from sourceSets.main.output
+    exclude 'META-INF/plugin.xml'
+    exclude 'testData/*'
+}
+
+task testsJar(type: Jar, dependsOn: classes) {
+    classifier = 'tests'
+    from sourceSets.test.output
+    exclude 'testData/*'
+}
+
+prepareSandbox {
+    from(classesJar) {
+        into "testGuiFramework/lib"
+    }
+    from (sourceSets.main.resources) {
+        exclude 'META-INF'
+        into "testGuiFramework/lib"
+    }
+    from (sourceSets.test.resources) {
+        exclude 'META-INF'
+        into "testGuiFramework/lib"
+    }
+    from(testsJar) {
+        into "testGuiFramework/lib"
+    }
+}

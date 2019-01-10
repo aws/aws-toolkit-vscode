@@ -244,11 +244,21 @@ if (gradle.startParameter.taskNames.contains("runIde")) {
     println("Top level runIde selected, excluding sub-projects' runIde")
     gradle.taskGraph.whenReady { graph ->
         graph.allTasks.forEach {
-            if (it.name == "runIde" && it.project != project(':jetbrains-core')) {
-                it.enabled = false
+            if (gradle.startParameter.systemPropertiesArgs.getOrDefault("exec.args", "").contains("guitest")) {
+                if (it.name == "runIde" && it.project != project(':jetbrains-core-gui')) {
+                    it.enabled = false
+                }
+            } else {
+                if (it.name == "runIde" && it.project != project(':jetbrains-core')) {
+                    it.enabled = false
+                }
             }
         }
     }
+}
+
+task guiTest(type: Test) {
+    dependsOn ":jetbrains-core-gui:test"
 }
 
 dependencies {
