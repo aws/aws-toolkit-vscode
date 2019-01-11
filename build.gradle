@@ -258,7 +258,7 @@ if (gradle.startParameter.taskNames.contains("runIde")) {
 }
 
 task guiTest(type: Test) {
-    dependsOn ":jetbrains-core-gui:test"
+    dependsOn ":jetbrains-core-gui:guiTest"
 }
 
 dependencies {

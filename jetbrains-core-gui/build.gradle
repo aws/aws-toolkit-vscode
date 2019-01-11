@@ -11,7 +11,7 @@ intellij {
     pluginName rootIntelliJTask.pluginName
     updateSinceUntilBuild rootIntelliJTask.updateSinceUntilBuild
     downloadSources = rootIntelliJTask.downloadSources
-    plugins = rootIntelliJTask.plugins + ['com.intellij.testGuiFramework:183.5153.8']
+    plugins = rootIntelliJTask.plugins + ['com.intellij.testGuiFramework:183.5429.1']
 }
 
 jacoco.applyTo(runIde)
@@ -25,15 +25,16 @@ runIde {
     }
 }
 
-test {
+// don't run gui tests as part of check
+test.enabled = false
+
+task guiTest(type: Test) {
     workingDir = file("..")
     def sysProps = System.properties.findAll { (it.key as String).startsWith("idea") || (it.key as String).startsWith("jb") }
     sysProps.put("idea.gui.tests.gradle.runner", true) //Use Gradle Launcher to run GUI tests
     systemProperties sysProps
     include '**/*TestSuite*'
 }
-// don't run gui tests automatically
-check.dependsOn.remove(test)
 
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
@@ -43,6 +44,7 @@ task sourcesJar(type: Jar, dependsOn: classes) {
 task classesJar(type: Jar, dependsOn: classes) {
     classifier = 'classes'
     from sourceSets.main.output
+    from project(':jetbrains-core').sourceSets.main.output
     exclude 'META-INF/plugin.xml'
     exclude 'testData/*'
 }

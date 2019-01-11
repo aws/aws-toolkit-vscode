@@ -7,9 +7,10 @@ import com.intellij.testGuiFramework.framework.RunWithIde
 import com.intellij.testGuiFramework.launcher.ide.CommunityIde
 import org.junit.runner.RunWith
 import org.junit.runners.Suite
+import software.aws.toolkits.jetbrains.settings.SetSamCli
 import software.aws.toolkits.jetbrains.ui.wizard.java.SamInitProjectBuilderIntelliJTest
 
 @RunWith(GuiTestSuiteRunner::class)
 @RunWithIde(CommunityIde::class)
-@Suite.SuiteClasses(SamInitProjectBuilderIntelliJTest::class)
+@Suite.SuiteClasses(SetSamCli::class, SamInitProjectBuilderIntelliJTest::class)
 class NewProjectWizardTestSuite : GuiTestSuite()

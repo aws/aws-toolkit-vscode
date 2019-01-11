@@ -16,8 +16,8 @@ class SamInitProjectBuilderIntelliJTest : GuiTestCase() {
     fun test_new_from_template() {
         welcomeFrame {
             createNewProject()
-            // wait for "Loading..." dialog to go away
-            Pause.pause(1000)
+            // defensive wait...
+            Pause.pause(500)
             dialog("New Project") {
                 // select runtime and SDK
                 jList("AWS Serverless Application").clickItem("AWS Serverless Application")
