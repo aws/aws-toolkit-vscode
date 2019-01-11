@@ -5,6 +5,9 @@
 
 'use strict'
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import { Lambda } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
@@ -41,9 +44,11 @@ export class DefaultStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode 
     }
 
     public async getChildren(): Promise<(StandaloneFunctionNode | ErrorNode)[]> {
-        await this.handleErrorProneOperation()
+        await this.handleErrorProneOperation(async () => this.updateChildren(),
+                                             localize('AWS.explorerNode.lambda.error',
+                                                      'Error loading Lambda resources'))
 
-        return this.errorNode ? [this.errorNode]
+        return !!this.errorNode ? [this.errorNode]
             : [...this.functionNodes.values()]
     }
 
@@ -61,10 +66,6 @@ export class DefaultStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode 
             key => this.functionNodes.get(key)!.update(functions.get(key)!),
             key => new DefaultStandaloneFunctionNode(this, functions.get(key)!)
         )
-    }
-
-    protected async doErrorProneOperation(): Promise<void> {
-       await this.updateChildren()
     }
 }
 

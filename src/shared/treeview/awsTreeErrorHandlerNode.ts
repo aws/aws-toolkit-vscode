@@ -19,18 +19,16 @@ export abstract class AWSTreeErrorHandlerNode extends AWSTreeNodeBase {
         super(label, collapsibleState)
     }
 
-    protected async handleErrorProneOperation() {
+    protected async handleErrorProneOperation(operation: () => Promise<void>, errorLabel: string) {
         this.errorNode = undefined
         try {
-            await this.doErrorProneOperation()
+            await operation()
         } catch (err) {
             const error = err as Error
-            this.errorNode = new ErrorNode(this, error)
+            this.errorNode = new ErrorNode(this, error, errorLabel)
 
             // TODO: Make the possibility to ErrorNode attempt to retry the operation
             console.error(error.message)
         }
     }
-
-    protected async abstract doErrorProneOperation(): Promise<void>
 }

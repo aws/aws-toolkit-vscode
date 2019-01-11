@@ -13,12 +13,12 @@ import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 export class ErrorNode extends AWSTreeNodeBase {
     public constructor(
         public readonly parent: AWSTreeNodeBase,
-        public readonly error: Error
+        public readonly error: Error,
+        label: string
     ) {
-        super(`Error loading resources (${error.name})`,
-              vscode.TreeItemCollapsibleState.None)
+        super(label, vscode.TreeItemCollapsibleState.None)
 
-        this.tooltip = error.message
+        this.tooltip = `${error.name}:${error.message}`
         this.contextValue = 'awsErrorNode'
         this.iconPath = {
             dark: vscode.Uri.file(ext.context.asAbsolutePath('resources/dark/error.svg')),

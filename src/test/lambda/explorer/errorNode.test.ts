@@ -21,12 +21,12 @@ describe('ErrorNode', () => {
     error.name = 'myMockError'
 
     // Validates we tagged the node correctly
-    it('initializes name and tooltip', async () => {
+    it('initializes label and tooltip', async () => {
 
-        const testNode = new ErrorNode(regionNode, error)
+        const testNode = new ErrorNode(regionNode, error, 'Error loading resources')
 
-        assert.strictEqual(testNode.label, `Error loading resources (${error.name})`)
-        assert.strictEqual(testNode.tooltip, error.message)
+        assert.strictEqual(testNode.label, 'Error loading resources')
+        assert.strictEqual(testNode.tooltip, `${error.name}:${error.message}`)
     })
 
     // Validates we wired up the expected resource for the node icon
@@ -35,7 +35,7 @@ describe('ErrorNode', () => {
         const fileScheme: string = 'file'
         const resourceImageName: string = 'error.svg'
 
-        const testNode = new ErrorNode(regionNode, error)
+        const testNode = new ErrorNode(regionNode, error, `Error loading resources (${error.name})`)
 
         assert(testNode.iconPath !== undefined)
         const iconPath = testNode.iconPath! as {
@@ -58,11 +58,11 @@ describe('ErrorNode', () => {
 
     // Validates function nodes are leaves
     it('has no children', async () => {
-        const testNode = new ErrorNode(regionNode, error)
+        const testNode = new ErrorNode(regionNode, error, `Error loading resources (${error.name})`)
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)
-        // assert.strictEqual(childNodes.length, 0)
+        assert.strictEqual(childNodes.length, 0)
     })
 
 })

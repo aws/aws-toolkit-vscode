@@ -11,19 +11,19 @@ import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { ErrorNode } from '../explorer/errorNode'
 import { ErrorTemplates } from '../templates/errorTemplates'
 
-export async function showStackTrace(element: ErrorNode) {
+export async function showErrorDetails(element: ErrorNode) {
     try {
 
         const view = vscode.window.createWebviewPanel(
             'html',
-            `Error information for ${element.parent.label}`,
+            `Error details for ${element.parent.label}`,
             -1
         )
 
         const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
         view.webview.html = baseTemplateFn({ content: '<h1>Loading...</h1>' })
 
-        const getConfigTemplateFn = _.template(ErrorTemplates.ERROR_INFORMATION)
+        const getConfigTemplateFn = _.template(ErrorTemplates.SHOW_ERROR_DETAILS)
         view.webview.html = baseTemplateFn({
             content: getConfigTemplateFn(element)
         })

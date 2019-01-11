@@ -30,7 +30,7 @@
         "onCommand:aws.samcli.detect",
         "onCommand:aws.samcli.validate.version",
         "onCommand:aws.deleteCloudFormation",
-        "onCommand:aws.showStackTrace",
+        "onCommand:aws.showErrorDetails",
         "onDebugInitialConfigurations"
     ],
     "main": "./out/src/extension",
@@ -144,7 +144,7 @@
                     "group": "0@5"
                 },
                 {
-                    "command": "aws.showStackTrace",
+                    "command": "aws.showErrorDetails",
                     "when": "view == lambda && viewItem == awsErrorNode",
                     "group": "0@5"
                 },
@@ -248,8 +248,8 @@
                 "category": "AWS"
             },
             {
-                "command": "aws.showStackTrace",
-                "title": "%AWS.command.showStackTrace%",
+                "command": "aws.showErrorDetails",
+                "title": "%AWS.command.showErrorDetails%",
                 "category": "AWS"
             }
         ]

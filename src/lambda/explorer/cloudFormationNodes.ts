@@ -50,9 +50,11 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
     }
 
     public async getChildren(): Promise<(CloudFormationStackNode | ErrorNode)[]> {
-        await this.handleErrorProneOperation()
+        await this.handleErrorProneOperation(async () => this.updateChildren(),
+                                             localize('AWS.explorerNode.cloudFormation.error',
+                                                      'Error loading Cloudformation resources'))
 
-        return this.errorNode ? [this.errorNode]
+        return !!this.errorNode ? [this.errorNode]
             : [...this.stackNodes.values()]
     }
 
@@ -68,10 +70,6 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
             key => new DefaultCloudFormationStackNode(this, stacks.get(key)!)
         )
     }
-
-    protected async doErrorProneOperation(): Promise<void> {
-        await this.updateChildren()
-     }
 }
 
 export interface CloudFormationStackNode extends AWSTreeErrorHandlerNode {
@@ -107,9 +105,11 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
     }
 
     public async getChildren(): Promise<(CloudFormationFunctionNode | PlaceholderNode)[]> {
-        await this.handleErrorProneOperation()
+        await this.handleErrorProneOperation(async () => this.updateChildren(),
+                                             localize('AWS.explorerNode.cloudFormation.error',
+                                                      'Error loading Cloudformation resources'))
 
-        if (this.errorNode) {
+        if (!!this.errorNode) {
             return [this.errorNode]
         }
 
@@ -130,10 +130,6 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
         this.label = `${stackSummary.StackName} [${stackSummary.StackStatus}]`
         this.tooltip = `${stackSummary.StackName}-${stackSummary.StackId}`
     }
-
-    protected async doErrorProneOperation(): Promise<void> {
-        await this.updateChildren()
-     }
 
     private async updateChildren(): Promise<void> {
 

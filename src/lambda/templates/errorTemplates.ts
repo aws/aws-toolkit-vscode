@@ -4,9 +4,9 @@
  */
 
 export class ErrorTemplates {
-    public static readonly ERROR_INFORMATION = `
+    public static readonly SHOW_ERROR_DETAILS = `
     <h1>
-        Error information for <%= parent.label %>
+        Error details for <%= parent.label %>
     </h1>
     <p>
 

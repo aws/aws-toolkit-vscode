@@ -23,7 +23,7 @@ import { deployLambda } from './commands/deployLambda'
 import { getLambdaConfig } from './commands/getLambdaConfig'
 import { invokeLambda } from './commands/invokeLambda'
 import { newLambda } from './commands/newLambda'
-import { showStackTrace } from './commands/showStackTrace'
+import { showErrorDetails } from './commands/showErrorDetails'
 import { CloudFormationStackNode } from './explorer/cloudFormationNodes'
 import { DefaultRegionNode } from './explorer/defaultRegionNode'
 import { ErrorNode } from './explorer/errorNode'
@@ -73,8 +73,8 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         )
 
         vscode.commands.registerCommand(
-            'aws.showStackTrace',
-            async (node: ErrorNode) => await showStackTrace(node)
+            'aws.showErrorDetails',
+            async (node: ErrorNode) => await showErrorDetails(node)
         )
 
         vscode.commands.registerCommand(
