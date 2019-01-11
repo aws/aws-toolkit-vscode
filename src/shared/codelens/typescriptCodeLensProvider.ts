@@ -53,6 +53,7 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
 
             lenses.push(this.generateLocalInvokeCodeLens(document, range, handler.handlerName, false))
             lenses.push(this.generateLocalInvokeCodeLens(document, range, handler.handlerName, true))
+            lenses.push(this.generateConfigureCodeLens(document, range, handler.handlerName))
         })
 
         return lenses
@@ -63,6 +64,20 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
         token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.CodeLens> {
         throw new Error('not implemented')
+    }
+
+    private generateConfigureCodeLens(
+        document: vscode.TextDocument,
+        range: vscode.Range,
+        handlerName: string
+    ) {
+        const command = {
+            arguments: [ document.uri, handlerName ],
+            command: 'aws.configureLambda',
+            title: localize('AWS.command.configureLambda', 'Configure')
+        }
+
+        return new vscode.CodeLens(range, command)
     }
 
     private generateLocalInvokeCodeLens(
