@@ -12,14 +12,13 @@ import { ErrorNode } from '../explorer/errorNode'
 import { ErrorTemplates } from '../templates/errorTemplates'
 
 export async function showErrorDetails(element: ErrorNode) {
+    const view = vscode.window.createWebviewPanel(
+        'html',
+        `Error details for ${element.parent.label}`,
+        -1
+    )
+
     try {
-
-        const view = vscode.window.createWebviewPanel(
-            'html',
-            `Error details for ${element.parent.label}`,
-            -1
-        )
-
         const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
         view.webview.html = baseTemplateFn({ content: '<h1>Loading...</h1>' })
 
@@ -27,8 +26,12 @@ export async function showErrorDetails(element: ErrorNode) {
         view.webview.html = baseTemplateFn({
             content: showErrorDetailsTemplateFn(element)
         })
+
     } catch (err) {
         const error = err as Error
         console.log(error.message)
+
+        const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
+        view.webview.html = baseTemplateFn({ content: `Error displaying error details: ${error.message}` })
     }
 }

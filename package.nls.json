@@ -33,7 +33,7 @@
     "AWS.explorerNode.region.noResources": "[no resources in this region]",
     "AWS.explorerNode.lambda.noFunctions": "[no functions in this region]",
     "AWS.explorerNode.cloudFormation.noFunctions": "[no functions in this CloudFormation]",
-    "AWS.explorerNode.cloudFormation.error": "Error loading Cloudformation resources",
+    "AWS.explorerNode.cloudFormation.error": "Error loading CloudFormation resources",
     "AWS.explorerNode.container.noItems": "[no items]",
     "AWS.explorerNode.lambda.retry": "Unable to load Lambda Functions, click here to retry",
     "AWS.explorerNode.lambda.error": "Error loading Lambda resources",

@@ -52,7 +52,7 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
     public async getChildren(): Promise<(CloudFormationStackNode | ErrorNode)[]> {
         await this.handleErrorProneOperation(async () => this.updateChildren(),
                                              localize('AWS.explorerNode.cloudFormation.error',
-                                                      'Error loading Cloudformation resources'))
+                                                      'Error loading CloudFormation resources'))
 
         return !!this.errorNode ? [this.errorNode]
             : [...this.stackNodes.values()]
@@ -96,10 +96,6 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
         super('', vscode.TreeItemCollapsibleState.Collapsed)
 
         this.update(stackSummary)
-        this.iconPath = {
-            dark: vscode.Uri.file(ext.context.asAbsolutePath('resources/dark/cloudformation.svg')),
-            light: vscode.Uri.file(ext.context.asAbsolutePath('resources/light/cloudformation.svg'))
-        }
         this.contextValue = 'awsCloudFormationNode'
         this.functionNodes = new Map<string, CloudFormationFunctionNode>()
     }
@@ -107,7 +103,7 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
     public async getChildren(): Promise<(CloudFormationFunctionNode | PlaceholderNode)[]> {
         await this.handleErrorProneOperation(async () => this.updateChildren(),
                                              localize('AWS.explorerNode.cloudFormation.error',
-                                                      'Error loading Cloudformation resources'))
+                                                      'Error loading CloudFormation resources'))
 
         if (!!this.errorNode) {
             return [this.errorNode]

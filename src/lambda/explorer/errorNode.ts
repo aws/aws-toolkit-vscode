@@ -6,7 +6,6 @@
 'use strict'
 
 import * as vscode from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 
 // Used as a child node when an exception occurs while querying AWS resources
@@ -20,9 +19,5 @@ export class ErrorNode extends AWSTreeNodeBase {
 
         this.tooltip = `${error.name}:${error.message}`
         this.contextValue = 'awsErrorNode'
-        this.iconPath = {
-            dark: vscode.Uri.file(ext.context.asAbsolutePath('resources/dark/error.svg')),
-            light: vscode.Uri.file(ext.context.asAbsolutePath('resources/light/error.svg'))
-        }
     }
 }

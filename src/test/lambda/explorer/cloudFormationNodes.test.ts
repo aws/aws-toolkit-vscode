@@ -7,7 +7,6 @@
 
 import * as assert from 'assert'
 import { CloudFormation, Lambda } from 'aws-sdk'
-import { Uri } from 'vscode'
 import {
     CloudFormationStackNode,
     DefaultCloudFormationFunctionNode,
@@ -195,35 +194,6 @@ describe('DefaultCloudFormationStackNode', () => {
         assert.strictEqual((childNodes[1] as DefaultCloudFormationFunctionNode).label, lambda3Name)
     })
 
-    // Validates we wired up the expected resource for the node icon
-    it('initializes icon path', async () => {
-
-        const fileScheme: string = 'file'
-        const resourceImageName: string = 'cloudformation.svg'
-
-        const testNode = new DefaultCloudFormationStackNode(
-            new DefaultCloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
-            fakeStackSummary
-        )
-
-        const iconPath = testNode.iconPath as {
-            light: Uri,
-            dark: Uri
-        }
-        assert(!!iconPath)
-
-        assert(!!iconPath.light)
-        assert(iconPath!.light instanceof Uri)
-        assert.strictEqual(iconPath!.light.scheme, fileScheme)
-        const lightResourcePath: string = iconPath!.light.path
-        assert(lightResourcePath.endsWith(`/light/${resourceImageName}`))
-
-        assert(!!iconPath.dark)
-        assert(iconPath!.dark instanceof Uri)
-        assert.strictEqual(iconPath!.dark.scheme, fileScheme)
-        const darkResourcePath: string = iconPath!.dark.path
-        assert(darkResourcePath.endsWith(`dark/${resourceImageName}`))
-    })
 })
 
 describe('DefaultCloudFormationNode', () => {
