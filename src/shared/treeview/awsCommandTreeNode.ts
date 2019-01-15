@@ -5,7 +5,7 @@
 
 'use strict'
 
-import { TreeItemCollapsibleState } from 'vscode'
+import { ext } from '../extensionGlobals'
 import { AWSTreeNodeBase } from '../treeview/awsTreeNodeBase'
 
 export class AWSCommandTreeNode extends AWSTreeNodeBase {
@@ -16,7 +16,7 @@ export class AWSCommandTreeNode extends AWSTreeNodeBase {
         commandArguments?: any[],
         tooltip?: string,
     ) {
-        super(label, TreeItemCollapsibleState.None)
+        super(label, ext.vscode.TreeItemCollapsibleState.None)
         this.command = {
             title: label || '',
             command: commandId,

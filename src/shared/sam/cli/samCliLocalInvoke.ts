@@ -5,8 +5,9 @@
 
 'use strict'
 
-import * as vscode from 'vscode'
+import { ext } from '../../extensionGlobals'
 import { fileExists } from '../../filesystemUtilities'
+import { types as vscode } from '../../vscode'
 import { DefaultSamCliTaskInvoker, SamCliTaskInvoker } from './samCliInvoker'
 
 export interface SamCliLocalInvokeResponse {
@@ -39,16 +40,16 @@ export class SamCliLocalInvokeInvocation {
             args.push('-d', this.debugPort)
         }
 
-        const execution: vscode.ShellExecution = new vscode.ShellExecution(
+        const execution: vscode.ShellExecution = new ext.vscode.ShellExecution(
             'sam',
             args
         )
 
-        const task: vscode.Task = new vscode.Task(
+        const task: vscode.Task = new ext.vscode.Task(
             {
                 type: 'samLocalInvoke',
             },
-            vscode.TaskScope.Workspace,
+            ext.vscode.TaskScope.Workspace,
             'LocalLambdaDebug',
             'SAM CLI',
             execution,

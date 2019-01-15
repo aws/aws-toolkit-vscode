@@ -9,7 +9,8 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { Lambda } from 'aws-sdk'
-import * as vscode from 'vscode'
+import { ext } from '../../shared/extensionGlobals'
+import { types as vscode } from '../../shared/vscode'
 import { FunctionNodeBase } from '../explorer/functionNode'
 
 class QuickPickLambda extends FunctionNodeBase implements vscode.QuickPickItem {
@@ -32,17 +33,17 @@ export async function quickPickLambda(
 ): Promise<FunctionNodeBase | undefined> {
     try {
         if (!lambdas || lambdas.length === 0) {
-            vscode.window.showInformationMessage(localize(
+            ext.vscode.window.showInformationMessage(localize(
                 'AWS.explorerNode.lambda.noFunctions',
                 '[no functions in this region]'
             ))
         } else {
             const qpLambdas = lambdas.map(lambda => new QuickPickLambda(lambda, region))
 
-            return await vscode.window.showQuickPick(qpLambdas, { placeHolder: 'Choose a lambda' })
+            return await ext.vscode.window.showQuickPick(qpLambdas, { placeHolder: 'Choose a lambda' })
         }
         throw new Error('No lambdas to work with.')
     } catch (error) {
-        vscode.window.showErrorMessage('Unable to connect to AWS.')
+        ext.vscode.window.showErrorMessage('Unable to connect to AWS.')
     }
 }

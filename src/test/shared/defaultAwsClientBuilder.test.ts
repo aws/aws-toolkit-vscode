@@ -5,17 +5,20 @@
 
 'use strict'
 
+import './vscode/initialize'
+
 import * as assert from 'assert'
 import { Service } from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
-import * as vscode from 'vscode'
-import { DefaultAWSClientBuilder } from '../../shared/awsClientBuilder'
 import { AwsContext, ContextChangeEventsArgs } from '../../shared/awsContext'
+import { DefaultAWSClientBuilder } from '../../shared/defaultAwsClientBuilder'
+import { ext } from '../../shared/extensionGlobals'
+import { types as vscode } from '../../shared/vscode'
 
 describe('DefaultAwsClientBuilder', () => {
     class FakeAwsContext implements AwsContext {
         public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> =
-            new vscode.EventEmitter<ContextChangeEventsArgs>().event
+            new ext.vscode.EventEmitter<ContextChangeEventsArgs>().event
 
         public async getCredentials(): Promise<AWS.Credentials | undefined> {
             return undefined

@@ -5,13 +5,15 @@
 
 'use strict'
 
+import './vscode/initialize'
+
 import * as assert from 'assert'
 import * as del from 'del'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 import * as filesystem from '../../shared/filesystem'
-import { fileExists,  } from '../../shared/filesystemUtilities'
+import * as fsUtils from '../../shared/filesystemUtilities'
 
 describe('filesystem', () => {
     const filename = 'file.txt'
@@ -63,7 +65,7 @@ describe('filesystem', () => {
         it('creates a directory at the specified path', async () => {
             const myPath = path.join(tempFolder, 'myPath')
             await filesystem.mkdirAsync(myPath)
-            assert.strictEqual(await fileExists(myPath), true)
+            assert.strictEqual(await fsUtils.fileExists(myPath), true)
 
             const stat = await filesystem.statAsync(myPath)
             assert.ok(stat)
@@ -87,9 +89,13 @@ describe('filesystem', () => {
         it('creates a directory with the specified prefix', async () => {
             const actual = await filesystem.mkdtempAsync('myPrefix')
 
-            assert.ok(actual)
-            assert.strictEqual(path.basename(actual).startsWith('myPrefix'), true)
-            assert.strictEqual(await fileExists(actual), true)
+            try {
+                assert.ok(actual)
+                assert.strictEqual(path.basename(actual).startsWith('myPrefix'), true)
+                assert.strictEqual(await fsUtils.fileExists(actual), true)
+            } finally {
+                await filesystem.rmdirAsync(actual)
+            }
         })
 
         it('rejects if prefix contains invalid path characters', async () => {

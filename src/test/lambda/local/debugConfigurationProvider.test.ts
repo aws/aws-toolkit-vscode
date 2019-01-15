@@ -5,13 +5,15 @@
 
 'use strict'
 
+import '../../shared/vscode/initialize'
+
 import * as assert from 'assert'
 import * as del from 'del'
 import * as path from 'path'
-import * as vscode from 'vscode'
 import { NodeDebugConfigurationProvider } from '../../../lambda/local/debugConfigurationProvider'
 import * as filesystem from '../../../shared/filesystem'
 import { readFileAsString } from '../../../shared/filesystemUtilities'
+import { types as vscode } from '../../../shared/vscode'
 import { createWorkspaceFolder, saveTemplate } from './util'
 
 describe('NodeDebugConfigurationProvider', () => {

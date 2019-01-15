@@ -72,6 +72,18 @@ export async function readFileAsync(filename: string, encoding: string | null): 
     })
 }
 
+export async function rmdirAsync(path: fs.PathLike): Promise<void> {
+    await new Promise<void>((resolve, reject) => {
+        fs.rmdir(path, err => {
+            if (!err) {
+                resolve()
+            } else {
+                reject(err)
+            }
+        })
+    })
+}
+
 export async function statAsync(path: string | Buffer): Promise<fs.Stats> {
     return await new Promise<fs.Stats>((resolve, reject) => {
         fs.stat(path, (err, stats) => {

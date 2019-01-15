@@ -5,6 +5,8 @@
 
 'use strict'
 
+import '../../vscode/initialize'
+
 import * as assert from 'assert'
 import { SamCliInfoInvocation, SamCliInfoResponse } from '../../../../shared/sam/cli/samCliInfo'
 

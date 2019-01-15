@@ -5,13 +5,13 @@
 
 'use strict'
 
-import { QuickPickItem } from 'vscode'
+import { types as vscode } from '../vscode'
 
 export interface CredentialSelectionState {
     title: string
     step: number
     totalSteps: number
-    credentialProfile: QuickPickItem | undefined
+    credentialProfile: vscode.QuickPickItem | undefined
     accesskey: string
     secretKey: string
     profileName: string

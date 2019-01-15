@@ -6,11 +6,11 @@
 'use strict'
 
 import * as path from 'path'
-import { accessAsync, readFileAsync } from './filesystem'
+import * as filesystem from './filesystem'
 
 export async function fileExists(filePath: string): Promise<boolean> {
     try {
-        await accessAsync(filePath)
+        await filesystem.accessAsync(filePath)
     } catch (err) {
         return false
     }
@@ -28,7 +28,7 @@ export async function fileExists(filePath: string): Promise<boolean> {
  */
 export async function readFileAsString(filePath: string, encoding?: string): Promise<string> {
     // tslint:disable-next-line:no-null-keyword
-    const result = await readFileAsync(filePath, encoding || null)
+    const result = await filesystem.readFileAsync(filePath, encoding || null)
     if (result instanceof Buffer) {
         return result.toString(encoding || undefined)
     }
@@ -54,4 +54,17 @@ export async function findFileInParentPaths(searchFolder: string, fileToFind: st
     }
 
     return findFileInParentPaths(parentPath, fileToFind)
+}
+
+export async function withTemporaryDirectory(
+    prefix: string,
+    action: (path: string) => Promise<void>
+): Promise<void> {
+    const tempPath = await filesystem.mkdtempAsync(prefix)
+
+    try {
+        await action(tempPath)
+    } finally {
+        await filesystem.rmdirAsync(tempPath)
+    }
 }

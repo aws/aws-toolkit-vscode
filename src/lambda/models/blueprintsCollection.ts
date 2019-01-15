@@ -6,11 +6,11 @@
 'use strict'
 
 import path = require('path')
-import { ExtensionContext } from 'vscode'
 import xml2js = require('xml2js')
 import { hostedFilesBaseUrl } from '../../shared/constants'
 import { ResourceFetcher } from '../../shared/resourceFetcher'
 import { FileResourceLocation, WebResourceLocation } from '../../shared/resourceLocation'
+import { types as vscode } from '../../shared/vscode'
 import { blueprintsManifestPath } from '../constants'
 import { Blueprint, BlueprintOrigin } from './blueprint'
 
@@ -39,10 +39,10 @@ interface BlueprintManifest {
 export class BlueprintsCollection {
 
     private availableBlueprints: Blueprint[] = []
-    private readonly _context: ExtensionContext
+    private readonly _context: vscode.ExtensionContext
     private readonly _resourceFetcher: ResourceFetcher
 
-    public constructor(context: ExtensionContext, resourceFetcher: ResourceFetcher) {
+    public constructor(context: vscode.ExtensionContext, resourceFetcher: ResourceFetcher) {
         this._context = context
         this._resourceFetcher = resourceFetcher
     }

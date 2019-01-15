@@ -5,9 +5,11 @@
 
 'use strict'
 
+import './shared/vscode/initialize'
+
 import * as assert from 'assert'
 import * as path from 'path'
-import * as vscode from 'vscode'
+import { ext } from '../shared/extensionGlobals'
 import { LambdaHandlerCandidate } from '../shared/lambdaHandlerSearch'
 import { TypescriptLambdaHandlerSearch } from '../shared/typescriptLambdaHandlerSearch'
 
@@ -98,7 +100,7 @@ describe('TypescriptLambdaHandlerSearch', () => {
         expectedHandlerNames: Set<string>
     ): Promise<void> {
         const search: TypescriptLambdaHandlerSearch = new TypescriptLambdaHandlerSearch(
-            vscode.Uri.file(filename)
+            ext.vscode.Uri.file(filename)
         )
 
         const handlers: LambdaHandlerCandidate[] = await search.findCandidateLambdaHandlers()

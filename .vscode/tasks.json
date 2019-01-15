@@ -14,7 +14,7 @@
             "group": {
                 "kind": "build",
                 "isDefault": true
-            },
+            }
         },
         {
             "type": "npm",
@@ -25,6 +25,16 @@
             "type": "npm",
             "script": "compile",
             "problemMatcher": "$tsc"
+        },
+        {
+            "type": "npm",
+            "script": "test",
+            "problemMatcher": []
+        },
+        {
+            "type": "npm",
+            "script": "mtest",
+            "problemMatcher": []
         }
     ]
 }

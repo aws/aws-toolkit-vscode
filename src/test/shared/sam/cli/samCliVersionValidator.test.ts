@@ -5,6 +5,8 @@
 
 'use strict'
 
+import '../../vscode/initialize'
+
 import * as assert from 'assert'
 import { SamCliVersion, SamCliVersionValidation } from '../../../../shared/sam/cli/samCliVersion'
 import { SamCliVersionValidator, SamCliVersionValidatorResult } from '../../../../shared/sam/cli/samCliVersionValidator'

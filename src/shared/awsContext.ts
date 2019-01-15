@@ -5,7 +5,7 @@
 
 'use strict'
 
-import * as vscode from 'vscode'
+import { types as vscode } from './vscode'
 
 // Carries the current context data on events
 export class ContextChangeEventsArgs {

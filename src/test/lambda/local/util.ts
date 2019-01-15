@@ -7,19 +7,20 @@
 
 import * as os from 'os'
 import * as path from 'path'
-import { Uri, WorkspaceFolder } from 'vscode'
+import { ext } from '../../../shared/extensionGlobals'
 import * as filesystem from '../../../shared/filesystem'
+import { types as vscode } from '../../../shared/vscode'
 
 export async function createWorkspaceFolder(prefix: string): Promise<{
     workspacePath: string
-    workspaceFolder: WorkspaceFolder
+    workspaceFolder: vscode.WorkspaceFolder
 }> {
     const workspacePath = await createTemporaryDirectory(prefix)
 
     return {
         workspacePath,
         workspaceFolder: {
-            uri: Uri.file(workspacePath),
+            uri: ext.vscode.Uri.file(workspacePath),
             name: path.basename(workspacePath),
             index: 0
         }

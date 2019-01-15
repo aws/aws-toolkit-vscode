@@ -9,8 +9,8 @@ import * as del from 'del'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import * as vscode from 'vscode'
 import * as filesystem from '../filesystem'
+import { types as vscode } from '../vscode'
 
 export class DisposableFiles implements vscode.Disposable {
 

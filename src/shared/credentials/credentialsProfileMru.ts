@@ -5,7 +5,7 @@
 
 'use strict'
 
-import * as vscode from 'vscode'
+import { ext } from '../extensionGlobals'
 import { SettingsConfiguration } from '../settingsConfiguration'
 
 /**
@@ -49,7 +49,7 @@ export class CredentialsProfileMru {
         await this._configuration.writeSetting(
             CredentialsProfileMru.configurationSettingName,
             mru,
-            vscode.ConfigurationTarget.Global
+            ext.vscode.ConfigurationTarget.Global
         )
     }
 }

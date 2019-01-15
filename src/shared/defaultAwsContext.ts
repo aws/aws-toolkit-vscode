@@ -6,13 +6,14 @@
 'use strict'
 
 import * as AWS from 'aws-sdk'
-import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { AwsContext, ContextChangeEventsArgs } from './awsContext'
 import { extensionSettingsPrefix, profileSettingKey, regionSettingKey } from './constants'
 import { CredentialsProfileMru } from './credentials/credentialsProfileMru'
 import { CredentialsManager } from './credentialsManager'
+import { ext } from './extensionGlobals'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from './settingsConfiguration'
+import { types as vscode } from './vscode'
 
 const localize = nls.loadMessageBundle()
 
@@ -36,8 +37,10 @@ export class DefaultAwsContext implements AwsContext {
 
     public constructor(public settingsConfiguration: SettingsConfiguration) {
 
-        this._onDidChangeContext = new vscode.EventEmitter<ContextChangeEventsArgs>()
-        this.onDidChangeContext = this._onDidChangeContext.event
+        this._onDidChangeContext = new ext.vscode.EventEmitter<ContextChangeEventsArgs>()
+        this.onDidChangeContext = this._onDidChangeContext.event.bind(
+            this._onDidChangeContext
+        ) as vscode.Event<ContextChangeEventsArgs>
 
         this.profileName = settingsConfiguration.readSetting(profileSettingKey, '')
         const persistedRegions = settingsConfiguration.readSetting<string[]>(regionSettingKey)
@@ -64,7 +67,7 @@ export class DefaultAwsContext implements AwsContext {
         } catch (err) {
             const error = err as Error
 
-            vscode.window.showErrorMessage(localize(
+            ext.vscode.window.showErrorMessage(localize(
                 'AWS.message.credentials.error',
                 'There was an issue trying to use credentials profile {0}.\nYou will be disconnected from AWS.\n\n{1}',
                 this.profileName,
@@ -83,7 +86,11 @@ export class DefaultAwsContext implements AwsContext {
     // resets the context to the indicated profile, saving it into settings
     public async setCredentialProfileName(profileName?: string): Promise<void> {
         this.profileName = profileName
-        await this.settingsConfiguration.writeSetting(profileSettingKey, profileName, vscode.ConfigurationTarget.Global)
+        await this.settingsConfiguration.writeSetting(
+            profileSettingKey,
+            profileName,
+            ext.vscode.ConfigurationTarget.Global
+        )
 
         if (this.profileName) {
             await this._credentialsMru.setMostRecentlyUsedProfile(this.profileName)
@@ -111,7 +118,7 @@ export class DefaultAwsContext implements AwsContext {
         await this.settingsConfiguration.writeSetting(
             regionSettingKey,
             this.explorerRegions,
-            vscode.ConfigurationTarget.Global
+            ext.vscode.ConfigurationTarget.Global
         )
         this._onDidChangeContext.fire(new ContextChangeEventsArgs(this.profileName, this.explorerRegions))
     }
@@ -128,7 +135,7 @@ export class DefaultAwsContext implements AwsContext {
         await this.settingsConfiguration.writeSetting(
             regionSettingKey,
             this.explorerRegions,
-            vscode.ConfigurationTarget.Global
+            ext.vscode.ConfigurationTarget.Global
         )
         this._onDidChangeContext.fire(new ContextChangeEventsArgs(this.profileName, this.explorerRegions))
     }

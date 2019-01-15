@@ -10,9 +10,10 @@
 import { parse } from 'jsonc-parser'
 import * as os from 'os'
 import * as path from 'path'
-import * as vscode from 'vscode'
+import { ext } from '../../shared/extensionGlobals'
 import { accessAsync, mkdirAsync, writeFileAsync } from '../../shared/filesystem'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
+import { types as vscode } from '../../shared/vscode'
 
 export interface HandlerConfig {
     event: any
@@ -33,7 +34,7 @@ export async function configureLocalLambda(workspaceFolder: vscode.WorkspaceFold
 
     await ensureHandlersConfigFileExists(uri, handler)
 
-    const editor: vscode.TextEditor = await vscode.window.showTextDocument(uri)
+    const editor: vscode.TextEditor = await ext.vscode.window.showTextDocument(uri)
     if (await prepareConfig(editor, handler)) {
         // Perf: TextDocument.save is smart enough to no-op if the document is not dirty.
         await editor.document.save()
@@ -41,7 +42,7 @@ export async function configureLocalLambda(workspaceFolder: vscode.WorkspaceFold
         throw new Error(`Could not update config file '${uri.fsPath}'`)
     }
 
-    await vscode.window.showTextDocument(
+    await ext.vscode.window.showTextDocument(
         editor.document,
         { selection: await getEventRange(editor, handler) }
     )
@@ -96,9 +97,12 @@ function getTabSize(editor?: vscode.TextEditor): number {
 async function getSymbols(uri: vscode.Uri): Promise<vscode.DocumentSymbol[] | undefined> {
     // Awaiting this command is required because without it, symbols for a newly created document might not yet
     // be available, in which case vscode.executeDocumentSymbolProvider will return an empty list.
-    await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('editor.action.wordHighlight.trigger', uri)
+    await ext.vscode.commands.executeCommand<vscode.DocumentSymbol[]>('editor.action.wordHighlight.trigger', uri)
 
-    return await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri)
+    return await ext.vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
+        'vscode.executeDocumentSymbolProvider',
+        uri
+    )
 }
 
 async function prepareConfig(editor: vscode.TextEditor, handler: string): Promise<boolean> {
@@ -109,8 +113,8 @@ async function prepareConfig(editor: vscode.TextEditor, handler: string): Promis
         return await editor.edit(editBuilder => editBuilder.replace(
             // The jsonc-parser API does not provide a safe way to insert a child into an empty list, so in the case
             // that the config file is missing or empty, we need to replace the entire document.
-            new vscode.Range(
-                new vscode.Position(0, 0),
+            new ext.vscode.Range(
+                new ext.vscode.Position(0, 0),
                 editor.document.positionAt(editor.document.getText().length)
             ),
             JSON.stringify(buildHandlersConfig(handler), undefined, getTabSize(editor))
@@ -128,12 +132,12 @@ async function prepareConfig(editor: vscode.TextEditor, handler: string): Promis
         const configString = JSON.stringify(config, undefined, getTabSize(editor))
 
         return await editor.edit(
-                // The jsonc-parser API does not provide a safe way to insert a child into an empty list, so in the case
-                // that the config file exists, but has an empty or undefined `handlers` property, we need to replace
-                // the entire document.
-                editBuilder => editBuilder.replace(
-                new vscode.Range(
-                    new vscode.Position(0, 0),
+            // The jsonc-parser API does not provide a safe way to insert a child into an empty list, so in the case
+            // that the config file exists, but has an empty or undefined `handlers` property, we need to replace
+            // the entire document.
+            editBuilder => editBuilder.replace(
+                new ext.vscode.Range(
+                    new ext.vscode.Position(0, 0),
                     editor.document.positionAt(editor.document.getText().length)
                 ),
                 configString
@@ -148,7 +152,7 @@ async function prepareConfig(editor: vscode.TextEditor, handler: string): Promis
         const lastChildEnd: vscode.Position = handlersSymbol.children.reduce(
             (lastSoFar: vscode.Position, current: vscode.DocumentSymbol) =>
                 current.range.end.isAfter(lastSoFar) ? current.range.end : lastSoFar,
-            new vscode.Position(0, 0)
+            new ext.vscode.Position(0, 0)
         )
 
         // For example (tabWidth = 4):
@@ -175,7 +179,7 @@ async function prepareConfig(editor: vscode.TextEditor, handler: string): Promis
         const lastChildEnd: vscode.Position = handlerSymbol.children.reduce(
             (lastSoFar: vscode.Position, current: vscode.DocumentSymbol) =>
                 current.range.end.isAfter(lastSoFar) ? current.range.end : lastSoFar,
-            new vscode.Position(0, 0)
+            new ext.vscode.Position(0, 0)
         )
 
         const baseIndentation: string = ' '.repeat(getTabSize(editor)).repeat(3)
@@ -188,14 +192,15 @@ async function prepareConfig(editor: vscode.TextEditor, handler: string): Promis
 }
 
 async function getEventRange(editor: vscode.TextEditor, handler: string): Promise<vscode.Range> {
-    const symbols: vscode.DocumentSymbol[] | undefined = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
-        'vscode.executeDocumentSymbolProvider',
-        editor.document.uri
-    )
+    const symbols: vscode.DocumentSymbol[] | undefined =
+        await ext.vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
+            'vscode.executeDocumentSymbolProvider',
+            editor.document.uri
+        )
 
-    const defaultRange = new vscode.Range(
-        new vscode.Position(0, 0),
-        new vscode.Position(0, 0)
+    const defaultRange = new ext.vscode.Range(
+        new ext.vscode.Position(0, 0),
+        new ext.vscode.Position(0, 0)
     )
 
     if (!symbols || symbols.length < 1) {
@@ -209,14 +214,16 @@ async function getEventRange(editor: vscode.TextEditor, handler: string): Promis
         return defaultRange
     }
 
-    const handlerSymbol: vscode.DocumentSymbol | undefined = handlersSymbol.children.find(c => c.name === handler)
+    const handlerSymbol: vscode.DocumentSymbol | undefined =
+        handlersSymbol.children.find(c => c.name === handler)
     if (!handlerSymbol) {
         console.error(`Unable to find config for handler ${handler}`)
 
         return defaultRange
     }
 
-    const eventSymbol: vscode.DocumentSymbol | undefined = handlerSymbol.children.find(c => c.name === 'event')
+    const eventSymbol: vscode.DocumentSymbol | undefined =
+        handlerSymbol.children.find(c => c.name === 'event')
     if (!eventSymbol) {
         return handlerSymbol.range
     }
@@ -245,5 +252,5 @@ async function getChildrenRange(symbol: vscode.DocumentSymbol) {
         return symbol.range
     }
 
-    return new vscode.Range(start, end)
+    return new ext.vscode.Range(start, end)
 }

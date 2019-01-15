@@ -3,8 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+'use strict'
+
+import '../../shared/vscode/initialize'
+
 import * as assert from 'assert'
-import { QuickPickItem } from 'vscode'
 import { CredentialSelectionDataProvider } from '../../../shared/credentials/credentialSelectionDataProvider'
 import { CredentialSelectionState } from '../../../shared/credentials/credentialSelectionState'
 import {
@@ -12,6 +15,7 @@ import {
     promptToDefineCredentialsProfile
 } from '../../../shared/credentials/defaultCredentialSelectionDataProvider'
 import { MultiStepInputFlowController } from '../../../shared/multiStepInputFlowController'
+import { types as vscode } from '../../../shared/vscode'
 
 describe('defaultCredentialSelectionDataProvider', () => {
 
@@ -27,8 +31,8 @@ describe('defaultCredentialSelectionDataProvider', () => {
                 public async pickCredentialProfile(
                     input: MultiStepInputFlowController,
                     partialState: Partial<CredentialSelectionState>
-                ): Promise<QuickPickItem> {
-                    return new Promise<QuickPickItem>(resolve => {
+                ): Promise<vscode.QuickPickItem> {
+                    return new Promise<vscode.QuickPickItem>(resolve => {
                         resolve({ label: this.existingProfileNames[1] })
                     })
                 }
@@ -87,7 +91,7 @@ describe('defaultCredentialSelectionDataProvider', () => {
                 public async pickCredentialProfile(
                     input: MultiStepInputFlowController,
                     partialState: Partial<CredentialSelectionState>
-                ): Promise<QuickPickItem> {
+                ): Promise<vscode.QuickPickItem> {
                     throw new Error('Should never get here')
                 }
 

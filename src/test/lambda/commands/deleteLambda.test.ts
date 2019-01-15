@@ -5,10 +5,12 @@
 
 'use strict'
 
+import '../../shared/vscode/initialize'
+
 import * as assert from 'assert'
-import { OutputChannel } from 'vscode'
 import { deleteLambda } from '../../../lambda/commands/deleteLambda'
 import { ext } from '../../../shared/extensionGlobals'
+import { types as vscode } from '../../../shared/vscode'
 import {
     MockLambdaClient,
     MockToolkitClientBuilder
@@ -97,7 +99,7 @@ describe('deleteLambda', async () => {
         ext.lambdaOutputChannel = {
             show(preserveFocus?: boolean | undefined): void { },
             appendLine(value: string): void { }
-        } as any as OutputChannel
+        } as any as vscode.OutputChannel
 
         const parent = new MockStandaloneFunctionGroupNode(
             undefined,

@@ -6,7 +6,6 @@
 'use strict'
 
 import _ = require('lodash')
-import * as vscode from 'vscode'
 import { AwsContext } from '../../shared/awsContext'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
@@ -22,7 +21,7 @@ export async function getLambdaConfig(
     try {
         const fn: FunctionNodeBase = await selectLambdaNode(awsContext, element)
 
-        const view = vscode.window.createWebviewPanel(
+        const view = ext.vscode.window.createWebviewPanel(
             'html',
             `Getting config for ${fn.configuration.FunctionName}`,
             -1

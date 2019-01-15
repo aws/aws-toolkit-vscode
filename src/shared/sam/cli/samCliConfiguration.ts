@@ -5,7 +5,7 @@
 
 'use strict'
 
-import * as vscode from 'vscode'
+import { ext } from '../../extensionGlobals'
 import * as filesystemUtilities from '../../filesystemUtilities'
 import { SettingsConfiguration } from '../../settingsConfiguration'
 import { SamCliLocationProvider } from './samCliLocator'
@@ -41,7 +41,7 @@ export class DefaultSamCliConfiguration {
         await this._configuration.writeSetting(
             DefaultSamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION,
             location,
-            vscode.ConfigurationTarget.Global
+            ext.vscode.ConfigurationTarget.Global
         )
     }
 

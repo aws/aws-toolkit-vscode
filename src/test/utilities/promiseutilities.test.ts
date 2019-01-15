@@ -5,6 +5,8 @@
 
 'use strict'
 
+import '../shared/vscode/initialize'
+
 import * as assert from 'assert'
 import { PromiseSharer } from '../../shared/utilities/promiseUtilities'
 

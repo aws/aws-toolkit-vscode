@@ -6,9 +6,10 @@
 'use strict'
 
 import * as path from 'path'
-import * as vscode from 'vscode'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
+import { ext } from '../../shared/extensionGlobals'
 import { fileExists } from '../../shared/filesystemUtilities'
+import { types as vscode } from '../../shared/vscode'
 
 export interface LocalLambda {
     lambda: string
@@ -18,7 +19,7 @@ export interface LocalLambda {
 }
 
 export async function detectLocalLambdas(
-    workspaceFolders: vscode.WorkspaceFolder[] | undefined = vscode.workspace.workspaceFolders
+    workspaceFolders: vscode.WorkspaceFolder[] | undefined = ext.vscode.workspace.workspaceFolders
 ): Promise<LocalLambda[]> {
     if (!workspaceFolders) {
         return []

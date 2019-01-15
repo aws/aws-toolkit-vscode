@@ -5,15 +5,17 @@
 
 'use strict'
 
+import '../vscode/initialize'
+
 import * as assert from 'assert'
 import * as del from 'del'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import * as vscode from 'vscode'
 import * as fileSystem from '../../../shared/filesystem'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
 import { DisposableFiles, ExtensionDisposableFiles } from '../../../shared/utilities/disposableFiles'
+import { types as vscode } from '../../../shared/vscode'
 
 describe('DisposableFiles', async () => {
     let tempFolder: string

@@ -3,6 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+'use strict'
+
+import './vscode/initialize'
+
 import * as assert from 'assert'
 import { safeGet } from '../../shared/extensionUtilities'
 

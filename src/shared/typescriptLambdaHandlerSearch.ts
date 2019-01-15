@@ -7,9 +7,9 @@
 
 import * as path from 'path'
 import * as ts from 'typescript'
-import * as vscode from 'vscode'
 import { readFileAsString } from './filesystemUtilities'
 import { LambdaHandlerCandidate, LambdaHandlerSearch } from './lambdaHandlerSearch'
+import { types as vscode } from './vscode'
 
 /**
  * Detects functions that could possibly be used as Lambda Function Handlers from a Typescript file.

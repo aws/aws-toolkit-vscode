@@ -3,11 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+'use strict'
+
+import './vscode/initialize'
+
 import * as assert from 'assert'
-import { ConfigurationTarget } from 'vscode'
 import { profileSettingKey, regionSettingKey } from '../../shared/constants'
 import { DefaultAwsContext } from '../../shared/defaultAwsContext'
+import { ext } from '../../shared/extensionGlobals'
 import { SettingsConfiguration } from '../../shared/settingsConfiguration'
+import { types as vscode } from '../../shared/vscode'
 
 describe('DefaultAwsContext', () => {
 
@@ -22,7 +27,7 @@ describe('DefaultAwsContext', () => {
 
         public async writeSetting<T>(
             settingKey: string, value: T | undefined,
-            target: ConfigurationTarget
+            target: vscode.ConfigurationTarget
         ): Promise<void> {
         }
     }
@@ -84,12 +89,16 @@ describe('DefaultAwsContext', () => {
     it('updates config on single region change', async () => {
 
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
-            public async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
+            public async writeSetting<T>(
+                settingKey: string,
+                value: T,
+                target: vscode.ConfigurationTarget
+            ): Promise<void> {
                 const array: string[] = value as any
                 assert.strictEqual(settingKey, regionSettingKey)
                 assert.strictEqual(array.length, 1)
                 assert.strictEqual(array[0], testRegion1Value)
-                assert.strictEqual(target, ConfigurationTarget.Global)
+                assert.strictEqual(target, ext.vscode.ConfigurationTarget.Global)
             }
         }
 
@@ -100,13 +109,17 @@ describe('DefaultAwsContext', () => {
     it('updates config on multiple region change', async () => {
 
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
-            public async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
+            public async writeSetting<T>(
+                settingKey: string,
+                value: T,
+                target: vscode.ConfigurationTarget
+            ): Promise<void> {
                 assert.strictEqual(settingKey, regionSettingKey)
                 assert(value instanceof Array)
                 const values = value as any as string[]
                 assert.strictEqual(values[0], testRegion1Value)
                 assert.strictEqual(values[1], testRegion2Value)
-                assert.strictEqual(target, ConfigurationTarget.Global)
+                assert.strictEqual(target, ext.vscode.ConfigurationTarget.Global)
             }
         }
 
@@ -124,10 +137,14 @@ describe('DefaultAwsContext', () => {
 
                 return super.readSetting<T>(settingKey, defaultValue)
             }
-            public async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
+            public async writeSetting<T>(
+                settingKey: string,
+                value: T,
+                target: vscode.ConfigurationTarget
+            ): Promise<void> {
                 assert.strictEqual(settingKey, regionSettingKey)
                 assert.deepStrictEqual(value, [ testRegion1Value ])
-                assert.strictEqual(target, ConfigurationTarget.Global)
+                assert.strictEqual(target, ext.vscode.ConfigurationTarget.Global)
             }
         }
 
@@ -138,10 +155,14 @@ describe('DefaultAwsContext', () => {
     it('updates config on profile change', async () => {
 
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
-            public async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
+            public async writeSetting<T>(
+                settingKey: string,
+                value: T,
+                target: vscode.ConfigurationTarget
+            ): Promise<void> {
                 assert.strictEqual(settingKey, profileSettingKey)
                 assert.strictEqual(value, testProfileValue)
-                assert.strictEqual(target, ConfigurationTarget.Global)
+                assert.strictEqual(target, ext.vscode.ConfigurationTarget.Global)
             }
         }
 

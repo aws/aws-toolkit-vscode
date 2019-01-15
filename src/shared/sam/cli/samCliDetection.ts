@@ -6,10 +6,11 @@
 'use strict'
 
 import * as AsyncLock from 'async-lock'
-import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { extensionSettingsPrefix, samAboutInstallUrl } from '../../constants'
+import { ext } from '../../extensionGlobals'
 import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
+import { types as vscode } from '../../vscode'
 import { DefaultSamCliConfiguration, SamCliConfiguration } from './samCliConfiguration'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
 
@@ -57,7 +58,7 @@ export async function detectSamCli(showMessageIfDetected: boolean): Promise<void
                     getSettingsNotUpdatedMessage(initialSamCliLocation) :
                     getSettingsUpdatedMessage(currentsamCliLocation)
 
-                vscode.window.showInformationMessage(message)
+                ext.vscode.window.showInformationMessage(message)
             }
         }
     })
@@ -65,7 +66,7 @@ export async function detectSamCli(showMessageIfDetected: boolean): Promise<void
 
 function notifyUserSamCliNotDetected(samCliConfig: SamCliConfiguration): void {
     // inform the user, but don't wait for this to complete
-    vscode.window.showErrorMessage(
+    ext.vscode.window.showErrorMessage(
         localize(
             'AWS.samcli.error.notFound',
             // tslint:disable-next-line:max-line-length
@@ -75,9 +76,9 @@ function notifyUserSamCliNotDetected(samCliConfig: SamCliConfiguration): void {
         browseToSamCli
     ).then(async userResponse => {
         if (userResponse === learnMore) {
-            await vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(samAboutInstallUrl))
+            await ext.vscode.commands.executeCommand('vscode.open', ext.vscode.Uri.parse(samAboutInstallUrl))
         } else if (userResponse === browseToSamCli) {
-            const location: vscode.Uri[] | undefined = await vscode.window.showOpenDialog(
+            const location: vscode.Uri[] | undefined = await ext.vscode.window.showOpenDialog(
                 {
                     canSelectFiles: true,
                     canSelectFolders: false,
@@ -89,7 +90,7 @@ function notifyUserSamCliNotDetected(samCliConfig: SamCliConfiguration): void {
             if (!!location && location.length === 1) {
                 const path: string = location[0].fsPath
                 await samCliConfig.setSamCliLocation(path)
-                vscode.window.showInformationMessage(getSettingsUpdatedMessage(path))
+                ext.vscode.window.showInformationMessage(getSettingsUpdatedMessage(path))
             }
         }
     })

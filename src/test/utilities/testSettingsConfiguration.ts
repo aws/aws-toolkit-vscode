@@ -5,6 +5,8 @@
 
 'use strict'
 
+import '../shared/vscode/initialize'
+
 import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 
 /**

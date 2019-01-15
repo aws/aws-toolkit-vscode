@@ -5,8 +5,8 @@
 
 'use strict'
 
-import { QuickPickItem } from 'vscode'
 import { MultiStepInputFlowController } from '../multiStepInputFlowController'
+import { types as vscode } from '../vscode'
 import { CredentialSelectionState } from './credentialSelectionState'
 
 export interface CredentialSelectionDataProvider {
@@ -15,7 +15,7 @@ export interface CredentialSelectionDataProvider {
     pickCredentialProfile(
         input: MultiStepInputFlowController,
         state: Partial<CredentialSelectionState>
-    ): Promise<QuickPickItem>
+    ): Promise<vscode.QuickPickItem>
 
     inputProfileName(
         input: MultiStepInputFlowController,

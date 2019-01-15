@@ -9,7 +9,6 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { CloudFormation, Lambda } from 'aws-sdk'
-import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
 import { CloudFormationClient } from '../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../shared/clients/lambdaClient'
@@ -54,7 +53,7 @@ export async function* listCloudFormationStacks(
 ): AsyncIterableIterator<CloudFormation.StackSummary> {
     // TODO: this 'loading' message needs to go under each regional entry
     // in the explorer, and be removed when that region's query completes
-    const status = vscode.window.setStatusBarMessage(
+    const status = ext.vscode.window.setStatusBarMessage(
         localize('AWS.message.statusBar.loading.cloudFormation', 'Loading CloudFormation Stacks...')
     )
 
@@ -71,8 +70,9 @@ export async function* listCloudFormationStacks(
 }
 
 export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableIterator<Lambda.FunctionConfiguration> {
-    const status = vscode.window.setStatusBarMessage(
-        localize('AWS.message.statusBar.loading.lambda', 'Loading Lambdas...'))
+    const status = ext.vscode.window.setStatusBarMessage(
+        localize('AWS.message.statusBar.loading.lambda', 'Loading Lambdas...')
+    )
 
     try {
         yield* client.listFunctions()

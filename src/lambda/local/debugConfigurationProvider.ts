@@ -6,10 +6,10 @@
 'use strict'
 
 import * as path from 'path'
-import * as vscode from 'vscode'
 import * as filesystem from '../../shared/filesystem'
 import { fileExists, readFileAsString } from '../../shared/filesystemUtilities'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
+import { types as vscode } from '../../shared/vscode'
 import { detectLocalLambdas, LocalLambda } from './detectLocalLambdas'
 
 import * as nls from 'vscode-nls'

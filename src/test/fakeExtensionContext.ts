@@ -5,14 +5,14 @@
 
 'use strict'
 
-import { ExtensionContext, Memento } from 'vscode'
+import { types as vscode } from '../shared/vscode'
 
-export class FakeExtensionContext implements ExtensionContext {
+export class FakeExtensionContext implements vscode.ExtensionContext {
     public subscriptions: {
         dispose(): any;
     }[] = []
-    public workspaceState: Memento = new FakeMemento()
-    public globalState: Memento = new FakeMemento()
+    public workspaceState: vscode.Memento = new FakeMemento()
+    public globalState: vscode.Memento = new FakeMemento()
     public extensionPath: string = ''
     public storagePath: string | undefined
 
@@ -21,7 +21,7 @@ export class FakeExtensionContext implements ExtensionContext {
     }
 }
 
-class FakeMemento implements Memento {
+class FakeMemento implements vscode.Memento {
     public get<T>(key: string): T | undefined
     public  get<T>(key: string, defaultValue: T): T
     public get(key: any, defaultValue?: any) {

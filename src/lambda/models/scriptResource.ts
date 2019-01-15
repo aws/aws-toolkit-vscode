@@ -3,7 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
+'use strict'
+
+import { types as vscode } from '../../shared/vscode'
+
 export class ScriptResource {
     public uri: vscode.Uri | undefined
     public nonce: string | undefined

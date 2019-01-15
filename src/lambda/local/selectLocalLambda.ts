@@ -8,7 +8,8 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import * as vscode from 'vscode'
+import { ext } from '../../shared/extensionGlobals'
+import { types as vscode } from '../../shared/vscode'
 import { detectLocalLambdas, LocalLambda } from './detectLocalLambdas'
 
 export interface ShowQuickPickFunc {
@@ -20,8 +21,7 @@ export interface ShowQuickPickFunc {
 }
 
 export async function selectLocalLambda(
-    workspaceFolders: vscode.WorkspaceFolder[] | undefined = vscode.workspace.workspaceFolders,
-    showQuickPick: ShowQuickPickFunc = vscode.window.showQuickPick
+    workspaceFolders: vscode.WorkspaceFolder[] | undefined = ext.vscode.workspace.workspaceFolders
 ): Promise<(LocalLambda & vscode.QuickPickItem) | undefined> {
     const localLambdas = (await detectLocalLambdas(workspaceFolders)).map(lambda => ({
         ...lambda,
@@ -29,7 +29,7 @@ export async function selectLocalLambda(
         description: lambda.templatePath
     }))
 
-    return await showQuickPick(
+    return await ext.vscode.window.showQuickPick(
         localLambdas,
         {
             placeHolder: localize(

@@ -5,6 +5,8 @@
 
 'use strict'
 
+import '../shared/vscode/initialize'
+
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
 import {
@@ -12,7 +14,7 @@ import {
     LambdaPolicyProvider,
     LambdaPolicyView,
     LambdaPolicyViewStatus
-} from '../../lambda/lambdaPolicy'
+} from '../../lambda/lambdaPolicyView'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
 import { MockToolkitClientBuilder } from '../shared/clients/mockClients'
@@ -33,7 +35,6 @@ class DoNothingLambdaPolicyProvider implements LambdaPolicyProvider {
 }
 
 describe('LambdaPolicyView', async () => {
-
     let autoDisposeView: LambdaPolicyView | undefined
 
     afterEach(async () => {
@@ -43,6 +44,13 @@ describe('LambdaPolicyView', async () => {
     })
 
     it('starts initialized', async () => {
+        const result = ext.vscode.window.createWebviewPanel(
+            'html',
+            'Lambda Policy: myPolicy',
+            -1
+        )
+        assert.ok(result)
+
         autoDisposeView = new LambdaPolicyView(new DoNothingLambdaPolicyProvider('fn1'))
 
         assert.strictEqual(autoDisposeView.status, LambdaPolicyViewStatus.Initialized)

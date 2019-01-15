@@ -5,6 +5,8 @@
 
 'use strict'
 
+import './vscode/initialize'
+
 import * as assert from 'assert'
 import { DefaultRegionProvider } from '../../shared/regions/defaultRegionProvider'
 import { ResourceFetcher } from '../../shared/resourceFetcher'

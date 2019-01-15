@@ -9,8 +9,8 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
-import * as vscode from 'vscode'
 import { NodeDebugConfiguration } from '../../lambda/local/debugConfigurationProvider'
+import { ext } from '../extensionGlobals'
 import * as fileSystem from '../filesystem'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
@@ -25,6 +25,7 @@ import { SamCliLocalInvokeInvocation } from '../sam/cli/samCliLocalInvoke'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
+import { types as vscode } from '../vscode'
 
 interface LambdaLocalInvokeArguments {
     document: vscode.TextDocument,
@@ -46,7 +47,7 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
         const lenses: vscode.CodeLens[] = []
 
         handlers.forEach(handler => {
-            const range: vscode.Range = new vscode.Range(
+            const range: vscode.Range = new ext.vscode.Range(
                 document.positionAt(handler.positionStart),
                 document.positionAt(handler.positionEnd),
             )
@@ -88,7 +89,8 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
             )
         }
 
-        const workspaceFolder: vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(document.uri)
+        const workspaceFolder: vscode.WorkspaceFolder | undefined =
+            ext.vscode.workspace.getWorkspaceFolder(document.uri)
         if (!workspaceFolder) {
             throw new Error(`Source file ${document.uri} is external to the current workspace.`)
         }
@@ -99,7 +101,7 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
             title: localize('AWS.command.configureLambda', 'Configure')
         }
 
-        return new vscode.CodeLens(range, command)
+        return new ext.vscode.CodeLens(range, command)
     }
 
     private generateLocalInvokeCodeLens(
@@ -125,7 +127,7 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
             title: title,
         }
 
-        return new vscode.CodeLens(range, command)
+        return new ext.vscode.CodeLens(range, command)
     }
 
     public static initialize(
@@ -133,7 +135,7 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
         processInvoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker(),
         taskInvoker: SamCliTaskInvoker = new DefaultSamCliTaskInvoker()
     ): void {
-        vscode.commands.registerCommand(
+        ext.vscode.commands.registerCommand(
             'aws.lambda.local.invoke',
             async (args: LambdaLocalInvokeArguments) => {
                 const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
@@ -197,7 +199,7 @@ class LocalLambdaRunner {
                 )
             )
 
-            vscode.window.showErrorMessage(
+            ext.vscode.window.showErrorMessage(
                 localize(
                     'AWS.error.during.sam.local',
                     'An error occurred trying to run SAM Application locally: {0}',
@@ -375,7 +377,7 @@ class LocalLambdaRunner {
             )
         )
 
-        const attachSuccess: boolean = await vscode.debug.startDebugging(undefined, debugConfig)
+        const attachSuccess: boolean = await ext.vscode.debug.startDebugging(undefined, debugConfig)
 
         if (attachSuccess) {
             this.outputChannel.appendLine(

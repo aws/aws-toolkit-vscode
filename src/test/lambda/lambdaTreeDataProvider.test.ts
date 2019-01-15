@@ -3,17 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+'use strict'
+
+import '../shared/vscode/initialize'
+
 import * as assert from 'assert'
 import * as AWS from 'aws-sdk'
-import * as vscode from 'vscode'
 import { RegionNode } from '../../lambda/explorer/regionNode'
 import { LambdaTreeDataProvider } from '../../lambda/lambdaTreeDataProvider'
 import { AwsContext, ContextChangeEventsArgs } from '../../shared/awsContext'
 import { AwsContextTreeCollection } from '../../shared/awsContextTreeCollection'
+import { ext } from '../../shared/extensionGlobals'
 import { RegionInfo } from '../../shared/regions/regionInfo'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { ResourceFetcher } from '../../shared/resourceFetcher'
 import { ResourceLocation } from '../../shared/resourceLocation'
+import { types as vscode } from '../../shared/vscode'
 
 describe('LambdaProvider', function(): void {
 
@@ -22,7 +27,6 @@ describe('LambdaProvider', function(): void {
         const regionCode = 'regionQuerty'
         const regionName = 'The Querty Region'
 
-        // TODO : Introduce Mocking instead of stub implementations
         class FakeRegionProvider implements RegionProvider {
             public async getRegionData(): Promise<RegionInfo[]> {
                 return [new RegionInfo(regionCode, regionName)]
@@ -31,7 +35,7 @@ describe('LambdaProvider', function(): void {
 
         class FakeAwsContext implements AwsContext {
             public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> =
-                new vscode.EventEmitter<ContextChangeEventsArgs>().event
+                new ext.vscode.EventEmitter<ContextChangeEventsArgs>().event
 
             public async getCredentials(): Promise<AWS.Credentials | undefined> {
                 throw new Error('Method not implemented.')

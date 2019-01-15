@@ -5,7 +5,7 @@
 
 'use strict'
 
-import * as vscode from 'vscode'
+import { ext } from '../../shared/extensionGlobals'
 import { FunctionNodeBase } from '../explorer/functionNode'
 
 export async function deployLambda(element?: FunctionNodeBase) {
@@ -13,7 +13,7 @@ export async function deployLambda(element?: FunctionNodeBase) {
         // TODO: trigger build/package and deploy sequence appropriate to
         // the implementation language. We'll need some form of controller
         // abstraction around the various implementations.
-        vscode.window.showInformationMessage('Not yet implemented!')
+        ext.vscode.window.showInformationMessage('Not yet implemented!')
     } catch (err) {
 
     }

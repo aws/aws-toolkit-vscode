@@ -8,15 +8,16 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
 import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
+import { ext } from '../shared/extensionGlobals'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { ResourceFetcher } from '../shared/resourceFetcher'
 import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
 import { intersection, toMap, updateInPlace } from '../shared/utilities/collectionUtils'
+import { types as vscode } from '../shared/vscode'
 import { deleteCloudFormation } from './commands/deleteCloudFormation'
 import { deleteLambda } from './commands/deleteLambda'
 import { deployLambda } from './commands/deployLambda'
@@ -28,7 +29,7 @@ import { DefaultRegionNode } from './explorer/defaultRegionNode'
 import { FunctionNodeBase } from './explorer/functionNode'
 import { RegionNode } from './explorer/regionNode'
 import { StandaloneFunctionNode } from './explorer/standaloneNodes'
-import { DefaultLambdaPolicyProvider, LambdaPolicyView } from './lambdaPolicy'
+import { DefaultLambdaPolicyProvider, LambdaPolicyView } from './lambdaPolicyView'
 import { configureLocalLambda } from './local/configureLocalLambda'
 import * as utils from './utils'
 
@@ -44,26 +45,26 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         private readonly regionProvider: RegionProvider,
         private readonly resourceFetcher: ResourceFetcher
     ) {
-        this._onDidChangeTreeData = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
+        this._onDidChangeTreeData = new ext.vscode.EventEmitter<AWSTreeNodeBase | undefined>()
         this.onDidChangeTreeData = this._onDidChangeTreeData.event
         this.regionNodes = new Map<string, RegionNode>()
     }
 
     public initialize(): void {
-        vscode.commands.registerCommand('aws.refreshAwsExplorer', async () => this.refresh())
-        vscode.commands.registerCommand('aws.newLambda', async () => await newLambda())
-        vscode.commands.registerCommand(
+        ext.vscode.commands.registerCommand('aws.refreshAwsExplorer', async () => this.refresh())
+        ext.vscode.commands.registerCommand('aws.newLambda', async () => await newLambda())
+        ext.vscode.commands.registerCommand(
             'aws.deployLambda',
             async (node: FunctionNodeBase) => await deployLambda(node)
         )
-        vscode.commands.registerCommand(
+        ext.vscode.commands.registerCommand(
             'aws.deleteLambda',
             async (node: StandaloneFunctionNode) => await deleteLambda(
                 node,
                 () => this.refresh(node.parent)
             )
         )
-        vscode.commands.registerCommand(
+        ext.vscode.commands.registerCommand(
             'aws.deleteCloudFormation',
             async (node: CloudFormationStackNode) => await deleteCloudFormation(
                 () => this.refresh(node.parent),
@@ -71,19 +72,19 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
             )
         )
 
-        vscode.commands.registerCommand(
+        ext.vscode.commands.registerCommand(
             'aws.invokeLambda',
             async (node: FunctionNodeBase) => await invokeLambda(this.awsContext, this.resourceFetcher, node)
         )
-        vscode.commands.registerCommand('aws.configureLambda', configureLocalLambda)
-        vscode.commands.registerCommand(
+        ext.vscode.commands.registerCommand('aws.configureLambda', configureLocalLambda)
+        ext.vscode.commands.registerCommand(
             'aws.getLambdaConfig',
             async (node: FunctionNodeBase) => await getLambdaConfig(
                 this.awsContext,
                 node
             ))
 
-        vscode.commands.registerCommand(
+        ext.vscode.commands.registerCommand(
             'aws.getLambdaPolicy',
             async (node: FunctionNodeBase) => {
                 const functionNode: FunctionNodeBase = await utils.selectLambdaNode(this.awsContext, node)
@@ -97,7 +98,7 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
                 await view.load()
             })
 
-        vscode.commands.registerCommand(
+        ext.vscode.commands.registerCommand(
             'aws.refreshLambdaProviderNode',
             async (lambdaProvider: LambdaTreeDataProvider, element: AWSTreeNodeBase) => {
                 lambdaProvider._onDidChangeTreeData.fire(element)

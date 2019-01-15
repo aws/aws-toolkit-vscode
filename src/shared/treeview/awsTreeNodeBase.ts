@@ -5,15 +5,13 @@
 
 'use strict'
 
-import {
-    TreeItem,
-    TreeItemCollapsibleState
-} from 'vscode'
+import { ext } from '../extensionGlobals'
+import { types as vscode } from '../vscode'
 
-export abstract class AWSTreeNodeBase extends TreeItem {
+export abstract class AWSTreeNodeBase extends ext.vscode.TreeItem {
     protected constructor(
         label: string,
-        collapsibleState?: TreeItemCollapsibleState
+        collapsibleState?: vscode.TreeItemCollapsibleState
     ) {
         super(label, collapsibleState)
     }

@@ -31,6 +31,19 @@
                 "${workspaceFolder}/out/src/test/**/*.js"
             ],
             "preLaunchTask": "npm: watch"
+        },
+        {
+            "name": "Unit Tests",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "mocha",
+            "args": [
+                "out/src/test/**/*.test.js"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/out/src/test/**/*.js"
+            ],
+            "preLaunchTask": "npm: compile"
         }
     ]
 }

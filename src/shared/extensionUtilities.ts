@@ -5,7 +5,6 @@
 
 import * as _ from 'lodash'
 import * as path from 'path'
-import * as vscode from 'vscode'
 import { ScriptResource } from '../lambda/models/scriptResource'
 import { ext } from '../shared/extensionGlobals'
 
@@ -35,7 +34,7 @@ export class ExtensionUtilities {
     private static resolveResourceURIs(basePath: string, names: string[]): ScriptResource[] {
         const scripts: ScriptResource[] = []
         _.forEach(names, (scriptName) => {
-            const scriptPathOnDisk = vscode.Uri.file(path.join(basePath, scriptName))
+            const scriptPathOnDisk = ext.vscode.Uri.file(path.join(basePath, scriptName))
             const scriptUri = scriptPathOnDisk.with({ scheme: 'vscode-resource' })
             const nonce = ExtensionUtilities.getNonce()
             scripts.push({ nonce: nonce, uri: scriptUri })

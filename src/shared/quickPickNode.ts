@@ -5,9 +5,9 @@
 
 'use strict'
 
-import { QuickPickItem } from 'vscode'
+import { types as vscode } from './vscode'
 
-export class QuickPickNode implements QuickPickItem {
+export class QuickPickNode implements vscode.QuickPickItem {
     public label: string
     public description?: string | undefined
     public detail?: string | undefined

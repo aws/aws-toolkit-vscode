@@ -5,6 +5,8 @@
 
 'use strict'
 
+import '../../vscode/initialize'
+
 import { SamCliConfiguration } from '../../../../shared/sam/cli/samCliConfiguration'
 import { DefaultSamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvoker'
 import { assertRejects } from '../../utilities/assertUtils'

@@ -5,6 +5,8 @@
 
 'use strict'
 
+import '../../shared/vscode/initialize'
+
 import * as assert from 'assert'
 import * as AWS from 'aws-sdk'
 import * as del from 'del'

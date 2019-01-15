@@ -5,7 +5,7 @@
 
 'use strict'
 
-import { TreeItemCollapsibleState } from 'vscode'
+import { ext } from '../../shared/extensionGlobals'
 import { RegionInfo } from '../../shared/regions/regionInfo'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 import { toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
@@ -33,7 +33,7 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
     }
 
     public constructor(info: RegionInfo) {
-        super(info.regionName, TreeItemCollapsibleState.Expanded)
+        super(info.regionName, ext.vscode.TreeItemCollapsibleState.Expanded)
         this.contextValue = 'awsRegion'
         this.info = info
         this.update(info)

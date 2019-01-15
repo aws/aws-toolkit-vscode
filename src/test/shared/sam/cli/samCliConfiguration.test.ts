@@ -5,6 +5,8 @@
 
 'use strict'
 
+import '../../vscode/initialize'
+
 import * as assert from 'assert'
 import * as del from 'del'
 import * as fs from 'fs'

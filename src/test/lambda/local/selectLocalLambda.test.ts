@@ -5,16 +5,23 @@
 
 'use strict'
 
+import {
+    types as vscode,
+    VSCodeContext,
+    WindowNamespace
+} from '../../../shared/vscode'
+import '../../shared/vscode/initialize'
+
 import * as assert from 'assert'
 import * as del from 'del'
 import * as path from 'path'
-import { WorkspaceFolder } from 'vscode'
 import { selectLocalLambda } from '../../../lambda/local/selectLocalLambda'
+import { ext } from '../../../shared/extensionGlobals'
 import { createWorkspaceFolder, saveTemplate } from './util'
 
-describe('selectLocalLambda tests', () => {
+describe('selectLocalLambda', () => {
     const workspacePaths: string[] = []
-    const workspaceFolders: WorkspaceFolder[] = []
+    const workspaceFolders: vscode.WorkspaceFolder[] = []
     let templatePath: string | undefined
 
     beforeEach(async () => {
@@ -36,18 +43,27 @@ describe('selectLocalLambda tests', () => {
     it('returns selected lambda', async () => {
         let showQuickPickInvoked = false
 
-        const actual = await selectLocalLambda(
-            workspaceFolders,
-            async (items, options, token) => {
-                assert.strictEqual(showQuickPickInvoked, false)
-                showQuickPickInvoked = true
+        ext.vscode = {
+            ...ext.vscode,
+            window: {
+                showQuickPick: async (
+                    items: any[] | Thenable<any[]>,
+                    options:
+                        vscode.QuickPickOptions |
+                        (vscode.QuickPickOptions & { canPickMany: true })
+                ) => {
+                    assert.strictEqual(showQuickPickInvoked, false)
+                    showQuickPickInvoked = true
 
-                assert.ok(options)
-                assert.strictEqual(options!.placeHolder, 'Select a lambda function')
+                    assert.ok(options)
+                    assert.strictEqual(options!.placeHolder, 'Select a lambda function')
 
-                return Array.isArray(items) ? items[0] : (await items)[0]
-            }
-        )
+                    return (await Promise.resolve(items))[0]
+                }
+            } as any as WindowNamespace
+        } as any as VSCodeContext
+
+        const actual = await selectLocalLambda(workspaceFolders)
 
         assert.ok(actual)
         assert.strictEqual(actual!.description, templatePath)
@@ -60,19 +76,27 @@ describe('selectLocalLambda tests', () => {
 
     it('returns undefined if no lambda selected', async () => {
         let showQuickPickInvoked = false
+        ext.vscode = {
+            ...ext.vscode,
+            window: {
+                showQuickPick: async (
+                    items: any,
+                    options:
+                        vscode.QuickPickOptions |
+                        (vscode.QuickPickOptions & { canPickMany: true })
+                ) => {
+                    assert.strictEqual(showQuickPickInvoked, false)
+                    showQuickPickInvoked = true
 
-        const actual = await selectLocalLambda(
-            workspaceFolders,
-            async (items, options, token) => {
-                assert.strictEqual(showQuickPickInvoked, false)
-                showQuickPickInvoked = true
+                    assert.ok(options)
+                    assert.strictEqual(options!.placeHolder, 'Select a lambda function')
 
-                assert.ok(options)
-                assert.strictEqual(options!.placeHolder, 'Select a lambda function')
+                    return undefined
+                }
+            } as any as WindowNamespace
+        } as any as VSCodeContext
 
-                return undefined
-            }
-        )
+        const actual = await selectLocalLambda(workspaceFolders)
 
         assert.strictEqual(actual, undefined)
     })

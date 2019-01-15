@@ -5,16 +5,19 @@
 
 'use strict'
 
+import '../../shared/vscode/initialize'
+
 import * as assert from 'assert'
 import * as del from 'del'
 import * as path from 'path'
-import { Uri, WorkspaceFolder } from 'vscode'
 import { detectLocalLambdas } from '../../../lambda/local/detectLocalLambdas'
+import { ext } from '../../../shared/extensionGlobals'
+import { types as vscode } from '../../../shared/vscode'
 import { createTemporaryDirectory, createWorkspaceFolder, saveTemplate } from './util'
 
 describe('detectLocalLambdas', () => {
     const workspacePaths: string[] = []
-    const workspaceFolders: WorkspaceFolder[] = []
+    const workspaceFolders: vscode.WorkspaceFolder[] = []
 
     beforeEach(async () => {
         const { workspacePath, workspaceFolder } = await createWorkspaceFolder('vsctk')
@@ -92,7 +95,7 @@ describe('detectLocalLambdas', () => {
 
         workspacePaths.push(await createTemporaryDirectory('vsctk2'))
         workspaceFolders.push({
-            uri: Uri.file(workspacePaths[1]),
+            uri: ext.vscode.Uri.file(workspacePaths[1]),
             name: path.basename(workspacePaths[1]),
             index: 1
         })

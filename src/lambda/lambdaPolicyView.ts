@@ -10,10 +10,10 @@ const localize = nls.loadMessageBundle()
 
 import { AWSError, Lambda } from 'aws-sdk'
 import _ = require('lodash')
-import * as vscode from 'vscode'
 import { LambdaClient } from '../shared/clients/lambdaClient'
 import { ext } from '../shared/extensionGlobals'
 import { BaseTemplates } from '../shared/templates/baseTemplates'
+import { types as vscode } from '../shared/vscode'
 import { LambdaPolicyTemplates } from './templates/lambdaTemplates'
 
 export interface LambdaPolicyProvider {
@@ -50,7 +50,7 @@ export enum LambdaPolicyViewStatus {
     Disposed
 }
 
-export class LambdaPolicyView implements vscode.Disposable {
+export class LambdaPolicyView {
 
     private static readonly VIEW_TEMPLATE: _.TemplateExecutor = _.template(BaseTemplates.SIMPLE_HTML)
     private static readonly VIEW_CONTENT_OUTER_CONTENT: _.TemplateExecutor =
@@ -100,8 +100,7 @@ export class LambdaPolicyView implements vscode.Disposable {
     }
 
     private createView(): vscode.WebviewPanel {
-
-        const view: vscode.WebviewPanel = vscode.window.createWebviewPanel(
+        const view: vscode.WebviewPanel = ext.vscode.window.createWebviewPanel(
             'html',
             localize(
                 'AWS.lambda.policy.title',

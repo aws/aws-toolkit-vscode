@@ -5,10 +5,11 @@
 
 'use strict'
 
-import * as vscode from 'vscode'
 import { extensionSettingsPrefix } from '../../constants'
+import { ext } from '../../extensionGlobals'
 import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
 import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
+import { types as vscode } from '../../vscode'
 import { DefaultSamCliConfiguration, SamCliConfiguration } from './samCliConfiguration'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
 
@@ -42,6 +43,6 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
 
 export class DefaultSamCliTaskInvoker implements SamCliTaskInvoker {
     public async invoke(task: vscode.Task): Promise<vscode.TaskExecution> {
-        return await vscode.tasks.executeTask(task)
+        return await ext.vscode.tasks.executeTask(task)
     }
 }

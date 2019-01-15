@@ -7,8 +7,8 @@
 
 import * as AsyncLock from 'async-lock'
 import * as AWS from 'aws-sdk'
-import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+import { ext } from './extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -84,7 +84,7 @@ export class CredentialsManager {
         callback: (err?: Error, token?: string) => void
     ): Promise<void> {
         try {
-            const token = await vscode.window.showInputBox({
+            const token = await ext.vscode.window.showInputBox({
                 ignoreFocusOut: true,
                 placeHolder: localize('AWS.prompt.mfa.enterCode.placeholder', 'Enter Authentication Code Here'),
                 prompt: localize(

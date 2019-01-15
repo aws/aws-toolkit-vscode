@@ -3,6 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+'use strict'
+
+import '../../shared/vscode/initialize'
+
 import * as assert from 'assert'
 import * as del from 'del'
 import * as fs from 'fs'

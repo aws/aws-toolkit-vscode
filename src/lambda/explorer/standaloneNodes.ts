@@ -6,7 +6,6 @@
 'use strict'
 
 import { Lambda } from 'aws-sdk'
-import * as vscode from 'vscode'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
@@ -35,7 +34,7 @@ export class DefaultStandaloneFunctionGroupNode extends AWSTreeNodeBase implemen
     public constructor(
         public readonly parent: RegionNode
     ) {
-        super('Lambda', vscode.TreeItemCollapsibleState.Collapsed)
+        super('Lambda', ext.vscode.TreeItemCollapsibleState.Collapsed)
         this.functionNodes = new Map<string, StandaloneFunctionNode>()
     }
 

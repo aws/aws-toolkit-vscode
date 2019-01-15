@@ -6,10 +6,10 @@
 'use strict'
 
 import path = require('path')
-import { ExtensionContext } from 'vscode'
 import { endpointsFileUrl } from '../constants'
 import { ResourceFetcher } from '../resourceFetcher'
 import { FileResourceLocation, WebResourceLocation } from '../resourceLocation'
+import { types as vscode } from '../vscode'
 import { RegionInfo } from './regionInfo'
 import { RegionProvider } from './regionProvider'
 
@@ -31,10 +31,10 @@ export class DefaultRegionProvider implements RegionProvider {
 
     private _areRegionsLoaded: boolean = false
     private _loadedRegions: RegionInfo[]
-    private readonly _context: ExtensionContext
+    private readonly _context: vscode.ExtensionContext
     private readonly _resourceFetcher: ResourceFetcher
 
-    public constructor(context: ExtensionContext, resourceFetcher: ResourceFetcher) {
+    public constructor(context: vscode.ExtensionContext, resourceFetcher: ResourceFetcher) {
         this._loadedRegions = []
         this._context = context
         this._resourceFetcher = resourceFetcher

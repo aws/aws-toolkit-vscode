@@ -9,7 +9,6 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { CloudFormation, Lambda } from 'aws-sdk'
-import * as vscode from 'vscode'
 import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
@@ -44,7 +43,7 @@ export class DefaultCloudFormationNode extends AWSTreeNodeBase implements CloudF
     }
 
     public constructor(public readonly parent: RegionNode) {
-        super('CloudFormation', vscode.TreeItemCollapsibleState.Collapsed)
+        super('CloudFormation', ext.vscode.TreeItemCollapsibleState.Collapsed)
         this.stackNodes = new Map<string, CloudFormationStackNode>()
     }
 
@@ -88,12 +87,12 @@ export class DefaultCloudFormationStackNode extends AWSTreeNodeBase implements C
         public readonly parent: CloudFormationNode,
         private stackSummary: CloudFormation.StackSummary
     ) {
-        super('', vscode.TreeItemCollapsibleState.Collapsed)
+        super('', ext.vscode.TreeItemCollapsibleState.Collapsed)
 
         this.update(stackSummary)
         this.iconPath = {
-            dark: vscode.Uri.file(ext.context.asAbsolutePath('resources/dark/cloudformation.svg')),
-            light: vscode.Uri.file(ext.context.asAbsolutePath('resources/light/cloudformation.svg'))
+            dark: ext.vscode.Uri.file(ext.context.asAbsolutePath('resources/dark/cloudformation.svg')),
+            light: ext.vscode.Uri.file(ext.context.asAbsolutePath('resources/light/cloudformation.svg'))
         }
         this.contextValue = 'awsCloudFormationNode'
         this.functionNodes = new Map<string, CloudFormationFunctionNode>()

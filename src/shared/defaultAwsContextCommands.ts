@@ -9,7 +9,6 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import opn = require('opn')
-import { Uri, ViewColumn, window, workspace } from 'vscode'
 import { AwsContext } from './awsContext'
 import { AwsContextTreeCollection } from './awsContextTreeCollection'
 import * as extensionConstants from './constants'
@@ -27,6 +26,7 @@ import {
 import { ext } from './extensionGlobals'
 import { RegionInfo } from './regions/regionInfo'
 import { RegionProvider } from './regions/regionProvider'
+import { types as vscode } from './vscode'
 
 /**
  * The actions that can be taken when we discover that a profile's default region is not
@@ -171,7 +171,7 @@ export class DefaultAWSContextCommands {
             const responseNo: string = localize('AWS.generic.response.no', 'No')
             const responseYes: string = localize('AWS.generic.response.no', 'Yes')
 
-            const response = await window.showWarningMessage(
+            const response = await ext.vscode.window.showWarningMessage(
                 localize(
                     'AWS.message.prompt.credentials.definition.tryAgain',
                     'The credentials do not appear to be valid ({0}). Would you like to try again?',
@@ -207,7 +207,7 @@ export class DefaultAWSContextCommands {
 
         if (credentialsFiles.length === 0) {
 
-            const userResponse = await window.showInformationMessage(
+            const userResponse = await ext.vscode.window.showInformationMessage(
                 localize(
                     'AWS.message.prompt.credentials.create',
                     'You do not appear to have any AWS Credentials defined. Would you like to set one up now?'
@@ -227,7 +227,7 @@ export class DefaultAWSContextCommands {
             // If no credentials were found, the user should be
             // encouraged to define some.
             if (profileNames.length === 0) {
-                const userResponse = await window.showInformationMessage(
+                const userResponse = await ext.vscode.window.showInformationMessage(
                     localize(
                         'AWS.message.prompt.credentials.create',
                         'You do not appear to have any AWS Credentials defined. Would you like to set one up now?'
@@ -263,11 +263,11 @@ export class DefaultAWSContextCommands {
 
         const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
         let preserveFocus: boolean = false
-        let viewColumn: ViewColumn = ViewColumn.Active
+        let viewColumn: vscode.ViewColumn = ext.vscode.ViewColumn.Active
 
         for (const filename of credentialsFiles) {
-            await window.showTextDocument(
-                Uri.file(filename),
+            await ext.vscode.window.showTextDocument(
+                ext.vscode.Uri.file(filename),
                 {
                     preserveFocus: preserveFocus,
                     preview: false,
@@ -275,12 +275,12 @@ export class DefaultAWSContextCommands {
                 })
 
             preserveFocus = true
-            viewColumn = ViewColumn.Beside
+            viewColumn = ext.vscode.ViewColumn.Beside
         }
 
         const responseNo: string = localize('AWS.generic.response.no', 'No')
         const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
-        const response = await window.showInformationMessage(
+        const response = await ext.vscode.window.showInformationMessage(
             localize(
                 'AWS.message.prompt.credentials.definition.help',
                 'Would you like some information related to defining credentials?',
@@ -325,7 +325,7 @@ export class DefaultAWSContextCommands {
             label: r.regionName,
             detail: r.regionCode
         }))
-        const input = await window.showQuickPick(regionsToShow, {
+        const input = await ext.vscode.window.showQuickPick(regionsToShow, {
             placeHolder: localize('AWS.message.selectRegion', 'Select an AWS region')
         })
 
@@ -342,7 +342,7 @@ export class DefaultAWSContextCommands {
         if (explorerRegions.has(profileRegion)) { return }
 
         // Explorer does not contain the default region. See if we should add it.
-        const config = workspace.getConfiguration(extensionConstants.extensionSettingsPrefix)
+        const config = ext.vscode.workspace.getConfiguration(extensionConstants.extensionSettingsPrefix)
 
         const defaultAction = config.get<OnDefaultRegionMissingOperation>(
             'onDefaultRegionMissing',
@@ -359,7 +359,7 @@ export class DefaultAWSContextCommands {
         }
 
         // Ask user what to do
-        const regionHiddenResponse = await window.showQuickPick(
+        const regionHiddenResponse = await ext.vscode.window.showQuickPick(
             [
                 DefaultRegionMissingPromptItems.add,
                 DefaultRegionMissingPromptItems.alwaysAdd,
@@ -393,8 +393,8 @@ export class DefaultAWSContextCommands {
                 const action = regionHiddenResponse === DefaultRegionMissingPromptItems.alwaysAdd ?
                     OnDefaultRegionMissingOperation.Add :
                     OnDefaultRegionMissingOperation.Ignore
-                await config.update('onDefaultRegionMissing', action, !workspace.name)
-                window.showInformationMessage(localize(
+                await config.update('onDefaultRegionMissing', action, !ext.vscode.workspace.name)
+                ext.vscode.window.showInformationMessage(localize(
                     'AWS.message.prompt.defaultRegionHidden.suppressed',
                     "You will no longer be asked what to do when the current profile's default region is " +
                     "hidden from the Explorer. This behavior can be changed by modifying the '{0}' setting.",

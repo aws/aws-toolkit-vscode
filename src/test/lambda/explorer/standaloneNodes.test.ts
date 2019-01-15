@@ -5,9 +5,10 @@
 
 'use strict'
 
+import '../../shared/vscode/initialize'
+
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
-import { Uri } from 'vscode'
 import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
 import {
     DefaultStandaloneFunctionGroupNode,
@@ -15,6 +16,7 @@ import {
 } from '../../../lambda/explorer/standaloneNodes'
 import { ext } from '../../../shared/extensionGlobals'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
+import { types as vscode } from '../../../shared/vscode'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 describe('DefaultStandaloneFunctionNode', () => {
@@ -60,18 +62,16 @@ describe('DefaultStandaloneFunctionNode', () => {
 
         assert(testNode.iconPath !== undefined)
         const iconPath = testNode.iconPath! as {
-            light: Uri,
-            dark: Uri
+            light: vscode.Uri,
+            dark: vscode.Uri
         }
 
         assert(iconPath.light !== undefined)
-        assert(iconPath.light instanceof Uri)
         assert.strictEqual(iconPath.light.scheme, fileScheme)
         const lightResourcePath: string = iconPath.light.path
         assert(lightResourcePath.endsWith(`/light/${resourceImageName}`))
 
         assert(iconPath.dark !== undefined)
-        assert(iconPath.dark instanceof Uri)
         assert.strictEqual(iconPath.dark.scheme, fileScheme)
         const darkResourcePath: string = iconPath.dark.path
         assert(darkResourcePath.endsWith(`dark/${resourceImageName}`))

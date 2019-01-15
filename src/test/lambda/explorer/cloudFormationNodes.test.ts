@@ -5,9 +5,10 @@
 
 'use strict'
 
+import '../../shared/vscode/initialize'
+
 import * as assert from 'assert'
 import { CloudFormation, Lambda } from 'aws-sdk'
-import { Uri } from 'vscode'
 import {
     CloudFormationStackNode,
     DefaultCloudFormationFunctionNode,
@@ -20,10 +21,10 @@ import { CloudFormationClient } from '../../../shared/clients/cloudFormationClie
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { ext } from '../../../shared/extensionGlobals'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
+import { types as vscode } from '../../../shared/vscode'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 describe('DefaultCloudFormationStackNode', () => {
-
     let fakeStackSummary: CloudFormation.StackSummary
 
     class FakeExtensionContextOverride extends FakeExtensionContext {
@@ -33,7 +34,7 @@ describe('DefaultCloudFormationStackNode', () => {
         }
     }
 
-    before(function() {
+    before(() => {
         ext.context = new FakeExtensionContextOverride()
         fakeStackSummary = {
             CreationTime: new Date(),
@@ -206,19 +207,17 @@ describe('DefaultCloudFormationStackNode', () => {
         )
 
         const iconPath = testNode.iconPath as {
-            light: Uri,
-            dark: Uri
+            light: vscode.Uri,
+            dark: vscode.Uri
         }
         assert(!!iconPath)
 
         assert(!!iconPath.light)
-        assert(iconPath!.light instanceof Uri)
         assert.strictEqual(iconPath!.light.scheme, fileScheme)
         const lightResourcePath: string = iconPath!.light.path
         assert(lightResourcePath.endsWith(`/light/${resourceImageName}`))
 
         assert(!!iconPath.dark)
-        assert(iconPath!.dark instanceof Uri)
         assert.strictEqual(iconPath!.dark.scheme, fileScheme)
         const darkResourcePath: string = iconPath!.dark.path
         assert(darkResourcePath.endsWith(`dark/${resourceImageName}`))

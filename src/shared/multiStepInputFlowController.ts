@@ -5,10 +5,11 @@
 
 'use strict'
 
-import { Disposable, QuickInput, QuickInputButton, QuickInputButtons, QuickPickItem, window } from 'vscode'
-
 // Taken from the VSCode QuickInput sample, coordinates flows through
 // a multi-step input sequence.
+
+import { ext } from './extensionGlobals'
+import { types as vscode } from './vscode'
 
 class InputFlowAction {
     public static back = new InputFlowAction()
@@ -19,14 +20,14 @@ class InputFlowAction {
 
 type InputStep = (input: MultiStepInputFlowController) => Thenable<InputStep | void>
 
-interface QuickPickParameters<T extends QuickPickItem> {
+interface QuickPickParameters<T extends vscode.QuickPickItem> {
     title: string
     step: number
     totalSteps: number
     items: T[]
     activeItem?: T
     placeholder: string
-    buttons?: QuickInputButton[]
+    buttons?: vscode.QuickInputButton[]
     shouldResume(): Thenable<boolean>
 }
 
@@ -36,17 +37,17 @@ interface InputBoxParameters {
     totalSteps: number
     value: string
     prompt: string
-    buttons?: QuickInputButton[]
+    buttons?: vscode.QuickInputButton[]
     ignoreFocusOut?: boolean
     validate(value: string): Promise<string | undefined>
     shouldResume(): Thenable<boolean>
 }
 
 export class MultiStepInputFlowController {
-    private current?: QuickInput
+    private current?: vscode.QuickInput
     private readonly steps: InputStep[] = []
 
-    public async showQuickPick<T extends QuickPickItem, P extends QuickPickParameters<T>>({
+    public async showQuickPick<T extends vscode.QuickPickItem, P extends QuickPickParameters<T>>({
         title,
         step,
         totalSteps,
@@ -56,10 +57,10 @@ export class MultiStepInputFlowController {
         buttons,
         shouldResume
     }: P) {
-        const disposables: Disposable[] = []
+        const disposables: vscode.Disposable[] = []
         try {
             return await new Promise<T | (P extends { buttons: (infer I)[] } ? I : never)>((resolve, reject) => {
-                const input = window.createQuickPick<T>()
+                const input = ext.vscode.window.createQuickPick<T>()
                 input.title = title
                 input.step = step
                 input.totalSteps = totalSteps
@@ -69,12 +70,12 @@ export class MultiStepInputFlowController {
                     input.activeItems = [activeItem]
                 }
                 input.buttons = [
-                    ...(this.steps.length > 1 ? [QuickInputButtons.Back] : []),
+                    ...(this.steps.length > 1 ? [ext.vscode.QuickInputButtons.Back] : []),
                     ...(buttons || [])
                 ]
                 disposables.push(
                     input.onDidTriggerButton(item => {
-                        if (item === QuickInputButtons.Back) {
+                        if (item === ext.vscode.QuickInputButtons.Back) {
                             reject(InputFlowAction.back)
                         } else {
                             resolve(item as any)
@@ -112,24 +113,24 @@ export class MultiStepInputFlowController {
         ignoreFocusOut,
         shouldResume
     }: P) {
-        const disposables: Disposable[] = []
+        const disposables: vscode.Disposable[] = []
         try {
             return await new Promise<string | (P extends { buttons: (infer I)[] } ? I : never)>((resolve, reject) => {
-                const input = window.createInputBox()
+                const input = ext.vscode.window.createInputBox()
                 input.title = title
                 input.step = step
                 input.totalSteps = totalSteps
                 input.value = value || ''
                 input.prompt = prompt
                 input.buttons = [
-                    ...(this.steps.length > 1 ? [QuickInputButtons.Back] : []),
+                    ...(this.steps.length > 1 ? [ext.vscode.QuickInputButtons.Back] : []),
                     ...(buttons || [])
                 ]
                 input.ignoreFocusOut = ignoreFocusOut ? ignoreFocusOut : false
                 let validating = validate('')
                 disposables.push(
                     input.onDidTriggerButton(item => {
-                        if (item === QuickInputButtons.Back) {
+                        if (item === ext.vscode.QuickInputButtons.Back) {
                             reject(InputFlowAction.back)
                         } else {
                             resolve(item as any)

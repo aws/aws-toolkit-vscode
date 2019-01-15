@@ -8,7 +8,6 @@
 import { _Blob } from 'aws-sdk/clients/lambda'
 import _ = require('lodash')
 import path = require('path')
-import * as vscode from 'vscode'
 import xml2js = require('xml2js')
 import { AwsContext } from '../../shared/awsContext'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
@@ -44,10 +43,10 @@ export async function invokeLambda(
 ) {
     try {
         const fn: FunctionNodeBase = await selectLambdaNode(awsContext, element)
-        const view = vscode.window.createWebviewPanel(
+        const view = ext.vscode.window.createWebviewPanel(
             'html',
             `Invoked ${fn.configuration.FunctionName}`,
-            vscode.ViewColumn.One,
+            ext.vscode.ViewColumn.One,
             {
                 // Enable scripts in the webview
                 enableScripts: true

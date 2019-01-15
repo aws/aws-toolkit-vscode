@@ -5,9 +5,9 @@
 
 'use strict'
 
-import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { samAboutInstallUrl } from '../../constants'
+import { ext } from '../../extensionGlobals'
 import {
     DefaultSamCliVersionProvider,
     SamCliVersion,
@@ -64,7 +64,7 @@ export class SamCliVersionValidator {
     }
 
     private async notifyVersionIsValid(version: string): Promise<void> {
-        vscode.window.setStatusBarMessage(
+        ext.vscode.window.setStatusBarMessage(
             localize(
                 'AWS.samcli.notification.version.valid',
                 'Your SAM CLI version {0} is valid.',
@@ -77,7 +77,7 @@ export class SamCliVersionValidator {
     private async notifyVersionIsNotValid(validationResult: SamCliVersionValidatorResult): Promise<void> {
         const actions = this.getNotificationActions(validationResult.validation)
 
-        const userResponse = await vscode.window.showErrorMessage(
+        const userResponse = await ext.vscode.window.showErrorMessage(
             localize(
                 'AWS.samcli.notification.version.invalid',
                 // tslint:disable-next-line:max-line-length
@@ -138,7 +138,7 @@ export class SamCliVersionValidator {
 
     private async handleUserResponse(userResponse: string): Promise<void> {
         if (userResponse === SamCliVersionValidator.ACTION_GO_TO_SAM_CLI_PAGE) {
-            await vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(samAboutInstallUrl))
+            await ext.vscode.commands.executeCommand('vscode.open', ext.vscode.Uri.parse(samAboutInstallUrl))
         } else if (userResponse === SamCliVersionValidator.ACTION_GO_TO_AWS_TOOLKIT_PAGE) {
             // TODO : direct to AWS Toolkit page when there is one
         }

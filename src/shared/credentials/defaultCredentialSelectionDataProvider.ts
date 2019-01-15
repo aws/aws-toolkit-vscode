@@ -16,10 +16,10 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { ExtensionContext, QuickPickItem } from 'vscode'
 import { extensionSettingsPrefix } from '../constants'
 import { MultiStepInputFlowController } from '../multiStepInputFlowController'
 import { DefaultSettingsConfiguration } from '../settingsConfiguration'
+import { types as vscode } from '../vscode'
 import { CredentialSelectionDataProvider } from './credentialSelectionDataProvider'
 import { CredentialSelectionState } from './credentialSelectionState'
 import { CredentialsProfileMru } from './credentialsProfileMru'
@@ -35,13 +35,16 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
     private readonly _credentialsMru: CredentialsProfileMru =
         new CredentialsProfileMru(new DefaultSettingsConfiguration(extensionSettingsPrefix))
 
-    public constructor(public readonly existingProfileNames: string[], protected context: ExtensionContext) {
+    public constructor(
+        public readonly existingProfileNames: string[],
+        protected context: vscode.ExtensionContext
+    ) {
     }
 
     public async pickCredentialProfile(
         input: MultiStepInputFlowController,
         state: Partial<CredentialSelectionState>
-    ): Promise<QuickPickItem> {
+    ): Promise<vscode.QuickPickItem> {
         return await input.showQuickPick({
             title: localize('AWS.title.selectCredentialProfile', 'Select an AWS credential profile'),
             step: 1,
@@ -124,12 +127,12 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
     /**
      * Builds and returns the list of QuickPickItem objects representing the profile names to select from in the UI
      */
-    private getProfileSelectionList(): QuickPickItem[] {
+    private getProfileSelectionList(): vscode.QuickPickItem[] {
         const orderedProfiles: ProfileEntry[] = this.getOrderedProfiles()
 
-        const selectionList: QuickPickItem[] = []
+        const selectionList: vscode.QuickPickItem[] = []
         orderedProfiles.forEach(profile => {
-            const selectionItem: QuickPickItem = { label: profile.profileName }
+            const selectionItem: vscode.QuickPickItem = { label: profile.profileName }
 
             if (profile.isRecentlyUsed) {
                 selectionItem.description = localize('AWS.profile.recentlyUsed', 'recently used')
