@@ -29,7 +29,10 @@ class LambdaServiceNode(project: Project) : AwsExplorerServiceRootNode(project, 
 
         val response = client.listFunctions(request.build())
         val resources: MutableList<AwsExplorerNode<*>> =
-            response.functions().asSequence().sortedBy { it.functionName().toLowerCase() }.map { mapResourceToNode(it) }.toMutableList()
+            response.functions().asSequence()
+                .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.functionName() })
+                .map { mapResourceToNode(it) }
+                .toMutableList()
         response.nextMarker()?.let {
             resources.add(AwsTruncatedResultNode(this, it))
         }

@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix sort order for CloudFormation nodes in the AWS Explorer"
+}

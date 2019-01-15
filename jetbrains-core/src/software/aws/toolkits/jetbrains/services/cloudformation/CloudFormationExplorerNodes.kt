@@ -41,7 +41,7 @@ class CloudFormationServiceNode(project: Project) : AwsExplorerServiceRootNode(p
 
         val nodes = response.stacks().filterNotNull().asSequence()
             .filter { it.stackStatus() !in DELETING_STACK_STATES }
-            .sortedBy { it.stackName() }
+            .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.stackName() })
             .map { it -> CloudFormationStackNode(nodeProject, it.stackName(), it.stackStatus()) }
             .toList()
 
