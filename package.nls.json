@@ -44,9 +44,9 @@
     "AWS.lambda.debug.node.launchConfig.name": "Lambda: Debug {0} locally",
     "AWS.lambda.debug.node.attachConfig.name": "Lambda: Attach to {0} locally",
     "AWS.lambda.debug.node.invokeTask.label": "Lambda: Invoke {0} locally",
-    "AWS.lambda.policy.loading": "Loading...",
     "AWS.lambda.policy.title": "Lambda Policy: {0}",
     "AWS.lambda.policy.unknown.function": "Unknown",
+    "AWS.message.loading": "Loading...",
     "AWS.message.credentials.error": "There was an issue trying to use credentials profile {0}.\nYou will be disconnected from AWS.\n\n{1}",
     "AWS.message.enterProfileName": "Enter the name of the credential profile to use",
     "AWS.message.info.cloudFormation.delete": "Deleted CloudFormation Stack {0}",
@@ -86,5 +86,9 @@
     "AWS.samcli.userChoice.visit.install.url": "Get SAM CLI",
     "AWS.samcli.userChoice.update.awstoolkit.url": "Update AWS Toolkit",
     "AWS.generic.response.no": "No",
-    "AWS.generic.response.yes": "Yes"
+    "AWS.generic.response.yes": "Yes",
+    "AWS.template.error.showErrorDetails.title": "Error details for",
+    "AWS.template.error.showErrorDetails.errorCode": "Error code",
+    "AWS.template.error.showErrorDetails.errorMessage": "Error message",
+    "AWS.template.error.showErrorDetails.stackTrace": "Stack trace"
 }

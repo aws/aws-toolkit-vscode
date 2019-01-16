@@ -198,7 +198,7 @@ describe('DefaultCloudFormationStackNode', () => {
 
 describe('DefaultCloudFormationNode', () => {
 
-    it('handle error', async () => {
+    it('handles error', async () => {
 
         class ThrowErrorDefaultCloudFormationNode extends DefaultCloudFormationNode {
             public constructor(

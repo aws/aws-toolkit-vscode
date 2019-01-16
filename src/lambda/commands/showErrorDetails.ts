@@ -5,6 +5,9 @@
 
 'use strict'
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import _ = require('lodash')
 import * as vscode from 'vscode'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
@@ -15,12 +18,12 @@ export async function showErrorDetails(element: ErrorNode) {
     const view = vscode.window.createWebviewPanel(
         'html',
         `Error details for ${element.parent.label}`,
-        -1
+        vscode.ViewColumn.Active
     )
 
     try {
         const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
-        view.webview.html = baseTemplateFn({ content: '<h1>Loading...</h1>' })
+        view.webview.html = baseTemplateFn({ content:  `<h1>${localize('AWS.message.loading', 'Loading...')}</h1>` })
 
         const showErrorDetailsTemplateFn = _.template(ErrorTemplates.SHOW_ERROR_DETAILS)
         view.webview.html = baseTemplateFn({

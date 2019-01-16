@@ -117,7 +117,7 @@ describe('DefaultStandaloneFunctionGroupNode', () => {
         }
     }
 
-    it('handle error', async () => {
+    it('handles error', async () => {
         const testNode = new ThrowErrorDefaultStandaloneFunctionGroupNode(
             new DefaultRegionNode(new RegionInfo('code', 'name')))
 

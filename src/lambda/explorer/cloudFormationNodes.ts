@@ -50,9 +50,10 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
     }
 
     public async getChildren(): Promise<(CloudFormationStackNode | ErrorNode)[]> {
-        await this.handleErrorProneOperation(async () => this.updateChildren(),
-                                             localize('AWS.explorerNode.cloudFormation.error',
-                                                      'Error loading CloudFormation resources'))
+        await this.handleErrorProneOperation(
+            async () => this.updateChildren(),
+            localize('AWS.explorerNode.cloudFormation.error',
+                     'Error loading CloudFormation resources'))
 
         return !!this.errorNode ? [this.errorNode]
             : [...this.stackNodes.values()]
