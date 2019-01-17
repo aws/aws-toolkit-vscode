@@ -64,9 +64,16 @@ subprojects {
         test.java.srcDir 'tst'
         test.resources.srcDir 'tst-resources'
         integrationTest {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
             java.srcDir 'it'
             resources.srcDir 'it-resources'
         }
+    }
+
+    configurations {
+        integrationTestImplementation.extendsFrom testImplementation
+        integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
     }
 
     dependencies {
@@ -79,15 +86,6 @@ subprojects {
         testCompile "org.assertj:assertj-core:$assertjVersion"
         testCompile "junit:junit:$junitVersion"
         testCompile "org.hamcrest:hamcrest-all:1.3"
-
-        integrationTestCompile sourceSets.main.output
-        integrationTestCompile sourceSets.test.output
-
-        integrationTestCompile configurations.compile
-        integrationTestCompile configurations.testCompile
-
-        integrationTestRuntime configurations.runtime
-        integrationTestRuntime configurations.testRuntime
     }
 
     test {
