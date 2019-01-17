@@ -28,6 +28,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 
+/* ktlint-disable custom-ktlint-rules:log-not-lazy */
 class ChangeLogPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         project.extensions.create(NAME, ChangeLogPluginExtension::class.java, project)

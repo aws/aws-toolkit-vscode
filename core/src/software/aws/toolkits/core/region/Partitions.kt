@@ -9,8 +9,8 @@ import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.slf4j.LoggerFactory
 import software.aws.toolkits.core.utils.RemoteResource
+import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.resources.BundledResources
-import java.io.IOException
 import java.io.InputStream
 import java.time.Duration
 
@@ -42,11 +42,8 @@ object PartitionParser {
         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         .enable(JsonParser.Feature.ALLOW_COMMENTS)
 
-    fun parse(inputStream: InputStream): Partitions? = try {
+    fun parse(inputStream: InputStream): Partitions? = LOG.tryOrNull("Failed to parse Partitions") {
         mapper.readValue<Partitions>(inputStream, Partitions::class.java)
-    } catch (e: IOException) {
-        LOG.error("Error: failed to parse Partitions", e)
-        null
     }
 }
 

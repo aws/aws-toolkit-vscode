@@ -19,6 +19,8 @@ import java.nio.file.Path
 import java.time.LocalDate
 import kotlin.streams.toList
 
+/* ktlint-disable custom-ktlint-rules:log-not-lazy */
+
 val MAPPER: ObjectMapper = jacksonObjectMapper().registerModule(JavaTimeModule()).enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
     .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
 

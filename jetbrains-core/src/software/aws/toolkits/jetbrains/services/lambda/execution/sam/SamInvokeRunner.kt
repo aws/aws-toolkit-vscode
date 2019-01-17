@@ -14,7 +14,6 @@ import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.RunContentBuilder
 import com.intellij.execution.ui.RunContentDescriptor
 import com.intellij.openapi.application.runInEdt
-import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleUtil
@@ -23,6 +22,8 @@ import com.intellij.xdebugger.XDebuggerManager
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
@@ -90,7 +91,7 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
                 }
             }
             .exceptionally {
-                LOG.warn("Failed to create Lambda package", it)
+                LOG.warn(it) { "Failed to create Lambda package" }
                 buildingPromise.setError(it)
                 null
             }.whenComplete { _, exception ->
@@ -113,7 +114,7 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
             ?: throw java.lang.IllegalStateException("Failed to locate module for $psiFile")
 
     private companion object {
-        val LOG = Logger.getInstance(SamInvokeRunner::class.java)
+        val LOG = getLogger<SamInvokeRunner>()
         val telemetry = TelemetryService.getInstance()
     }
 }

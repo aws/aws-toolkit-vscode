@@ -4,6 +4,7 @@
 package software.aws.toolkits.core.credentials
 
 import org.slf4j.LoggerFactory
+import software.aws.toolkits.core.utils.warn
 
 class ToolkitCredentialsProviderManager(
     private val registry: ToolkitCredentialsProviderRegistry
@@ -23,7 +24,7 @@ class ToolkitCredentialsProviderManager(
             try {
                 it.shutDown()
             } catch (e: Exception) {
-                LOG.warn("ToolkitCredentialsProviderFactory '${it::class.qualifiedName}' threw exception when shutting down", e)
+                LOG.warn(e) { "ToolkitCredentialsProviderFactory '${it::class.qualifiedName}' threw exception when shutting down" }
             }
         }
     }

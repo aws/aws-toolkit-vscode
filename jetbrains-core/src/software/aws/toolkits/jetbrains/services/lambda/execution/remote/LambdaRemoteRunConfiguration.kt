@@ -12,7 +12,6 @@ import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
-import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
 import org.jetbrains.annotations.TestOnly
@@ -20,6 +19,8 @@ import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
@@ -162,7 +163,7 @@ class RemoteLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaRem
                     .flatMap { it.functions().stream().map { function -> function.functionName() } }
                     .toList()
             } catch (e: Exception) {
-                LOG.warn("Failed to load functions", e)
+                LOG.warn(e) { "Failed to load functions" }
                 emptyList<String>()
             }
 
@@ -212,6 +213,6 @@ class RemoteLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaRem
     }
 
     private companion object {
-        val LOG = Logger.getInstance(RemoteLambdaRunSettingsEditor::class.java)
+        val LOG = getLogger<RemoteLambdaRunSettingsEditor>()
     }
 }

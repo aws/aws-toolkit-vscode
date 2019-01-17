@@ -4,6 +4,7 @@
 package software.aws.toolkits.core.telemetry
 
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -45,7 +46,7 @@ open class DefaultTelemetryBatcher(
         try {
             eventQueue.addAll(events)
         } catch (e: Exception) {
-            LOG.warn("Failed to add metric to queue", e)
+            LOG.warn(e) { "Failed to add metric to queue" }
         }
     }
 
@@ -70,12 +71,12 @@ open class DefaultTelemetryBatcher(
             val publishSucceeded = try {
                 publisher.publish(batch)
             } catch (e: Exception) {
-                LOG.warn("Failed to publish metrics", e)
+                LOG.warn(e) { "Failed to publish metrics" }
                 false
             }
 
             if (!publishSucceeded && retry) {
-                LOG.warn("Telemetry metrics failed to publish, retrying later...")
+                LOG.warn { "Telemetry metrics failed to publish, retrying later..." }
                 eventQueue.addAll(batch)
                 // don't want an infinite loop...
                 return

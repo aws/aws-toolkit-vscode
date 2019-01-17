@@ -15,6 +15,8 @@ import software.amazon.awssdk.codegen.model.service.ServiceModel
 import software.amazon.awssdk.codegen.utils.ModelLoaderUtils
 import java.io.File
 
+/* ktlint-disable custom-ktlint-rules:log-not-lazy */
+
 open class GenerateSdk : DefaultTask() {
     @InputDirectory
     lateinit var c2jFolder: File
@@ -24,6 +26,8 @@ open class GenerateSdk : DefaultTask() {
 
     @TaskAction
     fun generate() {
+        outputDir.deleteRecursively()
+
         LOG.info("Generating SDK from $c2jFolder")
         val models = C2jModels.builder()
             .serviceModel(loadServiceModel())

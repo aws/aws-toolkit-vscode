@@ -7,7 +7,6 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.application.runWriteAction
-import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
@@ -25,6 +24,8 @@ import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.testFramework.writeChild
 import org.junit.rules.TestWatcher
 import org.junit.runner.Description
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import java.nio.file.Paths
 
 /**
@@ -62,7 +63,7 @@ open class CodeInsightTestFixtureRule(protected val testDescription: LightProjec
             try {
                 fixture.tearDown()
             } catch (e: Exception) {
-                LOG.warn("Exception during tear-down", e)
+                LOG.warn(e) { "Exception during tear-down" }
             }
             lazyFixture.clear()
         }
@@ -87,7 +88,7 @@ open class CodeInsightTestFixtureRule(protected val testDescription: LightProjec
         get() = Paths.get("testdata", testClass.simpleName, testName).toString()
 
     private companion object {
-        val LOG = Logger.getInstance(CodeInsightTestFixtureRule::class.java)
+        val LOG = getLogger<CodeInsightTestFixtureRule>()
     }
 }
 

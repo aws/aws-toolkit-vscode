@@ -7,6 +7,7 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.cloudformation.Function
 import software.aws.toolkits.resources.message
@@ -33,7 +34,7 @@ object SamTemplateUtils {
             .filterIsInstance<Function>()
             .toList()
     } catch (e: Exception) {
-        LOG.warn("Failed to parse template: $file", e)
+        LOG.warn(e) { "Failed to parse template: $file" }
         emptyList()
     }
 

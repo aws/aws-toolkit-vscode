@@ -8,6 +8,7 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.ValidationInfo
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
 import javax.swing.DefaultComboBoxModel
@@ -104,7 +105,7 @@ class ResourceSelector<T> : ComboBox<T>() {
                     loadingStatus = ResourceLoadingStatus.SUCCESSFUL
                 }
             } catch (e: Exception) {
-                LOG.warn("Failed to load values", e)
+                LOG.warn(e) { "Failed to load values" }
                 loadingException = e
                 loadingStatus = ResourceLoadingStatus.FAILED
                 null

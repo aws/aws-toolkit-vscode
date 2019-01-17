@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services.lambda.java
 
 import com.intellij.openapi.compiler.CompilerManager
 import com.intellij.openapi.compiler.CompilerMessageCategory
-import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.roots.LibraryOrderEntry
 import com.intellij.openapi.roots.ModuleOrderEntry
@@ -18,6 +17,8 @@ import com.intellij.util.io.inputStream
 import com.intellij.util.io.isDirectory
 import com.intellij.util.io.isHidden
 import software.aws.toolkits.core.utils.createTemporaryZipFile
+import software.aws.toolkits.core.utils.debug
+import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
@@ -32,8 +33,7 @@ import kotlin.streams.toList
 
 class JavaLambdaPackager : LambdaPackager {
     override fun createPackage(module: Module, file: PsiFile): CompletionStage<LambdaPackage> {
-        val future =
-            CompletableFuture<LambdaPackage>()
+        val future = CompletableFuture<LambdaPackage>()
         val compilerManager = CompilerManager.getInstance(module.project)
         val compileScope = compilerManager.createModulesCompileScope(arrayOf(module), true, true)
 
@@ -52,7 +52,7 @@ class JavaLambdaPackager : LambdaPackager {
                             }
                         }
                     }
-                    LOG.debug("Created temporary zip: $zipFile")
+                    LOG.debug { "Created temporary zip: $zipFile" }
                     future.complete(LambdaPackage(zipFile))
                 } catch (e: Exception) {
                     future.completeExceptionally(RuntimeException(message("lambda.package.zip_fail"), e))
@@ -136,7 +136,6 @@ class JavaLambdaPackager : LambdaPackager {
     }
 
     companion object {
-        val LOG =
-            Logger.getInstance(JavaLambdaPackager::class.java)
+        val LOG = getLogger<JavaLambdaPackager>()
     }
 }

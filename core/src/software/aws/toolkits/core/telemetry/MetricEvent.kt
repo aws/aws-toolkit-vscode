@@ -6,6 +6,7 @@ package software.aws.toolkits.core.telemetry
 import software.aws.toolkits.core.telemetry.MetricEvent.Companion.illegalCharsRegex
 import software.amazon.awssdk.services.toolkittelemetry.model.Unit as MetricUnit
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import java.time.Instant
 
 interface MetricEvent {
@@ -118,12 +119,12 @@ class DefaultMetricEvent internal constructor(
 
             override fun metadata(key: String, value: String): MetricEvent.Datum.Builder {
                 if (metadata.containsKey(key)) {
-                    LOG.warn("Attempted to add multiple pieces of metadata with the same key")
+                    LOG.warn { "Attempted to add multiple pieces of metadata with the same key" }
                     return this
                 }
 
                 if (metadata.size > MAX_METADATA_ENTRIES) {
-                    LOG.warn("Each metric datum may contain a maximum of $MAX_METADATA_ENTRIES metadata entries")
+                    LOG.warn { "Each metric datum may contain a maximum of $MAX_METADATA_ENTRIES metadata entries" }
                     return this
                 }
 
