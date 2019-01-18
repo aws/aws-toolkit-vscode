@@ -10,7 +10,7 @@ import org.jetbrains.kotlin.psi.psiUtil.getCallNameExpression
 import org.jetbrains.kotlin.psi.psiUtil.getReceiverExpression
 import org.jetbrains.kotlin.psi.psiUtil.referenceExpression
 
-class LogLambdaRule : Rule("log-not-lazy") {
+class LazyLogRule : Rule("log-not-lazy") {
     private val logMethods = setOf("error", "warn", "info", "debug", "trace")
     private val logNames = setOf("log", "logger")
 

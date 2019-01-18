@@ -12,6 +12,6 @@ class CustomRuleSetProvider : RuleSetProvider {
         CopyrightHeaderRule(),
         BannedPatternRule(BannedPatternRule.DEFAULT_PATTERNS),
         ExpressionBodyRule(),
-        LogLambdaRule()
+        LazyLogRule()
     )
 }

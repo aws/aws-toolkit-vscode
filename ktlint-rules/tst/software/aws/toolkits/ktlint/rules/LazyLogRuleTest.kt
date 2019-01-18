@@ -8,8 +8,8 @@ import com.github.shyiko.ktlint.test.lint
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
-class LogLambdaRuleTest {
-    private val rule = LogLambdaRule()
+class LazyLogRuleTest {
+    private val rule = LazyLogRule()
 
     @Test
     fun lambdaIsUsedToLog() {
