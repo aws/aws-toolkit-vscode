@@ -12,15 +12,15 @@ import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
-import toolkits.gradle.ChangeLogGenerator
-import toolkits.gradle.ChangeLogWriter
-import toolkits.gradle.ChangeType
-import toolkits.gradle.Entry
-import toolkits.gradle.GitStager
-import toolkits.gradle.GithubWriter
-import toolkits.gradle.JetBrainsWriter
-import toolkits.gradle.MAPPER
-import toolkits.gradle.ReleaseCreator
+import toolkits.gradle.changelog.ChangeLogGenerator
+import toolkits.gradle.changelog.ChangeLogWriter
+import toolkits.gradle.changelog.ChangeType
+import toolkits.gradle.changelog.Entry
+import toolkits.gradle.changelog.GitStager
+import toolkits.gradle.changelog.GithubWriter
+import toolkits.gradle.changelog.JetBrainsWriter
+import toolkits.gradle.changelog.MAPPER
+import toolkits.gradle.changelog.ReleaseCreator
 import java.io.Console
 import java.io.File
 import java.io.FileFilter
@@ -64,10 +64,15 @@ class ChangeLogPlugin : Plugin<Project> {
 open class ChangeLogPluginExtension(project: Project) {
     var changesDirectory: File = project.rootProject.file(".changes")
     var nextReleaseDirectory: File = changesDirectory.resolve("next-release")
+    var issuesUrl: String = "https://github.com/aws/aws-toolkit-jetbrains/issues"
 }
 
 abstract class ChangeLogTask : DefaultTask() {
     protected val git = GitStager.create(project.rootDir)
+
+    @Input
+    @Optional
+    var issuesUrl: String? = configuration().issuesUrl
 
     @InputDirectory
     var changesDirectory: File = configuration().changesDirectory
@@ -123,7 +128,9 @@ open class NewChange : ChangeLogTask() {
     }
 
     private fun createChange(changeType: ChangeType, description: String) = newFile(changeType).apply {
-        MAPPER.writerWithDefaultPrettyPrinter().writeValue(this, Entry(changeType, description))
+        MAPPER.writerWithDefaultPrettyPrinter().writeValue(this,
+            Entry(changeType, description)
+        )
     }
 
     private fun newFile(changeType: ChangeType): File =
@@ -167,10 +174,6 @@ open class GenerateChangeLog : ChangeLogTask() {
     @Input
     var generateJetbrains = true
 
-    @Input
-    @Optional
-    var issuesUrl: String? = null
-
     @OutputFile
     @Optional
     var jetbrainsChangeNotesFile: File? = File("${project.buildDir}/resources/META-INF/change-notes.xml")
@@ -184,37 +187,37 @@ open class GenerateChangeLog : ChangeLogTask() {
     @TaskAction
     fun generate() {
         val writers = createWriters()
-        val writer = ChangeLogGenerator(*writers)
-        logger.info("Generating Changelog of types: ${writers.toList()}")
+        val generator = ChangeLogGenerator(writers)
+        logger.info("Generating Changelog of types: $writers")
         val unreleasedEntries = unreleasedEntries()
         if (includeUnreleased) {
             logger.info("Including ${unreleasedEntries.size} unreleased changes")
             if (unreleasedEntries.isNotEmpty()) {
-                writer.unreleased(unreleasedEntries.map { it.toPath() })
+                generator.addUnreleasedChanges(unreleasedEntries.map { it.toPath() })
             }
         } else {
             logger.info("Skipping unreleased changes")
         }
 
-        writer.generate(releaseEntries().map { it.toPath() })
-        writer.flush()
+        generator.addReleasedChanges(releaseEntries().map { it.toPath() })
+        generator.close()
 
         githubChangeLogFile?.let {
             git?.stage(it)
         }
     }
 
-    private fun createWriters(): Array<out ChangeLogWriter> {
+    private fun createWriters(): List<ChangeLogWriter> {
         val writers = mutableListOf<ChangeLogWriter>()
         githubChangeLogFile?.let {
             val changeLog = it.apply { createNewFile() }.toPath()
-            writers.add(GithubWriter(changeLog))
+            writers.add(GithubWriter(changeLog, issuesUrl))
         }
         jetbrainsChangeNotesFile?.let {
             it.parentFile.mkdirs()
             writers.add(JetBrainsWriter(it, issuesUrl))
         }
-        return writers.toTypedArray()
+        return writers.toList()
     }
 
     private fun unreleasedEntries(): List<File> = nextReleaseDirectory?.let {

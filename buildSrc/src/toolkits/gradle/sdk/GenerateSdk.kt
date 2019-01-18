@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package toolkits.gradle
+package toolkits.gradle.sdk
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.logging.Logging
@@ -16,7 +16,6 @@ import software.amazon.awssdk.codegen.utils.ModelLoaderUtils
 import java.io.File
 
 /* ktlint-disable custom-ktlint-rules:log-not-lazy */
-
 open class GenerateSdk : DefaultTask() {
     @InputDirectory
     lateinit var c2jFolder: File

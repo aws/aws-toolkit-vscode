@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package toolkits.gradle
+package toolkits.gradle.changelog
 
 import org.assertj.core.api.Assertions.assertThat
 import org.eclipse.jgit.api.Git

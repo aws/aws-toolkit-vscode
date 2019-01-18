@@ -50,3 +50,10 @@ dependencies {
     testCompile "junit:junit:$junitVersion"
     testCompile "com.nhaarman.mockitokotlin2:mockito-kotlin:2.0.0"
 }
+
+test {
+    testLogging {
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
+}
