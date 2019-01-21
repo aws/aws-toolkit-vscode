@@ -24,7 +24,6 @@
         "onView:lambda",
         "onCommand:aws.newLambda",
         "onCommand:aws.invokeLambda",
-        "onCommand:aws.configureLambda",
         "onCommand:aws.deployLambda",
         "onCommand:aws.getLambdaConfig",
         "onCommand:aws.getLambdaPolicy",
@@ -240,11 +239,6 @@
             {
                 "command": "aws.deleteCloudFormation",
                 "title": "%AWS.command.deleteCloudFormation%",
-                "category": "AWS"
-            },
-            {
-                "command": "aws.configureLambda",
-                "title": "%AWS.command.configureLambda%",
                 "category": "AWS"
             }
         ]

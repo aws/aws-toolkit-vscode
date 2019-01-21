@@ -5,6 +5,8 @@
 
 'use strict'
 
+// Use jsonc-parser.parse instead of JSON.parse, as JSONC can handle comments. VS Code uses jsonc-parser
+// under the hood to provide symbols for JSON documents, so this will keep us consistent with VS code.
 import { parse } from 'jsonc-parser'
 import * as os from 'os'
 import * as path from 'path'
@@ -22,38 +24,14 @@ export interface HandlersConfig {
     }
 }
 
-export async function configureLocalLambda(sourceUri: vscode.Uri, handler: string): Promise<void> {
-    // Handler will be the fully-qualified name, so we also allow '.' despite it being forbidden in handler names.
-    if (/[^\w\-\.]/.test(handler)) {
-        throw new Error(
-            `Invalid handler name: '${handler}'. ` +
-            'Handler names can contain only letters, numbers, hyphens, and underscores.'
-        )
-    }
-
-    const workspaceFolder: vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(sourceUri)
-    if (!workspaceFolder) {
-        console.error(`Source file ${sourceUri} is external to the current workspace.`)
-
-        return
-    }
-
+// Precondition: `handler` is a valid lambda handler name.
+export async function configureLocalLambda(workspaceFolder: vscode.WorkspaceFolder, handler: string): Promise<void> {
     // Preserve the scheme, etc of the workspace uri.
     const uri = workspaceFolder.uri.with({
         path: path.join(workspaceFolder.uri.fsPath, '.aws', 'handlers.json')
     })
 
-    try {
-        await accessAsync(path.dirname(uri.fsPath))
-    } catch {
-        await mkdirAsync(path.dirname(uri.fsPath), { recursive: true })
-    }
-
-    try {
-        await accessAsync(uri.fsPath)
-    } catch {
-        await writeFileAsync(uri.fsPath, JSON.stringify(buildHandlersConfig(handler), undefined, getTabSize()))
-    }
+    await ensureHandlersConfigFileExists(uri, handler)
 
     const editor: vscode.TextEditor = await vscode.window.showTextDocument(uri)
     if (await prepareConfig(editor, handler)) {
@@ -65,8 +43,22 @@ export async function configureLocalLambda(sourceUri: vscode.Uri, handler: strin
 
     await vscode.window.showTextDocument(
         editor.document,
-        { selection: await getFocusRange(editor, handler) }
+        { selection: await getEventRange(editor, handler) }
     )
+}
+
+async function ensureHandlersConfigFileExists(uri: vscode.Uri, handler: string): Promise<void> {
+    try {
+        await accessAsync(path.dirname(uri.fsPath))
+    } catch {
+        await mkdirAsync(path.dirname(uri.fsPath), { recursive: true })
+    }
+
+    try {
+        await accessAsync(uri.fsPath)
+    } catch {
+        await writeFileAsync(uri.fsPath, JSON.stringify(buildHandlersConfig(handler), undefined, getTabSize()))
+    }
 }
 
 function buildHandlersConfig(handler?: string): HandlersConfig {
@@ -87,7 +79,9 @@ function buildHandlerConfig(): HandlerConfig {
     }
 }
 
-function getTabSize(tabSize?: string | number | undefined): number {
+function getTabSize(editor?: vscode.TextEditor): number {
+    const tabSize = !editor ? undefined : editor.options.tabSize
+
     switch (typeof tabSize) {
         case 'number':
             return tabSize
@@ -99,50 +93,58 @@ function getTabSize(tabSize?: string | number | undefined): number {
     }
 }
 
-async function prepareConfig(editor: vscode.TextEditor, handler: string): Promise<boolean> {
+async function getSymbols(uri: vscode.Uri): Promise<vscode.DocumentSymbol[] | undefined> {
     // Awaiting this command is required because without it, symbols for a newly created document might not yet
     // be available, in which case vscode.executeDocumentSymbolProvider will return an empty list.
-    await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
-        'editor.action.wordHighlight.trigger',
-        editor.document.uri
-    )
-    const symbols: vscode.DocumentSymbol[] | undefined = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
-        'vscode.executeDocumentSymbolProvider',
-        editor.document.uri
-    )
+    await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('editor.action.wordHighlight.trigger', uri)
 
-    const entireDocumentRange: vscode.Range = new vscode.Range(
-        new vscode.Position(0, 0),
-        editor.document.positionAt(editor.document.getText().length)
-    )
+    return await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri)
+}
 
+async function prepareConfig(editor: vscode.TextEditor, handler: string): Promise<boolean> {
+    const symbols: vscode.DocumentSymbol[] | undefined = await getSymbols(editor.document.uri)
+
+    // If the file is empty, or if it is non-empty but cannot be even partially parsed as JSON, build it from scratch.
     if (!symbols || symbols.length < 1) {
-        return await editor.edit(editBuilder => {
-            const config: HandlersConfig = buildHandlersConfig(handler)
-
-            editBuilder.replace(
-                entireDocumentRange,
-                JSON.stringify(config, undefined, getTabSize(editor.options.tabSize))
-            )
-        })
+        return await editor.edit(editBuilder => editBuilder.replace(
+            // The jsonc-parser API does not provide a safe way to insert a child into an empty list, so in the case
+            // that the config file is missing or empty, we need to replace the entire document.
+            new vscode.Range(
+                new vscode.Position(0, 0),
+                editor.document.positionAt(editor.document.getText().length)
+            ),
+            JSON.stringify(buildHandlersConfig(handler), undefined, getTabSize(editor))
+        ))
     }
 
+    // If the config file exists, but `root.handlers` is undefined or empty, initial it with an empty
+    // config section for this handler.
     const handlersSymbol: vscode.DocumentSymbol | undefined = symbols.find(c => c.name === 'handlers')
     if (!handlersSymbol || handlersSymbol.children.length < 1) {
         const config: HandlersConfig = {
-            // Use jsonc-parser.parse instead of JSON.parse, as JSONC can handle comments. VS Code uses jsonc-parser
-            // under the hood to provide symbols for JSON documents, so this will keep us consistent with VS code.
             ...parse(editor.document.getText()),
             ...buildHandlersConfig(handler)
         }
-        const configString = JSON.stringify(config, undefined, getTabSize(editor.options.tabSize))
+        const configString = JSON.stringify(config, undefined, getTabSize(editor))
 
-        return await editor.edit(editBuilder => editBuilder.replace(entireDocumentRange, configString))
+        return await editor.edit(
+                // The jsonc-parser API does not provide a safe way to insert a child into an empty list, so in the case
+                // that the config file exists, but has an empty or undefined `handlers` property, we need to replace
+                // the entire document.
+                editBuilder => editBuilder.replace(
+                new vscode.Range(
+                    new vscode.Position(0, 0),
+                    editor.document.positionAt(editor.document.getText().length)
+                ),
+                configString
+            )
+        )
     }
 
+    // If `root.handlers` and is non-empty, but does not include an entry for this handler, create and insert one.
     const handlerSymbol: vscode.DocumentSymbol | undefined = handlersSymbol.children.find(c => c.name === handler)
     if (!handlerSymbol || handlerSymbol.children.length < 1) {
-        // At this point we know that handlersSymbol has at least one child.
+        // At this point we know that `root.handlers` has at least one child.
         const lastChildEnd: vscode.Position = handlersSymbol.children.reduce(
             (lastSoFar: vscode.Position, current: vscode.DocumentSymbol) =>
                 current.range.end.isAfter(lastSoFar) ? current.range.end : lastSoFar,
@@ -155,7 +157,7 @@ async function prepareConfig(editor: vscode.TextEditor, handler: string): Promis
         //             event: {}
         //         }
         // [END]
-        const tabSize = getTabSize(editor.options.tabSize)
+        const tabSize = getTabSize(editor)
         const baseIndentation: string = ' '.repeat(tabSize).repeat(2)
         // We have already validated that handler contains only letters, numbers, hyphens, and underscores.
         let snippet: string = `"${handler}": ${JSON.stringify(buildHandlerConfig(), undefined, tabSize)}`
@@ -165,6 +167,8 @@ async function prepareConfig(editor: vscode.TextEditor, handler: string): Promis
         return await editor.edit(editBuilder => editBuilder.insert(lastChildEnd, snippet))
     }
 
+    // If there is a config section for this handler, but it doesn't specify a sample event, create and insert
+    // an empty sample event.
     const eventSymbol: vscode.DocumentSymbol | undefined = handlerSymbol.children.find(c => c.name === 'event')
     if (!eventSymbol) {
         // At this point we know that handlerSymbol has at least one child.
@@ -174,7 +178,7 @@ async function prepareConfig(editor: vscode.TextEditor, handler: string): Promis
             new vscode.Position(0, 0)
         )
 
-        const baseIndentation: string = ' '.repeat(getTabSize(editor.options.tabSize)).repeat(3)
+        const baseIndentation: string = ' '.repeat(getTabSize(editor)).repeat(3)
         const snippet: string = `,${os.EOL}${baseIndentation}"event": {}${os.EOL}`
 
         return await editor.edit(editBuilder => editBuilder.insert(lastChildEnd, snippet))
@@ -183,7 +187,7 @@ async function prepareConfig(editor: vscode.TextEditor, handler: string): Promis
     return true
 }
 
-async function getFocusRange(editor: vscode.TextEditor, handler: string): Promise<vscode.Range> {
+async function getEventRange(editor: vscode.TextEditor, handler: string): Promise<vscode.Range> {
     const symbols: vscode.DocumentSymbol[] | undefined = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
         'vscode.executeDocumentSymbolProvider',
         editor.document.uri
