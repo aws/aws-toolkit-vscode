@@ -94,7 +94,7 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
         }
 
         const command = {
-            arguments: [ document.uri, handlerName ],
+            arguments: [ workspaceFolder, handlerName ],
             command: 'aws.configureLambda',
             title: localize('AWS.command.configureLambda', 'Configure')
         }
