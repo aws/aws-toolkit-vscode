@@ -60,11 +60,6 @@ export async function* listCloudFormationStacks(
 
     try {
         yield* client.listStacks()
-    } catch (err) {
-        const error = err as Error
-
-        // TODO: Handle error gracefully, possibly add a node that can attempt to retry the operation
-        console.error(error.message)
     } finally {
         status.dispose()
     }
@@ -77,11 +72,6 @@ export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableI
     try {
         yield* client.listFunctions()
 
-    } catch (err) {
-        const error = err as Error
-
-        // TODO: Handle error gracefully, possibly add a node that can attempt to retry the operation
-        console.error(error.message)
     } finally {
         if (!!status) {
             status.dispose()

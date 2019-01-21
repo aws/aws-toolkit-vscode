@@ -7,7 +7,6 @@
 
 import * as assert from 'assert'
 import { CloudFormation, Lambda } from 'aws-sdk'
-import { Uri } from 'vscode'
 import {
     CloudFormationStackNode,
     DefaultCloudFormationFunctionNode,
@@ -15,6 +14,7 @@ import {
     DefaultCloudFormationStackNode
 } from '../../../lambda/explorer/cloudFormationNodes'
 import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
+import { ErrorNode } from '../../../lambda/explorer/errorNode'
 import { PlaceholderNode } from '../../../lambda/explorer/placeholderNode'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
@@ -194,34 +194,32 @@ describe('DefaultCloudFormationStackNode', () => {
         assert.strictEqual((childNodes[1] as DefaultCloudFormationFunctionNode).label, lambda3Name)
     })
 
-    // Validates we wired up the expected resource for the node icon
-    it('initializes icon path', async () => {
+})
 
-        const fileScheme: string = 'file'
-        const resourceImageName: string = 'cloudformation.svg'
+describe('DefaultCloudFormationNode', () => {
 
-        const testNode = new DefaultCloudFormationStackNode(
-            new DefaultCloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
-            fakeStackSummary
+    it('handles error', async () => {
+
+        class ThrowErrorDefaultCloudFormationNode extends DefaultCloudFormationNode {
+            public constructor(
+                public readonly regionNode: DefaultRegionNode
+            ) {
+                super(regionNode)
+            }
+
+            public async updateChildren(): Promise<void> {
+                throw new Error('Hello there!')
+            }
+        }
+
+        const testNode: ThrowErrorDefaultCloudFormationNode = new ThrowErrorDefaultCloudFormationNode(
+            new DefaultRegionNode(new RegionInfo('code', 'name'))
         )
 
-        const iconPath = testNode.iconPath as {
-            light: Uri,
-            dark: Uri
-        }
-        assert(!!iconPath)
-
-        assert(!!iconPath.light)
-        assert(iconPath!.light instanceof Uri)
-        assert.strictEqual(iconPath!.light.scheme, fileScheme)
-        const lightResourcePath: string = iconPath!.light.path
-        assert(lightResourcePath.endsWith(`/light/${resourceImageName}`))
-
-        assert(!!iconPath.dark)
-        assert(iconPath!.dark instanceof Uri)
-        assert.strictEqual(iconPath!.dark.scheme, fileScheme)
-        const darkResourcePath: string = iconPath!.dark.path
-        assert(darkResourcePath.endsWith(`dark/${resourceImageName}`))
+        const childNodes = await testNode.getChildren()
+        assert(childNodes !== undefined)
+        assert.strictEqual(childNodes.length, 1)
+        assert.strictEqual(childNodes[0] instanceof ErrorNode, true)
     })
 
 })

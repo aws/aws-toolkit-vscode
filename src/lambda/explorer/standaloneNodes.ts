@@ -5,27 +5,31 @@
 
 'use strict'
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import { Lambda } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
-import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
+import { AWSTreeErrorHandlerNode } from '../../shared/treeview/awsTreeErrorHandlerNode'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listLambdaFunctions } from '../utils'
+import { ErrorNode } from './errorNode'
 import { FunctionNodeBase } from './functionNode'
 import { RegionNode } from './regionNode'
 
-export interface StandaloneFunctionGroupNode extends AWSTreeNodeBase {
+export interface StandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode {
     readonly regionCode: string
 
     readonly parent: RegionNode
 
-    getChildren(): Thenable<StandaloneFunctionNode[]>
+    getChildren(): Thenable<(StandaloneFunctionNode | ErrorNode)[]>
 
     updateChildren(): Thenable<void>
 }
 
-export class DefaultStandaloneFunctionGroupNode extends AWSTreeNodeBase implements StandaloneFunctionGroupNode {
+export class DefaultStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode implements StandaloneFunctionGroupNode {
     private readonly functionNodes: Map<string, StandaloneFunctionNode>
 
     public get regionCode(): string {
@@ -39,13 +43,17 @@ export class DefaultStandaloneFunctionGroupNode extends AWSTreeNodeBase implemen
         this.functionNodes = new Map<string, StandaloneFunctionNode>()
     }
 
-    public async getChildren(): Promise<StandaloneFunctionNode[]> {
-        await this.updateChildren()
+    public async getChildren(): Promise<(StandaloneFunctionNode | ErrorNode)[]> {
+        await this.handleErrorProneOperation(async () => this.updateChildren(),
+                                             localize('AWS.explorerNode.lambda.error',
+                                                      'Error loading Lambda resources'))
 
-        return [...this.functionNodes.values()]
+        return !!this.errorNode ? [this.errorNode]
+            : [...this.functionNodes.values()]
     }
 
     public async updateChildren(): Promise<void> {
+
         const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(this.regionCode)
         const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
             await toArrayAsync(listLambdaFunctions(client)),

@@ -13,7 +13,7 @@ import * as vscode from 'vscode'
 import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
-import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
+import { AWSTreeErrorHandlerNode } from '../../shared/treeview/awsTreeErrorHandlerNode'
 import {
     intersection,
     toArrayAsync,
@@ -22,21 +22,22 @@ import {
     updateInPlace
 } from '../../shared/utilities/collectionUtils'
 import { listCloudFormationStacks, listLambdaFunctions } from '../utils'
+import { ErrorNode } from './errorNode'
 import { FunctionNodeBase } from './functionNode'
 import { PlaceholderNode } from './placeholderNode'
 import { RegionNode } from './regionNode'
 
-export interface CloudFormationNode extends AWSTreeNodeBase {
+export interface CloudFormationNode extends AWSTreeErrorHandlerNode {
     readonly regionCode: string
 
     readonly parent: RegionNode
 
-    getChildren(): Thenable<CloudFormationStackNode[]>
+    getChildren(): Thenable<(CloudFormationStackNode | ErrorNode)[] >
 
     updateChildren(): Thenable<void>
 }
 
-export class DefaultCloudFormationNode extends AWSTreeNodeBase implements CloudFormationNode {
+export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implements CloudFormationNode {
     private readonly stackNodes: Map<string, CloudFormationStackNode>
 
     public get regionCode(): string {
@@ -48,13 +49,18 @@ export class DefaultCloudFormationNode extends AWSTreeNodeBase implements CloudF
         this.stackNodes = new Map<string, CloudFormationStackNode>()
     }
 
-    public async getChildren(): Promise<CloudFormationStackNode[]> {
-        await this.updateChildren()
+    public async getChildren(): Promise<(CloudFormationStackNode | ErrorNode)[]> {
+        await this.handleErrorProneOperation(
+            async () => this.updateChildren(),
+            localize('AWS.explorerNode.cloudFormation.error',
+                     'Error loading CloudFormation resources'))
 
-        return [...this.stackNodes.values()]
+        return !!this.errorNode ? [this.errorNode]
+            : [...this.stackNodes.values()]
     }
 
     public async updateChildren(): Promise<void> {
+
         const client: CloudFormationClient = ext.toolkitClientBuilder.createCloudFormationClient(this.regionCode)
         const stacks = await toMapAsync(listCloudFormationStacks(client), stack => stack.StackId)
 
@@ -67,7 +73,7 @@ export class DefaultCloudFormationNode extends AWSTreeNodeBase implements CloudF
     }
 }
 
-export interface CloudFormationStackNode extends AWSTreeNodeBase {
+export interface CloudFormationStackNode extends AWSTreeErrorHandlerNode {
     readonly regionCode: string
 
     readonly parent: CloudFormationNode
@@ -77,7 +83,7 @@ export interface CloudFormationStackNode extends AWSTreeNodeBase {
     update(stackSummary: CloudFormation.StackSummary): void
 }
 
-export class DefaultCloudFormationStackNode extends AWSTreeNodeBase implements CloudFormationStackNode {
+export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode implements CloudFormationStackNode {
     private readonly functionNodes: Map<string, CloudFormationFunctionNode>
 
     public get regionCode(): string {
@@ -91,27 +97,29 @@ export class DefaultCloudFormationStackNode extends AWSTreeNodeBase implements C
         super('', vscode.TreeItemCollapsibleState.Collapsed)
 
         this.update(stackSummary)
-        this.iconPath = {
-            dark: vscode.Uri.file(ext.context.asAbsolutePath('resources/dark/cloudformation.svg')),
-            light: vscode.Uri.file(ext.context.asAbsolutePath('resources/light/cloudformation.svg'))
-        }
         this.contextValue = 'awsCloudFormationNode'
         this.functionNodes = new Map<string, CloudFormationFunctionNode>()
     }
 
     public async getChildren(): Promise<(CloudFormationFunctionNode | PlaceholderNode)[]> {
-        await this.updateChildren()
+        await this.handleErrorProneOperation(async () => this.updateChildren(),
+                                             localize('AWS.explorerNode.cloudFormation.error',
+                                                      'Error loading CloudFormation resources'))
+
+        if (!!this.errorNode) {
+            return [this.errorNode]
+        }
 
         if (this.functionNodes.size > 0) {
             return [...this.functionNodes.values()]
-        } else {
-            return [
-                new PlaceholderNode(
-                    this,
-                    localize('AWS.explorerNode.cloudFormation.noFunctions', '[no functions in this CloudFormation]')
-                )
-            ]
         }
+
+        return [
+            new PlaceholderNode(
+                this,
+                localize('AWS.explorerNode.cloudFormation.noFunctions', '[no functions in this CloudFormation]')
+            )
+        ]
     }
 
     public update(stackSummary: CloudFormation.StackSummary): void {
@@ -121,6 +129,7 @@ export class DefaultCloudFormationStackNode extends AWSTreeNodeBase implements C
     }
 
     private async updateChildren(): Promise<void> {
+
         const resources: string[] = await this.resolveLambdaResources()
         const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(this.regionCode)
         const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
