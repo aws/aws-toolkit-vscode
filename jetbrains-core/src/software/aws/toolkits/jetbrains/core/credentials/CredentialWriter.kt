@@ -8,7 +8,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
-import com.intellij.openapi.fileTypes.UnknownFileType
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
@@ -47,11 +46,6 @@ class CreateOrUpdateCredentialProfilesAction @TestOnly constructor(
         }
 
         val virtualFile = localFileSystem.refreshAndFindFileByIoFile(file) ?: throw RuntimeException(message("credentials.could_not_open", file))
-        virtualFile.isWritable = true
-        if (virtualFile.fileType is UnknownFileType && virtualFile.length == 0L) {
-            throw RuntimeException(message("credentials.empty_file", file))
-        }
-
         val fileEditorManager = FileEditorManager.getInstance(project)
 
         localFileSystem.refreshFiles(listOf(virtualFile), false, false) {
@@ -76,6 +70,29 @@ interface CredentialFileWriter {
 }
 
 object DefaultCredentialFileWriter : CredentialFileWriter {
+    val TEMPLATE = """
+        # Amazon Web Services Credentials File used by AWS CLI, SDKs, and tools
+        # This file was created by the AWS Toolkit for JetBrains plugin.
+        #
+        # Your AWS credentials are represented by access keys associated with IAM users.
+        # For information about how to create and manage AWS access keys for a user, see:
+        # https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
+        #
+        # This credential file can store multiple access keys by placing each one in a
+        # named "profile". For information about how to change the access keys in a
+        # profile or to add a new profile with a different access key, see:
+        # https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html
+        #
+        [default]
+        # The access key and secret key pair identify your account and grant access to AWS.
+        aws_access_key_id = [accessKey]
+        # Treat your secret key like a password. Never share your secret key with anyone. Do
+        # not post it in online forums, or store it in a source control system. If your secret
+        # key is ever disclosed, immediately use IAM to delete the access key and secret key
+        # and create a new key pair. Then, update this file with the replacement key details.
+        aws_secret_access_key = [secretKey]
+    """.trimIndent()
+
     override fun createFile(file: File) {
         val parent = file.parentFile
         if (parent.mkdirs()) {
@@ -87,13 +104,7 @@ object DefaultCredentialFileWriter : CredentialFileWriter {
             parent.setExecutable(true)
         }
 
-        file.writeText(
-            """
-                [default]
-                aws_access_key_id=
-                aws_secret_access_key=
-            """.trimIndent()
-        )
+        file.writeText(TEMPLATE)
 
         file.setReadable(false, false)
         file.setReadable(true)

@@ -27,13 +27,7 @@ class DefaultCredentialFileWriterTest {
         val sut = DefaultCredentialFileWriter
         sut.createFile(file)
 
-        assertThat(file).exists().hasContent(
-            """
-            [default]
-            aws_access_key_id=
-            aws_secret_access_key=
-        """.trimIndent()
-        )
+        assertThat(file).exists().hasContent(DefaultCredentialFileWriter.TEMPLATE)
 
         assumeNoException<UnsupportedOperationException> {
             assertThat(Files.getPosixFilePermissions(file.toPath())).matches("rw-------")

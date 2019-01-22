@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Unable to edit AWS credential file via pycharm (#759)"
+}
