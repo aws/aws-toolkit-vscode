@@ -53,6 +53,16 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
 
             lenses.push(this.generateLocalInvokeCodeLens(document, range, handler.handlerName, false))
             lenses.push(this.generateLocalInvokeCodeLens(document, range, handler.handlerName, true))
+
+            try {
+                lenses.push(this.generateConfigureCodeLens(document, range, handler.handlerName))
+            } catch (err) {
+                const error = err as Error
+
+                console.error(
+                    `Could not generate 'configure' code lens for handler '${handler.handlerName}': ${error.message}`
+                )
+            }
         })
 
         return lenses
@@ -63,6 +73,33 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
         token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.CodeLens> {
         throw new Error('not implemented')
+    }
+
+    private generateConfigureCodeLens(
+        document: vscode.TextDocument,
+        range: vscode.Range,
+        handlerName: string
+    ) {
+        // Handler will be the fully-qualified name, so we also allow '.' despite it being forbidden in handler names.
+        if (/[^\w\-\.]/.test(handlerName)) {
+            throw new Error(
+                `Invalid handler name: '${handlerName}'. ` +
+                'Handler names can contain only letters, numbers, hyphens, and underscores.'
+            )
+        }
+
+        const workspaceFolder: vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(document.uri)
+        if (!workspaceFolder) {
+            throw new Error(`Source file ${document.uri} is external to the current workspace.`)
+        }
+
+        const command = {
+            arguments: [ workspaceFolder, handlerName ],
+            command: 'aws.configureLambda',
+            title: localize('AWS.command.configureLambda', 'Configure')
+        }
+
+        return new vscode.CodeLens(range, command)
     }
 
     private generateLocalInvokeCodeLens(

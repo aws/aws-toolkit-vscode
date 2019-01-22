@@ -22,6 +22,7 @@
     "AWS.command.deleteLambda.error": "There was an error deleting lambda function '{0}'",
     "AWS.command.deployLambda": "Deploy",
     "AWS.command.invokeLambda": "Invoke",
+    "AWS.command.configureLambda": "Configure",
     "AWS.command.refreshAwsExplorer": "Refresh",
     "AWS.command.getLambdaConfig": "Get Configuration",
     "AWS.command.getLambdaPolicy": "Get Policy",
