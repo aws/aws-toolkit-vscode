@@ -13,24 +13,18 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.LocalFileSystem
 import org.jetbrains.annotations.TestOnly
-import software.amazon.awssdk.profiles.ProfileFileSystemSetting
-import software.amazon.awssdk.utils.JavaSystemSetting
-import software.amazon.awssdk.utils.StringUtils
+import software.amazon.awssdk.profiles.ProfileFileLocation
 import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import java.io.File
-import java.nio.file.FileSystems
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.util.regex.Pattern
 
 class CreateOrUpdateCredentialProfilesAction @TestOnly constructor(
     private val writer: CredentialFileWriter,
     private val file: File
 ) : AnActionWrapper(message("configure.toolkit.upsert_credentials.action")), DumbAware {
     @Suppress("unused")
-    constructor() : this(DefaultCredentialFileWriter, FileLocation.credentialsFileLocationPath().toFile())
+    constructor() : this(DefaultCredentialFileWriter, ProfileFileLocation.configurationFilePath().toFile())
 
     private val localFileSystem = LocalFileSystem.getInstance()
 
@@ -112,59 +106,5 @@ object DefaultCredentialFileWriter : CredentialFileWriter {
         file.setWritable(true)
         file.setExecutable(false, false)
         file.setExecutable(false)
-    }
-}
-
-// TODO: remove this, when https://github.com/aws/aws-sdk-java-v2/pull/730 is merged & released
-private object FileLocation {
-    private val HOME_DIRECTORY_PATTERN = Pattern.compile("^~(/|" + Pattern.quote(FileSystems.getDefault().separator) + ").*$")
-
-    /**
-     * Load the location for the credentials file, regardless of whether it actually exists
-     */
-    fun credentialsFileLocationPath() = resolveProfileFilePath(
-        ProfileFileSystemSetting.AWS_SHARED_CREDENTIALS_FILE.stringValue
-            .orElse(Paths.get(userHomeDirectory(), ".aws", "credentials").toString())
-    )
-
-    private fun userHomeDirectory(): String {
-        val isWindows = JavaSystemSetting.OS_NAME.stringValue
-            .map { s -> StringUtils.lowerCase(s).startsWith("windows") }
-            .orElse(false)
-
-        // To match the logic of the CLI we have to consult environment variables directly.
-        // CHECKSTYLE:OFF
-        val home = System.getenv("HOME")
-
-        if (home != null) {
-            return home
-        }
-
-        if (isWindows) {
-            val userProfile = System.getenv("USERPROFILE")
-
-            if (userProfile != null) {
-                return userProfile
-            }
-
-            val homeDrive = System.getenv("HOMEDRIVE")
-            val homePath = System.getenv("HOMEPATH")
-
-            if (homeDrive != null && homePath != null) {
-                return homeDrive + homePath
-            }
-        }
-
-        return JavaSystemSetting.USER_HOME.stringValueOrThrow
-        // CHECKSTYLE:ON
-    }
-
-    private fun resolveProfileFilePath(path: String): Path {
-        var pathBuilder = path
-        // Resolve ~ using the CLI's logic, not whatever Java decides to do with it.
-        if (HOME_DIRECTORY_PATTERN.matcher(path).matches()) {
-            pathBuilder = userHomeDirectory() + path.substring(1)
-        }
-        return Paths.get(pathBuilder)
     }
 }
