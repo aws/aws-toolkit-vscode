@@ -25,37 +25,30 @@ export class SamCliLocalInvokeInvocation {
     public async execute(): Promise<SamCliLocalInvokeResponse> {
         await this.validate()
 
-        const args: string[] = [
+        const args = [
             'local',
             'invoke',
             this.templateResourceName,
             '--template',
             this.templatePath,
             '--event',
-            this.eventPath,
+            this.eventPath
         ]
-
         if (!!this.debugPort) {
             args.push('-d', this.debugPort)
         }
 
-        const execution: vscode.ShellExecution = new vscode.ShellExecution(
-            'sam',
-            args
-        )
+        const execution = new vscode.ShellExecution('sam', args)
 
-        const task: vscode.Task = new vscode.Task(
+        await this.invoker.invoke(new vscode.Task(
             {
                 type: 'samLocalInvoke',
             },
             vscode.TaskScope.Workspace,
             'LocalLambdaDebug',
             'SAM CLI',
-            execution,
-            []
-        )
-
-        await this.invoker.invoke(task)
+            execution
+        ))
 
         return {}
     }
