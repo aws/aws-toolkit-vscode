@@ -118,10 +118,6 @@ function activateCodeLensProviders(
                     language: 'javascript',
                     scheme: 'file',
                 },
-                {
-                    language: 'typescript',
-                    scheme: 'file',
-                }
             ],
             new TypescriptCodeLensProvider()
         )
