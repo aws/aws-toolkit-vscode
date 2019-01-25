@@ -137,7 +137,7 @@ class LocalLambdaRunner {
     private static readonly SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
 
     private _baseBuildFolder?: string
-    private _debugPort?: number
+    private readonly _debugPort?: number
 
     public constructor(
         private readonly configuration: SettingsConfiguration,
