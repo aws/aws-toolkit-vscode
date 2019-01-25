@@ -26,7 +26,7 @@ import { safeGet } from './shared/extensionUtilities'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import * as SamCliDetection from './shared/sam/cli/samCliDetection'
 import { SamCliVersionValidator } from './shared/sam/cli/samCliVersionValidator'
-import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
+import { DefaultSettingsConfiguration, SettingsConfiguration } from './shared/settingsConfiguration'
 import { AWSStatusBar } from './shared/statusBar'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { PromiseSharer } from './shared/utilities/promiseUtilities'
@@ -61,7 +61,7 @@ export async function activate(context: vscode.ExtensionContext) {
     ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
     ext.statusBar = new AWSStatusBar(awsContext, context)
 
-    context.subscriptions.push(...activateCodeLensProviders(toolkitOutputChannel))
+    context.subscriptions.push(...activateCodeLensProviders(awsContext.settingsConfiguration, toolkitOutputChannel))
 
     vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
     vscode.commands.registerCommand(
@@ -104,11 +104,12 @@ export function deactivate() {
 }
 
 function activateCodeLensProviders(
+    configuration: SettingsConfiguration,
     toolkitOutputChannel: vscode.OutputChannel
 ): vscode.Disposable[] {
     const disposables: vscode.Disposable[] = []
 
-    TypescriptCodeLensProvider.initialize(toolkitOutputChannel)
+    TypescriptCodeLensProvider.initialize(configuration, toolkitOutputChannel)
 
     disposables.push(
         vscode.languages.registerCodeLensProvider(
