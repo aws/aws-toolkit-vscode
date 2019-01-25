@@ -102,9 +102,17 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
         vscode.commands.registerCommand(
             'aws.lambda.local.invoke',
             async (args: LambdaLocalInvokeArguments) => {
+
+                let debugPort: number | undefined
+
+                if (args.debug) {
+                    debugPort = await TypescriptCodeLensProvider.determineDebugPort()
+                }
+
                 const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
                     configuration,
                     args,
+                    debugPort,
                     'nodejs8.10',
                     toolkitOutputChannel,
                     processInvoker,
@@ -115,6 +123,11 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
             }
         )
     }
+
+    private static async determineDebugPort(): Promise<number> {
+        // TODO : in the future, move this to a utility class and search for an available port
+        return 5858
+    }
 }
 
 class LocalLambdaRunner {
@@ -124,15 +137,22 @@ class LocalLambdaRunner {
     private static readonly SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
 
     private _baseBuildFolder?: string
+    private _debugPort?: number
 
     public constructor(
         private readonly configuration: SettingsConfiguration,
         private readonly localInvokeArgs: LambdaLocalInvokeArguments,
+        debugPort: number | undefined,
         private readonly runtime: string,
         private readonly outputChannel: vscode.OutputChannel,
         private readonly processInvoker: SamCliProcessInvoker,
         private readonly taskInvoker: SamCliTaskInvoker
     ) {
+        if (localInvokeArgs.debug && !debugPort) {
+            throw new Error('Debug port must be provided when launching in debug mode')
+        }
+
+        this._debugPort = debugPort
     }
 
     public async run(): Promise<void> {
@@ -151,9 +171,7 @@ class LocalLambdaRunner {
             const inputTemplate: string = await this.generateInputTemplate(rootCodeFolder)
             const samBuildTemplate: string = await this.executeSamBuild(rootCodeFolder, inputTemplate)
 
-            const debugPort: number | undefined = this.localInvokeArgs.debug ? await this.getDebugPort() : undefined
-
-            await this.invokeLambdaFunction(samBuildTemplate, debugPort)
+            await this.invokeLambdaFunction(samBuildTemplate)
 
         } catch (err) {
             console.log(err)
@@ -178,6 +196,14 @@ class LocalLambdaRunner {
             return
         }
 
+    }
+
+    public get debugPort(): number {
+        if (!this._debugPort) {
+            throw new Error('Debug port was expected but is undefined')
+        }
+
+        return this._debugPort
     }
 
     private async getBaseBuildFolder(): Promise<string> {
@@ -279,13 +305,9 @@ class LocalLambdaRunner {
     /**
      * Runs `sam local invoke` against the provided template file
      * @param samTemplatePath sam template to run locally
-     * @param debugPort Optional
-     *                  - when omitted, the lambda function is invoked locally
-     *                  - when provided, the debugger will attempt to attach to local invoke
      */
     private async invokeLambdaFunction(
         samTemplatePath: string,
-        debugPort: number | undefined,
     ): Promise<void> {
         this.outputChannel.appendLine(
             localize(
@@ -293,12 +315,6 @@ class LocalLambdaRunner {
                 'Starting the SAM Application locally (see Terminal for output)'
             )
         )
-
-        let debugPortStr: string | undefined
-
-        if (this.localInvokeArgs.debug) {
-            debugPortStr = debugPort!.toString()
-        }
 
         // TODO : events will be driven from somewhere else in the future.
         const eventPath: string = path.join(await this.getBaseBuildFolder(), 'event.json')
@@ -308,7 +324,7 @@ class LocalLambdaRunner {
             LocalLambdaRunner.TEMPLATE_RESOURCE_NAME,
             samTemplatePath,
             eventPath,
-            debugPortStr,
+            (!!this._debugPort) ? this._debugPort.toString() : undefined,
             this.taskInvoker
         )
 
@@ -327,12 +343,12 @@ class LocalLambdaRunner {
                 LocalLambdaRunner.SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT)
 
             await tcpPortUsed.waitUntilUsed(
-                debugPort!,
+                this.debugPort,
                 LocalLambdaRunner.SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS,
                 timeoutMillis
             )
 
-            await this.attachDebugger(debugPort!)
+            await this.attachDebugger(this.debugPort)
         }
     }
 
@@ -381,10 +397,5 @@ class LocalLambdaRunner {
                 )
             )
         }
-    }
-
-    private async getDebugPort(): Promise<number> {
-        // TODO : in the future, search for an available port
-        return 5858
     }
 }
