@@ -23,6 +23,7 @@ import {
     SamCliTaskInvoker
 } from '../sam/cli/samCliInvoker'
 import { SamCliLocalInvokeInvocation } from '../sam/cli/samCliLocalInvoke'
+import { SettingsConfiguration } from '../settingsConfiguration'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
@@ -93,6 +94,7 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
     }
 
     public static initialize(
+        configuration: SettingsConfiguration,
         toolkitOutputChannel: vscode.OutputChannel,
         processInvoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker(),
         taskInvoker: SamCliTaskInvoker = new DefaultSamCliTaskInvoker()
@@ -101,6 +103,7 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
             'aws.lambda.local.invoke',
             async (args: LambdaLocalInvokeArguments) => {
                 const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
+                    configuration,
                     args,
                     'nodejs8.10',
                     toolkitOutputChannel,
@@ -118,11 +121,12 @@ class LocalLambdaRunner {
 
     private static readonly TEMPLATE_RESOURCE_NAME: string = 'awsToolkitSamLocalResource'
     private static readonly SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
-    private static readonly SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS: number = 30000
+    private static readonly SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
 
     private _baseBuildFolder?: string
 
     public constructor(
+        private readonly configuration: SettingsConfiguration,
         private readonly localInvokeArgs: LambdaLocalInvokeArguments,
         private readonly runtime: string,
         private readonly outputChannel: vscode.OutputChannel,
@@ -317,10 +321,15 @@ class LocalLambdaRunner {
                     'Waiting for SAM Application to start before attaching debugger...'
                 )
             )
+
+            const timeoutMillis = this.configuration.readSetting<number>(
+                'samcli.debug.attach.timeout.millis',
+                LocalLambdaRunner.SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT)
+
             await tcpPortUsed.waitUntilUsed(
                 debugPort!,
                 LocalLambdaRunner.SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS,
-                LocalLambdaRunner.SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS
+                timeoutMillis
             )
 
             await this.attachDebugger(debugPort!)
