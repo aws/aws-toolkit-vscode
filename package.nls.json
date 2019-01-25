@@ -75,6 +75,7 @@
     "AWS.output.sam.local.attach.failure": "Unable to attach Debugger. Check the Terminal tab for output. If it took longer than expected to successfully start, you may still attach to it.",
     "AWS.output.sam.local.error": "Error: {0}",
     "AWS.output.sam.local.start": "Preparing to run {0} locally...",
+    "AWS.output.sam.local.waiting": "Waiting for SAM Application to start before attaching debugger...",
     "AWS.output.starting.sam.app.locally": "Starting the SAM Application locally (see Terminal for output)",
     "AWS.prompt.mfa.enterCode.placeholder": "Enter Authentication Code Here",
     "AWS.prompt.mfa.enterCode.prompt": "Enter authentication code for profile {0}",

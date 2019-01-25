@@ -9,6 +9,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
+import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
 import { NodeDebugConfiguration } from '../../lambda/local/debugConfigurationProvider'
 import * as fileSystem from '../filesystem'
@@ -116,6 +117,8 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
 class LocalLambdaRunner {
 
     private static readonly TEMPLATE_RESOURCE_NAME: string = 'awsToolkitSamLocalResource'
+    private static readonly SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
+    private static readonly SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS: number = 30000
 
     private _baseBuildFolder?: string
 
@@ -308,6 +311,18 @@ class LocalLambdaRunner {
         await command.execute()
 
         if (this.localInvokeArgs.debug) {
+            this.outputChannel.appendLine(
+                localize(
+                    'AWS.output.sam.local.waiting',
+                    'Waiting for SAM Application to start before attaching debugger...'
+                )
+            )
+            await tcpPortUsed.waitUntilUsed(
+                debugPort!,
+                LocalLambdaRunner.SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS,
+                LocalLambdaRunner.SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS
+            )
+
             await this.attachDebugger(debugPort!)
         }
     }
