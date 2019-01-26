@@ -11,6 +11,7 @@ const localize = nls.loadMessageBundle()
 import * as path from 'path'
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
+import { getLocalLambdaConfiguration, HandlerConfig } from '../../lambda/local/configureLocalLambda'
 import { NodeDebugConfiguration } from '../../lambda/local/debugConfigurationProvider'
 import * as fileSystem from '../filesystem'
 import * as filesystemUtilities from '../filesystemUtilities'
@@ -115,16 +116,16 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
             localize('AWS.codelens.lambda.invoke', 'Run')
 
         const commandArgs: LambdaLocalInvokeArguments = {
-            document: document,
-            range: range,
-            handlerName: handlerName,
-            debug: debug,
+            document,
+            range,
+            handlerName,
+            debug,
         }
 
         const command: vscode.Command = {
             arguments: [commandArgs],
             command: 'aws.lambda.local.invoke',
-            title: title,
+            title
         }
 
         return new vscode.CodeLens(range, command)
@@ -353,11 +354,10 @@ class LocalLambdaRunner {
             )
         )
 
-        // TODO : events will be driven from somewhere else in the future.
         const eventPath: string = path.join(await this.getBaseBuildFolder(), 'event.json')
-        await fileSystem.writeFileAsync(eventPath, '{}')
+        await fileSystem.writeFileAsync(eventPath, JSON.stringify(await this.getEvent()))
 
-        const command: SamCliLocalInvokeInvocation = new SamCliLocalInvokeInvocation(
+        const command = new SamCliLocalInvokeInvocation(
             LocalLambdaRunner.TEMPLATE_RESOURCE_NAME,
             samTemplatePath,
             eventPath,
@@ -387,6 +387,20 @@ class LocalLambdaRunner {
 
             await this.attachDebugger(this.debugPort)
         }
+    }
+
+    private async getEvent(): Promise<{}> {
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(this.localInvokeArgs.document.uri)
+        if (!workspaceFolder) {
+            return {}
+        }
+
+        const config: HandlerConfig = await getLocalLambdaConfiguration(
+            workspaceFolder,
+            this.localInvokeArgs.handlerName
+        )
+
+        return config.event
     }
 
     private async attachDebugger(debugPort: number) {

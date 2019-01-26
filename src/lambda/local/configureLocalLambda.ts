@@ -12,10 +12,11 @@ import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { accessAsync, mkdirAsync, writeFileAsync } from '../../shared/filesystem'
+import { readFileAsString } from '../../shared/filesystemUtilities'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 
 export interface HandlerConfig {
-    event: any
+    event: {}
 }
 
 export interface HandlersConfig {
@@ -26,10 +27,7 @@ export interface HandlersConfig {
 
 // Precondition: `handler` is a valid lambda handler name.
 export async function configureLocalLambda(workspaceFolder: vscode.WorkspaceFolder, handler: string): Promise<void> {
-    // Preserve the scheme, etc of the workspace uri.
-    const uri = workspaceFolder.uri.with({
-        path: path.join(workspaceFolder.uri.fsPath, '.aws', 'handlers.json')
-    })
+    const uri = getConfigUri(workspaceFolder)
 
     await ensureHandlersConfigFileExists(uri, handler)
 
@@ -45,6 +43,41 @@ export async function configureLocalLambda(workspaceFolder: vscode.WorkspaceFold
         editor.document,
         { selection: await getEventRange(editor, handler) }
     )
+}
+
+export async function getLocalLambdaConfiguration(
+    workspaceFolder: vscode.WorkspaceFolder,
+    handler: string
+): Promise<HandlerConfig> {
+    const handlersConfig = await getHandlersConfig(workspaceFolder)
+    const emptyHandlerConfig: HandlerConfig = {
+        event: {}
+    }
+
+    if (!handlersConfig || !handlersConfig.handlers) {
+        return emptyHandlerConfig
+    }
+
+    return handlersConfig.handlers[handler] || emptyHandlerConfig
+}
+
+async function getHandlersConfig(workspaceFolder: vscode.WorkspaceFolder): Promise<HandlersConfig> {
+    const uri = getConfigUri(workspaceFolder)
+
+    try {
+        return parse(await readFileAsString(uri.fsPath)) as HandlersConfig
+    } catch {
+        return {
+            handlers: {}
+        }
+    }
+}
+
+function getConfigUri(workspaceFolder: vscode.WorkspaceFolder): vscode.Uri {
+    // Preserve the scheme, etc of the workspace uri.
+    return workspaceFolder.uri.with({
+        path: path.join(workspaceFolder.uri.fsPath, '.aws', 'handlers.json')
+    })
 }
 
 async function ensureHandlersConfigFileExists(uri: vscode.Uri, handler: string): Promise<void> {
