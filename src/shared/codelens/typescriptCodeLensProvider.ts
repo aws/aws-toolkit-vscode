@@ -12,7 +12,7 @@ import * as path from 'path'
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
 import { getLocalLambdaConfiguration, HandlerConfig } from '../../lambda/local/configureLocalLambda'
-import { NodeDebugConfiguration } from '../../lambda/local/debugConfigurationProvider'
+import { NodeDebugConfiguration } from '../../lambda/local/nodeDebugConfiguration'
 import * as fileSystem from '../filesystem'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
@@ -97,7 +97,7 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
         }
 
         const command = {
-            arguments: [ workspaceFolder, handlerName ],
+            arguments: [workspaceFolder, handlerName],
             command: 'aws.configureLambda',
             title: localize('AWS.command.configureLambda', 'Configure')
         }

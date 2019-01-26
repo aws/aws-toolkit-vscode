@@ -70,12 +70,6 @@
                 }
             }
         },
-        "debuggers": [
-            {
-                "type": "lambda-node",
-                "label": "%AWS.lambda.debug.node.label%"
-            }
-        ],
         "viewsContainers": {
             "activitybar": [
                 {
