@@ -10,7 +10,6 @@ import * as nls from 'vscode-nls'
 
 import { RegionNode } from './lambda/explorer/regionNode'
 import { LambdaTreeDataProvider } from './lambda/lambdaTreeDataProvider'
-import { NodeDebugConfigurationProvider } from './lambda/local/debugConfigurationProvider'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
@@ -88,11 +87,6 @@ export async function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(vscode.window.registerTreeDataProvider(p.viewProviderId, p))
     })
 
-    context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider(
-        'lambda-node',
-        new NodeDebugConfigurationProvider()
-    ))
-
     await ext.statusBar.updateContext(undefined)
 
     await initializeSamCli()
@@ -118,10 +112,6 @@ function activateCodeLensProviders(
                     language: 'javascript',
                     scheme: 'file',
                 },
-                {
-                    language: 'typescript',
-                    scheme: 'file',
-                }
             ],
             new TypescriptCodeLensProvider()
         )
