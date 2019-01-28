@@ -10,7 +10,15 @@ import * as filesystemUtilities from '../../filesystemUtilities'
 import { SettingsConfiguration } from '../../settingsConfiguration'
 import { SamCliLocationProvider } from './samCliLocator'
 
-export class SamCliConfiguration {
+export interface SamCliConfiguration {
+    getSamCliLocation(): string | undefined
+
+    setSamCliLocation(location: string | undefined): Promise<void>
+
+    initialize(): Promise<void>
+}
+
+export class DefaultSamCliConfiguration {
     public static readonly CONFIGURATION_KEY_SAMCLI_LOCATION: string = 'samcli.location'
     private readonly _configuration: SettingsConfiguration
     private readonly _samCliLocationProvider: SamCliLocationProvider
@@ -25,13 +33,13 @@ export class SamCliConfiguration {
 
     public getSamCliLocation(): string | undefined {
         return this._configuration.readSetting(
-            SamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION
+            DefaultSamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION
         )
     }
 
     public async setSamCliLocation(location: string | undefined): Promise<void> {
         await this._configuration.writeSetting(
-            SamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION,
+            DefaultSamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION,
             location,
             vscode.ConfigurationTarget.Global
         )

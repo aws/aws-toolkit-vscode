@@ -10,10 +10,10 @@ import * as nls from 'vscode-nls'
 
 import { RegionNode } from './lambda/explorer/regionNode'
 import { LambdaTreeDataProvider } from './lambda/lambdaTreeDataProvider'
-import { NodeDebugConfigurationProvider } from './lambda/local/debugConfigurationProvider'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
+import { TypescriptCodeLensProvider } from './shared/codelens/typescriptCodeLensProvider'
 import { extensionSettingsPrefix } from './shared/constants'
 import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
@@ -25,8 +25,9 @@ import { safeGet } from './shared/extensionUtilities'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import * as SamCliDetection from './shared/sam/cli/samCliDetection'
 import { SamCliVersionValidator } from './shared/sam/cli/samCliVersionValidator'
-import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
+import { DefaultSettingsConfiguration, SettingsConfiguration } from './shared/settingsConfiguration'
 import { AWSStatusBar } from './shared/statusBar'
+import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { PromiseSharer } from './shared/utilities/promiseUtilities'
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -38,8 +39,14 @@ export async function activate(context: vscode.ExtensionContext) {
         nls.config()()
     }
 
+    const localize = nls.loadMessageBundle()
+
     ext.lambdaOutputChannel = vscode.window.createOutputChannel('AWS Lambda')
     ext.context = context
+
+    const toolkitOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel(
+        localize('AWS.channel.aws.toolkit', 'AWS Toolkit')
+    )
 
     await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
 
@@ -52,6 +59,8 @@ export async function activate(context: vscode.ExtensionContext) {
     ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
     ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
     ext.statusBar = new AWSStatusBar(awsContext, context)
+
+    context.subscriptions.push(...activateCodeLensProviders(awsContext.settingsConfiguration, toolkitOutputChannel))
 
     vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
     vscode.commands.registerCommand(
@@ -78,17 +87,37 @@ export async function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(vscode.window.registerTreeDataProvider(p.viewProviderId, p))
     })
 
-    context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider(
-        'lambda-node',
-        new NodeDebugConfigurationProvider()
-    ))
-
     await ext.statusBar.updateContext(undefined)
 
     await initializeSamCli()
+
+    await ExtensionDisposableFiles.initialize(context)
 }
 
 export function deactivate() {
+}
+
+function activateCodeLensProviders(
+    configuration: SettingsConfiguration,
+    toolkitOutputChannel: vscode.OutputChannel
+): vscode.Disposable[] {
+    const disposables: vscode.Disposable[] = []
+
+    TypescriptCodeLensProvider.initialize(configuration, toolkitOutputChannel)
+
+    disposables.push(
+        vscode.languages.registerCodeLensProvider(
+            [
+                {
+                    language: 'javascript',
+                    scheme: 'file',
+                },
+            ],
+            new TypescriptCodeLensProvider()
+        )
+    )
+
+    return disposables
 }
 
 /**

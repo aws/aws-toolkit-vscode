@@ -81,6 +81,94 @@ code --install-extension aws-toolkit-vscode-<VERSION>.vsix
 ![Select Profile](./docs/images/select_profile.png)
 
 
+## Creating a Debug Configuration
+
+You can debug your Serverless Application's Lambda Function locally using the CodeLens links above the lambda handler. If you would like to use the Debug Panel to launch the debugger instead, use the following steps to configure your project's Debug Configuration.
+
+These steps are relevant for javascript lambda functions, and assume you have a properly configured Serverless Application template file.
+
+* Define the payload that will be passed into your lambda function. Create a file next to your `template.yaml` called `event.json` and put an empty JSON object in the file:
+
+```javascript
+{
+}
+```
+
+* Define a task responsible for running the lambda function locally using SAM CLI. From the **Command Palette**, select `Tasks: Configure Task`.
+
+  * If your workspace does not have a `tasks.json` file, you will be prompted further. Select `Create tasks.json file from template`, then `Others`. Delete the echo task from the newly created file.
+  * If your workspace does have a `tasks.json` file, select one of your existing task definitions, or select `Open tasks.json file` to open the file.
+
+* Create an entry in the `tasks` array
+
+```javascript
+{
+    "label": "launchLambdaFunction",
+    "type": "shell",
+    "command": "sam",
+    "args": [
+        "local",
+        "invoke",
+        "HelloWorldFunction", // Replace this with the resource name of your lambda function from your Serverless Application template.yaml file
+        "--template",
+        "${workspaceFolder}/template.yaml", // Replace this with the appropriate workspace-relative path to your Serverless Application template.yaml file
+        "--event",
+        "${workspaceFolder}/event.json", // Replace this with the appropriate workspace-relative path to your event.json file
+        "-d",
+        "5858"
+    ],
+    "isBackground": true,
+    "problemMatcher": {
+        "pattern": [
+            {
+                // Use regex that never matches anything.
+                "regexp": "^(x)(\\b)(x)$",
+                "file": 1,
+                "location": 2,
+                "message": 3
+            }
+        ],
+        "background": {
+            // This is how the debugger knows when it can attach
+            "activeOnStart": true,
+            "beginsPattern": "^Fetching lambci.* Docker container image......$",
+            "endsPattern": "^.* Mounting .* as .*:ro inside runtime container$"
+        }
+    }
+}
+```
+
+  * Save the `tasks.json` file
+
+* Define a Debug Configuration to attach to the task you just defined. From the **Command Palette**, select `Debug: Open launch.json`.
+
+  * If you are asked to Select an Environment, select `Node.js`, and the file will be created for you. You can delete the `Launch Program` configuration entry that was initially created in the file.
+
+* Create an entry in the `configurations` array
+
+```javascript
+{
+    "type": "node",
+    "request": "launch",
+    "name": "Debug Local Lambda: <your function name here>",
+    "preLaunchTask": "launchLambdaFunction",
+    "address": "localhost",
+    "port": 5858,
+    "localRoot": "${workspaceFolder}/hello-world", // This is the workspace relative location of the folder referenced by your Serverless Application template resource's CodeUri
+    "remoteRoot": "/var/task",
+    "protocol": "inspector",
+    "skipFiles": [
+        "/var/runtime/node_modules/**/*.js",
+        "<node_internals>/**/*.js"
+    ]
+}
+```
+
+* Save the `launch.json` file
+
+You should now be able to switch to the Debug Pane in VS Code, and select your configuration from the dropdown menu. Pressing play or `F5` will launch and debug the lambda function you have just configured.
+
+
 ## Contributing
 
 See [Contributing](./CONTRIBUTING.md).

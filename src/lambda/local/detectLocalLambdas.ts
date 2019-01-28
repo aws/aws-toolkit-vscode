@@ -5,30 +5,16 @@
 
 'use strict'
 
-import * as schema from 'cloudformation-schema-js-yaml'
-import * as yaml from 'js-yaml'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { fileExists, readFileAsString } from '../../shared/filesystemUtilities'
+import { CloudFormation } from '../../shared/cloudformation/cloudformation'
+import { fileExists } from '../../shared/filesystemUtilities'
 
 export interface LocalLambda {
     lambda: string
     protocol: 'inspector' | 'legacy'
     workspaceFolder: vscode.WorkspaceFolder
     templatePath?: string
-}
-
-interface CloudFormationResource {
-    Type: string
-    Properties?: {
-        Runtime?: string
-    }
-}
-
-interface CloudFormationTemplate {
-    Resources?: {
-        [ key: string ]: CloudFormationResource
-    }
 }
 
 export async function detectLocalLambdas(
@@ -65,11 +51,7 @@ async function detectLambdasFromTemplate(
         return []
     }
 
-    const templateContent = await readFileAsString(templatePath)
-    const template = yaml.safeLoad(templateContent, {
-        filename: templatePath,
-        schema
-    }) as CloudFormationTemplate
+    const template: CloudFormation.Template = await CloudFormation.load(templatePath)
 
     const resources = template.Resources
     if (!resources) {
@@ -86,7 +68,7 @@ async function detectLambdasFromTemplate(
         }))
 }
 
-function getDebugProtocol(resource: CloudFormationResource): 'inspector' | 'legacy' {
+function getDebugProtocol(resource: CloudFormation.Resource): 'inspector' | 'legacy' {
     if (!resource.Properties || !resource.Properties.Runtime) {
         return 'inspector'
     }

@@ -31,6 +31,7 @@ import { FunctionNodeBase } from './explorer/functionNode'
 import { RegionNode } from './explorer/regionNode'
 import { StandaloneFunctionNode } from './explorer/standaloneNodes'
 import { DefaultLambdaPolicyProvider, LambdaPolicyView } from './lambdaPolicy'
+import { configureLocalLambda } from './local/configureLocalLambda'
 import * as utils from './utils'
 
 export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
@@ -81,6 +82,7 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
             'aws.invokeLambda',
             async (node: FunctionNodeBase) => await invokeLambda(this.awsContext, this.resourceFetcher, node)
         )
+        vscode.commands.registerCommand('aws.configureLambda', configureLocalLambda)
         vscode.commands.registerCommand(
             'aws.getLambdaConfig',
             async (node: FunctionNodeBase) => await getLambdaConfig(

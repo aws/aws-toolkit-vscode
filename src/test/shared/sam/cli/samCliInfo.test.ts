@@ -6,31 +6,15 @@
 'use strict'
 
 import * as assert from 'assert'
-import { SamCliInfoCommand, SamCliInfoResponse } from '../../../../shared/sam/cli/samCliCommand'
-import { SamCliConfiguration } from '../../../../shared/sam/cli/samCliConfiguration'
+import { SamCliInfoInvocation, SamCliInfoResponse } from '../../../../shared/sam/cli/samCliInfo'
 
 describe('SamInfoCliCommand', async () => {
 
-    class TestSamCliInfoCommand extends SamCliInfoCommand {
+    class TestSamCliInfoCommand extends SamCliInfoInvocation {
         public convertOutput(text: string): SamCliInfoResponse | undefined {
             return super.convertOutput(text)
         }
     }
-
-    it('throws exception if sam cli location is not known', async () => {
-        const samCliConfig: SamCliConfiguration = {
-            getSamCliLocation: () => undefined
-        } as any as SamCliConfiguration
-
-        const command = new SamCliInfoCommand(samCliConfig)
-
-        try {
-            await command.execute()
-            assert.strictEqual(true, false, 'error expected')
-        } catch (err) {
-            assert.notStrictEqual(err, undefined)
-        }
-    })
 
     it('converts sam info response to SamCliInfoResponse', async () => {
         const response: SamCliInfoResponse | undefined = new TestSamCliInfoCommand()

@@ -63,15 +63,14 @@
                     "type": "string",
                     "default": "",
                     "markdownDescription": "%AWS.configuration.description.samcli.location%"
+                },
+                "aws.samcli.debug.attach.timeout.millis": {
+                    "type": "number",
+                    "default": 30000,
+                    "markdownDescription": "%AWS.configuration.description.samcli.debug.attach.timeout%"
                 }
             }
         },
-        "debuggers": [
-            {
-                "type": "lambda-node",
-                "label": "%AWS.lambda.debug.node.label%"
-            }
-        ],
         "viewsContainers": {
             "activitybar": [
                 {
@@ -269,13 +268,17 @@
         "@types/del": "^3.0.1",
         "@types/fs-extra": "^5.0.4",
         "@types/glob": "^7.1.1",
+        "@types/handlebars": "^4.0.39",
+        "@types/js-yaml": "^3.11.2",
         "@types/lodash": "^4.14.110",
         "@types/mocha": "^2.2.48",
         "@types/node": "^10.12.12",
+        "@types/opn": "^5.1.0",
         "@types/request": "^2.47.1",
+        "@types/semver": "^5.5.0",
+        "@types/tcp-port-used": "^1.0.0",
         "@types/xml2js": "^0.4.3",
         "decache": "^4.4.0",
-        "del": "^3.0.0",
         "glob": "^7.1.3",
         "istanbul": "^0.4.5",
         "mocha": "^5.2.0",
@@ -289,21 +292,20 @@
         "vscode-nls-dev": "^3.2.2"
     },
     "dependencies": {
-        "@types/handlebars": "^4.0.39",
-        "@types/js-yaml": "^3.11.2",
-        "@types/opn": "^5.1.0",
-        "@types/semver": "^5.5.0",
         "async-lock": "^1.1.3",
         "aws-sdk": "^2.317.0",
         "cloudformation-schema-js-yaml": "^1.0.1",
+        "del": "^3.0.0",
         "fs-extra": "^6.0.1",
         "handlebars": "^4.0.12",
         "js-yaml": "^3.12.0",
+        "jsonc-parser": "^2.0.2",
         "lodash": "^4.17.10",
         "npm": "^6.4.1",
         "opn": "^5.4.0",
         "request": "^2.88.0",
         "semver": "^5.6.0",
+        "tcp-port-used": "^1.0.1",
         "typescript": "^3.1.3",
         "vscode-nls": "^3.2.4",
         "vue": "^2.5.16",
