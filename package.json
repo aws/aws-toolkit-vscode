@@ -30,6 +30,7 @@
         "onCommand:aws.samcli.detect",
         "onCommand:aws.samcli.validate.version",
         "onCommand:aws.deleteCloudFormation",
+        "onCommand:aws.showErrorDetails",
         "onDebugInitialConfigurations"
     ],
     "main": "./out/src/extension",
@@ -142,6 +143,11 @@
                     "group": "0@5"
                 },
                 {
+                    "command": "aws.showErrorDetails",
+                    "when": "view == lambda && viewItem == awsErrorNode",
+                    "group": "0@5"
+                },
+                {
                     "command": "aws.hideRegion",
                     "group": "0@1",
                     "when": "view == lambda && viewItem == awsRegionNode"
@@ -238,6 +244,11 @@
             {
                 "command": "aws.deleteCloudFormation",
                 "title": "%AWS.command.deleteCloudFormation%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.showErrorDetails",
+                "title": "%AWS.command.showErrorDetails%",
                 "category": "AWS"
             }
         ]

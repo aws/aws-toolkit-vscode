@@ -11,15 +11,18 @@ import {
     StandaloneFunctionGroupNode,
     StandaloneFunctionNode
 } from '../../../lambda/explorer/standaloneNodes'
+import { AWSTreeErrorHandlerNode } from '../../../shared/treeview/awsTreeErrorHandlerNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/awsTreeNodeBase'
 
-export class MockStandaloneFunctionGroupNode implements StandaloneFunctionGroupNode {
+export class MockStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode implements StandaloneFunctionGroupNode {
     public constructor(
         public readonly regionCode: string = '',
         public readonly parent: RegionNode = {} as any as RegionNode,
         public readonly getChildren: () => Thenable<StandaloneFunctionNode[]> = async () => [],
-        public readonly updateChildren: () => Thenable<void> = async () => {}
+        public readonly updateChildren: () => Thenable<void> = async () => {},
+        public readonly doErrorProneOperation: () => Promise<void> = async () => {},
    ) {
+       super('')
     }
 }
 
