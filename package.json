@@ -103,17 +103,17 @@
                 {
                     "command": "aws.getLambdaConfig",
                     "when": "view == lambda && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
-                    "group": "0@3"
+                    "group": "1@1"
                 },
                 {
                     "command": "aws.getLambdaPolicy",
                     "when": "view == lambda && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
-                    "group": "0@4"
+                    "group": "1@2"
                 },
                 {
                     "command": "aws.deleteLambda",
                     "when": "view == lambda && viewItem == awsRegionFunctionNode",
-                    "group": "0@5"
+                    "group": "2@1"
                 },
                 {
                     "command": "aws.deleteCloudFormation",
