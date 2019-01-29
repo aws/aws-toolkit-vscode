@@ -63,9 +63,16 @@ export class ChildProcess {
             throw Error('process already started')
         }
 
+        const spawnOptions: child_process.SpawnOptions = {}
+
+        if (process.platform === 'win32') {
+            spawnOptions.shell = true
+        }
+
         this._childProcess = child_process.spawn(
             this._command,
-            this._args
+            this._args,
+            spawnOptions
         )
 
         this._childProcess.stdout.on('data', (data: { toString(): string }) => {
