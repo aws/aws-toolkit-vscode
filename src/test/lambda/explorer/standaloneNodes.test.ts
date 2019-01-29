@@ -7,7 +7,6 @@
 
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
-import { Uri } from 'vscode'
 import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
 import { ErrorNode } from '../../../lambda/explorer/errorNode'
 import {

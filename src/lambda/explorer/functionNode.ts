@@ -6,8 +6,6 @@
 'use strict'
 
 import { Lambda } from 'aws-sdk'
-import { Uri } from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 
 export abstract class FunctionNodeBase extends AWSTreeNodeBase {
