@@ -22,7 +22,6 @@
         "onCommand:aws.showRegion",
         "onCommand:aws.hideRegion",
         "onView:lambda",
-        "onCommand:aws.newLambda",
         "onCommand:aws.invokeLambda",
         "onCommand:aws.deployLambda",
         "onCommand:aws.getLambdaConfig",
@@ -90,11 +89,6 @@
         },
         "menus": {
             "view/title": [
-                {
-                    "command": "aws.newLambda",
-                    "when": "view == lambda",
-                    "group": "navigation@2"
-                },
                 {
                     "command": "aws.deployLambda",
                     "when": "view == lambda",
@@ -179,15 +173,6 @@
                 "command": "aws.hideRegion",
                 "title": "%AWS.command.hideRegion%",
                 "category": "AWS"
-            },
-            {
-                "command": "aws.newLambda",
-                "title": "%AWS.command.newLambda%",
-                "category": "AWS",
-                "icon": {
-                    "light": "resources/light/new_lambda.svg",
-                    "dark": "resources/dark/new_lambda.svg"
-                }
             },
             {
                 "command": "aws.deployLambda",

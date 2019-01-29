@@ -18,7 +18,6 @@
     "AWS.command.credential.profile.create": "Create Credentials Profile",
     "AWS.command.showRegion": "Show region in the Explorer",
     "AWS.command.hideRegion": "Hide region from the Explorer",
-    "AWS.command.newLambda": "New Lambda Function or Serverless App",
     "AWS.command.deleteLambda": "Delete",
     "AWS.command.deleteLambda.error": "There was an error deleting lambda function '{0}'",
     "AWS.command.deployLambda": "Deploy",
