@@ -29,7 +29,7 @@ describe('DefaultStandaloneFunctionNode', () => {
         }
     }
 
-    before(function() {
+    before(() => {
         ext.context = new FakeExtensionContextOverride()
         fakeFunctionConfig = {
             FunctionName: 'testFunctionName',
@@ -46,36 +46,6 @@ describe('DefaultStandaloneFunctionNode', () => {
 
         assert.strictEqual(testNode.label, fakeFunctionConfig.FunctionName)
         assert.strictEqual(testNode.tooltip, `${fakeFunctionConfig.FunctionName}-${fakeFunctionConfig.FunctionArn}`)
-    })
-
-    // Validates we wired up the expected resource for the node icon
-    it('initializes icon path', async () => {
-
-        const fileScheme: string = 'file'
-        const resourceImageName: string = 'lambda_function.svg'
-
-        const testNode = new DefaultStandaloneFunctionNode(
-            new DefaultStandaloneFunctionGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
-            fakeFunctionConfig
-        )
-
-        assert(testNode.iconPath !== undefined)
-        const iconPath = testNode.iconPath! as {
-            light: Uri,
-            dark: Uri
-        }
-
-        assert(iconPath.light !== undefined)
-        assert(iconPath.light instanceof Uri)
-        assert.strictEqual(iconPath.light.scheme, fileScheme)
-        const lightResourcePath: string = iconPath.light.path
-        assert(lightResourcePath.endsWith(`/light/${resourceImageName}`))
-
-        assert(iconPath.dark !== undefined)
-        assert(iconPath.dark instanceof Uri)
-        assert.strictEqual(iconPath.dark.scheme, fileScheme)
-        const darkResourcePath: string = iconPath.dark.path
-        assert(darkResourcePath.endsWith(`dark/${resourceImageName}`))
     })
 
     // Validates we don't yield some unexpected value that our command triggers

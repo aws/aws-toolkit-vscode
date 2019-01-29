@@ -18,10 +18,6 @@ export abstract class FunctionNodeBase extends AWSTreeNodeBase {
     ) {
         super('')
         this.update(configuration)
-        this.iconPath =  {
-            dark: Uri.file(ext.context.asAbsolutePath('resources/dark/lambda_function.svg')),
-            light: Uri.file(ext.context.asAbsolutePath('resources/light/lambda_function.svg'))
-        }
     }
 
     public update(configuration: Lambda.FunctionConfiguration): void {
