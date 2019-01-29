@@ -8,6 +8,16 @@
 import * as child_process from 'child_process'
 import * as events from 'events'
 
+export function sanitizeCommand(command: string): string {
+    if (process.platform === 'win32') {
+        if (command.indexOf(' ') >= 0 && !command.startsWith('\"') && !command.endsWith('\"')) {
+            return `"${command}"`
+        }
+    }
+
+    return command
+}
+
 export interface ChildProcessResult {
     exitCode: number,
     error: Error | undefined,
@@ -25,7 +35,7 @@ export interface ChildProcessResult {
 export class ChildProcess {
     private static readonly CHILD_PROCESS_CLOSED = 'childProcessClosed'
 
-    private readonly _process: string
+    private readonly _command: string
     private readonly _args: string[] | undefined
 
     private _childProcess: child_process.ChildProcess | undefined
@@ -35,8 +45,8 @@ export class ChildProcess {
     private _error: Error | undefined
     private readonly _processCompletedPromise: Promise<ChildProcessResult>
 
-    public constructor(process: string, args?: string[] | undefined) {
-        this._process = process
+    public constructor(command: string, args?: string[] | undefined) {
+        this._command = sanitizeCommand(command)
         this._args = args
 
         this._processCompletedPromise = new Promise((resolve, reject) => {
@@ -54,7 +64,7 @@ export class ChildProcess {
         }
 
         this._childProcess = child_process.spawn(
-            this._process,
+            this._command,
             this._args
         )
 

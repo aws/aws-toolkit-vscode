@@ -10,7 +10,37 @@ import * as del from 'del'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { ChildProcess } from '../../shared/utilities/childProcess'
+import { ChildProcess, sanitizeCommand } from '../../shared/utilities/childProcess'
+
+describe('sanitizeCommand', async () => {
+    it('command without spaces remains unchanged', async () => {
+        const command = 'qwerty'
+
+        assert.strictEqual(sanitizeCommand(command), command)
+    })
+
+    if (process.platform === 'win32') {
+        it('windows - command with spaces gets wrapped in quotes', async () => {
+            const command = 'qwerty uiop'
+
+            assert.strictEqual(sanitizeCommand(command), `"${command}"`)
+        })
+
+        it('windows - command with spaces and wrapped in quotes remains unchanged', async () => {
+            const command = '\"qwerty uiop\"'
+
+            assert.strictEqual(sanitizeCommand(command), command)
+        })
+    }
+
+    if (process.platform !== 'win32') {
+        it('unix - command with spaces remains unchanged', async () => {
+            const command = 'qwerty uiop'
+
+            assert.strictEqual(sanitizeCommand(command), command)
+        })
+    }
+})
 
 describe('ChildProcess', async () => {
 
