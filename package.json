@@ -23,7 +23,6 @@
         "onCommand:aws.hideRegion",
         "onView:lambda",
         "onCommand:aws.invokeLambda",
-        "onCommand:aws.deployLambda",
         "onCommand:aws.getLambdaConfig",
         "onCommand:aws.getLambdaPolicy",
         "onCommand:aws.samcli.detect",
@@ -90,11 +89,6 @@
         "menus": {
             "view/title": [
                 {
-                    "command": "aws.deployLambda",
-                    "when": "view == lambda",
-                    "group": "navigation@3"
-                },
-                {
                     "command": "aws.invokeLambda",
                     "when": "view == lambda",
                     "group": "navigation@4"
@@ -110,11 +104,6 @@
                     "command": "aws.invokeLambda",
                     "when": "view == lambda && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
                     "group": "0@1"
-                },
-                {
-                    "command": "aws.deployLambda",
-                    "when": "view == lambda && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
-                    "group": "0@2"
                 },
                 {
                     "command": "aws.getLambdaConfig",
@@ -173,15 +162,6 @@
                 "command": "aws.hideRegion",
                 "title": "%AWS.command.hideRegion%",
                 "category": "AWS"
-            },
-            {
-                "command": "aws.deployLambda",
-                "title": "%AWS.command.deployLambda%",
-                "category": "AWS",
-                "icon": {
-                    "light": "resources/light/deploy_lambda.svg",
-                    "dark": "resources/dark/deploy_lambda.svg"
-                }
             },
             {
                 "command": "aws.invokeLambda",

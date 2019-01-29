@@ -19,7 +19,6 @@ import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
 import { intersection, toMap, updateInPlace } from '../shared/utilities/collectionUtils'
 import { deleteCloudFormation } from './commands/deleteCloudFormation'
 import { deleteLambda } from './commands/deleteLambda'
-import { deployLambda } from './commands/deployLambda'
 import { getLambdaConfig } from './commands/getLambdaConfig'
 import { invokeLambda } from './commands/invokeLambda'
 import { showErrorDetails } from './commands/showErrorDetails'
@@ -52,10 +51,6 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
 
     public initialize(): void {
         vscode.commands.registerCommand('aws.refreshAwsExplorer', async () => this.refresh())
-        vscode.commands.registerCommand(
-            'aws.deployLambda',
-            async (node: FunctionNodeBase) => await deployLambda(node)
-        )
         vscode.commands.registerCommand(
             'aws.deleteLambda',
             async (node: StandaloneFunctionNode) => await deleteLambda(
