@@ -53,11 +53,11 @@ abstract class SamExecutableDetectorTestBase {
         assertThat(unsanitizePath(detector.detect())).isEqualTo(expected)
     }
 
-    protected fun touch(vararg paths: String) {
-        for (path in paths) {
-            val sanitized = sanitizePath(path)
-            assertThat(FileUtil.createIfDoesntExist(File(tempFolder, sanitized))).isTrue()
-        }
+    protected fun touch(path: String): String {
+        val sanitized = sanitizePath(path)
+        val actualFile = File(tempFolder, sanitized)
+        assertThat(FileUtil.createIfDoesntExist(actualFile)).isTrue()
+        return actualFile.absolutePath
     }
 }
 

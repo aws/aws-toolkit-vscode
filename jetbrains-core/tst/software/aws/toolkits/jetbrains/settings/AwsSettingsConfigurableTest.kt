@@ -4,22 +4,13 @@
 package software.aws.toolkits.jetbrains.settings
 
 import com.intellij.openapi.options.ConfigurationException
-import com.intellij.openapi.util.SystemInfo
 import com.intellij.testFramework.ProjectRule
 import org.junit.Assert.assertNotNull
-import org.junit.Assume
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommonTestUtils
-import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.Paths
-import java.nio.file.attribute.PosixFilePermissions
-
-fun setPathAsExecutable(path: Path) {
-    Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("r-xr-xr-x"))
-}
 
 class AwsSettingsConfigurableTest : SamExecutableDetectorTestBase() {
     @JvmField
@@ -56,14 +47,10 @@ class AwsSettingsConfigurableTest : SamExecutableDetectorTestBase() {
 
     @Test
     fun validate_ok_setValidSam() {
-        Assume.assumeTrue(SystemInfo.isUnix)
-
-        val sam = tempFolderRule.newFile().toPath()
-        Files.write(sam, mutableListOf("echo '${SamCommonTestUtils.getMinVersionAsJson()}'"))
-        setPathAsExecutable(sam)
+        val samPath = makeASam(SamCommonTestUtils.getMinVersionAsJson())
 
         val settings = AwsSettingsConfigurable(projectRule.project)
-        settings.samExecutablePath.text = sam.toString()
+        settings.samExecutablePath.text = samPath.toString()
         settings.apply(detector)
     }
 
@@ -101,14 +88,9 @@ class AwsSettingsConfigurableTest : SamExecutableDetectorTestBase() {
     }
 
     private fun makeASam(version: String): Path {
-        Assume.assumeTrue(SystemInfo.isUnix)
         val path = "/usr/local/bin/sam"
-        touch(path)
-        assertExecutable(path)
+        val actualPath = touch(path)
 
-        val sam = Paths.get(tempFolder, path)
-        Files.write(sam, mutableListOf("echo '$version'"))
-        setPathAsExecutable(sam)
-        return sam
+        return SamCommonTestUtils.makeATestSam(path = actualPath, message = version)
     }
 }

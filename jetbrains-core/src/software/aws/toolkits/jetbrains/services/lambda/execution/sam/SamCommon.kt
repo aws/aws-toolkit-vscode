@@ -15,9 +15,11 @@ import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.EnvironmentUtil
 import com.intellij.util.text.SemVer
+import com.intellij.util.text.nullize
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.cloudformation.SERVERLESS_FUNCTION_TYPE
 import software.aws.toolkits.jetbrains.settings.SamSettings
+import software.aws.toolkits.jetbrains.utils.FileInfoCache
 import software.aws.toolkits.resources.message
 import java.nio.file.Paths
 
@@ -33,8 +35,31 @@ class SamCommon {
         // Exclusive
         val expectedSamMaxVersion = SemVer("0.16.0", 0, 16, 0)
 
+        private val versionCache = object : FileInfoCache<SemVer>() {
+            override fun getFileInfo(path: String): SemVer {
+                val commandLine = getSamCommandLine(path)
+                    .withParameters("--info")
+
+                val process = CapturingProcessHandler(commandLine).runProcess()
+
+                if (process.exitCode != 0) {
+                    throw IllegalStateException(process.stderr)
+                } else {
+                    if (process.stdout.isEmpty()) {
+                        throw IllegalStateException(message("sam.executable.empty_info"))
+                    }
+                    val tree = mapper.readTree(process.stdout)
+                    val version = tree.get(SAM_INFO_VERSION_KEY).asText()
+                    return SemVer.parseFromText(version)
+                        ?: throw IllegalStateException(message("sam.executable.version_parse_error", version))
+                }
+            }
+        }
+
         fun getSamCommandLine(path: String? = SamSettings.getInstance().executablePath): GeneralCommandLine {
-            path ?: throw RuntimeException(message("sam.cli_not_configured"))
+            val sanitizedPath = path.nullize(true)
+                ?: throw RuntimeException(message("sam.cli_not_configured"))
+
             // we have some env-hacks that we want to do, so we're building our own environment using the same util as GeneralCommandLine
             // GeneralCommandLine will apply some more env patches prior to process launch (see startProcess()) so this should be fine
             val effectiveEnvironment = EnvironmentUtil.getEnvironmentMap().toMutableMap()
@@ -56,41 +81,49 @@ class SamCommon {
                     // we're not setting PYTHONIOENCODING because we might break SAM on py2.7
                 }
             }
-            return GeneralCommandLine(path)
+
+            return GeneralCommandLine(sanitizedPath)
                 .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.NONE)
                 .withEnvironment(effectiveEnvironment)
         }
 
-        fun checkVersion(samVersionLine: String): String? {
-            val parsedSemVer = SemVer.parseFromText(samVersionLine)
-                    ?: return message("sam.executable.version_parse_error", samVersionLine)
-
-            val samVersionOutOfRangeMessage = message("sam.executable.version_wrong", expectedSamMinVersion, expectedSamMaxVersion, parsedSemVer)
-            if (parsedSemVer >= expectedSamMaxVersion) {
+        private fun checkVersion(semVer: SemVer): String? {
+            val samVersionOutOfRangeMessage = message("sam.executable.version_wrong", expectedSamMinVersion, expectedSamMaxVersion, semVer)
+            if (semVer >= expectedSamMaxVersion) {
                 return "$samVersionOutOfRangeMessage ${message("sam.executable.version_too_high")}"
-            } else if (parsedSemVer < expectedSamMinVersion) {
+            } else if (semVer < expectedSamMinVersion) {
                 return "$samVersionOutOfRangeMessage ${message("sam.executable.version_too_low")}"
             }
             return null
         }
 
-        fun validate(path: String? = SamSettings.getInstance().executablePath): String? =
-            try {
-                val commandLine = getSamCommandLine(path).withParameters("--info")
-                val process = CapturingProcessHandler(commandLine).runProcess()
-                if (process.exitCode != 0) {
-                    process.stderr
-                } else {
-                    if (process.stdout.isEmpty()) {
-                        message("lambda.run_configuration.sam.empty_info")
-                    }
-                    val tree = mapper.readTree(process.stdout)
-                    val version = tree.get(SAM_INFO_VERSION_KEY).asText()
-                    checkVersion(version)
-                }
+        /**
+         * @return The error message to display, else null if it is valid
+         */
+        fun validate(path: String? = SamSettings.getInstance().executablePath): String? {
+            val sanitizedPath = path.nullize(true)
+                ?: return message("sam.cli_not_configured")
+
+            return try {
+                checkVersion(versionCache.getResult(sanitizedPath))
             } catch (e: Exception) {
-                e.localizedMessage
+                return e.message
             }
+        }
+
+        /**
+         * @return The SemVer of SAM, or null if unable to determine it
+         */
+        fun getSamVersion(path: String? = SamSettings.getInstance().executablePath): SemVer? {
+            val sanitizedPath = path.nullize(true)
+                ?: return null
+
+            return try {
+                versionCache.getResult(sanitizedPath)
+            } catch (e: Exception) {
+                return null
+            }
+        }
 
         fun getTemplateFromDirectory(projectRoot: VirtualFile): VirtualFile? {
             val yamlFiles = VfsUtil.getChildren(projectRoot).filter { it.name.endsWith("yaml") || it.name.endsWith("yml") }

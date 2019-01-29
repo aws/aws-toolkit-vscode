@@ -10,6 +10,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.util.text.SemVer
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -17,11 +18,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Assume
 import org.junit.Rule
 import org.junit.Test
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommonTestUtils.getVersionAsJson
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommonTestUtils.makeATestSam
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.resources.message
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.nio.file.attribute.PosixFilePermissions
 
 class SamCommonTest {
     @Rule
@@ -31,16 +31,13 @@ class SamCommonTest {
     @Test
     fun testValidate_noPath() {
         val result = SamCommon.validate(null)
-        println(result)
         assertEquals(message("sam.cli_not_configured"), result)
     }
 
     @Test
     fun testValidate_pathNotExists() {
-        Assume.assumeTrue(SystemInfo.isUnix)
         val result = SamCommon.validate("dasfasdfjlkakjsdf_not_a_real_path")
-        println(result)
-        assertTrue(result?.contains("No such file or directory") == true)
+        assertThat(result).contains("File not found: \"dasfasdfjlkakjsdf_not_a_real_path\"")
     }
 
     @Test
@@ -48,30 +45,102 @@ class SamCommonTest {
         Assume.assumeTrue(SystemInfo.isUnix)
         val path = projectRule.fixture.addFileToProject("badexe", "").virtualFile.path
         val result = SamCommon.validate(path)
-        println(result)
-        assertTrue(result?.contains("Permission denied") == true)
+        assertThat(result).contains("Permission denied")
     }
 
     @Test
     fun testValidate_exitNonZero() {
-        Assume.assumeTrue(SystemInfo.isUnix)
-        val path = projectRule.fixture.addFileToProject("badexe", "echo stderr >&2; exit 100;").virtualFile.path
-        Files.setPosixFilePermissions(Paths.get(path), PosixFilePermissions.fromString("r-xr-xr-x"))
-
-        val result = SamCommon.validate(path)
-        println(result)
-        assertTrue(result?.contains("stderr") == true)
+        val samPath = makeATestSam("stderr", exitCode = 100)
+        val result = SamCommon.validate(samPath.toString())
+        assertThat(result).contains("stderr")
     }
 
     @Test
     fun testValidate_ok() {
-        Assume.assumeTrue(SystemInfo.isUnix)
-        val path = projectRule.fixture.addFileToProject("good", "echo '${SamCommonTestUtils.getMinVersionAsJson()}'").virtualFile.path
-        Files.setPosixFilePermissions(Paths.get(path), PosixFilePermissions.fromString("r-xr-xr-x"))
-
-        val result = SamCommon.validate(path)
-        println(result)
+        val samPath = makeATestSam(SamCommonTestUtils.getMinVersionAsJson())
+        val result = SamCommon.validate(samPath.toString())
         assertNull(result)
+    }
+
+    @Test
+    fun compatableSamVersion() {
+        val versions = arrayOf(
+            "0.7.0",
+            "0.7.123",
+            "0.7.999999999",
+            "0.7.0-beta",
+            "0.7.0-beta+build",
+            "0.8.0",
+            "0.9.0",
+            "0.10.0"
+        )
+        for (version in versions) {
+            assertNull(SamCommon.validate(makeATestSam(getVersionAsJson(version)).toString()))
+        }
+    }
+
+    @Test
+    fun unparsableVersion() {
+        val versions = arrayOf(
+            "GNU bash, version 3.2.57(1)-release (x86_64-apple-darwin16)",
+            "GNU bash, version 3.2.57(1)-release",
+            "12312312.123123131221"
+        )
+        for (version in versions) {
+            val message = SamCommon.validate(makeATestSam(getVersionAsJson(version)).toString())
+            assertThat(message).contains("Could not parse SAM executable version from")
+        }
+    }
+
+    @Test
+    fun incompatableSamVersion_tooLow() {
+        val versions = arrayOf(
+            "0.5.9",
+            "0.0.1",
+            "0.5.9-dev",
+            "0.6.2"
+        )
+        for (version in versions) {
+            val message = SamCommon.validate(makeATestSam(getVersionAsJson(version)).toString())
+            assertThat(message).contains("Bad SAM executable version. Expected")
+            assertThat(message).contains("upgrade your SAM CLI")
+        }
+    }
+
+    @Test
+    fun getVersion_Valid() {
+        val version = SemVer.parseFromText("0.5.9")!!
+        val actualVersion = SamCommon.getSamVersion(makeATestSam(getVersionAsJson(version.rawVersion)).toString())
+        assertThat(actualVersion).isEqualTo(version)
+    }
+
+    @Test
+    fun getVersion_badPath() {
+        val actualVersion = SamCommon.getSamVersion(path = null)
+        assertThat(actualVersion).isNull()
+    }
+
+    @Test
+    fun getVersion_Valid_exitNonZero() {
+        val samPath = makeATestSam("stderr", exitCode = 100)
+        val result = SamCommon.getSamVersion(samPath.toString())
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun incompatableSamVersion_tooHigh() {
+        val versions = arrayOf(
+            SamCommon.expectedSamMaxVersion.rawVersion,
+            SamCommon.expectedSamMaxVersion.parsedVersion,
+            "1.0.0",
+            "1.5.9",
+            "1.5.9-dev"
+        )
+        for (version in versions) {
+            val message = SamCommon.validate(makeATestSam(getVersionAsJson(version)).toString())
+            assertThat(message).contains("Bad SAM executable version. Expected")
+            assertThat(message).contains("upgrade your AWS Toolkit")
+        }
     }
 
     @Test(expected = java.lang.AssertionError::class)
@@ -265,19 +334,5 @@ Resources:
                 ReadCapacityUnits: 1
                 WriteCapacityUnits: 1
             """.trimIndent()
-    }
-}
-
-class SamCommonTestUtils {
-    companion object {
-        private fun getVersionAsJson(version: SemVer): String {
-            val tree = SamCommon.mapper.createObjectNode()
-            tree.put(SamCommon.SAM_INFO_VERSION_KEY, version.parsedVersion)
-            return SamCommon.mapper.writeValueAsString(tree)
-        }
-
-        fun getMinVersionAsJson() = getVersionAsJson(SamCommon.expectedSamMinVersion)
-
-        fun getMaxVersionAsJson() = getVersionAsJson(SamCommon.expectedSamMaxVersion)
     }
 }
