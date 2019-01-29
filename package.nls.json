@@ -44,7 +44,7 @@
     "AWS.explorerNode.lambda.error": "Error loading Lambda resources",
     "AWS.explorerNode.signIn": "Connect to AWS...",
     "AWS.explorerNode.signIn.tooltip": "Connect to AWS using a credential profile",
-    "AWS.lambda.explorerTitle": "Lambda",
+    "AWS.lambda.explorerTitle": "Explorer",
     "AWS.lambda.debug.node.launchConfig.name": "Lambda: Debug {0} locally",
     "AWS.lambda.debug.node.attachConfig.name": "Lambda: Attach to {0} locally",
     "AWS.lambda.debug.node.invokeTask.label": "Lambda: Invoke {0} locally",
