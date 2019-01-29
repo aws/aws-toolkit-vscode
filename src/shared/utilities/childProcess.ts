@@ -9,7 +9,6 @@ import * as child_process from 'child_process'
 import * as events from 'events'
 
 export interface ChildProcessResult {
-    process: ChildProcess,
     exitCode: number,
     error: Error | undefined,
     stdout: string,
@@ -59,11 +58,11 @@ export class ChildProcess {
             this._args
         )
 
-        this._childProcess.stdout.on('data', data => {
+        this._childProcess.stdout.on('data', (data: { toString(): string }) => {
             this._stdoutChunks.push(data.toString())
         })
 
-        this._childProcess.stderr.on('data', data => {
+        this._childProcess.stderr.on('data', (data: { toString(): string }) => {
             this._stderrChunks.push(data.toString())
         })
 
@@ -73,7 +72,6 @@ export class ChildProcess {
 
         this._childProcess.on('close', (code, signal) => {
             const processResult: ChildProcessResult = {
-                process: this,
                 exitCode: code,
                 stdout: this._stdoutChunks.join().trim(),
                 stderr: this._stderrChunks.join().trim(),

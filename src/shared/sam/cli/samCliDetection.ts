@@ -10,7 +10,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { extensionSettingsPrefix, samAboutInstallUrl } from '../../constants'
 import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
-import { SamCliConfiguration } from './samCliConfiguration'
+import { DefaultSamCliConfiguration, SamCliConfiguration } from './samCliConfiguration'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
 
 const localize = nls.loadMessageBundle()
@@ -38,7 +38,7 @@ const settingsNotUpdated = localize(
 
 export async function detectSamCli(showMessageIfDetected: boolean): Promise<void> {
     await lock.acquire('detect SAM CLI', async () => {
-        const samCliConfig = new SamCliConfiguration(
+        const samCliConfig = new DefaultSamCliConfiguration(
             new DefaultSettingsConfiguration(extensionSettingsPrefix),
             new DefaultSamCliLocationProvider()
         )

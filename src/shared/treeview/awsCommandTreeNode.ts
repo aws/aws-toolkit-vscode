@@ -10,6 +10,7 @@ import { AWSTreeNodeBase } from '../treeview/awsTreeNodeBase'
 
 export class AWSCommandTreeNode extends AWSTreeNodeBase {
     public constructor(
+        public readonly parent: AWSTreeNodeBase | undefined,
         label: string,
         commandId: string,
         commandArguments?: any[],

@@ -18,7 +18,7 @@ describe('CredentialsProfileMru', () => {
         const mru = credentialsMru.getMruList()
 
         assert(mru)
-        assert.equal(mru.length, 0)
+        assert.strictEqual(mru.length, 0)
     })
 
     it('lists single profile when only one exists', async () => {
@@ -30,8 +30,8 @@ describe('CredentialsProfileMru', () => {
         const mru = credentialsMru.getMruList()
 
         assert(mru)
-        assert.equal(mru.length >= 1, true)
-        assert.equal(mru[0], 'apples')
+        assert.strictEqual(mru.length >= 1, true)
+        assert.strictEqual(mru[0], 'apples')
     })
 
     it('lists multiple profiles when multiple exist', async () => {
@@ -43,9 +43,9 @@ describe('CredentialsProfileMru', () => {
         const mru = credentialsMru.getMruList()
 
         assert(mru)
-        assert.equal(mru.length >= 2, true)
-        assert.equal(mru[0], 'cats')
-        assert.equal(mru[1], 'dogs')
+        assert.strictEqual(mru.length >= 2, true)
+        assert.strictEqual(mru[0], 'cats')
+        assert.strictEqual(mru[1], 'dogs')
     })
 
     it('does not list duplicate profiles', async () => {
@@ -59,10 +59,10 @@ describe('CredentialsProfileMru', () => {
         const mru = credentialsMru.getMruList()
 
         assert(mru)
-        assert.equal(mru.length >= 3, true)
-        assert.equal(mru[0], 'bbq')
-        assert.equal(mru[1], 'ketchup')
-        assert.equal(mru[2], 'dill')
+        assert.strictEqual(mru.length >= 3, true)
+        assert.strictEqual(mru[0], 'bbq')
+        assert.strictEqual(mru[1], 'ketchup')
+        assert.strictEqual(mru[2], 'dill')
     })
 
     it('does not list more than MAX_CRENDTIAL_MRU_SIZE profiles', async () => {
@@ -73,6 +73,6 @@ describe('CredentialsProfileMru', () => {
         }
 
         const mru = credentialsMru.getMruList()
-        assert.equal(mru.length, CredentialsProfileMru.MAX_CREDENTIAL_MRU_SIZE)
+        assert.strictEqual(mru.length, CredentialsProfileMru.MAX_CREDENTIAL_MRU_SIZE)
     })
 })

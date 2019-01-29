@@ -42,13 +42,13 @@ describe('DefaultCredentialsFileReaderWriter', () => {
     it('can use Config File', async () => {
         const writer = new DefaultCredentialsFileReaderWriter()
         writer.setCanUseConfigFile(true)
-        assert.equal(writer.getCanUseConfigFile(), true)
+        assert.strictEqual(writer.getCanUseConfigFile(), true)
     })
 
     it('can not use Config File', async () => {
         const writer = new DefaultCredentialsFileReaderWriter()
         writer.setCanUseConfigFile(false)
-        assert.equal(writer.getCanUseConfigFile(), false)
+        assert.strictEqual(writer.getCanUseConfigFile(), false)
     })
 
     it('loads profiles from Config', async () => {
@@ -58,7 +58,7 @@ describe('DefaultCredentialsFileReaderWriter', () => {
         const profileNames = new Set(await writer.getProfileNames())
 
         credentialsProfileNames.forEach(profileName => {
-            assert.equal(
+            assert.strictEqual(
                 profileNames.has(profileName),
                 true,
                 `ERROR: profileNames [ ${[...profileNames].map(n => `'${n}'`).join(', ')} ]` +
@@ -67,7 +67,7 @@ describe('DefaultCredentialsFileReaderWriter', () => {
         })
 
         configProfileNames.forEach(profileName => {
-            assert.equal(
+            assert.strictEqual(
                 profileNames.has(profileName),
                 true,
                 `ERROR: configProfileNames [ ${[...configProfileNames].map(n => `'${n}'`).join(', ')} ]` +
@@ -83,7 +83,7 @@ describe('DefaultCredentialsFileReaderWriter', () => {
         const profileNames = new Set(await writer.getProfileNames())
 
         credentialsProfileNames.forEach(profileName => {
-            assert.equal(
+            assert.strictEqual(
                 profileNames.has(profileName),
                 true,
                 `ERROR: profileNames [ ${[...profileNames].map(n => `'${n}'`).join(', ')} ]` +
@@ -92,7 +92,7 @@ describe('DefaultCredentialsFileReaderWriter', () => {
         })
 
         configProfileNames.forEach(profileName => {
-            assert.equal(
+            assert.strictEqual(
                 profileNames.has(profileName),
                 false,
                 `ERROR: configProfileNames [ ${[...configProfileNames].map(n => `'${n}'`).join(', ')} ]` +
@@ -113,7 +113,7 @@ describe('DefaultCredentialsFileReaderWriter', () => {
 
             await writer.setCanUseConfigFileIfExists()
 
-            assert.equal(canUseState, true)
+            assert.strictEqual(canUseState, true)
         })
 
         it('does not allow use of config file if it does not exist', async () => {
@@ -129,7 +129,7 @@ describe('DefaultCredentialsFileReaderWriter', () => {
 
             await writer.setCanUseConfigFileIfExists()
 
-            assert.equal(canUseState, false)
+            assert.strictEqual(canUseState, false)
         })
     })
 

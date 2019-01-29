@@ -38,7 +38,7 @@ describe('UserCredentialsUtils', () => {
     describe('getCredentialsFilename', () => {
         it('falls back on default if AWS_SHARED_CREDENTIALS_FILE is not set', async () => {
             const filename = UserCredentialsUtils.getCredentialsFilename()
-            assert.equal(filename.length > 0, true)
+            assert.strictEqual(filename.length > 0, true)
         })
 
         it('gets AWS_SHARED_CREDENTIALS_FILE if set', async () => {
@@ -47,14 +47,14 @@ describe('UserCredentialsUtils', () => {
             env.AWS_SHARED_CREDENTIALS_FILE = expectedFilename
 
             const filename = UserCredentialsUtils.getCredentialsFilename()
-            assert.equal(filename, expectedFilename)
+            assert.strictEqual(filename, expectedFilename)
         })
     })
 
     describe('getConfigFilename', () => {
         it('falls back on default if AWS_CONFIG_FILE is not set', async () => {
             const filename = UserCredentialsUtils.getConfigFilename()
-            assert.equal(filename.length > 0, true)
+            assert.strictEqual(filename.length > 0, true)
         })
 
         it('gets AWS_CONFIG_FILE if set', async () => {
@@ -63,7 +63,7 @@ describe('UserCredentialsUtils', () => {
             env.AWS_CONFIG_FILE = expectedFilename
 
             const filename = UserCredentialsUtils.getConfigFilename()
-            assert.equal(filename, expectedFilename)
+            assert.strictEqual(filename, expectedFilename)
         })
     })
 
@@ -81,7 +81,7 @@ describe('UserCredentialsUtils', () => {
 
             const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
             assert(foundFiles)
-            assert.equal(foundFiles.length, 2)
+            assert.strictEqual(foundFiles.length, 2)
         })
 
         it('returns credentials file if it exists and config file does not exist', async () => {
@@ -96,8 +96,8 @@ describe('UserCredentialsUtils', () => {
 
             const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
             assert(foundFiles)
-            assert.equal(foundFiles.length, 1)
-            assert.equal(foundFiles[0], credentialsFilename)
+            assert.strictEqual(foundFiles.length, 1)
+            assert.strictEqual(foundFiles[0], credentialsFilename)
         })
 
         it('returns config file if it exists and credentials file does not exist', async () => {
@@ -112,8 +112,8 @@ describe('UserCredentialsUtils', () => {
 
             const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
             assert(foundFiles)
-            assert.equal(foundFiles.length, 1)
-            assert.equal(foundFiles[0], configFilename)
+            assert.strictEqual(foundFiles.length, 1)
+            assert.strictEqual(foundFiles[0], configFilename)
         })
 
         it('returns empty result if neither file exists', async () => {
@@ -126,7 +126,7 @@ describe('UserCredentialsUtils', () => {
 
             const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
             assert(foundFiles)
-            assert.equal(foundFiles.length, 0)
+            assert.strictEqual(foundFiles.length, 0)
         })
     })
 
@@ -178,8 +178,8 @@ describe('UserCredentialsUtils', () => {
                 'fakesecret',
                 mockSts as any as AWS.STS)
 
-            assert.equal(timesCalled, 1)
-            assert.equal(result.isValid, true)
+            assert.strictEqual(timesCalled, 1)
+            assert.strictEqual(result.isValid, true)
         })
 
         it('fails if getCallerIdentity rejects', async () => {
@@ -205,9 +205,9 @@ describe('UserCredentialsUtils', () => {
                 'fakesecret',
                 mockSts as any as AWS.STS)
 
-            assert.equal(timesCalled, 1)
-            assert.equal(result.isValid, false)
-            assert.equal(result.invalidMessage, 'Simulating error')
+            assert.strictEqual(timesCalled, 1)
+            assert.strictEqual(result.isValid, false)
+            assert.strictEqual(result.invalidMessage, 'Simulating error')
         })
 
         it('fails if getCallerIdentity throws', async () => {
@@ -233,9 +233,9 @@ describe('UserCredentialsUtils', () => {
                 'fakesecret',
                 mockSts as any as AWS.STS)
 
-            assert.equal(timesCalled, 1)
-            assert.equal(result.isValid, false)
-            assert.equal(result.invalidMessage, 'Simulating error with explicit throw')
+            assert.strictEqual(timesCalled, 1)
+            assert.strictEqual(result.isValid, false)
+            assert.strictEqual(result.invalidMessage, 'Simulating error with explicit throw')
         })
     })
 

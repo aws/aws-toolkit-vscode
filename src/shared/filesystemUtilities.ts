@@ -5,11 +5,12 @@
 
 'use strict'
 
+import * as path from 'path'
 import { accessAsync, readFileAsync } from './filesystem'
 
-export async function fileExists(path: string): Promise<boolean> {
+export async function fileExists(filePath: string): Promise<boolean> {
     try {
-        await accessAsync(path)
+        await accessAsync(filePath)
     } catch (err) {
         return false
     }
@@ -20,17 +21,37 @@ export async function fileExists(path: string): Promise<boolean> {
 /**
  * @description Wraps readFileAsync and resolves the Buffer to a string for convenience
  *
- * @param path filename to read
+ * @param filePath filename to read
  * @param encoding Optional - file encoding
  *
  * @returns the contents of the file as a string
  */
-export async function readFileAsString(path: string, encoding?: string): Promise<string> {
+export async function readFileAsString(filePath: string, encoding?: string): Promise<string> {
     // tslint:disable-next-line:no-null-keyword
-    const result = await readFileAsync(path, encoding || null)
+    const result = await readFileAsync(filePath, encoding || null)
     if (result instanceof Buffer) {
         return result.toString(encoding || undefined)
     }
 
     return result
+}
+
+/**
+ * Searches for fileToFind, starting in searchFolder and working up the parent folder chain.
+ * If file is not found, undefined is returned.
+ */
+export async function findFileInParentPaths(searchFolder: string, fileToFind: string): Promise<string | undefined> {
+    const targetFilePath: string = path.join(searchFolder, fileToFind)
+
+    if (await fileExists(targetFilePath)) {
+        return targetFilePath
+    }
+
+    const parentPath = path.dirname(searchFolder)
+
+    if (!parentPath || parentPath === searchFolder) {
+        return undefined
+    }
+
+    return findFileInParentPaths(parentPath, fileToFind)
 }

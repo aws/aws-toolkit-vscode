@@ -10,7 +10,7 @@ import * as del from 'del'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { SamCliConfiguration } from '../../../../shared/sam/cli/samCliConfiguration'
+import { DefaultSamCliConfiguration, SamCliConfiguration } from '../../../../shared/sam/cli/samCliConfiguration'
 import { SamCliLocationProvider } from '../../../../shared/sam/cli/samCliLocator'
 import { TestSettingsConfiguration } from '../../../utilities/testSettingsConfiguration'
 
@@ -33,19 +33,19 @@ describe('SamCliConfiguration', () => {
 
         createSampleFile(fakeCliLocation)
         await settingsConfiguration.writeSetting(
-            SamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION,
+            DefaultSamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION,
             fakeCliLocation,
             ''
         )
 
-        const samCliConfig: SamCliConfiguration = new SamCliConfiguration(
+        const samCliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(
             settingsConfiguration,
             {} as any as SamCliLocationProvider
         )
 
         await samCliConfig.initialize()
 
-        assert.equal(samCliConfig.getSamCliLocation(), fakeCliLocation)
+        assert.strictEqual(samCliConfig.getSamCliLocation(), fakeCliLocation)
     })
 
     it('calls location provider when config references file that does not exist', async () => {
@@ -53,12 +53,12 @@ describe('SamCliConfiguration', () => {
         const fakeCliLocation = path.join(tempFolder, 'fakeSamCli')
 
         await settingsConfiguration.writeSetting(
-            SamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION,
+            DefaultSamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION,
             fakeCliLocation,
             ''
         )
 
-        const samCliConfig: SamCliConfiguration = new SamCliConfiguration(
+        const samCliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(
             settingsConfiguration,
             {
                 getLocation: async (): Promise<string | undefined> => {
@@ -71,13 +71,13 @@ describe('SamCliConfiguration', () => {
 
         await samCliConfig.initialize()
 
-        assert.equal(timesCalled, 1)
+        assert.strictEqual(timesCalled, 1)
     })
 
     it('calls location provider when config not set', async () => {
         let timesCalled: number = 0
 
-        const samCliConfig: SamCliConfiguration = new SamCliConfiguration(
+        const samCliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(
             settingsConfiguration,
             {
                 getLocation: async (): Promise<string | undefined> => {
@@ -90,13 +90,13 @@ describe('SamCliConfiguration', () => {
 
         await samCliConfig.initialize()
 
-        assert.equal(timesCalled, 1)
+        assert.strictEqual(timesCalled, 1)
     })
 
     it('location provider detects a file', async () => {
         const fakeCliLocation = path.join(tempFolder, 'fakeSamCli')
 
-        const samCliConfig: SamCliConfiguration = new SamCliConfiguration(
+        const samCliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(
             settingsConfiguration,
             {
                 getLocation: async (): Promise<string | undefined> => {
@@ -107,11 +107,11 @@ describe('SamCliConfiguration', () => {
 
         await samCliConfig.initialize()
 
-        assert.equal(samCliConfig.getSamCliLocation(), fakeCliLocation)
+        assert.strictEqual(samCliConfig.getSamCliLocation(), fakeCliLocation)
     })
 
     it('location provider does not detect a file', async () => {
-        const samCliConfig: SamCliConfiguration = new SamCliConfiguration(
+        const samCliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(
             settingsConfiguration,
             {
                 getLocation: async (): Promise<string | undefined> => {
@@ -122,7 +122,7 @@ describe('SamCliConfiguration', () => {
 
         await samCliConfig.initialize()
 
-        assert.equal(samCliConfig.getSamCliLocation(), undefined)
+        assert.strictEqual(samCliConfig.getSamCliLocation(), undefined)
     })
 
     function createSampleFile(filename: string): void {
