@@ -89,11 +89,6 @@
         "menus": {
             "view/title": [
                 {
-                    "command": "aws.invokeLambda",
-                    "when": "view == lambda",
-                    "group": "navigation@4"
-                },
-                {
                     "command": "aws.refreshAwsExplorer",
                     "when": "view == lambda",
                     "group": "navigation@5"
@@ -166,11 +161,7 @@
             {
                 "command": "aws.invokeLambda",
                 "title": "%AWS.command.invokeLambda%",
-                "category": "AWS",
-                "icon": {
-                    "light": "resources/light/invoke_lambda.svg",
-                    "dark": "resources/dark/invoke_lambda.svg"
-                }
+                "category": "AWS"
             },
             {
                 "command": "aws.deleteLambda",
@@ -180,11 +171,7 @@
             {
                 "command": "aws.refreshAwsExplorer",
                 "title": "%AWS.command.refreshAwsExplorer%",
-                "category": "AWS",
-                "icon": {
-                    "light": "resources/light/invoke_lambda.svg",
-                    "dark": "resources/dark/invoke_lambda.svg"
-                }
+                "category": "AWS"
             },
             {
                 "command": "aws.getLambdaConfig",
