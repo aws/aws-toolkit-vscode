@@ -95,6 +95,7 @@ export class ChildProcess {
                 error: this._error
             }
 
+            this._childProcess!.removeAllListeners()
             this._onChildProcessClosed.emit(ChildProcess.CHILD_PROCESS_CLOSED, processResult)
         })
     }
