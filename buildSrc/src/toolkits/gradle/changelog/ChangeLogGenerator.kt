@@ -67,7 +67,6 @@ class ChangeLogGenerator(private val writers: List<ChangeLogWriter>) {
 
                 // Note: 2 spaces are on end for hard breaks in Markdown
                 renderedEntry.append("- **(${entry.type.sectionTitle})** ${lines.first().trim()}\n")
-                var inCodeBlock = false
                 for (it in lines.takeLast(lines.size - 1)) {
                     val line = it.trim()
                     if (line.isEmpty()) {
