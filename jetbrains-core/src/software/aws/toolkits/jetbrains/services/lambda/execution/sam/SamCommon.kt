@@ -112,16 +112,16 @@ class SamCommon {
         }
 
         /**
-         * @return The SemVer of SAM, or null if unable to determine it
+         * @return The string representation of the SAM version else "UNKNOWN"
          */
-        fun getSamVersion(path: String? = SamSettings.getInstance().executablePath): SemVer? {
+        fun getVersionString(path: String? = SamSettings.getInstance().executablePath): String {
             val sanitizedPath = path.nullize(true)
-                ?: return null
+                ?: return "UNKNOWN"
 
             return try {
-                versionCache.getResult(sanitizedPath)
+                versionCache.getResult(sanitizedPath).rawVersion
             } catch (e: Exception) {
-                return null
+                return "UNKNOWN"
             }
         }
 

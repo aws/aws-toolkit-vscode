@@ -9,7 +9,6 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
-import com.intellij.util.text.SemVer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -109,22 +108,22 @@ class SamCommonTest {
 
     @Test
     fun getVersion_Valid() {
-        val version = SemVer.parseFromText("0.5.9")!!
-        val actualVersion = SamCommon.getSamVersion(makeATestSam(getVersionAsJson(version.rawVersion)).toString())
+        val version = "0.5.9-dev"
+        val actualVersion = SamCommon.getVersionString(makeATestSam(getVersionAsJson(version)).toString())
         assertThat(actualVersion).isEqualTo(version)
     }
 
     @Test
     fun getVersion_badPath() {
-        val actualVersion = SamCommon.getSamVersion(path = null)
-        assertThat(actualVersion).isNull()
+        val actualVersion = SamCommon.getVersionString(path = null)
+        assertThat(actualVersion).isEqualTo("UNKNOWN")
     }
 
     @Test
     fun getVersion_Valid_exitNonZero() {
         val samPath = makeATestSam("stderr", exitCode = 100)
-        val result = SamCommon.getSamVersion(samPath.toString())
-        assertThat(result).isNull()
+        val actualVersion = SamCommon.getVersionString(samPath.toString())
+        assertThat(actualVersion).isEqualTo("UNKNOWN")
     }
 
     @Test

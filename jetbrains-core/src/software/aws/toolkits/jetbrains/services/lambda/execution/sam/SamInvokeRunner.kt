@@ -102,6 +102,7 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
                         // exception can be null but is not annotated as nullable
                         metadata("hasException", exception != null)
                         metadata("runtime", state.settings.runtime.name)
+                        metadata("samVersion", SamCommon.getVersionString())
                         metadata("templateBased", state.settings.templateDetails?.templateFile != null)
                     }
                 }

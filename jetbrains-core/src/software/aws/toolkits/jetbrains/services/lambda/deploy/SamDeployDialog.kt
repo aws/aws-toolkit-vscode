@@ -222,6 +222,7 @@ open class SamDeployDialog(
                     count()
                     // exception can be null but is not annotated as nullable
                     metadata("hasException", exception != null)
+                    metadata("samVersion", SamCommon.getVersionString())
                 }
             }
         }

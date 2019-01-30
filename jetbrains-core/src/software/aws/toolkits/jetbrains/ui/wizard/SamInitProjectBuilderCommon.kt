@@ -53,6 +53,7 @@ abstract class SamProjectTemplate {
         telemetry.record("SamProjectInit") {
             datum(getName()) {
                 metadata("runtime", runtime.name)
+                metadata("samVersion", SamCommon.getVersionString())
             }
         }
     }
