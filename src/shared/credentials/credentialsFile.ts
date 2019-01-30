@@ -11,11 +11,10 @@
 // their version.
 // ***************************************************************************
 
-import { copy } from 'fs-extra'
 import { homedir } from 'os'
 import { join, sep } from 'path'
 import { EnvironmentVariables } from '../environmentVariables'
-import { readFileAsync, writeFileAsync } from '../filesystem'
+import { readFileAsync } from '../filesystem'
 import { fileExists } from '../filesystemUtilities'
 
 export interface SharedConfigInit {
@@ -89,29 +88,6 @@ async function loadCredentialsFile(
     }
 
     return parseIni(await slurpFile(credentialsFilePath))
-}
-
-// TODO: FOR POC-DEMOS ONLY, NOT FOR PRODUCTION USE!
-// REMOVE_BEFORE_RELEASE
-// This is nowhere near resilient enough :-)
-export async function saveProfile(
-    name: string,
-    accessKey: string,
-    secretKey: string
-): Promise<void> {
-    const env = process.env as EnvironmentVariables
-    const filepath = env.AWS_SHARED_CREDENTIALS_FILE || join(getHomeDir(), '.aws', 'credentials')
-
-    // even though poc concept code, let's preserve the user's file!
-    await copy(filepath, `${filepath}.bak_vscode`, { overwrite: true})
-
-    const data = `${await slurpFile(filepath)}
-[${name}]
-aws_access_key_id=${accessKey}
-aws_secret_access_key=${secretKey}
-`
-
-    await writeFileAsync(filepath, data, 'utf8')
 }
 
 const profileKeyRegex = /^profile\s(["'])?([^\1]+)\1$/

@@ -137,7 +137,6 @@ describe('UserCredentialsUtils', () => {
 
             const env = process.env as EnvironmentVariables
             env.AWS_SHARED_CREDENTIALS_FILE = credentialsFilename
-
             await UserCredentialsUtils.generateCredentialsFile(
                 path.join(__dirname, '..', '..', '..', '..', '..'),
                 {
@@ -151,6 +150,11 @@ describe('UserCredentialsUtils', () => {
             assert(profiles)
             assert(profiles.credentialsFile)
             assert(profiles.credentialsFile[profileName])
+
+            const { mode } = fs.statSync(credentialsFilename)
+            const expectedMode = 0o100600
+            assert.deepStrictEqual(
+                mode, expectedMode, `expectedMode should be ${expectedMode} for file: "${credentialsFilename}"`)
         })
     })
 

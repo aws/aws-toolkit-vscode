@@ -5,12 +5,9 @@
 
 'use strict'
 
-export interface CredentialsFileReaderWriter {
+export interface CredentialsFileReader {
     // returns the list of available profile names
     getProfileNames(): Promise<string[]>
-
-    // writes a new profile to the credential file
-    addProfileToFile(profileName: string, accessKey: string, secretKet: string): Promise<void>
 
     /**
      * Gets the default region for a credentials profile

@@ -15,7 +15,7 @@ import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
 import { extensionSettingsPrefix } from './shared/constants'
-import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
+import { DefaultCredentialsFileReader } from './shared/credentials/defaultCredentialsFileReader'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
 import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
@@ -41,7 +41,7 @@ export async function activate(context: vscode.ExtensionContext) {
     ext.lambdaOutputChannel = vscode.window.createOutputChannel('AWS Lambda')
     ext.context = context
 
-    await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
+    await new DefaultCredentialsFileReader().setCanUseConfigFileIfExists()
 
     const awsContext = new DefaultAwsContext(new DefaultSettingsConfiguration(extensionSettingsPrefix))
     const awsContextTrees = new AwsContextTreeCollection()

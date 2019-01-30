@@ -7,11 +7,11 @@
 
 import { EnvironmentVariables } from '../environmentVariables'
 import { SystemUtilities } from '../systemUtilities'
-import { loadSharedConfigFiles, Profile, saveProfile } from './credentialsFile'
-import { CredentialsFileReaderWriter } from './credentialsFileReaderWriter'
+import { loadSharedConfigFiles, Profile } from './credentialsFile'
+import { CredentialsFileReader } from './credentialsFileReader'
 import { UserCredentialsUtils } from './userCredentialsUtils'
 
-export class DefaultCredentialsFileReaderWriter implements CredentialsFileReaderWriter {
+export class DefaultCredentialsFileReader implements CredentialsFileReader {
     public async getProfileNames(): Promise<string[]> {
         // TODO: cache the file and attach a watcher to it
         const sharedCredentials = await loadSharedConfigFiles()
@@ -22,10 +22,6 @@ export class DefaultCredentialsFileReaderWriter implements CredentialsFileReader
         const profileNames = new Set(credentialsProfileNames.concat(configProfileNames))
 
         return Promise.resolve(Array.from(profileNames))
-    }
-
-    public async addProfileToFile(profileName: string, accessKey: string, secretKey: string): Promise<void> {
-        await saveProfile(profileName, accessKey, secretKey)
     }
 
     /**

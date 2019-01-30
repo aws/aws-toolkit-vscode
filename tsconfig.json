@@ -12,7 +12,8 @@
         "sourceMap": true,
         "rootDirs": [
             "src",
-            "third-party"
+            "third-party",
+            "unit-test"
         ],
         /* Strict Type-Checking Option */
         "strict": true, /* enable all strict type-checking options */
