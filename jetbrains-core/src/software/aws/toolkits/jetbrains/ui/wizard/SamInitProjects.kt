@@ -22,6 +22,8 @@ class SamDynamoDBCookieCutter : SamProjectTemplate() {
     override fun getDescription() = message("sam.init.template.dynamodb_cookiecutter.description")
 
     override fun doBuild(runtime: Runtime, outputDir: VirtualFile) {
-        SamInitRunner(SamModuleType.ID, outputDir, runtime, "gh:aws-samples/cookiecutter-aws-sam-dynamodb-python").execute()
+        SamInitRunner(AwsModuleType.ID, outputDir, runtime, "gh:aws-samples/cookiecutter-aws-sam-dynamodb-python").execute()
     }
+
+    override fun supportedRuntimes() = setOf(Runtime.PYTHON2_7, Runtime.PYTHON3_6, Runtime.PYTHON3_7)
 }

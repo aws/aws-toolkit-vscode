@@ -8,8 +8,4 @@
         <sam.debugSupport runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.java.JavaSamDebugSupport"/>
         <handlerResolver runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.java.JavaLambdaHandlerResolver"/>
     </extensions>
-
-    <extensions defaultExtensionNs="com.intellij">
-        <moduleBuilder builderClass="software.aws.toolkits.jetbrains.ui.wizard.java.SamInitModuleBuilder" />
-    </extensions>
 </idea-plugin>

@@ -8,8 +8,4 @@
         <handlerResolver runtimeGroup="PYTHON" implementation="software.aws.toolkits.jetbrains.services.lambda.python.PythonLambdaHandlerResolver"/>
         <sam.debugSupport runtimeGroup="PYTHON" implementation="software.aws.toolkits.jetbrains.services.lambda.python.PythonSamDebugSupport"/>
     </extensions>
-
-    <extensions defaultExtensionNs="com.intellij">
-        <directoryProjectGenerator implementation="software.aws.toolkits.jetbrains.ui.wizard.python.SamInitProjectBuilderPyCharm" />
-    </extensions>
 </idea-plugin>

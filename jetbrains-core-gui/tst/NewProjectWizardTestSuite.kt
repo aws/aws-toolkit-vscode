@@ -8,7 +8,7 @@ import com.intellij.testGuiFramework.launcher.ide.CommunityIde
 import org.junit.runner.RunWith
 import org.junit.runners.Suite
 import software.aws.toolkits.jetbrains.settings.SetSamCli
-import software.aws.toolkits.jetbrains.ui.wizard.java.SamInitProjectBuilderIntelliJTest
+import software.aws.toolkits.jetbrains.ui.wizard.SamInitProjectBuilderIntelliJTest
 
 @RunWith(GuiTestSuiteRunner::class)
 @RunWithIde(CommunityIde::class)
