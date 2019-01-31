@@ -130,7 +130,7 @@ function getTabSize(editor?: vscode.TextEditor): number {
 async function loadSymbols(
     uri: vscode.Uri,
     maxAttempts = 3,
-    retryDelayMillis = 500 // milliseconds
+    retryDelayMillis = 500
 ): Promise<vscode.DocumentSymbol[] | undefined> {
     if (maxAttempts <= 0) {
         return undefined
