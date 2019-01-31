@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Skip image pulling when using SAM to run/debug Lambdas"
+}

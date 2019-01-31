@@ -37,6 +37,7 @@ class SamRunningState(
             .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.CONSOLE)
             .withParameters("local")
             .withParameters("invoke")
+            .withParameters("--skip-pull-image")
             .withParameters("--template")
             .withParameters(samTemplate())
             .withParameters("--event")
