@@ -6,16 +6,20 @@
 'use strict'
 
 import * as vscode from 'vscode'
-import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
+import { AWSTreeNode, AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 
 // Used as a child node when an exception occurs while querying AWS resources
 export class ErrorNode extends AWSTreeNodeBase {
-    public constructor(
-        public readonly parent: AWSTreeNodeBase,
-        public readonly error: Error,
+    public readonly parent: AWSTreeNode
+    public readonly error: Error
+    public constructor({parent, label, error}: {
+        parent: AWSTreeNode
+        error: Error
         label: string
-    ) {
+    }) {
         super(label, vscode.TreeItemCollapsibleState.None)
+        this.parent = parent
+        this.error = error
 
         this.tooltip = `${error.name}:${error.message}`
         this.contextValue = 'awsErrorNode'

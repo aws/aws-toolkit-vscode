@@ -22,7 +22,11 @@ describe('ErrorNode', () => {
     // Validates we tagged the node correctly
     it('initializes label and tooltip', async () => {
 
-        const testNode = new ErrorNode(regionNode, error, 'Error loading resources')
+        const testNode = new ErrorNode({
+            error,
+            label: 'Error loading resources',
+            parent: regionNode
+        })
 
         assert.strictEqual(testNode.label, 'Error loading resources')
         assert.strictEqual(testNode.tooltip, `${error.name}:${error.message}`)
@@ -30,7 +34,11 @@ describe('ErrorNode', () => {
 
     // Validates function nodes are leaves
     it('has no children', async () => {
-        const testNode = new ErrorNode(regionNode, error, `Error loading resources (${error.name})`)
+        const testNode = new ErrorNode({
+            error,
+            label: `Error loading resources (${error.name})`,
+            parent: regionNode
+        })
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)

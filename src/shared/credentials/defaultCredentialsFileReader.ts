@@ -9,7 +9,7 @@ import { EnvironmentVariables } from '../environmentVariables'
 import { SystemUtilities } from '../systemUtilities'
 import { loadSharedConfigFiles, Profile } from './credentialsFile'
 import { CredentialsFileReader } from './credentialsFileReader'
-import { UserCredentialsUtils } from './userCredentialsUtils'
+import { defaultCredentialsFile } from './userCredentialsUtils'
 
 export class DefaultCredentialsFileReader implements CredentialsFileReader {
     public async getProfileNames(): Promise<string[]> {
@@ -62,8 +62,9 @@ export class DefaultCredentialsFileReader implements CredentialsFileReader {
      * @description Calls setCanUseConfigFile , setting it to true if the config file exists, false otherwise
      */
     public async setCanUseConfigFileIfExists(): Promise<void> {
+        const configName = process.env.AWS_CONFIG_FILE || defaultCredentialsFile
         this.setCanUseConfigFile(
-            await SystemUtilities.fileExists(UserCredentialsUtils.getConfigFilename())
+            await SystemUtilities.fileExists(configName)
         )
     }
 

@@ -25,7 +25,11 @@ export abstract class AWSTreeErrorHandlerNode extends AWSTreeNodeBase {
             await operation()
         } catch (err) {
             const error = err as Error
-            this.errorNode = new ErrorNode(this, error, errorLabel)
+            this.errorNode = new ErrorNode({
+                error,
+                label: errorLabel,
+                parent: this
+            })
 
             // TODO: Make the possibility to ErrorNode attempt to retry the operation
             console.error(error.message)

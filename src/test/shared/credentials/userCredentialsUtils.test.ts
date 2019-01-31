@@ -10,6 +10,7 @@ import * as AWS from 'aws-sdk'
 import * as del from 'del'
 import * as fs from 'fs'
 import * as path from 'path'
+import { promisify } from 'util'
 
 import {
     loadSharedConfigFiles,
@@ -20,6 +21,7 @@ import {
     UserCredentialsUtils,
 } from '../../../shared/credentials/userCredentialsUtils'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
+import { SystemUtilities } from '../../../shared/systemUtilities'
 
 describe('UserCredentialsUtils', () => {
 
@@ -36,50 +38,78 @@ describe('UserCredentialsUtils', () => {
     })
 
     describe('getCredentialsFilename', () => {
-        it('falls back on default if AWS_SHARED_CREDENTIALS_FILE is not set', async () => {
-            const filename = UserCredentialsUtils.getCredentialsFilename()
-            assert.strictEqual(filename.length > 0, true)
+        it('falls back on default if AWS_SHARED_CREDENTIALS_FILE is not set in env', async () => {
+            const env = process.env as EnvironmentVariables
+            env.AWS_SHARED_CREDENTIALS_FILE = '' // ensure it's not set
+            const expectedFilename = path.join(SystemUtilities.getHomeDirectory(), '.aws', 'credentials')
+            const userCredentialsUtils: UserCredentialsUtils = new UserCredentialsUtils()
+            const filename = userCredentialsUtils.getCredentialsFilename()
+            assert.strictEqual(filename, expectedFilename)
         })
 
-        it('gets AWS_SHARED_CREDENTIALS_FILE if set', async () => {
-            const expectedFilename = path.join(tempFolder, 'credentials-custom-name-test')
+        it('gets AWS_SHARED_CREDENTIALS_FILE from env if set in env', async () => {
+            const expectedFilename = path.join(tempFolder, 'credentials-custom-name-test-env')
             const env = process.env as EnvironmentVariables
             env.AWS_SHARED_CREDENTIALS_FILE = expectedFilename
+            const userCredentialsUtils: UserCredentialsUtils = new UserCredentialsUtils()
 
-            const filename = UserCredentialsUtils.getCredentialsFilename()
+            const filename = userCredentialsUtils.getCredentialsFilename()
+            assert.strictEqual(filename, expectedFilename)
+        })
+
+        it('uses value of credentialsFile paramter if set', async () => {
+            const expectedFilename = path.join(tempFolder, 'credentials-custom-name-test-param')
+            const userCredentialsUtils = new UserCredentialsUtils({
+                credentialsFile: expectedFilename,
+            })
+            const filename = userCredentialsUtils.getCredentialsFilename()
             assert.strictEqual(filename, expectedFilename)
         })
     })
 
     describe('getConfigFilename', () => {
-        it('falls back on default if AWS_CONFIG_FILE is not set', async () => {
-            const filename = UserCredentialsUtils.getConfigFilename()
-            assert.strictEqual(filename.length > 0, true)
+        it('falls back on default if AWS_CONFIG_FILE is not set in env', async () => {
+            const env = process.env as EnvironmentVariables
+            env.AWS_CONFIG_FILE = '' // ensure it's not set
+            const expectedFilename = path.join(SystemUtilities.getHomeDirectory(), '.aws', 'config')
+            const userCredentialsUtils: UserCredentialsUtils = new UserCredentialsUtils()
+            const filename = userCredentialsUtils.getConfigFilename()
+            assert.strictEqual(filename, expectedFilename)
         })
 
-        it('gets AWS_CONFIG_FILE if set', async () => {
-            const expectedFilename = path.join(tempFolder, 'config-custom-name-test')
+        it('gets AWS_CONFIG_FILE if set in env', async () => {
+            const expectedFilename = path.join(tempFolder, 'config-custom-name-test-env')
             const env = process.env as EnvironmentVariables
             env.AWS_CONFIG_FILE = expectedFilename
+            const userCredentialsUtils = new UserCredentialsUtils()
+            const filename = userCredentialsUtils.getConfigFilename()
+            assert.strictEqual(filename, expectedFilename)
+        })
 
-            const filename = UserCredentialsUtils.getConfigFilename()
+        it('uses value of configFile paramter if set', async () => {
+            const expectedFilename = path.join(tempFolder, 'config-custom-name-test-params')
+            const userCredentialsUtils = new UserCredentialsUtils({
+                configFile: expectedFilename,
+            })
+            const filename = userCredentialsUtils.getConfigFilename()
             assert.strictEqual(filename, expectedFilename)
         })
     })
 
     describe('findExistingCredentialsFilenames', () => {
         it('returns both filenames if both files exist', async () => {
-            const credentialsFilename = path.join(tempFolder, 'credentials-both-exist-test')
-            const configFilename = path.join(tempFolder, 'config-both-exist-test')
+            const credentialsFile = path.join(tempFolder, 'credentials-both-exist-test')
+            const configFile = path.join(tempFolder, 'config-both-exist-test')
 
             const env = process.env as EnvironmentVariables
-            env.AWS_SHARED_CREDENTIALS_FILE = credentialsFilename
-            env.AWS_CONFIG_FILE = configFilename
+            env.AWS_SHARED_CREDENTIALS_FILE = credentialsFile
+            env.AWS_CONFIG_FILE = configFile
 
-            createCredentialsFile(credentialsFilename, ['default'])
-            createCredentialsFile(configFilename, ['default'])
+            createCredentialsFile(credentialsFile, ['default'])
+            createCredentialsFile(configFile, ['default'])
 
-            const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
+            const userCredentialsUtils = new UserCredentialsUtils()
+            const foundFiles: string[] = await userCredentialsUtils.findExistingCredentialsFilenames()
             assert(foundFiles)
             assert.strictEqual(foundFiles.length, 2)
         })
@@ -94,7 +124,8 @@ describe('UserCredentialsUtils', () => {
 
             createCredentialsFile(credentialsFilename, ['default'])
 
-            const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
+            const userCredentialsUtils = new UserCredentialsUtils()
+            const foundFiles: string[] = await userCredentialsUtils.findExistingCredentialsFilenames()
             assert(foundFiles)
             assert.strictEqual(foundFiles.length, 1)
             assert.strictEqual(foundFiles[0], credentialsFilename)
@@ -110,7 +141,8 @@ describe('UserCredentialsUtils', () => {
 
             createCredentialsFile(configFilename, ['default'])
 
-            const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
+            const userCredentialsUtils = new UserCredentialsUtils()
+            const foundFiles: string[] = await userCredentialsUtils.findExistingCredentialsFilenames()
             assert(foundFiles)
             assert.strictEqual(foundFiles.length, 1)
             assert.strictEqual(foundFiles[0], configFilename)
@@ -124,21 +156,22 @@ describe('UserCredentialsUtils', () => {
             env.AWS_SHARED_CREDENTIALS_FILE = credentialsFilename
             env.AWS_CONFIG_FILE = configFilename
 
-            const foundFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
+            const userCredentialsUtils = new UserCredentialsUtils()
+            const foundFiles: string[] = await userCredentialsUtils.findExistingCredentialsFilenames()
             assert(foundFiles)
             assert.strictEqual(foundFiles.length, 0)
         })
     })
 
-    describe('generateCredentialsFile', () => {
+    describe('generateCredentialsFile', async () => {
         it('generates a valid credentials file', async () => {
-            const credentialsFilename = path.join(tempFolder, 'credentials-generation-test')
             const profileName = 'someRandomProfileName'
+            const credentialsFilename = path.join(tempFolder, 'credentials-generation-test')
 
             const env = process.env as EnvironmentVariables
             env.AWS_SHARED_CREDENTIALS_FILE = credentialsFilename
-            await UserCredentialsUtils.generateCredentialsFile(
-                path.join(__dirname, '..', '..', '..', '..', '..'),
+            const userCredentialsUtils = new UserCredentialsUtils()
+            await userCredentialsUtils.generateCredentialsFile(
                 {
                     accessKey: '123',
                     profileName: profileName,
@@ -146,15 +179,20 @@ describe('UserCredentialsUtils', () => {
                 }
             )
 
-            const profiles: SharedConfigFiles = await loadSharedConfigFiles()
+            const profiles: SharedConfigFiles = await loadSharedConfigFiles({
+                filepath: credentialsFilename
+            })
             assert(profiles)
             assert(profiles.credentialsFile)
             assert(profiles.credentialsFile[profileName])
 
-            const { mode } = fs.statSync(credentialsFilename)
-            const expectedMode = 0o100600
-            assert.deepStrictEqual(
-                mode, expectedMode, `expectedMode should be ${expectedMode} for file: "${credentialsFilename}"`)
+        })
+
+        it('generated credentials file can be read and written', async () => {
+            const credentialsFilename = path.join(tempFolder, 'credentials-generation-test')
+            const access = promisify(fs.access)
+            await access(credentialsFilename, fs.constants.R_OK).catch(err => assert(false, 'Should be readable'))
+            await access(credentialsFilename, fs.constants.W_OK).catch(err => assert(false, 'Should be writeable'))
         })
     })
 

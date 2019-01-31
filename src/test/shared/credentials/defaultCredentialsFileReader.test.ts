@@ -7,22 +7,27 @@ import * as assert from 'assert'
 import * as del from 'del'
 import * as fs from 'fs'
 import * as path from 'path'
+
 import { DefaultCredentialsFileReader } from '../../../shared/credentials/defaultCredentialsFileReader'
+import { defaultConfigFile } from '../../../shared/credentials/userCredentialsUtils'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
+import { SystemUtilities } from '../../../shared/systemUtilities'
 
 describe('DefaultCredentialsFileReader', () => {
 
     let tempFolder: string
     const credentialsProfileNames: string[] = ['default', 'apple', 'orange']
     const configProfileNames: string[] = ['banana', 'mango']
+    let credentialsFilename: string
+    let configFilename: string
 
     before(() => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
         tempFolder = fs.mkdtempSync('vsctk')
 
-        const credentialsFilename = path.join(tempFolder, 'credentials-1')
-        const configFilename = path.join(tempFolder, 'config-1')
+        credentialsFilename = path.join(tempFolder, 'credentials-1')
+        configFilename = path.join(tempFolder, 'config-1')
 
         const configProfiles: string[] = []
         configProfileNames.forEach(x => configProfiles.push(`profile ${x}`))
@@ -101,35 +106,41 @@ describe('DefaultCredentialsFileReader', () => {
         })
     })
 
-    describe('setCanUseConfigFileIfExists', () => {
+    describe('setCanUseConfigFileIfExists', async () => {
 
         it('allows use of config file if it exists', async () => {
-            let canUseState: boolean | undefined
 
             const reader = new DefaultCredentialsFileReader()
-            reader.setCanUseConfigFile = (allow) => {
-                canUseState = allow
-            }
+            reader.setCanUseConfigFile(true)
+            const configFileName = defaultConfigFile
+            assert.ok(configFileName, 'expected configFileName to be set')
+            const configFileExists = await SystemUtilities.fileExists(configFileName)
+            assert.strictEqual(configFileExists, true, `expected "${configFileName}" to exist`)
 
             await reader.setCanUseConfigFileIfExists()
-
-            assert.strictEqual(canUseState, true)
+            assert.strictEqual(
+                reader.getCanUseConfigFile(),
+                true,
+                `reader.getCanUseConfigFile() should be true but is "${reader.getCanUseConfigFile()}"`)
         })
 
         it('does not allow use of config file if it does not exist', async () => {
-            let canUseState: boolean | undefined
 
             const env = process.env as EnvironmentVariables
             env.AWS_CONFIG_FILE = path.join(tempFolder, 'config-not-exist-file')
+            const exists = await SystemUtilities.fileExists(env.AWS_CONFIG_FILE)
+            assert.strictEqual(exists, false, `"${env.AWS_CONFIG_FILE}" shouldn't exist`)
 
             const reader = new DefaultCredentialsFileReader()
-            reader.setCanUseConfigFile = (allow) => {
-                canUseState = allow
-            }
+            reader.setCanUseConfigFile(true)
 
             await reader.setCanUseConfigFileIfExists()
 
-            assert.strictEqual(canUseState, false)
+            assert.strictEqual(
+                reader.getCanUseConfigFile(),
+                false,
+                `reader.getCanUseConfigFile() is "${reader.getCanUseConfigFile()}"`
+            )
         })
     })
 

@@ -6,9 +6,25 @@
 'use strict'
 
 import {
+    Command,
+    ThemeIcon,
     TreeItem,
-    TreeItemCollapsibleState
+    TreeItemCollapsibleState,
+    Uri
 } from 'vscode'
+
+export interface AWSTreeNode {
+    label?: string
+    id?: string
+    iconPath?: string | Uri | { light: string | Uri; dark: string | Uri } | ThemeIcon
+    resourceUri?: Uri
+    tooltip?: string | undefined
+    command?: Command
+    collapsibleState?: TreeItemCollapsibleState
+    contextValue?: string
+    getChildren(): Thenable<AWSTreeNode[]>
+
+}
 
 export abstract class AWSTreeNodeBase extends TreeItem {
     protected constructor(
@@ -18,7 +34,7 @@ export abstract class AWSTreeNodeBase extends TreeItem {
         super(label, collapsibleState)
     }
 
-    public getChildren(): Thenable<AWSTreeNodeBase[]> {
+    public getChildren(): Thenable<AWSTreeNode[]> {
         return Promise.resolve([])
     }
 }

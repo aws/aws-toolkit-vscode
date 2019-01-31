@@ -67,6 +67,7 @@ export class DefaultAWSContextCommands {
     private readonly _awsContext: AwsContext
     private readonly _awsContextTrees: AwsContextTreeCollection
     private readonly _regionProvider: RegionProvider
+    private readonly userCredentialsUtils: UserCredentialsUtils
 
     public constructor(
         awsContext: AwsContext,
@@ -76,6 +77,7 @@ export class DefaultAWSContextCommands {
         this._awsContext = awsContext
         this._awsContextTrees = awsContextTrees
         this._regionProvider = regionProvider
+        this.userCredentialsUtils = new UserCredentialsUtils()
     }
 
     public async onCommandLogin() {
@@ -90,7 +92,7 @@ export class DefaultAWSContextCommands {
 
     public async onCommandCreateCredentialsProfile(): Promise<void> {
 
-        const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
+        const credentialsFiles: string[] = await this.userCredentialsUtils.findExistingCredentialsFilenames()
 
         if (credentialsFiles.length === 0) {
             // Help user make a new credentials profile
@@ -157,8 +159,7 @@ export class DefaultAWSContextCommands {
             )
 
             if (validationResult.isValid) {
-                await UserCredentialsUtils.generateCredentialsFile(
-                    ext.context.extensionPath,
+                await this.userCredentialsUtils.generateCredentialsFile(
                     {
                         profileName: state.profileName,
                         accessKey: state.accesskey,
@@ -203,7 +204,7 @@ export class DefaultAWSContextCommands {
         const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
         const responseNo: string = localize('AWS.generic.response.no', 'No')
 
-        const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
+        const credentialsFiles: string[] = await this.userCredentialsUtils.findExistingCredentialsFilenames()
 
         if (credentialsFiles.length === 0) {
 
@@ -261,7 +262,7 @@ export class DefaultAWSContextCommands {
      */
     private async editCredentials(): Promise<void> {
 
-        const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
+        const credentialsFiles: string[] = await this.userCredentialsUtils.findExistingCredentialsFilenames()
         let preserveFocus: boolean = false
         let viewColumn: ViewColumn = ViewColumn.Active
 

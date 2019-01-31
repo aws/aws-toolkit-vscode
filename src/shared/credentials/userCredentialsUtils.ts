@@ -15,6 +15,9 @@ import { writeFileAsync } from '../filesystem'
 import { readFileAsString } from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 
+const env = process.env as EnvironmentVariables
+export const defaultCredentialsFile = path.join(SystemUtilities.getHomeDirectory(), '.aws', 'credentials')
+export const defaultConfigFile = path.join(SystemUtilities.getHomeDirectory(), '.aws', 'config')
 /**
  * The payload used to fill in the handlebars template
  * for the simple credentials file.
@@ -31,6 +34,21 @@ export interface CredentialsValidationResult {
 }
 
 export class UserCredentialsUtils {
+    public credentialsFile?: string
+    public configFile?: string
+    private readonly credentialsFileTemplate: string
+    public constructor({credentialsFile, configFile, credentialsFileTemplate}: {
+        credentialsFile?: string,
+        configFile?: string
+        credentialsFileTemplate?: string
+    } = {}) {
+        this.credentialsFile = credentialsFile
+
+        this.configFile = configFile
+
+        this.credentialsFileTemplate = credentialsFileTemplate ||
+            path.join(__dirname, '..', '..', '..', '..', 'resources', 'newUserCredentialsFile')
+    }
 
     /**
      * @description Determines which credentials related files
@@ -38,7 +56,7 @@ export class UserCredentialsUtils {
      *
      * @returns array of filenames for files found.
      */
-    public static async findExistingCredentialsFilenames(): Promise<string[]> {
+    public async findExistingCredentialsFilenames(): Promise<string[]> {
         const candidateFiles: string[] = [
             this.getCredentialsFilename(),
             this.getConfigFilename()
@@ -52,23 +70,17 @@ export class UserCredentialsUtils {
     }
 
     /**
-     * @returns Filename for the credentials file
+     * @returns File path for the credentials file
      */
-    public static getCredentialsFilename(): string {
-        const env = process.env as EnvironmentVariables
-
-        return env.AWS_SHARED_CREDENTIALS_FILE
-            || path.join(SystemUtilities.getHomeDirectory(), '.aws', 'credentials')
+    public getCredentialsFilename(): string {
+        return this.credentialsFile || env.AWS_SHARED_CREDENTIALS_FILE || defaultCredentialsFile
     }
 
     /**
-     * @returns Filename for the config file
+     * @returns File path for the config file
      */
-    public static getConfigFilename(): string {
-        const env = process.env as EnvironmentVariables
-
-        return env.AWS_CONFIG_FILE
-            || path.join(SystemUtilities.getHomeDirectory(), '.aws', 'config')
+    public getConfigFilename(): string {
+        return this.configFile || env.AWS_CONFIG_FILE || defaultConfigFile
     }
 
     /**
@@ -77,13 +89,9 @@ export class UserCredentialsUtils {
      *
      * @param credentialsContext the profile to create in the file
      */
-    public static async generateCredentialsFile(
-        extensionPath: string,
-        credentialsContext: CredentialsTemplateContext
-    ): Promise<void> {
-        const templatePath: string = path.join(extensionPath, 'resources', 'newUserCredentialsFile')
+    public async generateCredentialsFile(credentialsContext: CredentialsTemplateContext): Promise<void> {
 
-        const credentialsTemplate: string = await readFileAsString(templatePath, 'utf-8')
+        const credentialsTemplate: string = await readFileAsString(this.credentialsFileTemplate, 'utf-8')
 
         const handlebarTemplate = handlebars.compile(credentialsTemplate)
         const credentialsFileContents = handlebarTemplate(credentialsContext)
