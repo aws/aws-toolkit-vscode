@@ -130,16 +130,23 @@ function getTabSize(editor?: vscode.TextEditor): number {
 async function loadSymbols(
     uri: vscode.Uri,
     maxAttempts = 3,
-    retryDelay = 500 // milliseconds
+    retryDelayMillis = 500 // milliseconds
 ): Promise<vscode.DocumentSymbol[] | undefined> {
     if (maxAttempts <= 0) {
         return undefined
     }
 
-    return await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
+    const symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
         'vscode.executeDocumentSymbolProvider',
         uri
-    ) || await sleep(retryDelay).then(async () => await loadSymbols(uri, maxAttempts - 1, retryDelay))
+    )
+    if (symbols) {
+        return symbols
+    }
+
+    await sleep(retryDelayMillis)
+
+    return await loadSymbols(uri, maxAttempts - 1, retryDelayMillis)
 }
 
 async function prepareConfig(editor: vscode.TextEditor, handler: string): Promise<boolean> {
