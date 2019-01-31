@@ -25,7 +25,7 @@ export interface ChildProcessResult {
 export class ChildProcess {
     private static readonly CHILD_PROCESS_CLOSED = 'childProcessClosed'
 
-    private readonly _process: string
+    private readonly _command: string
     private readonly _args: string[] | undefined
 
     private _childProcess: child_process.ChildProcess | undefined
@@ -35,8 +35,8 @@ export class ChildProcess {
     private _error: Error | undefined
     private readonly _processCompletedPromise: Promise<ChildProcessResult>
 
-    public constructor(process: string, args?: string[] | undefined) {
-        this._process = process
+    public constructor(command: string, args?: string[] | undefined) {
+        this._command = command
         this._args = args
 
         this._processCompletedPromise = new Promise((resolve, reject) => {
@@ -53,9 +53,16 @@ export class ChildProcess {
             throw Error('process already started')
         }
 
+        const spawnOptions: child_process.SpawnOptions = {}
+
+        if (process.platform === 'win32') {
+            spawnOptions.shell = true
+        }
+
         this._childProcess = child_process.spawn(
-            this._process,
-            this._args
+            this._command,
+            this._args,
+            spawnOptions
         )
 
         this._childProcess.stdout.on('data', (data: { toString(): string }) => {
@@ -78,6 +85,7 @@ export class ChildProcess {
                 error: this._error
             }
 
+            this._childProcess!.removeAllListeners()
             this._onChildProcessClosed.emit(ChildProcess.CHILD_PROCESS_CLOSED, processResult)
         })
     }
