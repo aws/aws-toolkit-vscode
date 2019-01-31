@@ -39,8 +39,8 @@ describe('ChildProcess', async () => {
 
             const result = await childProcess.promise()
 
-            assert.strictEqual(result.exitCode, 0)
-            assert.strictEqual(result.stdout, 'hi')
+            assert.strictEqual(result.exitCode, 0, `Expected exit code 0, got ${result.exitCode}`)
+            assert.strictEqual(result.stdout, 'hi', `Expected stdout to be hi , got: ${result.stdout}`)
         })
 
         it('errs when starting twice - windows', async () => {
@@ -57,7 +57,7 @@ describe('ChildProcess', async () => {
                 childProcess.start()
             })
         })
-    }
+    } // END Windows only tests
 
     if (process.platform !== 'win32') {
         it('runs and captures stdout - unix', async () => {
@@ -72,8 +72,8 @@ describe('ChildProcess', async () => {
 
             const result = await childProcess.promise()
 
-            assert.strictEqual(result.exitCode, 0)
-            assert.strictEqual(result.stdout, 'hi')
+            assert.strictEqual(result.exitCode, 0, `Expected exit code 0, got ${result.exitCode}`)
+            assert.strictEqual(result.stdout, 'hi', `Expected stdout to be hi , got: ${result.stdout}`)
         })
 
         it('errs when starting twice - unix', async () => {
@@ -90,7 +90,30 @@ describe('ChildProcess', async () => {
                 childProcess.start()
             })
         })
-    }
+    } // END Linux only tests
+
+    it('runs commands containing a space', async () => {
+        let command: string
+
+        if (process.platform === 'win32') {
+            command = path.join(tempFolder, 'test script.bat')
+            writeBatchFile(command)
+        } else {
+            command = path.join(tempFolder, 'test script.sh')
+            writeShellFile(command)
+        }
+
+        const childProcess = new ChildProcess(
+            command
+        )
+
+        childProcess.start()
+
+        const result = await childProcess.promise()
+
+        assert.strictEqual(result.exitCode, 0, `Expected exit code 0, got ${result.exitCode}`)
+        assert.strictEqual(result.stdout, 'hi', `Expected stdout to be hi , got: ${result.stdout}`)
+    })
 
     it('errs when getting promise without starting', async () => {
         const batchFile = path.join(tempFolder, 'test-script.bat')
