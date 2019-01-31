@@ -10,37 +10,7 @@ import * as del from 'del'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { ChildProcess, sanitizeCommand } from '../../shared/utilities/childProcess'
-
-describe('sanitizeCommand', async () => {
-    it('command without spaces remains unchanged', async () => {
-        const command = 'qwerty'
-
-        assert.strictEqual(sanitizeCommand(command), command)
-    })
-
-    if (process.platform === 'win32') {
-        it('windows - command with spaces gets wrapped in quotes', async () => {
-            const command = 'qwerty uiop'
-
-            assert.strictEqual(sanitizeCommand(command), `"${command}"`)
-        })
-
-        it('windows - command with spaces and wrapped in quotes remains unchanged', async () => {
-            const command = '\"qwerty uiop\"'
-
-            assert.strictEqual(sanitizeCommand(command), command)
-        })
-    }
-
-    if (process.platform !== 'win32') {
-        it('unix - command with spaces remains unchanged', async () => {
-            const command = 'qwerty uiop'
-
-            assert.strictEqual(sanitizeCommand(command), command)
-        })
-    }
-})
+import { ChildProcess } from '../../shared/utilities/childProcess'
 
 describe('ChildProcess', async () => {
 
@@ -69,8 +39,24 @@ describe('ChildProcess', async () => {
 
             const result = await childProcess.promise()
 
-            assert.strictEqual(result.exitCode, 0)
-            assert.strictEqual(result.stdout, 'hi')
+            assert.strictEqual(result.exitCode, 0, `Expected exit code 0, got ${result.exitCode}`)
+            assert.strictEqual(result.stdout, 'hi', `Expected stdout to be hi , got: ${result.stdout}`)
+        })
+
+        it('runs commands containing a space - windows', async () => {
+            const batchFile = path.join(tempFolder, 'test script.bat')
+            writeBatchFile(batchFile)
+
+            const childProcess = new ChildProcess(
+                batchFile
+            )
+
+            childProcess.start()
+
+            const result = await childProcess.promise()
+
+            assert.strictEqual(result.exitCode, 0, `Expected exit code 0, got ${result.exitCode}`)
+            assert.strictEqual(result.stdout, 'hi', `Expected stdout to be hi , got: ${result.stdout}`)
         })
 
         it('errs when starting twice - windows', async () => {
@@ -87,7 +73,7 @@ describe('ChildProcess', async () => {
                 childProcess.start()
             })
         })
-    }
+    } // END Windows only tests
 
     if (process.platform !== 'win32') {
         it('runs and captures stdout - unix', async () => {
@@ -102,8 +88,24 @@ describe('ChildProcess', async () => {
 
             const result = await childProcess.promise()
 
-            assert.strictEqual(result.exitCode, 0)
-            assert.strictEqual(result.stdout, 'hi')
+            assert.strictEqual(result.exitCode, 0, `Expected exit code 0, got ${result.exitCode}`)
+            assert.strictEqual(result.stdout, 'hi', `Expected stdout to be hi , got: ${result.stdout}`)
+        })
+
+        it('runs commands containing a space - unix', async () => {
+            const scriptFile = path.join(tempFolder, 'test script.sh')
+            writeShellFile(scriptFile)
+
+            const childProcess = new ChildProcess(
+                scriptFile
+            )
+
+            childProcess.start()
+
+            const result = await childProcess.promise()
+
+            assert.strictEqual(result.exitCode, 0, `Expected exit code 0, got ${result.exitCode}`)
+            assert.strictEqual(result.stdout, 'hi', `Expected stdout to be hi , got: ${result.stdout}`)
         })
 
         it('errs when starting twice - unix', async () => {
@@ -120,7 +122,7 @@ describe('ChildProcess', async () => {
                 childProcess.start()
             })
         })
-    }
+    } // END Linux only tests
 
     it('errs when getting promise without starting', async () => {
         const batchFile = path.join(tempFolder, 'test-script.bat')

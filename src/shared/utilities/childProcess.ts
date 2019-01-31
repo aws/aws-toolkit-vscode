@@ -8,16 +8,6 @@
 import * as child_process from 'child_process'
 import * as events from 'events'
 
-export function sanitizeCommand(command: string): string {
-    if (process.platform === 'win32') {
-        if (command.indexOf(' ') >= 0 && !command.startsWith('\"') && !command.endsWith('\"')) {
-            return `"${command}"`
-        }
-    }
-
-    return command
-}
-
 export interface ChildProcessResult {
     exitCode: number,
     error: Error | undefined,
@@ -46,7 +36,7 @@ export class ChildProcess {
     private readonly _processCompletedPromise: Promise<ChildProcessResult>
 
     public constructor(command: string, args?: string[] | undefined) {
-        this._command = sanitizeCommand(command)
+        this._command = command
         this._args = args
 
         this._processCompletedPromise = new Promise((resolve, reject) => {
