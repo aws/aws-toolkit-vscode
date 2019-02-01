@@ -49,6 +49,7 @@ class SamInitProjectBuilderIntelliJTest : GuiTestCase() {
                 jList("AWS").clickItem("AWS")
                 jList("AWS Serverless Application").clickItem("AWS Serverless Application")
                 button("Next").click()
+                Pause.pause(1000)
                 combobox("Runtime:").selectItem("java8")
                 combobox("SAM Template:").selectItem("AWS SAM Hello World")
                 button("Finish").click()
@@ -70,6 +71,7 @@ class SamInitProjectBuilderIntelliJTest : GuiTestCase() {
                 jList("AWS").clickItem("AWS")
                 jList("AWS Serverless Application").clickItem("AWS Serverless Application")
                 button("Next").click()
+                Pause.pause(1000)
                 combobox("Runtime:").selectItem("python3.6")
                 button("Finish").click()
             }
