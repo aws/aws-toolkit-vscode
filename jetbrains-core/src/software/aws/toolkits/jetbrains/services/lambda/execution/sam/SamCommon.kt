@@ -127,7 +127,7 @@ class SamCommon {
 
         fun getTemplateFromDirectory(projectRoot: VirtualFile): VirtualFile? {
             val yamlFiles = VfsUtil.getChildren(projectRoot).filter { it.name.endsWith("yaml") || it.name.endsWith("yml") }
-            assert(yamlFiles.size == 1) { println(message("cloudformation.yaml.too_many_files", yamlFiles.size)) }
+            assert(yamlFiles.size == 1) { message("cloudformation.yaml.too_many_files", yamlFiles.size) }
             return yamlFiles.first()
         }
 
