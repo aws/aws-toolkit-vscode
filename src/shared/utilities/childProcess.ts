@@ -6,7 +6,7 @@
 'use strict'
 
 import * as child_process from 'child_process'
-import * as childProcessSpawn from 'cross-spawn'
+import * as crossSpawn from 'cross-spawn'
 import * as events from 'events'
 
 export interface ChildProcessResult {
@@ -54,7 +54,7 @@ export class ChildProcess {
             throw Error('process already started')
         }
 
-        this._childProcess = childProcessSpawn(
+        this._childProcess = crossSpawn(
             this._command,
             this._args
         )

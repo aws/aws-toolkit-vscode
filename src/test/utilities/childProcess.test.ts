@@ -186,7 +186,7 @@ describe('ChildProcess', async () => {
     }
 
     function writeWindowsCommandFile(filename: string): void {
-        fs.writeFileSync(filename, '@echo OFF\necho hi')
+        fs.writeFileSync(filename, `@echo OFF${os.EOL}echo hi`)
     }
 
     function writeShellFile(filename: string): void {
