@@ -9,9 +9,6 @@ import * as vscode from 'vscode'
 import { fileExists } from '../../filesystemUtilities'
 import { DefaultSamCliTaskInvoker, SamCliTaskInvoker } from './samCliInvoker'
 
-export interface SamCliLocalInvokeResponse {
-}
-
 export class SamCliLocalInvokeInvocation {
     public constructor(
         private readonly templateResourceName: string,
@@ -22,7 +19,7 @@ export class SamCliLocalInvokeInvocation {
     ) {
     }
 
-    public async execute(): Promise<SamCliLocalInvokeResponse> {
+    public async execute(): Promise<void> {
         await this.validate()
 
         const args = [
@@ -49,8 +46,6 @@ export class SamCliLocalInvokeInvocation {
             'SAM CLI',
             execution
         ))
-
-        return {}
     }
 
     protected async validate(): Promise<void> {

@@ -5,6 +5,7 @@
 
 'use strict'
 
+import { SpawnOptions } from 'child_process'
 import * as vscode from 'vscode'
 import { extensionSettingsPrefix } from '../../constants'
 import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
@@ -13,6 +14,7 @@ import { DefaultSamCliConfiguration, SamCliConfiguration } from './samCliConfigu
 import { DefaultSamCliLocationProvider } from './samCliLocator'
 
 export interface SamCliProcessInvoker {
+    invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
     invoke(...args: string[]): Promise<ChildProcessResult>
 }
 
@@ -27,13 +29,22 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
     )) {
     }
 
-    public async invoke(...args: string[]): Promise<ChildProcessResult> {
+    public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
+    public invoke(...args: string[]): Promise<ChildProcessResult>
+    public async invoke(optionsOrArgs: any, ...args: string[]): Promise<ChildProcessResult> {
+        let options: SpawnOptions | undefined
+        if (Array.isArray(optionsOrArgs)) {
+            args = optionsOrArgs as string[]
+        } else {
+            options = optionsOrArgs as SpawnOptions
+        }
+
         const samCliLocation = this.config.getSamCliLocation()
         if (!samCliLocation) {
             throw new Error('SAM CLI location not configured')
         }
 
-        const childProcess: ChildProcess = new ChildProcess(samCliLocation, args)
+        const childProcess: ChildProcess = new ChildProcess(samCliLocation, options, ...args)
         childProcess.start()
 
         return await childProcess.promise()

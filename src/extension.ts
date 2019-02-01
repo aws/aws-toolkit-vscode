@@ -8,6 +8,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
+import { createNewSamApp } from './lambda/commands/createNewSamApp'
 import { RegionNode } from './lambda/explorer/regionNode'
 import { LambdaTreeDataProvider } from './lambda/lambdaTreeDataProvider'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
@@ -76,6 +77,10 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
         'aws.hideRegion',
         async (node?: RegionNode) => await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
+    )
+    vscode.commands.registerCommand(
+        'aws.lambda.createNewSamApp',
+        async () => await createNewSamApp()
     )
 
     const providers = [
