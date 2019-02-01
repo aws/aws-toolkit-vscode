@@ -149,13 +149,9 @@ describe('UserCredentialsUtils', () => {
             )
 
             const profiles: SharedConfigFiles = await loadSharedConfigFiles()
-            assert(profiles)
-            assert(profiles.credentialsFile)
-            assert(profiles.credentialsFile[profileName])
-        })
-
-        it('generated credentials file can be read and written', async () => {
-            const credentialsFilename = path.join(tempFolder, 'credentials-generation-test')
+            assert(profiles, 'profiles should be truthy')
+            assert(profiles.credentialsFile, 'profiles.credentialsFile should be truthy')
+            assert(profiles.credentialsFile[profileName], 'profiles.credentialsFile[profileName] should be truthy')
             const access = promisify(fs.access)
             await access(credentialsFilename, fs.constants.R_OK).catch(err => assert(false, 'Should be readable'))
             await access(credentialsFilename, fs.constants.W_OK).catch(err => assert(false, 'Should be writeable'))
