@@ -10,6 +10,7 @@ import * as AWS from 'aws-sdk'
 import * as del from 'del'
 import * as fs from 'fs'
 import * as path from 'path'
+import { promisify } from 'util'
 
 import {
     loadSharedConfigFiles,
@@ -151,6 +152,13 @@ describe('UserCredentialsUtils', () => {
             assert(profiles)
             assert(profiles.credentialsFile)
             assert(profiles.credentialsFile[profileName])
+        })
+
+        it('generated credentials file can be read and written', async () => {
+            const credentialsFilename = path.join(tempFolder, 'credentials-generation-test')
+            const access = promisify(fs.access)
+            await access(credentialsFilename, fs.constants.R_OK).catch(err => assert(false, 'Should be readable'))
+            await access(credentialsFilename, fs.constants.W_OK).catch(err => assert(false, 'Should be writeable'))
         })
     })
 
