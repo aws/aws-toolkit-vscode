@@ -17,6 +17,7 @@ intellij {
 jacoco.applyTo(runIde)
 runIde {
     systemProperties System.properties.findAll {(it.key as String).startsWith("idea") || (it.key as String).startsWith("jb")}
+    systemProperty("aws.toolkits.enableTelemetry", false)
     /* Need to split the space-delimited value in the exec.args */
     args System.getProperty("exec.args", "").split(",")
     jacoco {

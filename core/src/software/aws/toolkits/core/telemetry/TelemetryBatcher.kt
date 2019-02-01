@@ -57,7 +57,7 @@ open class DefaultTelemetryBatcher(
     // TODO: This should flush to disk instead of network on shutdown. User should not have to wait for network calls to exit. Also consider handling clock drift
     @Synchronized
     private fun flush(retry: Boolean, publish: Boolean) {
-        if (!publish) {
+        if (!publish || !TELEMETRY_ENABLED) {
             eventQueue.clear()
         }
 
@@ -90,5 +90,8 @@ open class DefaultTelemetryBatcher(
         private val LOG = getLogger<DefaultTelemetryBatcher>()
         private const val DEFAULT_MAX_BATCH_SIZE = 20
         private const val DEFAULT_MAX_QUEUE_SIZE = 10000
+
+        private const val TELEMETRY_KEY = "aws.toolkits.enableTelemetry"
+        val TELEMETRY_ENABLED = System.getProperty(TELEMETRY_KEY)?.toBoolean() ?: true
     }
 }

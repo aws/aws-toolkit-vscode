@@ -12,6 +12,10 @@ intellij {
     plugins = ["PythonCore:2018.3.183.4284.148", "yaml"]
 }
 
+runIde {
+    systemProperty("aws.toolkits.enableTelemetry", false)
+}
+
 configurations {
     testArtifacts
 }
