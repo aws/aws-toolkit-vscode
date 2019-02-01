@@ -11,12 +11,12 @@ import com.intellij.openapi.project.Project
 import com.intellij.util.messages.MessageBus
 import com.intellij.util.messages.Topic
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
-import software.aws.toolkits.core.credentials.ProfileToolkitCredentialsProviderFactory
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.AwsSdkClient
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.Companion.ACCOUNT_SETTINGS_CHANGED
+import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileToolkitCredentialsProviderFactory
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.utils.MRUList
 import software.aws.toolkits.jetbrains.utils.notifyWarn
@@ -139,7 +139,7 @@ class DefaultProjectAccountSettingsManager(private val project: Project) :
             if (this.isValid(AwsSdkClient.getInstance().sdkHttpClient)) {
                 activeProfileInternal = this
             } else {
-                val content = if (this.displayName.toLowerCase() == ProfileToolkitCredentialsProviderFactory.DEFAULT_PROFILE_DISPLAY_NAME.toLowerCase()) {
+                val content = if (this.displayName.equals(ProfileToolkitCredentialsProviderFactory.DEFAULT_PROFILE_DISPLAY_NAME, true)) {
                     message("credentials.default.profile.invalid.no.fallback.notification")
                 } else {
                     message("credentials.profile.invalid.notification", this.displayName)

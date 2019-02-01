@@ -1,8 +1,10 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.core.credentials
+package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.openapi.ui.Messages
+import com.intellij.openapi.ui.TestInputDialog
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.mock
@@ -13,6 +15,7 @@ import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Condition
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -30,7 +33,10 @@ import software.amazon.awssdk.profiles.ProfileFile
 import software.amazon.awssdk.profiles.ProfileProperty.AWS_ACCESS_KEY_ID
 import software.amazon.awssdk.profiles.ProfileProperty.AWS_SECRET_ACCESS_KEY
 import software.amazon.awssdk.profiles.ProfileProperty.AWS_SESSION_TOKEN
+import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.ToolkitRegionProvider
+import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileToolkitCredentialsProvider
+import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileToolkitCredentialsProviderFactory
 import java.io.File
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -50,6 +56,15 @@ class ProfileToolkitCredentialsProviderFactoryTest {
     fun setUp() {
         profileFile = temporaryFolder.newFile("config")
         reset(mockSdkHttpClient, mockRegionProvider)
+
+        Messages.setTestInputDialog {
+            MFA_TOKEN
+        }
+    }
+
+    @After
+    fun tearDown() {
+        Messages.setTestInputDialog(TestInputDialog.DEFAULT)
     }
 
     @Test
@@ -108,7 +123,6 @@ class ProfileToolkitCredentialsProviderFactoryTest {
         )
 
         val providerFactory = createProviderFactory()
-
         assertThat(providerFactory.listCredentialProviders()).hasOnlyOneElementSatisfying {
             assertThat(it.id).isEqualTo(
                 "profile:another_profile"
@@ -274,8 +288,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
                 profiles(),
                 profiles()["role"]!!,
                 mockSdkHttpClient,
-                mockRegionProvider,
-                mfaProvider
+                mockRegionProvider
             )
         }.isInstanceOf(IllegalArgumentException::class.java)
             .hasMessage("Profile `role` references source profile `source_profile` which does not exist")
@@ -308,8 +321,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
                 profiles(),
                 profiles()["role"]!!,
                 mockSdkHttpClient,
-                mockRegionProvider,
-                mfaProvider
+                mockRegionProvider
             )
         }.isInstanceOf(IllegalArgumentException::class.java)
             .hasMessage("A circular profile dependency was found between role->source_profile->source_profile2->source_profile3->source_profile")
@@ -327,12 +339,9 @@ class ProfileToolkitCredentialsProviderFactoryTest {
                 value.filterIsInstance<ProfileToolkitCredentialsProvider>().any { it.profile == expectedProfile }
         }
 
-    private val mfaProvider: (String, String) -> String = { _, _ -> MFA_TOKEN }
-
     private fun createProviderFactory() = ProfileToolkitCredentialsProviderFactory(
         mockSdkHttpClient,
         mockRegionProvider,
-        mfaProvider,
         profileFile.toPath()
     )
 

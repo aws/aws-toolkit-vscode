@@ -1,10 +1,12 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.core.credentials
+package software.aws.toolkits.jetbrains.core.credentials.profiles
 
-import org.slf4j.LoggerFactory
-import org.slf4j.event.Level
+import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.invokeAndWaitIfNeed
+import com.intellij.openapi.ui.Messages
+import icons.AwsIcons
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -12,50 +14,41 @@ import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.profiles.Profile
-import software.amazon.awssdk.profiles.ProfileFile
-import software.amazon.awssdk.profiles.ProfileProperty.AWS_ACCESS_KEY_ID
-import software.amazon.awssdk.profiles.ProfileProperty.AWS_SECRET_ACCESS_KEY
-import software.amazon.awssdk.profiles.ProfileProperty.AWS_SESSION_TOKEN
-import software.amazon.awssdk.profiles.ProfileProperty.EXTERNAL_ID
-import software.amazon.awssdk.profiles.ProfileProperty.MFA_SERIAL
-import software.amazon.awssdk.profiles.ProfileProperty.ROLE_ARN
-import software.amazon.awssdk.profiles.ProfileProperty.ROLE_SESSION_NAME
-import software.amazon.awssdk.profiles.ProfileProperty.SOURCE_PROFILE
+import software.amazon.awssdk.profiles.ProfileProperty
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain
 import software.amazon.awssdk.services.sts.StsClient
 import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider
 import software.amazon.awssdk.services.sts.model.AssumeRoleRequest
-import software.aws.toolkits.core.credentials.ProfileToolkitCredentialsProviderFactory.Companion.TYPE
+import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileToolkitCredentialsProviderFactory.Companion.TYPE
 import software.aws.toolkits.resources.message
-import java.nio.file.Path
 import java.util.function.Supplier
 
 class ProfileToolkitCredentialsProvider(
     private val profiles: MutableMap<String, Profile>,
-    internal val profile: Profile,
+    val profile: Profile,
     private val sdkHttpClient: SdkHttpClient,
-    private val regionProvider: ToolkitRegionProvider,
-    private val mfaProvider: (String, String) -> String
+    private val regionProvider: ToolkitRegionProvider
 ) : ToolkitCredentialsProvider() {
-    private val internalCredentialsProvider = createInternalCredentialProvider()
+    private var internalCredentialsProvider = createInternalCredentialProvider()
+
     override val id = "$TYPE:${profile.name()}"
     override val displayName get() = message("credentials.profile.name", profile.name())
-
     override fun resolveCredentials(): AwsCredentials = internalCredentialsProvider.resolveCredentials()
 
     private fun createInternalCredentialProvider(): AwsCredentialsProvider = when {
-        propertyExists(ROLE_ARN) -> {
+        propertyExists(ProfileProperty.ROLE_ARN) -> {
             validateChain()
 
-            val sourceProfile = requiredProperty(SOURCE_PROFILE)
-            val roleArn = requiredProperty(ROLE_ARN)
-            val roleSessionName = profile.property(ROLE_SESSION_NAME)
+            val sourceProfile = requiredProperty(ProfileProperty.SOURCE_PROFILE)
+            val roleArn = requiredProperty(ProfileProperty.ROLE_ARN)
+            val roleSessionName = profile.property(ProfileProperty.ROLE_SESSION_NAME)
                 .orElseGet { "aws-toolkit-jetbrains-${System.currentTimeMillis()}" }
-            val externalId = profile.property(EXTERNAL_ID).orElse(null)
-            val mfaSerial = profile.property(MFA_SERIAL).orElse(null)
+            val externalId = profile.property(ProfileProperty.EXTERNAL_ID).orElse(null)
+            val mfaSerial = profile.property(ProfileProperty.MFA_SERIAL).orElse(null)
 
             val stsRegion = tryOrNull {
                 DefaultAwsRegionProviderChain().region?.let {
@@ -72,8 +65,7 @@ class ProfileToolkitCredentialsProvider(
                         profiles,
                         profiles[sourceProfile]!!,
                         sdkHttpClient,
-                        regionProvider,
-                        mfaProvider
+                        regionProvider
                     )
                 )
                 .region(stsRegion?.let { Region.of(it.id) } ?: Region.US_EAST_1)
@@ -91,20 +83,20 @@ class ProfileToolkitCredentialsProvider(
                 })
                 .build()
         }
-        propertyExists(AWS_SESSION_TOKEN) -> {
+        propertyExists(ProfileProperty.AWS_SESSION_TOKEN) -> {
             StaticCredentialsProvider.create(
                 AwsSessionCredentials.create(
-                    requiredProperty(AWS_ACCESS_KEY_ID),
-                    requiredProperty(AWS_SECRET_ACCESS_KEY),
-                    requiredProperty(AWS_SESSION_TOKEN)
+                    requiredProperty(ProfileProperty.AWS_ACCESS_KEY_ID),
+                    requiredProperty(ProfileProperty.AWS_SECRET_ACCESS_KEY),
+                    requiredProperty(ProfileProperty.AWS_SESSION_TOKEN)
                 )
             )
         }
-        propertyExists(AWS_ACCESS_KEY_ID) -> {
+        propertyExists(ProfileProperty.AWS_ACCESS_KEY_ID) -> {
             StaticCredentialsProvider.create(
                 AwsBasicCredentials.create(
-                    requiredProperty(AWS_ACCESS_KEY_ID),
-                    requiredProperty(AWS_SECRET_ACCESS_KEY)
+                    requiredProperty(ProfileProperty.AWS_ACCESS_KEY_ID),
+                    requiredProperty(ProfileProperty.AWS_SECRET_ACCESS_KEY)
                 )
             )
         }
@@ -116,32 +108,36 @@ class ProfileToolkitCredentialsProvider(
         roleArn: String,
         roleSessionName: String?,
         externalId: String?
-    ): AssumeRoleRequest = mfaSerial?.let {
-        AssumeRoleRequest.builder()
-            .roleArn(roleArn)
-            .roleSessionName(roleSessionName)
-            .externalId(externalId)
-            .serialNumber(mfaSerial)
-            .tokenCode(mfaProvider.invoke(profile.name(), mfaSerial))
-            .build()
-    } ?: AssumeRoleRequest.builder()
+    ): AssumeRoleRequest = AssumeRoleRequest.builder()
         .roleArn(roleArn)
         .roleSessionName(roleSessionName)
-        .externalId(externalId)
-        .build()
+        .externalId(externalId).also { request ->
+            mfaSerial?.let { _ ->
+                request.serialNumber(mfaSerial)
+                    .tokenCode(getMfaToken(profile.name(), mfaSerial))
+            }
+        }.build()
+
+    private fun getMfaToken(name: String, mfaSerial: String): String = invokeAndWaitIfNeed(ModalityState.any()) {
+        Messages.showInputDialog(
+            message("credentials.profile.mfa.message", mfaSerial),
+            message("credentials.profile.mfa.title", name),
+            AwsIcons.Logos.IAM_LARGE
+        ) ?: throw IllegalStateException("MFA challenge is required")
+    }
 
     private fun validateChain() {
         val profileChain = LinkedHashSet<String>()
         var currentProfile = profile
 
-        while (currentProfile.property(SOURCE_PROFILE).isPresent) {
+        while (currentProfile.property(ProfileProperty.SOURCE_PROFILE).isPresent) {
             val currentProfileName = currentProfile.name()
             if (!profileChain.add(currentProfileName)) {
                 val chain = profileChain.joinToString("->", postfix = "->$currentProfileName")
                 throw IllegalArgumentException("A circular profile dependency was found between $chain")
             }
 
-            val sourceProfile = currentProfile.property(SOURCE_PROFILE).get()
+            val sourceProfile = currentProfile.property(ProfileProperty.SOURCE_PROFILE).get()
             currentProfile = profiles[sourceProfile]
                     ?: throw IllegalArgumentException("Profile `$currentProfileName` references source profile `$sourceProfile` which does not exist")
         }
@@ -161,49 +157,4 @@ class ProfileToolkitCredentialsProvider(
         }
 
     override fun toString(): String = "ProfileToolkitCredentialsProvider(profile=$profile)"
-}
-
-class ProfileToolkitCredentialsProviderFactory(
-    private val sdkHttpClient: SdkHttpClient,
-    private val regionProvider: ToolkitRegionProvider,
-    private val mfaProvider: (String, String) -> String,
-    private val credentialLocationOverride: Path? = null
-) : ToolkitCredentialsProviderFactory(TYPE) {
-    init {
-        loadFromProfileFile()
-        // TODO: Start file watchers
-    }
-
-    /**
-     * Clean out all the current credentials and load all the profiles
-     */
-    private fun loadFromProfileFile() {
-        LOG.tryOrNull(message("credentials.profile.failed_load")) {
-            val profiles = credentialLocationOverride?.let {
-                ProfileFile.builder()
-                    .content(credentialLocationOverride)
-                    .type(ProfileFile.Type.CONFIGURATION)
-                    .build()
-                    .profiles()
-            } ?: ProfileFile.defaultProfileFile().profiles()
-
-            clear()
-            profiles.values.forEach {
-                LOG.tryOrNull(message("credentials.profile.failed_load"), level = Level.WARN) {
-                    add(ProfileToolkitCredentialsProvider(profiles, it, sdkHttpClient, regionProvider, mfaProvider))
-                }
-            }
-        }
-    }
-
-    override fun shutDown() {
-        // TODO: Shut down credential file watcher here
-    }
-
-    companion object {
-        private val LOG = LoggerFactory.getLogger(ProfileToolkitCredentialsProviderFactory::class.java)
-
-        const val TYPE = "profile"
-        const val DEFAULT_PROFILE_DISPLAY_NAME = "$TYPE:default"
-    }
 }

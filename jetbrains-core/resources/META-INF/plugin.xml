@@ -139,7 +139,7 @@ If you come across bugs with the toolkit or have feature requests, please raise 
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit">
-        <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.ProfileCredentialProviderFactory"/>
+        <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialProviderFactory"/>
     </extensions>
 
     <actions>
