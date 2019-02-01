@@ -20,6 +20,7 @@ export class MockCloudFormationNode extends AWSTreeErrorHandlerNode implements C
     public constructor(
         public readonly regionCode: string = '',
         public readonly parent: RegionNode = {} as any as RegionNode,
+        // @ts-ignore
         public readonly getChildren: () => Thenable<CloudFormationStackNode[]> = async () => [],
         public readonly updateChildren: () => Thenable<void> = async () => {},
         public readonly doErrorProneOperation: () => Promise<void> = async () => {},
@@ -32,6 +33,7 @@ export class MockCloudFormationStackNode extends AWSTreeErrorHandlerNode impleme
     public constructor(
         public readonly regionCode: string = '',
         public readonly parent: CloudFormationNode = {} as any as CloudFormationNode,
+        // @ts-ignore
         public readonly getChildren: () => Thenable<(CloudFormationNode | PlaceholderNode)[]> = async () => [],
         public readonly update: (stackSummary: CloudFormation.StackSummary) => void = stackSummary => {},
         public readonly doErrorProneOperation: () => Promise<void> = async () => {},
@@ -44,6 +46,7 @@ export class MockCloudFormationFunctionNode implements CloudFormationFunctionNod
     public constructor(
         public readonly regionCode: string = '',
         public readonly parent: CloudFormationStackNode = {} as any as CloudFormationStackNode,
+        // @ts-ignore
         public readonly getChildren: () => Thenable<AWSTreeNodeBase[]> = async () => [],
         public readonly updateChildren: () => Thenable<void> = async () => {},
         public readonly configuration: Lambda.FunctionConfiguration = {},

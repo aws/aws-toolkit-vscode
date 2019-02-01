@@ -113,16 +113,19 @@ function buildHandlerConfig(): HandlerConfig {
 }
 
 function getTabSize(editor?: vscode.TextEditor): number {
-    const tabSize = !editor ? undefined : editor.options.tabSize
+    const defaultTabSize = 4
+    const tabSize: number | string = !editor ? defaultTabSize : editor.options.tabSize || defaultTabSize
 
     switch (typeof tabSize) {
         case 'number':
+            // @ts-ignore
             return tabSize
         case 'string':
+            // @ts-ignore
             return Number.parseInt(tabSize, 10)
         default:
             // If we couldn't determine the tabSize at the document, workspace, or user level, default to 4.
-            return new DefaultSettingsConfiguration('editor').readSetting<number>('tabSize') || 4
+            return new DefaultSettingsConfiguration('editor').readSetting<number>('tabSize') || defaultTabSize
     }
 }
 
