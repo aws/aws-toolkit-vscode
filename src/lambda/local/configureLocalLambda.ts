@@ -10,6 +10,7 @@
 import { parse } from 'jsonc-parser'
 import * as os from 'os'
 import * as path from 'path'
+import * as sleep from 'sleep-promise'
 import * as vscode from 'vscode'
 import { accessAsync, mkdirAsync, writeFileAsync } from '../../shared/filesystem'
 import { readFileAsString } from '../../shared/filesystemUtilities'
@@ -126,16 +127,30 @@ function getTabSize(editor?: vscode.TextEditor): number {
     }
 }
 
-async function getSymbols(uri: vscode.Uri): Promise<vscode.DocumentSymbol[] | undefined> {
-    // Awaiting this command is required because without it, symbols for a newly created document might not yet
-    // be available, in which case vscode.executeDocumentSymbolProvider will return an empty list.
-    await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('editor.action.wordHighlight.trigger', uri)
+async function loadSymbols(
+    uri: vscode.Uri,
+    maxAttempts = 3,
+    retryDelayMillis = 500
+): Promise<vscode.DocumentSymbol[] | undefined> {
+    if (maxAttempts <= 0) {
+        return undefined
+    }
 
-    return await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri)
+    const symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
+        'vscode.executeDocumentSymbolProvider',
+        uri
+    )
+    if (symbols) {
+        return symbols
+    }
+
+    await sleep(retryDelayMillis)
+
+    return await loadSymbols(uri, maxAttempts - 1, retryDelayMillis)
 }
 
 async function prepareConfig(editor: vscode.TextEditor, handler: string): Promise<boolean> {
-    const symbols: vscode.DocumentSymbol[] | undefined = await getSymbols(editor.document.uri)
+    const symbols: vscode.DocumentSymbol[] | undefined = await loadSymbols(editor.document.uri)
 
     // If the file is empty, or if it is non-empty but cannot be even partially parsed as JSON, build it from scratch.
     if (!symbols || symbols.length < 1) {

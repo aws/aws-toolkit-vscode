@@ -6,6 +6,7 @@
 'use strict'
 
 import * as child_process from 'child_process'
+import * as crossSpawn from 'cross-spawn'
 import * as events from 'events'
 
 export interface ChildProcessResult {
@@ -53,16 +54,9 @@ export class ChildProcess {
             throw Error('process already started')
         }
 
-        const spawnOptions: child_process.SpawnOptions = {}
-
-        if (process.platform === 'win32') {
-            spawnOptions.shell = true
-        }
-
-        this._childProcess = child_process.spawn(
+        this._childProcess = crossSpawn(
             this._command,
-            this._args,
-            spawnOptions
+            this._args
         )
 
         this._childProcess.stdout.on('data', (data: { toString(): string }) => {

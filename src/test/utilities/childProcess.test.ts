@@ -10,7 +10,7 @@ import * as del from 'del'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { ChildProcess } from '../../shared/utilities/childProcess'
+import { ChildProcess, ChildProcessResult } from '../../shared/utilities/childProcess'
 
 describe('ChildProcess', async () => {
 
@@ -39,8 +39,34 @@ describe('ChildProcess', async () => {
 
             const result = await childProcess.promise()
 
-            assert.strictEqual(result.exitCode, 0, `Expected exit code 0, got ${result.exitCode}`)
-            assert.strictEqual(result.stdout, 'hi', `Expected stdout to be hi , got: ${result.stdout}`)
+            validateChildProcessResult({
+                childProcessResult: result,
+                expectedExitCode: 0,
+                expectedOutput: 'hi'
+            })
+        })
+
+        it('runs cmd files containing a space in the filename and folder', async () => {
+            const subfolder: string = path.join(tempFolder, 'sub folder')
+            const command: string = path.join(subfolder, 'test script.cmd')
+
+            fs.mkdirSync(subfolder)
+
+            writeWindowsCommandFile(command)
+
+            const childProcess = new ChildProcess(
+                command
+            )
+
+            childProcess.start()
+
+            const result = await childProcess.promise()
+
+            validateChildProcessResult({
+                childProcessResult: result,
+                expectedExitCode: 0,
+                expectedOutput: 'hi'
+            })
         })
 
         it('errs when starting twice - windows', async () => {
@@ -72,8 +98,11 @@ describe('ChildProcess', async () => {
 
             const result = await childProcess.promise()
 
-            assert.strictEqual(result.exitCode, 0, `Expected exit code 0, got ${result.exitCode}`)
-            assert.strictEqual(result.stdout, 'hi', `Expected stdout to be hi , got: ${result.stdout}`)
+            validateChildProcessResult({
+                childProcessResult: result,
+                expectedExitCode: 0,
+                expectedOutput: 'hi'
+            })
         })
 
         it('errs when starting twice - unix', async () => {
@@ -92,14 +121,17 @@ describe('ChildProcess', async () => {
         })
     } // END Linux only tests
 
-    it('runs commands containing a space', async () => {
+    it('runs scripts containing a space in the filename and folder', async () => {
+        const subfolder: string = path.join(tempFolder, 'sub folder')
         let command: string
 
+        fs.mkdirSync(subfolder)
+
         if (process.platform === 'win32') {
-            command = path.join(tempFolder, 'test script.bat')
+            command = path.join(subfolder, 'test script.bat')
             writeBatchFile(command)
         } else {
-            command = path.join(tempFolder, 'test script.sh')
+            command = path.join(subfolder, 'test script.sh')
             writeShellFile(command)
         }
 
@@ -111,8 +143,11 @@ describe('ChildProcess', async () => {
 
         const result = await childProcess.promise()
 
-        assert.strictEqual(result.exitCode, 0, `Expected exit code 0, got ${result.exitCode}`)
-        assert.strictEqual(result.stdout, 'hi', `Expected stdout to be hi , got: ${result.stdout}`)
+        validateChildProcessResult({
+            childProcessResult: result,
+            expectedExitCode: 0,
+            expectedOutput: 'hi'
+        })
     })
 
     it('errs when getting promise without starting', async () => {
@@ -150,8 +185,34 @@ describe('ChildProcess', async () => {
         fs.writeFileSync(filename, '@echo hi')
     }
 
+    function writeWindowsCommandFile(filename: string): void {
+        fs.writeFileSync(filename, `@echo OFF${os.EOL}echo hi`)
+    }
+
     function writeShellFile(filename: string): void {
         fs.writeFileSync(filename, 'echo hi')
         fs.chmodSync(filename, 0o744)
+    }
+
+    function validateChildProcessResult({
+        childProcessResult,
+        expectedExitCode,
+        expectedOutput
+    }: {
+        childProcessResult: ChildProcessResult,
+        expectedExitCode: number,
+        expectedOutput: string
+    }) {
+        assert.strictEqual(
+            childProcessResult.exitCode,
+            expectedExitCode,
+            `Expected exit code ${expectedExitCode}, got ${childProcessResult.exitCode}`
+        )
+
+        assert.strictEqual(
+            childProcessResult.stdout,
+            expectedOutput,
+            `Expected stdout to be ${expectedOutput} , got: ${childProcessResult.stdout}`
+        )
     }
 })
