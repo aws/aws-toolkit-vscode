@@ -20,7 +20,7 @@ function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
     }
 
     for (const item of array) {
-        if (!Array.isArray(item)) {
+        if (Array.isArray(item)) {
             return true
         }
     }

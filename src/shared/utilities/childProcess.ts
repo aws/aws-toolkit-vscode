@@ -6,6 +6,7 @@
 'use strict'
 
 import * as child_process from 'child_process'
+import * as crossSpawn from 'cross-spawn'
 import * as events from 'events'
 
 export interface ChildProcessResult {
@@ -26,7 +27,6 @@ export class ChildProcess {
     private static readonly CHILD_PROCESS_CLOSED = 'childProcessClosed'
 
     private readonly args: string[]
-
     private childProcess: child_process.ChildProcess | undefined
     private readonly onChildProcessClosed: events.EventEmitter = new events.EventEmitter()
     private readonly stdoutChunks: string[] = []
@@ -40,7 +40,6 @@ export class ChildProcess {
         ...args: string[]
     ) {
         this.args = args
-
         this.processCompletedPromise = new Promise((resolve, reject) => {
             this.onChildProcessClosed.once(
                 ChildProcess.CHILD_PROCESS_CLOSED,
@@ -52,10 +51,10 @@ export class ChildProcess {
 
     public start(): void {
         if (this.childProcess) {
-            throw Error('process already started')
+            throw new Error('process already started')
         }
 
-        this.childProcess = child_process.spawn(
+        this.childProcess = crossSpawn(
             this.process,
             this.args,
             this.options
@@ -81,6 +80,7 @@ export class ChildProcess {
                 error: this.error
             }
 
+            this.childProcess!.removeAllListeners()
             this.onChildProcessClosed.emit(ChildProcess.CHILD_PROCESS_CLOSED, processResult)
         })
     }

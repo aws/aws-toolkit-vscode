@@ -51,7 +51,7 @@ export interface CreateNewSamAppWizardContext {
 }
 
 class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
-    public readonly lambdaRuntimes: lambdaRuntime.LambdaRuntime[] = lambdaRuntime.lambdaRuntimes
+    public readonly lambdaRuntimes = lambdaRuntime.lambdaRuntimes
     public readonly showInputBox = vscode.window.showInputBox
     public readonly showOpenDialog = vscode.window.showOpenDialog
     public readonly showQuickPick = vscode.window.showQuickPick
@@ -141,6 +141,9 @@ export class CreateNewSamAppWizard extends MultiStepWizard<SamCliInitArgs> {
     }
 
     protected getResult(): SamCliInitArgs | undefined {
+        console.error(`runtime: ${this.runtime}`)
+        console.error(`location: ${this.location}`)
+        console.error(`name: ${this.name}`)
         if (!this.runtime || !this.location || !this.name) {
             return undefined
         }
