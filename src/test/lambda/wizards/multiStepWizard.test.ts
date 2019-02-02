@@ -14,8 +14,18 @@ import {
     CreateNewSamAppWizardContext
 } from '../../../lambda/wizards/samInitWizard'
 
-function isMultiDimensionalArray(array: any[] | any[][] | undefined) {
-    return array && array.some(i => Array.isArray(i))
+function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
+    if (!array) {
+        return false
+    }
+
+    for (const item of array) {
+        if (!Array.isArray(item)) {
+            return true
+        }
+    }
+
+    return false
 }
 
 class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
