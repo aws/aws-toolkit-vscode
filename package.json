@@ -22,9 +22,7 @@
         "onCommand:aws.showRegion",
         "onCommand:aws.hideRegion",
         "onView:lambda",
-        "onCommand:aws.newLambda",
         "onCommand:aws.invokeLambda",
-        "onCommand:aws.deployLambda",
         "onCommand:aws.getLambdaConfig",
         "onCommand:aws.getLambdaPolicy",
         "onCommand:aws.samcli.detect",
@@ -91,21 +89,6 @@
         "menus": {
             "view/title": [
                 {
-                    "command": "aws.newLambda",
-                    "when": "view == lambda",
-                    "group": "navigation@2"
-                },
-                {
-                    "command": "aws.deployLambda",
-                    "when": "view == lambda",
-                    "group": "navigation@3"
-                },
-                {
-                    "command": "aws.invokeLambda",
-                    "when": "view == lambda",
-                    "group": "navigation@4"
-                },
-                {
                     "command": "aws.refreshAwsExplorer",
                     "when": "view == lambda",
                     "group": "navigation@5"
@@ -118,24 +101,19 @@
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.deployLambda",
-                    "when": "view == lambda && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
-                    "group": "0@2"
-                },
-                {
                     "command": "aws.getLambdaConfig",
                     "when": "view == lambda && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
-                    "group": "0@3"
+                    "group": "1@1"
                 },
                 {
                     "command": "aws.getLambdaPolicy",
                     "when": "view == lambda && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
-                    "group": "0@4"
+                    "group": "1@2"
                 },
                 {
                     "command": "aws.deleteLambda",
                     "when": "view == lambda && viewItem == awsRegionFunctionNode",
-                    "group": "0@5"
+                    "group": "2@1"
                 },
                 {
                     "command": "aws.deleteCloudFormation",
@@ -181,31 +159,9 @@
                 "category": "AWS"
             },
             {
-                "command": "aws.newLambda",
-                "title": "%AWS.command.newLambda%",
-                "category": "AWS",
-                "icon": {
-                    "light": "resources/light/new_lambda.svg",
-                    "dark": "resources/dark/new_lambda.svg"
-                }
-            },
-            {
-                "command": "aws.deployLambda",
-                "title": "%AWS.command.deployLambda%",
-                "category": "AWS",
-                "icon": {
-                    "light": "resources/light/deploy_lambda.svg",
-                    "dark": "resources/dark/deploy_lambda.svg"
-                }
-            },
-            {
                 "command": "aws.invokeLambda",
                 "title": "%AWS.command.invokeLambda%",
-                "category": "AWS",
-                "icon": {
-                    "light": "resources/light/invoke_lambda.svg",
-                    "dark": "resources/dark/invoke_lambda.svg"
-                }
+                "category": "AWS"
             },
             {
                 "command": "aws.deleteLambda",
@@ -215,11 +171,7 @@
             {
                 "command": "aws.refreshAwsExplorer",
                 "title": "%AWS.command.refreshAwsExplorer%",
-                "category": "AWS",
-                "icon": {
-                    "light": "resources/light/invoke_lambda.svg",
-                    "dark": "resources/dark/invoke_lambda.svg"
-                }
+                "category": "AWS"
             },
             {
                 "command": "aws.getLambdaConfig",
@@ -265,6 +217,7 @@
     },
     "devDependencies": {
         "@types/async-lock": "^1.1.0",
+        "@types/cross-spawn": "^6.0.0",
         "@types/del": "^3.0.1",
         "@types/fs-extra": "^5.0.4",
         "@types/glob": "^7.1.1",
@@ -295,6 +248,7 @@
         "async-lock": "^1.1.3",
         "aws-sdk": "^2.317.0",
         "cloudformation-schema-js-yaml": "^1.0.1",
+        "cross-spawn": "^6.0.5",
         "del": "^3.0.0",
         "fs-extra": "^6.0.1",
         "handlebars": "^4.0.12",
@@ -305,6 +259,7 @@
         "opn": "^5.4.0",
         "request": "^2.88.0",
         "semver": "^5.6.0",
+        "sleep-promise": "^8.0.1",
         "tcp-port-used": "^1.0.1",
         "typescript": "^3.1.3",
         "vscode-nls": "^3.2.4",

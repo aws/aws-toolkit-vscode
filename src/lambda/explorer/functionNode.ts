@@ -6,8 +6,6 @@
 'use strict'
 
 import { Lambda } from 'aws-sdk'
-import { Uri } from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 
 export abstract class FunctionNodeBase extends AWSTreeNodeBase {
@@ -18,10 +16,6 @@ export abstract class FunctionNodeBase extends AWSTreeNodeBase {
     ) {
         super('')
         this.update(configuration)
-        this.iconPath =  {
-            dark: Uri.file(ext.context.asAbsolutePath('resources/dark/lambda_function.svg')),
-            light: Uri.file(ext.context.asAbsolutePath('resources/light/lambda_function.svg'))
-        }
     }
 
     public update(configuration: Lambda.FunctionConfiguration): void {

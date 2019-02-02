@@ -34,7 +34,7 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
 
     public constructor(info: RegionInfo) {
         super(info.regionName, TreeItemCollapsibleState.Expanded)
-        this.contextValue = 'awsRegion'
+        this.contextValue = 'awsRegionNode'
         this.info = info
         this.update(info)
 
