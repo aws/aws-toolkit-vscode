@@ -1,0 +1,7 @@
+version: 0.2
+
+phases:
+  build:
+    commands:
+      - chmod +x gradlew
+      - ./gradlew check --info --full-stacktrace

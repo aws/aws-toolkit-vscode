@@ -1,0 +1,26 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - apt-get update
+      # switch libav-tools to ffmpeg when codebuild images update
+      - apt-get install -y xvfb procps libav-tools
+      - pip install --user aws-sam-cli
+  build:
+    commands:
+      - Xvfb :99 -screen 0 1920x1080x24 &
+      - export DISPLAY=:99
+      - export SAM_CLI_EXEC=$(python -m site --user-base)/bin/sam
+      - chmod +x gradlew
+      - ./gradlew buildPlugin
+      - if [ "$RECORD_UI" ]; then avconv -f x11grab -video_size 1920x1080 -i 127.0.0.1:99 /tmp/screen_recording.mp4 -loglevel warning & fi
+      - ./gradlew guiTest
+  post_build:
+    commands:
+      - if [ "$RECORD_UI" ]; then pkill -2 avconv; fi
+      - if [ "$RECORD_UI" ]; then cp /tmp/screen_recording.mp4 jetbrains-core-gui/build/idea-sandbox/system/log/screen_recording.mp4; fi
+artifacts:
+  files:
+    - guitest.log
+    - jetbrains-core-gui/build/idea-sandbox/system/log/**/*
