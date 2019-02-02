@@ -91,6 +91,25 @@ To send us a pull request, please:
 GitHub provides additional document on [forking a repository](https://help.github.com/articles/fork-a-repo/) and
 [creating a pull request](https://help.github.com/articles/creating-a-pull-request/).
 
+### Importing icons from other open source repos
+
+If you are contribuing visual assets from other open source repos, the source repo must have a compatible license (such as MIT), and we need to document the source of the images. Follow these steps:
+
+* A separate location in this repo is used for every repo where images are sourced from. The location is in the form `third-party/resources/from-<BRIEF_REPO_NAME>`
+* Copy the source repo's licence into this destination location's LICENSE.txt file
+* Create a README.md in the destination location, and type in a copyright attribution:
+```text
+The AWS Toolkit for VS Code includes the following third-party software/licensing:
+
+Icons contained in this folder and subfolders are from <SOURCE_REPO_NAME>: <SOURCE_REPO_URL>
+
+<PASTE_SOURCE_LICENSE_HERE>
+```
+* Copy the SVG file(s) into a suitable place within the destination location, for example `.../dark/xyz.svg` and `.../light/xyz.svg`
+* Add an entry to `third-party/README.md` summarizing the new destination location, where the asserts were sourced from, and a brief rationale.
+
+[PR 227](https://github.com/aws/aws-toolkit-vscode/pull/227) illustrates what this looks like in practice.
+
 ## Finding contributions to work on
 
 Looking at the existing issues is a great way to find something to contribute on. As our projects, by default, use the default GitHub issue labels ((enhancement/bug/duplicate/help wanted/good first issue/invalid/question/wontfix), looking at any [`good first issue`](https://github.com/aws/aws-toolkit-vscode/labels/good%20first%20issue) or [`help wanted`](https://github.com/aws/aws-toolkit-vscode/labels/help%20wanted) issues is a great place to start.
