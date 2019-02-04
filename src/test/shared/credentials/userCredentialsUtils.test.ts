@@ -12,10 +12,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { promisify } from 'util'
 
-import {
-    loadSharedConfigFiles,
-    SharedConfigFiles
-} from '../../../shared/credentials/credentialsFile'
+import { ParsedIniData } from '../../../shared/credentials/credentialsFileProcessor'
 import {
     CredentialsValidationResult,
     UserCredentialsUtils,
@@ -139,19 +136,31 @@ describe('UserCredentialsUtils', () => {
             const env = process.env as EnvironmentVariables
             env.AWS_SHARED_CREDENTIALS_FILE = credentialsFilename
 
+            const creds = {
+                accessKey: '123',
+                profileName: profileName,
+                secretKey: 'ABC'
+            }
             await UserCredentialsUtils.generateCredentialsFile(
                 path.join(__dirname, '..', '..', '..', '..', '..'),
-                {
-                    accessKey: '123',
-                    profileName: profileName,
-                    secretKey: 'ABC'
-                }
+                creds
             )
-
-            const profiles: SharedConfigFiles = await loadSharedConfigFiles()
-            assert(profiles, 'profiles should be truthy')
-            assert(profiles.credentialsFile, 'profiles.credentialsFile should be truthy')
-            assert(profiles.credentialsFile[profileName], 'profiles.credentialsFile[profileName] should be truthy')
+            const iniLoader = new AWS.IniLoader()
+            const profiles: ParsedIniData = iniLoader.loadFrom({
+                filename: credentialsFilename
+            })
+            assert(typeof profiles === 'object', 'profiles should be an object')
+            assert(profiles[profileName], 'profiles should be truthy')
+            assert.strictEqual(
+              profiles[profileName].aws_access_key_id,
+              creds.accessKey,
+              `creds.accessKey: "${profiles[profileName].aws_access_key_id}" !== "${creds.accessKey}"`
+            )
+            assert.strictEqual(
+              profiles[profileName].aws_secret_access_key,
+              creds.secretKey,
+              `creds.secretKey: "${profiles[profileName].aws_access_key_id}" !== "${creds.secretKey}"`
+            )
             const access = promisify(fs.access)
             await access(credentialsFilename, fs.constants.R_OK).catch(err => assert(false, 'Should be readable'))
             await access(credentialsFilename, fs.constants.W_OK).catch(err => assert(false, 'Should be writeable'))

@@ -19,7 +19,7 @@ import {
     DefaultCredentialSelectionDataProvider,
     promptToDefineCredentialsProfile
 } from './credentials/defaultCredentialSelectionDataProvider'
-import { DefaultCredentialsFileReaderWriter } from './credentials/defaultCredentialsFileReaderWriter'
+import { DefaultCredentialsFileProcessor } from './credentials/defaultCredentialsFileProcessor'
 import {
     CredentialsValidationResult,
     UserCredentialsUtils
@@ -198,8 +198,6 @@ export class DefaultAWSContextCommands {
      */
     private async getProfileNameFromUser(): Promise<string | undefined> {
 
-        await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
-
         const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
         const responseNo: string = localize('AWS.generic.response.no', 'No')
 
@@ -221,7 +219,7 @@ export class DefaultAWSContextCommands {
             return await this.promptAndCreateNewCredentialsFile()
         } else {
 
-            const credentialReaderWriter = new DefaultCredentialsFileReaderWriter()
+            const credentialReaderWriter = new DefaultCredentialsFileProcessor()
             const profileNames = await credentialReaderWriter.getProfileNames()
 
             // If no credentials were found, the user should be
@@ -333,7 +331,7 @@ export class DefaultAWSContextCommands {
     }
 
     private async checkExplorerForDefaultRegion(profileName: string): Promise<void> {
-        const credentialReaderWriter = new DefaultCredentialsFileReaderWriter()
+        const credentialReaderWriter = new DefaultCredentialsFileProcessor()
 
         const profileRegion = await credentialReaderWriter.getDefaultRegion(profileName)
         if (!profileRegion) { return }

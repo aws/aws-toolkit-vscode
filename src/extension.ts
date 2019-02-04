@@ -15,7 +15,6 @@ import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
 import { TypescriptCodeLensProvider } from './shared/codelens/typescriptCodeLensProvider'
 import { extensionSettingsPrefix } from './shared/constants'
-import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
 import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
@@ -47,8 +46,6 @@ export async function activate(context: vscode.ExtensionContext) {
     const toolkitOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.toolkit', 'AWS Toolkit')
     )
-
-    await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
 
     const awsContext = new DefaultAwsContext(new DefaultSettingsConfiguration(extensionSettingsPrefix))
     const awsContextTrees = new AwsContextTreeCollection()
