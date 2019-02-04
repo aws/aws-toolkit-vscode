@@ -11,8 +11,11 @@ const localize = nls.loadMessageBundle()
 import * as path from 'path'
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
-import { getLocalLambdaConfiguration, HandlerConfig } from '../../lambda/local/configureLocalLambda'
+
+import { buildHandlerConfig, getLocalLambdaConfiguration, HandlerConfig } from '../../lambda/local/configureLocalLambda'
+import { detectLocalLambdas, LocalLambda } from '../../lambda/local/detectLocalLambdas'
 import { NodeDebugConfiguration } from '../../lambda/local/nodeDebugConfiguration'
+import { CloudFormation } from '../cloudformation/cloudformation'
 import * as fileSystem from '../filesystem'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
@@ -34,6 +37,12 @@ interface LambdaLocalInvokeArguments {
     range: vscode.Range,
     handlerName: string,
     debug: boolean,
+}
+
+interface EnvironmentVariables {
+    [resource: string]: {
+        [key: string]: string
+    }
 }
 
 export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
@@ -280,12 +289,21 @@ class LocalLambdaRunner {
             this.localInvokeArgs.handlerName
         ).replace('\\', '/')
 
-        await new SamTemplateGenerator()
+        const existingTemplateResource =
+            await this.getResourceForHandlerFromTemplate(relativeFunctionHandler, await detectLocalLambdas())
+
+        const newTemplate = new SamTemplateGenerator()
             .withCodeUri(rootCodeFolder)
             .withFunctionHandler(relativeFunctionHandler)
             .withResourceName(LocalLambdaRunner.TEMPLATE_RESOURCE_NAME)
             .withRuntime(this.runtime)
-            .generate(inputTemplatePath)
+
+        if (!!existingTemplateResource && !!existingTemplateResource.Properties &&
+            existingTemplateResource.Properties.Environment) {
+            newTemplate.withEnvironment(existingTemplateResource.Properties.Environment)
+        }
+
+        await newTemplate.generate(inputTemplatePath)
 
         return inputTemplatePath
     }
@@ -355,12 +373,18 @@ class LocalLambdaRunner {
         )
 
         const eventPath: string = path.join(await this.getBaseBuildFolder(), 'event.json')
-        await fileSystem.writeFileAsync(eventPath, JSON.stringify(await this.getEvent()))
+        const environmentVariablePath = path.join(await this.getBaseBuildFolder(), 'temp.json')
+        const config = await this.getConfig()
+
+        await fileSystem.writeFileAsync(eventPath, JSON.stringify(config.event || {}))
+        await fileSystem.writeFileAsync(environmentVariablePath,
+                                        JSON.stringify(this.getEnvironmentVariables(config)))
 
         const command = new SamCliLocalInvokeInvocation(
             LocalLambdaRunner.TEMPLATE_RESOURCE_NAME,
             samTemplatePath,
             eventPath,
+            environmentVariablePath,
             (!!this._debugPort) ? this._debugPort.toString() : undefined,
             this.taskInvoker
         )
@@ -389,10 +413,10 @@ class LocalLambdaRunner {
         }
     }
 
-    private async getEvent(): Promise<{}> {
+    private async getConfig(): Promise<HandlerConfig> {
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(this.localInvokeArgs.document.uri)
         if (!workspaceFolder) {
-            return {}
+            return buildHandlerConfig()
         }
 
         const config: HandlerConfig = await getLocalLambdaConfiguration(
@@ -400,7 +424,29 @@ class LocalLambdaRunner {
             this.localInvokeArgs.handlerName
         )
 
-        return config.event
+        return config
+    }
+
+    private getEnvironmentVariables(config: HandlerConfig): EnvironmentVariables {
+        if (!!config.environmentVariables) {
+            return {
+                [LocalLambdaRunner.TEMPLATE_RESOURCE_NAME]: config.environmentVariables
+            }
+        } else {
+            return {}
+        }
+    }
+
+    private async getResourceForHandlerFromTemplate(handler: string, lambdas: LocalLambda[]):
+        Promise<CloudFormation.Resource | undefined> {
+
+        for (const lambda of lambdas) {
+            if (lambda.handler === handler) {
+                return lambda.resource
+            }
+        }
+
+        return undefined
     }
 
     private async attachDebugger(debugPort: number) {

@@ -18,7 +18,8 @@ export namespace CloudFormation {
             Handler: string,
             CodeUri: string,
             Runtime?: string,
-            Timeout?: number
+            Timeout?: number,
+            Environment?: Environment
         }
     }
 
@@ -28,7 +29,13 @@ export namespace CloudFormation {
         }
     }
 
-    export async function load(filename: string): Promise<Template> {
+    export interface Environment {
+        Variables: {
+            [varName: string]: string
+        }
+    }
+
+    export async function load(filename: string): Promise<CloudFormation.Template> {
         const templateAsYaml: string = await filesystemUtilities.readFileAsString(filename, 'utf8')
 
         return yaml.safeLoad(
@@ -36,10 +43,10 @@ export namespace CloudFormation {
             {
                 schema
             }
-        ) as Template
+        ) as CloudFormation.Template
     }
 
-    export async function save(template: Template, filename: string): Promise<void> {
+    export async function save(template: CloudFormation.Template, filename: string): Promise<void> {
         const templateAsYaml: string = yaml.safeDump(template)
 
         await filesystem.writeFileAsync(filename, templateAsYaml, 'utf8')

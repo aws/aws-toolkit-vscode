@@ -18,6 +18,7 @@ export class SamTemplateGenerator {
     private _codeUri?: string
     private _runtime?: string
     private _existingTemplateFilename?: string
+    private _environment?: CloudFormation.Environment
 
     public withResourceName(resourceName: string): SamTemplateGenerator {
         this._resourceName = resourceName
@@ -45,6 +46,12 @@ export class SamTemplateGenerator {
 
     public withExistingTemplate(templateFilename: string): SamTemplateGenerator {
         this._existingTemplateFilename = templateFilename
+
+        return this
+    }
+
+    public withEnvironment(env: CloudFormation.Environment): SamTemplateGenerator {
+        this._environment = env
 
         return this
     }
@@ -117,7 +124,8 @@ export class SamTemplateGenerator {
             Properties: {
                 Handler: this._functionHandler!,
                 CodeUri: this._codeUri!,
-                Runtime: this._runtime!
+                Runtime: this._runtime!,
+                Environment: this._environment!
             }
         }
 
