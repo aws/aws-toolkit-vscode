@@ -5,6 +5,8 @@
 
 'use strict'
 
+import * as path from 'path'
+import * as vscode from 'vscode'
 import { SamCliInitInvocation } from '../../shared/sam/cli/samCliInit'
 import { CreateNewSamAppWizard } from '../wizards/samInitWizard'
 
@@ -13,7 +15,14 @@ export async function createNewSamApp() {
     if (config) {
         const invocation = new SamCliInitInvocation(config)
         await invocation.execute()
-        // TODO: If the user selected a location outside of the current workspace,
-        // should we add it as an additional workspace folder?
+
+        vscode.workspace.updateWorkspaceFolders(
+            vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders.length : 0,
+            0,
+            {
+                uri: config.location,
+                name: path.basename(config.location.fsPath)
+            }
+        )
     }
 }

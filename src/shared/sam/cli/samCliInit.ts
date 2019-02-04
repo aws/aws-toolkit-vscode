@@ -6,12 +6,12 @@
 'use strict'
 
 import * as vscode from 'vscode'
-import { LambdaRuntime } from '../../../lambda/models/lambdaRuntime'
+import { SamLambdaRuntime } from '../../../lambda/models/samLambdaRuntime'
 import { ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliProcessInvoker, SamCliProcessInvoker } from './samCliInvoker'
 
 export interface SamCliInitArgs {
-    runtime: LambdaRuntime
+    runtime: SamLambdaRuntime
     location: vscode.Uri
     name: string
 }

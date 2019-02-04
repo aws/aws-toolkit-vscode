@@ -37,7 +37,7 @@ export class SamCliBuildInvocation {
         console.error(`Error: ${error}`)
         console.error(`stdout: ${stdout}`)
 
-        throw new Error(`sam init encountered an error: ${error && error.message ? error.message : stdout}`)
+        throw new Error(`sam build encountered an error: ${error && error.message ? error.message : stdout}`)
     }
 
     private async validate(): Promise<void> {

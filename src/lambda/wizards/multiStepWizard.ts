@@ -7,8 +7,11 @@
 
 export class WizardStep {
     public constructor(
-        public readonly run: () => Thenable<WizardStep>,
-        public readonly isTerminal: boolean = false
+        /**
+         * Runs the step and returns the next step.
+         * @returns The next step, or undefined if the wizard is complete or cancelled.
+         */
+        public readonly run: () => Thenable<WizardStep | undefined>
     ) {
     }
 }
@@ -18,8 +21,9 @@ export abstract class MultiStepWizard<TResult> {
     }
 
     public async run(): Promise<TResult | undefined> {
-        let step = this.startStep
-        while (!step.isTerminal) {
+        let step: WizardStep | undefined = this.startStep
+
+        while (step) {
             step = await step.run()
         }
 

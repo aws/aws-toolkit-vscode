@@ -5,9 +5,11 @@
 
 'use strict'
 
+import * as immutable from 'immutable'
+
 // TODO: Can we dynamically determine the available runtimes? We could theoretically parse the
 // output of `sam init --help`, but that's a hack.
-export type LambdaRuntime =
+export type SamLambdaRuntime =
     'python3.6' |
     'python2.7' |
     'python' |
@@ -24,7 +26,7 @@ export type LambdaRuntime =
     'java8' |
     'java'
 
-export const lambdaRuntimes: LambdaRuntime[] = [
+export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set([
     'python3.6',
     'python2.7',
     'python',
@@ -40,4 +42,4 @@ export const lambdaRuntimes: LambdaRuntime[] = [
     'go',
     'java8',
     'java'
-]
+] as SamLambdaRuntime[])

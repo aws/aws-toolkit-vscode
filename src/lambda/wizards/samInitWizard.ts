@@ -8,15 +8,16 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
+import * as immutable from 'immutable'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
-import * as lambdaRuntime from '../models/lambdaRuntime'
+import * as lambdaRuntime from '../models/samLambdaRuntime'
 import { MultiStepWizard, WizardStep } from '../wizards/multiStepWizard'
 
 export interface CreateNewSamAppWizardContext {
-    readonly lambdaRuntimes: lambdaRuntime.LambdaRuntime[]
+    readonly lambdaRuntimes: immutable.Set<lambdaRuntime.SamLambdaRuntime>
     readonly workspaceFolders: vscode.WorkspaceFolder[] | undefined
 
     showInputBox(
@@ -51,7 +52,7 @@ export interface CreateNewSamAppWizardContext {
 }
 
 class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
-    public readonly lambdaRuntimes = lambdaRuntime.lambdaRuntimes
+    public readonly lambdaRuntimes = lambdaRuntime.samLambdaRuntimes
     public readonly showInputBox = vscode.window.showInputBox
     public readonly showOpenDialog = vscode.window.showOpenDialog
     public readonly showQuickPick = vscode.window.showQuickPick
@@ -63,11 +64,22 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
 
 export class CreateNewSamAppWizard extends MultiStepWizard<SamCliInitArgs> {
     private readonly RUNTIME: WizardStep = new WizardStep(async () => {
-        this.runtime = await this.context.showQuickPick(this.context.lambdaRuntimes, {
-            ignoreFocusOut: true
-        }) as lambdaRuntime.LambdaRuntime | undefined
+        const runtimeItems = this.context.lambdaRuntimes
+            .toArray()
+            .sort()
+            .map(runtime => ({ label: runtime }))
 
-        return !!this.runtime ? this.LOCATION : this.CANCELLED
+        const result = await this.context.showQuickPick<vscode.QuickPickItem>(runtimeItems, {
+            ignoreFocusOut: true
+        })
+
+        if (!result) {
+            return undefined
+        }
+
+        this.runtime = result.label as lambdaRuntime.SamLambdaRuntime
+
+        return this.LOCATION
     })
 
     private readonly LOCATION: WizardStep = new WizardStep(async () => {
@@ -76,14 +88,14 @@ export class CreateNewSamAppWizard extends MultiStepWizard<SamCliInitArgs> {
             .concat([ new BrowseFolderQuickPickItem(this.context) ])
 
         const selection = await this.context.showQuickPick(choices, {
-            ignoreFocusOut: true
+            ignoreFocusOut: true,
         })
         if (!selection) {
             return this.RUNTIME
         }
         this.location = await selection.getUri()
 
-        return !!this.location ? this.NAME : this.RUNTIME
+        return this.location ? this.NAME : this.RUNTIME
     })
 
     private readonly NAME: WizardStep = new WizardStep(async () => {
@@ -119,14 +131,10 @@ export class CreateNewSamAppWizard extends MultiStepWizard<SamCliInitArgs> {
             }
         })
 
-        return this.name ? this.DONE : this.LOCATION
+        return this.name ? undefined : this.LOCATION
     })
 
-    private readonly DONE: WizardStep = new WizardStep(async () => this.DONE, true)
-
-    private readonly CANCELLED: WizardStep = new WizardStep(async () => this.CANCELLED, true)
-
-    private runtime?: lambdaRuntime.LambdaRuntime
+    private runtime?: lambdaRuntime.SamLambdaRuntime
     private location?: vscode.Uri
     private name?: string
 
@@ -141,9 +149,6 @@ export class CreateNewSamAppWizard extends MultiStepWizard<SamCliInitArgs> {
     }
 
     protected getResult(): SamCliInitArgs | undefined {
-        console.error(`runtime: ${this.runtime}`)
-        console.error(`location: ${this.location}`)
-        console.error(`name: ${this.name}`)
         if (!this.runtime || !this.location || !this.name) {
             return undefined
         }
@@ -187,7 +192,7 @@ class BrowseFolderQuickPickItem implements FolderQuickPickItem {
         const workspaceFolders = this.context.workspaceFolders
         const defaultUri = !!workspaceFolders && workspaceFolders.length > 0 ?
             workspaceFolders[0].uri :
-            vscode.Uri.parse(os.homedir())
+            vscode.Uri.file(os.homedir())
 
         const result = await this.context.showOpenDialog({
             defaultUri,

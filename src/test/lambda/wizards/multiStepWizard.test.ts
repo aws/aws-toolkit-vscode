@@ -6,9 +6,10 @@
 'use strict'
 
 import * as assert from 'assert'
+import * as immutable from 'immutable'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { LambdaRuntime } from '../../../lambda/models/lambdaRuntime'
+import { SamLambdaRuntime } from '../../../lambda/models/samLambdaRuntime'
 import {
     CreateNewSamAppWizard,
     CreateNewSamAppWizardContext
@@ -29,17 +30,30 @@ function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
 }
 
 class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
+    /**
+     * @param  {vscode.WorkspaceFolder[] | vscode.WorkspaceFolder[][]} _workspaceFolders
+     *         The value to return from context.workspaceFolders.
+     * @param  {immutable.Set<SamLambdaRuntime> | immutable.Set<SamLambdaRuntime>[]} _lambdaRuntimes
+     *         The value to return from context.lambdaRuntimes.
+     * @param  {string | string[]} inputBoxResult
+     *         The value to return from context.showInputBox.
+     * @param  {(vscode.Uri[] | undefined) | (vscode.Uri[] | undefined)[]} openDialogResult
+     *         The value to return from context.showOpenDialog.
+     *
+     * Each parameter may be a single value (in which case that value is always returned),
+     * or an array of values (in which case each invocation will return the next item from the array).
+     */
     public constructor(
         private readonly _workspaceFolders: vscode.WorkspaceFolder[] | vscode.WorkspaceFolder[][],
-        private readonly _lambdaRuntimes: LambdaRuntime[] | LambdaRuntime[][],
+        private readonly _lambdaRuntimes: immutable.Set<SamLambdaRuntime> | immutable.Set<SamLambdaRuntime>[],
         private readonly inputBoxResult: string | string[],
         private readonly openDialogResult: (vscode.Uri[] | undefined) | (vscode.Uri[] | undefined)[]
     ) {
         if (isMultiDimensionalArray(this._workspaceFolders)) {
             this._workspaceFolders = (_workspaceFolders as vscode.WorkspaceFolder[][]).reverse()
         }
-        if (isMultiDimensionalArray(this._lambdaRuntimes)) {
-            this._lambdaRuntimes = (_lambdaRuntimes as LambdaRuntime[][]).reverse()
+        if (Array.isArray(this._lambdaRuntimes)) {
+            this._lambdaRuntimes = (_lambdaRuntimes as immutable.Set<SamLambdaRuntime>[]).reverse()
         }
         if (Array.isArray(this.inputBoxResult)) {
             this.inputBoxResult = (inputBoxResult as string[]).reverse()
@@ -49,16 +63,16 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
         }
     }
 
-    public get lambdaRuntimes(): LambdaRuntime[] {
-        if (isMultiDimensionalArray(this._lambdaRuntimes)) {
+    public get lambdaRuntimes(): immutable.Set<SamLambdaRuntime> {
+        if (Array.isArray(this._lambdaRuntimes)) {
             if (this._lambdaRuntimes!.length <= 0) {
                 throw new Error('lambdaRuntimes was called more times than expected')
             }
 
-            return (this._lambdaRuntimes as LambdaRuntime[][]).pop() || []
+            return (this._lambdaRuntimes as immutable.Set<SamLambdaRuntime>[]).pop() || immutable.Set()
         }
 
-        return (this._lambdaRuntimes as LambdaRuntime[]) || []
+        return (this._lambdaRuntimes as immutable.Set<SamLambdaRuntime>) || immutable.Set()
     }
 
     public get workspaceFolders(): vscode.WorkspaceFolder[] {
@@ -128,6 +142,7 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
         options?: vscode.QuickPickOptions,
         token?: vscode.CancellationToken
     ): Promise<string | T | string[] | T[] | undefined> {
+        // Just return the first item in `items`.
         const resolvedItems: string[] | T[] = Array.isArray(items) ?
             items as string[] | T[] :
             await (items as (Thenable<string[]> | Thenable<T[]>))
@@ -145,7 +160,7 @@ describe('CreateNewSamAppWizard', async () => {
         it('uses user response as runtime', async () => {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
-                ['nodejs8.10'],
+                immutable.Set<SamLambdaRuntime>(['nodejs8.10']),
                 'myName',
                 [vscode.Uri.file(path.join('my', 'workspace', 'folder'))]
             )
@@ -159,7 +174,7 @@ describe('CreateNewSamAppWizard', async () => {
         it ('exits when cancelled', async () => {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
-                [],
+                immutable.Set<SamLambdaRuntime>(),
                 'myName',
                 [vscode.Uri.file(path.join('my', 'workspace', 'folder'))]
             )
@@ -175,7 +190,7 @@ describe('CreateNewSamAppWizard', async () => {
             const locationPath = path.join('my', 'quick', 'pick', 'result')
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
-                ['nodejs8.10'],
+                immutable.Set<SamLambdaRuntime>(['nodejs8.10']),
                 'myName',
                 [vscode.Uri.file(locationPath)]
             )
@@ -190,7 +205,10 @@ describe('CreateNewSamAppWizard', async () => {
             const locationPath = path.join('my', 'quick', 'pick', 'result')
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
-                [['python3.6'], ['nodejs8.10']],
+                [
+                    immutable.Set<SamLambdaRuntime>(['python3.6']),
+                    immutable.Set<SamLambdaRuntime>(['nodejs8.10'])
+                ],
                 'myName',
                 [
                     undefined,
@@ -211,7 +229,7 @@ describe('CreateNewSamAppWizard', async () => {
 
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
-                ['nodejs8.10'],
+                immutable.Set<SamLambdaRuntime>(['nodejs8.10']),
                 name,
                 [vscode.Uri.file(locationPath)]
             )
@@ -235,7 +253,7 @@ describe('CreateNewSamAppWizard', async () => {
                     name: path.basename(p),
                     index: index++
                 })),
-                ['nodejs8.10'],
+                immutable.Set<SamLambdaRuntime>(['nodejs8.10']),
                 'myName',
                 []
             )
@@ -251,7 +269,7 @@ describe('CreateNewSamAppWizard', async () => {
         it('uses user response as name', async () => {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
-                ['nodejs8.10'],
+                immutable.Set<SamLambdaRuntime>(['nodejs8.10']),
                 'myName',
                 [vscode.Uri.file(path.join('my', 'quick', 'pick', 'result'))]
             )
@@ -265,7 +283,7 @@ describe('CreateNewSamAppWizard', async () => {
         it('backtracks when cancelled', async () => {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
-                ['nodejs8.10'],
+                immutable.Set<SamLambdaRuntime>(['nodejs8.10']),
                 [ '', 'myName' ],
                 [
                     [vscode.Uri.file(path.join('my', 'quick', 'pick', 'result', '1'))],
