@@ -15,6 +15,9 @@
                 "kind": "build",
                 "isDefault": true
             },
+            "runOptions": {
+                "runOn": "folderOpen"
+            }
         },
         {
             "type": "npm",
