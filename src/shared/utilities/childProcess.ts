@@ -26,22 +26,22 @@ export interface ChildProcessResult {
 export class ChildProcess {
     private static readonly CHILD_PROCESS_CLOSED = 'childProcessClosed'
 
-    private readonly _command: string
-    private readonly _args: string[] | undefined
+    private readonly args: string[]
+    private childProcess: child_process.ChildProcess | undefined
+    private readonly onChildProcessClosed: events.EventEmitter = new events.EventEmitter()
+    private readonly stdoutChunks: string[] = []
+    private readonly stderrChunks: string[] = []
+    private error: Error | undefined
+    private readonly processCompletedPromise: Promise<ChildProcessResult>
 
-    private _childProcess: child_process.ChildProcess | undefined
-    private readonly _onChildProcessClosed: events.EventEmitter = new events.EventEmitter()
-    private readonly _stdoutChunks: string[] = []
-    private readonly _stderrChunks: string[] = []
-    private _error: Error | undefined
-    private readonly _processCompletedPromise: Promise<ChildProcessResult>
-
-    public constructor(command: string, args?: string[] | undefined) {
-        this._command = command
-        this._args = args
-
-        this._processCompletedPromise = new Promise((resolve, reject) => {
-            this._onChildProcessClosed.once(
+    public constructor(
+        private readonly process: string,
+        private readonly options?: child_process.SpawnOptions,
+        ...args: string[]
+    ) {
+        this.args = args
+        this.processCompletedPromise = new Promise((resolve, reject) => {
+            this.onChildProcessClosed.once(
                 ChildProcess.CHILD_PROCESS_CLOSED,
                 (processResult: ChildProcessResult) => {
                     resolve(processResult)
@@ -50,45 +50,46 @@ export class ChildProcess {
     }
 
     public start(): void {
-        if (!!this._childProcess) {
-            throw Error('process already started')
+        if (this.childProcess) {
+            throw new Error('process already started')
         }
 
-        this._childProcess = crossSpawn(
-            this._command,
-            this._args
+        this.childProcess = crossSpawn(
+            this.process,
+            this.args,
+            this.options
         )
 
-        this._childProcess.stdout.on('data', (data: { toString(): string }) => {
-            this._stdoutChunks.push(data.toString())
+        this.childProcess.stdout.on('data', (data: { toString(): string }) => {
+            this.stdoutChunks.push(data.toString())
         })
 
-        this._childProcess.stderr.on('data', (data: { toString(): string }) => {
-            this._stderrChunks.push(data.toString())
+        this.childProcess.stderr.on('data', (data: { toString(): string }) => {
+            this.stderrChunks.push(data.toString())
         })
 
-        this._childProcess.on('error', (error) => {
-            this._error = error
+        this.childProcess.on('error', (error) => {
+            this.error = error
         })
 
-        this._childProcess.on('close', (code, signal) => {
+        this.childProcess.on('close', (code, signal) => {
             const processResult: ChildProcessResult = {
                 exitCode: code,
-                stdout: this._stdoutChunks.join().trim(),
-                stderr: this._stderrChunks.join().trim(),
-                error: this._error
+                stdout: this.stdoutChunks.join().trim(),
+                stderr: this.stderrChunks.join().trim(),
+                error: this.error
             }
 
-            this._childProcess!.removeAllListeners()
-            this._onChildProcessClosed.emit(ChildProcess.CHILD_PROCESS_CLOSED, processResult)
+            this.childProcess!.removeAllListeners()
+            this.onChildProcessClosed.emit(ChildProcess.CHILD_PROCESS_CLOSED, processResult)
         })
     }
 
     public async promise(): Promise<ChildProcessResult> {
-        if (!this._childProcess) {
+        if (!this.childProcess) {
             throw new Error('child process not started')
         }
 
-        return this._processCompletedPromise
+        return this.processCompletedPromise
     }
 }

@@ -29,6 +29,7 @@
         "onCommand:aws.samcli.validate.version",
         "onCommand:aws.deleteCloudFormation",
         "onCommand:aws.showErrorDetails",
+        "onCommand:aws.lambda.createNewSamApp",
         "onDebugInitialConfigurations"
     ],
     "main": "./out/src/extension",
@@ -133,6 +134,11 @@
             ]
         },
         "commands": [
+            {
+                "command": "aws.lambda.createNewSamApp",
+                "title": "%AWS.command.createNewSamApp%",
+                "category": "AWS"
+            },
             {
                 "command": "aws.login",
                 "title": "%AWS.command.login%",
@@ -252,6 +258,7 @@
         "del": "^3.0.0",
         "fs-extra": "^6.0.1",
         "handlebars": "^4.0.12",
+        "immutable": "^4.0.0-rc.12",
         "js-yaml": "^3.12.0",
         "jsonc-parser": "^2.0.2",
         "lodash": "^4.17.10",

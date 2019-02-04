@@ -9,9 +9,6 @@ import { fileExists } from '../../filesystemUtilities'
 import { ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliProcessInvoker, SamCliProcessInvoker } from './samCliInvoker'
 
-export interface SamCliBuildResponse {
-}
-
 export class SamCliBuildInvocation {
     public constructor(
         private readonly buildDir: string,
@@ -21,45 +18,29 @@ export class SamCliBuildInvocation {
     ) {
     }
 
-    public async execute(): Promise<SamCliBuildResponse> {
+    public async execute(): Promise<void> {
         await this.validate()
 
-        const childProcessResult: ChildProcessResult = await this.invoker.invoke(
+        const { exitCode, error, stdout }: ChildProcessResult = await this.invoker.invoke(
             'build',
             '--build-dir', this.buildDir,
             '--base-dir', this.baseDir,
             '--template', this.templatePath
         )
 
-        if (childProcessResult.exitCode === 0) {
-            const response: SamCliBuildResponse = {}
-
-            return response
+        if (exitCode === 0) {
+            return
         }
 
         console.error('SAM CLI error')
-        console.error(`Exit code: ${childProcessResult.exitCode}`)
-        console.error(`Error: ${childProcessResult.error}`)
-        console.error(`stdout: ${childProcessResult.stdout}`)
+        console.error(`Exit code: ${exitCode}`)
+        console.error(`Error: ${error}`)
+        console.error(`stdout: ${stdout}`)
 
-        let errorMessage: string | undefined
-        if (!!childProcessResult.error && !!childProcessResult.error.message) {
-            errorMessage = childProcessResult.error.message
-        } else if (!!childProcessResult.stderr) {
-            errorMessage = childProcessResult.stderr
-        }
-        throw new Error(`sam build encountered an error: ${errorMessage}`)
+        throw new Error(`sam build encountered an error: ${error && error.message ? error.message : stdout}`)
     }
 
-    protected async validate(): Promise<void> {
-        if (!this.buildDir) {
-            throw new Error('buildDir is missing or empty')
-        }
-
-        if (!this.templatePath) {
-            throw new Error('template path is missing or empty')
-        }
-
+    private async validate(): Promise<void> {
         if (!await fileExists(this.templatePath)) {
             throw new Error(`template path does not exist: ${this.templatePath}`)
         }
