@@ -28,6 +28,7 @@ class SamCommon {
         val mapper = jacksonObjectMapper()
         const val SAM_BUILD_DIR = ".aws-sam"
         const val SAM_INFO_VERSION_KEY = "version"
+        const val SAM_INVALID_OPTION_SUBSTRING = "no such option"
 
         // Inclusive
         val expectedSamMinVersion = SemVer("0.7.0", 0, 7, 0)
@@ -43,6 +44,9 @@ class SamCommon {
                 val process = CapturingProcessHandler(commandLine).runProcess()
 
                 if (process.exitCode != 0) {
+                    if (process.stderr.contains(SAM_INVALID_OPTION_SUBSTRING)) {
+                        throw IllegalStateException(message("sam.executable.unexpected_output", process.stderr))
+                    }
                     throw IllegalStateException(process.stderr)
                 } else {
                     if (process.stdout.isEmpty()) {
