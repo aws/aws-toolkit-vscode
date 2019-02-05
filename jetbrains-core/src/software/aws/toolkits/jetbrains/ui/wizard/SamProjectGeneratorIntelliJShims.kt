@@ -22,6 +22,11 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.resources.message
 
+// Meshing of two worlds. IntelliJ wants validation errors to be thrown exceptions. Non-IntelliJ wants validation errors
+// to be returned as a ValidationInfo object. We have a shim to convert thrown exceptions into objects,
+// but then we lose the ability in IntelliJ to fail validation without showing an error. This is a workaround for that case.
+class ValidationException : Exception()
+
 // IntelliJ shim requires a ModuleBuilder
 // UI is centralized in generator and is passed in to have access to UI elements
 class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuilder() {
@@ -77,8 +82,12 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
 
             @Throws(ConfigurationException::class)
             override fun validate(): Boolean {
-                val info = generator.peer.validate()
-                if (info != null) throw ConfigurationException(info.message)
+                try {
+                    val info = generator.peer.validate()
+                    if (info != null) throw ConfigurationException(info.message)
+                } catch (_: ValidationException) {
+                    return false
+                }
 
                 return true
             }

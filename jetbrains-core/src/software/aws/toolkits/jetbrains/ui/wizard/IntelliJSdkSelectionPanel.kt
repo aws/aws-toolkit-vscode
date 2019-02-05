@@ -32,9 +32,8 @@ class IntelliJSdkSelectionPanel(callback: AbstractNewProjectStep.AbstractCallbac
     }
 
     private fun buildSdkSettingsPanel(runtime: Runtime): SdkSettingsStep =
-        object : SdkSettingsStep(dummyContext, generator.builder, sdkPanelFilter(runtime), null) {}.also {
-            it.validate()
-        }
+        object : SdkSettingsStep(dummyContext, generator.builder, sdkPanelFilter(runtime), null) {}
+        // don't validate on init of the SettingsStep or weird things will happen if the user has no SDK
 
     private var currentSdkPanel: SdkSettingsStep = buildSdkSettingsPanel(generator.settings.runtime)
     override val sdkSelectionPanel: JComponent
@@ -56,7 +55,11 @@ class IntelliJSdkSelectionPanel(callback: AbstractNewProjectStep.AbstractCallbac
     }
 
     override fun validateAll(): List<ValidationInfo>? {
-        currentSdkPanel.validate()
+        if (!currentSdkPanel.validate()) {
+            throw ValidationException()
+        }
+        // okay to return null here since any ConfigurationError in the validate() call will propagate up to the ModuleWizardStep
+        // validation checker and do-the-right-thing for us
         return null
     }
 
