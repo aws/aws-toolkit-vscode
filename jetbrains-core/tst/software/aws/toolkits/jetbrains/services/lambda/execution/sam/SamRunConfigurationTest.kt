@@ -12,11 +12,13 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.After
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.rules.EnvironmentVariableHelper
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
@@ -39,10 +41,13 @@ class SamRunConfigurationTest {
     @JvmField
     val tempDir = TemporaryFolder()
 
+    private val mockId = "MockCredsId"
+    private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
+
     @Before
     fun setUp() {
         SamSettings.getInstance().savedExecutablePath = "sam"
-        MockCredentialsManager.getInstance().reset()
+        MockCredentialsManager.getInstance().addCredentials(mockId, mockCreds)
 
         projectRule.fixture.addClass(
             """
@@ -57,6 +62,11 @@ class SamRunConfigurationTest {
         )
     }
 
+    @After
+    fun tearDown() {
+        MockCredentialsManager.getInstance().reset()
+    }
+
     @Test
     fun samIsNotSet() {
         SamSettings.getInstance().savedExecutablePath = null
@@ -64,7 +74,10 @@ class SamRunConfigurationTest {
         assumeTrue(SamExecutableDetector().detect() == null)
 
         runInEdtAndWait {
-            val runConfiguration = createHandlerBasedRunConfiguration(project = projectRule.project)
+            val runConfiguration = createHandlerBasedRunConfiguration(
+                project = projectRule.project,
+                credentialsProviderId = mockId
+            )
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
@@ -75,7 +88,11 @@ class SamRunConfigurationTest {
     @Test
     fun handlerIsNotSet() {
         runInEdtAndWait {
-            val runConfiguration = createHandlerBasedRunConfiguration(project = projectRule.project, handler = null)
+            val runConfiguration = createHandlerBasedRunConfiguration(
+                project = projectRule.project,
+                handler = null,
+                credentialsProviderId = mockId
+            )
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
@@ -86,7 +103,11 @@ class SamRunConfigurationTest {
     @Test
     fun runtimeIsNotSet() {
         runInEdtAndWait {
-            val runConfiguration = createHandlerBasedRunConfiguration(project = projectRule.project, runtime = null)
+            val runConfiguration = createHandlerBasedRunConfiguration(
+                project = projectRule.project,
+                runtime = null,
+                credentialsProviderId = mockId
+            )
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
@@ -97,7 +118,11 @@ class SamRunConfigurationTest {
     @Test
     fun handlerDoesNotExist() {
         runInEdtAndWait {
-            val runConfiguration = createHandlerBasedRunConfiguration(project = projectRule.project, handler = "Fake")
+            val runConfiguration = createHandlerBasedRunConfiguration(
+                project = projectRule.project,
+                handler = "Fake",
+                credentialsProviderId = mockId
+            )
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
@@ -108,7 +133,11 @@ class SamRunConfigurationTest {
     @Test
     fun templateFileNotSet() {
         runInEdtAndWait {
-            val runConfiguration = createTemplateRunConfiguration(project = projectRule.project, templateFile = null)
+            val runConfiguration = createTemplateRunConfiguration(
+                project = projectRule.project,
+                templateFile = null,
+                credentialsProviderId = mockId
+            )
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
@@ -119,7 +148,12 @@ class SamRunConfigurationTest {
     @Test
     fun logicalFunctionNotSet() {
         runInEdtAndWait {
-            val runConfiguration = createTemplateRunConfiguration(project = projectRule.project, templateFile = "test", logicalFunctionName = null)
+            val runConfiguration = createTemplateRunConfiguration(
+                project = projectRule.project,
+                templateFile = "test",
+                logicalFunctionName = null,
+                credentialsProviderId = mockId
+            )
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
@@ -146,7 +180,12 @@ class SamRunConfigurationTest {
             }.absolutePath
             val logicalName = "NotSomeFunction"
 
-            val runConfiguration = createTemplateRunConfiguration(project = projectRule.project, templateFile = template, logicalFunctionName = logicalName)
+            val runConfiguration = createTemplateRunConfiguration(
+                project = projectRule.project,
+                templateFile = template,
+                logicalFunctionName = logicalName,
+                credentialsProviderId = mockId
+            )
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
@@ -173,7 +212,12 @@ class SamRunConfigurationTest {
             }.absolutePath
             val logicalName = "SomeFunction"
 
-            val runConfiguration = createTemplateRunConfiguration(project = projectRule.project, templateFile = template, logicalFunctionName = logicalName)
+            val runConfiguration = createTemplateRunConfiguration(
+                project = projectRule.project,
+                templateFile = template,
+                logicalFunctionName = logicalName,
+                credentialsProviderId = mockId
+            )
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
@@ -184,7 +228,11 @@ class SamRunConfigurationTest {
     @Test
     fun invalidRegion() {
         runInEdtAndWait {
-            val runConfiguration = createHandlerBasedRunConfiguration(project = projectRule.project, region = null)
+            val runConfiguration = createHandlerBasedRunConfiguration(
+                project = projectRule.project,
+                region = null,
+                credentialsProviderId = mockId
+            )
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
@@ -193,9 +241,42 @@ class SamRunConfigurationTest {
     }
 
     @Test
+    fun noCredentials() {
+        runInEdtAndWait {
+            val runConfiguration = createHandlerBasedRunConfiguration(
+                project = projectRule.project,
+                credentialsProviderId = null
+            )
+            assertThat(runConfiguration).isNotNull
+            assertThatThrownBy { getState(runConfiguration) }
+                .isInstanceOf(ExecutionException::class.java)
+                .hasMessage(message("lambda.run_configuration.no_credentials_specified"))
+        }
+    }
+
+    @Test
+    fun invalidCredentials() {
+        val credentialName = "DNE"
+        runInEdtAndWait {
+            val runConfiguration = createHandlerBasedRunConfiguration(
+                project = projectRule.project,
+                credentialsProviderId = credentialName
+            )
+            assertThat(runConfiguration).isNotNull
+            assertThatThrownBy { getState(runConfiguration) }
+                .isInstanceOf(ExecutionException::class.java)
+                .hasMessage(message("lambda.run_configuration.credential_not_found_error", credentialName))
+        }
+    }
+
+    @Test
     fun inputTextIsResolved() {
         runInEdtAndWait {
-            val runConfiguration = createHandlerBasedRunConfiguration(project = projectRule.project, input = "TestInput")
+            val runConfiguration = createHandlerBasedRunConfiguration(
+                project = projectRule.project,
+                input = "TestInput",
+                credentialsProviderId = mockId
+            )
             assertThat(runConfiguration).isNotNull
             assertThat(getState(runConfiguration).settings.input).isEqualTo("TestInput")
         }
@@ -210,7 +291,8 @@ class SamRunConfigurationTest {
             val runConfiguration = createHandlerBasedRunConfiguration(
                 project = projectRule.project,
                 input = tempFile.absolutePath,
-                inputIsFile = true
+                inputIsFile = true,
+                credentialsProviderId = mockId
             )
             assertThat(runConfiguration).isNotNull
             assertThat(getState(runConfiguration).settings.input).isEqualTo("TestInputFile")

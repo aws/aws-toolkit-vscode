@@ -171,6 +171,10 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
                 }
             }
 
+            if (credentialProviderId == null) {
+                throw RuntimeConfigurationError(message("lambda.run_configuration.no_credentials_specified"))
+            }
+
             val (handler, runtime, templateDetails) = resolveLambdaInfo(project)
             val element = findPsiElementsForHandler(project, runtime, handler).firstOrNull()
                 ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
@@ -244,15 +248,18 @@ class SamRunSettingsEditor(project: Project) : SettingsEditor<SamRunConfiguratio
             .sorted()
 
         val selected = RuntimeGroup.determineRuntime(project)?.let { if (it in supported) it else null }
+        val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
 
         view.setRuntimes(supported)
         view.runtime.selectedItem = selected
 
         view.regionSelector.setRegions(regionProvider.regions().values.toMutableList())
-        view.regionSelector.selectedRegion = ProjectAccountSettingsManager.getInstance(project).activeRegion
+        view.regionSelector.selectedRegion = accountSettingsManager.activeRegion
 
         view.credentialSelector.setCredentialsProviders(credentialManager.getCredentialProviders())
-        view.credentialSelector.setSelectedCredentialsProvider(ProjectAccountSettingsManager.getInstance(project).activeCredentialProvider)
+        if (accountSettingsManager.hasActiveCredentials()) {
+            view.credentialSelector.setSelectedCredentialsProvider(accountSettingsManager.activeCredentialProvider)
+        }
     }
 
     override fun createEditor(): JPanel = view.panel

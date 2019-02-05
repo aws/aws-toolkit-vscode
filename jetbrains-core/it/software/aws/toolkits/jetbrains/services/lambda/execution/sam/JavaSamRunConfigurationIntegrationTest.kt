@@ -19,6 +19,8 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addClass
@@ -28,6 +30,9 @@ class JavaSamRunConfigurationIntegrationTest {
     @Rule
     @JvmField
     val projectRule = HeavyJavaCodeInsightTestFixtureRule()
+
+    private val mockId = "MockCredsId"
+    private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
 
     @Before
     fun setUp() {
@@ -52,6 +57,8 @@ class JavaSamRunConfigurationIntegrationTest {
         }
 
         setUpCompiler()
+
+        MockCredentialsManager.getInstance().addCredentials(mockId, mockCreds)
     }
 
     private fun setUpCompiler() {
@@ -78,11 +85,16 @@ class JavaSamRunConfigurationIntegrationTest {
     @After
     fun tearDown() {
         CompilerTestUtil.disableExternalCompiler(projectRule.project)
+        MockCredentialsManager.getInstance().reset()
     }
 
     @Test
     fun samIsExecuted() {
-        val runConfiguration = createHandlerBasedRunConfiguration(project = projectRule.project, input = "\"Hello World\"")
+        val runConfiguration = createHandlerBasedRunConfiguration(
+            project = projectRule.project,
+            input = "\"Hello World\"",
+            credentialsProviderId = mockId
+        )
         assertThat(runConfiguration).isNotNull
 
         val executeLambda = executeLambda(runConfiguration)
@@ -109,7 +121,8 @@ class JavaSamRunConfigurationIntegrationTest {
             project = projectRule.project,
             templateFile = templateFile.containingFile.virtualFile.path,
             logicalFunctionName = "SomeFunction",
-            input = "\"Hello World\""
+            input = "\"Hello World\"",
+            credentialsProviderId = mockId
         )
 
         assertThat(runConfiguration).isNotNull
@@ -138,7 +151,8 @@ class JavaSamRunConfigurationIntegrationTest {
             project = projectRule.project,
             templateFile = templateFile.containingFile.virtualFile.path,
             logicalFunctionName = "SomeFunction",
-            input = "\"Hello World\""
+            input = "\"Hello World\"",
+            credentialsProviderId = mockId
         )
 
         assertThat(runConfiguration).isNotNull
@@ -163,7 +177,11 @@ class JavaSamRunConfigurationIntegrationTest {
             )
         }
 
-        val runConfiguration = createHandlerBasedRunConfiguration(project = projectRule.project, input = "\"Hello World\"")
+        val runConfiguration = createHandlerBasedRunConfiguration(
+            project = projectRule.project,
+            input = "\"Hello World\"",
+            credentialsProviderId = mockId
+        )
         assertThat(runConfiguration).isNotNull
 
         val debuggerIsHit = checkBreakPointHit(projectRule.project)
