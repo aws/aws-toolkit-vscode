@@ -27,22 +27,20 @@ export class SamCliInfoInvocation {
                 return response
             }
 
+            console.error(`Unexpected sam --info output: ${childProcessResult.stdout}`)
             throw new Error('SAM CLI did not return expected data')
         }
 
         console.error('SAM CLI error')
         console.error(`Exit code: ${childProcessResult.exitCode}`)
         console.error(`Error: ${childProcessResult.error}`)
+        console.error(`stderr: ${childProcessResult.stderr}`)
         console.error(`stdout: ${childProcessResult.stdout}`)
 
-        let errorMessage: string | undefined
-        if (!!childProcessResult.error && !!childProcessResult.error.message) {
-            errorMessage = childProcessResult.error.message
-        } else if (!!childProcessResult.stderr) {
-            errorMessage = childProcessResult.stderr
-        }
-
-        throw new Error(`sam --info encountered an error: ${errorMessage}`)
+        throw new Error(`sam --info encountered an error: ${
+            childProcessResult.error && childProcessResult.error.message ||
+            childProcessResult.stderr ||
+            childProcessResult.stdout}`)
     }
 
     /**

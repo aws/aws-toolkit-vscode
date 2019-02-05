@@ -35,6 +35,8 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
         let options: SpawnOptions | undefined
         if (Array.isArray(optionsOrArgs)) {
             args = optionsOrArgs as string[]
+        } else if (typeof optionsOrArgs === 'string' || optionsOrArgs instanceof String) {
+            args = [optionsOrArgs.toString(), ...args]
         } else {
             options = optionsOrArgs as SpawnOptions
         }
