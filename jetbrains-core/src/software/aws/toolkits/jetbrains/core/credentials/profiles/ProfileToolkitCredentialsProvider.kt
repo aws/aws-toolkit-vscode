@@ -22,86 +22,113 @@ import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider
 import software.amazon.awssdk.services.sts.model.AssumeRoleRequest
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.ToolkitRegionProvider
-import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileToolkitCredentialsProviderFactory.Companion.TYPE
 import software.aws.toolkits.resources.message
 import java.util.function.Supplier
 
+/**
+ * @param profiles Holds references to the loaded profiles, should always be fetched from to handle loading of newer data
+ * @param profileName The name of the profile this provider uses as its source
+ * @param sdkHttpClient Shared HTTP Client used through the toolkit
+ * @param regionProvider Region provider used to retrieve information about STS
+ */
 class ProfileToolkitCredentialsProvider(
-    private val profiles: MutableMap<String, Profile>,
-    val profile: Profile,
+    private val profiles: ProfileHolder,
+    val profileName: String,
     private val sdkHttpClient: SdkHttpClient,
     private val regionProvider: ToolkitRegionProvider
 ) : ToolkitCredentialsProvider() {
-    private var internalCredentialsProvider = createInternalCredentialProvider()
+    private var internalCredentialsProvider: AwsCredentialsProvider? = createInternalCredentialProvider()
 
-    override val id = "$TYPE:${profile.name()}"
-    override val displayName get() = message("credentials.profile.name", profile.name())
-    override fun resolveCredentials(): AwsCredentials = internalCredentialsProvider.resolveCredentials()
+    override val id = "$TYPE:$profileName"
+    override val displayName get() = message("credentials.profile.name", profileName)
+    override fun resolveCredentials(): AwsCredentials = internalCredentialsProvider?.resolveCredentials()
+        ?: throw IllegalStateException(message("credentials.profile.not_valid", displayName))
 
-    private fun createInternalCredentialProvider(): AwsCredentialsProvider = when {
-        propertyExists(ProfileProperty.ROLE_ARN) -> {
-            validateChain()
-
-            val sourceProfile = requiredProperty(ProfileProperty.SOURCE_PROFILE)
-            val roleArn = requiredProperty(ProfileProperty.ROLE_ARN)
-            val roleSessionName = profile.property(ProfileProperty.ROLE_SESSION_NAME)
-                .orElseGet { "aws-toolkit-jetbrains-${System.currentTimeMillis()}" }
-            val externalId = profile.property(ProfileProperty.EXTERNAL_ID).orElse(null)
-            val mfaSerial = profile.property(ProfileProperty.MFA_SERIAL).orElse(null)
-
-            val stsRegion = tryOrNull {
-                DefaultAwsRegionProviderChain().region?.let {
-                    regionProvider.regions()[it.id()]
-                }
-            }
-
-            // Override the default SPI for getting the active credentials since we are making an internal
-            // to this provider client
-            val stsClient = StsClient.builder()
-                .httpClient(sdkHttpClient)
-                .credentialsProvider(
-                    ProfileToolkitCredentialsProvider(
-                        profiles,
-                        profiles[sourceProfile]!!,
-                        sdkHttpClient,
-                        regionProvider
-                    )
-                )
-                .region(stsRegion?.let { Region.of(it.id) } ?: Region.US_EAST_1)
-                .build()
-
-            StsAssumeRoleCredentialsProvider.builder()
-                .stsClient(stsClient)
-                .refreshRequest(Supplier {
-                    createAssumeRoleRequest(
-                        mfaSerial,
-                        roleArn,
-                        roleSessionName,
-                        externalId
-                    )
-                })
-                .build()
-        }
-        propertyExists(ProfileProperty.AWS_SESSION_TOKEN) -> {
-            StaticCredentialsProvider.create(
-                AwsSessionCredentials.create(
-                    requiredProperty(ProfileProperty.AWS_ACCESS_KEY_ID),
-                    requiredProperty(ProfileProperty.AWS_SECRET_ACCESS_KEY),
-                    requiredProperty(ProfileProperty.AWS_SESSION_TOKEN)
-                )
-            )
-        }
-        propertyExists(ProfileProperty.AWS_ACCESS_KEY_ID) -> {
-            StaticCredentialsProvider.create(
-                AwsBasicCredentials.create(
-                    requiredProperty(ProfileProperty.AWS_ACCESS_KEY_ID),
-                    requiredProperty(ProfileProperty.AWS_SECRET_ACCESS_KEY)
-                )
-            )
-        }
-        else -> throw IllegalArgumentException("Profile `$profile` is unsupported")
+    fun refresh() {
+        // Null out the old data, this way if we fail to create the new one (or we delete the underlying profile) we
+        // don't have stale data
+        internalCredentialsProvider = null
+        internalCredentialsProvider = createInternalCredentialProvider()
     }
+
+    // Due to the inability to get the MFA into the standard ProfileToolkitProvider in the SDK, we have to recreate
+    // the logic
+    private fun createInternalCredentialProvider(): AwsCredentialsProvider =
+        when {
+            propertyExists(ProfileProperty.ROLE_ARN) -> {
+                validateChain()
+
+                val sourceProfile = requiredProperty(ProfileProperty.SOURCE_PROFILE)
+                val roleArn = requiredProperty(ProfileProperty.ROLE_ARN)
+
+                val roleSessionName = profile().property(ProfileProperty.ROLE_SESSION_NAME)
+                    .orElseGet { "aws-toolkit-jetbrains-${System.currentTimeMillis()}" }
+                val externalId = profile().property(ProfileProperty.EXTERNAL_ID)
+                    .orElse(null)
+                val mfaSerial = profile().property(ProfileProperty.MFA_SERIAL)
+                    .orElse(null)
+
+                val stsRegion = profile().property(ProfileProperty.REGION)
+                    .map { Region.of(it) }
+                    .orElseGet {
+                        try {
+                            DefaultAwsRegionProviderChain().region
+                        } catch (e: RuntimeException) {
+                            LOG.warn { "Failed to determine STS region, falling back to US_EAST_1" }
+                            Region.US_EAST_1
+                        }
+                    }
+
+                // Override the default SPI for getting the active credentials since we are making an internal
+                // to this provider client
+                val stsClient = StsClient.builder()
+                    .httpClient(sdkHttpClient)
+                    .credentialsProvider(
+                        ProfileToolkitCredentialsProvider(
+                            profiles,
+                            sourceProfile,
+                            sdkHttpClient,
+                            regionProvider
+                        )
+                    )
+                    .region(stsRegion)
+                    .build()
+
+                StsAssumeRoleCredentialsProvider.builder()
+                    .stsClient(stsClient)
+                    .refreshRequest(Supplier {
+                        createAssumeRoleRequest(
+                            mfaSerial,
+                            roleArn,
+                            roleSessionName,
+                            externalId
+                        )
+                    })
+                    .build()
+            }
+            propertyExists(ProfileProperty.AWS_SESSION_TOKEN) -> {
+                StaticCredentialsProvider.create(
+                    AwsSessionCredentials.create(
+                        requiredProperty(ProfileProperty.AWS_ACCESS_KEY_ID),
+                        requiredProperty(ProfileProperty.AWS_SECRET_ACCESS_KEY),
+                        requiredProperty(ProfileProperty.AWS_SESSION_TOKEN)
+                    )
+                )
+            }
+            propertyExists(ProfileProperty.AWS_ACCESS_KEY_ID) -> {
+                StaticCredentialsProvider.create(
+                    AwsBasicCredentials.create(
+                        requiredProperty(ProfileProperty.AWS_ACCESS_KEY_ID),
+                        requiredProperty(ProfileProperty.AWS_SECRET_ACCESS_KEY)
+                    )
+                )
+            }
+            // TODO: Improve why it is unsupported, https://github.com/aws/aws-toolkit-jetbrains/issues/794
+            else -> throw IllegalArgumentException("Profile `${profile()}` is unsupported")
+        }
 
     private fun createAssumeRoleRequest(
         mfaSerial: String?,
@@ -114,7 +141,7 @@ class ProfileToolkitCredentialsProvider(
         .externalId(externalId).also { request ->
             mfaSerial?.let { _ ->
                 request.serialNumber(mfaSerial)
-                    .tokenCode(getMfaToken(profile.name(), mfaSerial))
+                    .tokenCode(getMfaToken(profileName, mfaSerial))
             }
         }.build()
 
@@ -128,33 +155,47 @@ class ProfileToolkitCredentialsProvider(
 
     private fun validateChain() {
         val profileChain = LinkedHashSet<String>()
-        var currentProfile = profile
+        var currentProfile = profile()
 
-        while (currentProfile.property(ProfileProperty.SOURCE_PROFILE).isPresent) {
+        while (propertyExists(ProfileProperty.SOURCE_PROFILE, currentProfile)) {
             val currentProfileName = currentProfile.name()
             if (!profileChain.add(currentProfileName)) {
                 val chain = profileChain.joinToString("->", postfix = "->$currentProfileName")
-                throw IllegalArgumentException("A circular profile dependency was found between $chain")
+                throw IllegalArgumentException(message("credentials.profile.circular_profiles", chain))
             }
 
-            val sourceProfile = currentProfile.property(ProfileProperty.SOURCE_PROFILE).get()
-            currentProfile = profiles[sourceProfile]
-                    ?: throw IllegalArgumentException("Profile `$currentProfileName` references source profile `$sourceProfile` which does not exist")
+            val sourceProfile = requiredProperty(ProfileProperty.SOURCE_PROFILE, currentProfile)
+            currentProfile = profiles.getProfileOrNull(sourceProfile)
+                ?: throw IllegalArgumentException(
+                    message(
+                        "credentials.profile.source_profile_not_found",
+                        currentProfileName,
+                        sourceProfile
+                    )
+                )
         }
     }
 
-    private fun propertyExists(property: String): Boolean = profile.property(property).isPresent
+    private fun propertyExists(propertyName: String, profile: Profile = profile()): Boolean =
+        profile.property(propertyName).isPresent
 
-    private fun requiredProperty(property: String): String = profile.property(property)
-        .orElseThrow {
-            IllegalArgumentException(
-                message(
-                    "credentials.profile.missing_property",
-                    profile.name(),
-                    property
+    private fun requiredProperty(propertyName: String, profile: Profile = profile()): String =
+        profile.property(propertyName)
+            .orElseThrow {
+                IllegalArgumentException(
+                    message(
+                        "credentials.profile.missing_property",
+                        profileName,
+                        propertyName
+                    )
                 )
-            )
-        }
+            }
 
-    override fun toString(): String = "ProfileToolkitCredentialsProvider(profile=$profile)"
+    private fun profile() = profiles.getProfile(profileName)
+
+    override fun toString(): String = "ProfileToolkitCredentialsProvider(profile=${profile()})"
+
+    private companion object {
+        val LOG = getLogger<ProfileToolkitCredentialsProvider>()
+    }
 }

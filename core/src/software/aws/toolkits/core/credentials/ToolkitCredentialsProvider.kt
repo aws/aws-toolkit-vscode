@@ -55,17 +55,20 @@ abstract class ToolkitCredentialsProvider : AwsCredentialsProvider {
  * The class for managing [ToolkitCredentialsProvider] of the same type.
  * @property type The internal ID for this type of [ToolkitCredentialsProvider], eg 'profile' for AWS account whose credentials is stored in the profile file.
  */
-abstract class ToolkitCredentialsProviderFactory(
-    val type: String
+abstract class ToolkitCredentialsProviderFactory<T : ToolkitCredentialsProvider>(
+    val type: String,
+    protected val credentialsProviderManager: ToolkitCredentialsProviderManager
 ) {
-    private val providers = mutableMapOf<String, ToolkitCredentialsProvider>()
+    private val providers = mutableMapOf<String, T>()
 
-    protected fun add(provider: ToolkitCredentialsProvider) {
+    protected fun add(provider: T) {
         providers[provider.id] = provider
+        credentialsProviderManager.providerAdded(provider)
     }
 
-    protected fun clear() {
-        providers.clear()
+    protected fun remove(provider: T) {
+        providers.remove(provider.id)
+        credentialsProviderManager.providerRemoved(provider.id)
     }
 
     fun listCredentialProviders() = providers.values

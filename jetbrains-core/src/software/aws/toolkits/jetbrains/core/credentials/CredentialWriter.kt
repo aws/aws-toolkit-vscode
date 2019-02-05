@@ -15,7 +15,7 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.profiles.ProfileFileLocation
 import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
-import software.aws.toolkits.jetbrains.utils.notifyInfo
+import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialProviderFactory
 import software.aws.toolkits.resources.message
 import java.io.File
 
@@ -59,8 +59,7 @@ class CreateOrUpdateCredentialProfilesAction @TestOnly constructor(
                     ?: throw RuntimeException(message("credentials.could_not_open", it))
             }
 
-            // TODO : remove message (and localized string) when credentials auto-refreshing is supported
-            notifyInfo("", message("credentials.notification.restart.ide"))
+            ProfileCredentialProviderFactory.profileWatcher.start()
         }
     }
 

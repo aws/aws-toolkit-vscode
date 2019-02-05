@@ -8,56 +8,93 @@ import org.slf4j.event.Level
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.profiles.ProfileFile
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProviderFactory
+import software.aws.toolkits.core.credentials.ToolkitCredentialsProviderManager
 import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileWatcher.ProfileChangeListener
 import software.aws.toolkits.resources.message
-import java.nio.file.Path
 
 class ProfileToolkitCredentialsProviderFactory(
     private val sdkHttpClient: SdkHttpClient,
     private val regionProvider: ToolkitRegionProvider,
-    private val credentialLocationOverride: Path? = null
-) : ToolkitCredentialsProviderFactory(TYPE) {
+    credentialsProviderManager: ToolkitCredentialsProviderManager,
+    private val profileWatcher: ProfileWatcher
+) : ToolkitCredentialsProviderFactory<ProfileToolkitCredentialsProvider>(TYPE, credentialsProviderManager), ProfileChangeListener {
+    private val profileHolder = ProfileHolder()
 
     init {
+        loadFromProfileFile()
+        profileWatcher.addListener(this)
+    }
+
+    override fun onProfilesChanged() {
         loadFromProfileFile()
     }
 
     /**
      * Clean out all the current credentials and load all the profiles
      */
+    @Synchronized
     private fun loadFromProfileFile() {
         val profiles = LOG.tryOrNull(message("credentials.profile.failed_load")) {
-            credentialLocationOverride?.let {
-                // TODO: This should go away, and be migrated to using the standard AWS sysProps for testing
-                ProfileFile.builder()
-                    .content(credentialLocationOverride)
-                    .type(ProfileFile.Type.CONFIGURATION)
-                    .build()
-                    .profiles()
-            } ?: ProfileFile.defaultProfileFile().profiles()
+            ProfileFile.defaultProfileFile().profiles()
         } ?: emptyMap()
 
-        profiles.values.forEach {
+        // Remove old ones
+        profileHolder.list().forEach {
+            if (!profiles.containsKey(it.name())) {
+                profileHolder.removeProfile(it.name())
+            }
+        }
+
+        // Add new ones
+        profiles.forEach {
+            profileHolder.putProfile(it.value)
+        }
+
+        val currentProfiles = listCredentialProviders()
+            .map { it.profileName to it }
+            .toMap(mutableMapOf())
+
+        profiles.values.forEach { newProfile ->
             LOG.tryOrNull(message("credentials.profile.failed_load"), level = Level.WARN) {
-                add(
-                    ProfileToolkitCredentialsProvider(
-                        profiles,
-                        it,
+                // If we already have a provider referencing this profile, we need replace the internal profile
+                val currentProvider = currentProfiles[newProfile.name()]
+                if (currentProvider != null) {
+                    currentProvider.refresh()
+                    credentialsProviderManager.providerModified(currentProvider)
+                } else {
+                    val newProvider = ProfileToolkitCredentialsProvider(
+                        profileHolder,
+                        newProfile.name(),
                         sdkHttpClient,
                         regionProvider
                     )
-                )
+                    add(newProvider)
+                }
+
+                // Only remove it from the list of things to keep if successful
+                currentProfiles.remove(newProfile.name())
+            }
+        }
+
+        // Profiles are not longer in the updated file, remove them from the toolkit
+        currentProfiles.values.forEach {
+            remove(it)
+            try {
+                it.refresh() // Force a refresh to clear the data
+            } catch (e: Exception) {
+                // NO-OP, expected since the underlying profile was deleted
             }
         }
     }
 
     override fun shutDown() {
+        profileWatcher.removeListener(this)
     }
 
     companion object {
-        private val LOG =
-            LoggerFactory.getLogger(ProfileToolkitCredentialsProviderFactory::class.java)
+        private val LOG = LoggerFactory.getLogger(ProfileToolkitCredentialsProviderFactory::class.java)
 
         const val TYPE = "profile"
         const val DEFAULT_PROFILE_DISPLAY_NAME = "$TYPE:default"

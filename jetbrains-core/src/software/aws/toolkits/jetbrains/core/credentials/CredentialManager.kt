@@ -10,8 +10,8 @@ import com.intellij.openapi.util.Disposer
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
+import software.aws.toolkits.core.credentials.DefaultToolkitCredentialsProviderManager
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
-import software.aws.toolkits.core.credentials.ToolkitCredentialsProviderManager
 
 interface CredentialManager {
     @Throws(CredentialProviderNotFound::class)
@@ -25,8 +25,9 @@ interface CredentialManager {
 }
 
 class DefaultCredentialManager : CredentialManager, Disposable {
-    private val toolkitCredentialManager =
-        ToolkitCredentialsProviderManager(ExtensionPointCredentialsProviderRegistry())
+    private val toolkitCredentialManager = DefaultToolkitCredentialsProviderManager(
+        ExtensionPointCredentialsProviderRegistry()
+    )
 
     init {
         Disposer.register(ApplicationManager.getApplication(), this)

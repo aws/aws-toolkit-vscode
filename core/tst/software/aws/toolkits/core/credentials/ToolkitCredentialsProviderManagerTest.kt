@@ -3,22 +3,35 @@
 
 package software.aws.toolkits.core.credentials
 
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import software.amazon.awssdk.auth.credentials.AwsCredentials
-import kotlin.reflect.KClass
 
 class ToolkitCredentialsProviderManagerTest {
     @Rule
     @JvmField
     val temporaryFolder = TemporaryFolder()
 
-    private val manager = ToolkitCredentialsProviderManager(MockToolkitCredentialsProviderRegistry())
+    private val mockChangeListener: ToolkitCredentialsChangeListener = mock()
+    private val mockRegistry = MockToolkitCredentialsProviderRegistry()
+    private val manager = DefaultToolkitCredentialsProviderManager(mockRegistry).also {
+        it.addChangeListener(mockChangeListener)
+    }
+    private val shutDownFactories = mutableSetOf<ToolkitCredentialsProviderFactory<*>>()
 
-    private val shutDownFactories = mutableSetOf<KClass<*>>()
+    @Before
+    fun setUp() {
+        mockRegistry.createMockProviderFactory("Mock1", manager)
+        mockRegistry.createMockProviderFactory("Mock2", manager)
+    }
 
     @Test
     fun testGettingCredentials() {
@@ -35,8 +48,26 @@ class ToolkitCredentialsProviderManagerTest {
     @Test
     fun testShutdownIsCalledOnFactories() {
         manager.shutDown()
-        assertThat(shutDownFactories)
-            .containsOnly(MockToolkitCredentialProviderFactory::class, MockToolkitCredentialProviderFactory2::class)
+        assertThat(shutDownFactories).hasSize(2)
+    }
+
+    @Test
+    fun testListenerIsCalledOnAdd() {
+        verify(mockChangeListener, times(4)).providerAdded(any())
+    }
+
+    @Test
+    fun testListenerIsCalledOnRemove() {
+        val mockProviderFactory = mockRegistry.createMockProviderFactory("Mock3", manager)
+        mockProviderFactory.remove("Mock3:Cred1")
+        verify(mockChangeListener).providerRemoved("Mock3:Cred1")
+    }
+
+    @Test
+    fun testListenerIsCalledOnModification() {
+        val mockProviderFactory = mockRegistry.createMockProviderFactory("Mock3", manager)
+        mockProviderFactory.modify("Mock3:Cred1")
+        verify(mockChangeListener).providerModified(any())
     }
 
     private class MockToolkitCredentialsProvider(override val id: String) : ToolkitCredentialsProvider() {
@@ -46,33 +77,46 @@ class ToolkitCredentialsProviderManagerTest {
         override fun resolveCredentials(): AwsCredentials = throw NotImplementedError()
     }
 
-    private inner class MockToolkitCredentialProviderFactory : ToolkitCredentialsProviderFactory("Mock1") {
+    private inner class MockToolkitCredentialsProviderRegistry : ToolkitCredentialsProviderRegistry {
+        private val registry = mutableSetOf<ToolkitCredentialsProviderFactory<*>>()
+
+        fun createMockProviderFactory(id: String, manager: ToolkitCredentialsProviderManager) =
+            MockToolkitCredentialsProviderFactory(id, manager).also {
+                registry.add(it)
+            }
+
+        override fun listFactories(manager: ToolkitCredentialsProviderManager) = registry
+    }
+
+    private inner class MockToolkitCredentialsProviderFactory(
+        private val id: String,
+        manager: ToolkitCredentialsProviderManager
+    ) : ToolkitCredentialsProviderFactory<MockToolkitCredentialsProvider>(id, manager) {
         init {
-            add(MockToolkitCredentialsProvider("Mock1:Cred1"))
-            add(MockToolkitCredentialsProvider("Mock1:Cred2"))
+            add(MockToolkitCredentialsProvider("$id:Cred1"))
+            add(MockToolkitCredentialsProvider("$id:Cred2"))
+        }
+
+        fun remove(id: String) {
+            remove(get(id)!!)
+        }
+
+        fun modify(id: String) {
+            // Pretend it modifies it
+            credentialsProviderManager.providerModified(get(id)!!)
         }
 
         override fun shutDown() {
-            shutDownFactories.add(this::class)
+            shutDownFactories.add(this)
             throw RuntimeException("Simulated")
         }
-    }
 
-    private inner class MockToolkitCredentialProviderFactory2 : ToolkitCredentialsProviderFactory("Mock2") {
-        init {
-            add(MockToolkitCredentialsProvider("Mock2:Cred1"))
-            add(MockToolkitCredentialsProvider("Mock2:Cred2"))
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+            return id == (other as MockToolkitCredentialsProviderFactory).id
         }
 
-        override fun shutDown() {
-            shutDownFactories.add(this::class)
-        }
-    }
-
-    private inner class MockToolkitCredentialsProviderRegistry : ToolkitCredentialsProviderRegistry {
-        override fun listFactories() = listOf(
-            MockToolkitCredentialProviderFactory(),
-            MockToolkitCredentialProviderFactory2()
-        )
+        override fun hashCode(): Int = id.hashCode()
     }
 }
