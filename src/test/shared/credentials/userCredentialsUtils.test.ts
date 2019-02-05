@@ -10,6 +10,7 @@ import * as AWS from 'aws-sdk'
 import * as del from 'del'
 import * as fs from 'fs'
 import * as path from 'path'
+import { promisify } from 'util'
 
 import {
     loadSharedConfigFiles,
@@ -137,20 +138,34 @@ describe('UserCredentialsUtils', () => {
 
             const env = process.env as EnvironmentVariables
             env.AWS_SHARED_CREDENTIALS_FILE = credentialsFilename
-
+            const creds = {
+                accessKey: '123',
+                profileName: profileName,
+                secretKey: 'ABC'
+            }
             await UserCredentialsUtils.generateCredentialsFile(
                 path.join(__dirname, '..', '..', '..', '..', '..'),
-                {
-                    accessKey: '123',
-                    profileName: profileName,
-                    secretKey: 'ABC'
-                }
+                creds
             )
 
-            const profiles: SharedConfigFiles = await loadSharedConfigFiles()
-            assert(profiles)
-            assert(profiles.credentialsFile)
-            assert(profiles.credentialsFile[profileName])
+            const sharedConfigFiles: SharedConfigFiles = await loadSharedConfigFiles()
+            assert(typeof sharedConfigFiles === 'object', 'sharedConfigFiles should be an object')
+            const profiles = sharedConfigFiles.credentialsFile
+            assert(typeof profiles === 'object', 'profiles should be an object')
+            assert(profiles[profileName], 'profiles should be truthy')
+            assert.strictEqual(
+              profiles[profileName].aws_access_key_id,
+              creds.accessKey,
+              `creds.accessKey: "${profiles[profileName].aws_access_key_id}" !== "${creds.accessKey}"`
+            )
+            assert.strictEqual(
+              profiles[profileName].aws_secret_access_key,
+              creds.secretKey,
+              `creds.secretKey: "${profiles[profileName].aws_access_key_id}" !== "${creds.secretKey}"`
+            )
+            const access = promisify(fs.access)
+            await access(credentialsFilename, fs.constants.R_OK).catch(err => assert(false, 'Should be readable'))
+            await access(credentialsFilename, fs.constants.W_OK).catch(err => assert(false, 'Should be writeable'))
         })
     })
 
