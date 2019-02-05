@@ -93,7 +93,10 @@ export class UserCredentialsUtils {
             throw new Error('Credentials file exists. Not overwriting it.')
         }
 
-        await writeFileAsync(this.getCredentialsFilename(), credentialsFileContents, 'utf8')
+        await writeFileAsync(this.getCredentialsFilename(), credentialsFileContents, {
+            encoding: 'utf8',
+            mode: 0o100600 // basic file (type 100) with 600 permissions
+        })
     }
 
     /**
