@@ -8,6 +8,7 @@ import com.intellij.ide.util.projectWizard.SdkSettingsStep
 import com.intellij.ide.util.projectWizard.WizardContext
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.projectRoots.SdkTypeId
+import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.util.Condition
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
@@ -52,6 +53,11 @@ class IntelliJSdkSelectionPanel(callback: AbstractNewProjectStep.AbstractCallbac
                 panel.addSdkPanel(sdkLabel, sdkSelectionPanel)
             }
         }
+    }
+
+    override fun validateAll(): List<ValidationInfo>? {
+        currentSdkPanel.validate()
+        return null
     }
 
     override fun getSdk(): Sdk? {
