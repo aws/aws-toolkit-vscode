@@ -18,10 +18,10 @@ export class SamCliInfoInvocation {
     public async execute(): Promise<SamCliInfoResponse> {
         await this.validate()
 
-        const childProcessResult: ChildProcessResult = await this.invoker.invoke('--info')
+        const { error, exitCode, stderr, stdout }: ChildProcessResult = await this.invoker.invoke('--info')
 
-        if (childProcessResult.exitCode === 0) {
-            const response = this.convertOutput(childProcessResult.stdout)
+        if (exitCode === 0) {
+            const response = this.convertOutput(stdout)
 
             if (!!response) {
                 return response
@@ -31,18 +31,12 @@ export class SamCliInfoInvocation {
         }
 
         console.error('SAM CLI error')
-        console.error(`Exit code: ${childProcessResult.exitCode}`)
-        console.error(`Error: ${childProcessResult.error}`)
-        console.error(`stdout: ${childProcessResult.stdout}`)
+        console.error(`Exit code: ${exitCode}`)
+        console.error(`Error: ${error}`)
+        console.error(`stdout: ${stderr}`)
+        console.error(`stdout: ${stdout}`)
 
-        let errorMessage: string | undefined
-        if (!!childProcessResult.error && !!childProcessResult.error.message) {
-            errorMessage = childProcessResult.error.message
-        } else if (!!childProcessResult.stderr) {
-            errorMessage = childProcessResult.stderr
-        }
-
-        throw new Error(`sam --info encountered an error: ${errorMessage}`)
+        throw new Error(`sam --info encountered an error: ${error && error.message ? error.message : stderr || stdout}`)
     }
 
     /**
