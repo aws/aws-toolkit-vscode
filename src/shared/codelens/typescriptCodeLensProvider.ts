@@ -37,9 +37,10 @@ interface LambdaLocalInvokeArguments {
     range: vscode.Range,
     handlerName: string,
     debug: boolean,
+    workspaceFolder: vscode.WorkspaceFolder
 }
 
-interface EnvironmentVariables {
+interface SAMTemplateEnvironmentVariables {
     [resource: string]: {
         [key: string]: string
     }
@@ -62,12 +63,18 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
                 document.positionAt(handler.positionStart),
                 document.positionAt(handler.positionEnd),
             )
+            const workspaceFolder:
+                vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(document.uri)
 
-            lenses.push(this.generateLocalInvokeCodeLens(document, range, handler.handlerName, false))
-            lenses.push(this.generateLocalInvokeCodeLens(document, range, handler.handlerName, true))
+            if (!workspaceFolder) {
+                throw new Error(`Source file ${document.uri} is external to the current workspace.`)
+            }
+
+            lenses.push(this.generateLocalInvokeCodeLens(document, range, handler.handlerName, false, workspaceFolder))
+            lenses.push(this.generateLocalInvokeCodeLens(document, range, handler.handlerName, true, workspaceFolder))
 
             try {
-                lenses.push(this.generateConfigureCodeLens(document, range, handler.handlerName))
+                lenses.push(this.generateConfigureCodeLens(document, range, handler.handlerName, workspaceFolder))
             } catch (err) {
                 const error = err as Error
 
@@ -90,7 +97,8 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
     private generateConfigureCodeLens(
         document: vscode.TextDocument,
         range: vscode.Range,
-        handlerName: string
+        handlerName: string,
+        workspaceFolder?: vscode.WorkspaceFolder
     ) {
         // Handler will be the fully-qualified name, so we also allow '.' despite it being forbidden in handler names.
         if (/[^\w\-\.]/.test(handlerName)) {
@@ -98,11 +106,6 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
                 `Invalid handler name: '${handlerName}'. ` +
                 'Handler names can contain only letters, numbers, hyphens, and underscores.'
             )
-        }
-
-        const workspaceFolder: vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(document.uri)
-        if (!workspaceFolder) {
-            throw new Error(`Source file ${document.uri} is external to the current workspace.`)
         }
 
         const command = {
@@ -119,6 +122,7 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
         range: vscode.Range,
         handlerName: string,
         debug: boolean,
+        workspaceFolder: vscode.WorkspaceFolder,
     ): vscode.CodeLens {
         const title: string = debug ?
             localize('AWS.codelens.lambda.invoke.debug', 'Debug') :
@@ -129,6 +133,7 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
             range,
             handlerName,
             debug,
+            workspaceFolder,
         }
 
         const command: vscode.Command = {
@@ -277,6 +282,7 @@ class LocalLambdaRunner {
     ): Promise<string> {
         const buildFolder: string = await this.getBaseBuildFolder()
         const inputTemplatePath: string = path.join(buildFolder, 'input', 'input-template.yaml')
+        let existingTemplateResource: CloudFormation.Resource | undefined
 
         // Make function handler relative to baseDir
         const handlerFileRelativePath = path.relative(
@@ -289,8 +295,12 @@ class LocalLambdaRunner {
             this.localInvokeArgs.handlerName
         ).replace('\\', '/')
 
-        const existingTemplateResource =
-            await this.getResourceForHandlerFromTemplate(relativeFunctionHandler, await detectLocalLambdas())
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(this.localInvokeArgs.workspaceFolder.uri)
+        if (!!workspaceFolder) {
+            existingTemplateResource = await this.getResourceForHandlerFromTemplate(
+                relativeFunctionHandler, await detectLocalLambdas([workspaceFolder])
+            )
+        }
 
         const newTemplate = new SamTemplateGenerator()
             .withCodeUri(rootCodeFolder)
@@ -373,7 +383,7 @@ class LocalLambdaRunner {
         )
 
         const eventPath: string = path.join(await this.getBaseBuildFolder(), 'event.json')
-        const environmentVariablePath = path.join(await this.getBaseBuildFolder(), 'temp.json')
+        const environmentVariablePath = path.join(await this.getBaseBuildFolder(), 'env-vars.json')
         const config = await this.getConfig()
 
         await fileSystem.writeFileAsync(eventPath, JSON.stringify(config.event || {}))
@@ -427,7 +437,7 @@ class LocalLambdaRunner {
         return config
     }
 
-    private getEnvironmentVariables(config: HandlerConfig): EnvironmentVariables {
+    private getEnvironmentVariables(config: HandlerConfig): SAMTemplateEnvironmentVariables {
         if (!!config.environmentVariables) {
             return {
                 [LocalLambdaRunner.TEMPLATE_RESOURCE_NAME]: config.environmentVariables

@@ -85,7 +85,7 @@ describe('filesystem', () => {
 
     describe('mkdtempAsync', () => {
         it('creates a directory with the specified prefix', async () => {
-            const actual = await filesystem.mkdtempAsync('myPrefix')
+            const actual = await filesystem.mkdtempAsync(path.join(os.tmpdir(), 'myPrefix'))
 
             assert.ok(actual)
             assert.strictEqual(path.basename(actual).startsWith('myPrefix'), true)

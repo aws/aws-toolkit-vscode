@@ -30,23 +30,29 @@ export namespace CloudFormation {
     }
 
     export interface Environment {
-        Variables: {
+        Variables?: {
             [varName: string]: string
         }
     }
 
-    export async function load(filename: string): Promise<CloudFormation.Template> {
+    export async function load(filename: string): Promise<Template> {
         const templateAsYaml: string = await filesystemUtilities.readFileAsString(filename, 'utf8')
 
-        return yaml.safeLoad(
+        const template = yaml.safeLoad(
             templateAsYaml,
             {
                 schema
             }
-        ) as CloudFormation.Template
+        ) as Template
+
+        if (typeof template === 'string') {
+            throw new Error ('YAML is not a valid CloudFormation template')
+        }
+
+        return template
     }
 
-    export async function save(template: CloudFormation.Template, filename: string): Promise<void> {
+    export async function save(template: Template, filename: string): Promise<void> {
         const templateAsYaml: string = yaml.safeDump(template)
 
         await filesystem.writeFileAsync(filename, templateAsYaml, 'utf8')
