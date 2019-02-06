@@ -28,9 +28,9 @@ object ToolkitActionPlaces {
 //    <logic>
 //  }
 abstract class AnActionWrapper : TelemetryNamespace, AnAction {
-    constructor(): super()
-    constructor(text: String? = null, description: String? = null, icon: Icon? = null):
-        super(text, description, icon)
+    constructor() : super()
+    constructor(text: String? = null, description: String? = null, icon: Icon? = null) :
+            super(text, description, icon)
 
     /**
      * Consumers should use doActionPerformed(e: AnActionEvent)
@@ -72,9 +72,9 @@ abstract class ComboBoxActionWrapper : TelemetryNamespace, ComboBoxAction() {
 }
 
 abstract class ToogleActionWrapper : TelemetryNamespace, ToggleAction {
-    constructor(): super()
-    constructor(text: String? = null, description: String? = null, icon: Icon? = null):
-        super(text, description, icon)
+    constructor() : super()
+    constructor(text: String? = null, description: String? = null, icon: Icon? = null) :
+            super(text, description, icon)
 
     // this will be repeatedly called by the IDE, so we likely do not want telemetry on this,
     // but keeping this to maintain API consistency
