@@ -34,7 +34,7 @@ export namespace CloudFormation {
         return yaml.safeLoad(
             templateAsYaml,
             {
-                schema
+                schema: schema as yaml.SchemaDefinition
             }
         ) as Template
     }
