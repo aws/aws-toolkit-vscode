@@ -21,7 +21,7 @@ export class SamCliBuildInvocation {
     public async execute(): Promise<void> {
         await this.validate()
 
-        const { exitCode, error, stdout }: ChildProcessResult = await this.invoker.invoke(
+        const { exitCode, error, stderr, stdout }: ChildProcessResult = await this.invoker.invoke(
             'build',
             '--build-dir', this.buildDir,
             '--base-dir', this.baseDir,
@@ -35,9 +35,10 @@ export class SamCliBuildInvocation {
         console.error('SAM CLI error')
         console.error(`Exit code: ${exitCode}`)
         console.error(`Error: ${error}`)
+        console.error(`stdout: ${stderr}`)
         console.error(`stdout: ${stdout}`)
 
-        throw new Error(`sam build encountered an error: ${error && error.message ? error.message : stdout}`)
+        throw new Error(`sam build encountered an error: ${error && error.message ? error.message : stderr || stdout}`)
     }
 
     private async validate(): Promise<void> {

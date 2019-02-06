@@ -31,13 +31,9 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
 
     public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
     public invoke(...args: string[]): Promise<ChildProcessResult>
-    public async invoke(optionsOrArgs: any, ...args: string[]): Promise<ChildProcessResult> {
-        let options: SpawnOptions | undefined
-        if (Array.isArray(optionsOrArgs)) {
-            args = optionsOrArgs as string[]
-        } else {
-            options = optionsOrArgs as SpawnOptions
-        }
+    public async invoke(first: SpawnOptions | string, ...rest: string[]): Promise<ChildProcessResult> {
+        const args = typeof first === 'string' ? [ first, ...rest ] : rest
+        const options: SpawnOptions | undefined = typeof first === 'string' ? undefined : first
 
         const samCliLocation = this.config.getSamCliLocation()
         if (!samCliLocation) {
