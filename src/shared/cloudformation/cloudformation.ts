@@ -41,7 +41,7 @@ export namespace CloudFormation {
         const template = yaml.safeLoad(
             templateAsYaml,
             {
-                schema
+                schema: schema as yaml.SchemaDefinition
             }
         ) as Template
 

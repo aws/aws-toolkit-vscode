@@ -5,7 +5,12 @@
 
 'use strict'
 
-const symbol: {
-    asyncIterator: symbol
-} = Symbol
-symbol.asyncIterator = Symbol.asyncIterator || Symbol.for('Symbol.asyncIterator')
+if (!Symbol.asyncIterator) {
+    Object.defineProperty(
+        Symbol,
+        'asyncIterator',
+        {
+            value: Symbol.for('Symbol.asyncIterator')
+        }
+    )
+}
