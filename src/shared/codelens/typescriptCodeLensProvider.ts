@@ -13,7 +13,7 @@ import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
 
 import { buildHandlerConfig, getLocalLambdaConfiguration, HandlerConfig } from '../../lambda/local/configureLocalLambda'
-import { detectLocalLambdas, LocalLambda } from '../../lambda/local/detectLocalLambdas'
+import { detectLocalLambdas } from '../../lambda/local/detectLocalLambdas'
 import { NodeDebugConfiguration } from '../../lambda/local/nodeDebugConfiguration'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import * as fileSystem from '../filesystem'
@@ -296,21 +296,21 @@ class LocalLambdaRunner {
         ).replace('\\', '/')
 
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(this.localInvokeArgs.workspaceFolder.uri)
-        if (!!workspaceFolder) {
-            existingTemplateResource = await this.getResourceForHandlerFromTemplate(
-                relativeFunctionHandler, await detectLocalLambdas([workspaceFolder])
-            )
+        if (workspaceFolder) {
+            const lambdas = await detectLocalLambdas([workspaceFolder])
+            const existingLambda = lambdas.find(lambda => lambda.handler === relativeFunctionHandler)
+            existingTemplateResource = (existingLambda ? existingLambda.resource : undefined)
         }
 
-        const newTemplate = new SamTemplateGenerator()
+        let newTemplate = new SamTemplateGenerator()
             .withCodeUri(rootCodeFolder)
             .withFunctionHandler(relativeFunctionHandler)
             .withResourceName(LocalLambdaRunner.TEMPLATE_RESOURCE_NAME)
             .withRuntime(this.runtime)
 
-        if (!!existingTemplateResource && !!existingTemplateResource.Properties &&
+        if (existingTemplateResource && existingTemplateResource.Properties &&
             existingTemplateResource.Properties.Environment) {
-            newTemplate.withEnvironment(existingTemplateResource.Properties.Environment)
+            newTemplate = newTemplate.withEnvironment(existingTemplateResource.Properties.Environment)
         }
 
         await newTemplate.generate(inputTemplatePath)
@@ -445,18 +445,6 @@ class LocalLambdaRunner {
         } else {
             return {}
         }
-    }
-
-    private async getResourceForHandlerFromTemplate(handler: string, lambdas: LocalLambda[]):
-        Promise<CloudFormation.Resource | undefined> {
-
-        for (const lambda of lambdas) {
-            if (lambda.handler === handler) {
-                return lambda.resource
-            }
-        }
-
-        return undefined
     }
 
     private async attachDebugger(debugPort: number) {

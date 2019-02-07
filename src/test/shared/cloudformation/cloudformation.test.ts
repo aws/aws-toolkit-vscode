@@ -116,4 +116,26 @@ describe ('CloudFormation', () => {
         const loadedYaml: CloudFormation.Template = await CloudFormation.load(filename)
         assert.deepStrictEqual(loadedYaml, baseTemplate)
     })
+
+    it ('can successfully validate a valid template', () => {
+        assert.doesNotThrow(() => CloudFormation.validateTemplate(baseTemplate))
+    })
+
+    it ('can successfully validate a valid resource', () => {
+        assert.doesNotThrow(() => CloudFormation.validateResource(baseResource))
+    })
+
+    it ('can detect an invalid template', () => {
+        const badTemplate = baseTemplate
+        delete badTemplate.Resources!.TestResource!.Type
+        assert.throws(() => {CloudFormation.validateTemplate(badTemplate)},
+                      'Missing or invalid value in Template for key: Type')
+    })
+
+    it ('can detect an invalid resource', () => {
+        const badResource = baseResource
+        delete badResource.Properties!.CodeUri
+        assert.throws(() => CloudFormation.validateResource(badResource),
+                      'Missing or invalid value in Template for key: CodeUri')
+    })
 })
