@@ -22,6 +22,7 @@
         "onCommand:aws.showRegion",
         "onCommand:aws.hideRegion",
         "onView:lambda",
+        "onCommand:aws.deployLambda",
         "onCommand:aws.samcli.detect",
         "onCommand:aws.samcli.validate.version",
         "onCommand:aws.lambda.createNewSamApp",
@@ -197,6 +198,11 @@
             {
                 "command": "aws.deleteLambda",
                 "title": "%AWS.command.deleteLambda%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.deployLambda",
+                "title": "%AWS.command.deployLambda%",
                 "category": "AWS"
             },
             {

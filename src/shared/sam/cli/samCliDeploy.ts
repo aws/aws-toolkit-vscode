@@ -5,15 +5,13 @@
 
 'use strict'
 
-import { fileExists } from '../../filesystemUtilities'
 import { ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliProcessInvoker, SamCliProcessInvoker } from './samCliInvoker'
 
-export class SamCliBuildInvocation {
+export class SamCliDeployInvocation {
     public constructor(
-        private readonly buildDir: string,
-        private readonly baseDir: string,
-        private readonly templatePath: string,
+        private readonly templateFile: string,
+        private readonly stackName: string,
         private readonly invoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker()
     ) {
     }
@@ -22,28 +20,27 @@ export class SamCliBuildInvocation {
         await this.validate()
 
         const { exitCode, error, stderr, stdout }: ChildProcessResult = await this.invoker.invoke(
-            'build',
-            '--build-dir', this.buildDir,
-            '--base-dir', this.baseDir,
-            '--template', this.templatePath
+            'deploy',
+            '--template-file', this.templateFile,
+            '--stack-name', this.stackName,
+            '--capabilities', 'CAPABILITY_IAM'
         )
 
         if (exitCode === 0) {
             return
         }
 
-        console.error('SAM CLI error')
+        console.error('SAM deploy error')
         console.error(`Exit code: ${exitCode}`)
         console.error(`Error: ${error}`)
         console.error(`stderr: ${stderr}`)
         console.error(`stdout: ${stdout}`)
 
-        throw new Error(`sam build encountered an error: ${error && error.message ? error.message : stderr || stdout}`)
+        throw new Error(`sam deploy encountered an error: ${error && error.message ? error.message : stderr || stdout}`)
     }
 
     private async validate(): Promise<void> {
-        if (!await fileExists(this.templatePath)) {
-            throw new Error(`template path does not exist: ${this.templatePath}`)
-        }
+        // TODO: Validate that templateFile exists.
+        // TODO: Validate that stackName is a valid name.
     }
 }

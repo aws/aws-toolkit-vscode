@@ -72,8 +72,24 @@ export async function readFileAsync(filename: string, encoding: string | null): 
     })
 }
 
-export async function statAsync(path: string | Buffer): Promise<fs.Stats> {
-    return await new Promise<fs.Stats>((resolve, reject) => {
+export async function rmdirAsync(path: fs.PathLike): Promise<void> {
+    await new Promise<void>((resolve, reject) => {
+        fs.rmdir(path, err => {
+            if (!err) {
+                resolve()
+            } else {
+                reject(err)
+            }
+        })
+    })
+}
+
+export interface Stats extends fs.Stats {
+    // fs.Stats is a class, so for easy mocking we code against an interface with the same shape.
+}
+
+export async function statAsync(path: string | Buffer): Promise<Stats> {
+    return await new Promise<Stats>((resolve, reject) => {
         fs.stat(path, (err, stats) => {
             if (!err) {
                 resolve(stats)
