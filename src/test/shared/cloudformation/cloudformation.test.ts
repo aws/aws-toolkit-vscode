@@ -128,7 +128,7 @@ describe ('CloudFormation', () => {
     it ('can detect an invalid template', () => {
         const badTemplate = baseTemplate
         delete badTemplate.Resources!.TestResource!.Type
-        assert.throws(() => {CloudFormation.validateTemplate(badTemplate)},
+        assert.throws(() => CloudFormation.validateTemplate(badTemplate),
                       'Missing or invalid value in Template for key: Type')
     })
 
