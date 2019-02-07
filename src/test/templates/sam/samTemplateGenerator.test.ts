@@ -218,7 +218,7 @@ describe('SamTemplateGenerator', () => {
             assert.strictEqual(await SystemUtilities.fileExists(destinationTemplateFilename), false)
         })
 
-        it('errs if function handler is not in existing template and not provided', async () => {
+        it('errs if function handler is not provided', async () => {
             const expectedTemplateContents: CloudFormation.Template = createSampleTemplate(
                 [sampleResourceNameValue]
             )
@@ -238,7 +238,7 @@ describe('SamTemplateGenerator', () => {
                 })
 
             assert.ok(error)
-            assert.strictEqual(error.message, 'Missing value: FunctionHandler')
+            assert.strictEqual(error.message, 'Missing or invalid value in Template for key: Handler')
             assert.strictEqual(await SystemUtilities.fileExists(destinationTemplateFilename), false)
         })
 

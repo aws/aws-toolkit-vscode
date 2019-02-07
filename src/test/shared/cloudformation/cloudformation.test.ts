@@ -8,7 +8,6 @@
 import * as assert from 'assert'
 import * as del from 'del'
 import * as fs from 'fs'
-import * as yaml from 'js-yaml'
 import * as os from 'os'
 import * as path from 'path'
 
@@ -16,30 +15,31 @@ import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import * as filesystem from '../../../shared/filesystem'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
+import { assertRejects } from '../utilities/assertUtils'
 
 describe ('CloudFormation', () => {
 
     let tempFolder: string
     let filename: string
 
-    before(() => {
+    before(async () => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
         tempFolder = fs.mkdtempSync(path.join(os.tmpdir(), 'vsctk'))
         filename = path.join(tempFolder, 'temp.yaml')
     })
 
-    beforeEach(() => {
-        if (filesystemUtilities.fileExists(filename)) {
-            del.sync(filename, { force: true })
+    afterEach(async () => {
+        if (await filesystemUtilities.fileExists(filename)) {
+            await del(filename, { force: true })
         }
     })
 
-    after(() => {
-        if (filesystemUtilities.fileExists(filename)) {
-            del.sync(filename, { force: true })
+    after(async () => {
+        if (await filesystemUtilities.fileExists(filename)) {
+            await del(filename, { force: true })
         }
-        del.sync([tempFolder], { force: true })
+        await del([tempFolder], { force: true })
     })
 
     const baseEnvironment: CloudFormation.Environment = {
@@ -66,9 +66,7 @@ describe ('CloudFormation', () => {
     }
 
     async function strToYamlFile(str: string, file: string): Promise<void> {
-        const templateAsYaml: string = yaml.safeDump(str)
-
-        await filesystem.writeFileAsync(file, templateAsYaml, 'utf8')
+        await filesystem.writeFileAsync(file, str, 'utf8')
     }
 
     it ('can successfully load a file', async () => {
@@ -83,7 +81,7 @@ describe ('CloudFormation', () => {
             Timeout: 12345
             Environment:
                 Variables:
-                ENVVAR: envvar`
+                    ENVVAR: envvar`
 
         await strToYamlFile(yamlStr, filename)
         const loadedTemplate = await CloudFormation.load(filename)
@@ -102,9 +100,9 @@ describe ('CloudFormation', () => {
             Timeout: 12345
             Environment:
                 Variables:
-                ENVVAR: envvar`
+                    ENVVAR: envvar`
         await strToYamlFile(badYamlStr, filename)
-        assert.throws(async () => {await CloudFormation.load(filename)}, Error)
+        await assertRejects(async () => await CloudFormation.load(filename))
     })
 
     it ('can successfully save a file', async() => {
