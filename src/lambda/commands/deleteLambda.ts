@@ -44,7 +44,7 @@ export async function deleteLambda({
                            }
 }: {
   lambdaClient: LambdaClient
-  node: StandaloneFunctionNode,
+  node: StandaloneFunctionNode, // TODO: Change to deleteParams: Lambda.Types.DeleteFunctionRequest
   outputChannel: OutputChannel,
   onError?(err: any): void
   onRefresh(): void,
