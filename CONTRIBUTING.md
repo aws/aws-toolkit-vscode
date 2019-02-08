@@ -14,6 +14,8 @@ Before you start, install the following dependencies.
 
 * [Visual Studio Code](https://code.visualstudio.com/Download)
 * [NodeJS and NPM](https://nodejs.org/)
+  * NodeJS Version: 10.x
+  * NPM version: 6.4.1 or higher
 * [Typescript](https://www.typescriptlang.org/)
 * [Git](https://git-scm.com/downloads)
 
