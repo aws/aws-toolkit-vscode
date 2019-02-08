@@ -21,11 +21,11 @@ describe('SystemUtilities', () => {
     before(() => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
-        tempFolder = fs.mkdtempSync('vsctk')
+        tempFolder = fs.mkdtempSync(path.join(os.tmpdir(), 'vsctk'))
     })
 
     after(() => {
-        del.sync([tempFolder])
+        del.sync([tempFolder], { force: true })
     })
 
     describe('getHomeDirectory', () => {

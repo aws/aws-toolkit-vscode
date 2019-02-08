@@ -9,6 +9,7 @@ import * as assert from 'assert'
 import * as AWS from 'aws-sdk'
 import * as del from 'del'
 import * as fs from 'fs'
+import * as os from 'os'
 import * as path from 'path'
 import { promisify } from 'util'
 
@@ -29,11 +30,11 @@ describe('UserCredentialsUtils', () => {
     before(() => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
-        tempFolder = fs.mkdtempSync('vsctk')
+        tempFolder = fs.mkdtempSync(path.join(os.tmpdir(), 'vsctk'))
     })
 
     after(() => {
-        del.sync([tempFolder])
+        del.sync([tempFolder], { force: true })
     })
 
     describe('getCredentialsFilename', () => {
