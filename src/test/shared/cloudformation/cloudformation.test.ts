@@ -35,33 +35,28 @@ describe ('CloudFormation', () => {
         }
     })
 
-    after(async () => {
-        if (await filesystemUtilities.fileExists(filename)) {
-            await del(filename, { force: true })
-        }
-        await del([tempFolder], { force: true })
-    })
-
-    const baseEnvironment: CloudFormation.Environment = {
-        Variables: {
-            ENVVAR: 'envvar'
+    function createBaseTemplate(): CloudFormation.Template {
+        return {
+            Resources: {
+                TestResource: createBaseResource()
+            }
         }
     }
 
-    const baseResource: CloudFormation.Resource = {
-        Type: 'type',
-        Properties: {
-            Handler: 'handler',
-            CodeUri: 'codeuri',
-            Runtime: 'runtime',
-            Timeout: 12345,
-            Environment: baseEnvironment
-        }
-    }
-
-    const baseTemplate: CloudFormation.Template = {
-        Resources: {
-            TestResource: baseResource
+    function createBaseResource(): CloudFormation.Resource {
+        return {
+            Type: 'AWS::Serverless::Function',
+            Properties: {
+                Handler: 'handler',
+                CodeUri: 'codeuri',
+                Runtime: 'runtime',
+                Timeout: 12345,
+                Environment: {
+                    Variables: {
+                        ENVVAR: 'envvar'
+                    }
+                }
+            }
         }
     }
 
@@ -73,7 +68,7 @@ describe ('CloudFormation', () => {
         const yamlStr: string =
 `Resources:
     TestResource:
-        Type: type
+        Type: AWS::Serverless::Function
         Properties:
             Handler: handler
             CodeUri: codeuri
@@ -85,7 +80,25 @@ describe ('CloudFormation', () => {
 
         await strToYamlFile(yamlStr, filename)
         const loadedTemplate = await CloudFormation.load(filename)
-        assert.deepStrictEqual(loadedTemplate, baseTemplate)
+        assert.deepStrictEqual(loadedTemplate, createBaseTemplate())
+    })
+
+    it ('only loads YAML with valid types', async () => {
+        // timeout is not a number
+        const badYamlStr: string =
+`Resources:
+    TestResource:
+        Type: AWS::Serverless::Function
+        Properties:
+            Handler: handler
+            CodeUri: codeuri
+            Runtime: runtime
+            Timeout: not a number
+            Environment:
+                Variables:
+                    ENVVAR: envvar`
+        await strToYamlFile(badYamlStr, filename)
+        await assertRejects(async () => await CloudFormation.load(filename))
     })
 
     it ('only loads valid YAML', async () => {
@@ -93,7 +106,7 @@ describe ('CloudFormation', () => {
         const badYamlStr: string =
 `Resources:
     TestResource:
-        Type: type
+        Type: AWS::Serverless::Function
         Properties:
             CodeUri: codeuri
             Runtime: runtime
@@ -106,11 +119,12 @@ describe ('CloudFormation', () => {
     })
 
     it ('can successfully save a file', async() => {
-        await CloudFormation.save(baseTemplate, filename)
+        await CloudFormation.save(createBaseTemplate(), filename)
         assert.strictEqual(await SystemUtilities.fileExists(filename), true)
     })
 
     it ('can successfully save a file to YAML and load the file as a CloudFormation.Template', async () => {
+        const baseTemplate = createBaseTemplate()
         await CloudFormation.save(baseTemplate, filename)
         assert.strictEqual(await SystemUtilities.fileExists(filename), true)
         const loadedYaml: CloudFormation.Template = await CloudFormation.load(filename)
@@ -118,24 +132,24 @@ describe ('CloudFormation', () => {
     })
 
     it ('can successfully validate a valid template', () => {
-        assert.doesNotThrow(() => CloudFormation.validateTemplate(baseTemplate))
+        assert.doesNotThrow(() => CloudFormation.validateTemplate(createBaseTemplate()))
     })
 
     it ('can successfully validate a valid resource', () => {
-        assert.doesNotThrow(() => CloudFormation.validateResource(baseResource))
+        assert.doesNotThrow(() => CloudFormation.validateResource(createBaseResource()))
     })
 
     it ('can detect an invalid template', () => {
-        const badTemplate = baseTemplate
+        const badTemplate = createBaseTemplate()
         delete badTemplate.Resources!.TestResource!.Type
         assert.throws(() => CloudFormation.validateTemplate(badTemplate),
-                      'Missing or invalid value in Template for key: Type')
+                      Error, 'Missing or invalid value in Template for key: Type')
     })
 
     it ('can detect an invalid resource', () => {
-        const badResource = baseResource
+        const badResource = createBaseResource()
         delete badResource.Properties!.CodeUri
         assert.throws(() => CloudFormation.validateResource(badResource),
-                      'Missing or invalid value in Template for key: CodeUri')
+                      Error, 'Missing or invalid value in Template for key: CodeUri')
     })
 })
