@@ -6,13 +6,9 @@
 'use strict'
 
 import * as assert from 'assert'
-import { OutputChannel } from 'vscode'
 import { deleteLambda } from '../../../lambda/commands/deleteLambda'
-import { ext } from '../../../shared/extensionGlobals'
-import {
-    MockLambdaClient,
-    MockToolkitClientBuilder
-} from '../../shared/clients/mockClients'
+import { MockOutputChannel } from '../../mockOutputChannel'
+import { MockLambdaClient } from '../../shared/clients/mockClients'
 import {
     MockStandaloneFunctionGroupNode,
     MockStandaloneFunctionNode
@@ -20,12 +16,9 @@ import {
 
 describe('deleteLambda', async () => {
     it('no-ops if function name is not provided', async () => {
-        ext.toolkitClientBuilder = new MockToolkitClientBuilder(
+        const lambdaClient = new MockLambdaClient(
             undefined,
-            new MockLambdaClient(
-                undefined,
-                name => assert.fail()
-            )
+            name => assert.fail()
         )
 
         const parent = new MockStandaloneFunctionGroupNode(
@@ -43,20 +36,32 @@ describe('deleteLambda', async () => {
             async configuration => assert.fail()
         )
 
-        await deleteLambda(node, () => assert.fail())
+        await deleteLambda({
+            node,
+            lambdaClient,
+            outputChannel: new MockOutputChannel(),
+            onRefresh: () => assert.fail(),
+            onConfirm: async () => {
+                assert.fail()
+
+                return false
+            }
+        })
     })
 
-    it('deletes the function with the specified name', async () => {
-        let invokeCount = 0
-        ext.toolkitClientBuilder = new MockToolkitClientBuilder(
+    const assertLambdaDeleteWorks = async ({confirmationResponse}: { confirmationResponse: boolean }) => {
+        let deleteCount = 0
+        let refreshCount = 0
+        const lambdaClient = new MockLambdaClient(
             undefined,
-            new MockLambdaClient(
-                undefined,
-                async name => {
-                    assert.strictEqual(name, 'myFunctionName')
-                    invokeCount++
-                }
-            )
+            async (name) => {
+              deleteCount++
+              assert.strictEqual(
+                  name,
+                  'myFunctionName',
+                  `Expected lambda name "myFunctionName", not "${name}"`
+              )
+            }
         )
 
         const parent = new MockStandaloneFunctionGroupNode(
@@ -76,28 +81,46 @@ describe('deleteLambda', async () => {
             async configuration => assert.fail()
         )
 
-        await deleteLambda(node, () => {})
+        await deleteLambda({
+             node,
+             lambdaClient,
+             outputChannel: new MockOutputChannel(),
+             onRefresh: () => refreshCount++,
+             onConfirm: async () => confirmationResponse
+        })
 
-        assert.strictEqual(invokeCount, 1)
+        const expectedDeleteCount = confirmationResponse ? 1 : 0
+        assert.strictEqual(
+            deleteCount,
+            expectedDeleteCount,
+            `Expected delete count ${expectedDeleteCount}, actual count ${deleteCount}`
+        )
+
+        const expectedRefreshCount = 1
+        assert.strictEqual(
+            refreshCount,
+            expectedRefreshCount,
+            `Expected refresh count ${expectedRefreshCount}, actual count ${refreshCount}`
+        )
+    }
+
+    it('deletes lambda with the specified name when confirmed', async () => {
+        return assertLambdaDeleteWorks({ confirmationResponse: true })
+    })
+
+    it('does not delete lambda with the specified name when cancelled', async () => {
+        return assertLambdaDeleteWorks({ confirmationResponse: false })
     })
 
     it('handles errors gracefully', async () => {
         let deleteCount = 0
-        ext.toolkitClientBuilder = new MockToolkitClientBuilder(
+        const lambdaClient = new MockLambdaClient(
             undefined,
-            new MockLambdaClient(
-                undefined,
-                async name => {
-                    deleteCount++
-                    throw new Error()
-                }
-            )
+            async name => {
+                deleteCount++
+                throw new Error()
+            }
         )
-
-        ext.lambdaOutputChannel = {
-            show(preserveFocus?: boolean | undefined): void { },
-            appendLine(value: string): void { }
-        } as any as OutputChannel
 
         const parent = new MockStandaloneFunctionGroupNode(
             undefined,
@@ -118,7 +141,13 @@ describe('deleteLambda', async () => {
         )
 
         let refreshCount = 0
-        await deleteLambda(node, () => refreshCount++)
+        await deleteLambda({
+           node,
+           lambdaClient,
+           outputChannel: new MockOutputChannel(),
+           onRefresh: () => refreshCount++,
+           onConfirm: async () => true
+        })
 
         assert.strictEqual(deleteCount, 1)
         assert.strictEqual(refreshCount, 1)
@@ -126,14 +155,11 @@ describe('deleteLambda', async () => {
 
     it('refreshes after delete', async () => {
         let deleteCount = 0
-        ext.toolkitClientBuilder = new MockToolkitClientBuilder(
+        const lambdaClient = new MockLambdaClient(
             undefined,
-            new MockLambdaClient(
-                undefined,
-                async name => {
-                    deleteCount++
-                }
-            )
+            async name => {
+                deleteCount++
+            }
         )
 
         const parent = new MockStandaloneFunctionGroupNode(
@@ -155,7 +181,14 @@ describe('deleteLambda', async () => {
         )
 
         let refreshCount = 0
-        await deleteLambda(node, () => refreshCount++)
+
+        await deleteLambda({
+            node,
+            lambdaClient,
+            outputChannel: new MockOutputChannel(),
+            onRefresh: () => refreshCount++,
+            onConfirm: async () => true
+        })
 
         assert.strictEqual(deleteCount, 1)
         assert.strictEqual(refreshCount, 1)

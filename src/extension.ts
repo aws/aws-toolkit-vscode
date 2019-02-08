@@ -42,7 +42,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
     const localize = nls.loadMessageBundle()
 
-    ext.lambdaOutputChannel = vscode.window.createOutputChannel('AWS Lambda')
     ext.context = context
 
     const toolkitOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel(

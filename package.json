@@ -219,7 +219,8 @@
         "postinstall": "node ./node_modules/vscode/bin/install",
         "test": "npm run compile && node ./test-scripts/test.js",
         "lint": "tslint --project .",
-        "package": "vsce package"
+        "package": "vsce package",
+        "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix"
     },
     "devDependencies": {
         "@types/async-lock": "^1.1.0",
