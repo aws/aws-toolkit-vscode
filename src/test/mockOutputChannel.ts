@@ -32,10 +32,17 @@ export class MockOutputChannel implements OutputChannel {
     this.isHidden = true
   }
 
+  /**
+   * This is overloaded by VS Code but viewColumn version is deprecated thus
+   * show(preserveFocus?: boolean) is really what we should consider.
+   * @param args
+   */
   public show(...args: any[] /* viewColumn?: ViewColumn, preserveFocus?: boolean */) {
-    this.isHidden = true
+    this.isHidden = false
     if (args && typeof args[0] === 'boolean') {
-      this.preserveFocus = !!args[0] // Making linter happy
+      this.preserveFocus = !!args[0] // Linter doesn't know it's a boolean
+    } else if (args[0]) {
+      throw new TypeError('1st argument must be a boolean if provided')
     }
   }
 }
