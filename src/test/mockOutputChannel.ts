@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { OutputChannel } from 'vscode'
+import * as vscode from 'vscode'
 
-export class MockOutputChannel implements OutputChannel {
+export class MockOutputChannel implements vscode.OutputChannel {
   public value: string = ''
   public isHidden: boolean = false
   public preserveFocus: boolean = false
@@ -35,14 +35,13 @@ export class MockOutputChannel implements OutputChannel {
   /**
    * This is overloaded by VS Code but viewColumn version is deprecated thus
    * show(preserveFocus?: boolean) is really what we should consider.
-   * @param args
    */
-  public show(...args: any[] /* viewColumn?: ViewColumn, preserveFocus?: boolean */) {
-    this.isHidden = false
-    if (args && typeof args[0] === 'boolean') {
-      this.preserveFocus = !!args[0] // Linter doesn't know it's a boolean
-    } else if (args[0]) {
-      throw new TypeError('1st argument must be a boolean if provided')
-    }
+  public show(columnOrPreserveFocus?: vscode.ViewColumn | boolean, preserveFocus?: boolean): void {
+      if (typeof columnOrPreserveFocus === 'boolean') {
+          this.preserveFocus = columnOrPreserveFocus
+      } else if (typeof columnOrPreserveFocus !== 'undefined') {
+          throw new TypeError('1st argument must be a boolean if provided. ViewColumn is deprecated')
+      }
+      this.isHidden = false
   }
 }
