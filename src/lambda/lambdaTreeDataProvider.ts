@@ -44,15 +44,10 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         private readonly awsContextTrees: AwsContextTreeCollection,
         private readonly regionProvider: RegionProvider,
         private readonly resourceFetcher: ResourceFetcher,
-        private readonly  outputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda')
     ) {
         this._onDidChangeTreeData = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
         this.onDidChangeTreeData = this._onDidChangeTreeData.event
         this.regionNodes = new Map<string, RegionNode>()
-        if (!ext.lambdaOutputChannel) {
-            // TODO: Update each lambda commands to take this as in input and remove ext.lambdaOutputChannel
-            ext.lambdaOutputChannel = this.outputChannel
-        }
     }
 
     public initialize(): void {
@@ -62,7 +57,7 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
             async (node: StandaloneFunctionNode) => await deleteLambda({
                 node,
                 lambdaClient: ext.toolkitClientBuilder.createLambdaClient(node.regionCode),
-                outputChannel: this.outputChannel,
+                outputChannel: ext.lambdaOutputChannel,
                 onRefresh: () => this.refresh(node.parent)
             })
         )

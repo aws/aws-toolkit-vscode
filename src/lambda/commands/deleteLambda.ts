@@ -5,63 +5,56 @@
 
 'use strict'
 
-import { OutputChannel, window } from 'vscode'
-import { loadMessageBundle } from 'vscode-nls'
-const localize = loadMessageBundle()
+import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
 
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { StandaloneFunctionNode } from '../explorer/standaloneNodes'
 
 export async function deleteLambda({
-                           lambdaClient,
-                           node,
-                           outputChannel,
-                           onRefresh,
-                           onConfirm = async () => {
-                               const responseNo: string = localize('AWS.generic.response.no', 'No')
-                               const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
-                               const response = await window.showWarningMessage(
-                                 localize(
-                                   'AWS.command.deleteLambda.confirm',
-                                   "Are you sure you want to delete lambda function '{0}'?",
-                                   node.configuration.FunctionName
-                                 ),
-                                 responseYes,
-                                 responseNo
-                               )
+    onConfirm = async () => {
+        const responseNo: string = localize('AWS.generic.response.no', 'No')
+        const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
+        const response = await vscode.window.showWarningMessage(
+          localize(
+            'AWS.command.deleteLambda.confirm',
+            "Are you sure you want to delete lambda function '{0}'?",
+            restParams.node.configuration.FunctionName
+          ),
+          responseYes,
+          responseNo
+        )
 
-                               return response === responseYes
-                           },
-                           onError = (error: any) => {
-                               outputChannel.show(true)
-                               outputChannel.appendLine(localize(
-                                   'AWS.command.deleteLambda.error',
-                                   "There was an error deleting lambda function '{0}'",
-                                   node.configuration.FunctionArn
-                                 ))
-                               outputChannel.appendLine(String(error)) // linter hates toString on type any
-                               outputChannel.appendLine('')
-                           }
+        return response === responseYes
+    },
+    ...restParams
 }: {
-  lambdaClient: LambdaClient
-  node: StandaloneFunctionNode, // TODO: Change to deleteParams: Lambda.Types.DeleteFunctionRequest
-  outputChannel: OutputChannel,
-  onError?(err: any): void
-  onRefresh(): void,
-  onConfirm?(): Promise<boolean>,
+    lambdaClient: LambdaClient
+    node: StandaloneFunctionNode, // TODO: Change to deleteParams: Lambda.Types.DeleteFunctionRequest
+    outputChannel: vscode.OutputChannel,
+    onRefresh(): void,
+    onConfirm?(): Promise<boolean>,
 }): Promise<void> {
 
-    if (!node.configuration.FunctionName) {
+    if (!restParams.node.configuration.FunctionName) {
         return
     }
     try {
         const isConfirmed = await onConfirm()
         if (isConfirmed) {
-            await lambdaClient.deleteFunction(node.configuration.FunctionName)
+            await restParams.lambdaClient.deleteFunction(restParams.node.configuration.FunctionName)
         }
     } catch (err) {
-        onError(err)
+        restParams.outputChannel.show(true)
+        restParams.outputChannel.appendLine(localize(
+            'AWS.command.deleteLambda.error',
+            "There was an error deleting lambda function '{0}'",
+            restParams.node.configuration.FunctionArn
+        ))
+        restParams.outputChannel.appendLine(String(err)) // linter hates toString on type any
+        restParams.outputChannel.appendLine('')
     } finally {
-        onRefresh()
+      restParams.onRefresh()
     }
 }
