@@ -12,21 +12,28 @@ const localize = nls.loadMessageBundle()
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { StandaloneFunctionNode } from '../explorer/standaloneNodes'
 
+/**
+ * @param message: Message displayed to user
+ */
+const confirm = async (message: string): Promise<boolean> => {
+    // TODO: Re-use `confirm` throughout package (rather than cutting and pasting logic).
+    const responseNo: string = localize('AWS.generic.response.no', 'No')
+    const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
+    const response = await vscode.window.showWarningMessage(
+      message,
+      responseYes,
+      responseNo
+    )
+
+    return response === responseYes
+}
 export async function deleteLambda({
     onConfirm = async () => {
-        const responseNo: string = localize('AWS.generic.response.no', 'No')
-        const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
-        const response = await vscode.window.showWarningMessage(
-          localize(
-            'AWS.command.deleteLambda.confirm',
-            "Are you sure you want to delete lambda function '{0}'?",
-            restParams.node.configuration.FunctionName
-          ),
-          responseYes,
-          responseNo
-        )
-
-        return response === responseYes
+        return await confirm(localize(
+          'AWS.command.deleteLambda.confirm',
+          "Are you sure you want to delete lambda function '{0}'?",
+          restParams.node.configuration.FunctionName
+        ))
     },
     ...restParams
 }: {
