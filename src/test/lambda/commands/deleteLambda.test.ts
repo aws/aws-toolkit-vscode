@@ -49,7 +49,7 @@ describe('deleteLambda', async () => {
         })
     })
 
-    const assertLambdaDeleteWorks = async ({confirmationResponse}: { confirmationResponse: boolean }) => {
+    const assertLambdaDeleteWorks = async (confirmationResponse: boolean) => {
         let deleteCount = 0
         let refreshCount = 0
         const lambdaClient = new MockLambdaClient(
@@ -105,20 +105,21 @@ describe('deleteLambda', async () => {
     }
 
     it('deletes lambda with the specified name when confirmed', async () => {
-        return assertLambdaDeleteWorks({ confirmationResponse: true })
+        return assertLambdaDeleteWorks(true)
     })
 
     it('does not delete lambda with the specified name when cancelled', async () => {
-        return assertLambdaDeleteWorks({ confirmationResponse: false })
+        return assertLambdaDeleteWorks(false)
     })
 
     it('handles errors gracefully', async () => {
         let deleteCount = 0
+        const expectedError = new Error('This error is expected')
         const lambdaClient = new MockLambdaClient(
             undefined,
             async name => {
                 deleteCount++
-                throw new Error()
+                throw expectedError
             }
         )
 
@@ -140,17 +141,26 @@ describe('deleteLambda', async () => {
             async configuration => assert.fail()
         )
 
+        const outputChannel = new MockOutputChannel()
+        outputChannel.hide()
+
         let refreshCount = 0
         await deleteLambda({
            node,
            lambdaClient,
-           outputChannel: new MockOutputChannel(),
+           outputChannel: outputChannel,
            onRefresh: () => refreshCount++,
            onConfirm: async () => true
         })
 
         assert.strictEqual(deleteCount, 1)
         assert.strictEqual(refreshCount, 1)
+
+        assert.strictEqual(outputChannel.isHidden, false)
+        assert.strictEqual(
+            outputChannel.value && outputChannel.value.indexOf(String(expectedError)) > 0,
+            true
+        )
     })
 
     it('refreshes after delete', async () => {
