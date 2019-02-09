@@ -14,6 +14,7 @@ export class SamCliLocalInvokeInvocation {
         private readonly templateResourceName: string,
         private readonly templatePath: string,
         private readonly eventPath: string,
+        private readonly environmentVariablePath: string,
         private readonly debugPort?: string,
         private readonly invoker: SamCliTaskInvoker = new DefaultSamCliTaskInvoker()
     ) {
@@ -29,7 +30,9 @@ export class SamCliLocalInvokeInvocation {
             '--template',
             this.templatePath,
             '--event',
-            this.eventPath
+            this.eventPath,
+            '--env-vars',
+            this.environmentVariablePath
         ]
         if (!!this.debugPort) {
             args.push('-d', this.debugPort)

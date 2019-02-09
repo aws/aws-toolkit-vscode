@@ -10,7 +10,6 @@ import * as path from 'path'
 import * as filesystem from '../../../shared/filesystem'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
 import { CloudFormation } from '../../cloudformation/cloudformation'
-import { SystemUtilities } from '../../systemUtilities'
 
 export class SamTemplateGenerator {
     private _resourceName?: string
@@ -18,6 +17,7 @@ export class SamTemplateGenerator {
     private _codeUri?: string
     private _runtime?: string
     private _existingTemplateFilename?: string
+    private _environment?: CloudFormation.Environment
 
     public withResourceName(resourceName: string): SamTemplateGenerator {
         this._resourceName = resourceName
@@ -49,6 +49,12 @@ export class SamTemplateGenerator {
         return this
     }
 
+    public withEnvironment(env: CloudFormation.Environment): SamTemplateGenerator {
+        this._environment = env
+
+        return this
+    }
+
     public async generate(filename: string): Promise<void> {
         await this.validate()
 
@@ -75,19 +81,10 @@ export class SamTemplateGenerator {
         if (!this._existingTemplateFilename) {
             if (!this._functionHandler) { throw new Error('Missing value: FunctionHandler') }
             if (!this._runtime) { throw new Error('Missing value: Runtime') }
-        } else {
-            await this.validateExistingTemplate()
         }
     }
 
-    private async validateExistingTemplate(): Promise<void> {
-        if (!this._existingTemplateFilename) { return }
-
-        if (!await SystemUtilities.fileExists(this._existingTemplateFilename)) {
-            throw new Error(`Template file not found: ${this._existingTemplateFilename}`)
-        }
-
-        const template: CloudFormation.Template = await CloudFormation.load(this._existingTemplateFilename)
+    private validateExistingTemplate(template: CloudFormation.Template): void {
         const templateResourceNames: Set<string> = !!template.Resources
             ? new Set(Object.keys(template.Resources))
             : new Set()
@@ -117,7 +114,8 @@ export class SamTemplateGenerator {
             Properties: {
                 Handler: this._functionHandler!,
                 CodeUri: this._codeUri!,
-                Runtime: this._runtime!
+                Runtime: this._runtime!,
+                Environment: this._environment!
             }
         }
 
@@ -128,6 +126,7 @@ export class SamTemplateGenerator {
 
     private async createTemplateFromExistingTemplate(): Promise<CloudFormation.Template> {
         const template: CloudFormation.Template = await CloudFormation.load(this._existingTemplateFilename!)
+        this.validateExistingTemplate(template)
         const resource: CloudFormation.Resource = template.Resources![this._resourceName!]
 
         resource.Properties!.CodeUri = this._codeUri!

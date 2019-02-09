@@ -17,7 +17,10 @@ import { readFileAsString } from '../../shared/filesystemUtilities'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 
 export interface HandlerConfig {
-    event: {}
+    event: {},
+    environmentVariables: {
+        [ name: string ]: string
+    }
 }
 
 export interface HandlersConfig {
@@ -51,9 +54,7 @@ export async function getLocalLambdaConfiguration(
     handler: string
 ): Promise<HandlerConfig> {
     const handlersConfig = await getHandlersConfig(workspaceFolder)
-    const emptyHandlerConfig: HandlerConfig = {
-        event: {}
-    }
+    const emptyHandlerConfig = buildHandlerConfig()
 
     if (!handlersConfig || !handlersConfig.handlers) {
         return emptyHandlerConfig
@@ -107,9 +108,10 @@ function buildHandlersConfig(handler?: string): HandlersConfig {
     return config
 }
 
-function buildHandlerConfig(): HandlerConfig {
+export function buildHandlerConfig(): HandlerConfig {
     return {
-        event: {}
+        event: {},
+        environmentVariables: {}
     }
 }
 

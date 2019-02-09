@@ -32,6 +32,11 @@ describe('SamTemplateGenerator', () => {
         const sampleFunctionHandlerValue: string = 'sampleFunctionHandler'
         const sampleResourceNameValue: string = 'sampleResourceName'
         const sampleRuntimeValue: string = 'sampleRuntime'
+        const sampleEnvironment: CloudFormation.Environment = {
+            Variables: {
+                key: 'value'
+            }
+        }
         let templateFilename: string
 
         beforeEach(() => {
@@ -44,6 +49,7 @@ describe('SamTemplateGenerator', () => {
                 .withFunctionHandler(sampleFunctionHandlerValue)
                 .withRuntime(sampleRuntimeValue)
                 .withResourceName(sampleResourceNameValue)
+                .withEnvironment(sampleEnvironment)
                 .generate(templateFilename)
 
             assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
@@ -56,6 +62,7 @@ describe('SamTemplateGenerator', () => {
             assert.strictEqual(resource.Properties!.CodeUri, sampleCodeUriValue)
             assert.strictEqual(resource.Properties!.Handler, sampleFunctionHandlerValue)
             assert.strictEqual(resource.Properties!.Runtime, sampleRuntimeValue)
+            assert.deepStrictEqual(resource.Properties!.Environment, sampleEnvironment)
         })
 
         it('errs if resource name is missing', async () => {
@@ -211,7 +218,7 @@ describe('SamTemplateGenerator', () => {
             assert.strictEqual(await SystemUtilities.fileExists(destinationTemplateFilename), false)
         })
 
-        it('errs if function handler is not in existing template and not provided', async () => {
+        it('errs if function handler is not provided', async () => {
             const expectedTemplateContents: CloudFormation.Template = createSampleTemplate(
                 [sampleResourceNameValue]
             )
@@ -231,7 +238,7 @@ describe('SamTemplateGenerator', () => {
                 })
 
             assert.ok(error)
-            assert.strictEqual(error.message, 'Missing value: FunctionHandler')
+            assert.strictEqual(error.message, 'Missing or invalid value in Template for key: Handler')
             assert.strictEqual(await SystemUtilities.fileExists(destinationTemplateFilename), false)
         })
 
