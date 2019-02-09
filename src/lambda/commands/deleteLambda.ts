@@ -51,6 +51,7 @@ export async function deleteLambda({
         const isConfirmed = await onConfirm()
         if (isConfirmed) {
             await restParams.lambdaClient.deleteFunction(restParams.node.configuration.FunctionName)
+            restParams.onRefresh()
         }
     } catch (err) {
         restParams.outputChannel.show(true)
@@ -61,7 +62,6 @@ export async function deleteLambda({
         ))
         restParams.outputChannel.appendLine(String(err)) // linter hates toString on type any
         restParams.outputChannel.appendLine('')
-    } finally {
-      restParams.onRefresh()
+        restParams.onRefresh() // Refresh in case it was already deleted.
     }
 }

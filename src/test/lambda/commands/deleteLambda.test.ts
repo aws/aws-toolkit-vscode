@@ -96,7 +96,7 @@ describe('deleteLambda', async () => {
             `Expected delete count ${expectedDeleteCount}, actual count ${deleteCount}`
         )
 
-        const expectedRefreshCount = 1
+        const expectedRefreshCount = confirmationResponse ? 1 : 0
         assert.strictEqual(
             refreshCount,
             expectedRefreshCount,
