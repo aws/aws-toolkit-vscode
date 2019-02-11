@@ -20,9 +20,9 @@ const confirm = async (message: string): Promise<boolean> => {
     const responseNo: string = localize('AWS.generic.response.no', 'No')
     const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
     const response = await vscode.window.showWarningMessage(
-      message,
-      responseYes,
-      responseNo
+        message,
+        responseYes,
+        responseNo
     )
 
     return response === responseYes
