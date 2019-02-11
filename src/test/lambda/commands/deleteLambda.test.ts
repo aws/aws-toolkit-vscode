@@ -15,192 +15,151 @@ import {
 } from '../explorer/mockStandaloneNodes'
 
 describe('deleteLambda', async () => {
-    it('no-ops if function name is not provided', async () => {
-        const lambdaClient = new MockLambdaClient(
-            undefined,
-            name => assert.fail()
-        )
 
-        const parent = new MockStandaloneFunctionGroupNode(
-            undefined,
-            undefined,
-            async () => assert.fail(),
-            async () => assert.fail()
-        )
+    it('should do nothing if function name is not provided', async () => {
+        return assertLambdaDeleteWorksWhen({
+            // test variables
+            functionName: '',
+            onConfirm: async () => assert.fail('should not try to confirm w/o function name'),
 
-        const node = new MockStandaloneFunctionNode(
-            undefined,
-            parent,
-            {},
-            async () => assert.fail(),
-            async configuration => assert.fail()
-        )
+            // expected results
+            expectDeleteIsCalled: false,
+            expectRefreshIsCalled: false
+        })
+    })
 
-        await deleteLambda({
-            node,
-            lambdaClient,
-            outputChannel: new MockOutputChannel(),
-            onRefresh: () => assert.fail(),
-            onConfirm: async () => {
-                assert.fail()
+    it('should delete lambda when confirmed', async () => {
+        return assertLambdaDeleteWorksWhen({
+            // test variables
+            functionName: 'myFunctionName',
+            onConfirm: async () => true,
 
-                return false
+            // expected results
+            expectDeleteIsCalled: true,
+            expectRefreshIsCalled: true
+        })
+    })
+
+    it('should not delete lambda when cancelled', async () => {
+        return assertLambdaDeleteWorksWhen({
+            // test variables
+            functionName: 'myFunctionName',
+            onConfirm: async () => false,
+
+            // expected results
+            expectDeleteIsCalled: false,
+            expectRefreshIsCalled: false
+        })
+    })
+
+    it('should handles errors gracefully', async () => {
+        const errorToThrowDuringDelete = new SyntaxError('Fake error inserted to test error handling')
+
+        return assertLambdaDeleteWorksWhen({
+            // test variables
+            errorToThrowDuringDelete,
+            functionName: 'myFunctionName',
+            onConfirm: async () => true,
+
+            // expected results
+            expectDeleteIsCalled: true,
+            expectRefreshIsCalled: true,
+            onAssertOutputChannel(outputChannel: MockOutputChannel) {
+                const expectedMessagePart = String(errorToThrowDuringDelete)
+                assert(!outputChannel.isHidden, 'output channel should not be hidden after error')
+                assert(
+                  outputChannel.value && outputChannel.value.indexOf(expectedMessagePart) > 0,
+                  `output channel should contain "${expectedMessagePart}"`
+                )
             }
         })
     })
 
-    const assertLambdaDeleteWorks = async (confirmationResponse: boolean) => {
-        let deleteCount = 0
-        let refreshCount = 0
+    const assertLambdaDeleteWorksWhen = async ({
+        onAssertOutputChannel = ((channel: MockOutputChannel) => {
+            // Defaults to expecting no output. Should verify output when expected.
+            assert.strictEqual(
+              channel.value,
+              '',
+              'expect no output since output testing was omitted'
+            )
+        }),
+        ...params
+    }: {
+        functionName: string,
+        errorToThrowDuringDelete?: Error,
+        expectDeleteIsCalled: boolean,
+        expectRefreshIsCalled: boolean,
+        onConfirm(): Promise<boolean>,
+        onAssertOutputChannel?(actualOutputChannel: MockOutputChannel): void
+    }) => {
+        let isDeleteCalled = false
+        let isRefreshCalled = false
         const lambdaClient = new MockLambdaClient(
-            undefined,
-            async (name) => {
-              deleteCount++
+          undefined,
+          async (name) => {
+              isDeleteCalled = true
               assert.strictEqual(
-                  name,
-                  'myFunctionName',
-                  `Expected lambda name "myFunctionName", not "${name}"`
+                name,
+                params.functionName,
+                `expected lambda name "${params.functionName}", not "${name}"`
               )
-            }
+              if (params.errorToThrowDuringDelete) {
+                  throw params.errorToThrowDuringDelete
+              }
+          }
         )
 
         const parent = new MockStandaloneFunctionGroupNode(
-            undefined,
-            undefined,
-            async () => assert.fail(),
-            async () => assert.fail()
+          undefined,
+          undefined,
+          async () => assert.fail(),
+          async () => assert.fail()
         )
 
         const node = new MockStandaloneFunctionNode(
-            undefined,
-            parent,
-            {
-                FunctionName: 'myFunctionName'
-            },
-            async () => assert.fail(),
-            async configuration => assert.fail()
+          undefined,
+          parent,
+          {
+              FunctionName: params.functionName
+          },
+          async () => assert.fail(),
+          async configuration => assert.fail()
         )
-
-        await deleteLambda({
-             node,
-             lambdaClient,
-             outputChannel: new MockOutputChannel(),
-             onRefresh: () => refreshCount++,
-             onConfirm: async () => confirmationResponse
-        })
-
-        const expectedDeleteCount = confirmationResponse ? 1 : 0
-        assert.strictEqual(
-            deleteCount,
-            expectedDeleteCount,
-            `Expected delete count ${expectedDeleteCount}, actual count ${deleteCount}`
-        )
-
-        const expectedRefreshCount = confirmationResponse ? 1 : 0
-        assert.strictEqual(
-            refreshCount,
-            expectedRefreshCount,
-            `Expected refresh count ${expectedRefreshCount}, actual count ${refreshCount}`
-        )
-    }
-
-    it('deletes lambda with the specified name when confirmed', async () => {
-        return assertLambdaDeleteWorks(true)
-    })
-
-    it('does not delete lambda with the specified name when cancelled', async () => {
-        return assertLambdaDeleteWorks(false)
-    })
-
-    it('handles errors gracefully', async () => {
-        let deleteCount = 0
-        const expectedError = new Error('This error is expected')
-        const lambdaClient = new MockLambdaClient(
-            undefined,
-            async name => {
-                deleteCount++
-                throw expectedError
-            }
-        )
-
-        const parent = new MockStandaloneFunctionGroupNode(
-            undefined,
-            undefined,
-            async () => assert.fail(),
-            async () => assert.fail()
-        )
-
-        const node = new MockStandaloneFunctionNode(
-            undefined,
-            parent,
-            {
-                FunctionArn: 'myFunctionArn',
-                FunctionName: 'myFunctionName'
-            },
-            async () => assert.fail(),
-            async configuration => assert.fail()
-        )
-
         const outputChannel = new MockOutputChannel()
-        outputChannel.hide()
 
-        let refreshCount = 0
-        await deleteLambda({
-           node,
-           lambdaClient,
-           outputChannel: outputChannel,
-           onRefresh: () => refreshCount++,
-           onConfirm: async () => true
-        })
-
-        assert.strictEqual(deleteCount, 1)
-        assert.strictEqual(refreshCount, 1)
-
-        assert.strictEqual(outputChannel.isHidden, false)
-        assert.strictEqual(
-            outputChannel.value && outputChannel.value.indexOf(String(expectedError)) > 0,
-            true
-        )
-    })
-
-    it('refreshes after delete', async () => {
-        let deleteCount = 0
-        const lambdaClient = new MockLambdaClient(
-            undefined,
-            async name => {
-                deleteCount++
+        try {
+            await deleteLambda({
+                node,
+                lambdaClient,
+                outputChannel,
+                onRefresh: () => isRefreshCalled = true,
+                onConfirm: async () => params.onConfirm()
+            })
+        } catch (err) {
+            const error = err as Error
+            if (params.errorToThrowDuringDelete) {
+                assert.deepStrictEqual(params.errorToThrowDuringDelete, err)
+            } else {
+                console.error(error)
+                assert.fail(`Unexpected error during test: "${error.message}"`)
             }
+        }
+
+        assert.strictEqual(
+          isDeleteCalled,
+          params.expectDeleteIsCalled,
+          `delete should ${params.expectDeleteIsCalled ? '' : ' not'} be called.`
         )
 
-        const parent = new MockStandaloneFunctionGroupNode(
-            undefined,
-            undefined,
-            async () => assert.fail(),
-            async () => assert.fail()
+        assert.strictEqual(
+          isRefreshCalled,
+          params.expectRefreshIsCalled,
+          `refresh should${params.expectRefreshIsCalled ? '' : ' not'} be called`
         )
 
-        const node = new MockStandaloneFunctionNode(
-            undefined,
-            parent,
-            {
-                FunctionArn: 'myFunctionArn',
-                FunctionName: 'myFunctionName'
-            },
-            async () => assert.fail(),
-            async configuration => assert.fail()
-        )
+        onAssertOutputChannel.bind({}) // Make linter happy
 
-        let refreshCount = 0
-
-        await deleteLambda({
-            node,
-            lambdaClient,
-            outputChannel: new MockOutputChannel(),
-            onRefresh: () => refreshCount++,
-            onConfirm: async () => true
-        })
-
-        assert.strictEqual(deleteCount, 1)
-        assert.strictEqual(refreshCount, 1)
-    })
+        onAssertOutputChannel(outputChannel)
+    }
 })
