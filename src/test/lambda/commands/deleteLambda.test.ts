@@ -68,8 +68,8 @@ describe('deleteLambda', async () => {
                 const expectedMessagePart = String(errorToThrowDuringDelete)
                 assert(!outputChannel.isHidden, 'output channel should not be hidden after error')
                 assert(
-                  outputChannel.value && outputChannel.value.indexOf(expectedMessagePart) > 0,
-                  `output channel should contain "${expectedMessagePart}"`
+                    outputChannel.value && outputChannel.value.indexOf(expectedMessagePart) > 0,
+                    `output channel should contain "${expectedMessagePart}"`
                 )
             }
         })
@@ -79,9 +79,9 @@ describe('deleteLambda', async () => {
         onAssertOutputChannel = ((channel: MockOutputChannel) => {
             // Defaults to expecting no output. Should verify output when expected.
             assert.strictEqual(
-              channel.value,
-              '',
-              'expect no output since output testing was omitted'
+                channel.value,
+                '',
+                'expect no output since output testing was omitted'
             )
         }),
         ...params
@@ -96,35 +96,35 @@ describe('deleteLambda', async () => {
         let isDeleteCalled = false
         let isRefreshCalled = false
         const lambdaClient = new MockLambdaClient(
-          undefined,
-          async (name) => {
-              isDeleteCalled = true
-              assert.strictEqual(
-                name,
-                params.functionName,
-                `expected lambda name "${params.functionName}", not "${name}"`
-              )
-              if (params.errorToThrowDuringDelete) {
-                  throw params.errorToThrowDuringDelete
-              }
-          }
+            undefined,
+            async (name) => {
+                isDeleteCalled = true
+                assert.strictEqual(
+                    name,
+                    params.functionName,
+                    `expected lambda name "${params.functionName}", not "${name}"`
+                )
+                if (params.errorToThrowDuringDelete) {
+                    throw params.errorToThrowDuringDelete
+                }
+            }
         )
 
         const parent = new MockStandaloneFunctionGroupNode(
-          undefined,
-          undefined,
-          async () => assert.fail(),
-          async () => assert.fail()
+            undefined,
+            undefined,
+            async () => assert.fail(),
+            async () => assert.fail()
         )
 
         const node = new MockStandaloneFunctionNode(
-          undefined,
-          parent,
-          {
-              FunctionName: params.functionName
-          },
-          async () => assert.fail(),
-          async configuration => assert.fail()
+            undefined,
+            parent,
+            {
+                FunctionName: params.functionName
+            },
+            async () => assert.fail(),
+            async configuration => assert.fail()
         )
         const outputChannel = new MockOutputChannel()
 
@@ -147,15 +147,15 @@ describe('deleteLambda', async () => {
         }
 
         assert.strictEqual(
-          isDeleteCalled,
-          params.expectDeleteIsCalled,
-          `delete should ${params.expectDeleteIsCalled ? '' : ' not'} be called.`
+            isDeleteCalled,
+            params.expectDeleteIsCalled,
+            `delete should ${params.expectDeleteIsCalled ? '' : ' not'} be called.`
         )
 
         assert.strictEqual(
-          isRefreshCalled,
-          params.expectRefreshIsCalled,
-          `refresh should${params.expectRefreshIsCalled ? '' : ' not'} be called`
+            isRefreshCalled,
+            params.expectRefreshIsCalled,
+            `refresh should${params.expectRefreshIsCalled ? '' : ' not'} be called`
         )
 
         onAssertOutputChannel.bind({}) // Make linter happy
