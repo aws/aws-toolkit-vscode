@@ -14,7 +14,7 @@ import java.nio.file.Paths
 import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.attribute.PosixFilePermissions
 
-class DefaultCredentialFileWriterTest {
+class DefaultConfigFileWriterTest {
 
     @Rule
     @JvmField
@@ -24,10 +24,10 @@ class DefaultCredentialFileWriterTest {
     fun canCreateCredentialsFileTemplateWithAppropriatePermissions() {
         val baseFolder = folderRule.newFolder()
         val file = Paths.get(baseFolder.absolutePath, ".aws", "credentials").toFile()
-        val sut = DefaultCredentialFileWriter
+        val sut = DefaultConfigFileWriter
         sut.createFile(file)
 
-        assertThat(file).exists().hasContent(DefaultCredentialFileWriter.TEMPLATE)
+        assertThat(file).exists().hasContent(DefaultConfigFileWriter.TEMPLATE)
 
         assumeNoException<UnsupportedOperationException> {
             assertThat(Files.getPosixFilePermissions(file.toPath())).matches("rw-------")
@@ -43,7 +43,7 @@ class DefaultCredentialFileWriterTest {
         baseFolder.setReadable(true, false)
         val file = Paths.get(baseFolder.absolutePath, "credentials").toFile()
 
-        val sut = DefaultCredentialFileWriter
+        val sut = DefaultConfigFileWriter
         sut.createFile(file)
 
         assumeNoException<UnsupportedOperationException> {

@@ -20,31 +20,44 @@ import software.aws.toolkits.resources.message
 import java.io.File
 
 class CreateOrUpdateCredentialProfilesAction @TestOnly constructor(
-    private val writer: CredentialFileWriter,
-    private val file: File
+    private val writer: ConfigFileWriter,
+    private val configFile: File,
+    private val credentialsFile: File
 ) : AnActionWrapper(message("configure.toolkit.upsert_credentials.action")), DumbAware {
     @Suppress("unused")
-    constructor() : this(DefaultCredentialFileWriter, ProfileFileLocation.configurationFilePath().toFile())
+    constructor() : this(
+        DefaultConfigFileWriter,
+        ProfileFileLocation.configurationFilePath().toFile(),
+        ProfileFileLocation.credentialsFilePath().toFile()
+    )
 
     private val localFileSystem = LocalFileSystem.getInstance()
 
     override fun doActionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
 
-        if (!file.exists()) {
-            if (confirm(project, file)) {
-                writer.createFile(file)
+        // if both config and credential files do not exist, create a new config file
+        if (!configFile.exists() && !credentialsFile.exists()) {
+            if (confirm(project, configFile)) {
+                writer.createFile(configFile)
             } else {
                 return
             }
         }
 
-        val virtualFile = localFileSystem.refreshAndFindFileByIoFile(file) ?: throw RuntimeException(message("credentials.could_not_open", file))
+        // open both config and credential files, if they exist
+        // credential file is opened last since it takes precedence over the config file
+        val virtualFiles = listOf(configFile, credentialsFile).filter { it.exists() }.map {
+            localFileSystem.refreshAndFindFileByIoFile(it) ?: throw RuntimeException(message("credentials.could_not_open", it))
+        }
+
         val fileEditorManager = FileEditorManager.getInstance(project)
 
-        localFileSystem.refreshFiles(listOf(virtualFile), false, false) {
-            fileEditorManager.openTextEditor(OpenFileDescriptor(project, virtualFile), true)
-                ?: throw RuntimeException(message("credentials.could_not_open", file))
+        localFileSystem.refreshFiles(virtualFiles, false, false) {
+            virtualFiles.forEach {
+                fileEditorManager.openTextEditor(OpenFileDescriptor(project, it), true)
+                    ?: throw RuntimeException(message("credentials.could_not_open", it))
+            }
 
             // TODO : remove message (and localized string) when credentials auto-refreshing is supported
             notifyInfo("", message("credentials.notification.restart.ide"))
@@ -59,24 +72,27 @@ class CreateOrUpdateCredentialProfilesAction @TestOnly constructor(
     ) == Messages.OK
 }
 
-interface CredentialFileWriter {
+interface ConfigFileWriter {
     fun createFile(file: File)
 }
 
-object DefaultCredentialFileWriter : CredentialFileWriter {
+object DefaultConfigFileWriter : ConfigFileWriter {
     val TEMPLATE = """
-        # Amazon Web Services Credentials File used by AWS CLI, SDKs, and tools
+        # Amazon Web Services Config File used by AWS CLI, SDKs, and tools
         # This file was created by the AWS Toolkit for JetBrains plugin.
         #
         # Your AWS credentials are represented by access keys associated with IAM users.
         # For information about how to create and manage AWS access keys for a user, see:
         # https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
         #
-        # This credential file can store multiple access keys by placing each one in a
+        # This config file can store multiple access keys by placing each one in a
         # named "profile". For information about how to change the access keys in a
         # profile or to add a new profile with a different access key, see:
         # https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html
         #
+        # If both a credential and config file exists, the values in the credential file
+        # take precedence
+
         [default]
         # The access key and secret key pair identify your account and grant access to AWS.
         aws_access_key_id = [accessKey]
@@ -85,6 +101,10 @@ object DefaultCredentialFileWriter : CredentialFileWriter {
         # key is ever disclosed, immediately use IAM to delete the access key and secret key
         # and create a new key pair. Then, update this file with the replacement key details.
         aws_secret_access_key = [secretKey]
+
+        # [profile user1]
+        # aws_access_key_id = [accessKey1]
+        # aws_secret_access_key = [secretKey1]
     """.trimIndent()
 
     override fun createFile(file: File) {

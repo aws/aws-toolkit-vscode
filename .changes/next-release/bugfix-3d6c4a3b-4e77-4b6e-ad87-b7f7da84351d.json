@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix issue where 'Edit Credentials' action didn't check for both 'config' and 'credentials'"
+}
