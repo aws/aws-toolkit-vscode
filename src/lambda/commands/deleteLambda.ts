@@ -7,10 +7,11 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
 
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { StandaloneFunctionNode } from '../explorer/standaloneNodes'
+
+const localize = nls.loadMessageBundle()
 
 /**
  * @param message: Message displayed to user
@@ -27,15 +28,16 @@ const confirm = async (message: string): Promise<boolean> => {
 
     return response === responseYes
 }
+
 export async function deleteLambda({
-    onConfirm = async () => {
-        return await confirm(localize(
-          'AWS.command.deleteLambda.confirm',
-          "Are you sure you want to delete lambda function '{0}'?",
-          restParams.node.configuration.FunctionName
-        ))
-    },
-    ...restParams
+   onConfirm = async () => {
+       return await confirm(localize(
+           'AWS.command.deleteLambda.confirm',
+           "Are you sure you want to delete lambda function '{0}'?",
+           restParams.node.configuration.FunctionName
+       ))
+   },
+   ...restParams
 }: {
     lambdaClient: LambdaClient
     node: StandaloneFunctionNode, // TODO: Change to deleteParams: Lambda.Types.DeleteFunctionRequest

@@ -18,87 +18,87 @@ describe('deleteLambda', async () => {
 
     it('should do nothing if function name is not provided', async () => {
         return assertLambdaDeleteWorksWhen({
-            // test variables
-            functionName: '',
-            onConfirm: async () => assert.fail('should not try to confirm w/o function name'),
+           // test variables
+           functionName: '',
+           onConfirm: async () => assert.fail('should not try to confirm w/o function name'),
 
-            // expected results
-            expectDeleteIsCalled: false,
-            expectRefreshIsCalled: false
-        })
+           // expected results
+           expectedDeleteCallCount: 0,
+           expectedRefreshCallCount: 0
+       })
     })
 
     it('should delete lambda when confirmed', async () => {
         return assertLambdaDeleteWorksWhen({
-            // test variables
-            functionName: 'myFunctionName',
-            onConfirm: async () => true,
+           // test variables
+           functionName: 'myFunctionName',
+           onConfirm: async () => true,
 
-            // expected results
-            expectDeleteIsCalled: true,
-            expectRefreshIsCalled: true
-        })
+           // expected results
+           expectedDeleteCallCount: 1,
+           expectedRefreshCallCount: 1
+       })
     })
 
     it('should not delete lambda when cancelled', async () => {
         return assertLambdaDeleteWorksWhen({
-            // test variables
-            functionName: 'myFunctionName',
-            onConfirm: async () => false,
+           // test variables
+           functionName: 'myFunctionName',
+           onConfirm: async () => false,
 
-            // expected results
-            expectDeleteIsCalled: false,
-            expectRefreshIsCalled: false
-        })
+           // expected results
+           expectedDeleteCallCount: 0,
+           expectedRefreshCallCount: 0
+       })
     })
 
     it('should handles errors gracefully', async () => {
         const errorToThrowDuringDelete = new SyntaxError('Fake error inserted to test error handling')
 
         return assertLambdaDeleteWorksWhen({
-            // test variables
-            errorToThrowDuringDelete,
-            functionName: 'myFunctionName',
-            onConfirm: async () => true,
+           // test variables
+           errorToThrowDuringDelete,
+           functionName: 'myFunctionName',
+           onConfirm: async () => true,
 
-            // expected results
-            expectDeleteIsCalled: true,
-            expectRefreshIsCalled: true,
-            onAssertOutputChannel(outputChannel: MockOutputChannel) {
-                const expectedMessagePart = String(errorToThrowDuringDelete)
-                assert(!outputChannel.isHidden, 'output channel should not be hidden after error')
-                assert(
-                    outputChannel.value && outputChannel.value.indexOf(expectedMessagePart) > 0,
-                    `output channel should contain "${expectedMessagePart}"`
-                )
-            }
-        })
+           // expected results
+           expectedDeleteCallCount: 1,
+           expectedRefreshCallCount: 1,
+           onAssertOutputChannel(outputChannel: MockOutputChannel) {
+               const expectedMessagePart = String(errorToThrowDuringDelete)
+               assert(!outputChannel.isHidden, 'output channel should not be hidden after error')
+               assert(
+                   outputChannel.value && outputChannel.value.indexOf(expectedMessagePart) > 0,
+                   `output channel should contain "${expectedMessagePart}"`
+               )
+           }
+       })
     })
 
     const assertLambdaDeleteWorksWhen = async ({
-        onAssertOutputChannel = ((channel: MockOutputChannel) => {
-            // Defaults to expecting no output. Should verify output when expected.
-            assert.strictEqual(
-                channel.value,
-                '',
-                'expect no output since output testing was omitted'
-            )
-        }),
-        ...params
-    }: {
+       onAssertOutputChannel = ((channel: MockOutputChannel) => {
+           // Defaults to expecting no output. Should verify output when expected.
+           assert.strictEqual(
+               channel.value,
+               '',
+               'expect no output since output testing was omitted'
+           )
+       }),
+       ...params
+   }: {
         functionName: string,
         errorToThrowDuringDelete?: Error,
-        expectDeleteIsCalled: boolean,
-        expectRefreshIsCalled: boolean,
+        expectedDeleteCallCount: number,
+        expectedRefreshCallCount: number,
         onConfirm(): Promise<boolean>,
         onAssertOutputChannel?(actualOutputChannel: MockOutputChannel): void
     }) => {
-        let isDeleteCalled = false
-        let isRefreshCalled = false
+        let deleteCallCount = 0
+        let refreshCallCount = 0
         const lambdaClient = new MockLambdaClient(
             undefined,
             async (name) => {
-                isDeleteCalled = true
+                deleteCallCount += 1
                 assert.strictEqual(
                     name,
                     params.functionName,
@@ -130,12 +130,12 @@ describe('deleteLambda', async () => {
 
         try {
             await deleteLambda({
-                node,
-                lambdaClient,
-                outputChannel,
-                onRefresh: () => isRefreshCalled = true,
-                onConfirm: async () => params.onConfirm()
-            })
+                                   node,
+                                   lambdaClient,
+                                   outputChannel,
+                                   onRefresh: () => refreshCallCount += 1,
+                                   onConfirm: async () => params.onConfirm()
+                               })
         } catch (err) {
             const error = err as Error
             if (params.errorToThrowDuringDelete) {
@@ -146,20 +146,17 @@ describe('deleteLambda', async () => {
             }
         }
 
-        assert.strictEqual(
-            isDeleteCalled,
-            params.expectDeleteIsCalled,
-            `delete should ${params.expectDeleteIsCalled ? '' : ' not'} be called.`
+        assert(
+            deleteCallCount === params.expectedDeleteCallCount,
+            `delete should be called ${params.expectedDeleteCallCount} times, not ${deleteCallCount}`
         )
 
-        assert.strictEqual(
-            isRefreshCalled,
-            params.expectRefreshIsCalled,
-            `refresh should${params.expectRefreshIsCalled ? '' : ' not'} be called`
+        assert(
+            refreshCallCount === params.expectedRefreshCallCount,
+            `refresh should be called ${params.expectedRefreshCallCount} times, not ${refreshCallCount}`
         )
 
         onAssertOutputChannel.bind({}) // Make linter happy
-
         onAssertOutputChannel(outputChannel)
     }
 })
