@@ -11,6 +11,7 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
 import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
+import { ext } from '../shared/extensionGlobals'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { ResourceFetcher } from '../shared/resourceFetcher'
 import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode'
@@ -42,7 +43,7 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         private readonly awsContext: AwsContext,
         private readonly awsContextTrees: AwsContextTreeCollection,
         private readonly regionProvider: RegionProvider,
-        private readonly resourceFetcher: ResourceFetcher
+        private readonly resourceFetcher: ResourceFetcher,
     ) {
         this._onDidChangeTreeData = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
         this.onDidChangeTreeData = this._onDidChangeTreeData.event
@@ -53,10 +54,12 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         vscode.commands.registerCommand('aws.refreshAwsExplorer', async () => this.refresh())
         vscode.commands.registerCommand(
             'aws.deleteLambda',
-            async (node: StandaloneFunctionNode) => await deleteLambda(
+            async (node: StandaloneFunctionNode) => await deleteLambda({
                 node,
-                () => this.refresh(node.parent)
-            )
+                lambdaClient: ext.toolkitClientBuilder.createLambdaClient(node.regionCode),
+                outputChannel: ext.lambdaOutputChannel,
+                onRefresh: () => this.refresh(node.parent)
+            })
         )
         vscode.commands.registerCommand(
             'aws.deleteCloudFormation',
