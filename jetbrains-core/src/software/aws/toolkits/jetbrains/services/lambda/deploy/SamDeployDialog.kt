@@ -4,12 +4,11 @@
 package software.aws.toolkits.jetbrains.services.lambda.deploy
 
 import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.process.CapturingProcessAdapter
+import com.intellij.execution.process.CapturingProcessRunner
 import com.intellij.execution.process.OSProcessHandler
-import com.intellij.execution.process.ProcessAdapter
-import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.process.ProcessOutput
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.progress.ProcessCanceledException
@@ -195,23 +194,18 @@ open class SamDeployDialog(
 
         consoleView.attachToProcess(processHandler)
 
-        val output = CapturingProcessAdapter()
-        processHandler.addProcessListener(output)
-        processHandler.addProcessListener(object : ProcessAdapter() {
-            override fun processTerminated(event: ProcessEvent) {
-                if (event.exitCode == 0) {
-                    try {
-                        future.complete(result.invoke(output.output))
-                    } catch (e: Exception) {
-                        future.completeExceptionally(e)
-                    }
-                } else {
-                    future.completeExceptionally(RuntimeException(message("serverless.application.deploy.execution_failed")))
+        ApplicationManager.getApplication().executeOnPooledThread {
+            val output = CapturingProcessRunner(processHandler).runProcess(progressIndicator)
+            if (output.exitCode == 0) {
+                try {
+                    future.complete(result.invoke(output))
+                } catch (e: Exception) {
+                    future.completeExceptionally(e)
                 }
+            } else {
+                future.completeExceptionally(RuntimeException(message("serverless.application.deploy.execution_failed")))
             }
-        })
-
-        processHandler.startNotify()
+        }
 
         return future.whenComplete { _, exception ->
             telemetry.record("SamDeploy") {
