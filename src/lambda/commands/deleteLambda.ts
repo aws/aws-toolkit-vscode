@@ -9,7 +9,6 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
 import { LambdaClient } from '../../shared/clients/lambdaClient'
-import { StandaloneFunctionNode } from '../explorer/standaloneNodes'
 
 const localize = nls.loadMessageBundle()
 
@@ -30,29 +29,30 @@ const confirm = async (message: string): Promise<boolean> => {
 }
 
 export async function deleteLambda({
+   deleteParams,
    onConfirm = async () => {
        return await confirm(localize(
            'AWS.command.deleteLambda.confirm',
            "Are you sure you want to delete lambda function '{0}'?",
-           restParams.node.configuration.FunctionName
+           deleteParams.functionName
        ))
    },
    ...restParams
 }: {
-    lambdaClient: LambdaClient
-    node: StandaloneFunctionNode, // TODO: Change to deleteParams: Lambda.Types.DeleteFunctionRequest
+    deleteParams: { functionName: string },
+    lambdaClient: LambdaClient,
     outputChannel: vscode.OutputChannel,
-    onRefresh(): void,
     onConfirm?(): Promise<boolean>,
+    onRefresh(): void
 }): Promise<void> {
 
-    if (!restParams.node.configuration.FunctionName) {
+    if (!deleteParams.functionName) {
         return
     }
     try {
         const isConfirmed = await onConfirm()
         if (isConfirmed) {
-            await restParams.lambdaClient.deleteFunction(restParams.node.configuration.FunctionName)
+            await restParams.lambdaClient.deleteFunction(deleteParams.functionName)
             restParams.onRefresh()
         }
     } catch (err) {
@@ -60,7 +60,7 @@ export async function deleteLambda({
         restParams.outputChannel.appendLine(localize(
             'AWS.command.deleteLambda.error',
             "There was an error deleting lambda function '{0}'",
-            restParams.node.configuration.FunctionArn
+            deleteParams.functionName
         ))
         restParams.outputChannel.appendLine(String(err)) // linter hates toString on type any
         restParams.outputChannel.appendLine('')
