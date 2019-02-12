@@ -41,6 +41,7 @@ public class DeployServerlessApplicationPanel {
     @NotNull JRadioButton createStack;
     @NotNull JCheckBox requireReview;
     @NotNull JPanel parametersPanel;
+    @NotNull JCheckBox useContainer;
 
     public DeployServerlessApplicationPanel withTemplateParameters(final Collection<Parameter> parameters) {
         parametersPanel.setBorder(IdeBorderFactory.createTitledBorder(message("serverless.application.deploy.template.parameters"), false));

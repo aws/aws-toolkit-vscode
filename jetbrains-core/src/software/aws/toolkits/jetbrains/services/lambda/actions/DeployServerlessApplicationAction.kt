@@ -79,7 +79,8 @@ class DeployServerlessApplicationAction : AnActionWrapper(
             templateFile,
             stackDialog.parameters,
             stackDialog.bucket,
-            stackDialog.autoExecute
+            stackDialog.autoExecute,
+            stackDialog.useContainer
         )
 
         deployDialog.show()
@@ -141,6 +142,7 @@ class DeployServerlessApplicationAction : AnActionWrapper(
                     setSamStackName(samPath, stackDialog.stackName)
                     setSamBucketName(samPath, stackDialog.bucket)
                     setSamAutoExecute(samPath, stackDialog.autoExecute)
+                    setSamUseContainer(samPath, stackDialog.useContainer)
                 }
             }
         }

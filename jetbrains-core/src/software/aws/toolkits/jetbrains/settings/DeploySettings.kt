@@ -36,6 +36,11 @@ class DeploySettings : PersistentStateComponent<DeployConfigs> {
         state.samConfigs.computeIfAbsent(samPath) { DeploySamConfig() }.autoExecute = value
     }
 
+    fun samUseContainer(samPath: String): Boolean? = state.samConfigs[samPath]?.useContainer
+    fun setSamUseContainer(samPath: String, value: Boolean) {
+        state.samConfigs.computeIfAbsent(samPath) { DeploySamConfig() }.useContainer = value
+    }
+
     companion object {
         @JvmStatic
         fun getInstance(module: Module): DeploySettings? = ModuleServiceManager.getService(module, DeploySettings::class.java)
@@ -49,7 +54,8 @@ data class DeployConfigs(
 data class DeploySamConfig(
     var stackName: String? = null,
     var bucketName: String? = null,
-    var autoExecute: Boolean = false
+    var autoExecute: Boolean = false,
+    var useContainer: Boolean = false
 )
 
 /**
