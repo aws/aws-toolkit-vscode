@@ -44,9 +44,13 @@ export class DefaultStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode 
     }
 
     public async getChildren(): Promise<(StandaloneFunctionNode | ErrorNode)[]> {
-        await this.handleErrorProneOperation(async () => this.updateChildren(),
-                                             localize('AWS.explorerNode.lambda.error',
-                                                      'Error loading Lambda resources'))
+        await this.handleErrorProneOperation(
+            async () => this.updateChildren(),
+            localize(
+                'AWS.explorerNode.lambda.error',
+                'Error loading Lambda resources'
+            )
+        )
 
         return !!this.errorNode ? [this.errorNode]
             : [...this.functionNodes.values()]

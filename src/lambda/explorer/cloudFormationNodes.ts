@@ -32,7 +32,7 @@ export interface CloudFormationNode extends AWSTreeErrorHandlerNode {
 
     readonly parent: RegionNode
 
-    getChildren(): Thenable<(CloudFormationStackNode | ErrorNode)[] >
+    getChildren(): Thenable<(CloudFormationStackNode | ErrorNode)[]>
 
     updateChildren(): Thenable<void>
 }
@@ -52,8 +52,10 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
     public async getChildren(): Promise<(CloudFormationStackNode | ErrorNode)[]> {
         await this.handleErrorProneOperation(
             async () => this.updateChildren(),
-            localize('AWS.explorerNode.cloudFormation.error',
-                     'Error loading CloudFormation resources'))
+            localize(
+                'AWS.explorerNode.cloudFormation.error',
+                'Error loading CloudFormation resources'
+            ))
 
         return !!this.errorNode ? [this.errorNode]
             : [...this.stackNodes.values()]
@@ -99,12 +101,19 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
         this.update(stackSummary)
         this.contextValue = 'awsCloudFormationNode'
         this.functionNodes = new Map<string, CloudFormationFunctionNode>()
+        this.iconPath = {
+            dark: vscode.Uri.file(ext.context.asAbsolutePath('resources/dark/cloudformation.svg')),
+            light: vscode.Uri.file(ext.context.asAbsolutePath('resources/light/cloudformation.svg')),
+        }
     }
 
     public async getChildren(): Promise<(CloudFormationFunctionNode | PlaceholderNode)[]> {
-        await this.handleErrorProneOperation(async () => this.updateChildren(),
-                                             localize('AWS.explorerNode.cloudFormation.error',
-                                                      'Error loading CloudFormation resources'))
+        await this.handleErrorProneOperation(
+            async () => this.updateChildren(),
+            localize(
+                'AWS.explorerNode.cloudFormation.error',
+                'Error loading CloudFormation resources'
+            ))
 
         if (!!this.errorNode) {
             return [this.errorNode]
