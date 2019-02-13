@@ -40,7 +40,7 @@ export async function deleteLambda({
    ...restParams
 }: {
     deleteParams: { functionName: string },
-    lambdaClient: LambdaClient,
+    lambdaClient: Pick<LambdaClient, 'deleteFunction'>, // i.e. implements LambdaClient.deleteFunction
     outputChannel: vscode.OutputChannel,
     onConfirm?(): Promise<boolean>,
     onRefresh(): void
