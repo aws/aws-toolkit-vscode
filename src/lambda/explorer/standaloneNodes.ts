@@ -37,7 +37,8 @@ export class DefaultStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode 
     }
 
     public constructor(
-        public readonly parent: RegionNode
+        public readonly parent: RegionNode,
+        private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
     ) {
         super('Lambda', vscode.TreeItemCollapsibleState.Collapsed)
         this.functionNodes = new Map<string, StandaloneFunctionNode>()
@@ -68,7 +69,7 @@ export class DefaultStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode 
             this.functionNodes,
             functions.keys(),
             key => this.functionNodes.get(key)!.update(functions.get(key)!),
-            key => new DefaultStandaloneFunctionNode(this, functions.get(key)!)
+            key => new DefaultStandaloneFunctionNode(this, functions.get(key)!, this.getExtensionAbsolutePath)
         )
     }
 }
@@ -84,9 +85,10 @@ export class DefaultStandaloneFunctionNode extends FunctionNodeBase implements S
 
     public constructor(
         public readonly parent: StandaloneFunctionGroupNode,
-        configuration: Lambda.FunctionConfiguration
+        configuration: Lambda.FunctionConfiguration,
+        getExtensionAbsolutePath: (relativeExtensionPath: string) => string
     ) {
-        super(configuration)
+        super(configuration, getExtensionAbsolutePath)
         this.contextValue = 'awsRegionFunctionNode'
     }
 }

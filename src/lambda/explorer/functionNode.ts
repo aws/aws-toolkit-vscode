@@ -7,20 +7,20 @@
 
 import { Lambda } from 'aws-sdk'
 import { Uri } from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 
 export abstract class FunctionNodeBase extends AWSTreeNodeBase {
     public abstract readonly regionCode: string
 
     protected constructor(
-        public configuration: Lambda.FunctionConfiguration
+        public configuration: Lambda.FunctionConfiguration,
+        public readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
     ) {
         super('')
         this.update(configuration)
         this.iconPath = {
-            dark: Uri.file(ext.context.asAbsolutePath('resources/dark/lambda.svg')),
-            light: Uri.file(ext.context.asAbsolutePath('resources/light/lambda.svg')),
+            dark: Uri.file(this.getExtensionAbsolutePath('resources/dark/lambda.svg')),
+            light: Uri.file(this.getExtensionAbsolutePath('resources/light/lambda.svg')),
         }
     }
 

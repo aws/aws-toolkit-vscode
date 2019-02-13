@@ -19,20 +19,23 @@ export class MockStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode imp
         public readonly regionCode: string = '',
         public readonly parent: RegionNode = {} as any as RegionNode,
         public readonly getChildren: () => Thenable<StandaloneFunctionNode[]> = async () => [],
-        public readonly updateChildren: () => Thenable<void> = async () => {},
-        public readonly doErrorProneOperation: () => Promise<void> = async () => {},
-   ) {
-       super('')
+        public readonly updateChildren: () => Thenable<void> = async () => { },
+        public readonly doErrorProneOperation: () => Promise<void> = async () => { },
+    ) {
+        super('')
     }
 }
 
 export class MockStandaloneFunctionNode implements StandaloneFunctionNode {
+
     public constructor(
         public readonly regionCode: string = '',
         public readonly parent: StandaloneFunctionGroupNode = {} as any as StandaloneFunctionGroupNode,
         public readonly configuration: Lambda.FunctionConfiguration = {},
         public readonly getChildren: () => Thenable<AWSTreeNodeBase[]> = async () => [],
-        public readonly update: (configuration: Lambda.FunctionConfiguration) => void = config => {}
+        public readonly update: (configuration: Lambda.FunctionConfiguration) => void = config => { },
+        public readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string =
+            (relativeExtensionPath) => 'MockStandaloneFunctionNode'
     ) {
     }
 }

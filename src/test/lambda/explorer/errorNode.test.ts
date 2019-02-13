@@ -15,7 +15,10 @@ describe('ErrorNode', () => {
     const regionCode = 'us-east-1'
     const regionName = 'US East (N. Virginia)'
 
-    const regionNode = new DefaultRegionNode(new RegionInfo(regionCode, regionName))
+    const regionNode = new DefaultRegionNode(
+        new RegionInfo(regionCode, regionName),
+        () => { throw new Error('unused') }
+    )
     const error = new Error('error message')
     error.name = 'myMockError'
 
