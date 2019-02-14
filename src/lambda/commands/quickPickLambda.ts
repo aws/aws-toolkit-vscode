@@ -18,7 +18,13 @@ class QuickPickLambda extends FunctionNodeBase implements vscode.QuickPickItem {
     public picked?: boolean | undefined
 
     public constructor(configuration: Lambda.FunctionConfiguration, public readonly regionCode: string) {
-        super(configuration)
+        super(
+            configuration,
+            // TODO : This class is ultimately used by selectLambdaNode, which is no longer
+            // required, because the commands that use it no longer use optional params.
+            // Phase out.
+            (relativeExtensionPath: string) => ''
+        )
     }
 
     public get label(): string {
