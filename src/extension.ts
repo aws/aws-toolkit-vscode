@@ -85,7 +85,13 @@ export async function activate(context: vscode.ExtensionContext) {
     )
 
     const providers = [
-        new LambdaTreeDataProvider(awsContext, awsContextTrees, regionProvider, resourceFetcher)
+        new LambdaTreeDataProvider(
+            awsContext,
+            awsContextTrees,
+            regionProvider,
+            resourceFetcher,
+            (relativeExtensionPath) => getExtensionAbsolutePath(context, relativeExtensionPath)
+        )
     ]
 
     providers.forEach((p) => {
@@ -147,4 +153,8 @@ async function initializeSamCli(): Promise<void> {
     )
 
     await SamCliDetection.detectSamCli(false)
+}
+
+function getExtensionAbsolutePath(context: vscode.ExtensionContext, relativeExtensionPath: string): string {
+    return context.asAbsolutePath(relativeExtensionPath)
 }
