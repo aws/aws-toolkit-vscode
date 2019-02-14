@@ -75,7 +75,10 @@ export class RegionNodeCollection {
             this.regionNodes,
             regionMap.keys(),
             key => this.regionNodes.get(key)!.update(regionMap.get(key)!),
-            key => new DefaultRegionNode(regionMap.get(key)!, this.getExtensionAbsolutePath)
+            key => new DefaultRegionNode(
+                regionMap.get(key)!,
+                relativeExtensionPath => this.getExtensionAbsolutePath(relativeExtensionPath)
+            )
         )
     }
 }

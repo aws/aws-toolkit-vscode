@@ -73,7 +73,11 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
             this.stackNodes,
             stacks.keys(),
             key => this.stackNodes.get(key)!.update(stacks.get(key)!),
-            key => new DefaultCloudFormationStackNode(this, stacks.get(key)!, this.getExtensionAbsolutePath)
+            key => new DefaultCloudFormationStackNode(
+                this,
+                stacks.get(key)!,
+                relativeExtensionPath => this.getExtensionAbsolutePath(relativeExtensionPath)
+            )
         )
     }
 }
@@ -154,7 +158,11 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
             this.functionNodes,
             intersection(resources, functions.keys()),
             key => this.functionNodes.get(key)!.update(functions.get(key)!),
-            key => new DefaultCloudFormationFunctionNode(this, functions.get(key)!, this.getExtensionAbsolutePath)
+            key => new DefaultCloudFormationFunctionNode(
+                this,
+                functions.get(key)!,
+                relativeExtensionPath => this.getExtensionAbsolutePath(relativeExtensionPath)
+            )
         )
     }
 

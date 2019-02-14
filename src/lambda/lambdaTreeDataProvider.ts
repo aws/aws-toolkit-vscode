@@ -155,7 +155,7 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
             key => this.regionNodes.get(key)!.update(regionMap.get(key)!),
             key => new DefaultRegionNode(
                 regionMap.get(key)!,
-                this.getExtensionAbsolutePath
+                relativeExtensionPath => this.getExtensionAbsolutePath(relativeExtensionPath)
             )
         )
 

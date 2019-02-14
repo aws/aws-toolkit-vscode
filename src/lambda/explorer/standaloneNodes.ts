@@ -69,7 +69,11 @@ export class DefaultStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode 
             this.functionNodes,
             functions.keys(),
             key => this.functionNodes.get(key)!.update(functions.get(key)!),
-            key => new DefaultStandaloneFunctionNode(this, functions.get(key)!, this.getExtensionAbsolutePath)
+            key => new DefaultStandaloneFunctionNode(
+                this,
+                functions.get(key)!,
+                relativeExtensionPath => this.getExtensionAbsolutePath(relativeExtensionPath)
+            )
         )
     }
 }
