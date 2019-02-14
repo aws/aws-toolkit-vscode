@@ -17,6 +17,8 @@ import { accessAsync, mkdirAsync, writeFileAsync } from '../../shared/filesystem
 import { readFileAsString } from '../../shared/filesystemUtilities'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 
+const localize = nls.loadMessageBundle()
+
 export interface HandlerConfig {
     event: {},
     environmentVariables: {
@@ -30,23 +32,42 @@ export interface HandlersConfig {
     }
 }
 
+export interface ConfigureLocalLambdaContext {
+    showTextDocument(document: vscode.TextDocument, column?: vscode.ViewColumn | undefined,
+                     preserveFocus?: boolean | undefined): Thenable<vscode.TextEditor>,
+    showTextDocument(document: vscode.TextDocument, options?: vscode.TextDocumentShowOptions | undefined):
+                     Thenable<vscode.TextEditor>,
+    showTextDocument(uri: vscode.Uri, options?: vscode.TextDocumentShowOptions | undefined):
+                     Thenable<vscode.TextEditor>,
+    executeCommand<T>(command: string, ...rest: any[]): Thenable<T | undefined>,
+    showInformationMessage(message: string, ...items: string[]): Thenable<string | undefined>
+}
+
+class DefaultConfigureLocalLambdaContext implements ConfigureLocalLambdaContext {
+    public readonly showTextDocument = vscode.window.showTextDocument
+    public readonly executeCommand = vscode.commands.executeCommand
+    public readonly showInformationMessage = vscode.window.showInformationMessage
+}
+
 // Precondition: `handler` is a valid lambda handler name.
-export async function configureLocalLambda(workspaceFolder: vscode.WorkspaceFolder, handler: string): Promise<void> {
+export async function configureLocalLambda(workspaceFolder: vscode.WorkspaceFolder, handler: string,
+                                           context: ConfigureLocalLambdaContext =
+                                           new DefaultConfigureLocalLambdaContext()): Promise<void> {
     const uri = getConfigUri(workspaceFolder)
 
     await ensureHandlersConfigFileExists(uri, handler)
 
-    const editor: vscode.TextEditor = await vscode.window.showTextDocument(uri)
-    if (await prepareConfig(editor, handler)) {
+    const editor: vscode.TextEditor = await context.showTextDocument(uri)
+    if (await prepareConfig(editor, handler, context)) {
         // Perf: TextDocument.save is smart enough to no-op if the document is not dirty.
         await editor.document.save()
     } else {
         throw new Error(`Could not update config file '${uri.fsPath}'`)
     }
 
-    await vscode.window.showTextDocument(
+    await context.showTextDocument(
         editor.document,
-        { selection: await getEventRange(editor, handler) }
+        { selection: await getEventRange(editor, handler, context) }
     )
 }
 
@@ -132,11 +153,12 @@ function getTabSize(editor?: vscode.TextEditor): number {
 
 async function loadSymbols(
     uri: vscode.Uri,
+    context: ConfigureLocalLambdaContext,
     maxAttempts = 10,
     retryDelayMillis = 200
-): Promise<vscode.DocumentSymbol[] | boolean> {
+): Promise<vscode.DocumentSymbol[] | undefined> {
 
-    const symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
+    const symbols = await context.executeCommand<vscode.DocumentSymbol[]>(
         'vscode.executeDocumentSymbolProvider',
         uri
     )
@@ -147,16 +169,29 @@ async function loadSymbols(
     }
 
     if (maxAttempts <= 0) {
-        // JSON symbol provider hasn't loaded and/or file exists but is unparseable (default 2 seconds total)
-        // (e.g. file is blank, only contains `{}`, or does not have any valid top level keys)
-        const localize = nls.loadMessageBundle()
+        return undefined
+    }
+
+    // waiting before retry to wait for JSON parser
+    await sleep(retryDelayMillis)
+
+    return await loadSymbols(uri, context, maxAttempts - 1, retryDelayMillis)
+}
+
+async function prepareConfig(editor: vscode.TextEditor, handler: string,
+                             context: ConfigureLocalLambdaContext): Promise<boolean> {
+    let symbols: vscode.DocumentSymbol[] | undefined = await loadSymbols(editor.document.uri, context)
+    let shouldOverwrite: boolean = false
+    let shouldLoop: boolean = !symbols
+
+    while (!symbols && shouldLoop) {
         const responseRetry: string     = localize('AWS.message.prompt.cantLoadHandlers.retry',
                                                    'Retry')
         const responseOverwrite: string = localize('AWS.message.prompt.cantLoadHandlers.overwrite',
                                                    'Overwrite existing handlers.json')
         const responseCancel: string    = localize('AWS.message.prompt.cantLoadHandlers.cancel',
                                                    'Cancel')
-        const failMessage = await vscode.window.showInformationMessage(
+        const failMessage = await context.showInformationMessage(
             localize('AWS.message.prompt.cantLoadHandlers.message',
                      'There was an issue parsing your handlers.json file.'),
             responseRetry,
@@ -168,30 +203,27 @@ async function loadSymbols(
                 // Retry => reload saved file
                 // executeCommand from earlier loadSymbols runs opens the file in editor
                 // this means that a user can edit their JSON and successfully retry loading
-                return await loadSymbols(uri, 0, 0)
+                symbols = await loadSymbols(editor.document.uri, context, 0, 0)
+                break
             }
             case responseOverwrite: {
                 // Overwrite => recreate file from scratch
-                return false
+                shouldOverwrite = true
+                shouldLoop = false
+                break
             }
             default: {
                 // Cancel => don't overwrite file (X-ing out of dialog => implicit cancel)
-                return true
+                shouldOverwrite = false
+                shouldLoop = false
+                break
             }
         }
     }
 
-    // waiting before retry to wait for JSON parser
-    await sleep(retryDelayMillis)
-
-    return await loadSymbols(uri, maxAttempts - 1, retryDelayMillis)
-}
-
-async function prepareConfig(editor: vscode.TextEditor, handler: string): Promise<boolean> {
-    const symbols: vscode.DocumentSymbol[] | boolean = await loadSymbols(editor.document.uri)
-
-    // If the file is empty, or if it is non-empty but cannot be even partially parsed as JSON, build it from scratch.
-    if (!symbols || (typeof symbols !== 'boolean' && symbols.length < 1)) {
+    // If the file is empty, or if it is non-empty but cannot be even partially parsed as JSON,
+    // and the user wants to overwrite, build it from scratch.
+    if ((!symbols || symbols.length < 1) && shouldOverwrite) {
         return await editor.edit(editBuilder => editBuilder.replace(
             // The jsonc-parser API does not provide a safe way to insert a child into an empty list, so in the case
             // that the config file is missing or empty, we need to replace the entire document.
@@ -203,8 +235,8 @@ async function prepareConfig(editor: vscode.TextEditor, handler: string): Promis
         ))
     }
 
-    // file is valid (symbols exist) vs. invalid file that had its validation skipped (see loadSymbols)
-    if (typeof symbols !== 'boolean') {
+    // file is valid enough (symbols exist)
+    if (symbols) {
         // If the config file exists, but `root.handlers` is undefined or empty, initial it with an empty
         // config section for this handler.
         const handlersSymbol: vscode.DocumentSymbol | undefined = symbols.find(c => c.name === 'handlers')
@@ -294,8 +326,9 @@ async function addSampleField(fieldKey: string, handlerSymbol: vscode.DocumentSy
     return true
 }
 
-async function getEventRange(editor: vscode.TextEditor, handler: string): Promise<vscode.Range> {
-    const symbols: vscode.DocumentSymbol[] | undefined = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
+async function getEventRange(editor: vscode.TextEditor, handler: string,
+                             context: ConfigureLocalLambdaContext): Promise<vscode.Range> {
+    const symbols: vscode.DocumentSymbol[] | undefined = await context.executeCommand<vscode.DocumentSymbol[]>(
         'vscode.executeDocumentSymbolProvider',
         editor.document.uri
     )
