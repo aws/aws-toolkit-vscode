@@ -85,21 +85,28 @@ class ProfileToolkitCredentialsProviderFactory(
             }
         }.filter { it.isFailure }
 
+        val refreshTitle = message("credentials.profile.refresh_ok_title")
+        val refreshBaseMessage = message("credentials.profile.refresh_ok_message", profiles.size)
         if (errors.isNotEmpty()) {
             val message = errors.mapNotNull { it.exceptionOrNull()?.message }.reduce { acc, message ->
                 "$acc\n$message"
             }
 
-            val title = message("credentials.invalid.title")
-            val numErrorMessage = message("credentials.profile.loading_errors", errors.size)
+            val errorDialogTitle = message("credentials.invalid.title")
+            val numErrorMessage = message("credentials.profile.refresh_errors", errors.size)
 
             notifyInfo(
-                title = title,
-                content = numErrorMessage,
+                title = refreshTitle,
+                content = "$refreshBaseMessage $numErrorMessage",
                 notificationActions = listOf(
-                    createShowMoreInfoDialogAction(message("credentials.invalid.more_info"), title, numErrorMessage, message),
+                    createShowMoreInfoDialogAction(message("credentials.invalid.more_info"), errorDialogTitle, numErrorMessage, message),
                     createNotificationExpiringAction(ActionManager.getInstance().getAction("aws.settings.upsertCredentials"))
                 )
+            )
+        } else {
+            notifyInfo(
+                title = refreshTitle,
+                content = refreshBaseMessage
             )
         }
 
