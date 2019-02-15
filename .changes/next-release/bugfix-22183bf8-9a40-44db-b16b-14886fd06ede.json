@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Improve 'Invalid AWS Credentials' messaging to include error details"
+}

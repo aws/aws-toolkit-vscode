@@ -64,6 +64,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
     val systemPropertyHelper = SystemPropertyHelper()
 
     private lateinit var profileFile: File
+    private lateinit var credentialsFile: File
     private val mockSdkHttpClient: SdkHttpClient = mock()
     private val mockRegionProvider: ToolkitRegionProvider = mock()
     private val mockProviderManager: ToolkitCredentialsProviderManager = mock()
@@ -74,7 +75,9 @@ class ProfileToolkitCredentialsProviderFactoryTest {
     fun setUp() {
         val awsFolder = temporaryFolder.newFolder(".aws")
         profileFile = File(awsFolder, "config")
+        credentialsFile = File(awsFolder, "credentials")
         System.getProperties().setProperty("aws.configFile", profileFile.absolutePath)
+        System.getProperties().setProperty("aws.sharedCredentialsFile", credentialsFile.absolutePath)
 
         reset(mockSdkHttpClient, mockRegionProvider)
 

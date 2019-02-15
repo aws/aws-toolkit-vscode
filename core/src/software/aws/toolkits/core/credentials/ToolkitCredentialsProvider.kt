@@ -35,19 +35,19 @@ abstract class ToolkitCredentialsProvider : AwsCredentialsProvider {
 
     override fun toString(): String = "${this::class.simpleName}(id='$id')"
 
-    open fun isValid(sdkHttpClient: SdkHttpClient): Boolean {
+    /**
+     * Returns true or throws an Exception
+     */
+    @Throws(Exception::class)
+    open fun isValidOrThrow(sdkHttpClient: SdkHttpClient): Boolean {
         val client = StsClient.builder()
             .region(Region.US_EAST_1)
             .httpClient(sdkHttpClient)
             .credentialsProvider(this)
             .build()
 
-        return try {
-            client.callerIdentity
-            true
-        } catch (e: Exception) {
-            false
-        }
+        client.callerIdentity
+        return true
     }
 }
 

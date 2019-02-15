@@ -9,11 +9,17 @@ import com.intellij.notification.NotificationListener
 import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications.Bus.notify
 import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.DialogBuilder
+import com.intellij.ui.ScrollPaneFactory
+import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
 import software.aws.toolkits.jetbrains.core.SettingsSelectorAction
 import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
 import software.aws.toolkits.resources.message
+import javax.swing.JLabel
+import javax.swing.JTextArea
 
 const val GROUP_DISPLAY_ID = "AWS Toolkit"
 
@@ -27,11 +33,8 @@ fun Exception.notifyError(title: String = "", project: Project? = null) =
         ), project
     )
 
-fun notifyInfo(title: String, content: String = "", project: Project? = null, listener: NotificationListener? = null) =
-    notify(Notification(GROUP_DISPLAY_ID, title, content, NotificationType.INFORMATION, listener), project)
-
-fun notifyWarn(title: String, content: String = "", project: Project? = null, notificationActions: Collection<AnAction>) {
-    val notification = Notification(GROUP_DISPLAY_ID, title, content, NotificationType.WARNING)
+fun notify(type: NotificationType, title: String, content: String = "", project: Project? = null, notificationActions: Collection<AnAction>) {
+    val notification = Notification(GROUP_DISPLAY_ID, title, content, type)
 
     notificationActions.forEach {
         notification.addAction(it)
@@ -39,6 +42,15 @@ fun notifyWarn(title: String, content: String = "", project: Project? = null, no
 
     notify(notification, project)
 }
+
+fun notifyInfo(title: String, content: String = "", project: Project? = null, listener: NotificationListener? = null) =
+    notify(Notification(GROUP_DISPLAY_ID, title, content, NotificationType.INFORMATION, listener), project)
+
+fun notifyInfo(title: String, content: String = "", project: Project? = null, notificationActions: Collection<AnAction>) =
+    notify(NotificationType.INFORMATION, title, content, project, notificationActions)
+
+fun notifyWarn(title: String, content: String = "", project: Project? = null, notificationActions: Collection<AnAction>) =
+    notify(NotificationType.WARNING, title, content, project, notificationActions)
 
 fun notifyWarn(title: String, content: String = "", project: Project? = null, listener: NotificationListener? = null) =
     notify(Notification(GROUP_DISPLAY_ID, title, content, NotificationType.WARNING, listener), project)
@@ -100,3 +112,31 @@ fun createNotificationExpiringAction(action: AnAction): NotificationAction = Not
     action.actionPerformed(actionEvent)
     notification.expire()
 }
+
+fun createShowMoreInfoDialogAction(actionName: String?, title: String?, message: String?, moreInfo: String?) =
+    object : AnActionWrapper(actionName) {
+        override fun isDumbAware() = true
+
+        override fun doActionPerformed(e: AnActionEvent) {
+            val dialogTitle = title ?: ""
+
+            val textArea = JTextArea(moreInfo).apply {
+                columns = 50
+                rows = 5
+                lineWrap = true
+                wrapStyleWord = true
+                isEditable = false
+            }
+
+            val dialogBuilder = DialogBuilder().apply {
+                setTitle(dialogTitle)
+                setNorthPanel(JLabel(message))
+                setCenterPanel(ScrollPaneFactory.createScrollPane(textArea))
+                setPreferredFocusComponent(textArea)
+                removeAllActions()
+                addOkAction()
+            }
+
+            dialogBuilder.show()
+        }
+    }

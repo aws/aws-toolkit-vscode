@@ -33,6 +33,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsMa
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.utils.createNotificationExpiringAction
+import software.aws.toolkits.jetbrains.utils.createShowMoreInfoDialogAction
 import software.aws.toolkits.jetbrains.utils.notifyWarn
 import software.aws.toolkits.resources.message
 import java.awt.Component
@@ -224,16 +225,22 @@ private class ChangeCredentialsAction(val credentialsProvider: ToolkitCredential
 
     override fun doSetSelected(e: AnActionEvent, state: Boolean) {
         if (state) {
-            if (!credentialsProvider.isValid(AwsSdkClient.getInstance().sdkHttpClient)) {
+            try {
+                if (credentialsProvider.isValidOrThrow(AwsSdkClient.getInstance().sdkHttpClient)) {
+                    getAccountSetting(e).activeCredentialProvider = credentialsProvider
+                }
+            } catch (ex: Exception) {
+                val title = message("credentials.invalid.title")
+                val message = message("credentials.profile.validation_error", credentialsProvider.displayName)
                 notifyWarn(
-                    title = message("credentials.invalid.title"),
-                    content = message("credentials.invalid.notification", credentialsProvider.displayName),
-                    notificationActions = listOf(createNotificationExpiringAction(
-                        ActionManager.getInstance().getAction("aws.settings.upsertCredentials")
-                    ))
+                    title = title,
+                    content = message,
+                    project = e.project,
+                    notificationActions = listOf(
+                        createShowMoreInfoDialogAction(message("credentials.invalid.more_info"), title, message, ex.localizedMessage),
+                        createNotificationExpiringAction(ActionManager.getInstance().getAction("aws.settings.upsertCredentials"))
+                    )
                 )
-            } else {
-                getAccountSetting(e).activeCredentialProvider = credentialsProvider
             }
         }
     }

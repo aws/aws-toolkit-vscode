@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials.profiles
 
+import com.intellij.openapi.actionSystem.ActionManager
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
 import software.amazon.awssdk.http.SdkHttpClient
@@ -11,7 +12,11 @@ import software.aws.toolkits.core.credentials.ToolkitCredentialsProviderFactory
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProviderManager
 import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.core.utils.tryOrThrowNullable
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileWatcher.ProfileChangeListener
+import software.aws.toolkits.jetbrains.utils.createNotificationExpiringAction
+import software.aws.toolkits.jetbrains.utils.createShowMoreInfoDialogAction
+import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 
 class ProfileToolkitCredentialsProviderFactory(
@@ -56,26 +61,46 @@ class ProfileToolkitCredentialsProviderFactory(
             .map { it.profileName to it }
             .toMap(mutableMapOf())
 
-        profiles.values.forEach { newProfile ->
-            LOG.tryOrNull(message("credentials.profile.failed_load"), level = Level.WARN) {
-                // If we already have a provider referencing this profile, we need replace the internal profile
-                val currentProvider = currentProfiles[newProfile.name()]
-                if (currentProvider != null) {
-                    currentProvider.refresh()
-                    credentialsProviderManager.providerModified(currentProvider)
-                } else {
-                    val newProvider = ProfileToolkitCredentialsProvider(
-                        profileHolder,
-                        newProfile.name(),
-                        sdkHttpClient,
-                        regionProvider
-                    )
-                    add(newProvider)
-                }
+        val errors = profiles.values.map { newProfile ->
+            Result.runCatching {
+                LOG.tryOrThrowNullable(message("credentials.profile.failed_load"), level = Level.WARN) {
+                    // If we already have a provider referencing this profile, we need replace the internal profile
+                    val currentProvider = currentProfiles[newProfile.name()]
+                    if (currentProvider != null) {
+                        currentProvider.refresh()
+                        credentialsProviderManager.providerModified(currentProvider)
+                    } else {
+                        val newProvider = ProfileToolkitCredentialsProvider(
+                            profileHolder,
+                            newProfile.name(),
+                            sdkHttpClient,
+                            regionProvider
+                        )
+                        add(newProvider)
+                    }
 
-                // Only remove it from the list of things to keep if successful
-                currentProfiles.remove(newProfile.name())
+                    // Only remove it from the list of things to keep if successful
+                    currentProfiles.remove(newProfile.name())
+                }
             }
+        }.filter { it.isFailure }
+
+        if (errors.isNotEmpty()) {
+            val message = errors.mapNotNull { it.exceptionOrNull()?.message }.reduce { acc, message ->
+                "$acc\n$message"
+            }
+
+            val title = message("credentials.invalid.title")
+            val numErrorMessage = message("credentials.profile.loading_errors", errors.size)
+
+            notifyInfo(
+                title = title,
+                content = numErrorMessage,
+                notificationActions = listOf(
+                    createShowMoreInfoDialogAction(message("credentials.invalid.more_info"), title, numErrorMessage, message),
+                    createNotificationExpiringAction(ActionManager.getInstance().getAction("aws.settings.upsertCredentials"))
+                )
+            )
         }
 
         // Profiles are not longer in the updated file, remove them from the toolkit

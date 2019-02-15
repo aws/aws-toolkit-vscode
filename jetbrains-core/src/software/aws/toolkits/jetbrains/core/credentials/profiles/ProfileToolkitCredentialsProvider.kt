@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.core.credentials.profiles
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.invokeAndWaitIfNeed
 import com.intellij.openapi.ui.Messages
+import com.intellij.util.text.nullize
 import icons.AwsIcons
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentials
@@ -109,6 +110,7 @@ class ProfileToolkitCredentialsProvider(
                     })
                     .build()
             }
+
             propertyExists(ProfileProperty.AWS_SESSION_TOKEN) -> {
                 StaticCredentialsProvider.create(
                     AwsSessionCredentials.create(
@@ -118,6 +120,7 @@ class ProfileToolkitCredentialsProvider(
                     )
                 )
             }
+
             propertyExists(ProfileProperty.AWS_ACCESS_KEY_ID) -> {
                 StaticCredentialsProvider.create(
                     AwsBasicCredentials.create(
@@ -126,8 +129,10 @@ class ProfileToolkitCredentialsProvider(
                     )
                 )
             }
-            // TODO: Improve why it is unsupported, https://github.com/aws/aws-toolkit-jetbrains/issues/794
-            else -> throw IllegalArgumentException("Profile `${profile()}` is unsupported")
+
+            else -> {
+                throw IllegalArgumentException(message("credentials.profile.unsupported", profile().name()))
+            }
         }
 
     private fun createAssumeRoleRequest(
@@ -181,6 +186,9 @@ class ProfileToolkitCredentialsProvider(
 
     private fun requiredProperty(propertyName: String, profile: Profile = profile()): String =
         profile.property(propertyName)
+            .filter {
+                it.nullize() != null
+            }
             .orElseThrow {
                 IllegalArgumentException(
                     message(
