@@ -44,7 +44,8 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         private readonly awsContextTrees: AwsContextTreeCollection,
         private readonly regionProvider: RegionProvider,
         private readonly resourceFetcher: ResourceFetcher,
-        private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
+        private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string,
+        private readonly lambdaOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda'),
     ) {
         this._onDidChangeTreeData = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
         this.onDidChangeTreeData = this._onDidChangeTreeData.event
@@ -56,9 +57,9 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         vscode.commands.registerCommand(
             'aws.deleteLambda',
             async (node: StandaloneFunctionNode) => await deleteLambda({
-                node,
+                deleteParams: { functionName: node.configuration.FunctionName || '' },
                 lambdaClient: ext.toolkitClientBuilder.createLambdaClient(node.regionCode),
-                outputChannel: ext.lambdaOutputChannel,
+                outputChannel: this.lambdaOutputChannel,
                 onRefresh: () => this.refresh(node.parent)
             })
         )
@@ -77,7 +78,12 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
 
         vscode.commands.registerCommand(
             'aws.invokeLambda',
-            async (node: FunctionNodeBase) => await invokeLambda(this.awsContext, this.resourceFetcher, node)
+            async (node: FunctionNodeBase) => await invokeLambda({
+                awsContext: this.awsContext,
+                element: node,
+                outputChannel: this.lambdaOutputChannel,
+                resourceFetcher: this.resourceFetcher
+            })
         )
         vscode.commands.registerCommand('aws.configureLambda', configureLocalLambda)
         vscode.commands.registerCommand(

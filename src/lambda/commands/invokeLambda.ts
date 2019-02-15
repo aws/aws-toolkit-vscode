@@ -37,13 +37,20 @@ interface CommandMessage {
     value?: _Blob
 }
 
-export async function invokeLambda(
-    awsContext: AwsContext,
+export async function invokeLambda(params: {
+    /* TODO: Instead of vague scope-leaking objects: awsContext & element, it would be cleaner if this took:
+     *  {
+     *      lambdaClient: LambdaClient,         // or just invoke/invokeAsync interface of AWS.Lambda (see: lambda.d.ts)
+     *      invokeParams: {functionArn: string} // or Lambda.Types.InvocationRequest (see: lambda.d.ts)
+     *  }
+     */
+    awsContext: AwsContext, // TODO: Consider replacing 'awsContext' with something specific and meaningful
+    outputChannel: vscode.OutputChannel,
     resourceFetcher: ResourceFetcher,
-    element?: FunctionNodeBase
-) {
+    element?: FunctionNodeBase, // TODO: Consider replacing 'element'' with something specific and meaningful
+}) {
     try {
-        const fn: FunctionNodeBase = await selectLambdaNode(awsContext, element)
+        const fn: FunctionNodeBase = await selectLambdaNode(params.awsContext, params.element)
         const view = vscode.window.createWebviewPanel(
             'html',
             `Invoked ${fn.configuration.FunctionName}`,
@@ -69,7 +76,7 @@ export async function invokeLambda(
         console.log(resourcePath)
 
         try {
-            const sampleInput = await resourceFetcher.getResource([
+            const sampleInput = await params.resourceFetcher.getResource([
                 new WebResourceLocation(sampleRequestManifestPath),
                 new FileResourceLocation(resourcePath)
             ])
@@ -104,12 +111,13 @@ export async function invokeLambda(
             })
 
             view.webview.onDidReceiveMessage(
-                createMessageReceivedFunc(
-                    resourceFetcher,
-                    resourcePath,
-                    message => view.webview.postMessage(message),
-                    fn
-                ),
+                createMessageReceivedFunc({
+                    fn,
+                    outputChannel: params.outputChannel,
+                    resourceFetcher: params.resourceFetcher,
+                    resourcePath: resourcePath,
+                    onPostMessage: message  => view.webview.postMessage(message)
+                }),
                 undefined,
                 ext.context.subscriptions
             )
@@ -123,26 +131,28 @@ export async function invokeLambda(
     }
 }
 
-function createMessageReceivedFunc(
+function createMessageReceivedFunc({fn, outputChannel, ...restParams}: {
+    // TODO: Consider passing lambdaClient: LambdaClient
+    fn: FunctionNodeBase, // TODO: Replace w/ invokeParams: {functionArn: string} // or Lambda.Types.InvocationRequest
+    outputChannel: vscode.OutputChannel
     resourceFetcher: ResourceFetcher,
     resourcePath: string,
-    postMessage: (message: any) => Thenable<boolean>,
-    fn: FunctionNodeBase
-) {
+    onPostMessage(message: any): Thenable<boolean>
+}) {
     return async (message: CommandMessage) => {
         switch (message.command) {
             case 'sampleRequestSelected':
                 console.log('selected the following sample:')
                 console.log(message.value)
 
-                const sample = await resourceFetcher.getResource([
+                const sample = await restParams.resourceFetcher.getResource([
                     new WebResourceLocation(`${sampleRequestPath}${message.value}`),
-                    new FileResourceLocation(resourcePath)
+                    new FileResourceLocation(restParams.resourcePath)
                 ])
 
                 console.log(sample)
 
-                postMessage({ command: 'loadedSample', sample: sample })
+                restParams.onPostMessage({ command: 'loadedSample', sample: sample })
 
                 return
 
@@ -150,14 +160,13 @@ function createMessageReceivedFunc(
                 console.log('invoking lambda function with the following payload:')
                 console.log(message.value)
 
-                ext.lambdaOutputChannel.show()
-                ext.lambdaOutputChannel.appendLine('Loading response...')
+                outputChannel.show()
+                outputChannel.appendLine('Loading response...')
 
                 try {
                     if (!fn.configuration.FunctionArn) {
                         throw new Error(`Could not determine ARN for function ${fn.configuration.FunctionName}`)
                     }
-
                     const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(fn.regionCode)
                     const funcResponse = await client.invoke(
                         fn.configuration.FunctionArn,
@@ -168,19 +177,18 @@ function createMessageReceivedFunc(
                         ''
                     const payload = funcResponse.Payload ? funcResponse.Payload : JSON.stringify({})
 
-                    ext.lambdaOutputChannel.appendLine(`Invocation result for ${fn.configuration.FunctionArn}`)
-                    ext.lambdaOutputChannel.appendLine('Logs:')
-                    ext.lambdaOutputChannel.appendLine(logs)
-                    ext.lambdaOutputChannel.appendLine('')
-                    ext.lambdaOutputChannel.appendLine('Payload:')
-                    ext.lambdaOutputChannel.appendLine(payload.toString())
-                    ext.lambdaOutputChannel.appendLine('')
+                    outputChannel.appendLine(`Invocation result for ${fn.configuration.FunctionArn}`)
+                    outputChannel.appendLine('Logs:')
+                    outputChannel.appendLine(logs)
+                    outputChannel.appendLine('')
+                    outputChannel.appendLine('Payload:')
+                    outputChannel.appendLine(payload.toString())
+                    outputChannel.appendLine('')
                 } catch (e) {
                     const error = e as Error
-
-                    ext.lambdaOutputChannel.appendLine(`There was an error invoking ${fn.configuration.FunctionArn}`)
-                    ext.lambdaOutputChannel.appendLine(error.toString())
-                    ext.lambdaOutputChannel.appendLine('')
+                    outputChannel.appendLine(`There was an error invoking ${fn.configuration.FunctionArn}`)
+                    outputChannel.appendLine(error.toString())
+                    outputChannel.appendLine('')
                 }
 
                 return
