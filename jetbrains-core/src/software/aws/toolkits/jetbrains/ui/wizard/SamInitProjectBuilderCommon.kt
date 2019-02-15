@@ -30,7 +30,7 @@ abstract class SamProjectTemplate {
 
     fun build(runtime: Runtime, outputDir: VirtualFile) {
         doBuild(runtime, outputDir)
-        telemetry.record("SamProjectInit") {
+        TelemetryService.getInstance().record("SamProjectInit") {
             datum(getName()) {
                 metadata("runtime", runtime.name)
                 metadata("samVersion", SamCommon.getVersionString())
@@ -43,10 +43,6 @@ abstract class SamProjectTemplate {
     }
 
     open fun supportedRuntimes(): Set<Runtime> = Runtime.knownValues().toSet()
-
-    companion object {
-        private val telemetry = TelemetryService.getInstance()
-    }
 }
 
 @JvmOverloads

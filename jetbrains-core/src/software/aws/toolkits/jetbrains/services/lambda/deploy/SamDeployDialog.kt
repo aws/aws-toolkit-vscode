@@ -214,7 +214,7 @@ open class SamDeployDialog(
         }
 
         return future.whenComplete { _, exception ->
-            telemetry.record("SamDeploy") {
+            TelemetryService.getInstance().record("SamDeploy") {
                 datum(title) {
                     count()
                     // exception can be null but is not annotated as nullable
@@ -231,6 +231,5 @@ open class SamDeployDialog(
     private companion object {
         const val NUMBER_OF_STEPS = 3.0
         val LOG = getLogger<SamDeployDialog>()
-        val telemetry = TelemetryService.getInstance()
     }
 }

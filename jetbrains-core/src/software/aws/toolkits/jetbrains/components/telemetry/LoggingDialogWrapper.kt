@@ -52,7 +52,7 @@ abstract class LoggingDialogWrapper : DialogWrapper, TelemetryNamespace {
     override fun doOKAction() {
         super.doOKAction()
 
-        telemetry.record(getNamespace()) {
+        TelemetryService.getInstance().record(getNamespace()) {
             datum("OKAction") {
                 count()
             }
@@ -62,14 +62,10 @@ abstract class LoggingDialogWrapper : DialogWrapper, TelemetryNamespace {
     override fun doCancelAction() {
         super.doCancelAction()
 
-        telemetry.record(getNamespace()) {
+        TelemetryService.getInstance().record(getNamespace()) {
             datum("CancelAction") {
                 count()
             }
         }
-    }
-
-    companion object {
-        protected val telemetry = TelemetryService.getInstance()
     }
 }
