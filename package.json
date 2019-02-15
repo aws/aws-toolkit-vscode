@@ -22,13 +22,8 @@
         "onCommand:aws.showRegion",
         "onCommand:aws.hideRegion",
         "onView:lambda",
-        "onCommand:aws.invokeLambda",
-        "onCommand:aws.getLambdaConfig",
-        "onCommand:aws.getLambdaPolicy",
         "onCommand:aws.samcli.detect",
         "onCommand:aws.samcli.validate.version",
-        "onCommand:aws.deleteCloudFormation",
-        "onCommand:aws.showErrorDetails",
         "onCommand:aws.lambda.createNewSamApp",
         "onDebugInitialConfigurations"
     ],
@@ -88,6 +83,36 @@
             ]
         },
         "menus": {
+            "commandPalette": [
+                {
+                    "command": "aws.deleteCloudFormation",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.deleteLambda",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.getLambdaConfig",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.getLambdaPolicy",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.invokeLambda",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.refreshAwsExplorer",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.showErrorDetails",
+                    "when": "false"
+                }
+            ],
             "view/title": [
                 {
                     "command": "aws.refreshAwsExplorer",
@@ -219,7 +244,8 @@
         "postinstall": "node ./node_modules/vscode/bin/install",
         "test": "npm run compile && node ./test-scripts/test.js",
         "lint": "tslint --project .",
-        "package": "vsce package"
+        "package": "vsce package",
+        "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix"
     },
     "devDependencies": {
         "@types/async-lock": "^1.1.0",

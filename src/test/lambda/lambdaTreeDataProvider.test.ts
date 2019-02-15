@@ -15,7 +15,7 @@ import { RegionProvider } from '../../shared/regions/regionProvider'
 import { ResourceFetcher } from '../../shared/resourceFetcher'
 import { ResourceLocation } from '../../shared/resourceLocation'
 
-describe('LambdaProvider', function(): void {
+describe('LambdaProvider', () => {
 
     it('displays region nodes with user-friendly region names', async () => {
 
@@ -46,7 +46,7 @@ describe('LambdaProvider', function(): void {
             }
 
             public async getExplorerRegions(): Promise<string[]> {
-                return [ regionCode ]
+                return [regionCode]
             }
 
             public async addExplorerRegion(...regions: string[]): Promise<void> {
@@ -73,7 +73,8 @@ describe('LambdaProvider', function(): void {
             awsContext,
             awsContextTreeCollection,
             regionProvider,
-            resourceFetcher
+            resourceFetcher,
+            (path) => { throw new Error('unused') }
         )
 
         const treeNodesPromise = lambdaProvider.getChildren()

@@ -42,7 +42,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
     const localize = nls.loadMessageBundle()
 
-    ext.lambdaOutputChannel = vscode.window.createOutputChannel('AWS Lambda')
     ext.context = context
 
     const toolkitOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel(
@@ -84,7 +83,13 @@ export async function activate(context: vscode.ExtensionContext) {
     )
 
     const providers = [
-        new LambdaTreeDataProvider(awsContext, awsContextTrees, regionProvider, resourceFetcher)
+        new LambdaTreeDataProvider(
+            awsContext,
+            awsContextTrees,
+            regionProvider,
+            resourceFetcher,
+            (relativeExtensionPath) => getExtensionAbsolutePath(context, relativeExtensionPath)
+        )
     ]
 
     providers.forEach((p) => {
@@ -146,4 +151,8 @@ async function initializeSamCli(): Promise<void> {
     )
 
     await SamCliDetection.detectSamCli(false)
+}
+
+function getExtensionAbsolutePath(context: vscode.ExtensionContext, relativeExtensionPath: string): string {
+    return context.asAbsolutePath(relativeExtensionPath)
 }

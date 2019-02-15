@@ -16,7 +16,7 @@ This is an open source project because we want you to be involved. We love issue
 
 The toolkit has not been released to the marketplace, so in order to try it you must build and run from source:
 
-> Note: [`git`](https://git-scm.com/downloads) and [`npm`](https://nodejs.org/) are required to build from source.
+> Note: [`git`](https://git-scm.com/downloads) and [`npm`](https://nodejs.org/) **version 6.4.1 or higher** are required to build from source.
 
 1. Clone the repository
 

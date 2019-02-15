@@ -5,37 +5,65 @@
 
 'use strict'
 
+import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
 
 import { LambdaClient } from '../../shared/clients/lambdaClient'
-import { ext } from '../../shared/extensionGlobals'
-import { StandaloneFunctionNode } from '../explorer/standaloneNodes'
 
-export async function deleteLambda(
-    node: StandaloneFunctionNode,
-    refresh: () => void
-): Promise<void> {
-    const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(node.regionCode)
+const localize = nls.loadMessageBundle()
 
-    if (!node.configuration.FunctionName) {
+/**
+ * @param message: Message displayed to user
+ */
+const confirm = async (message: string): Promise<boolean> => {
+    // TODO: Re-use `confirm` throughout package (rather than cutting and pasting logic).
+    const responseNo: string = localize('AWS.generic.response.no', 'No')
+    const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
+    const response = await vscode.window.showWarningMessage(
+        message,
+        responseYes,
+        responseNo
+    )
+
+    return response === responseYes
+}
+
+export async function deleteLambda({
+   deleteParams,
+   onConfirm = async () => {
+       return await confirm(localize(
+           'AWS.command.deleteLambda.confirm',
+           "Are you sure you want to delete lambda function '{0}'?",
+           deleteParams.functionName
+       ))
+   },
+   ...restParams
+}: {
+    deleteParams: { functionName: string },
+    lambdaClient: Pick<LambdaClient, 'deleteFunction'>, // i.e. implements LambdaClient.deleteFunction
+    outputChannel: vscode.OutputChannel,
+    onConfirm?(): Promise<boolean>,
+    onRefresh(): void
+}): Promise<void> {
+
+    if (!deleteParams.functionName) {
         return
     }
-
     try {
-        await client.deleteFunction(node.configuration.FunctionName)
+        const isConfirmed = await onConfirm()
+        if (isConfirmed) {
+            await restParams.lambdaClient.deleteFunction(deleteParams.functionName)
+            restParams.onRefresh()
+        }
     } catch (err) {
-        const error = err as Error
-
-        ext.lambdaOutputChannel.show(true)
-        ext.lambdaOutputChannel.appendLine(localize(
+        restParams.outputChannel.show(true)
+        restParams.outputChannel.appendLine(localize(
             'AWS.command.deleteLambda.error',
             "There was an error deleting lambda function '{0}'",
-            node.configuration.FunctionArn
+            deleteParams.functionName
         ))
-        ext.lambdaOutputChannel.appendLine(error.toString())
-        ext.lambdaOutputChannel.appendLine('')
-    } finally {
-        refresh()
+        restParams.outputChannel.appendLine(String(err)) // linter hates toString on type any
+        restParams.outputChannel.appendLine('')
+        restParams.onRefresh() // Refresh in case it was already deleted.
     }
 }
