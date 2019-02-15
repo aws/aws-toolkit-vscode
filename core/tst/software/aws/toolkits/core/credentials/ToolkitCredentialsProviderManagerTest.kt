@@ -31,6 +31,7 @@ class ToolkitCredentialsProviderManagerTest {
     fun setUp() {
         mockRegistry.createMockProviderFactory("Mock1", manager)
         mockRegistry.createMockProviderFactory("Mock2", manager)
+        manager.reloadFactories(mockRegistry)
     }
 
     @Test
@@ -59,6 +60,7 @@ class ToolkitCredentialsProviderManagerTest {
     @Test
     fun testListenerIsCalledOnRemove() {
         val mockProviderFactory = mockRegistry.createMockProviderFactory("Mock3", manager)
+        manager.reloadFactories(mockRegistry)
         mockProviderFactory.remove("Mock3:Cred1")
         verify(mockChangeListener).providerRemoved("Mock3:Cred1")
     }
@@ -66,6 +68,7 @@ class ToolkitCredentialsProviderManagerTest {
     @Test
     fun testListenerIsCalledOnModification() {
         val mockProviderFactory = mockRegistry.createMockProviderFactory("Mock3", manager)
+        manager.reloadFactories(mockRegistry)
         mockProviderFactory.modify("Mock3:Cred1")
         verify(mockChangeListener).providerModified(any())
     }

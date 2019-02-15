@@ -35,8 +35,12 @@ interface ToolkitCredentialsProviderManager : ToolkitCredentialsChangeListener {
 
 class DefaultToolkitCredentialsProviderManager(registry: ToolkitCredentialsProviderRegistry) :
     ToolkitCredentialsProviderManager {
-    private val factories = registry.listFactories(this)
     private val listeners = ConcurrentHashMap.newKeySet<ToolkitCredentialsChangeListener>()
+    private val factories = mutableListOf<ToolkitCredentialsProviderFactory<*>>()
+
+    init {
+        reloadFactories(registry)
+    }
 
     @Throws(CredentialProviderNotFound::class)
     override fun getCredentialProvider(id: String): ToolkitCredentialsProvider = factories.asSequence().mapNotNull { it.get(id) }.firstOrNull()
@@ -74,6 +78,11 @@ class DefaultToolkitCredentialsProviderManager(registry: ToolkitCredentialsProvi
                 it.providerRemoved(providerId)
             }
         }
+    }
+
+    fun reloadFactories(registry: ToolkitCredentialsProviderRegistry) {
+        factories.clear()
+        factories.addAll(registry.listFactories(this))
     }
 
     /**
