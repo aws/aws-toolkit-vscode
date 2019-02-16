@@ -8,31 +8,25 @@
 import { ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliProcessInvoker, SamCliProcessInvoker } from './samCliInvoker'
 
-export interface SamCliPackageResponse {
-    templateContent: string
-}
-
 export class SamCliPackageInvocation {
     public constructor(
         private readonly templateFile: string,
+        private readonly outputTemplateFile: string,
         private readonly s3Bucket: string,
         private readonly invoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker()
     ) {
     }
 
-    public async execute(): Promise<SamCliPackageResponse> {
-        await this.validate()
-
+    public async execute(): Promise<void> {
         const { exitCode, error, stderr, stdout }: ChildProcessResult = await this.invoker.invoke(
             'package',
             '--template-file', this.templateFile,
-            '--s3-bucket', this.s3Bucket
+            '--s3-bucket', this.s3Bucket,
+            '--output-template-file', this.outputTemplateFile
         )
 
         if (exitCode === 0) {
-            return {
-                templateContent: stdout
-            }
+            return
         }
 
         console.error('SAM package error')
@@ -43,10 +37,5 @@ export class SamCliPackageInvocation {
 
         const message = error && error.message ? error.message : stderr || stdout
         throw new Error(`sam package encountered an error: ${message}`)
-    }
-
-    private async validate(): Promise<void> {
-        // TODO: Validate that templateFile exists.
-        // TODO: Validate that s3Bucket is a valid S3 bucket name.
     }
 }

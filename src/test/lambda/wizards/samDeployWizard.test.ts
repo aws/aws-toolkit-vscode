@@ -14,10 +14,8 @@ import {
     SamDeployWizardContext
 } from '../../../lambda/wizards/samDeployWizard'
 
-type WorkspaceFolderPickUri = Pick<vscode.WorkspaceFolder, 'uri'>
-
 class MockSamDeployWizardContext implements SamDeployWizardContext {
-    public get workspaceFolders(): WorkspaceFolderPickUri[] | undefined {
+    public get workspaceFolders(): vscode.Uri[] | undefined {
         if (this.workspaceFoldersResponses.length <= 0) {
             throw new Error('workspaceFolders was called more times than expected')
         }
@@ -27,7 +25,7 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
 
     public constructor(
         public readonly onDetectLocalTemplates: typeof detectLocalTemplates,
-        private readonly workspaceFoldersResponses: (WorkspaceFolderPickUri[] | undefined)[] = [],
+        private readonly workspaceFoldersResponses: (vscode.Uri[] | undefined)[] = [],
         private readonly showInputBoxReponses: (string | undefined)[] = [],
         private readonly showQuickPickResponses: (vscode.QuickPickItem | undefined)[] = []
     ) {
@@ -107,7 +105,7 @@ describe('SamDeployWizard', async () => {
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
-                [[{ uri: vscode.Uri.file(workspaceFolderPath) }]],
+                [[ vscode.Uri.file(workspaceFolderPath) ]],
                 [],
                 [undefined]
             ))
@@ -121,7 +119,7 @@ describe('SamDeployWizard', async () => {
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
-                [[{ uri: vscode.Uri.file(workspaceFolderPath) }]],
+                [[ vscode.Uri.file(workspaceFolderPath) ]],
                 [ 'mys3bucketname', 'myStackName'],
                 [{ uri: vscode.Uri.file(templatePath) } as any as vscode.QuickPickItem]
             ))
@@ -145,8 +143,8 @@ describe('SamDeployWizard', async () => {
                     yield vscode.Uri.file(templatePath2)
                 },
                 [
-                    [{ uri: vscode.Uri.file(workspaceFolderPath1) }],
-                    [{ uri: vscode.Uri.file(workspaceFolderPath2) }]
+                    [ vscode.Uri.file(workspaceFolderPath1) ],
+                    [ vscode.Uri.file(workspaceFolderPath2) ]
                 ],
                 [
                     undefined,
@@ -169,7 +167,7 @@ describe('SamDeployWizard', async () => {
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
-                [[{ uri: vscode.Uri.file(workspaceFolderPath) }]],
+                [[ vscode.Uri.file(workspaceFolderPath) ]],
                 [
                     'mys3bucketname',
                     'myStackName'
@@ -194,7 +192,7 @@ describe('SamDeployWizard', async () => {
                 try {
                     await new SamDeployWizard(new MockSamDeployWizardContext(
                         async function*() { yield vscode.Uri.file(templatePath) },
-                        [[{ uri: vscode.Uri.file(workspaceFolderPath) }]],
+                        [[ vscode.Uri.file(workspaceFolderPath) ]],
                         [bucketName],
                         [{ uri: vscode.Uri.file(templatePath) } as any as vscode.QuickPickItem]
                     )).run()
@@ -246,7 +244,7 @@ describe('SamDeployWizard', async () => {
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
-                [[{ uri: vscode.Uri.file(workspaceFolderPath) }]],
+                [[ vscode.Uri.file(workspaceFolderPath) ]],
                 [
                     'mys3bucketname1',
                     undefined,
@@ -266,7 +264,7 @@ describe('SamDeployWizard', async () => {
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
-                [[{ uri: vscode.Uri.file(workspaceFolderPath) }]],
+                [[ vscode.Uri.file(workspaceFolderPath) ]],
                 [
                     'mys3bucketname',
                     'myStackName'
@@ -287,7 +285,7 @@ describe('SamDeployWizard', async () => {
                 try {
                     await new SamDeployWizard(new MockSamDeployWizardContext(
                         async function*() { yield vscode.Uri.file(templatePath) },
-                        [[{ uri: vscode.Uri.file(workspaceFolderPath) }]],
+                        [[ vscode.Uri.file(workspaceFolderPath) ]],
                         ['myBucketName', stackName],
                         [{ uri: vscode.Uri.file(templatePath) } as any as vscode.QuickPickItem]
                     )).run()

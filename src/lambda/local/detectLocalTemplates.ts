@@ -19,29 +19,13 @@ class DefaultDetectLocalTemplatesContext implements DetectLocalTemplatesContext 
     public readonly statAsync = filesystem.statAsync
 }
 
-type WorkspaceFolderPickUri = Pick<vscode.WorkspaceFolder, 'uri'>
-
-export function detectLocalTemplates(
-    ...workspaceFolders: WorkspaceFolderPickUri[]
-): AsyncIterableIterator<vscode.Uri>
-export function detectLocalTemplates(
-    context: DetectLocalTemplatesContext,
-    ...workspaceFolders: WorkspaceFolderPickUri[]
-): AsyncIterableIterator<vscode.Uri>
-export async function* detectLocalTemplates(
-    first: DetectLocalTemplatesContext | WorkspaceFolderPickUri | undefined,
-    ...rest: WorkspaceFolderPickUri[]
-): AsyncIterableIterator<vscode.Uri> {
-    let context: DetectLocalTemplatesContext
-    let workspaceFolders: WorkspaceFolderPickUri[]
-    if (first && (first as WorkspaceFolderPickUri).uri) {
-        context = new DefaultDetectLocalTemplatesContext()
-        workspaceFolders = [ first as WorkspaceFolderPickUri, ...rest ]
-    } else {
-        context = (first as DetectLocalTemplatesContext) || new DefaultDetectLocalTemplatesContext()
-        workspaceFolders = rest
-    }
-
+export async function* detectLocalTemplates({
+    workspaceFolders,
+    context = new DefaultDetectLocalTemplatesContext()
+}: {
+    workspaceFolders: vscode.Uri[]
+    context?: DetectLocalTemplatesContext
+}): AsyncIterableIterator<vscode.Uri> {
     for (const workspaceFolder of workspaceFolders) {
         for await (const folder of getFolderCandidates(context, workspaceFolder)) {
             yield* detectTemplatesInFolder(context, folder)
@@ -51,13 +35,13 @@ export async function* detectLocalTemplates(
 
 async function* getFolderCandidates(
     context: DetectLocalTemplatesContext,
-    workspaceFolder: WorkspaceFolderPickUri
+    uri: vscode.Uri
 ): AsyncIterableIterator<string> {
     // Search the root and first level of children only.
-    yield workspaceFolder.uri.fsPath
+    yield uri.fsPath
 
-    const entries = await context.readdirAsync(workspaceFolder.uri.fsPath)
-    for (const entry of entries.map(p => path.join(workspaceFolder.uri.fsPath, p))) {
+    const entries = await context.readdirAsync(uri.fsPath)
+    for (const entry of entries.map(p => path.join(uri.fsPath, p))) {
         const stats = await context.statAsync(entry)
         if (stats.isDirectory()) {
             yield entry

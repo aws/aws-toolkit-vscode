@@ -13,18 +13,16 @@ import * as vscode from 'vscode'
 import { detectLocalTemplates } from '../local/detectLocalTemplates'
 import { MultiStepWizard, WizardStep } from './multiStepWizard'
 
-export interface SamDeployWizardArgs {
+export interface SamDeployWizardResponse {
     template: vscode.Uri
     s3Bucket: string
     stackName: string
 }
 
-type WorkspaceFolderPickUri = Pick<vscode.WorkspaceFolder, 'uri'>
-
 export interface SamDeployWizardContext {
     readonly onDetectLocalTemplates: typeof detectLocalTemplates
 
-    readonly workspaceFolders: WorkspaceFolderPickUri[] | undefined
+    readonly workspaceFolders: vscode.Uri[] | undefined
 
     showInputBox: typeof vscode.window.showInputBox
 
@@ -38,15 +36,13 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
     public readonly showQuickPick = vscode.window.showQuickPick
 
-    public get workspaceFolders(): WorkspaceFolderPickUri[] | undefined {
-        return vscode.workspace.workspaceFolders
+    public get workspaceFolders(): vscode.Uri[] | undefined {
+        return (vscode.workspace.workspaceFolders || []).map(f => f.uri)
     }
 }
 
-export class SamDeployWizard extends MultiStepWizard<SamDeployWizardArgs> {
-    private template?: vscode.Uri
-    private s3Bucket?: string
-    private stackName?: string
+export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
+    private readonly response: Partial<SamDeployWizardResponse> = {}
 
     public constructor(
         private readonly context: SamDeployWizardContext = new DefaultSamDeployWizardContext()
@@ -58,15 +54,15 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardArgs> {
         return this.TEMPLATE
     }
 
-    protected getResult(): SamDeployWizardArgs | undefined {
-        if (!this.template || !this.s3Bucket || !this.stackName) {
+    protected getResult(): SamDeployWizardResponse | undefined {
+        if (!this.response.template || !this.response.s3Bucket || !this.response.stackName) {
             return undefined
         }
 
         return {
-            template: this.template,
-            s3Bucket: this.s3Bucket,
-            stackName: this.stackName
+            template: this.response.template,
+            s3Bucket: this.response.s3Bucket,
+            stackName: this.response.stackName
         }
     }
 
@@ -76,14 +72,14 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardArgs> {
             await getTemplateChoices(this.context.onDetectLocalTemplates, ...workspaceFolders)
         )
 
-        this.template = choice ? choice.uri : undefined
+        this.response.template = choice ? choice.uri : undefined
 
-        return this.template ? this.S3_BUCKET : undefined
+        return this.response.template ? this.S3_BUCKET : undefined
     }
 
     private readonly S3_BUCKET: WizardStep = async () => {
-        this.s3Bucket = await this.context.showInputBox({
-            value: this.s3Bucket,
+        this.response.s3Bucket = await this.context.showInputBox({
+            value: this.response.s3Bucket,
             prompt: localize(
                 'AWS.samcli.deploy.s3Bucket.prompt',
                 'Enter the AWS S3 bucket to which your code should be deployed'
@@ -95,110 +91,32 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardArgs> {
             ignoreFocusOut: true,
 
             // https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-s3-bucket-naming-requirements.html
-            validateInput(value: string): string | undefined | null | Thenable<string | undefined | null> {
-                if (value.length < 3 || value.length > 63) {
-                    return localize(
-                        'AWS.samcli.deploy.s3Bucket.error.length',
-                        'S3 bucket name must be between 3 and 63 characters long'
-                    )
-                }
-
-                if (!/^[a-z\d\.\-]+$/.test(value)) {
-                    return localize(
-                        'AWS.samcli.deploy.s3Bucket.error.invalidCharacters',
-                        'S3 bucket name may only contain lower-case characters, numbers, periods, and dashes'
-                    )
-                }
-
-                if (/^\d+\.\d+\.\d+\.\d+$/.test(value)) {
-                    return localize(
-                        'AWS.samcli.deploy.s3Bucket.error.ipAddress',
-                        'S3 bucket name may not be formatted as an IP address (198.51.100.24)'
-                    )
-                }
-
-                if (value[value.length - 1] === '-') {
-                    return localize(
-                        'AWS.samcli.deploy.s3Bucket.error.endsWithDash',
-                        'S3 bucket name may not end with a dash'
-                    )
-                }
-
-                if (value.includes('..')) {
-                    return localize(
-                        'AWS.samcli.deploy.s3Bucket.error.consecutivePeriods',
-                        'S3 bucket name may not have consecutive periods'
-                    )
-                }
-
-                if (value.includes('.-') || value.includes('-.')) {
-                    return localize(
-                        'AWS.samcli.deploy.s3Bucket.error.dashAdjacentPeriods',
-                        'S3 bucket name may not contain a period adjacent to a dash'
-                    )
-                }
-
-                if (value.split('.').some(label => !/^[a-z\d]/.test(label))) {
-                    return localize(
-                        'AWS.samcli.deploy.s3Bucket.error.labelFirstCharacter',
-                        'Each label in an S3 bucket name must begin with a number or a lower-case character'
-                    )
-                }
-
-                // TODO: Validate that a bucket with this name does not already exist.
-
-                return undefined
-            }
+            validateInput: validateS3Bucket
         })
 
-        return this.s3Bucket ? this.STACK_NAME : this.TEMPLATE
+        return this.response.s3Bucket ? this.STACK_NAME : this.TEMPLATE
     }
 
     private readonly STACK_NAME: WizardStep = async () => {
-        this.stackName = await this.context.showInputBox({
-            value: this.stackName,
+        this.response.stackName = await this.context.showInputBox({
+            value: this.response.stackName,
             prompt: localize(
                 'AWS.samcli.deploy.stackName.prompt',
                 'Enter the name to use for the deployed stack'
             ),
             placeHolder: localize(
                 'AWS.samcli.deploy.stackName.placeholder',
-                'stack name'
+                'Stack name'
             ),
             ignoreFocusOut: true,
 
             // https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html
             // A stack name can contain only alphanumeric characters (case sensitive) and hyphens.
             // It must start with an alphabetic character and cannot be longer than 128 characters.
-            validateInput(value: string): string | undefined | null | Thenable<string | undefined | null> {
-                if (!/^[a-zA-Z\d\-]+$/.test(value)) {
-                    return localize(
-                        'AWS.samcli.deploy.stackName.error.invalidCharacters',
-                        'A stack name may contain only alphanumeric characters (case sensitive) and hyphens'
-                    )
-                }
-
-                if (!/^[a-zA-Z]/.test(value)) {
-                    return localize(
-                        'AWS.samcli.deploy.stackName.error.firstCharacter',
-                        'A stack name must begin with an alphabetic character'
-                    )
-                }
-
-                if (value.length > 128) {
-                    return localize(
-                        'AWS.samcli.deploy.stackName.error.length',
-                        'A stack name must not be longer than 128 characters'
-                    )
-                }
-
-                // TODO: Validate that a stack with this name does not already exist.
-
-                return undefined
-            }
+            validateInput: validateStackName
         })
 
-        return this.stackName ? undefined : this.S3_BUCKET
+        return this.response.stackName ? undefined : this.S3_BUCKET
     }
 }
 
@@ -215,12 +133,92 @@ class SamTemplateQuickPickItem implements vscode.QuickPickItem {
     }
 }
 
+function validateS3Bucket(value: string): string | undefined | null | Thenable<string | undefined | null> {
+    if (value.length < 3 || value.length > 63) {
+        return localize(
+            'AWS.samcli.deploy.s3Bucket.error.length',
+            'S3 bucket name must be between 3 and 63 characters long'
+        )
+    }
+
+    if (!/^[a-z\d\.\-]+$/.test(value)) {
+        return localize(
+            'AWS.samcli.deploy.s3Bucket.error.invalidCharacters',
+            'S3 bucket name may only contain lower-case characters, numbers, periods, and dashes'
+        )
+    }
+
+    if (/^\d+\.\d+\.\d+\.\d+$/.test(value)) {
+        return localize(
+            'AWS.samcli.deploy.s3Bucket.error.ipAddress',
+            'S3 bucket name may not be formatted as an IP address (198.51.100.24)'
+        )
+    }
+
+    if (value[value.length - 1] === '-') {
+        return localize(
+            'AWS.samcli.deploy.s3Bucket.error.endsWithDash',
+            'S3 bucket name may not end with a dash'
+        )
+    }
+
+    if (value.includes('..')) {
+        return localize(
+            'AWS.samcli.deploy.s3Bucket.error.consecutivePeriods',
+            'S3 bucket name may not have consecutive periods'
+        )
+    }
+
+    if (value.includes('.-') || value.includes('-.')) {
+        return localize(
+            'AWS.samcli.deploy.s3Bucket.error.dashAdjacentPeriods',
+            'S3 bucket name may not contain a period adjacent to a dash'
+        )
+    }
+
+    if (value.split('.').some(label => !/^[a-z\d]/.test(label))) {
+        return localize(
+            'AWS.samcli.deploy.s3Bucket.error.labelFirstCharacter',
+            'Each label in an S3 bucket name must begin with a number or a lower-case character'
+        )
+    }
+
+    return undefined
+}
+
+function validateStackName(value: string): string | undefined | null | Thenable<string | undefined | null> {
+    if (!/^[a-zA-Z\d\-]+$/.test(value)) {
+        return localize(
+            'AWS.samcli.deploy.stackName.error.invalidCharacters',
+            'A stack name may contain only alphanumeric characters (case sensitive) and hyphens'
+        )
+    }
+
+    if (!/^[a-zA-Z]/.test(value)) {
+        return localize(
+            'AWS.samcli.deploy.stackName.error.firstCharacter',
+            'A stack name must begin with an alphabetic character'
+        )
+    }
+
+    if (value.length > 128) {
+        return localize(
+            'AWS.samcli.deploy.stackName.error.length',
+            'A stack name must not be longer than 128 characters'
+        )
+    }
+
+    // TODO: Validate that a stack with this name does not already exist.
+
+    return undefined
+}
+
 async function getTemplateChoices(
     onDetectLocalTemplates: typeof detectLocalTemplates = detectLocalTemplates,
-    ...workspaceFolders: WorkspaceFolderPickUri[]
+    ...workspaceFolders: vscode.Uri[]
 ): Promise<SamTemplateQuickPickItem[]> {
     const result: SamTemplateQuickPickItem[] = []
-    for await (const uri of onDetectLocalTemplates(...workspaceFolders)) {
+    for await (const uri of onDetectLocalTemplates({ workspaceFolders })) {
         result.push(new SamTemplateQuickPickItem(uri))
     }
 

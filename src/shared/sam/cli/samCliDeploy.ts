@@ -17,8 +17,6 @@ export class SamCliDeployInvocation {
     }
 
     public async execute(): Promise<void> {
-        await this.validate()
-
         const { exitCode, error, stderr, stdout }: ChildProcessResult = await this.invoker.invoke(
             'deploy',
             '--template-file', this.templateFile,
@@ -37,10 +35,5 @@ export class SamCliDeployInvocation {
         console.error(`stdout: ${stdout}`)
 
         throw new Error(`sam deploy encountered an error: ${error && error.message ? error.message : stderr || stdout}`)
-    }
-
-    private async validate(): Promise<void> {
-        // TODO: Validate that templateFile exists.
-        // TODO: Validate that stackName is a valid name.
     }
 }

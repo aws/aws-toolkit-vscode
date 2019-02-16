@@ -17,7 +17,7 @@ function normalizePath(...paths: string[]): string {
 
 describe('detectLocalTemplates', async () => {
     it('Detects no templates when there are no workspace folders', async () => {
-        for await (const template of detectLocalTemplates()) {
+        for await (const template of detectLocalTemplates({ workspaceFolders: []})) {
             assert.fail(`Expected no templates, but found '${template.fsPath}'`)
         }
     })
@@ -25,8 +25,9 @@ describe('detectLocalTemplates', async () => {
     it('Detects templates at the root of each workspace folder', async () => {
         const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
 
-        const result = detectLocalTemplates(
-            {
+        const result = detectLocalTemplates({
+            workspaceFolders: [ vscode.Uri.file(workspaceFolderPath) ],
+            context: {
                 async accessAsync(_path: string | Buffer): Promise<void> {
                     if (_path !== normalizePath(workspaceFolderPath, 'template.yaml')) {
                         throw new Error(`No file found at path: '${_path}'`)
@@ -52,11 +53,8 @@ describe('detectLocalTemplates', async () => {
                         }
                     } as any as filesystem.Stats
                 }
-            },
-            {
-                uri: vscode.Uri.file(workspaceFolderPath)
-            } as any as vscode.WorkspaceFolder
-        )
+            }
+        })
 
         const templates: vscode.Uri[] = []
         for await (const template of result) {
@@ -71,8 +69,9 @@ describe('detectLocalTemplates', async () => {
         const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
         const workspaceFolderChildPath = normalizePath(workspaceFolderPath, 'child')
 
-        const result = detectLocalTemplates(
-            {
+        const result = detectLocalTemplates({
+            workspaceFolders: [ vscode.Uri.file(workspaceFolderPath) ],
+            context: {
                 async accessAsync(_path: string | Buffer): Promise<void> {
                     if (_path !== normalizePath(workspaceFolderChildPath, 'template.yaml')) {
                         throw new Error(`No file found at path: '${_path}'`)
@@ -105,11 +104,8 @@ describe('detectLocalTemplates', async () => {
                         }
                     } as any as filesystem.Stats
                 }
-            },
-            {
-                uri: vscode.Uri.file(workspaceFolderPath)
-            } as any as vscode.WorkspaceFolder
-        )
+            }
+        })
 
         const templates: vscode.Uri[] = []
         for await (const template of result) {
@@ -125,8 +121,9 @@ describe('detectLocalTemplates', async () => {
         const workspaceFolderChildPath = normalizePath(workspaceFolderPath, 'child')
         const workspaceFolderGrandchildPath = normalizePath(workspaceFolderChildPath, 'grandchild')
 
-        const result = detectLocalTemplates(
-            {
+        const result = detectLocalTemplates({
+            workspaceFolders: [ vscode.Uri.file(workspaceFolderPath) ],
+            context: {
                 async accessAsync(_path: string | Buffer): Promise<void> {
                     if (_path !== normalizePath(workspaceFolderGrandchildPath, 'template.yaml')) {
                         throw new Error(`No file found at path: '${_path}'`)
@@ -161,11 +158,8 @@ describe('detectLocalTemplates', async () => {
                         }
                     } as any as filesystem.Stats
                 }
-            },
-            {
-                uri: vscode.Uri.file(workspaceFolderPath)
-            } as any as vscode.WorkspaceFolder
-        )
+            }
+        })
 
         const templates: vscode.Uri[] = []
         for await (const template of result) {
@@ -180,8 +174,9 @@ describe('detectLocalTemplates', async () => {
         const workspaceFolderChildPath1 = normalizePath(workspaceFolderPath, 'child1')
         const workspaceFolderChildPath2 = normalizePath(workspaceFolderPath, 'child2')
 
-        const result = detectLocalTemplates(
-            {
+        const result = detectLocalTemplates({
+            workspaceFolders: [ vscode.Uri.file(workspaceFolderPath) ],
+            context: {
                 async accessAsync(_path: string | Buffer): Promise<void> {
                     switch (_path) {
                         case normalizePath(workspaceFolderChildPath1, 'template.yaml'):
@@ -219,11 +214,8 @@ describe('detectLocalTemplates', async () => {
                         }
                     } as any as filesystem.Stats
                 }
-            },
-            {
-                uri: vscode.Uri.file(workspaceFolderPath)
-            } as any as vscode.WorkspaceFolder
-        )
+            }
+        })
 
         const templates: vscode.Uri[] = []
         for await (const template of result) {
@@ -231,16 +223,18 @@ describe('detectLocalTemplates', async () => {
         }
 
         assert.strictEqual(templates.length, 2)
-        assert.strictEqual(templates[0].fsPath, normalizePath(workspaceFolderChildPath1, 'template.yaml'))
-        assert.strictEqual(templates[1].fsPath, normalizePath(workspaceFolderChildPath2, 'template.yaml'))
+        assert.ok(templates.some(t => t.fsPath === normalizePath(workspaceFolderChildPath1, 'template.yaml')))
+        assert.ok(templates.some(t => t.fsPath === normalizePath(workspaceFolderChildPath2, 'template.yaml')))
+
     })
 
     it('Detects multiple templates when both template.yml and template.yaml exist in a folder', async () => {
         const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
         const workspaceFolderChildPath = normalizePath(workspaceFolderPath, 'child')
 
-        const result = detectLocalTemplates(
-            {
+        const result = detectLocalTemplates({
+            workspaceFolders: [ vscode.Uri.file(workspaceFolderPath) ],
+            context: {
                 async accessAsync(_path: string | Buffer): Promise<void> {
                     switch (_path) {
                         case normalizePath(workspaceFolderChildPath, 'template.yml'):
@@ -277,11 +271,8 @@ describe('detectLocalTemplates', async () => {
                         }
                     } as any as filesystem.Stats
                 }
-            },
-            {
-                uri: vscode.Uri.file(workspaceFolderPath)
-            } as any as vscode.WorkspaceFolder
-        )
+            }
+        })
 
         const templates: vscode.Uri[] = []
         for await (const template of result) {
@@ -289,7 +280,7 @@ describe('detectLocalTemplates', async () => {
         }
 
         assert.strictEqual(templates.length, 2)
-        assert.strictEqual(templates[0].fsPath, normalizePath(workspaceFolderChildPath, 'template.yaml'))
-        assert.strictEqual(templates[1].fsPath, normalizePath(workspaceFolderChildPath, 'template.yml'))
+        assert.ok(templates.some(t => t.fsPath === normalizePath(workspaceFolderChildPath, 'template.yaml')))
+        assert.ok(templates.some(t => t.fsPath === normalizePath(workspaceFolderChildPath, 'template.yml')))
     })
 })

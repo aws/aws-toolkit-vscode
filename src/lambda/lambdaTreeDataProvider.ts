@@ -21,7 +21,7 @@ import { intersection, toMap, updateInPlace } from '../shared/utilities/collecti
 import { createNewSamApp } from './commands/createNewSamApp'
 import { deleteCloudFormation } from './commands/deleteCloudFormation'
 import { deleteLambda } from './commands/deleteLambda'
-import { deployLambda } from './commands/deployLambda'
+import { deploySamApplication } from './commands/deploySamApplication'
 import { getLambdaConfig } from './commands/getLambdaConfig'
 import { invokeLambda } from './commands/invokeLambda'
 import { showErrorDetails } from './commands/showErrorDetails'
@@ -78,8 +78,8 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
             )
         )
         vscode.commands.registerCommand(
-            'aws.deployLambda',
-            async () => await deployLambda()
+            'aws.deploySamApplication',
+            async () => await deploySamApplication()
         )
 
         vscode.commands.registerCommand(

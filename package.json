@@ -22,7 +22,7 @@
         "onCommand:aws.showRegion",
         "onCommand:aws.hideRegion",
         "onView:lambda",
-        "onCommand:aws.deployLambda",
+        "onCommand:aws.deploySamApplication",
         "onCommand:aws.samcli.detect",
         "onCommand:aws.samcli.validate.version",
         "onCommand:aws.lambda.createNewSamApp",
@@ -201,8 +201,8 @@
                 "category": "AWS"
             },
             {
-                "command": "aws.deployLambda",
-                "title": "%AWS.command.deployLambda%",
+                "command": "aws.deploySamApplication",
+                "title": "%AWS.command.deploySamApplication%",
                 "category": "AWS"
             },
             {
