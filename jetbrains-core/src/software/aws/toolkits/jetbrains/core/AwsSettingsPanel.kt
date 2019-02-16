@@ -91,7 +91,7 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
         updateWidget()
     }
 
-    override fun activeCredentialsChanged(credentialsProvider: ToolkitCredentialsProvider) {
+    override fun activeCredentialsChanged(credentialsProvider: ToolkitCredentialsProvider?) {
         updateWidget()
     }
 

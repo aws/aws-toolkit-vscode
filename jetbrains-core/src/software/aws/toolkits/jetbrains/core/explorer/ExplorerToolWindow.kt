@@ -66,7 +66,7 @@ class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, tru
         updateModel()
     }
 
-    override fun activeCredentialsChanged(credentialsProvider: ToolkitCredentialsProvider) {
+    override fun activeCredentialsChanged(credentialsProvider: ToolkitCredentialsProvider?) {
         updateModel()
     }
 

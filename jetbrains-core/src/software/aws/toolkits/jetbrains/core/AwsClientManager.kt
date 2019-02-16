@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.core
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ApplicationNamesInfo
 import com.intellij.openapi.application.ex.ApplicationInfoEx
 import com.intellij.openapi.components.ServiceManager
@@ -13,9 +14,11 @@ import com.intellij.openapi.util.Disposer
 import software.amazon.awssdk.core.SdkClient
 import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
+import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.AwsToolkit
+import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 
 open class AwsClientManager(project: Project, sdkClient: AwsSdkClient) :
@@ -25,6 +28,13 @@ open class AwsClientManager(project: Project, sdkClient: AwsSdkClient) :
 
     init {
         Disposer.register(project, Disposable { this.dispose() })
+
+        val busConnection = ApplicationManager.getApplication().messageBus.connect(project)
+        busConnection.subscribe(CredentialManager.CREDENTIALS_CHANGED, object : ToolkitCredentialsChangeListener {
+            override fun providerRemoved(providerId: String) {
+                invalidateSdks(providerId)
+            }
+        })
     }
 
     override fun dispose() {

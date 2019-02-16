@@ -46,7 +46,7 @@ class AwsSettingsMenu(private val project: Project) : DefaultActionGroup(message
         add(ChangeAccountSettingsAction(project).createPopupActionGroup())
     }
 
-    override fun activeCredentialsChanged(credentialsProvider: ToolkitCredentialsProvider) {
+    override fun activeCredentialsChanged(credentialsProvider: ToolkitCredentialsProvider?) {
         clearAndReAddActions()
     }
 

@@ -10,13 +10,18 @@ import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotSameAs
 import assertk.assertions.isSameAs
 import assertk.assertions.isTrue
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.testFramework.PlatformTestCase
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.runInEdtAndWait
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder
 import software.amazon.awssdk.awscore.client.builder.AwsDefaultClientBuilder
 import software.amazon.awssdk.core.SdkClient
@@ -25,6 +30,9 @@ import software.amazon.awssdk.core.client.config.SdkClientOption
 import software.amazon.awssdk.core.signer.Signer
 import software.amazon.awssdk.http.SdkHttpClient
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
+import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.jvm.isAccessible
@@ -38,6 +46,19 @@ class AwsClientManagerTest {
     @Rule
     @JvmField
     val temporaryDirectory = TemporaryFolder()
+
+    private lateinit var mockCredentialManager: MockCredentialsManager
+
+    @Before
+    fun setUp() {
+        mockCredentialManager = MockCredentialsManager.getInstance()
+    }
+
+    @After
+    fun tearDown() {
+        MockProjectAccountSettingsManager.getInstance(projectRule.project).reset()
+        mockCredentialManager.reset()
+    }
 
     @Test
     fun canGetAnInstanceOfAClient() {
@@ -53,6 +74,30 @@ class AwsClientManagerTest {
         val barClient = sut.getClient<DummyServiceClient>()
 
         assert(fooClient).isSameAs(barClient)
+    }
+
+    @Test
+    fun oldClientsAreRemovedWhenProfilesAreRemoved() {
+        val sut = getClientManager()
+        val testSettings = MockProjectAccountSettingsManager.getInstance(projectRule.project)
+        testSettings.activeCredentialProvider = mockCredentialManager.addCredentials(
+            "profile:admin",
+            AwsBasicCredentials.create("Access", "Secret"),
+            true
+        )
+
+        sut.getClient<DummyServiceClient>()
+
+        assertThat(sut.cachedClients().keys).anySatisfy {
+            it.credentialProviderId == "profile:admin"
+        }
+
+        ApplicationManager.getApplication().messageBus.syncPublisher(CredentialManager.CREDENTIALS_CHANGED)
+            .providerRemoved("profile:admin")
+
+        assertThat(sut.cachedClients().keys).noneSatisfy {
+            it.credentialProviderId == "profile:admin"
+        }
     }
 
     @Test
@@ -138,9 +183,7 @@ class AwsClientManagerTest {
     }
 
     class InvalidServiceClient : SdkClient {
-        override fun close() {
-            TODO("not implemented")
-        }
+        override fun close() {}
 
         override fun serviceName() = "invalidClient"
     }

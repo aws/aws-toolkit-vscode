@@ -26,7 +26,7 @@ import kotlin.reflect.KClass
  * An SPI for caching of AWS clients inside of a toolkit
  */
 abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
-    protected data class AwsClientKey(
+    data class AwsClientKey(
         val credentialProviderId: String,
         val region: AwsRegion,
         val serviceClass: KClass<out SdkClient>
@@ -80,11 +80,18 @@ abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
         cachedClients.values.mapNotNull { it as? AutoCloseable }.forEach { it.close() }
     }
 
+    protected fun invalidateSdks(providerId: String) {
+        cachedClients.keys.removeIf { it.credentialProviderId == providerId }
+    }
+
     /**
      * Used by [software.aws.toolkits.jetbrains.core.MockClientManager]
      */
     @TestOnly
     protected fun clear() = cachedClients.clear()
+
+    @TestOnly
+    fun cachedClients() = cachedClients
 
     /**
      * Creates a new client for the requested [AwsClientKey]
