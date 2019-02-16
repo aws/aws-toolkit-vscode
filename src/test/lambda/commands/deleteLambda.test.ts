@@ -9,10 +9,6 @@ import * as assert from 'assert'
 import { deleteLambda } from '../../../lambda/commands/deleteLambda'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { MockLambdaClient } from '../../shared/clients/mockClients'
-import {
-    MockStandaloneFunctionGroupNode,
-    MockStandaloneFunctionNode
-} from '../explorer/mockStandaloneNodes'
 
 describe('deleteLambda', async () => {
 
@@ -109,33 +105,16 @@ describe('deleteLambda', async () => {
                 }
             }
         )
-
-        const parent = new MockStandaloneFunctionGroupNode(
-            undefined,
-            undefined,
-            async () => assert.fail(),
-            async () => assert.fail()
-        )
-
-        const node = new MockStandaloneFunctionNode(
-            undefined,
-            parent,
-            {
-                FunctionName: params.functionName
-            },
-            async () => assert.fail(),
-            async configuration => assert.fail()
-        )
         const outputChannel = new MockOutputChannel()
 
         try {
             await deleteLambda({
-                                   node,
-                                   lambdaClient,
-                                   outputChannel,
-                                   onRefresh: () => refreshCallCount += 1,
-                                   onConfirm: async () => params.onConfirm()
-                               })
+               deleteParams: { functionName: params.functionName },
+               lambdaClient,
+               outputChannel,
+               onRefresh: () => refreshCallCount += 1,
+               onConfirm: async () => params.onConfirm()
+           })
         } catch (err) {
             const error = err as Error
             if (params.errorToThrowDuringDelete) {
