@@ -7,6 +7,7 @@
 
 import * as assert from 'assert'
 import { CloudFormation, Lambda } from 'aws-sdk'
+import * as os from 'os'
 import { TreeItem, Uri } from 'vscode'
 import {
     CloudFormationStackNode,
@@ -41,7 +42,7 @@ describe('DefaultCloudFormationStackNode', () => {
         const testNode: CloudFormationStackNode = generateTestNode()
 
         assert.strictEqual(testNode.label, `${fakeStackSummary.StackName} [${fakeStackSummary.StackStatus}]`)
-        assert.strictEqual(testNode.tooltip, `${fakeStackSummary.StackName}-${fakeStackSummary.StackId}`)
+        assert.strictEqual(testNode.tooltip, `${fakeStackSummary.StackName}${os.EOL}${fakeStackSummary.StackId}`)
     })
 
     it('initializes icon', async () => {
