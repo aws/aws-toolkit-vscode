@@ -7,6 +7,7 @@
 
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
+import * as os from 'os'
 import { TreeItem, Uri } from 'vscode'
 import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
 import { ErrorNode } from '../../../lambda/explorer/errorNode'
@@ -33,7 +34,10 @@ describe('DefaultStandaloneFunctionNode', () => {
         const testNode = generateTestNode()
 
         assert.strictEqual(testNode.label, fakeFunctionConfig.FunctionName)
-        assert.strictEqual(testNode.tooltip, `${fakeFunctionConfig.FunctionName}-${fakeFunctionConfig.FunctionArn}`)
+        assert.strictEqual(
+            testNode.tooltip,
+            `${fakeFunctionConfig.FunctionName}${os.EOL}${fakeFunctionConfig.FunctionArn}`
+        )
     })
 
     it('initializes icon', async () => {

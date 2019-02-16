@@ -9,6 +9,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { CloudFormation, Lambda } from 'aws-sdk'
+import * as os from 'os'
 import * as vscode from 'vscode'
 import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
@@ -142,7 +143,7 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
     public update(stackSummary: CloudFormation.StackSummary): void {
         this.stackSummary = stackSummary
         this.label = `${stackSummary.StackName} [${stackSummary.StackStatus}]`
-        this.tooltip = `${stackSummary.StackName}-${stackSummary.StackId}`
+        this.tooltip = `${stackSummary.StackName}${os.EOL}${stackSummary.StackId}`
     }
 
     private async updateChildren(): Promise<void> {
