@@ -208,7 +208,11 @@
             {
                 "command": "aws.refreshAwsExplorer",
                 "title": "%AWS.command.refreshAwsExplorer%",
-                "category": "AWS"
+                "category": "AWS",
+                "icon": {
+                    "dark": "third-party/resources/from-vscode/dark/refresh.svg",
+                    "light": "third-party/resources/from-vscode/light/refresh.svg"
+                }
             },
             {
                 "command": "aws.getLambdaConfig",

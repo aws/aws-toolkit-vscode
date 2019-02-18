@@ -125,8 +125,8 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
         workspaceFolder: vscode.WorkspaceFolder,
     ): vscode.CodeLens {
         const title: string = debug ?
-            localize('AWS.codelens.lambda.invoke.debug', 'Debug') :
-            localize('AWS.codelens.lambda.invoke', 'Run')
+            localize('AWS.codelens.lambda.invoke.debug', 'Debug Locally') :
+            localize('AWS.codelens.lambda.invoke', 'Run Locally')
 
         const commandArgs: LambdaLocalInvokeArguments = {
             document,
@@ -387,8 +387,10 @@ class LocalLambdaRunner {
         const config = await this.getConfig()
 
         await fileSystem.writeFileAsync(eventPath, JSON.stringify(config.event || {}))
-        await fileSystem.writeFileAsync(environmentVariablePath,
-                                        JSON.stringify(this.getEnvironmentVariables(config)))
+        await fileSystem.writeFileAsync(
+            environmentVariablePath,
+            JSON.stringify(this.getEnvironmentVariables(config))
+        )
 
         const command = new SamCliLocalInvokeInvocation(
             LocalLambdaRunner.TEMPLATE_RESOURCE_NAME,
