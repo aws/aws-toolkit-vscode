@@ -33,14 +33,9 @@ export interface HandlersConfig {
 }
 
 export interface ConfigureLocalLambdaContext {
-    showTextDocument(document: vscode.TextDocument, column?: vscode.ViewColumn | undefined,
-                     preserveFocus?: boolean | undefined): Thenable<vscode.TextEditor>,
-    showTextDocument(document: vscode.TextDocument, options?: vscode.TextDocumentShowOptions | undefined):
-                     Thenable<vscode.TextEditor>,
-    showTextDocument(uri: vscode.Uri, options?: vscode.TextDocumentShowOptions | undefined):
-                     Thenable<vscode.TextEditor>,
-    executeCommand<T>(command: string, ...rest: any[]): Thenable<T | undefined>,
-    showInformationMessage(message: string, ...items: string[]): Thenable<string | undefined>
+    showTextDocument: typeof vscode.window.showTextDocument
+    executeCommand: typeof vscode.commands.executeCommand
+    showInformationMessage: typeof vscode.window.showInformationMessage
 }
 
 class DefaultConfigureLocalLambdaContext implements ConfigureLocalLambdaContext {
@@ -50,9 +45,12 @@ class DefaultConfigureLocalLambdaContext implements ConfigureLocalLambdaContext 
 }
 
 // Precondition: `handler` is a valid lambda handler name.
-export async function configureLocalLambda(workspaceFolder: vscode.WorkspaceFolder, handler: string,
-                                           context: ConfigureLocalLambdaContext =
-                                           new DefaultConfigureLocalLambdaContext()): Promise<void> {
+export async function configureLocalLambda(
+    workspaceFolder: vscode.WorkspaceFolder,
+    handler: string,
+    context: ConfigureLocalLambdaContext = new DefaultConfigureLocalLambdaContext()
+): Promise<void> {
+
     const uri = getConfigUri(workspaceFolder)
 
     await ensureHandlersConfigFileExists(uri, handler)
@@ -75,6 +73,7 @@ export async function getLocalLambdaConfiguration(
     workspaceFolder: vscode.WorkspaceFolder,
     handler: string
 ): Promise<HandlerConfig> {
+
     const handlersConfig = await getHandlersConfig(workspaceFolder)
     const emptyHandlerConfig = buildHandlerConfig()
 
@@ -178,8 +177,12 @@ async function loadSymbols(
     return await loadSymbols(uri, context, maxAttempts - 1, retryDelayMillis)
 }
 
-async function prepareConfig(editor: vscode.TextEditor, handler: string,
-                             context: ConfigureLocalLambdaContext): Promise<boolean> {
+async function prepareConfig(
+    editor: vscode.TextEditor,
+    handler: string,
+    context: ConfigureLocalLambdaContext
+): Promise<boolean> {
+
     let symbols: vscode.DocumentSymbol[] | undefined = await loadSymbols(editor.document.uri, context)
     let shouldOverwrite: boolean = false
     let shouldLoop: boolean = !symbols
@@ -235,78 +238,97 @@ async function prepareConfig(editor: vscode.TextEditor, handler: string,
         ))
     }
 
-    // file is valid enough (symbols exist)
+    // file is valid enough (file exists and has at least one valid top-level JSON key:value pair)
     if (symbols) {
-        // If the config file exists, but `root.handlers` is undefined or empty, initial it with an empty
-        // config section for this handler.
         const handlersSymbol: vscode.DocumentSymbol | undefined = symbols.find(c => c.name === 'handlers')
         if (!handlersSymbol || handlersSymbol.children.length < 1) {
-            const config: HandlersConfig = {
-                ...parse(editor.document.getText()),
-                ...buildHandlersConfig(handler)
-            }
-            const configString = JSON.stringify(config, undefined, getTabSize(editor))
-
-            return await editor.edit(
-                    // The jsonc-parser API does not provide a safe way to insert a child into an empty list,
-                    // so in the case that the config file exists, but has an empty or undefined `handlers` property,
-                    // we need to replace the entire document.
-                    editBuilder => editBuilder.replace(
-                    new vscode.Range(
-                        new vscode.Position(0, 0),
-                        editor.document.positionAt(editor.document.getText().length)
-                    ),
-                    configString
-                )
-            )
+            // create handlers field from scratch if it doesn't exist. This also creates all other handler fields
+            return await addHandlersField(handler, editor)
         }
-
-        // If `root.handlers` and is non-empty, but does not include an entry for this handler, create and insert one.
         const handlerSymbol: vscode.DocumentSymbol | undefined = handlersSymbol.children.find(c => c.name === handler)
-
-        // handler doesn't exist or is empty -- add handler from scratch
         if (!handlerSymbol || handlerSymbol.children.length < 1) {
-            // At this point we know that `root.handlers` has at least one child.
-            const lastChildEnd: vscode.Position = handlersSymbol.children.reduce(
-                (lastSoFar: vscode.Position, current: vscode.DocumentSymbol) =>
-                    current.range.end.isAfter(lastSoFar) ? current.range.end : lastSoFar,
-                new vscode.Position(0, 0)
-            )
-
-            // For example (tabWidth = 4):
-            // [START],
-            //         "myHandler": {
-            //             event: {}
-            //         }
-            // [END]
-            const tabSize = getTabSize(editor)
-            const baseIndentation: string = ' '.repeat(tabSize).repeat(2)
-            // We have already validated that handler contains only letters, numbers, hyphens, and underscores.
-            let snippet: string = `"${handler}": ${JSON.stringify(buildHandlerConfig(), undefined, tabSize)}`
-                .split(/\r?\n/).map(line => `${baseIndentation}${line}`).join(os.EOL)
-            snippet = `,${os.EOL}${snippet}${os.EOL}`
-
-            return await editor.edit(editBuilder => editBuilder.insert(lastChildEnd, snippet))
+            // create handler field from scratch if it doesn't exist. This also creates all other handler fields
+            return await addHandlerFieldToHandlersField(handlersSymbol, handler, editor)
         }
-
-        // handler exists and at least some keys exist
         const tempHandler = buildHandlerConfig()
-        let fieldCheck = true
+        let editorIsValid: boolean = true
         for (const field of Object.keys(tempHandler)) {
-            fieldCheck = await addSampleField(field, handlerSymbol, editor)
-            if (!fieldCheck) {
-                return fieldCheck
+            // add all other subfields under the handler if they don't exist
+            editorIsValid = await addSampleField(field, handlerSymbol, editor)
+            if (!editorIsValid) {
+                break
             }
         }
 
-        return fieldCheck
+        return editorIsValid
     }
 
+    // file is not JSON with at least one valid top-level key:value pair
+    // but user has opted to not overwrite the file
     return true
 }
 
-async function addSampleField(fieldKey: string, handlerSymbol: vscode.DocumentSymbol,
-                              editor: vscode.TextEditor): Promise<boolean> {
+async function addHandlersField(
+    handler: string,
+    editor: vscode.TextEditor
+): Promise<boolean> {
+
+    const config: HandlersConfig = {
+        ...parse(editor.document.getText()),
+        ...buildHandlersConfig(handler)
+    }
+    const configString = JSON.stringify(config, undefined, getTabSize(editor))
+
+    return await editor.edit(
+        // The jsonc-parser API does not provide a safe way to insert a child into an empty list,
+        // so in the case that the config file exists, but has an empty or undefined `handlers` property,
+        // we need to replace the entire document.
+        editBuilder => editBuilder.replace(
+            new vscode.Range(
+                new vscode.Position(0, 0),
+                editor.document.positionAt(editor.document.getText().length)
+            ),
+            configString
+        )
+    )
+
+}
+
+async function addHandlerFieldToHandlersField(
+    handlersSymbol: vscode.DocumentSymbol,
+    handler: string,
+    editor: vscode.TextEditor
+): Promise<boolean> {
+
+    // handler doesn't exist or is empty -- add handler from scratch
+    // At this point we know that `root.handlers` has at least one child.
+    const lastChildEnd: vscode.Position = handlersSymbol.children.reduce(
+        (lastSoFar: vscode.Position, current: vscode.DocumentSymbol) =>
+            current.range.end.isAfter(lastSoFar) ? current.range.end : lastSoFar,
+        new vscode.Position(0, 0)
+    )
+
+    // For example (tabWidth = 4):
+    // [START],
+    //         "myHandler": {
+    //             event: {}
+    //         }
+    // [END]
+    const tabSize = getTabSize(editor)
+    const baseIndentation: string = ' '.repeat(tabSize).repeat(2)
+    // We have already validated that handler contains only letters, numbers, hyphens, and underscores.
+    let snippet: string = `"${handler}": ${JSON.stringify(buildHandlerConfig(), undefined, tabSize)}`
+        .split(/\r?\n/).map(line => `${baseIndentation}${line}`).join(os.EOL)
+    snippet = `,${os.EOL}${snippet}${os.EOL}`
+
+    return await editor.edit(editBuilder => editBuilder.insert(lastChildEnd, snippet))
+}
+
+async function addSampleField(
+    fieldKey: string,
+    handlerSymbol: vscode.DocumentSymbol,
+    editor: vscode.TextEditor
+): Promise<boolean> {
 
     const fieldSymbol: vscode.DocumentSymbol | undefined = handlerSymbol.children.find(c => c.name === fieldKey)
 
@@ -326,8 +348,12 @@ async function addSampleField(fieldKey: string, handlerSymbol: vscode.DocumentSy
     return true
 }
 
-async function getEventRange(editor: vscode.TextEditor, handler: string,
-                             context: ConfigureLocalLambdaContext): Promise<vscode.Range> {
+async function getEventRange(
+    editor: vscode.TextEditor,
+    handler: string,
+    context: ConfigureLocalLambdaContext
+): Promise<vscode.Range> {
+
     const symbols: vscode.DocumentSymbol[] | undefined = await context.executeCommand<vscode.DocumentSymbol[]>(
         'vscode.executeDocumentSymbolProvider',
         editor.document.uri
