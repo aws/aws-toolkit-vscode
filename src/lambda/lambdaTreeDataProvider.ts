@@ -18,8 +18,10 @@ import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
 import { intersection, toMap, updateInPlace } from '../shared/utilities/collectionUtils'
+import { createNewSamApp } from './commands/createNewSamApp'
 import { deleteCloudFormation } from './commands/deleteCloudFormation'
 import { deleteLambda } from './commands/deleteLambda'
+import { deploySamApplication } from './commands/deploySamApplication'
 import { getLambdaConfig } from './commands/getLambdaConfig'
 import { invokeLambda } from './commands/invokeLambda'
 import { showErrorDetails } from './commands/showErrorDetails'
@@ -55,6 +57,11 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
     public initialize(): void {
         vscode.commands.registerCommand('aws.refreshAwsExplorer', async () => this.refresh())
         vscode.commands.registerCommand(
+            'aws.lambda.createNewSamApp',
+            async () => await createNewSamApp()
+        )
+
+        vscode.commands.registerCommand(
             'aws.deleteLambda',
             async (node: StandaloneFunctionNode) => await deleteLambda({
                 deleteParams: { functionName: node.configuration.FunctionName || '' },
@@ -69,6 +76,10 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
                 () => this.refresh(node.parent),
                 node
             )
+        )
+        vscode.commands.registerCommand(
+            'aws.deploySamApplication',
+            async () => await deploySamApplication()
         )
 
         vscode.commands.registerCommand(

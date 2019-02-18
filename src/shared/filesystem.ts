@@ -72,8 +72,12 @@ export async function readFileAsync(filename: string, encoding: string | null): 
     })
 }
 
-export async function statAsync(path: string | Buffer): Promise<fs.Stats> {
-    return await new Promise<fs.Stats>((resolve, reject) => {
+export interface Stats extends fs.Stats {
+    // fs.Stats is a class, so for easy mocking we code against an interface with the same shape.
+}
+
+export async function statAsync(path: string | Buffer): Promise<Stats> {
+    return await new Promise<Stats>((resolve, reject) => {
         fs.stat(path, (err, stats) => {
             if (!err) {
                 resolve(stats)

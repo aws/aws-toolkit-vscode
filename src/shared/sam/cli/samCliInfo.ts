@@ -33,7 +33,7 @@ export class SamCliInfoInvocation {
         console.error('SAM CLI error')
         console.error(`Exit code: ${exitCode}`)
         console.error(`Error: ${error}`)
-        console.error(`stdout: ${stderr}`)
+        console.error(`stderr: ${stderr}`)
         console.error(`stdout: ${stdout}`)
 
         throw new Error(`sam --info encountered an error: ${error && error.message ? error.message : stderr || stdout}`)
