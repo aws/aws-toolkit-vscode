@@ -89,8 +89,6 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
                 'S3 bucket name'
             ),
             ignoreFocusOut: true,
-
-            // https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-s3-bucket-naming-requirements.html
             validateInput: validateS3Bucket
         })
 
@@ -109,10 +107,6 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
                 'Stack name'
             ),
             ignoreFocusOut: true,
-
-            // https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html
-            // A stack name can contain only alphanumeric characters (case sensitive) and hyphens.
-            // It must start with an alphabetic character and cannot be longer than 128 characters.
             validateInput: validateStackName
         })
 
@@ -133,6 +127,7 @@ class SamTemplateQuickPickItem implements vscode.QuickPickItem {
     }
 }
 
+// https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-s3-bucket-naming-requirements.html
 function validateS3Bucket(value: string): string | undefined | null | Thenable<string | undefined | null> {
     if (value.length < 3 || value.length > 63) {
         return localize(
@@ -186,6 +181,9 @@ function validateS3Bucket(value: string): string | undefined | null | Thenable<s
     return undefined
 }
 
+// https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html
+// A stack name can contain only alphanumeric characters (case sensitive) and hyphens.
+// It must start with an alphabetic character and cannot be longer than 128 characters.
 function validateStackName(value: string): string | undefined | null | Thenable<string | undefined | null> {
     if (!/^[a-zA-Z\d\-]+$/.test(value)) {
         return localize(
