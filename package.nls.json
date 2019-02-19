@@ -129,6 +129,7 @@
     "AWS.samcli.initWizard.name.error.empty": "Application name cannot be empty",
     "AWS.samcli.initWizard.name.error.pathSep": "The path separator ({0}) is not allowed in application names",
     "AWS.samcli.initWizard.runtime.prompt": "Select a SAM Application Runtime",
+    "AWS.samcli.initWizard.source.error.notFound": "Project created successfully, but main source code file not found: {0}",
     "AWS.generic.response.no": "No",
     "AWS.generic.response.yes": "Yes",
     "AWS.template.error.showErrorDetails.title": "Error details for",

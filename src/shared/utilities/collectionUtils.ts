@@ -39,16 +39,11 @@ export function complement<T>(sequence1: Iterable<T>, sequence2: Iterable<T>): S
     return filter(sequence2, item => !set1.has(item))
 }
 
-export async function toArrayAsync<T>(
-    items: AsyncIterableIterator<T>,
-    predicate?: (item: T) => boolean
-): Promise<T[]> {
+export async function toArrayAsync<T>(items: AsyncIterable<T>): Promise<T[]> {
     const result: T[] = []
 
     for await (const item of items) {
-        if (!predicate || predicate(item)) {
-            result.push(item)
-        }
+        result.push(item)
     }
 
     return result
@@ -121,6 +116,41 @@ function filter<T>(sequence: Iterable<T>, condition: (item: T) => boolean): Set<
     for (const item of sequence) {
         if (condition(item)) {
             result.add(item)
+        }
+    }
+
+    return result
+}
+
+export async function* filterAsync<T>(
+    sequence: Iterable<T>,
+    condition: (item: T) => Promise<boolean>
+): AsyncIterable<T> {
+    for (const item of sequence) {
+        if (await condition(item)) {
+            yield item
+        }
+    }
+}
+
+export async function first<T>(sequence: AsyncIterable<T>): Promise<T | undefined> {
+    const head = await take(sequence, 1)
+
+    return head.length > 0 ? head[0] : undefined
+}
+
+export async function take<T>(sequence: AsyncIterable<T>, count: number): Promise<T[]> {
+    if (count <= 0) {
+        return []
+    }
+
+    const result: T[] = []
+
+    for await (const item of sequence) {
+        result.push(item)
+
+        if (result.length >= count) {
+            break
         }
     }
 

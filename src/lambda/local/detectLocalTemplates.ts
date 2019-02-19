@@ -21,13 +21,13 @@ class DefaultDetectLocalTemplatesContext implements DetectLocalTemplatesContext 
 }
 
 export async function* detectLocalTemplates({
-    workspaceFolders,
+    workspaceUris,
     context = new DefaultDetectLocalTemplatesContext()
 }: {
-    workspaceFolders: vscode.Uri[]
+    workspaceUris: vscode.Uri[]
     context?: DetectLocalTemplatesContext
 }): AsyncIterableIterator<vscode.Uri> {
-    for (const workspaceFolder of workspaceFolders) {
+    for (const workspaceFolder of workspaceUris) {
         for await (const folder of getFolderCandidates(context, workspaceFolder)) {
             yield* detectTemplatesInFolder(context, folder)
         }
