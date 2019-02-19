@@ -12,7 +12,7 @@ import { CloudFormation } from '../../shared/cloudformation/cloudformation'
 import * as fs from '../../shared/filesystemUtilities'
 import { filterAsync, first } from '../../shared/utilities/collectionUtils'
 import { detectLocalTemplates } from '../local/detectLocalTemplates'
-import { isNodeJS } from '../models/samLambdaRuntime'
+import { getFamily, SamLambdaRuntimeFamily } from '../models/samLambdaRuntime'
 
 export interface OpenMainSourceFileUriContext {
     getLocalTemplates(...workspaceUris: vscode.Uri[]): AsyncIterable<vscode.Uri>
@@ -88,11 +88,15 @@ async function getSourceFileUri({
     }
 
     const { Handler, Runtime } = resource.Properties
-    if (Runtime && isNodeJS(Runtime)) {
-        return await getNodeSourceFileUri({ root, resource, fileExists })
-    }
+    switch (getFamily(Runtime)) {
+        case SamLambdaRuntimeFamily.NodeJS:
+            return await getNodeSourceFileUri({ root, resource, fileExists })
+        case SamLambdaRuntimeFamily.Python:
+            return await getPythonSourceFileUri({ root, resource, fileExists })
+        default:
+            throw new Error(`Lambda resource '${Handler}' has unknown runtime '${Runtime}'`)
 
-    throw new Error(`Lambda resource '${Handler}' has unknown runtime ${Runtime}`)
+    }
 }
 
 async function getNodeSourceFileUri({
@@ -117,4 +121,28 @@ async function getNodeSourceFileUri({
     }
 
     throw new Error(`Javascript file expected at ${basePath}.(ts|jsx|js), but no file was found`)
+}
+
+async function getPythonSourceFileUri({
+    fileExists,
+    root,
+    resource,
+}: Pick<OpenMainSourceFileUriContext, 'fileExists'> & {
+    root: vscode.Uri,
+    resource: CloudFormation.Resource
+}): Promise<vscode.Uri> {
+    const handler = resource.Properties!.Handler
+    const tokens = handler.split('.', 1) || [handler]
+    const basePath = path.join(root.fsPath, resource.Properties!.CodeUri, tokens[0])
+
+    const file = await first(filterAsync(
+        [`${basePath}.py`],
+        async (p: string) => await fileExists(p)
+    ))
+
+    if (file) {
+        return vscode.Uri.file(file)
+    }
+
+    throw new Error(`Python file expected at ${basePath}.py, but no file was found`)
 }
