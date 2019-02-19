@@ -7,8 +7,6 @@
 
 import * as assert from 'assert'
 import * as del from 'del'
-import * as fs from 'fs'
-import * as os from 'os'
 import * as path from 'path'
 import * as filesystem from '../../shared/filesystem'
 import * as filesystemUtilities from '../../shared/filesystemUtilities'
@@ -21,7 +19,7 @@ describe('filesystemUtilities', () => {
 
     beforeEach(async () => {
         // Make a temp folder for all these tests
-        tempFolder = fs.mkdtempSync(path.join(os.tmpdir(), 'vsctk'))
+        tempFolder = await filesystem.mkdtempAsync()
         targetFilePath = path.join(tempFolder, targetFilename)
 
         await filesystem.writeFileAsync(targetFilePath, 'Hello, World!', 'utf8')

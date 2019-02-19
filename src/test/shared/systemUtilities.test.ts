@@ -12,16 +12,17 @@ import * as os from 'os'
 import * as path from 'path'
 
 import { EnvironmentVariables } from '../../shared/environmentVariables'
+import * as filesystem from '../../shared/filesystem'
 import { SystemUtilities } from '../../shared/systemUtilities'
 
 describe('SystemUtilities', () => {
 
     let tempFolder: string
 
-    before(() => {
+    before(async () => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
-        tempFolder = fs.mkdtempSync(path.join(os.tmpdir(), 'vsctk'))
+        tempFolder = await filesystem.mkdtempAsync()
     })
 
     after(() => {

@@ -28,7 +28,7 @@ export async function fileExists(filePath: string): Promise<boolean> {
  */
 export async function readFileAsString(filePath: string, encoding?: string): Promise<string> {
     // tslint:disable-next-line:no-null-keyword
-    const result = await readFileAsync(filePath, encoding || null)
+    const result = await readFileAsync(filePath, encoding)
     if (result instanceof Buffer) {
         return result.toString(encoding || undefined)
     }

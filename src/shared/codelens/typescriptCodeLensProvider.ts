@@ -260,13 +260,12 @@ class LocalLambdaRunner {
 
     private async getBaseBuildFolder(): Promise<string> {
         if (!this._baseBuildFolder) {
-            this._baseBuildFolder = await fileSystem.mkdtempAsync(
-                path.join(
-                    ExtensionDisposableFiles.getInstance().toolkitTempFolder,
-                    'build-'
-                )
+            const baseBuildDir = path.join(
+                ExtensionDisposableFiles.getInstance().toolkitTempFolder,
+                'build'
             )
-
+            await fileSystem.mkdirAsync(baseBuildDir)
+            this._baseBuildFolder = baseBuildDir
             ExtensionDisposableFiles.getInstance().addFolder(this._baseBuildFolder)
         }
 

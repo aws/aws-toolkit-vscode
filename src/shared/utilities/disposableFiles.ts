@@ -7,8 +7,6 @@
 
 import * as del from 'del'
 import * as fs from 'fs'
-import * as os from 'os'
-import * as path from 'path'
 import * as vscode from 'vscode'
 import * as filesystem from '../filesystem'
 
@@ -85,12 +83,7 @@ export class ExtensionDisposableFiles extends DisposableFiles {
             throw new Error('ExtensionDisposableFiles already initialized')
         }
 
-        const toolkitTempFolder: string = await filesystem.mkdtempAsync(
-            path.join(
-                os.tmpdir(),
-                'aws-toolkit-vscode-'
-            )
-        )
+        const toolkitTempFolder: string = await filesystem.mkdtempAsync('aws-toolkit-vscode-')
 
         ExtensionDisposableFiles.INSTANCE = new ExtensionDisposableFiles(toolkitTempFolder)
 

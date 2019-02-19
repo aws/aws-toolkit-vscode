@@ -7,8 +7,6 @@
 
 import * as assert from 'assert'
 import * as del from 'del'
-import * as fs from 'fs'
-import * as os from 'os'
 import * as path from 'path'
 
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
@@ -25,7 +23,7 @@ describe ('CloudFormation', () => {
     before(async () => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
-        tempFolder = fs.mkdtempSync(path.join(os.tmpdir(), 'vsctk'))
+        tempFolder = await filesystem.mkdtempAsync()
         filename = path.join(tempFolder, 'temp.yaml')
     })
 

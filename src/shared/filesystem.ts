@@ -6,102 +6,50 @@
 'use strict'
 
 import * as fs from 'fs'
+import * as os from 'os'
+import * as path from 'path'
+import { promisify } from 'util'
 
-export async function accessAsync(path: string | Buffer): Promise<void> {
-    await new Promise<void>((resolve, reject) => fs.access(path, err => {
-        if (!err) {
-            resolve()
-        } else {
-            reject(err)
-        }
-    }))
+const access = promisify(fs.access)
+
+export type PathLike = fs.PathLike
+
+export const accessAsync = async (pathLike: fs.PathLike): Promise<void> => {
+    return access(pathLike)
 }
 
-export async function mkdirAsync(
-    path: fs.PathLike,
-    options?: number | string | fs.MakeDirectoryOptions | undefined | null
-): Promise<void> {
-    await new Promise<void>((resolve, reject) => fs.mkdir(path, options, err => {
-        if (!err) {
-            resolve()
-        } else {
-            reject(err)
-        }
-    }))
+export const mkdirAsync = promisify(fs.mkdir)
+
+const mkdtemp = promisify(fs.mkdtemp)
+
+export const getTempDirPath = (prefix: string = 'vsctk') => {
+    return path.join(
+        os.type() === 'Darwin' ? '/tmp' : os.tmpdir(),
+        prefix || 'vsctk'
+    )
 }
 
-export async function mkdtempAsync(prefix: string): Promise<string> {
-    return await new Promise<string>((resolve, reject) => {
-        fs.mkdtemp(prefix, (err, folder) => {
-            if (!err) {
-                resolve(folder)
-            } else {
-                reject(err)
-            }
-        })
-    })
+export const  mkdtempAsync = async (prefix?: string) => {
+    return mkdtemp(getTempDirPath(prefix))
 }
 
-export async function readdirAsync(
-    path: string | Buffer,
-    options?: {
-        encoding: BufferEncoding | null
-        withFileTypes?: false
-    } | BufferEncoding | undefined | null
-): Promise<string[]> {
-    return await new Promise<string[]>((resolve, reject) => {
-        fs.readdir(path, options, (err, files) => {
-            if (!err) {
-                resolve(files)
-            } else {
-                reject(err)
-            }
-        })
-    })
+const readdir = promisify(fs.readdir)
+export const readdirAsync = async (pathLike: fs.PathLike): Promise<string[]> => {
+    return readdir(pathLike)
 }
 
-export async function readFileAsync(filename: string, encoding: string | null): Promise<string | Buffer> {
-    return await new Promise<string | Buffer>((resolve, reject) => {
-        fs.readFile(filename, encoding, (err, data) => {
-            if (!err) {
-                resolve(data)
-            } else {
-                reject(err)
-            }
-        })
-    })
+const readFile = promisify(fs.readFile)
+export const readFileAsync = async (pathLike: fs.PathLike, encoding?: string): Promise<string | Buffer> => {
+    return readFile(pathLike, { encoding })
 }
 
 export interface Stats extends fs.Stats {
     // fs.Stats is a class, so for easy mocking we code against an interface with the same shape.
 }
 
-export async function statAsync(path: string | Buffer): Promise<Stats> {
-    return await new Promise<Stats>((resolve, reject) => {
-        fs.stat(path, (err, stats) => {
-            if (!err) {
-                resolve(stats)
-            } else {
-                reject(err)
-            }
-        })
-    })
+const stat = promisify(fs.stat)
+export const statAsync = async (pathLike: fs.PathLike): Promise<Stats> => {
+    return stat(pathLike)
 }
 
-export async function writeFileAsync(
-    filename: string,
-    data: any,
-    // fs.WriteFileOptions includes null, but not undefined.
-    // tslint:disable-next-line:no-null-keyword
-    options: fs.WriteFileOptions = null
-): Promise<void> {
-    await new Promise<void>((resolve, reject) => {
-        fs.writeFile(filename, data, options, err => {
-            if (!err) {
-                resolve()
-            } else {
-                reject(err)
-            }
-        })
-    })
-}
+export const writeFileAsync = promisify(fs.writeFile)

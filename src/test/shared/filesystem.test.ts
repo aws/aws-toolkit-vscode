@@ -7,7 +7,6 @@
 
 import * as assert from 'assert'
 import * as del from 'del'
-import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 import * as filesystem from '../../shared/filesystem'
@@ -18,10 +17,10 @@ describe('filesystem', () => {
     let tempFolder: string
     let filePath: string
 
-    beforeEach(() => {
+    beforeEach(async () => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
-        tempFolder = fs.mkdtempSync(path.join(os.tmpdir(), 'vsctk'))
+        tempFolder = await filesystem.mkdtempAsync()
         filePath = path.join(tempFolder, filename)
     })
 
@@ -85,7 +84,7 @@ describe('filesystem', () => {
 
     describe('mkdtempAsync', () => {
         it('creates a directory with the specified prefix', async () => {
-            const actual = await filesystem.mkdtempAsync(path.join(os.tmpdir(), 'myPrefix'))
+            const actual = await filesystem.mkdtempAsync('myPrefix')
 
             assert.ok(actual)
             assert.strictEqual(path.basename(actual).startsWith('myPrefix'), true)
@@ -142,18 +141,6 @@ describe('filesystem', () => {
             assert.strictEqual(actual.length, 1)
             assert.strictEqual(actual[0], filename)
         })
-
-        it('interprets options as encoding when it is a string', async () => {
-            await filesystem.writeFileAsync(filePath, 'Hello, World!', 'utf8')
-            const actual = await filesystem.readdirAsync(
-                tempFolder,
-                'base64'
-            )
-
-            assert.ok(actual)
-            assert.strictEqual(actual.length, 1)
-            assert.strictEqual(actual[0], Buffer.from(filename).toString('base64'))
-        })
     })
 
     describe('readFileAsync', () => {
@@ -175,7 +162,7 @@ describe('filesystem', () => {
         it('reads empty binary files', async () => {
             await filesystem.writeFileAsync(filePath, '', 'binary')
             // tslint:disable-next-line:no-null-keyword
-            const actual = await filesystem.readFileAsync(filePath, null)
+            const actual = await filesystem.readFileAsync(filePath)
 
             assert.ok(actual)
             assert.strictEqual(actual instanceof Buffer, true)
@@ -185,7 +172,7 @@ describe('filesystem', () => {
         it('reads non-empty binary files', async () => {
             await filesystem.writeFileAsync(filePath, 'Hello, World!', 'binary')
             // tslint:disable-next-line:no-null-keyword
-            const actual = await filesystem.readFileAsync(filePath, null)
+            const actual = await filesystem.readFileAsync(filePath)
 
             assert.ok(actual)
             assert.strictEqual(actual instanceof Buffer, true)
@@ -248,7 +235,7 @@ describe('filesystem', () => {
         it('writes binary data to file', async () => {
             await filesystem.writeFileAsync(filePath, 'Hello, World!', 'binary')
             // tslint:disable-next-line:no-null-keyword
-            const actual = await filesystem.readFileAsync(filePath, null)
+            const actual = await filesystem.readFileAsync(filePath)
 
             assert.ok(actual)
             assert.strictEqual(actual instanceof Buffer, true)

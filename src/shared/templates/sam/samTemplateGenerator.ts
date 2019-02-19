@@ -61,14 +61,23 @@ export class SamTemplateGenerator {
         const template: CloudFormation.Template = !!this._existingTemplateFilename
             ? await this.createTemplateFromExistingTemplate()
             : this.createTemplateFromScratch()
-
-        const templateAsYaml: string = yaml.safeDump(template)
-
-        const parentDirectory: string = path.dirname(filename)
-        if (!await filesystemUtilities.fileExists(parentDirectory)) {
-            await filesystem.mkdirAsync(parentDirectory)
+        let parentDirectory: string
+        try {
+            const templateAsYaml: string = yaml.safeDump(template)
+            parentDirectory = path.dirname(filename)
+            if (!await filesystemUtilities.fileExists(parentDirectory)) {
+                await filesystem.mkdirAsync(parentDirectory)
+            }
+            await filesystem.writeFileAsync(filename, templateAsYaml, 'utf8')
+        } catch (err)  {
+            const errDetails = {
+                inputFileName: filename,
+                template,
+                parentDirectory: parentDirectory!,
+                error: err
+            }
+            throw new Error(`Failed to generate template: ${JSON.stringify(errDetails, undefined, 2)}`)
         }
-        await filesystem.writeFileAsync(filename, templateAsYaml, 'utf8')
     }
 
     /**
@@ -115,7 +124,7 @@ export class SamTemplateGenerator {
                 Handler: this._functionHandler!,
                 CodeUri: this._codeUri!,
                 Runtime: this._runtime!,
-                Environment: this._environment!
+                Environment: this._environment || {}
             }
         }
 

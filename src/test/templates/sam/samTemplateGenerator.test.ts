@@ -7,7 +7,6 @@
 
 import * as assert from 'assert'
 import * as del from 'del'
-import * as os from 'os'
 import * as path from 'path'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import * as filesystem from '../../../shared/filesystem'
@@ -19,7 +18,7 @@ describe('SamTemplateGenerator', () => {
     let tempFolder: string
 
     beforeEach(async () => {
-        tempFolder = await filesystem.mkdtempAsync(path.join(os.tmpdir(), 'vsctk-'))
+        tempFolder = await filesystem.mkdtempAsync()
     })
 
     afterEach(async () => {

@@ -28,14 +28,14 @@ describe('detectLocalTemplates', async () => {
         const result = detectLocalTemplates({
             workspaceFolders: [ vscode.Uri.file(workspaceFolderPath) ],
             context: {
-                async accessAsync(_path: string | Buffer): Promise<void> {
+                async accessAsync(_path: filesystem.PathLike): Promise<void> {
                     if (_path !== normalizePath(workspaceFolderPath, 'template.yaml')) {
                         throw new Error(`No file found at path: '${_path}'`)
                     }
                 },
 
                 async readdirAsync(
-                    _path: string | Buffer,
+                    _path: filesystem.PathLike,
                     options?: {
                         encoding: BufferEncoding | null
                         withFileTypes?: false
@@ -45,7 +45,7 @@ describe('detectLocalTemplates', async () => {
                 },
 
                 async statAsync(
-                    _path: string | Buffer
+                    _path: filesystem.PathLike
                 ): Promise<filesystem.Stats> {
                     return {
                         isDirectory() {
@@ -72,18 +72,14 @@ describe('detectLocalTemplates', async () => {
         const result = detectLocalTemplates({
             workspaceFolders: [ vscode.Uri.file(workspaceFolderPath) ],
             context: {
-                async accessAsync(_path: string | Buffer): Promise<void> {
+                async accessAsync(_path: filesystem.PathLike): Promise<void> {
                     if (_path !== normalizePath(workspaceFolderChildPath, 'template.yaml')) {
                         throw new Error(`No file found at path: '${_path}'`)
                     }
                 },
 
                 async readdirAsync(
-                    _path: string | Buffer,
-                    options?: {
-                        encoding: BufferEncoding | null
-                        withFileTypes?: false
-                    } | BufferEncoding | undefined | null
+                    _path: filesystem.PathLike
                 ): Promise<string[]> {
                     switch (_path) {
                         case workspaceFolderPath:
@@ -96,7 +92,7 @@ describe('detectLocalTemplates', async () => {
                 },
 
                 async statAsync(
-                    _path: string | Buffer
+                    _path: filesystem.PathLike
                 ): Promise<filesystem.Stats> {
                     return {
                         isDirectory() {
@@ -124,19 +120,13 @@ describe('detectLocalTemplates', async () => {
         const result = detectLocalTemplates({
             workspaceFolders: [ vscode.Uri.file(workspaceFolderPath) ],
             context: {
-                async accessAsync(_path: string | Buffer): Promise<void> {
+                async accessAsync(_path: filesystem.PathLike): Promise<void> {
                     if (_path !== normalizePath(workspaceFolderGrandchildPath, 'template.yaml')) {
                         throw new Error(`No file found at path: '${_path}'`)
                     }
                 },
 
-                async readdirAsync(
-                    _path: string | Buffer,
-                    options?: {
-                        encoding: BufferEncoding | null
-                        withFileTypes?: false
-                    } | BufferEncoding | undefined | null
-                ): Promise<string[]> {
+                async readdirAsync(_path: filesystem.PathLike): Promise<string[]> {
                     switch (_path) {
                         case workspaceFolderPath:
                             return [ 'child' ]
@@ -149,9 +139,7 @@ describe('detectLocalTemplates', async () => {
                     }
                 },
 
-                async statAsync(
-                    _path: string | Buffer
-                ): Promise<filesystem.Stats> {
+                async statAsync(_path: filesystem.PathLike): Promise<filesystem.Stats> {
                     return {
                         isDirectory() {
                             return true
@@ -177,7 +165,7 @@ describe('detectLocalTemplates', async () => {
         const result = detectLocalTemplates({
             workspaceFolders: [ vscode.Uri.file(workspaceFolderPath) ],
             context: {
-                async accessAsync(_path: string | Buffer): Promise<void> {
+                async accessAsync(_path: filesystem.PathLike): Promise<void> {
                     switch (_path) {
                         case normalizePath(workspaceFolderChildPath1, 'template.yaml'):
                         case normalizePath(workspaceFolderChildPath2, 'template.yaml'):
@@ -188,11 +176,7 @@ describe('detectLocalTemplates', async () => {
                 },
 
                 async readdirAsync(
-                    _path: string | Buffer,
-                    options?: {
-                        encoding: BufferEncoding | null
-                        withFileTypes?: false
-                    } | BufferEncoding | undefined | null
+                    _path: filesystem.PathLike
                 ): Promise<string[]> {
                     switch (_path) {
                         case workspaceFolderPath:
@@ -205,9 +189,7 @@ describe('detectLocalTemplates', async () => {
                     }
                 },
 
-                async statAsync(
-                    _path: string | Buffer
-                ): Promise<filesystem.Stats> {
+                async statAsync(_path: filesystem.PathLike): Promise<filesystem.Stats> {
                     return {
                         isDirectory() {
                             return true
@@ -235,7 +217,7 @@ describe('detectLocalTemplates', async () => {
         const result = detectLocalTemplates({
             workspaceFolders: [ vscode.Uri.file(workspaceFolderPath) ],
             context: {
-                async accessAsync(_path: string | Buffer): Promise<void> {
+                async accessAsync(_path: filesystem.PathLike): Promise<void> {
                     switch (_path) {
                         case normalizePath(workspaceFolderChildPath, 'template.yml'):
                         case normalizePath(workspaceFolderChildPath, 'template.yaml'):
@@ -245,13 +227,7 @@ describe('detectLocalTemplates', async () => {
                     }
                 },
 
-                async readdirAsync(
-                    _path: string | Buffer,
-                    options?: {
-                        encoding: BufferEncoding | null
-                        withFileTypes?: false
-                    } | BufferEncoding | undefined | null
-                ): Promise<string[]> {
+                async readdirAsync(_path: filesystem.PathLike): Promise<string[]> {
                     switch (_path) {
                         case workspaceFolderPath:
                             return [ 'child' ]
@@ -262,9 +238,7 @@ describe('detectLocalTemplates', async () => {
                     }
                 },
 
-                async statAsync(
-                    _path: string | Buffer
-                ): Promise<filesystem.Stats> {
+                async statAsync(_path: filesystem.PathLike): Promise<filesystem.Stats> {
                     return {
                         isDirectory() {
                             return true
