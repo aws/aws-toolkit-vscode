@@ -15,6 +15,8 @@ export class FakeExtensionContext implements ExtensionContext {
     public globalState: Memento = new FakeMemento()
     public extensionPath: string = ''
     public storagePath: string | undefined
+    public globalStoragePath: string = ''
+    public logPath: string = ''
 
     public asAbsolutePath(relativePath: string): string {
         throw new Error('Method not implemented.')
