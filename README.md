@@ -32,11 +32,18 @@ npm install
 npm run package
 ```
 
+After packaging completes, the name of the vsix file is output. You'll need to know this filename in the next step.
+
 3. Install the toolkit
 
+Run the following command, replacing `<VSIX_FILENAME_HERE>` with the filename output in the previous step.
+
 ```shell
-code --install-extension aws-toolkit-vscode-<VERSION>.vsix
+code --install-extension <VSIX_FILENAME_HERE>
 ```
+
+For example: `code --install-extension aws-toolkit-vscode-0.0.1.vsix`
+
 
 ### Sign in to your AWS account
 
