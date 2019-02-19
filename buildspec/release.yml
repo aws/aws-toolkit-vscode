@@ -18,6 +18,7 @@ phases:
     commands:
       - cd aws-toolkit-vscode
       - git checkout $Env:GIT_BRANCH
+      # TODO : See if we can cache the node dependencies with CodeBuild to keep npm install times lean
       - npm install
   build:
     commands:
