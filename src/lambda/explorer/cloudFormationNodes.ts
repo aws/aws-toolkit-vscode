@@ -9,6 +9,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { CloudFormation, Lambda } from 'aws-sdk'
+import * as os from 'os'
 import * as vscode from 'vscode'
 import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
@@ -32,7 +33,7 @@ export interface CloudFormationNode extends AWSTreeErrorHandlerNode {
 
     readonly parent: RegionNode
 
-    getChildren(): Thenable<(CloudFormationStackNode | ErrorNode)[] >
+    getChildren(): Thenable<(CloudFormationStackNode | ErrorNode)[]>
 
     updateChildren(): Thenable<void>
 }
@@ -44,7 +45,10 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
         return this.parent.regionCode
     }
 
-    public constructor(public readonly parent: RegionNode) {
+    public constructor(
+        public readonly parent: RegionNode,
+        private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
+    ) {
         super('CloudFormation', vscode.TreeItemCollapsibleState.Collapsed)
         this.stackNodes = new Map<string, CloudFormationStackNode>()
     }
@@ -52,8 +56,10 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
     public async getChildren(): Promise<(CloudFormationStackNode | ErrorNode)[]> {
         await this.handleErrorProneOperation(
             async () => this.updateChildren(),
-            localize('AWS.explorerNode.cloudFormation.error',
-                     'Error loading CloudFormation resources'))
+            localize(
+                'AWS.explorerNode.cloudFormation.error',
+                'Error loading CloudFormation resources'
+            ))
 
         return !!this.errorNode ? [this.errorNode]
             : [...this.stackNodes.values()]
@@ -68,7 +74,11 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
             this.stackNodes,
             stacks.keys(),
             key => this.stackNodes.get(key)!.update(stacks.get(key)!),
-            key => new DefaultCloudFormationStackNode(this, stacks.get(key)!)
+            key => new DefaultCloudFormationStackNode(
+                this,
+                stacks.get(key)!,
+                relativeExtensionPath => this.getExtensionAbsolutePath(relativeExtensionPath)
+            )
         )
     }
 }
@@ -92,19 +102,27 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
 
     public constructor(
         public readonly parent: CloudFormationNode,
-        private stackSummary: CloudFormation.StackSummary
+        private stackSummary: CloudFormation.StackSummary,
+        private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
     ) {
         super('', vscode.TreeItemCollapsibleState.Collapsed)
 
         this.update(stackSummary)
         this.contextValue = 'awsCloudFormationNode'
         this.functionNodes = new Map<string, CloudFormationFunctionNode>()
+        this.iconPath = {
+            dark: vscode.Uri.file(this.getExtensionAbsolutePath('resources/dark/cloudformation.svg')),
+            light: vscode.Uri.file(this.getExtensionAbsolutePath('resources/light/cloudformation.svg')),
+        }
     }
 
     public async getChildren(): Promise<(CloudFormationFunctionNode | PlaceholderNode)[]> {
-        await this.handleErrorProneOperation(async () => this.updateChildren(),
-                                             localize('AWS.explorerNode.cloudFormation.error',
-                                                      'Error loading CloudFormation resources'))
+        await this.handleErrorProneOperation(
+            async () => this.updateChildren(),
+            localize(
+                'AWS.explorerNode.cloudFormation.error',
+                'Error loading CloudFormation resources'
+            ))
 
         if (!!this.errorNode) {
             return [this.errorNode]
@@ -125,7 +143,7 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
     public update(stackSummary: CloudFormation.StackSummary): void {
         this.stackSummary = stackSummary
         this.label = `${stackSummary.StackName} [${stackSummary.StackStatus}]`
-        this.tooltip = `${stackSummary.StackName}-${stackSummary.StackId}`
+        this.tooltip = `${stackSummary.StackName}${os.EOL}${stackSummary.StackId}`
     }
 
     private async updateChildren(): Promise<void> {
@@ -141,7 +159,11 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
             this.functionNodes,
             intersection(resources, functions.keys()),
             key => this.functionNodes.get(key)!.update(functions.get(key)!),
-            key => new DefaultCloudFormationFunctionNode(this, functions.get(key)!)
+            key => new DefaultCloudFormationFunctionNode(
+                this,
+                functions.get(key)!,
+                relativeExtensionPath => this.getExtensionAbsolutePath(relativeExtensionPath)
+            )
         )
     }
 
@@ -170,9 +192,10 @@ export class DefaultCloudFormationFunctionNode extends FunctionNodeBase {
 
     public constructor(
         public readonly parent: CloudFormationStackNode,
-        configuration: Lambda.FunctionConfiguration
+        configuration: Lambda.FunctionConfiguration,
+        getExtensionAbsolutePath: (relativeExtensionPath: string) => string
     ) {
-        super(configuration)
+        super(configuration, getExtensionAbsolutePath)
         this.contextValue = 'awsCloudFormationFunctionNode'
     }
 }

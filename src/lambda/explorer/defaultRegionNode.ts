@@ -32,14 +32,17 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
         return this.info.regionName
     }
 
-    public constructor(info: RegionInfo) {
+    public constructor(
+        info: RegionInfo,
+        getExtensionAbsolutePath: (relativeExtensionPath: string) => string
+    ) {
         super(info.regionName, TreeItemCollapsibleState.Expanded)
         this.contextValue = 'awsRegionNode'
         this.info = info
         this.update(info)
 
-        this.cloudFormationNode = new DefaultCloudFormationNode(this)
-        this.standaloneFunctionGroupNode = new DefaultStandaloneFunctionGroupNode(this)
+        this.cloudFormationNode = new DefaultCloudFormationNode(this, getExtensionAbsolutePath)
+        this.standaloneFunctionGroupNode = new DefaultStandaloneFunctionGroupNode(this, getExtensionAbsolutePath)
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
@@ -59,7 +62,9 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
 export class RegionNodeCollection {
     private readonly regionNodes: Map<string, RegionNode>
 
-    public constructor() {
+    public constructor(
+        private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
+    ) {
         this.regionNodes = new Map<string, RegionNode>()
     }
 
@@ -70,7 +75,10 @@ export class RegionNodeCollection {
             this.regionNodes,
             regionMap.keys(),
             key => this.regionNodes.get(key)!.update(regionMap.get(key)!),
-            key => new DefaultRegionNode(regionMap.get(key)!)
+            key => new DefaultRegionNode(
+                regionMap.get(key)!,
+                relativeExtensionPath => this.getExtensionAbsolutePath(relativeExtensionPath)
+            )
         )
     }
 }

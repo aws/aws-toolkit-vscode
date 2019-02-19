@@ -9,16 +9,16 @@ import * as semver from 'semver'
 import { SamCliInfoInvocation } from './samCliInfo'
 
 export enum SamCliVersionValidation {
-    Valid,
-    VersionTooLow,
-    VersionTooHigh,
-    VersionNotParseable,
+    Valid = 'Valid',
+    VersionTooLow = 'VersionTooLow',
+    VersionTooHigh = 'VersionTooHigh',
+    VersionNotParseable = 'VersionNotParseable',
 }
 
 export class SamCliVersion {
 
     public static readonly MINIMUM_SAM_CLI_VERSION_INCLUSIVE = '0.7.0'
-    public static readonly MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE = '0.11.0'
+    public static readonly MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE = '0.16.0'
 
     public static validate(version?: string): SamCliVersionValidation {
         if (!version) {

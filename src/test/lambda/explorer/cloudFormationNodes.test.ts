@@ -7,6 +7,8 @@
 
 import * as assert from 'assert'
 import { CloudFormation, Lambda } from 'aws-sdk'
+import * as os from 'os'
+import { TreeItem, Uri } from 'vscode'
 import {
     CloudFormationStackNode,
     DefaultCloudFormationFunctionNode,
@@ -20,21 +22,13 @@ import { CloudFormationClient } from '../../../shared/clients/cloudFormationClie
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { ext } from '../../../shared/extensionGlobals'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
-import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 describe('DefaultCloudFormationStackNode', () => {
 
     let fakeStackSummary: CloudFormation.StackSummary
+    const fakeIconPathPrefix: string = 'DefaultCloudFormationStackNode'
 
-    class FakeExtensionContextOverride extends FakeExtensionContext {
-
-        public asAbsolutePath(relativePath: string): string {
-            return relativePath
-        }
-    }
-
-    before(function() {
-        ext.context = new FakeExtensionContextOverride()
+    before(() => {
         fakeStackSummary = {
             CreationTime: new Date(),
             StackId: '1',
@@ -45,13 +39,16 @@ describe('DefaultCloudFormationStackNode', () => {
 
     // Validates we tagged the node correctly.
     it('initializes name and tooltip', async () => {
-        const testNode: CloudFormationStackNode = new DefaultCloudFormationStackNode(
-            new DefaultCloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
-            fakeStackSummary
-        )
+        const testNode: CloudFormationStackNode = generateTestNode()
 
         assert.strictEqual(testNode.label, `${fakeStackSummary.StackName} [${fakeStackSummary.StackStatus}]`)
-        assert.strictEqual(testNode.tooltip, `${fakeStackSummary.StackName}-${fakeStackSummary.StackId}`)
+        assert.strictEqual(testNode.tooltip, `${fakeStackSummary.StackName}${os.EOL}${fakeStackSummary.StackId}`)
+    })
+
+    it('initializes icon', async () => {
+        const testNode: CloudFormationStackNode = generateTestNode()
+
+        validateIconPath(testNode)
     })
 
     it('returns placeholder node if no children are present', async () => {
@@ -83,10 +80,7 @@ describe('DefaultCloudFormationStackNode', () => {
                 return lambdaClient
             }
         }
-        const testNode = new DefaultCloudFormationStackNode(
-            new DefaultCloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
-            fakeStackSummary
-        )
+        const testNode = generateTestNode()
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)
@@ -178,10 +172,7 @@ describe('DefaultCloudFormationStackNode', () => {
             }
         }
 
-        const testNode: CloudFormationStackNode = new DefaultCloudFormationStackNode(
-            new DefaultCloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
-            fakeStackSummary
-        )
+        const testNode: CloudFormationStackNode = generateTestNode()
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)
@@ -194,17 +185,72 @@ describe('DefaultCloudFormationStackNode', () => {
         assert.strictEqual((childNodes[1] as DefaultCloudFormationFunctionNode).label, lambda3Name)
     })
 
+    function validateIconPath(
+        node: TreeItem
+    ) {
+        const fileScheme: string = 'file'
+        const expectedPrefix = `/${fakeIconPathPrefix}/`
+
+        assert(node.iconPath !== undefined)
+        const iconPath = node.iconPath! as {
+            light: Uri,
+            dark: Uri
+        }
+
+        assert(iconPath.light !== undefined)
+        assert(iconPath.light instanceof Uri)
+        assert.strictEqual(iconPath.light.scheme, fileScheme)
+        const lightResourcePath: string = iconPath.light.path
+        assert(
+            lightResourcePath.indexOf(expectedPrefix) >= 0,
+            `expected light resource path ${lightResourcePath} to contain ${expectedPrefix}`
+        )
+        assert(
+            lightResourcePath.indexOf('/light/') >= 0,
+            `expected light resource path ${lightResourcePath} to contain '/light/'`
+        )
+
+        assert(iconPath.dark !== undefined)
+        assert(iconPath.dark instanceof Uri)
+        assert.strictEqual(iconPath.dark.scheme, fileScheme)
+        const darkResourcePath: string = iconPath.dark.path
+        assert(
+            darkResourcePath.indexOf(expectedPrefix) >= 0,
+            `expected dark resource path ${darkResourcePath} to contain ${expectedPrefix}`
+        )
+        assert(
+            darkResourcePath.indexOf('/dark/') >= 0,
+            `expected light resource path ${darkResourcePath} to contain '/dark/'`
+        )
+    }
+
+    function generateTestNode(): CloudFormationStackNode {
+        return new DefaultCloudFormationStackNode(
+            new DefaultCloudFormationNode(
+                new DefaultRegionNode(new RegionInfo('code', 'name'), iconPathMaker),
+                iconPathMaker
+            ),
+            fakeStackSummary,
+            iconPathMaker
+        )
+    }
+
+    function iconPathMaker(relativePath: string): string {
+        return `${fakeIconPathPrefix}/${relativePath}`
+    }
 })
 
 describe('DefaultCloudFormationNode', () => {
 
     it('handles error', async () => {
 
+        const unusedPathResolver = () => { throw new Error('unused') }
+
         class ThrowErrorDefaultCloudFormationNode extends DefaultCloudFormationNode {
             public constructor(
                 public readonly regionNode: DefaultRegionNode
             ) {
-                super(regionNode)
+                super(regionNode, unusedPathResolver)
             }
 
             public async updateChildren(): Promise<void> {
@@ -213,7 +259,7 @@ describe('DefaultCloudFormationNode', () => {
         }
 
         const testNode: ThrowErrorDefaultCloudFormationNode = new ThrowErrorDefaultCloudFormationNode(
-            new DefaultRegionNode(new RegionInfo('code', 'name'))
+            new DefaultRegionNode(new RegionInfo('code', 'name'), unusedPathResolver)
         )
 
         const childNodes = await testNode.getChildren()

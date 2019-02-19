@@ -18,8 +18,10 @@ import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
 import { intersection, toMap, updateInPlace } from '../shared/utilities/collectionUtils'
+import { createNewSamApp } from './commands/createNewSamApp'
 import { deleteCloudFormation } from './commands/deleteCloudFormation'
 import { deleteLambda } from './commands/deleteLambda'
+import { deploySamApplication } from './commands/deploySamApplication'
 import { getLambdaConfig } from './commands/getLambdaConfig'
 import { invokeLambda } from './commands/invokeLambda'
 import { showErrorDetails } from './commands/showErrorDetails'
@@ -44,6 +46,8 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         private readonly awsContextTrees: AwsContextTreeCollection,
         private readonly regionProvider: RegionProvider,
         private readonly resourceFetcher: ResourceFetcher,
+        private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string,
+        private readonly lambdaOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda'),
     ) {
         this._onDidChangeTreeData = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
         this.onDidChangeTreeData = this._onDidChangeTreeData.event
@@ -53,11 +57,16 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
     public initialize(): void {
         vscode.commands.registerCommand('aws.refreshAwsExplorer', async () => this.refresh())
         vscode.commands.registerCommand(
+            'aws.lambda.createNewSamApp',
+            async () => await createNewSamApp()
+        )
+
+        vscode.commands.registerCommand(
             'aws.deleteLambda',
             async (node: StandaloneFunctionNode) => await deleteLambda({
-                node,
+                deleteParams: { functionName: node.configuration.FunctionName || '' },
                 lambdaClient: ext.toolkitClientBuilder.createLambdaClient(node.regionCode),
-                outputChannel: ext.lambdaOutputChannel,
+                outputChannel: this.lambdaOutputChannel,
                 onRefresh: () => this.refresh(node.parent)
             })
         )
@@ -68,6 +77,10 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
                 node
             )
         )
+        vscode.commands.registerCommand(
+            'aws.deploySamApplication',
+            async () => await deploySamApplication()
+        )
 
         vscode.commands.registerCommand(
             'aws.showErrorDetails',
@@ -76,7 +89,12 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
 
         vscode.commands.registerCommand(
             'aws.invokeLambda',
-            async (node: FunctionNodeBase) => await invokeLambda(this.awsContext, this.resourceFetcher, node)
+            async (node: FunctionNodeBase) => await invokeLambda({
+                awsContext: this.awsContext,
+                element: node,
+                outputChannel: this.lambdaOutputChannel,
+                resourceFetcher: this.resourceFetcher
+            })
         )
         vscode.commands.registerCommand('aws.configureLambda', configureLocalLambda)
         vscode.commands.registerCommand(
@@ -152,7 +170,10 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
             this.regionNodes,
             intersection(regionMap.keys(), explorerRegionCodes),
             key => this.regionNodes.get(key)!.update(regionMap.get(key)!),
-            key => new DefaultRegionNode(regionMap.get(key)!)
+            key => new DefaultRegionNode(
+                regionMap.get(key)!,
+                relativeExtensionPath => this.getExtensionAbsolutePath(relativeExtensionPath)
+            )
         )
 
         if (this.regionNodes.size > 0) {

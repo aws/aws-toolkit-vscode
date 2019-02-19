@@ -22,6 +22,7 @@
         "onCommand:aws.showRegion",
         "onCommand:aws.hideRegion",
         "onView:lambda",
+        "onCommand:aws.deploySamApplication",
         "onCommand:aws.samcli.detect",
         "onCommand:aws.samcli.validate.version",
         "onCommand:aws.lambda.createNewSamApp",
@@ -200,9 +201,18 @@
                 "category": "AWS"
             },
             {
+                "command": "aws.deploySamApplication",
+                "title": "%AWS.command.deploySamApplication%",
+                "category": "AWS"
+            },
+            {
                 "command": "aws.refreshAwsExplorer",
                 "title": "%AWS.command.refreshAwsExplorer%",
-                "category": "AWS"
+                "category": "AWS",
+                "icon": {
+                    "dark": "third-party/resources/from-vscode/dark/refresh.svg",
+                    "light": "third-party/resources/from-vscode/light/refresh.svg"
+                }
             },
             {
                 "command": "aws.getLambdaConfig",
@@ -253,7 +263,6 @@
         "@types/del": "^3.0.1",
         "@types/fs-extra": "^5.0.4",
         "@types/glob": "^7.1.1",
-        "@types/handlebars": "^4.0.39",
         "@types/js-yaml": "^3.12.0",
         "@types/lodash": "^4.14.110",
         "@types/mocha": "^2.2.48",
@@ -272,8 +281,8 @@
         "tslint": "^5.11.0",
         "tslint-eslint-rules": "^5.4.0",
         "tslint-no-circular-imports": "^0.6.1",
-        "vsce": "^1.51.1",
-        "vscode": "^1.1.21",
+        "vsce": "^1.57.1",
+        "vscode": "^1.1.29",
         "vscode-nls-dev": "^3.2.2"
     },
     "dependencies": {
@@ -283,11 +292,11 @@
         "cross-spawn": "^6.0.5",
         "del": "^3.0.0",
         "fs-extra": "^6.0.1",
-        "handlebars": "^4.0.12",
+        "handlebars": "^4.1.0",
         "immutable": "^4.0.0-rc.12",
         "js-yaml": "^3.12.0",
         "jsonc-parser": "^2.0.2",
-        "lodash": "^4.17.10",
+        "lodash": "^4.17.11",
         "npm": "^6.4.1",
         "opn": "^5.4.0",
         "request": "^2.88.0",
