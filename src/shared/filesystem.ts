@@ -25,7 +25,7 @@ const mkdtemp = promisify(fs.mkdtemp)
 export const getTempDirPath = (prefix: string = 'vsctk') => {
     return path.join(
         os.type() === 'Darwin' ? '/tmp' : os.tmpdir(),
-        prefix || 'vsctk'
+        prefix
     )
 }
 

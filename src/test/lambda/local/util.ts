@@ -26,7 +26,7 @@ export async function createWorkspaceFolder(prefix: string): Promise<{
     }
 }
 
-export const  createTemporaryDirectory = filesystem.mkdtempAsync
+export const createTemporaryDirectory = filesystem.mkdtempAsync
 
 export async function saveTemplate(templatePath: string, runtime: string, ...functionNames: string[]) {
     const functionResources = functionNames.map(
