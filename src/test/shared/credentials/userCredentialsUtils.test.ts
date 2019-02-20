@@ -21,7 +21,7 @@ import {
     UserCredentialsUtils,
 } from '../../../shared/credentials/userCredentialsUtils'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
-import * as filesystem from '../../../shared/filesystem'
+import { mkdtemp } from '../../../shared/filesystemUtilities'
 
 describe('UserCredentialsUtils', () => {
 
@@ -30,7 +30,7 @@ describe('UserCredentialsUtils', () => {
     before(async () => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
-        tempFolder = await filesystem.mkdtempAsync()
+        tempFolder = await mkdtemp()
     })
 
     after(() => {

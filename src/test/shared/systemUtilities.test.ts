@@ -12,7 +12,7 @@ import * as os from 'os'
 import * as path from 'path'
 
 import { EnvironmentVariables } from '../../shared/environmentVariables'
-import * as filesystem from '../../shared/filesystem'
+import { mkdtemp } from '../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../shared/systemUtilities'
 
 describe('SystemUtilities', () => {
@@ -22,7 +22,7 @@ describe('SystemUtilities', () => {
     before(async () => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
-        tempFolder = await filesystem.mkdtempAsync()
+        tempFolder = await mkdtemp()
     })
 
     after(() => {

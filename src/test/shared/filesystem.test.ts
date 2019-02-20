@@ -9,8 +9,8 @@ import * as assert from 'assert'
 import * as del from 'del'
 import * as os from 'os'
 import * as path from 'path'
-import * as filesystem from '../../shared/filesystem'
-import { fileExists,  } from '../../shared/filesystemUtilities'
+import { access, mkdir, readdir, readFile, stat, writeFile } from '../../shared/filesystem'
+import { fileExists, mkdtemp } from '../../shared/filesystemUtilities'
 
 describe('filesystem', () => {
     const filename = 'file.txt'
@@ -20,7 +20,7 @@ describe('filesystem', () => {
     beforeEach(async () => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
-        tempFolder = await filesystem.mkdtempAsync()
+        tempFolder = await mkdtemp()
         filePath = path.join(tempFolder, filename)
     })
 
@@ -30,16 +30,16 @@ describe('filesystem', () => {
 
     describe('accessAsync', () => {
         it('does not throw if no error occurs', async () => {
-            await filesystem.writeFileAsync(filePath, 'Hello, World!', 'utf8')
+            await writeFile(filePath, 'Hello, World!', 'utf8')
 
-            assert.doesNotThrow(async () => await filesystem.accessAsync(filePath))
+            assert.doesNotThrow(async () => await access(filePath))
         })
 
         it('throws if error occurs', async () => {
             let error: NodeJS.ErrnoException | undefined
 
             try {
-                await filesystem.accessAsync(filePath)
+                await access(filePath)
             } catch (err) {
                 error = err as NodeJS.ErrnoException | undefined
             }
@@ -51,29 +51,29 @@ describe('filesystem', () => {
         })
 
         it('accepts Buffer-based paths', async () => {
-            await filesystem.writeFileAsync(filePath, 'Hello, World!', 'utf8')
+            await writeFile(filePath, 'Hello, World!', 'utf8')
             const buffer: Buffer = Buffer.from(filePath)
 
-            assert.doesNotThrow(async () => await filesystem.accessAsync(buffer))
+            assert.doesNotThrow(async () => await access(buffer))
         })
     })
 
     describe('mkdirAsync', () => {
         it('creates a directory at the specified path', async () => {
             const myPath = path.join(tempFolder, 'myPath')
-            await filesystem.mkdirAsync(myPath)
+            await mkdir(myPath)
             assert.strictEqual(await fileExists(myPath), true)
 
-            const stat = await filesystem.statAsync(myPath)
-            assert.ok(stat)
-            assert.strictEqual(stat.isDirectory(), true)
+            const statResult = await stat(myPath)
+            assert.ok(statResult)
+            assert.strictEqual(statResult.isDirectory(), true)
         })
 
         it('rejects if path contains invalid characters', async () => {
             let error: Error | string | undefined
 
             try {
-                await filesystem.mkdirAsync('\n\0')
+                await mkdir('\n\0')
             } catch (err) {
                 error = err as Error | string | undefined
             } finally {
@@ -84,7 +84,7 @@ describe('filesystem', () => {
 
     describe('mkdtempAsync', () => {
         it('creates a directory with the specified prefix', async () => {
-            const actual = await filesystem.mkdtempAsync('myPrefix')
+            const actual = await mkdtemp('myPrefix')
 
             assert.ok(actual)
             assert.strictEqual(path.basename(actual).startsWith('myPrefix'), true)
@@ -95,7 +95,7 @@ describe('filesystem', () => {
             let error: Error | string | undefined
 
             try {
-                await filesystem.mkdtempAsync('\n\0')
+                await mkdtemp('\n\0')
             } catch (err) {
                 error = err as Error | string | undefined
             } finally {
@@ -106,8 +106,8 @@ describe('filesystem', () => {
 
     describe('readdirAsync',  () => {
         it('reads non-empty directories', async () => {
-            await filesystem.writeFileAsync(filePath, 'Hello, World!', 'utf8')
-            const actual = await filesystem.readdirAsync(tempFolder)
+            await writeFile(filePath, 'Hello, World!', 'utf8')
+            const actual = await readdir(tempFolder)
 
             assert.ok(actual)
             assert.strictEqual(actual.length, 1)
@@ -115,7 +115,7 @@ describe('filesystem', () => {
         })
 
         it('reads empty directories', async () => {
-            const actual = await filesystem.readdirAsync(tempFolder)
+            const actual = await readdir(tempFolder)
 
             assert.ok(actual)
             assert.strictEqual(actual.length, 0)
@@ -125,7 +125,7 @@ describe('filesystem', () => {
             const wrongFolder = path.join(path.dirname(tempFolder), path.basename(tempFolder) + 'WRONG')
             let error: Error | string | undefined
             try {
-                await filesystem.readdirAsync(wrongFolder)
+                await readdir(wrongFolder)
             } catch (err) {
                 error = err as Error | string | undefined
             } finally {
@@ -134,8 +134,8 @@ describe('filesystem', () => {
         })
 
         it('accepts Buffer-based paths', async () => {
-            await filesystem.writeFileAsync(filePath, 'Hello, World!', 'utf8')
-            const actual = await filesystem.readdirAsync(Buffer.from(tempFolder))
+            await writeFile(filePath, 'Hello, World!', 'utf8')
+            const actual = await readdir(Buffer.from(tempFolder))
 
             assert.ok(actual)
             assert.strictEqual(actual.length, 1)
@@ -145,24 +145,24 @@ describe('filesystem', () => {
 
     describe('readFileAsync', () => {
         it('reads empty text files', async () => {
-            await filesystem.writeFileAsync(filePath, '', 'utf8')
-            const actual = await filesystem.readFileAsync(filePath, 'utf8')
+            await writeFile(filePath, '', 'utf8')
+            const actual = await readFile(filePath, 'utf8')
 
             assert.strictEqual(actual, '')
         })
 
         it('reads non-empty text files', async () => {
-            await filesystem.writeFileAsync(filePath, 'Hello, World!', 'utf8')
-            const actual = await filesystem.readFileAsync(filePath, 'utf8')
+            await writeFile(filePath, 'Hello, World!', 'utf8')
+            const actual = await readFile(filePath, 'utf8')
 
             assert.ok(actual)
             assert.strictEqual(actual, 'Hello, World!')
         })
 
         it('reads empty binary files', async () => {
-            await filesystem.writeFileAsync(filePath, '', 'binary')
+            await writeFile(filePath, '', 'binary')
             // tslint:disable-next-line:no-null-keyword
-            const actual = await filesystem.readFileAsync(filePath)
+            const actual = await readFile(filePath)
 
             assert.ok(actual)
             assert.strictEqual(actual instanceof Buffer, true)
@@ -170,9 +170,9 @@ describe('filesystem', () => {
         })
 
         it('reads non-empty binary files', async () => {
-            await filesystem.writeFileAsync(filePath, 'Hello, World!', 'binary')
+            await writeFile(filePath, 'Hello, World!', 'binary')
             // tslint:disable-next-line:no-null-keyword
-            const actual = await filesystem.readFileAsync(filePath)
+            const actual = await readFile(filePath)
 
             assert.ok(actual)
             assert.strictEqual(actual instanceof Buffer, true)
@@ -182,7 +182,7 @@ describe('filesystem', () => {
         it('rejects if file does not exist', async () => {
             let error: Error | string | undefined
             try {
-                await filesystem.readFileAsync(filePath, 'utf8')
+                await readFile(filePath, 'utf8')
             } catch (err) {
                 error = err as Error | string | undefined
             } finally {
@@ -193,8 +193,8 @@ describe('filesystem', () => {
 
     describe('statAsync', () => {
         it('gets metadata for empty file', async () => {
-            await filesystem.writeFileAsync(filePath, '', 'utf8')
-            const actual = await filesystem.statAsync(filePath)
+            await writeFile(filePath, '', 'utf8')
+            const actual = await stat(filePath)
 
             assert.ok(actual)
             assert.strictEqual(actual.isFile(), true)
@@ -202,8 +202,8 @@ describe('filesystem', () => {
         })
 
         it('gets metadata for non-empty file', async () => {
-            await filesystem.writeFileAsync(filePath, 'Hello, World!', 'utf8')
-            const actual = await filesystem.statAsync(filePath)
+            await writeFile(filePath, 'Hello, World!', 'utf8')
+            const actual = await stat(filePath)
 
             assert.ok(actual)
             assert.strictEqual(actual.isFile(), true)
@@ -214,7 +214,7 @@ describe('filesystem', () => {
             let error: Error | string | undefined
 
             try {
-                await filesystem.statAsync(filePath)
+                await stat(filePath)
             } catch (err) {
                 error = err  as Error | string | undefined
             } finally {
@@ -225,17 +225,17 @@ describe('filesystem', () => {
 
     describe('writeFileAsync', () => {
         it('writes text data to file', async () => {
-            await filesystem.writeFileAsync(filePath, 'Hello, World!', 'utf8')
-            const actual = await filesystem.readFileAsync(filePath, 'utf8')
+            await writeFile(filePath, 'Hello, World!', 'utf8')
+            const actual = await readFile(filePath, 'utf8')
 
             assert.ok(actual)
             assert.strictEqual(actual, 'Hello, World!')
         })
 
         it('writes binary data to file', async () => {
-            await filesystem.writeFileAsync(filePath, 'Hello, World!', 'binary')
+            await writeFile(filePath, 'Hello, World!', 'binary')
             // tslint:disable-next-line:no-null-keyword
-            const actual = await filesystem.readFileAsync(filePath)
+            const actual = await readFile(filePath)
 
             assert.ok(actual)
             assert.strictEqual(actual instanceof Buffer, true)
@@ -243,17 +243,17 @@ describe('filesystem', () => {
         })
 
         it('overwrites existing file', async () => {
-            await filesystem.writeFileAsync(filePath, 'Hello, Tom!', 'utf8')
-            await filesystem.writeFileAsync(filePath, 'Hello, Jane!', 'utf8')
-            const actual = await filesystem.readFileAsync(filePath, 'utf8')
+            await writeFile(filePath, 'Hello, Tom!', 'utf8')
+            await writeFile(filePath, 'Hello, Jane!', 'utf8')
+            const actual = await readFile(filePath, 'utf8')
 
             assert.ok(actual)
             assert.strictEqual(actual, 'Hello, Jane!')
         })
 
         it('creates file if it doesn\'t already exist', async () => {
-            await filesystem.writeFileAsync(filePath, 'Hello, World!', 'utf8')
-            const actual = await filesystem.readFileAsync(filePath, 'utf8')
+            await writeFile(filePath, 'Hello, World!', 'utf8')
+            const actual = await readFile(filePath, 'utf8')
 
             assert.ok(actual)
             assert.strictEqual(actual, 'Hello, World!')
@@ -265,7 +265,7 @@ describe('filesystem', () => {
             let error: Error | string | undefined
 
             try {
-                await filesystem.writeFileAsync(path.join(tempFolder, wrongFilePath), 'Hello, World!', 'utf8')
+                await writeFile(path.join(tempFolder, wrongFilePath), 'Hello, World!', 'utf8')
             } catch (err) {
                 error = err  as Error | string | undefined
             } finally {

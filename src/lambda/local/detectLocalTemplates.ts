@@ -5,18 +5,19 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import * as filesystem from '../../shared/filesystem'
+import { access, stat } from '../../shared/filesystem'
+import { readDirAsString } from '../../shared/filesystemUtilities'
 
 export interface DetectLocalTemplatesContext {
-    accessAsync: typeof filesystem.accessAsync
-    readdirAsync: typeof filesystem.readdirAsync
-    statAsync: typeof filesystem.statAsync
+    accessAsync: typeof access
+    readdirAsync: typeof readDirAsString
+    statAsync: typeof stat
 }
 
 class DefaultDetectLocalTemplatesContext implements DetectLocalTemplatesContext {
-    public readonly accessAsync = filesystem.accessAsync
-    public readonly readdirAsync = filesystem.readdirAsync
-    public readonly statAsync = filesystem.statAsync
+    public readonly accessAsync = access
+    public readonly readdirAsync = readDirAsString
+    public readonly statAsync = stat
 }
 
 export async function* detectLocalTemplates({

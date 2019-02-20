@@ -16,7 +16,7 @@ import { buildHandlerConfig, getLocalLambdaConfiguration, HandlerConfig } from '
 import { detectLocalLambdas } from '../../lambda/local/detectLocalLambdas'
 import { NodeDebugConfiguration } from '../../lambda/local/nodeDebugConfiguration'
 import { CloudFormation } from '../cloudformation/cloudformation'
-import * as fileSystem from '../filesystem'
+import { mkdir, writeFile } from '../filesystem'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { SamCliBuildInvocation } from '../sam/cli/samCliBuild'
@@ -264,7 +264,7 @@ class LocalLambdaRunner {
                 ExtensionDisposableFiles.getInstance().toolkitTempFolder,
                 'build'
             )
-            await fileSystem.mkdirAsync(baseBuildDir)
+            await mkdir(baseBuildDir)
             this._baseBuildFolder = baseBuildDir
             ExtensionDisposableFiles.getInstance().addFolder(this._baseBuildFolder)
         }
@@ -385,8 +385,8 @@ class LocalLambdaRunner {
         const environmentVariablePath = path.join(await this.getBaseBuildFolder(), 'env-vars.json')
         const config = await this.getConfig()
 
-        await fileSystem.writeFileAsync(eventPath, JSON.stringify(config.event || {}))
-        await fileSystem.writeFileAsync(
+        await writeFile(eventPath, JSON.stringify(config.event || {}))
+        await writeFile(
             environmentVariablePath,
             JSON.stringify(this.getEnvironmentVariables(config))
         )

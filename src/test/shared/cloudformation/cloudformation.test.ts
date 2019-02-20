@@ -10,8 +10,8 @@ import * as del from 'del'
 import * as path from 'path'
 
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
-import * as filesystem from '../../../shared/filesystem'
-import * as filesystemUtilities from '../../../shared/filesystemUtilities'
+import { writeFile } from '../../../shared/filesystem'
+import { fileExists, mkdtemp } from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import { assertRejects } from '../utilities/assertUtils'
 
@@ -23,12 +23,12 @@ describe ('CloudFormation', () => {
     before(async () => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
-        tempFolder = await filesystem.mkdtempAsync()
+        tempFolder = await mkdtemp()
         filename = path.join(tempFolder, 'temp.yaml')
     })
 
     afterEach(async () => {
-        if (await filesystemUtilities.fileExists(filename)) {
+        if (await fileExists(filename)) {
             await del(filename, { force: true })
         }
     })
@@ -59,7 +59,7 @@ describe ('CloudFormation', () => {
     }
 
     async function strToYamlFile(str: string, file: string): Promise<void> {
-        await filesystem.writeFileAsync(file, str, 'utf8')
+        await writeFile(file, str, 'utf8')
     }
 
     it ('can successfully load a file', async () => {
