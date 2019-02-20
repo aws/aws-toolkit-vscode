@@ -282,7 +282,6 @@ class LocalLambdaRunner {
     ): Promise<string> {
         const buildFolder: string = await this.getBaseBuildFolder()
         const inputTemplatePath: string = path.join(buildFolder, 'input', 'input-template.yaml')
-        let existingTemplateResource: CloudFormation.Resource | undefined
 
         // Make function handler relative to baseDir
         const handlerFileRelativePath = path.relative(
@@ -296,10 +295,11 @@ class LocalLambdaRunner {
         ).replace('\\', '/')
 
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(this.localInvokeArgs.workspaceFolder.uri)
+        let existingTemplateResource: CloudFormation.Resource | undefined
         if (workspaceFolder) {
             const lambdas = await detectLocalLambdas([workspaceFolder])
             const existingLambda = lambdas.find(lambda => lambda.handler === relativeFunctionHandler)
-            existingTemplateResource = (existingLambda ? existingLambda.resource : undefined)
+            existingTemplateResource = existingLambda ? existingLambda.resource : undefined
         }
 
         let newTemplate = new SamTemplateGenerator()
