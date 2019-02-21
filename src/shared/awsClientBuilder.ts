@@ -8,7 +8,7 @@
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { env, version } from 'vscode'
 import { AwsContext } from './awsContext'
-import { NpmPackage } from './npmPackage'
+import * as constants from './constants'
 
 export interface AWSClientBuilder {
     createAndConfigureServiceClient<T>(
@@ -47,9 +47,8 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
         }
 
         if (!awsServiceOpts.customUserAgent) {
-            const npmPackage = require('../../../package.json') as NpmPackage
-            const pluginVersion = npmPackage.version
             const platformName = env.appName.replace(/\s/g, '-')
+            const pluginVersion = constants.pluginVersion
             awsServiceOpts.customUserAgent = `AWS-Toolkit-For-VisualStudio/${pluginVersion} ${platformName}/${version}`
         }
 
