@@ -58,6 +58,7 @@
     "AWS.message.enterProfileName": "Enter the name of the credential profile to use",
     "AWS.message.info.cloudFormation.delete": "Deleted CloudFormation Stack {0}",
     "AWS.message.error.cloudFormation.delete": "An error occurred while deleting CloudFormation Stack {0}. Please check the stack events on the AWS Console",
+    "AWS.message.error.cloudFormation.unsupported": "Unable to delete a CloudFormation Stack. No stack provided.",
     "AWS.message.selectRegion": "Select an AWS region",
     "AWS.message.selectProfile": "Select an AWS credential profile",
     "AWS.message.statusBar.loading.cloudFormation": "Loading CloudFormations...",
