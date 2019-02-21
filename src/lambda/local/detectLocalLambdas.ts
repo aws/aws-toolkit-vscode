@@ -5,17 +5,17 @@
 
 'use strict'
 
-import * as path from 'path'
 import * as vscode from 'vscode'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
 import { fileExists } from '../../shared/filesystemUtilities'
+import { detectLocalTemplates } from './detectLocalTemplates'
 
 export interface LocalLambda {
     lambda: string
     protocol: 'inspector' | 'legacy'
     workspaceFolder: vscode.WorkspaceFolder
-    resource?: CloudFormation.Resource
-    templatePath?: string
+    resource: CloudFormation.Resource
+    templatePath: string
     handler?: string
 }
 
@@ -39,10 +39,13 @@ export async function detectLocalLambdas(
 async function detectLambdasFromWorkspaceFolder(
     workspaceFolder: vscode.WorkspaceFolder
 ): Promise<LocalLambda[]> {
-    return [
-        ...await detectLambdasFromTemplate(workspaceFolder, path.join(workspaceFolder.uri.fsPath, 'template.yml')),
-        ...await detectLambdasFromTemplate(workspaceFolder, path.join(workspaceFolder.uri.fsPath, 'template.yaml'))
-    ]
+    const result = []
+
+    for await (const templateUri of detectLocalTemplates({ workspaceFolders: [workspaceFolder.uri] })) {
+        result.push(...await detectLambdasFromTemplate(workspaceFolder, templateUri.fsPath))
+    }
+
+    return result
 }
 
 async function detectLambdasFromTemplate(
