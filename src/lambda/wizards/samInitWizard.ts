@@ -96,7 +96,11 @@ export class CreateNewSamAppWizard extends MultiStepWizard<SamCliInitArgs> {
             .map(runtime => ({ label: runtime }))
 
         const result = await this.context.showQuickPick<vscode.QuickPickItem>(runtimeItems, {
-            ignoreFocusOut: true
+            ignoreFocusOut: true,
+            placeHolder: localize(
+                'AWS.samcli.initWizard.runtime.prompt',
+                'Select a SAM Application Runtime'
+            )
         })
 
         if (!result) {
@@ -110,11 +114,15 @@ export class CreateNewSamAppWizard extends MultiStepWizard<SamCliInitArgs> {
 
     private readonly LOCATION: WizardStep = async () => {
         const choices: FolderQuickPickItem[] = (this.context.workspaceFolders || [])
-            .map<FolderQuickPickItem>(f => new WorkspaceFolderQuickPickItem(f) )
-            .concat([ new BrowseFolderQuickPickItem(this.context) ])
+            .map<FolderQuickPickItem>(f => new WorkspaceFolderQuickPickItem(f))
+            .concat([new BrowseFolderQuickPickItem(this.context)])
 
         const selection = await this.context.showQuickPick(choices, {
             ignoreFocusOut: true,
+            placeHolder: localize(
+                'AWS.samcli.initWizard.location.prompt',
+                'Select a location for your new project'
+            )
         })
         if (!selection) {
             return this.RUNTIME
