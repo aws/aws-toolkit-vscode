@@ -11,7 +11,7 @@ import * as path from 'path'
 import { STS } from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { EnvironmentVariables } from '../environmentVariables'
-import { writeFileAsync } from '../filesystem'
+import { writeFile } from '../filesystem'
 import { readFileAsString } from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 
@@ -83,7 +83,7 @@ export class UserCredentialsUtils {
     ): Promise<void> {
         const templatePath: string = path.join(extensionPath, 'resources', 'newUserCredentialsFile')
 
-        const credentialsTemplate: string = await readFileAsString(templatePath, 'utf-8')
+        const credentialsTemplate: string = await readFileAsString(templatePath)
 
         const handlebarTemplate = handlebars.compile(credentialsTemplate)
         const credentialsFileContents = handlebarTemplate(credentialsContext)
@@ -93,7 +93,7 @@ export class UserCredentialsUtils {
             throw new Error('Credentials file exists. Not overwriting it.')
         }
 
-        await writeFileAsync(this.getCredentialsFilename(), credentialsFileContents, {
+        await writeFile(this.getCredentialsFilename(), credentialsFileContents, {
             encoding: 'utf8',
             mode: 0o100600 // basic file (type 100) with 600 permissions
         })

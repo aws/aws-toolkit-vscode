@@ -6,10 +6,10 @@
 import * as assert from 'assert'
 import * as del from 'del'
 import * as fs from 'fs'
-import * as os from 'os'
 import * as path from 'path'
 import { DefaultCredentialsFileReaderWriter } from '../../../shared/credentials/defaultCredentialsFileReaderWriter'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
+import { mkdtemp } from '../../../shared/filesystemUtilities'
 
 describe('DefaultCredentialsFileReaderWriter', () => {
 
@@ -17,10 +17,10 @@ describe('DefaultCredentialsFileReaderWriter', () => {
     const credentialsProfileNames: string[] = ['default', 'apple', 'orange']
     const configProfileNames: string[] = ['banana', 'mango']
 
-    before(() => {
+    before(async () => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
-        tempFolder = fs.mkdtempSync(path.join(os.tmpdir(), 'vsctk'))
+        tempFolder = await mkdtemp()
 
         const credentialsFilename = path.join(tempFolder, 'credentials-1')
         const configFilename = path.join(tempFolder, 'config-1')

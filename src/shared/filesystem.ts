@@ -6,102 +6,26 @@
 'use strict'
 
 import * as fs from 'fs'
+import { promisify } from 'util'
 
-export async function accessAsync(path: string | Buffer): Promise<void> {
-    await new Promise<void>((resolve, reject) => fs.access(path, err => {
-        if (!err) {
-            resolve()
-        } else {
-            reject(err)
-        }
-    }))
-}
-
-export async function mkdirAsync(
-    path: fs.PathLike,
-    options?: number | string | fs.MakeDirectoryOptions | undefined | null
-): Promise<void> {
-    await new Promise<void>((resolve, reject) => fs.mkdir(path, options, err => {
-        if (!err) {
-            resolve()
-        } else {
-            reject(err)
-        }
-    }))
-}
-
-export async function mkdtempAsync(prefix: string): Promise<string> {
-    return await new Promise<string>((resolve, reject) => {
-        fs.mkdtemp(prefix, (err, folder) => {
-            if (!err) {
-                resolve(folder)
-            } else {
-                reject(err)
-            }
-        })
-    })
-}
-
-export async function readdirAsync(
-    path: string | Buffer,
-    options?: {
-        encoding: BufferEncoding | null
-        withFileTypes?: false
-    } | BufferEncoding | undefined | null
-): Promise<string[]> {
-    return await new Promise<string[]>((resolve, reject) => {
-        fs.readdir(path, options, (err, files) => {
-            if (!err) {
-                resolve(files)
-            } else {
-                reject(err)
-            }
-        })
-    })
-}
-
-export async function readFileAsync(filename: string, encoding: string | null): Promise<string | Buffer> {
-    return await new Promise<string | Buffer>((resolve, reject) => {
-        fs.readFile(filename, encoding, (err, data) => {
-            if (!err) {
-                resolve(data)
-            } else {
-                reject(err)
-            }
-        })
-    })
-}
+// interfaces & types
+export type PathLike = fs.PathLike
 
 export interface Stats extends fs.Stats {
     // fs.Stats is a class, so for easy mocking we code against an interface with the same shape.
 }
 
-export async function statAsync(path: string | Buffer): Promise<Stats> {
-    return await new Promise<Stats>((resolve, reject) => {
-        fs.stat(path, (err, stats) => {
-            if (!err) {
-                resolve(stats)
-            } else {
-                reject(err)
-            }
-        })
-    })
-}
+// functions
+export const access = promisify(fs.access)
 
-export async function writeFileAsync(
-    filename: string,
-    data: any,
-    // fs.WriteFileOptions includes null, but not undefined.
-    // tslint:disable-next-line:no-null-keyword
-    options: fs.WriteFileOptions = null
-): Promise<void> {
-    await new Promise<void>((resolve, reject) => {
-        fs.writeFile(filename, data, options, err => {
-            if (!err) {
-                resolve()
-            } else {
-                reject(err)
-            }
-        })
-    })
-}
+export const mkdir = promisify(fs.mkdir)
+
+export const mkdtemp = promisify(fs.mkdtemp)
+
+export const readFile = promisify(fs.readFile)
+
+export const readdir = promisify(fs.readdir)
+
+export const stat = promisify(fs.stat)
+
+export const writeFile = promisify(fs.writeFile)
