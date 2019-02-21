@@ -6,10 +6,9 @@
 'use strict'
 
 import * as del from 'del'
-import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { mkdtempAsync } from '../../shared/filesystem'
+import { mkdtemp } from '../../shared/filesystemUtilities'
 import { SamCliDeployInvocation } from '../../shared/sam/cli/samCliDeploy'
 import { DefaultSamCliProcessInvoker, SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvoker'
 import { SamCliPackageInvocation } from '../../shared/sam/cli/samCliPackage'
@@ -25,7 +24,7 @@ export async function deploySamApplication(
 
     const { template, s3Bucket, stackName } = args
 
-    const tempFolder = await mkdtempAsync(path.join(os.tmpdir(), 'samDeploy'))
+    const tempFolder = await mkdtemp('samDeploy')
     const outputTemplatePath = path.join(tempFolder, 'template.yaml')
 
     try {

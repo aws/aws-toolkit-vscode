@@ -71,7 +71,7 @@ export namespace CloudFormation {
             throw new Error(`Template file not found: ${filename}`)
         }
 
-        const templateAsYaml: string = await filesystemUtilities.readFileAsString(filename, 'utf8')
+        const templateAsYaml: string = await filesystemUtilities.readFileAsString(filename)
         const template = yaml.safeLoad(
             templateAsYaml,
             {
@@ -86,7 +86,7 @@ export namespace CloudFormation {
     export async function save(template: Template, filename: string): Promise<void> {
         const templateAsYaml: string = yaml.safeDump(template)
 
-        await filesystem.writeFileAsync(filename, templateAsYaml, 'utf8')
+        await filesystem.writeFile(filename, templateAsYaml, 'utf8')
     }
 
     export function validateTemplate(template: Template): void {

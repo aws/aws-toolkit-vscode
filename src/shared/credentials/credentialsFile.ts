@@ -15,8 +15,8 @@ import { copy } from 'fs-extra'
 import { homedir } from 'os'
 import { join, sep } from 'path'
 import { EnvironmentVariables } from '../environmentVariables'
-import { readFileAsync, writeFileAsync } from '../filesystem'
-import { fileExists } from '../filesystemUtilities'
+import { writeFile } from '../filesystem'
+import { fileExists, readFileAsString } from '../filesystemUtilities'
 
 export interface SharedConfigInit {
     /**
@@ -73,7 +73,7 @@ async function loadConfigFile(
         return {}
     }
 
-    return normalizeConfigFile(parseIni(await slurpFile(configFilePath)))
+    return normalizeConfigFile(parseIni(await readFileAsString(configFilePath)))
 }
 
 async function loadCredentialsFile(
@@ -88,7 +88,7 @@ async function loadCredentialsFile(
         return {}
     }
 
-    return parseIni(await slurpFile(credentialsFilePath))
+    return parseIni(await readFileAsString(credentialsFilePath))
 }
 
 // TODO: FOR POC-DEMOS ONLY, NOT FOR PRODUCTION USE!
@@ -105,13 +105,13 @@ export async function saveProfile(
     // even though poc concept code, let's preserve the user's file!
     await copy(filepath, `${filepath}.bak_vscode`, { overwrite: true})
 
-    const data = `${await slurpFile(filepath)}
+    const data = `${await readFileAsString(filepath)}
 [${name}]
 aws_access_key_id=${accessKey}
 aws_secret_access_key=${secretKey}
 `
 
-    await writeFileAsync(filepath, data, 'utf8')
+    await writeFile(filepath, data, 'utf8')
 }
 
 const profileKeyRegex = /^profile\s(["'])?([^\1]+)\1$/
@@ -153,15 +153,6 @@ function parseIni(iniData: string): ParsedIniData {
     }
 
     return map
-}
-
-async function slurpFile(path: string): Promise<string> {
-    const result = await readFileAsync(path, 'utf8')
-    if (result instanceof Buffer) {
-        return result.toString('utf8')
-    }
-
-    return result
 }
 
 function getHomeDir(): string {

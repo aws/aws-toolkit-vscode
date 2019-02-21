@@ -7,7 +7,7 @@
 
 import * as yaml from 'js-yaml'
 import * as path from 'path'
-import * as filesystem from '../../../shared/filesystem'
+import { mkdir, writeFile } from '../../../shared/filesystem'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 
@@ -62,8 +62,8 @@ export class SamTemplateGenerator {
 
         const parentDirectory: string = path.dirname(filename)
         if (!await filesystemUtilities.fileExists(parentDirectory)) {
-            await filesystem.mkdirAsync(parentDirectory, { recursive: true })
+            await mkdir(parentDirectory, { recursive: true })
         }
-        await filesystem.writeFileAsync(filename, templateAsYaml, 'utf8')
+        await writeFile(filename, templateAsYaml, 'utf8')
     }
 }
