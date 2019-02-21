@@ -63,6 +63,15 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
 
         return !!this.errorNode ? [this.errorNode]
             : [...this.stackNodes.values()]
+                .sort((nodeA, nodeB) =>
+                    nodeA.stackName.localeCompare(
+                        nodeB.stackName,
+                        undefined,
+                        {
+                            sensitivity: 'base'
+                        }
+                    )
+                )
     }
 
     public async updateChildren(): Promise<void> {
