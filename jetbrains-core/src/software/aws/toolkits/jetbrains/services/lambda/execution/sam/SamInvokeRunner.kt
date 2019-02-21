@@ -93,7 +93,7 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
             .exceptionally {
                 LOG.warn(it) { "Failed to create Lambda package" }
                 buildingPromise.setError(it)
-                null
+                throw it
             }.whenComplete { _, exception ->
                 TelemetryService.getInstance().record("SamInvoke") {
                     val type = if (environment.isDebug()) "Debug" else "Run"
