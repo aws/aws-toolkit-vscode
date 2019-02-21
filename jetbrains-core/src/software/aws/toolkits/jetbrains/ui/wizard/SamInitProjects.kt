@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.ui.wizard
 
 import com.intellij.openapi.vfs.VirtualFile
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamInitRunner
 import software.aws.toolkits.resources.message
 
 val SAM_TEMPLATES = listOf(SamHelloWorld(), SamDynamoDBCookieCutter())
@@ -22,7 +21,12 @@ class SamDynamoDBCookieCutter : SamProjectTemplate() {
     override fun getDescription() = message("sam.init.template.dynamodb_cookiecutter.description")
 
     override fun doBuild(runtime: Runtime, outputDir: VirtualFile) {
-        SamInitRunner(AwsModuleType.ID, outputDir, runtime, "gh:aws-samples/cookiecutter-aws-sam-dynamodb-python").execute()
+        SamInitRunner(
+            AwsModuleType.ID,
+            outputDir,
+            runtime,
+            "gh:aws-samples/cookiecutter-aws-sam-dynamodb-python"
+        ).execute()
     }
 
     override fun supportedRuntimes() = setOf(Runtime.PYTHON2_7, Runtime.PYTHON3_6, Runtime.PYTHON3_7)
