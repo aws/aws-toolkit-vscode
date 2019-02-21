@@ -26,7 +26,8 @@
         "onCommand:aws.samcli.detect",
         "onCommand:aws.samcli.validate.version",
         "onCommand:aws.lambda.createNewSamApp",
-        "onDebugInitialConfigurations"
+        "onDebugInitialConfigurations",
+        "onCommand:aws.viewLogs"
     ],
     "main": "./out/src/extension",
     "contributes": {
@@ -63,6 +64,23 @@
                     "type": "number",
                     "default": 30000,
                     "markdownDescription": "%AWS.configuration.description.samcli.debug.attach.timeout%"
+                },
+                "aws.logLevel": {
+                    "type": "string",
+                    "default": "info",
+                    "enum": [
+                        "error",
+                        "warn",
+                        "info",
+                        "verbose"
+                    ],
+                    "enumDescriptions": [
+                        "Errors Only",
+                        "Errors and Warnings",
+                        "Errors, Warnings, and Info",
+                        "Errors, Warnings, Info, and Verbose"
+                    ],
+                    "markdownDescription": "%AWS.configuration.description.logLevel%"
                 }
             }
         },
@@ -242,6 +260,11 @@
             {
                 "command": "aws.showErrorDetails",
                 "title": "%AWS.command.showErrorDetails%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.viewLogs",
+                "title": "%AWS.command.viewLogs%",
                 "category": "AWS"
             }
         ]

@@ -5,9 +5,12 @@
 
 'use strict'
 
+import * as path from 'path'
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import * as winston from 'winston'
 
+const localize = nls.loadMessageBundle()
 let logSettings: LogSettings
 
 class LogSettings {
@@ -21,7 +24,7 @@ class LogSettings {
             transports: [new winston.transports.File({ filename: logPath })]
         })
         this.logPath = logPath
-        // TODO: check if a log level exists--we can add a field for this to the settings page.
+        // TODO: check if a default log level already exists--we can add a field for this to the settings page.
         this.setLevel(level)
     }
 
@@ -34,8 +37,15 @@ class LogSettings {
     }
 
     public setLevel(level: string): void {
-        // TODO: Ensure log level is valid
-        this.logger.level = level
+        if (this.logger.levels.hasOwnProperty(level)) {
+            this.logger.level = level
+        } else {
+            warn(localize(
+                'AWS.log.invalidLevel',
+                'Invalid log level: {0}',
+                level
+            ))
+        }
     }
 
     public getLevel(): string {
@@ -52,9 +62,15 @@ export function initialize(context: vscode.ExtensionContext): void {
     const logPath = context.logPath + '.log'
     logSettings = new LogSettings(outputChannel, logPath)
 
-    // TODO: localize this
-    logSettings.getOutputChannel().appendLine(`Error logs for this session can be found in ${logPath}`)
-    // TODO: register `goto logs for current session` command in command palette
+    logSettings.getOutputChannel().appendLine(localize(
+        'AWS.log.fileLocation',
+        'Error logs for this session can be found in {0}',
+        logPath
+    ))
+    vscode.commands.registerCommand(
+        'aws.viewLogs',
+        async () => await openLogFile()
+    )
 }
 
 // TODO: Format correctly/uniformly
@@ -79,4 +95,8 @@ export function error(message: string): void {
 
 export function changeLogLevel(level: string): void {
     logSettings.setLevel(level)
+}
+
+async function openLogFile(): Promise<void> {
+    await vscode.window.showTextDocument(vscode.Uri.file(path.normalize(logSettings.getLogPath())))
 }
