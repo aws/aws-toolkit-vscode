@@ -29,7 +29,7 @@ describe('filesystem', () => {
             const fsFunction = getPropAs<CustomPromisify<Function>>(fs, fxName) // fs[fxName]
             const actualType = typeof filesystemFunction
             assert(
-                actualType ===  'function',
+                actualType === 'function',
                 `filesystem.${fxName} should be a "function" but is "${actualType}"`
             )
             assert.strictEqual(String(filesystemFunction), String(promisify(fsFunction)))
