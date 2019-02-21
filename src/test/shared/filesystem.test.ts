@@ -25,8 +25,7 @@ describe('filesystem', () => {
     functionsToTest.forEach((fxName: string) => {
         it(`filesystem.${fxName} is same as promisify(fs.${fxName})`, async () => {
             // @ts-ignore
-            assert.strictEqual(String(promisify(fs[fxName])), String(filesystem[fxName]) // tslint:disable-line
-            )
+            assert.strictEqual(String(promisify(fs[fxName])), String(filesystem[fxName])) // tslint:disable-line
         })
     })
 })
