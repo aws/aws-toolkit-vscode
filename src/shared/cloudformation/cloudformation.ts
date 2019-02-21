@@ -12,16 +12,45 @@ import * as filesystemUtilities from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 
 export namespace CloudFormation {
+    export function validateProperties(
+        {
+            Handler,
+            CodeUri,
+            Runtime,
+            ...rest
+        }: Partial<ResourceProperties>
+    ): ResourceProperties {
+        if (!Handler) {
+            throw new Error('Missing value: Handler')
+        }
+
+        if (!CodeUri) {
+            throw new Error('Missing value: CodeUri')
+        }
+
+        if (!Runtime) {
+            throw new Error('Missing value: Runtime')
+        }
+
+        return {
+            Handler,
+            CodeUri,
+            Runtime,
+            ...rest
+        }
+    }
+
+    export interface ResourceProperties {
+        Handler: string,
+        CodeUri: string,
+        Runtime: string,
+        Timeout?: number,
+        Environment?: Environment
+    }
 
     export interface Resource {
         Type: string,
-        Properties?: {
-            Handler: string,
-            CodeUri: string,
-            Runtime?: string,
-            Timeout?: number,
-            Environment?: Environment
-        }
+        Properties?: ResourceProperties
     }
 
     export interface Template {
