@@ -24,8 +24,14 @@ const functionsToTest = [
 describe('filesystem', () => {
     functionsToTest.forEach((fxName: string) => {
         it(`filesystem.${fxName} is same as promisify(fs.${fxName})`, async () => {
-            // @ts-ignore
-            assert.strictEqual(String(promisify(fs[fxName])), String(filesystem[fxName])) // tslint:disable-line
+            // @ts-ignore missing index signature
+            const filesystemFunction = filesystem[fxName]
+            // @ts-ignore missing index signature
+            const fsFunction = fs[fxName]
+            assert.strictEqual(
+                String(filesystemFunction),
+                String(promisify(fsFunction)) // tslint:disable-line:no-unsafe-any
+            )
         })
     })
 })
