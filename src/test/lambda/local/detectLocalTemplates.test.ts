@@ -28,13 +28,13 @@ describe('detectLocalTemplates', async () => {
         const result = detectLocalTemplates({
             workspaceFolders: [ vscode.Uri.file(workspaceFolderPath) ],
             context: {
-                async accessAsync(_path: filesystem.PathLike): Promise<void> {
+                async access(_path: filesystem.PathLike): Promise<void> {
                     if (_path !== normalizePath(workspaceFolderPath, 'template.yaml')) {
                         throw new Error(`No file found at path: '${_path}'`)
                     }
                 },
 
-                async readdirAsync(
+                async readDir(
                     _path: filesystem.PathLike,
                     options?: {
                         encoding: BufferEncoding | null
@@ -44,7 +44,7 @@ describe('detectLocalTemplates', async () => {
                     return [ 'template.yaml' ]
                 },
 
-                async statAsync(
+                async stat(
                     _path: filesystem.PathLike
                 ): Promise<filesystem.Stats> {
                     return {
@@ -72,13 +72,13 @@ describe('detectLocalTemplates', async () => {
         const result = detectLocalTemplates({
             workspaceFolders: [ vscode.Uri.file(workspaceFolderPath) ],
             context: {
-                async accessAsync(_path: filesystem.PathLike): Promise<void> {
+                async access(_path: filesystem.PathLike): Promise<void> {
                     if (_path !== normalizePath(workspaceFolderChildPath, 'template.yaml')) {
                         throw new Error(`No file found at path: '${_path}'`)
                     }
                 },
 
-                async readdirAsync(
+                async readDir(
                     _path: filesystem.PathLike
                 ): Promise<string[]> {
                     switch (_path) {
@@ -91,7 +91,7 @@ describe('detectLocalTemplates', async () => {
                     }
                 },
 
-                async statAsync(
+                async stat(
                     _path: filesystem.PathLike
                 ): Promise<filesystem.Stats> {
                     return {
@@ -120,13 +120,13 @@ describe('detectLocalTemplates', async () => {
         const result = detectLocalTemplates({
             workspaceFolders: [ vscode.Uri.file(workspaceFolderPath) ],
             context: {
-                async accessAsync(_path: filesystem.PathLike): Promise<void> {
+                async access(_path: filesystem.PathLike): Promise<void> {
                     if (_path !== normalizePath(workspaceFolderGrandchildPath, 'template.yaml')) {
                         throw new Error(`No file found at path: '${_path}'`)
                     }
                 },
 
-                async readdirAsync(_path: filesystem.PathLike): Promise<string[]> {
+                async readDir(_path: filesystem.PathLike): Promise<string[]> {
                     switch (_path) {
                         case workspaceFolderPath:
                             return [ 'child' ]
@@ -139,7 +139,7 @@ describe('detectLocalTemplates', async () => {
                     }
                 },
 
-                async statAsync(_path: filesystem.PathLike): Promise<filesystem.Stats> {
+                async stat(_path: filesystem.PathLike): Promise<filesystem.Stats> {
                     return {
                         isDirectory() {
                             return true
@@ -165,7 +165,7 @@ describe('detectLocalTemplates', async () => {
         const result = detectLocalTemplates({
             workspaceFolders: [ vscode.Uri.file(workspaceFolderPath) ],
             context: {
-                async accessAsync(_path: filesystem.PathLike): Promise<void> {
+                async access(_path: filesystem.PathLike): Promise<void> {
                     switch (_path) {
                         case normalizePath(workspaceFolderChildPath1, 'template.yaml'):
                         case normalizePath(workspaceFolderChildPath2, 'template.yaml'):
@@ -175,7 +175,7 @@ describe('detectLocalTemplates', async () => {
                     }
                 },
 
-                async readdirAsync(
+                async readDir(
                     _path: filesystem.PathLike
                 ): Promise<string[]> {
                     switch (_path) {
@@ -189,7 +189,7 @@ describe('detectLocalTemplates', async () => {
                     }
                 },
 
-                async statAsync(_path: filesystem.PathLike): Promise<filesystem.Stats> {
+                async stat(_path: filesystem.PathLike): Promise<filesystem.Stats> {
                     return {
                         isDirectory() {
                             return true
@@ -217,7 +217,7 @@ describe('detectLocalTemplates', async () => {
         const result = detectLocalTemplates({
             workspaceFolders: [ vscode.Uri.file(workspaceFolderPath) ],
             context: {
-                async accessAsync(_path: filesystem.PathLike): Promise<void> {
+                async access(_path: filesystem.PathLike): Promise<void> {
                     switch (_path) {
                         case normalizePath(workspaceFolderChildPath, 'template.yml'):
                         case normalizePath(workspaceFolderChildPath, 'template.yaml'):
@@ -227,7 +227,7 @@ describe('detectLocalTemplates', async () => {
                     }
                 },
 
-                async readdirAsync(_path: filesystem.PathLike): Promise<string[]> {
+                async readDir(_path: filesystem.PathLike): Promise<string[]> {
                     switch (_path) {
                         case workspaceFolderPath:
                             return [ 'child' ]
@@ -238,7 +238,7 @@ describe('detectLocalTemplates', async () => {
                     }
                 },
 
-                async statAsync(_path: filesystem.PathLike): Promise<filesystem.Stats> {
+                async stat(_path: filesystem.PathLike): Promise<filesystem.Stats> {
                     return {
                         isDirectory() {
                             return true

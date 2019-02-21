@@ -8,25 +8,24 @@
 import * as fs from 'fs'
 import { promisify } from 'util'
 
+// interfaces & types
 export type PathLike = fs.PathLike
-
-export const access = promisify(fs.access)
-
-export const mkdir = promisify(fs.mkdir)
-
-export const readFile = promisify(fs.readFile)
-
-export const readdir = promisify(fs.readdir)
 
 export interface Stats extends fs.Stats {
     // fs.Stats is a class, so for easy mocking we code against an interface with the same shape.
 }
 
-const _stat = promisify(fs.stat)
-export const stat = async (pathLike: fs.PathLike): Promise<Stats> => {
-    return _stat(pathLike)
-}
+// functions
+export const access = promisify(fs.access)
 
-export const writeFile = promisify(fs.writeFile)
+export const mkdir = promisify(fs.mkdir)
 
 export const mkdtemp = promisify(fs.mkdtemp)
+
+export const readFile = promisify(fs.readFile)
+
+export const readdir = promisify(fs.readdir)
+
+export const stat = promisify(fs.stat)
+
+export const writeFile = promisify(fs.writeFile)
