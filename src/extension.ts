@@ -22,7 +22,7 @@ import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
 import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
 import { safeGet } from './shared/extensionUtilities'
-import * as logger from './shared/logger'
+import * as winston from './shared/logger'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import * as SamCliDetection from './shared/sam/cli/samCliDetection'
 import { SamCliVersionValidator } from './shared/sam/cli/samCliVersionValidator'
@@ -43,7 +43,14 @@ export async function activate(context: vscode.ExtensionContext) {
     const localize = nls.loadMessageBundle()
 
     ext.context = context
-    logger.initialize(context)
+    const defaultSettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
+
+    await winston.initialize(context, defaultSettingsConfiguration)
+    const logger = winston.getLogger()
+    logger.log('info', 'it\'s alive!')
+    logger.warn('this is kinda bad')
+    const y = new Error('ahhhhhhh')
+    logger.error(`this is real bad: ${y.message}`, y)
 
     const toolkitOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.toolkit', 'AWS Toolkit')
@@ -51,7 +58,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
 
-    const awsContext = new DefaultAwsContext(new DefaultSettingsConfiguration(extensionSettingsPrefix))
+    const awsContext = new DefaultAwsContext(defaultSettingsConfiguration)
     const awsContextTrees = new AwsContextTreeCollection()
     const resourceFetcher = new DefaultResourceFetcher()
     const regionProvider = new DefaultRegionProvider(context, resourceFetcher)
