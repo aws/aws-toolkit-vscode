@@ -38,7 +38,7 @@ export async function deploySamApplication({
         const packageInvocation = new SamCliPackageInvocation(template.fsPath, outputTemplatePath, s3Bucket, invoker)
         restParams.outputChannel.show(true)
         // TODO: Add nls support
-        restParams.outputChannel.appendLine(`Packaging SAM app to "${s3Bucket}" S3 bucket`)
+        restParams.outputChannel.appendLine(`Packaging SAM app to ${s3Bucket} S3 bucket`)
         await packageInvocation.execute()
 
         stage = 'deploying'
@@ -46,18 +46,18 @@ export async function deploySamApplication({
         // Deploying can take a very long time for Python Lambda's with native dependencies so user needs feedback
         restParams.outputChannel.appendLine(localize(
           'AWS.samcli.deploy.stackName.initiated',
-          'Deploying "{0}" stack...',
+          'Deploying {0} stack...',
           stackName
         ))
         await deployInvocation.execute()
         // TODO: Add nls support
-        const msg = `Successfully deployed "${stackName}" to S3 "${s3Bucket}"`
+        const msg = `Successfully deployed ${stackName} to S3 ${s3Bucket}`
         restParams.outputChannel.appendLine(msg)
         // TODO: Is this the right way to provide this feedback?
         vscode.window.showInformationMessage(msg)
     } catch (err) {
         // TODO: Add nls support
-        const msg = `Failed ${stage} "${stackName}" using S3 bucket "${s3Bucket}": ${String(err)}`
+        const msg = `Failed ${stage} ${stackName} using S3 bucket ${s3Bucket}: ${String(err)}`
         restParams.outputChannel.appendLine(msg)
         // TODO: Is this the right way to provide this feedback?
         vscode.window.showWarningMessage(msg)
