@@ -38,7 +38,7 @@ export async function deploySamApplication({
         const packageInvocation = new SamCliPackageInvocation(template.fsPath, outputTemplatePath, s3Bucket, invoker)
         restParams.outputChannel.show(true)
         // TODO: Add nls support
-        restParams.outputChannel.appendLine(`Packaging SAM app to ${s3Bucket} S3 bucket`)
+        restParams.outputChannel.appendLine(`Packaging SAM Application to S3 Bucket: ${s3Bucket}`)
         await packageInvocation.execute()
 
         stage = 'deploying'
@@ -51,13 +51,13 @@ export async function deploySamApplication({
         ))
         await deployInvocation.execute()
         // TODO: Add nls support
-        const msg = `Successfully deployed ${stackName} to S3 ${s3Bucket}`
+        const msg = `Successfully deployed SAM Application to CloudFormation Stack: ${stackName}`
         restParams.outputChannel.appendLine(msg)
         // TODO: Is this the right way to provide this feedback?
         vscode.window.showInformationMessage(msg)
     } catch (err) {
         // TODO: Add nls support
-        const msg = `Failed ${stage} ${stackName} using S3 bucket ${s3Bucket}: ${String(err)}`
+        const msg = `Failed to deploy SAM application. Error while ${stage}: ${String(err)}`
         restParams.outputChannel.appendLine(msg)
         // TODO: Is this the right way to provide this feedback?
         vscode.window.showWarningMessage(msg)
