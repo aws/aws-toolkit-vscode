@@ -108,6 +108,7 @@
     "AWS.samcli.deploy.s3Bucket.error.consecutivePeriods": "S3 bucket name may not have consecutive periods",
     "AWS.samcli.deploy.s3Bucket.error.dashAdjacentPeriods": "S3 bucket name may not contain a period adjacent to a dash",
     "AWS.samcli.deploy.s3Bucket.error.labelFirstCharacter": "Each label in an S3 bucket name must begin with a number or a lower-case character",
+    "AWS.samcli.deploy.stackName.initiated": "Deploying \"{0}\" stack...",
     "AWS.samcli.deploy.stackName.error.invalidCharacters": "A stack name may contain only alphanumeric characters (case sensitive) and hyphens",
     "AWS.samcli.deploy.stackName.error.firstCharacter": "A stack name must begin with an alphabetic character",
     "AWS.samcli.deploy.stackName.error.length": "A stack name must not be longer than 128 characters",
