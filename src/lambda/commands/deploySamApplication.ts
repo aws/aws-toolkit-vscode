@@ -60,7 +60,7 @@ export async function deploySamApplication({
         const msg = `Failed ${stage} "${stackName}" using S3 bucket "${s3Bucket}": ${String(err)}`
         restParams.outputChannel.appendLine(msg)
         // TODO: Is this the right way to provide this feedback?
-        vscode.window.showInformationMessage(msg)
+        vscode.window.showWarningMessage(msg)
     } finally {
         await del(tempFolder, {
             force: true
