@@ -76,7 +76,7 @@ export class DefaultTelemetryService implements TelemetryService {
         })
 
         try {
-            await filesystem.writeFileAsync(this.persistFilePath, JSON.stringify(this.eventQueue))
+            await filesystem.writeFile(this.persistFilePath, JSON.stringify(this.eventQueue))
         } catch (_) {}
     }
 
