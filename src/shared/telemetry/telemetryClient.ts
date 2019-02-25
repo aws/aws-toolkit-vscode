@@ -8,5 +8,5 @@
 import { TelemetryEvent } from './telemetryEvent'
 
 export interface TelemetryClient {
-    postMetrics(payload: TelemetryEvent[]): Promise<TelemetryEvent[] | void>
+    postMetrics(payload: TelemetryEvent[]): Promise<TelemetryEvent[] | undefined>
 }

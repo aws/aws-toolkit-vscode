@@ -7,9 +7,9 @@
 
 import { TelemetryEvent } from './telemetryEvent'
 
-// const NAME_ILLEGAL_CHARS_REGEX = new RegExp('[^\w+-.:]')
-
 export interface TelemetryPublisher {
+    init(): Promise<void>
+
     enqueue(events: TelemetryEvent[]): any
     flush(): Promise<any>
 }

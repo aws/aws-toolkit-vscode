@@ -15,10 +15,13 @@ class MockTelemetryPublisher implements TelemetryPublisher {
     public enqueueCount = 0
     public enqueuedItems = 0
 
+    public async init() {}
+
     public enqueue(events: any[]) {
         this.enqueueCount++
         this.enqueuedItems += events.length
     }
+
     public async flush() {
         this.flushCount++
     }
@@ -62,7 +65,7 @@ describe('DefaultTelemetryService', () => {
         assert.strictEqual(mockPublisher.flushCount, 0)
         assert.strictEqual(mockPublisher.enqueueCount, 0)
         assert.strictEqual(mockPublisher.enqueuedItems, 0)
-        // and any recorded events are kept
-        assert.strictEqual(service.getRecords().length, 1)
+        // and there are no records in memeory
+        assert.strictEqual(service.getRecords().length, 0)
     })
 })

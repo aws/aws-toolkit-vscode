@@ -11,7 +11,7 @@ export interface TelemetryService {
     telemetryEnabled: boolean
     persistFilePath: string
 
-    start(): void
-    shutdown(): Promise<any>
+    start(): Promise<void>
+    shutdown(): Promise<void>
     record(event: TelemetryEvent): void
 }

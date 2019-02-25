@@ -10,6 +10,43 @@ import { TelemetryEventArray } from '../../../shared/telemetry/telemetryEvent'
 
 describe('TelemetryEventArray', () => {
     describe('toMetricData', () => {
+        it('strips names of invalid characters', () => {
+            const eventArray = new TelemetryEventArray()
+            const metricEvents = [
+                {
+                    namespace: 'namesp$ace',
+                    createTime: new Date()
+                },
+                {
+                    namespace: 'namespace',
+                    createTime: new Date(),
+                    data: [
+                        {
+                            name: 'even#t1',
+                            value: 1
+                        },
+                        {
+                            name: 'event:2',
+                            value: 0.5,
+                            unit: 'Percent',
+                            metadata: new Map([
+                                ['key', 'value'],
+                                ['key2', 'value2']
+                            ])
+                        }
+                    ]
+                }
+            ]
+
+            eventArray.push(...metricEvents)
+            const data = eventArray.toMetricData()
+
+            assert.strictEqual(data.length, 3)
+            assert.strictEqual(data[0].MetricName, 'namespace')
+            assert.strictEqual(data[1].MetricName, 'namespace.event1')
+            assert.strictEqual(data[2].MetricName, 'namespace.event:2')
+        })
+
         it('maps TelemetryEvent with no data to a single MetricDatum', () => {
             const eventArray = new TelemetryEventArray()
             const metricEvent = {

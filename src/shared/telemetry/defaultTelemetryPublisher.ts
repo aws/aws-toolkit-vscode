@@ -11,27 +11,26 @@ import { TelemetryClient } from './telemetryClient'
 import { TelemetryEvent, TelemetryEventArray } from './telemetryEvent'
 import { TelemetryPublisher } from './telemetryPublisher'
 
+export interface IdentityPublisherTuple {
+    cognitoIdentityId: string,
+    publisher: TelemetryPublisher
+}
+
 export class DefaultTelemetryPublisher implements TelemetryPublisher {
     private static readonly DEFAULT_MAX_BATCH_SIZE = 20
-    private telemetryClient?: TelemetryClient
-    private readonly clientId: string
-    private readonly region: string
-    private readonly credentials: AWS.Credentials
-    private readonly eventQueue: TelemetryEventArray = new TelemetryEventArray()
+
+    private readonly eventQueue: TelemetryEventArray
 
     public constructor(
-        clientId: string,
-        region: string,
-        credentials: AWS.Credentials,
-        telemetryClient?: TelemetryClient
+        private readonly clientId: string,
+        private readonly region: string,
+        private readonly credentials: AWS.Credentials,
+        private telemetryClient?: TelemetryClient
     ) {
-        this.clientId = clientId
-        this.region = region
-        this.credentials = credentials
-        this.telemetryClient = telemetryClient
+        this.eventQueue = new TelemetryEventArray()
     }
 
-    public enqueue(events: TelemetryEvent[]) {
+    public enqueue(events: TelemetryEvent[]): void {
         this.eventQueue.push(...events)
     }
 
@@ -39,16 +38,20 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
         return this.eventQueue
     }
 
-    public async flush() {
+    public async flush(): Promise<void> {
         if (this.telemetryClient === undefined) {
-            await this.createDefaultTelemetryClient()
+            await this.init()
         }
 
         while (this.eventQueue.length !== 0) {
             const batch = this.eventQueue
                 .splice(0, DefaultTelemetryPublisher.DEFAULT_MAX_BATCH_SIZE) as TelemetryEventArray
 
-            const failedBatch = await this.telemetryClient!!.postMetrics(batch)
+            if (this.telemetryClient === undefined) {
+                return
+            }
+
+            const failedBatch = await this.telemetryClient.postMetrics(batch)
             if (failedBatch !== undefined) {
                 this.enqueue(failedBatch)
 
@@ -58,7 +61,7 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
         }
     }
 
-    public async createDefaultTelemetryClient() {
+    public async init(): Promise<void> {
         this.telemetryClient = await DefaultTelemetryClient.createDefaultClient(
             this.clientId,
             this.region,
@@ -66,7 +69,7 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
         )
     }
 
-    public static async fromDefaultIdentityPool(clientId: string) {
+    public static async fromDefaultIdentityPool(clientId: string): Promise<IdentityPublisherTuple> {
         return this.fromIdentityPool(clientId, DefaultTelemetryClient.DEFAULT_IDENTITY_POOL)
     }
 
@@ -75,7 +78,7 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
      * @return A tuple containing the new identityId and the telemetry publisher
      */
     public static async fromIdentityPool(clientId: string, identityPool: string)
-        : Promise<[string, TelemetryPublisher]> {
+        : Promise<IdentityPublisherTuple> {
         const region = identityPool.split(':')[0]
         try {
             const res = await new CognitoIdentity({
@@ -87,15 +90,18 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
             if (err) {
                 return Promise.reject('SDK deserialization error')
             }
-            const identityId = res.IdentityId
+            const identityId = res.IdentityId!!
 
-            return [identityId!!, DefaultTelemetryPublisher.fromIdentityId(clientId, identityId!!)]
+            return {
+                cognitoIdentityId: identityId,
+                publisher: DefaultTelemetryPublisher.fromIdentityId(clientId, identityId)
+            }
         } catch (err) {
             return Promise.reject('Failed to get an Cognito identity for telemetry')
         }
     }
 
-    public static fromIdentityId(clientId: string, identityId: string) {
+    public static fromIdentityId(clientId: string, identityId: string): DefaultTelemetryPublisher {
         const region = identityId.split(':')[0]
         const cognitoCredentials = new CognitoIdentityCredentials(
             { IdentityId: identityId },

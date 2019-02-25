@@ -27,7 +27,7 @@ import * as SamCliDetection from './shared/sam/cli/samCliDetection'
 import { SamCliVersionValidator } from './shared/sam/cli/samCliVersionValidator'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from './shared/settingsConfiguration'
 import { AWSStatusBar } from './shared/statusBar'
-import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryService'
+// import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryService'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { PromiseSharer } from './shared/utilities/promiseUtilities'
 
@@ -59,8 +59,9 @@ export async function activate(context: vscode.ExtensionContext) {
     ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
     ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
     ext.statusBar = new AWSStatusBar(awsContext, context)
-    ext.telemetry = new DefaultTelemetryService(context)
-    ext.telemetry.start()
+    // TODO: uncomment when we have a way to surface a telemetry confirmation prompt to users
+    // ext.telemetry = new DefaultTelemetryService(context)
+    // ext.telemetry.start()
 
     context.subscriptions.push(...activateCodeLensProviders(awsContext.settingsConfiguration, toolkitOutputChannel))
 
@@ -103,7 +104,8 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export async function deactivate() {
-    await ext.telemetry.shutdown()
+    // TODO: uncomment when we have a way to surface a telemetry confirmation prompt to users
+    // await ext.telemetry.shutdown()
 }
 
 function activateCodeLensProviders(

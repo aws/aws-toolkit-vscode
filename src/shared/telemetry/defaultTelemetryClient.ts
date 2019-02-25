@@ -21,40 +21,35 @@ export class DefaultTelemetryClient implements TelemetryClient {
 
     private static readonly PRODUCT_NAME = 'AWS Toolkit For VS Code'
 
-    private readonly clientId: string
-    private readonly client: ClientTelemetry
-
-    private constructor(clientId: string, client: ClientTelemetry) {
-        this.client = client
-        this.clientId = clientId
-    }
+    private constructor(private readonly clientId: string, private readonly client: ClientTelemetry) {}
 
     /**
      * Returns failed events
      * @param batch batch of events
      */
-    public async postMetrics(batch: TelemetryEventArray) {
-        return this.client!!.postMetrics({
-            AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
-            AWSProductVersion: constants.pluginVersion,
-            ClientID: this.clientId,
-            OS: os.platform(),
-            OSVersion: os.release(),
-            ParentProduct: vscode.env.appName,
-            ParentProductVersion: vscode.version,
-            MetricData: batch.toMetricData()
-        }).promise()
-            .then(() => {
-                console.info(`Successfully sent a telemetry batch of ${batch.length}`)
-            })
-            .catch(err => {
-                console.error(`Batch error: ${err}`)
+    public async postMetrics(batch: TelemetryEventArray): Promise<TelemetryEventArray | undefined> {
+        try {
+            await this.client.postMetrics({
+                AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
+                AWSProductVersion: constants.pluginVersion,
+                ClientID: this.clientId,
+                OS: os.platform(),
+                OSVersion: os.release(),
+                ParentProduct: vscode.env.appName,
+                ParentProductVersion: vscode.version,
+                MetricData: batch.toMetricData()
+            }).promise()
+            console.info(`Successfully sent a telemetry batch of ${batch.length}`)
+        } catch (err) {
+            console.error(`Batch error: ${err}`)
 
-                return batch
-            })
+            return batch
+        }
     }
 
-    public static async createDefaultClient(clientId: string, region: string, credentials: Credentials) {
+    public static async createDefaultClient(clientId: string, region: string, credentials: Credentials)
+        : Promise<DefaultTelemetryClient> {
+
         await credentials.getPromise()
 
         return new DefaultTelemetryClient(clientId, await ext.sdkClientBuilder.createAndConfigureServiceClient(
