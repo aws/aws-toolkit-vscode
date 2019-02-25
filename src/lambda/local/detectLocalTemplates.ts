@@ -5,18 +5,19 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import * as filesystem from '../../shared/filesystem'
+import { access, stat } from '../../shared/filesystem'
+import { readDirAsString } from '../../shared/filesystemUtilities'
 
 export interface DetectLocalTemplatesContext {
-    accessAsync: typeof filesystem.accessAsync
-    readdirAsync: typeof filesystem.readdirAsync
-    statAsync: typeof filesystem.statAsync
+    access: typeof access
+    readDir: typeof readDirAsString
+    stat: typeof stat
 }
 
 class DefaultDetectLocalTemplatesContext implements DetectLocalTemplatesContext {
-    public readonly accessAsync = filesystem.accessAsync
-    public readonly readdirAsync = filesystem.readdirAsync
-    public readonly statAsync = filesystem.statAsync
+    public readonly access = access
+    public readonly readDir = readDirAsString
+    public readonly stat = stat
 }
 
 export async function* detectLocalTemplates({
@@ -40,9 +41,9 @@ async function* getFolderCandidates(
     // Search the root and first level of children only.
     yield uri.fsPath
 
-    const entries = await context.readdirAsync(uri.fsPath)
+    const entries = await context.readDir(uri.fsPath)
     for (const entry of entries.map(p => path.join(uri.fsPath, p))) {
-        const stats = await context.statAsync(entry)
+        const stats = await context.stat(entry)
         if (stats.isDirectory()) {
             yield entry
         }
@@ -58,7 +59,7 @@ async function* detectTemplatesInFolder(
         path.join(folder, 'template.yml'),
     ]) {
         try {
-            await context.accessAsync(templatePath)
+            await context.access(templatePath)
             yield vscode.Uri.file(templatePath)
         } catch (err) {
             // This is usually because the file doesn't exist, but could also be a permissions issue.

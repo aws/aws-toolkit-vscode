@@ -8,13 +8,14 @@
 import * as os from 'os'
 import * as path from 'path'
 import { Uri, WorkspaceFolder } from 'vscode'
-import * as filesystem from '../../../shared/filesystem'
+import { writeFile } from '../../../shared/filesystem'
+import { mkdtemp } from '../../../shared/filesystemUtilities'
 
 export async function createWorkspaceFolder(prefix: string): Promise<{
     workspacePath: string
     workspaceFolder: WorkspaceFolder
 }> {
-    const workspacePath = await createTemporaryDirectory(prefix)
+    const workspacePath = await mkdtemp(prefix)
 
     return {
         workspacePath,
@@ -24,12 +25,6 @@ export async function createWorkspaceFolder(prefix: string): Promise<{
             index: 0
         }
     }
-}
-
-export async function createTemporaryDirectory(prefix: string): Promise<string> {
-    const fullPrefix = path.join(os.tmpdir(), prefix)
-
-    return await filesystem.mkdtempAsync(fullPrefix)
 }
 
 export async function saveTemplate(templatePath: string, runtime: string, ...functionNames: string[]) {
@@ -76,5 +71,5 @@ Outputs:
         Value: !GetAtt HelloWorldFunctionRole.Arn
 `
 
-    await filesystem.writeFileAsync(templatePath, templateContent, 'utf8')
+    await writeFile(templatePath, templateContent, 'utf8')
 }

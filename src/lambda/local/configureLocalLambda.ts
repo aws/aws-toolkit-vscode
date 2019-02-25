@@ -13,7 +13,7 @@ import * as path from 'path'
 import * as sleep from 'sleep-promise'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { accessAsync, mkdirAsync, writeFileAsync } from '../../shared/filesystem'
+import { access, mkdir, writeFile } from '../../shared/filesystem'
 import { readFileAsString } from '../../shared/filesystemUtilities'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 
@@ -105,15 +105,15 @@ function getConfigUri(workspaceFolder: vscode.WorkspaceFolder): vscode.Uri {
 
 async function ensureHandlersConfigFileExists(uri: vscode.Uri, handler: string): Promise<void> {
     try {
-        await accessAsync(path.dirname(uri.fsPath))
+        await access(path.dirname(uri.fsPath))
     } catch {
-        await mkdirAsync(path.dirname(uri.fsPath), { recursive: true })
+        await mkdir(path.dirname(uri.fsPath), { recursive: true })
     }
 
     try {
-        await accessAsync(uri.fsPath)
+        await access(uri.fsPath)
     } catch {
-        await writeFileAsync(uri.fsPath, JSON.stringify(buildHandlersConfig(handler), undefined, getTabSize()))
+        await writeFile(uri.fsPath, JSON.stringify(buildHandlersConfig(handler), undefined, getTabSize()))
     }
 }
 
