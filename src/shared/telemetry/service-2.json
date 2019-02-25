@@ -35,7 +35,8 @@
         "enum":[
           "AWS Toolkit For JetBrains",
           "AWS Toolkit For Eclipse",
-          "AWS Toolkit for VisualStudio"
+          "AWS Toolkit for VisualStudio",
+          "AWS Toolkit For VS Code"
         ]
       },
       "AWSProductVersion":{
