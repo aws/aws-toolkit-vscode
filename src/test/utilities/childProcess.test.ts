@@ -115,13 +115,18 @@ describe('ChildProcess', async () => {
                 scriptFile
             )
 
-            // We want to verify that the error is thrown immediately, so we don't await the promises.
+            // We want to verify that the error is thrown even if the first
+            // invocation is still in progress, so we don't await the promise.
             // tslint:disable-next-line:no-floating-promises
             childProcess.run()
-            assert.throws(() => {
-                // tslint:disable-next-line:no-floating-promises
-                childProcess.run()
-            })
+
+            try {
+                await childProcess.run()
+            } catch (err) {
+                return
+            }
+
+            assert.fail('Expected exception, but none was thrown.')
         })
     } // END Linux only tests
 
