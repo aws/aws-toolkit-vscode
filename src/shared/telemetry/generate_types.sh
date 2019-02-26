@@ -11,7 +11,7 @@ AWS_SDK_DIR=aws-sdk-js
 TYPEFILE=$BASEDIR/$SERVICE_LOWERCASE.d.ts
 
 # get a fresh sdk
-git clone --depth 1 https://github.com/aws/aws-sdk-js.git
+git clone --depth 1 https://github.com/aws/aws-sdk-js.git $AWS_SDK_DIR
 
 # copy our json definition to the api dir
 cp $JSON_FILE $AWS_SDK_DIR/apis/$SERVICE_LOWERCASE-$DATE.normal.json

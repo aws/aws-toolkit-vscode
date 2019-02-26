@@ -88,7 +88,7 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
             }).promise()
             const err = res.$response.error
             if (err) {
-                return Promise.reject('SDK deserialization error')
+                return Promise.reject(`SDK error: ${err}`)
             }
             const identityId = res.IdentityId!!
 
@@ -97,7 +97,7 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
                 publisher: DefaultTelemetryPublisher.fromIdentityId(clientId, identityId)
             }
         } catch (err) {
-            return Promise.reject('Failed to get an Cognito identity for telemetry')
+            return Promise.reject(`Failed to get an Cognito identity for telemetry: ${err}`)
         }
     }
 
