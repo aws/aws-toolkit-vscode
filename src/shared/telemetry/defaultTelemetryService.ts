@@ -10,6 +10,7 @@ import * as path from 'path'
 import uuidv4 = require('uuid/v4')
 import { ExtensionContext } from 'vscode'
 import * as filesystem from '../filesystem'
+import { DefaultTelemetryClient } from './defaultTelemetryClient'
 import { DefaultTelemetryPublisher } from './defaultTelemetryPublisher'
 import { TelemetryEvent } from './telemetryEvent'
 import { TelemetryPublisher } from './telemetryPublisher'
@@ -19,7 +20,7 @@ export class DefaultTelemetryService implements TelemetryService {
     public static readonly TELEMETRY_COGNITO_ID_KEY = 'telemetryId'
     public static readonly TELEMETRY_CLIENT_ID_KEY = 'telemetryClientId'
 
-    private static readonly DEFAULT_FLUSH_PERIOD_MILLIS = 1000 * 60 // 5 minutes in milliseconds
+    private static readonly DEFAULT_FLUSH_PERIOD_MILLIS = 1000 * 60 * 5 // 5 minutes in milliseconds
 
     // TODO: make this user configurable
     public telemetryEnabled: boolean = false
@@ -134,17 +135,29 @@ export class DefaultTelemetryService implements TelemetryService {
             }
 
             // grab our Cognito identityId
-            const identity = this.context.globalState.get<string>(DefaultTelemetryService.TELEMETRY_COGNITO_ID_KEY)
+            const poolId = DefaultTelemetryClient.DEFAULT_IDENTITY_POOL
+            const identityMapJson = this.context.globalState.get<string>(
+                DefaultTelemetryService.TELEMETRY_COGNITO_ID_KEY,
+                '[]'
+            )
+            // Maps don't cleanly de/serialize with JSON.parse/stringify so we need to do it ourselves
+            const identityMap = new Map<string, string>(JSON.parse(identityMapJson))
+            // convert the value to a map
+            const identity = identityMap.get(poolId)
 
+            // if we don't have an identity, get one
             if (!identity) {
                 const identityPublisherTuple =
                     await DefaultTelemetryPublisher.fromDefaultIdentityPool(clientId)
 
+                // save it
+                identityMap.set(poolId, identityPublisherTuple.cognitoIdentityId)
                 await this.context.globalState.update(
                     DefaultTelemetryService.TELEMETRY_COGNITO_ID_KEY,
-                    identityPublisherTuple.cognitoIdentityId
+                    JSON.stringify(Array.from(identityMap.entries()))
                 )
 
+                // return the publisher
                 return identityPublisherTuple.publisher
             } else {
                 return DefaultTelemetryPublisher.fromIdentityId(clientId, identity)
