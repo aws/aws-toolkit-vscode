@@ -101,20 +101,20 @@ async function addWorkspaceFolder(
             updateExistingWorkspacePromise = new Promise<void>((resolve, reject) => {
                 try {
                     const watcher = vscode.workspace.createFileSystemWatcher(fileToOpen.fsPath)
+                    disposables.push(watcher)
+
                     const listener = (uri: vscode.Uri) => {
                         try {
                             if (path.relative(uri.fsPath, fileToOpen.fsPath)) {
                                 resolve()
-                                watcher.dispose()
                             }
                         } catch (err) {
                             reject(err)
-                            watcher.dispose()
                         }
                     }
 
-                    watcher.onDidCreate(listener)
-                    watcher.onDidChange(listener)
+                    watcher.onDidCreate(listener, undefined, disposables)
+                    watcher.onDidChange(listener, undefined, disposables)
                 } catch (err) {
                     reject(err)
                 }
