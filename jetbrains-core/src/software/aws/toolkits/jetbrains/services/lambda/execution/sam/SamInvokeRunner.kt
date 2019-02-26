@@ -29,6 +29,7 @@ import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import java.io.File
 import java.net.ServerSocket
+import java.nio.file.Paths
 
 class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
     override fun getRunnerId(): String = "SamInvokeRunner"
@@ -82,15 +83,30 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
 
         samState.runner = runner
 
-        val packager = LambdaPackager.getInstanceOrThrow(state.settings.runtimeGroup)
-        packager.createPackage(module, psiFile)
-            .thenAccept {
+        val runConfigSettings = samState.settings
+
+        val packager = LambdaPackager.getInstanceOrThrow(runConfigSettings.runtimeGroup)
+        val buildResult = runConfigSettings.templateDetails?.templateFile?.let {
+            packager.buildLambdaFromTemplate(
+                module,
+                Paths.get(it),
+                runConfigSettings.templateDetails.logicalName,
+                runConfigSettings.environmentVariables
+            )
+        } ?: packager.buildLambda(
+            module,
+            runConfigSettings.handlerElement,
+            runConfigSettings.handler,
+            runConfigSettings.runtime,
+            runConfigSettings.environmentVariables
+        )
+
+        buildResult.thenAccept {
                 runInEdt {
                     samState.lambdaPackage = it
                     buildingPromise.setResult(runner.run(environment, samState))
                 }
-            }
-            .exceptionally {
+            }.exceptionally {
                 LOG.warn(it) { "Failed to create Lambda package" }
                 buildingPromise.setError(it)
                 throw it
@@ -101,9 +117,9 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
                         count()
                         // exception can be null but is not annotated as nullable
                         metadata("hasException", exception != null)
-                        metadata("runtime", state.settings.runtime.name)
+                        metadata("runtime", runConfigSettings.runtime.name)
                         metadata("samVersion", SamCommon.getVersionString())
-                        metadata("templateBased", state.settings.templateDetails?.templateFile != null)
+                        metadata("templateBased", runConfigSettings.templateDetails?.templateFile != null)
                     }
                 }
             }

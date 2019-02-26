@@ -3,18 +3,19 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.python
 
-import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.openapi.vfs.LocalFileSystem
-import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiElement
 import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.runInEdtAndGet
-import com.intellij.testFramework.runInEdtAndWait
+import com.jetbrains.python.psi.PyFile
+import com.jetbrains.python.psi.PyFunction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
+import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.zipEntries
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
 import software.aws.toolkits.jetbrains.utils.rules.PyVirtualEnvSdk
@@ -30,8 +31,8 @@ class PythonLambdaPackagerTest {
 
     @Test
     fun testContentRootIsAdded() {
-        val psiFile = addPythonHandler("hello_world/app.py")
-        val lambdaPackage = runPackager(projectRule.module, psiFile)
+        val handler = addPythonHandler("hello_world/app.py")
+        val lambdaPackage = runPackager(projectRule.module, handler)
         verifyExpectedEntries(lambdaPackage, "hello_world/app.py")
         verifyPathMappings(
             lambdaPackage,
@@ -41,8 +42,8 @@ class PythonLambdaPackagerTest {
 
     @Test
     fun testContentRootSubFolderIsAdded() {
-        val psiFile = addPythonHandler("src/hello_world/app.py")
-        val lambdaPackage = runPackager(projectRule.module, psiFile)
+        val handler = addPythonHandler("src/hello_world/app.py")
+        val lambdaPackage = runPackager(projectRule.module, handler)
         verifyExpectedEntries(lambdaPackage, "src/hello_world/app.py")
         verifyPathMappings(
             lambdaPackage,
@@ -52,10 +53,10 @@ class PythonLambdaPackagerTest {
 
     @Test
     fun testSourceRootTakesPrecedence() {
-        val psiFile = addPythonHandler("src/hello_world/app.py")
-        PsiTestUtil.addSourceRoot(projectRule.module, psiFile.virtualFile.parent.parent)
+        val handler = addPythonHandler("src/hello_world/app.py")
+        PsiTestUtil.addSourceRoot(projectRule.module, handler.containingFile.virtualFile.parent.parent)
 
-        val lambdaPackage = runPackager(projectRule.module, psiFile)
+        val lambdaPackage = runPackager(projectRule.module, handler)
         verifyExpectedEntries(lambdaPackage, "hello_world/app.py")
         verifyPathMappings(
             lambdaPackage,
@@ -67,9 +68,9 @@ class PythonLambdaPackagerTest {
     fun testVirtualEnvIsNotAdded() {
         val module = projectRule.module
         ModuleRootModificationUtil.setModuleSdk(module, PyVirtualEnvSdk(module))
-        val psiFile = addPythonHandler("hello_world/app.py")
+        val handler = addPythonHandler("hello_world/app.py")
 
-        val lambdaPackage = runPackager(projectRule.module, psiFile)
+        val lambdaPackage = runPackager(projectRule.module, handler)
         verifyExpectedEntries(lambdaPackage, "hello_world/app.py")
         verifyPathMappings(
             lambdaPackage,
@@ -86,9 +87,9 @@ class PythonLambdaPackagerTest {
         """.trimIndent()
         )
         PsiTestUtil.addSourceRoot(projectRule.module, testPsiFile.virtualFile.parent.parent, true)
-        val psiFile = addPythonHandler("hello_world/app.py")
+        val handler = addPythonHandler("hello_world/app.py")
 
-        val lambdaPackage = runPackager(projectRule.module, psiFile)
+        val lambdaPackage = runPackager(projectRule.module, handler)
         verifyExpectedEntries(lambdaPackage, "hello_world/app.py")
         verifyPathMappings(
             lambdaPackage,
@@ -102,9 +103,9 @@ class PythonLambdaPackagerTest {
         val pyVirtualEnvSdk = PyVirtualEnvSdk(module)
         pyVirtualEnvSdk.addSitePackage("someLib")
         ModuleRootModificationUtil.setModuleSdk(module, pyVirtualEnvSdk)
-        val psiFile = addPythonHandler("hello_world/app.py")
+        val handler = addPythonHandler("hello_world/app.py")
 
-        val lambdaPackage = runPackager(projectRule.module, psiFile)
+        val lambdaPackage = runPackager(projectRule.module, handler)
         verifyExpectedEntries(lambdaPackage, "hello_world/app.py", "someLib/__init__.py")
         verifyPathMappings(
             lambdaPackage,
@@ -113,42 +114,32 @@ class PythonLambdaPackagerTest {
         )
     }
 
-    @Test
-    fun testDSStoreIsIgnored() {
-        val psiFile = addPythonHandler("hello_world/app.py")
-        runInEdtAndWait {
-            runWriteAction {
-                psiFile.containingDirectory.virtualFile.createChildData(null, ".DS_Store")
-            }
+    private fun addPythonHandler(path: String): PyFunction {
+        val psiFile = projectRule.fixture.addFileToProject(
+            path,
+            """
+                def handle(event, context):
+                    return "HelloWorld"
+                """.trimIndent()
+        ) as PyFile
+
+        return runInEdtAndGet {
+            psiFile.findTopLevelFunction("handle")!!
         }
-        val lambdaPackage = runPackager(projectRule.module, psiFile)
-        verifyExpectedEntries(lambdaPackage, "hello_world/app.py")
-        verifyPathMappings(
-            lambdaPackage,
-            "%PROJECT_ROOT%/hello_world/app.py" to "hello_world/app.py"
-        )
     }
 
-    private fun addPythonHandler(path: String): PsiFile = projectRule.fixture.addFileToProject(
-        path,
-        """
-            def handle(event, context):
-                return "HelloWorld"
-            """.trimIndent()
-    )
-
-    private fun runPackager(module: Module, handlerFile: PsiFile): LambdaPackage {
+    private fun runPackager(module: Module, handler: PsiElement): LambdaPackage {
         LocalFileSystem.getInstance().refresh(false)
 
         val completableFuture = runInEdtAndGet {
-            packager.createPackage(module, handlerFile)
+            packager.buildLambda(module, handler, "app.handle", Runtime.PYTHON3_6)
         }
 
         return completableFuture.toCompletableFuture().get(30, TimeUnit.SECONDS)
     }
 
     private fun verifyExpectedEntries(lambdaPackage: LambdaPackage, vararg entries: String) {
-        assertThat(zipEntries(lambdaPackage.location)).containsExactlyInAnyOrder(*entries)
+        assertThat(zipEntries(lambdaPackage.codeLocation)).containsExactlyInAnyOrder(*entries)
     }
 
     private fun verifyPathMappings(lambdaPackage: LambdaPackage, vararg mappings: Pair<String, String>) {

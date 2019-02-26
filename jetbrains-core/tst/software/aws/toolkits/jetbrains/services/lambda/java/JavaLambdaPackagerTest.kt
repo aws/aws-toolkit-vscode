@@ -13,7 +13,7 @@ import com.intellij.openapi.projectRoots.impl.JavaAwareProjectJdkTableImpl
 import com.intellij.openapi.roots.CompilerProjectExtension
 import com.intellij.openapi.roots.DependencyScope
 import com.intellij.openapi.roots.ModuleRootModificationUtil
-import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiElement
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.runInEdtAndWait
@@ -23,6 +23,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.zipEntries
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
@@ -73,7 +74,7 @@ class JavaLambdaPackagerTest {
             """
         ).containingFile
 
-        runAndVerifyExpectedEntries(module, psiFile, "com/example/UsefulUtils.class")
+        runAndVerifyExpectedEntries(module, psiFile, "com.example.UsefulUtils", "com/example/UsefulUtils.class")
     }
 
     @Test
@@ -96,7 +97,7 @@ class JavaLambdaPackagerTest {
             """
         ).containingFile
 
-        runAndVerifyExpectedEntries(module, psiFile, "com/example/UsefulUtils.class", "lib/$dependentJarName")
+        runAndVerifyExpectedEntries(module, psiFile, "com.example.UsefulUtils", "com/example/UsefulUtils.class", "lib/$dependentJarName")
     }
 
     @Test
@@ -149,6 +150,7 @@ class JavaLambdaPackagerTest {
         ModuleRootModificationUtil.addDependency(mainModule, dependencyModule)
 
         runAndVerifyExpectedEntries(mainModule, mainClass,
+            "com.example.UsefulUtils",
             "com/example/UsefulUtils.class",
             "com/example/dependency/SomeClass.class",
             "lib/$dependentJarName")
@@ -173,7 +175,7 @@ class JavaLambdaPackagerTest {
 
         fixture.addResourceFile(module, "foo/bar.txt", "hello world!")
 
-        runAndVerifyExpectedEntries(module, mainClass, "com/example/UsefulUtils.class", "foo/bar.txt")
+        runAndVerifyExpectedEntries(module, mainClass, "com.example.UsefulUtils", "com/example/UsefulUtils.class", "foo/bar.txt")
     }
 
     @Test
@@ -211,7 +213,7 @@ class JavaLambdaPackagerTest {
 
         ModuleRootModificationUtil.addModuleLibrary(module, testDependencyJarName, mutableListOf(testDependencyJarPath), mutableListOf(), DependencyScope.TEST)
 
-        runAndVerifyExpectedEntries(module, mainClass, "com/example/UsefulUtils.class")
+        runAndVerifyExpectedEntries(module, mainClass, "com.example.UsefulUtils", "com/example/UsefulUtils.class")
     }
 
     @Test
@@ -231,11 +233,9 @@ class JavaLambdaPackagerTest {
             """
         )
 
-        val mainClassFile = mainClass.containingFile
-
         ModuleRootModificationUtil.addModuleLibrary(module, testDependencyJarName, mutableListOf(testDependencyJarPath), mutableListOf(), DependencyScope.TEST)
 
-        runAndVerifyExpectedEntries(module, mainClassFile, "com/example/UsefulUtils.class")
+        runAndVerifyExpectedEntries(module, mainClass, "com.example.UsefulUtils", "com/example/UsefulUtils.class")
 
         runInEdt {
             // Modify the file that was compiled to verify there is no lock remaining
@@ -246,17 +246,17 @@ class JavaLambdaPackagerTest {
         }
     }
 
-    private fun runAndVerifyExpectedEntries(module: Module, mainClass: PsiFile, vararg entries: String) {
+    private fun runAndVerifyExpectedEntries(module: Module, mainClass: PsiElement, handler: String, vararg entries: String) {
         setUpCompiler()
 
         val completableFuture = CompletableFuture<LambdaPackage>()
 
         runInEdt {
-            lambdaPackager.createPackage(module, mainClass).whenDone(completableFuture)
+            lambdaPackager.buildLambda(module, mainClass, handler, Runtime.JAVA8).whenDone(completableFuture)
         }
 
         completableFuture.thenAccept {
-            assertThat(zipEntries(it.location)).containsExactlyInAnyOrder(*entries)
+            assertThat(zipEntries(it.codeLocation)).containsExactlyInAnyOrder(*entries)
         }.get(30, TimeUnit.SECONDS)
     }
 

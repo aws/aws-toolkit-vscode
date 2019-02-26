@@ -13,8 +13,8 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.cloudformation.Function
-import software.aws.toolkits.jetbrains.services.cloudformation.SERVERLESS_FUNCTION_TYPE
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamTemplateUtils.writeDummySamTemplate
 import java.io.File
 
 class SamRunningState(
@@ -39,7 +39,7 @@ class SamRunningState(
             .withParameters("invoke")
             .withParameters("--skip-pull-image")
             .withParameters("--template")
-            .withParameters(samTemplate())
+            .withParameters(lambdaPackage.templateLocation.toString())
             .withParameters("--event")
             .withParameters(createEventFile())
             .apply { settings.templateDetails?.run { withParameters(logicalName) } }
@@ -55,7 +55,13 @@ class SamRunningState(
         val tempFile = FileUtil.createTempFile("${environment.runProfile.name}-template", ".yaml", true)
         when {
             settings.templateDetails != null -> substituteCodeUri(tempFile, settings.templateDetails)
-            else -> writeDummySamTemplate(tempFile)
+            else -> writeDummySamTemplate(
+                tempFile,
+                settings.runtime,
+                lambdaPackage.codeLocation.toString(),
+                settings.handler,
+                settings.environmentVariables
+            )
         }
 
         return tempFile.absolutePath
@@ -67,35 +73,9 @@ class SamRunningState(
         val template = CloudFormationTemplate.parse(environment.project, file)
         val function = template.getResourceByName(templateDetails.logicalName) as? Function
                 ?: throw IllegalStateException("Failed to locate the resource: ${templateDetails.logicalName}")
-        function.setCodeLocation(lambdaPackage.location.toString())
+        function.setCodeLocation(lambdaPackage.codeLocation.toString())
 
         template.saveTo(tempFile)
-    }
-
-    private fun writeDummySamTemplate(tempFile: File) {
-        tempFile.writeText(yamlWriter {
-            mapping("Resources") {
-                mapping("Function") {
-                    keyValue("Type", SERVERLESS_FUNCTION_TYPE)
-                    mapping("Properties") {
-                        keyValue("Handler", settings.handler)
-                        keyValue("CodeUri", lambdaPackage.location.toString())
-                        keyValue("Runtime", settings.runtime.toString())
-                        keyValue("Timeout", "900")
-
-                        if (settings.environmentVariables.isNotEmpty()) {
-                            mapping("Environment") {
-                                mapping("Variables") {
-                                    settings.environmentVariables.forEach { key, value ->
-                                        keyValue(key, value)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        })
     }
 
     private fun createEventFile(): String {

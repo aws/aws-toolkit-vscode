@@ -6,7 +6,7 @@ package software.aws.toolkits.jetbrains.services.lambda.upload
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
-import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiElement
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.CreateFunctionRequest
 import software.amazon.awssdk.services.lambda.model.FunctionCode
@@ -36,21 +36,21 @@ class LambdaCreator internal constructor(
 ) {
     fun createLambda(
         module: Module,
-        file: PsiFile,
+        handler: PsiElement,
         functionDetails: FunctionUploadDetails,
         s3Bucket: String
-    ): CompletionStage<LambdaFunction> = packager.createPackage(module, file)
-        .thenCompose { uploader.upload(functionDetails, it.location, s3Bucket) }
+    ): CompletionStage<LambdaFunction> = packager.buildLambda(module, handler, functionDetails.handler, functionDetails.runtime)
+        .thenCompose { uploader.upload(functionDetails, it.codeLocation, s3Bucket) }
         .thenCompose { functionCreator.create(module.project, functionDetails, it) }
 
     fun updateLambda(
         module: Module,
-        file: PsiFile,
+        handler: PsiElement,
         functionDetails: FunctionUploadDetails,
         s3Bucket: String,
         replaceConfiguration: Boolean = true
-    ): CompletionStage<Nothing> = packager.createPackage(module, file)
-        .thenCompose { uploader.upload(functionDetails, it.location, s3Bucket) }
+    ): CompletionStage<Nothing> = packager.buildLambda(module, handler, functionDetails.handler, functionDetails.runtime)
+        .thenCompose { uploader.upload(functionDetails, it.codeLocation, s3Bucket) }
         .thenCompose { functionCreator.update(functionDetails, it, replaceConfiguration) }
 }
 

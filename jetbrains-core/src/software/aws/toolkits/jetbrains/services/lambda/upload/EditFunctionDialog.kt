@@ -256,10 +256,10 @@ class EditFunctionDialog(
             FileDocumentManager.getInstance().saveAllDocuments()
 
             val (future, message) = if (mode == UPDATE_CODE) {
-                lambdaCreator.updateLambda(module, psiFile, functionDetails, s3Bucket, configurationChanged()) to
+                lambdaCreator.updateLambda(module, element, functionDetails, s3Bucket, configurationChanged()) to
                     message("lambda.function.code_updated.notification", functionDetails.name)
             } else {
-                lambdaCreator.createLambda(module, psiFile, functionDetails, s3Bucket) to
+                lambdaCreator.createLambda(module, element, functionDetails, s3Bucket) to
                     message("lambda.function.created.notification", functionDetails.name)
             }
 

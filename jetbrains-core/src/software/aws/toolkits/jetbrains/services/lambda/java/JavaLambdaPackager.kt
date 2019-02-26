@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.java
 
+import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.openapi.compiler.CompilerManager
 import com.intellij.openapi.compiler.CompilerMessageCategory
 import com.intellij.openapi.module.Module
@@ -11,17 +12,20 @@ import com.intellij.openapi.roots.ModuleOrderEntry
 import com.intellij.openapi.roots.OrderEnumerator
 import com.intellij.openapi.roots.OrderRootType
 import com.intellij.openapi.roots.libraries.Library
-import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiElement
 import com.intellij.util.io.exists
 import com.intellij.util.io.inputStream
 import com.intellij.util.io.isDirectory
 import com.intellij.util.io.isHidden
+import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.createTemporaryZipFile
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.putNextEntry
+import software.aws.toolkits.jetbrains.services.lambda.Lambda
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamTemplateUtils
 import software.aws.toolkits.resources.message
 import java.io.InputStream
 import java.nio.file.Files
@@ -31,8 +35,43 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import kotlin.streams.toList
 
-class JavaLambdaPackager : LambdaPackager {
-    override fun createPackage(module: Module, file: PsiFile): CompletionStage<LambdaPackage> {
+class JavaLambdaPackager : LambdaPackager() {
+    // TODO: Remove override when we switch to sam build
+    override fun buildLambdaFromTemplate(
+        module: Module,
+        templateLocation: Path,
+        logicalId: String,
+        envVars: Map<String, String>
+    ): CompletionStage<LambdaPackage> {
+
+        val function = SamTemplateUtils.findFunctionsFromTemplate(
+            module.project,
+            templateLocation.toFile()
+        ).find { it.logicalName == logicalId }
+            ?: throw RuntimeConfigurationError(
+                message(
+                    "lambda.run_configuration.sam.no_such_function",
+                    logicalId,
+                    templateLocation
+                )
+            )
+
+        val handler = function.handler()
+        val runtime = Runtime.fromValue(function.runtime())
+        val element =
+            Lambda.findPsiElementsForHandler(module.project, runtime, handler).firstOrNull()
+                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
+
+        return buildLambda(module, element, handler, runtime, envVars)
+    }
+
+    override fun buildLambda(
+        module: Module,
+        handlerElement: PsiElement,
+        handler: String,
+        runtime: Runtime,
+        envVars: Map<String, String>
+    ): CompletionStage<LambdaPackage> {
         val future = CompletableFuture<LambdaPackage>()
         val compilerManager = CompilerManager.getInstance(module.project)
         val compileScope = compilerManager.createModulesCompileScope(arrayOf(module), true, true)
@@ -53,7 +92,7 @@ class JavaLambdaPackager : LambdaPackager {
                         }
                     }
                     LOG.debug { "Created temporary zip: $zipFile" }
-                    future.complete(LambdaPackage(zipFile))
+                    future.complete(LambdaPackage(zipFile, zipFile))
                 } catch (e: Exception) {
                     future.completeExceptionally(RuntimeException(message("lambda.package.zip_fail"), e))
                 }

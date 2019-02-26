@@ -6,10 +6,12 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
+import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.cloudformation.Function
+import software.aws.toolkits.jetbrains.services.cloudformation.SERVERLESS_FUNCTION_TYPE
 import software.aws.toolkits.resources.message
 import java.io.File
 
@@ -41,4 +43,36 @@ object SamTemplateUtils {
     @JvmStatic
     fun functionFromElement(element: PsiElement): Function? =
         CloudFormationTemplate.convertPsiToResource(element) as? Function
+
+    fun writeDummySamTemplate(
+        tempFile: File,
+        runtime: Runtime,
+        codeUri: String,
+        handler: String,
+        envVars: Map<String, String> = emptyMap()
+    ) {
+        tempFile.writeText(yamlWriter {
+            mapping("Resources") {
+                mapping("Function") {
+                    keyValue("Type", SERVERLESS_FUNCTION_TYPE)
+                    mapping("Properties") {
+                        keyValue("Handler", handler)
+                        keyValue("CodeUri", codeUri)
+                        keyValue("Runtime", runtime.toString())
+                        keyValue("Timeout", "900")
+
+                        if (envVars.isNotEmpty()) {
+                            mapping("Environment") {
+                                mapping("Variables") {
+                                    envVars.forEach { key, value ->
+                                        keyValue(key, value)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        })
+    }
 }
