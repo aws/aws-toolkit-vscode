@@ -141,7 +141,7 @@ export class DefaultTelemetryService implements TelemetryService {
                 '[]'
             )
             // Maps don't cleanly de/serialize with JSON.parse/stringify so we need to do it ourselves
-            const identityMap = new Map<string, string>(JSON.parse(identityMapJson))
+            const identityMap = new Map<string, string>(JSON.parse(identityMapJson) as Iterable<[string, string]>)
             // convert the value to a map
             const identity = identityMap.get(poolId)
 
