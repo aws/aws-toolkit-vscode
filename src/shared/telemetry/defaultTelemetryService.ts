@@ -129,18 +129,18 @@ export class DefaultTelemetryService implements TelemetryService {
     private async createDefaultPublisher(): Promise<TelemetryPublisher | undefined> {
         try {
             // grab our clientId and generate one if it doesn't exist
-            let clientId = this.context.globalState.get(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY)
+            let clientId = this.context.globalState.get<string>(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY)
             if (!clientId) {
                 clientId = uuidv4()
                 await this.context.globalState.update(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY, clientId)
             }
 
             // grab our Cognito identityId
-            const identity = this.context.globalState.get(DefaultTelemetryService.TELEMETRY_COGNITO_ID_KEY)
+            const identity = this.context.globalState.get<string>(DefaultTelemetryService.TELEMETRY_COGNITO_ID_KEY)
 
             if (!identity) {
                 const identityPublisherTuple =
-                    await DefaultTelemetryPublisher.fromDefaultIdentityPool(clientId as string)
+                    await DefaultTelemetryPublisher.fromDefaultIdentityPool(clientId)
 
                 await this.context.globalState.update(
                     DefaultTelemetryService.TELEMETRY_COGNITO_ID_KEY,
@@ -149,7 +149,7 @@ export class DefaultTelemetryService implements TelemetryService {
 
                 return identityPublisherTuple.publisher
             } else {
-                return DefaultTelemetryPublisher.fromIdentityId(clientId as string, identity as string)
+                return DefaultTelemetryPublisher.fromIdentityId(clientId, identity)
             }
         } catch (err) {
             console.error(`Got ${err} while initializing telemetry publisher`)
