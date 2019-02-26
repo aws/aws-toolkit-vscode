@@ -17,7 +17,7 @@ class MockTelemetryPublisher implements TelemetryPublisher {
 
     public async init() {}
 
-    public enqueue(events: any[]) {
+    public enqueue(...events: any[]) {
         this.enqueueCount++
         this.enqueuedItems += events.length
     }
@@ -33,11 +33,11 @@ describe('DefaultTelemetryService', () => {
         const mockPublisher = new MockTelemetryPublisher()
         const service = new DefaultTelemetryService(mockContext, mockPublisher)
         service.telemetryEnabled = true
-        service.setFlushPeriod(10)
+        service.flushPeriod = 10
         service.record({ namespace: 'name', createTime: new Date() })
 
         await service.start()
-        assert.notStrictEqual(service.getTimer(), undefined)
+        assert.notStrictEqual(service.timer, undefined)
 
         await new Promise<any>(resolve => setTimeout(resolve, 50))
         await service.shutdown()
@@ -52,11 +52,11 @@ describe('DefaultTelemetryService', () => {
         const mockPublisher = new MockTelemetryPublisher()
         const service = new DefaultTelemetryService(mockContext, mockPublisher)
         service.telemetryEnabled = false
-        service.setFlushPeriod(10)
+        service.flushPeriod = 10
         service.record({ namespace: 'name', createTime: new Date() })
 
         await service.start()
-        assert.notStrictEqual(service.getTimer(), undefined)
+        assert.notStrictEqual(service.timer, undefined)
 
         await new Promise<any>(resolve => setTimeout(resolve, 50))
         await service.shutdown()
@@ -66,6 +66,6 @@ describe('DefaultTelemetryService', () => {
         assert.strictEqual(mockPublisher.enqueueCount, 0)
         assert.strictEqual(mockPublisher.enqueuedItems, 0)
         // and there are no records in memeory
-        assert.strictEqual(service.getRecords().length, 0)
+        assert.strictEqual(service.records.length, 0)
     })
 })

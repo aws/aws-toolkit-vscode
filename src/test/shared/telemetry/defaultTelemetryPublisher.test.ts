@@ -25,30 +25,30 @@ class MockTelemetryClient implements TelemetryClient {
 describe('DefaultTelemetryPublisher', () => {
     it('enqueues events', () => {
         const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
-        publisher.enqueue([
+        publisher.enqueue(...[
             { namespace: 'name', createTime: new Date() },
         ])
 
-        assert.strictEqual(publisher.getQueue().length, 1)
+        assert.strictEqual(publisher.queue.length, 1)
 
-        publisher.enqueue([
+        publisher.enqueue(...[
             { namespace: 'name2', createTime: new Date() },
             { namespace: 'name3', createTime: new Date() },
         ])
 
-        assert.strictEqual(publisher.getQueue().length, 3)
+        assert.strictEqual(publisher.queue.length, 3)
     })
 
     it('can flush single event', async () => {
         const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
-        publisher.enqueue([
+        publisher.enqueue(...[
             { namespace: 'name', createTime: new Date() },
         ])
 
-        assert.strictEqual(publisher.getQueue().length, 1)
+        assert.strictEqual(publisher.queue.length, 1)
 
         await publisher.flush()
-        assert.strictEqual(publisher.getQueue().length, 0)
+        assert.strictEqual(publisher.queue.length, 0)
     })
 
     it('retains queue on flush failure', async () => {
@@ -61,12 +61,12 @@ describe('DefaultTelemetryPublisher', () => {
             new AWS.Credentials('', ''),
             new MockTelemetryClient(batch)
         )
-        publisher.enqueue(batch)
+        publisher.enqueue(...batch)
 
-        assert.strictEqual(publisher.getQueue().length, 1)
+        assert.strictEqual(publisher.queue.length, 1)
 
         await publisher.flush()
-        assert.strictEqual(publisher.getQueue().length, 1)
-        assert.strictEqual(publisher.getQueue()[0], batch[0])
+        assert.strictEqual(publisher.queue.length, 1)
+        assert.strictEqual(publisher.queue[0], batch[0])
     })
 })

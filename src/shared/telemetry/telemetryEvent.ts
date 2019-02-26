@@ -22,47 +22,43 @@ export interface TelemetryEvent {
     data?: Datum[]
 }
 
-export class TelemetryEventArray extends Array<TelemetryEvent> {
-    public toMetricData() {
-        const metricData = new Array<MetricDatum>()
+export function toMetricData(array: TelemetryEvent[]): MetricDatum[] {
+    return ([] as MetricDatum[]).concat(
+        ...array.map( metricEvent => {
+            if (metricEvent.data !== undefined) {
+                const mappedEventData = metricEvent.data.map( datum => {
+                    let metadata: MetadataEntry[] | undefined
+                    let unit = datum.unit
 
-        return metricData.concat(
-            ...this.map( metricEvent => {
-                if (metricEvent.data !== undefined) {
-                    const mappedEventData = metricEvent.data.map( datum => {
-                        let metadata: MetadataEntry[] | undefined
-                        let unit = datum.unit
+                    if (datum.metadata !== undefined) {
+                        metadata = Array.from(datum.metadata).map(entry => {
+                            return { Key: entry[0], Value: entry[1] }
+                        })
+                    }
 
-                        if (datum.metadata !== undefined) {
-                            metadata = Array.from(datum.metadata).map(entry => {
-                                return { Key: entry[0], Value: entry[1] }
-                            })
-                        }
+                    if (unit === undefined) {
+                        unit = 'None'
+                    }
 
-                        if (unit === undefined) {
-                            unit = 'None'
-                        }
+                    return {
+                        MetricName: `${metricEvent.namespace}.${datum.name}`.replace(NAME_ILLEGAL_CHARS_REGEX, ''),
+                        EpochTimestamp: metricEvent.createTime.getTime(),
+                        Unit: unit,
+                        Value: datum.value,
+                        Metadata: metadata
+                    }
+                })
 
-                        return {
-                            MetricName: `${metricEvent.namespace}.${datum.name}`.replace(NAME_ILLEGAL_CHARS_REGEX, ''),
-                            EpochTimestamp: metricEvent.createTime.getTime(),
-                            Unit: unit,
-                            Value: datum.value,
-                            Metadata: metadata
-                        }
-                    })
+                return mappedEventData
+            }
 
-                    return mappedEventData
-                }
-
-                // case where there are no datum attached to the event, but we should still publish this
-                return {
-                    MetricName: metricEvent.namespace.replace(NAME_ILLEGAL_CHARS_REGEX, ''),
-                    EpochTimestamp: metricEvent.createTime.getTime(),
-                    Unit: 'None',
-                    Value: 0
-                }
-            })
-        )
-    }
+            // case where there are no datum attached to the event, but we should still publish this
+            return {
+                MetricName: metricEvent.namespace.replace(NAME_ILLEGAL_CHARS_REGEX, ''),
+                EpochTimestamp: metricEvent.createTime.getTime(),
+                Unit: 'None',
+                Value: 0
+            }
+        })
+    )
 }

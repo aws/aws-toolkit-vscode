@@ -8,7 +8,7 @@
 import { CognitoIdentity, CognitoIdentityCredentials } from 'aws-sdk'
 import { DefaultTelemetryClient } from './defaultTelemetryClient'
 import { TelemetryClient } from './telemetryClient'
-import { TelemetryEvent, TelemetryEventArray } from './telemetryEvent'
+import { TelemetryEvent } from './telemetryEvent'
 import { TelemetryPublisher } from './telemetryPublisher'
 
 export interface IdentityPublisherTuple {
@@ -19,7 +19,7 @@ export interface IdentityPublisherTuple {
 export class DefaultTelemetryPublisher implements TelemetryPublisher {
     private static readonly DEFAULT_MAX_BATCH_SIZE = 20
 
-    private readonly eventQueue: TelemetryEventArray
+    private readonly _eventQueue: TelemetryEvent[]
 
     public constructor(
         private readonly clientId: string,
@@ -27,15 +27,15 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
         private readonly credentials: AWS.Credentials,
         private telemetryClient?: TelemetryClient
     ) {
-        this.eventQueue = new TelemetryEventArray()
+        this._eventQueue = []
     }
 
-    public enqueue(events: TelemetryEvent[]): void {
-        this.eventQueue.push(...events)
+    public enqueue(...events: TelemetryEvent[]): void {
+        this._eventQueue.push(...events)
     }
 
-    public getQueue(): ReadonlyArray<TelemetryEvent> {
-        return this.eventQueue
+    public get queue(): ReadonlyArray<TelemetryEvent> {
+        return this._eventQueue
     }
 
     public async flush(): Promise<void> {
@@ -43,9 +43,9 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
             await this.init()
         }
 
-        while (this.eventQueue.length !== 0) {
-            const batch = this.eventQueue
-                .splice(0, DefaultTelemetryPublisher.DEFAULT_MAX_BATCH_SIZE) as TelemetryEventArray
+        while (this._eventQueue.length !== 0) {
+            const batch = this._eventQueue
+                .splice(0, DefaultTelemetryPublisher.DEFAULT_MAX_BATCH_SIZE) as TelemetryEvent[]
 
             if (this.telemetryClient === undefined) {
                 return
@@ -53,7 +53,7 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
 
             const failedBatch = await this.telemetryClient.postMetrics(batch)
             if (failedBatch !== undefined) {
-                this.enqueue(failedBatch)
+                this.enqueue(...failedBatch)
 
                 // retry next time
                 return
@@ -90,7 +90,10 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
             if (err) {
                 return Promise.reject(`SDK error: ${err}`)
             }
-            const identityId = res.IdentityId!!
+            const identityId = res.IdentityId
+            if (!identityId) {
+                throw new Error('identityId returned by Cognito call was null')
+            }
 
             return {
                 cognitoIdentityId: identityId,

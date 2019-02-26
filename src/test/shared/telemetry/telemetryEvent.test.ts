@@ -6,12 +6,12 @@
 'use strict'
 
 import * as assert from 'assert'
-import { TelemetryEventArray } from '../../../shared/telemetry/telemetryEvent'
+import { toMetricData } from '../../../shared/telemetry/telemetryEvent'
 
 describe('TelemetryEventArray', () => {
     describe('toMetricData', () => {
         it('strips names of invalid characters', () => {
-            const eventArray = new TelemetryEventArray()
+            const eventArray = []
             const metricEvents = [
                 {
                     namespace: 'namesp$ace',
@@ -39,7 +39,7 @@ describe('TelemetryEventArray', () => {
             ]
 
             eventArray.push(...metricEvents)
-            const data = eventArray.toMetricData()
+            const data = toMetricData(eventArray)
 
             assert.strictEqual(data.length, 3)
             assert.strictEqual(data[0].MetricName, 'namespace')
@@ -48,13 +48,13 @@ describe('TelemetryEventArray', () => {
         })
 
         it('maps TelemetryEvent with no data to a single MetricDatum', () => {
-            const eventArray = new TelemetryEventArray()
+            const eventArray = []
             const metricEvent = {
                 namespace: 'namespace',
                 createTime: new Date()
             }
             eventArray.push(metricEvent)
-            const data = eventArray.toMetricData()
+            const data = toMetricData(eventArray)
 
             assert.strictEqual(data.length, 1)
             assert.strictEqual(data[0].EpochTimestamp, metricEvent.createTime.getTime())
@@ -63,7 +63,7 @@ describe('TelemetryEventArray', () => {
         })
 
         it('maps TelemetryEvent with data to a multiple MetricDatum', () => {
-            const eventArray = new TelemetryEventArray()
+            const eventArray = []
             const metricEvent = {
                 namespace: 'namespace',
                 createTime: new Date(),
@@ -84,7 +84,7 @@ describe('TelemetryEventArray', () => {
                 ]
             }
             eventArray.push(metricEvent)
-            const data = eventArray.toMetricData()
+            const data = toMetricData(eventArray)
 
             assert.strictEqual(data.length, 2)
             assert.strictEqual(data[0].EpochTimestamp, metricEvent.createTime.getTime())

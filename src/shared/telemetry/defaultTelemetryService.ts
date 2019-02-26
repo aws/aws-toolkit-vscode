@@ -11,7 +11,7 @@ import uuidv4 = require('uuid/v4')
 import { ExtensionContext } from 'vscode'
 import * as filesystem from '../filesystem'
 import { DefaultTelemetryPublisher } from './defaultTelemetryPublisher'
-import { TelemetryEvent, TelemetryEventArray } from './telemetryEvent'
+import { TelemetryEvent } from './telemetryEvent'
 import { TelemetryPublisher } from './telemetryPublisher'
 import { TelemetryService } from './telemetryService'
 
@@ -19,17 +19,17 @@ export class DefaultTelemetryService implements TelemetryService {
     public static readonly TELEMETRY_COGNITO_ID_KEY = 'telemetryId'
     public static readonly TELEMETRY_CLIENT_ID_KEY = 'telemetryClientId'
 
-    private static readonly DEFAULT_FLUSH_PERIOD_MILLIS = 1000 * 60 * 5 // 5 minutes in milliseconds
+    private static readonly DEFAULT_FLUSH_PERIOD_MILLIS = 1000 * 60 // 5 minutes in milliseconds
 
     // TODO: make this user configurable
     public telemetryEnabled: boolean = false
     public startTime: Date
     public readonly persistFilePath: string
 
-    private flushPeriod: number
-    private timer?: NodeJS.Timer
+    private _flushPeriod: number
+    private _timer?: NodeJS.Timer
     private publisher?: TelemetryPublisher
-    private readonly eventQueue: TelemetryEventArray
+    private readonly _eventQueue: TelemetryEvent[]
 
     public constructor(private readonly context: ExtensionContext, publisher?: TelemetryPublisher) {
         const persistPath = context.globalStoragePath
@@ -40,9 +40,9 @@ export class DefaultTelemetryService implements TelemetryService {
         }
 
         this.startTime = new Date()
-        this.eventQueue = DefaultTelemetryService.readEventsFromCache(this.persistFilePath)
+        this._eventQueue = DefaultTelemetryService.readEventsFromCache(this.persistFilePath)
 
-        this.flushPeriod = DefaultTelemetryService.DEFAULT_FLUSH_PERIOD_MILLIS
+        this._flushPeriod = DefaultTelemetryService.DEFAULT_FLUSH_PERIOD_MILLIS
 
         if (publisher !== undefined) {
             this.publisher = publisher
@@ -58,9 +58,9 @@ export class DefaultTelemetryService implements TelemetryService {
     }
 
     public async shutdown(): Promise<void> {
-        if (this.timer !== undefined) {
-            clearTimeout(this.timer)
-            this.timer = undefined
+        if (this._timer !== undefined) {
+            clearTimeout(this._timer)
+            this._timer = undefined
         }
         const currTime = new Date()
         this.record({
@@ -76,26 +76,26 @@ export class DefaultTelemetryService implements TelemetryService {
         })
 
         try {
-            await filesystem.writeFile(this.persistFilePath, JSON.stringify(this.eventQueue))
-        } catch (_) {}
+            await filesystem.writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))
+        } catch {}
     }
 
-    public getTimer(): NodeJS.Timer | undefined {
-        return this.timer
+    public get timer(): NodeJS.Timer | undefined {
+        return this._timer
     }
 
-    public setFlushPeriod(period: number): void {
-        this.flushPeriod = period
+    public set flushPeriod(period: number) {
+        this._flushPeriod = period
     }
 
     public record(event: TelemetryEvent): void {
         if (this.telemetryEnabled) {
-            this.eventQueue.push(event)
+            this._eventQueue.push(event)
         }
     }
 
-    public getRecords(): ReadonlyArray<TelemetryEvent> {
-        return this.eventQueue
+    public get records(): ReadonlyArray<TelemetryEvent> {
+        return this._eventQueue
     }
 
     private async flushRecords(): Promise<void> {
@@ -104,25 +104,23 @@ export class DefaultTelemetryService implements TelemetryService {
                 await this.createDefaultPublisherAndClient()
             }
             if (this.publisher !== undefined) {
-                this.publisher.enqueue(this.eventQueue)
+                this.publisher.enqueue(...this._eventQueue)
                 await this.publisher.flush()
-                this.eventQueue.length = 0
+                this._eventQueue.length = 0
             }
         } else {
-            this.eventQueue.length = 0
+            this._eventQueue.length = 0
         }
     }
 
     private async startTimer(): Promise<void> {
-        this.timer = setTimeout(
+        this._timer = setTimeout(
+            // this is async so that we don't have pseudo-concurrent invocations of the callback
             async () => {
-                const fn = async () => {
-                    await this.flushRecords()
-                    this.timer = setTimeout(fn, this.flushPeriod)
-                }
-                await fn()
+                await this.flushRecords()
+                this._timer!.refresh()
             },
-            this.flushPeriod
+            this._flushPeriod
         )
     }
 
@@ -163,16 +161,16 @@ export class DefaultTelemetryService implements TelemetryService {
         }
     }
 
-    private static readEventsFromCache(cachePath: string): TelemetryEventArray {
+    private static readEventsFromCache(cachePath: string): TelemetryEvent[] {
         try {
-            const events = JSON.parse(fs.readFileSync(cachePath, 'utf-8')) as TelemetryEventArray
+            const events = JSON.parse(fs.readFileSync(cachePath, 'utf-8')) as TelemetryEvent[]
             events.forEach((element: TelemetryEvent) => {
                 element.createTime = new Date(element.createTime)
             })
 
             return events
-        } catch (_) {
-            return new TelemetryEventArray()
+        } catch {
+            return []
         }
     }
 

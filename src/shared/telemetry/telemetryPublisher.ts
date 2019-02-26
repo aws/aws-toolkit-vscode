@@ -10,6 +10,6 @@ import { TelemetryEvent } from './telemetryEvent'
 export interface TelemetryPublisher {
     init(): Promise<void>
 
-    enqueue(events: TelemetryEvent[]): any
+    enqueue(...events: TelemetryEvent[]): any
     flush(): Promise<any>
 }

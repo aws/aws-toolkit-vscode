@@ -13,7 +13,7 @@ import { ext } from '../extensionGlobals'
 import * as ClientTelemetry from './clienttelemetry'
 import apiConfig = require('./service-2.json')
 import { TelemetryClient } from './telemetryClient'
-import { TelemetryEventArray } from './telemetryEvent'
+import { TelemetryEvent, toMetricData } from './telemetryEvent'
 
 export class DefaultTelemetryClient implements TelemetryClient {
     public static readonly DEFAULT_IDENTITY_POOL = 'us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842'
@@ -27,7 +27,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
      * Returns failed events
      * @param batch batch of events
      */
-    public async postMetrics(batch: TelemetryEventArray): Promise<TelemetryEventArray | undefined> {
+    public async postMetrics(batch: TelemetryEvent[]): Promise<TelemetryEvent[] | undefined> {
         try {
             await this.client.postMetrics({
                 AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
@@ -37,7 +37,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                 OSVersion: os.release(),
                 ParentProduct: vscode.env.appName,
                 ParentProductVersion: vscode.version,
-                MetricData: batch.toMetricData()
+                MetricData: toMetricData(batch)
             }).promise()
             console.info(`Successfully sent a telemetry batch of ${batch.length}`)
         } catch (err) {
