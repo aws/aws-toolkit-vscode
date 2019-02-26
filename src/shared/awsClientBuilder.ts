@@ -49,7 +49,7 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
         if (!awsServiceOpts.customUserAgent) {
             const platformName = env.appName.replace(/\s/g, '-')
             const pluginVersion = constants.pluginVersion
-            awsServiceOpts.customUserAgent = `AWS-Toolkit-For-VisualStudio/${pluginVersion} ${platformName}/${version}`
+            awsServiceOpts.customUserAgent = `AWS-Toolkit-For-VSCode/${pluginVersion} ${platformName}/${version}`
         }
 
         return awsServiceFactory(awsServiceOpts)
