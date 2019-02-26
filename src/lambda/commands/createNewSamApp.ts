@@ -14,24 +14,31 @@ import { SamCliInitArgs, SamCliInitInvocation } from '../../shared/sam/cli/samCl
 import { getMainSourceFileUri } from '../utilities/getMainSourceFile'
 import { CreateNewSamAppWizard } from '../wizards/samInitWizard'
 
-export const MAIN_SOURCE_FILE_URI = 'MAIN_SOURCE_FILE_URI'
+export const URI_TO_OPEN_ON_INIT_KEY = 'URI_TO_OPEN_ON_INIT_KEY'
 
 export async function resumeCreateNewSamApp(context: Pick<vscode.ExtensionContext, 'globalState'>) {
-    const rawUri = context.globalState.get<string>(MAIN_SOURCE_FILE_URI)
+    const rawUri = context.globalState.get<string>(URI_TO_OPEN_ON_INIT_KEY)
     if (!rawUri) {
         return
     }
 
-    const uri = vscode.Uri.file(rawUri)
-    if (!vscode.workspace.getWorkspaceFolder(uri)) {
-        vscode.window.showErrorMessage(`Document '${uri.fsPath}' is not in any active workspace folder`)
+    try {
+        const uri = vscode.Uri.file(rawUri)
+        if (!vscode.workspace.getWorkspaceFolder(uri)) {
+            // This should never happen, as `rawUri` will only be set if `uri` is in the newly added workspace folder.
+            vscode.window.showErrorMessage(localize(
+                'AWS.samcli.initWizard.source.error.notInWorkspace',
+                'Could not open file \'{0}\'. If this file exists on disk, try adding it to your workspace.',
+                uri.fsPath
+            ))
 
-        return
+            return
+        }
+
+        await vscode.window.showTextDocument(uri)
+    } finally {
+        context.globalState.update(URI_TO_OPEN_ON_INIT_KEY, undefined)
     }
-
-    await vscode.window.showTextDocument(uri)
-
-    context.globalState.update(MAIN_SOURCE_FILE_URI, undefined)
 }
 
 export async function createNewSamApp(context: Pick<vscode.ExtensionContext, 'globalState'>): Promise<void> {
@@ -55,7 +62,7 @@ export async function createNewSamApp(context: Pick<vscode.ExtensionContext, 'gl
         },
         uri
     )) {
-        context.globalState.update(MAIN_SOURCE_FILE_URI, uri!.fsPath)
+        context.globalState.update(URI_TO_OPEN_ON_INIT_KEY, uri!.fsPath)
     } else {
         await vscode.window.showTextDocument(uri)
     }
@@ -67,7 +74,7 @@ async function getMainUri(config: Pick<SamCliInitArgs, 'location' | 'name'>): Pr
             root: vscode.Uri.file(path.join(config.location.fsPath, config.name))
         })
     } catch (err) {
-        vscode.window.showErrorMessage(localize(
+        vscode.window.showWarningMessage(localize(
             'AWS.samcli.initWizard.source.error.notFound',
             'Project created successfully, but main source code file not found: {0}'
         ))
@@ -122,6 +129,8 @@ async function addWorkspaceFolder(
             folder
         )) {
             console.error('Could not update workspace folders')
+
+            return false
         }
 
         if (updateExistingWorkspacePromise) {

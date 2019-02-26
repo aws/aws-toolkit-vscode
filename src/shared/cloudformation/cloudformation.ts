@@ -43,20 +43,14 @@ export namespace CloudFormation {
     export interface ResourceProperties {
         Handler: string,
         CodeUri: string,
-        Runtime: string,
+        Runtime?: string,
         Timeout?: number,
         Environment?: Environment
     }
 
-    export interface Resource  {
+    export interface Resource {
         Type: 'AWS::Serverless::Function',
-        Properties?: {
-            Handler: string,
-            CodeUri: string,
-            Runtime?: string,
-            Timeout?: number,
-            Environment?: Environment
-        }
+        Properties?: ResourceProperties
     }
 
     export interface Template {
