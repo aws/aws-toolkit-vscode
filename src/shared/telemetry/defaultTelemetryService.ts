@@ -22,10 +22,10 @@ export class DefaultTelemetryService implements TelemetryService {
 
     private static readonly DEFAULT_FLUSH_PERIOD_MILLIS = 1000 * 60 * 5 // 5 minutes in milliseconds
 
-    // TODO: make this user configurable
-    public telemetryEnabled: boolean = false
     public startTime: Date
     public readonly persistFilePath: string
+    // start off disabled
+    private _telemetryEnabled: boolean = false
 
     private _flushPeriod: number
     private _timer?: NodeJS.Timer
@@ -76,9 +76,19 @@ export class DefaultTelemetryService implements TelemetryService {
             ]
         })
 
-        try {
-            await filesystem.writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))
-        } catch {}
+        // only write events to disk if telemetry is enabled at shutdown time
+        if (this.telemetryEnabled) {
+            try {
+                await filesystem.writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))
+            } catch {}
+        }
+    }
+
+    public get telemetryEnabled(): boolean {
+        return this._telemetryEnabled
+    }
+    public set telemetryEnabled(value: boolean) {
+        this._telemetryEnabled = value
     }
 
     public get timer(): NodeJS.Timer | undefined {
@@ -90,13 +100,15 @@ export class DefaultTelemetryService implements TelemetryService {
     }
 
     public record(event: TelemetryEvent): void {
-        if (this.telemetryEnabled) {
-            this._eventQueue.push(event)
-        }
+        this._eventQueue.push(event)
     }
 
     public get records(): ReadonlyArray<TelemetryEvent> {
         return this._eventQueue
+    }
+
+    public clearRecords(): void {
+        this._eventQueue.length = 0
     }
 
     private async flushRecords(): Promise<void> {
@@ -109,8 +121,6 @@ export class DefaultTelemetryService implements TelemetryService {
                 await this.publisher.flush()
                 this._eventQueue.length = 0
             }
-        } else {
-            this._eventQueue.length = 0
         }
     }
 

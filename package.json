@@ -63,6 +63,19 @@
                     "type": "number",
                     "default": 30000,
                     "markdownDescription": "%AWS.configuration.description.samcli.debug.attach.timeout%"
+                },
+                "aws.telemetry": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "enum": [
+                        true,
+                        false,
+                        null
+                    ],
+                    "default": null,
+                    "markdownDescription": "%AWS.configuration.description.telemetry%"
                 }
             }
         },

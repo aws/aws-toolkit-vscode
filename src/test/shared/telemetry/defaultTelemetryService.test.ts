@@ -32,6 +32,7 @@ describe('DefaultTelemetryService', () => {
         const mockContext = new FakeExtensionContext()
         const mockPublisher = new MockTelemetryPublisher()
         const service = new DefaultTelemetryService(mockContext, mockPublisher)
+        service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = 10
         service.record({ namespace: 'name', createTime: new Date() })
@@ -51,6 +52,7 @@ describe('DefaultTelemetryService', () => {
         const mockContext = new FakeExtensionContext()
         const mockPublisher = new MockTelemetryPublisher()
         const service = new DefaultTelemetryService(mockContext, mockPublisher)
+        service.clearRecords()
         service.telemetryEnabled = false
         service.flushPeriod = 10
         service.record({ namespace: 'name', createTime: new Date() })
@@ -65,7 +67,12 @@ describe('DefaultTelemetryService', () => {
         assert.strictEqual(mockPublisher.flushCount, 0)
         assert.strictEqual(mockPublisher.enqueueCount, 0)
         assert.strictEqual(mockPublisher.enqueuedItems, 0)
-        // and there are no records in memeory
-        assert.strictEqual(service.records.length, 0)
+        // and events are kept in memory
+        assert.strictEqual(service.records.length, 3)
+        // events are, in order, the dummy test event, the start event, and the shutdown event
+        // test event is first since we record it before starting the service
+        assert.strictEqual(service.records[0].namespace, 'name')
+        assert.strictEqual(service.records[1].namespace, 'ToolkitStart')
+        assert.strictEqual(service.records[2].namespace, 'ToolkitEnd')
     })
 })
