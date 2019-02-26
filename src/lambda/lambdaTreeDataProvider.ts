@@ -79,7 +79,7 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         )
         vscode.commands.registerCommand(
             'aws.deploySamApplication',
-            async () => await deploySamApplication()
+            async () => await deploySamApplication({outputChannel: this.lambdaOutputChannel})
         )
 
         vscode.commands.registerCommand(
