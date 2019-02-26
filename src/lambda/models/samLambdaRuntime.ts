@@ -43,3 +43,15 @@ export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set(
     'java8',
     'java'
 ] as SamLambdaRuntime[])
+
+export function isNodeJS(runtime: string): boolean {
+    switch (runtime) {
+        case 'nodejs6.10':
+        case 'nodejs8.10':
+        case 'nodejs4.3':
+        case 'nodejs':
+            return true
+        default:
+            return false
+    }
+}

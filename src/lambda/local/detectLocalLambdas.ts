@@ -41,7 +41,7 @@ async function detectLambdasFromWorkspaceFolder(
 ): Promise<LocalLambda[]> {
     const result = []
 
-    for await (const templateUri of detectLocalTemplates({ workspaceFolders: [workspaceFolder.uri] })) {
+    for await (const templateUri of detectLocalTemplates({ workspaceUris: [workspaceFolder.uri] })) {
         result.push(...await detectLambdasFromTemplate(workspaceFolder, templateUri.fsPath))
     }
 
@@ -63,7 +63,7 @@ async function detectLambdasFromTemplate(
         return []
     }
 
-    return Object.keys(resources)
+    return Object.getOwnPropertyNames(resources)
         .filter(key => resources[key].Type === 'AWS::Serverless::Function')
         .map(key => ({
             lambda: key,
