@@ -34,14 +34,16 @@ abstract class LambdaPackager {
         handlerElement: PsiElement,
         handler: String,
         runtime: Runtime,
-        envVars: Map<String, String> = emptyMap()
+        envVars: Map<String, String> = emptyMap(),
+        useContainer: Boolean = false
     ): CompletionStage<LambdaPackage>
 
     open fun buildLambdaFromTemplate(
         module: Module,
         templateLocation: Path,
         logicalId: String,
-        envVars: Map<String, String>
+        envVars: Map<String, String>,
+        useContainer: Boolean = false
     ): CompletionStage<LambdaPackage> {
         val future = CompletableFuture<LambdaPackage>()
         ApplicationManager.getApplication().executeOnPooledThread {
@@ -54,6 +56,10 @@ abstract class LambdaPackager {
                 .withParameters(templateLocation.toString())
                 .withParameters("--build-dir")
                 .withParameters(buildDir.toString())
+
+            if (useContainer) {
+                commandLine.withParameters("--use-container")
+            }
 
             val processHandler = ProcessHandlerFactory.getInstance().createColoredProcessHandler(commandLine)
             processHandler.addProcessListener(object : ProcessAdapter() {
@@ -94,8 +100,9 @@ abstract class LambdaPackager {
         module: Module,
         handlerElement: PsiElement,
         handler: String,
-        runtime: Runtime
-    ): CompletionStage<Path> = buildLambda(module, handlerElement, handler, runtime)
+        runtime: Runtime,
+        useContainer: Boolean = false
+    ): CompletionStage<Path> = buildLambda(module, handlerElement, handler, runtime, emptyMap(), useContainer)
         .thenApply { lambdaLocation ->
             val zipLocation = FileUtil.createTempFile("lambdaPackage", "zip", true)
             Compressor.Zip(zipLocation).use {

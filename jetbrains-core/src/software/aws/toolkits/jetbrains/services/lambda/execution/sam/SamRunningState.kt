@@ -16,6 +16,7 @@ import software.aws.toolkits.jetbrains.services.cloudformation.Function
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamTemplateUtils.writeDummySamTemplate
 import java.io.File
+import java.nio.file.Path
 
 class SamRunningState(
     environment: ExecutionEnvironment,
@@ -33,13 +34,15 @@ class SamRunningState(
         totalEnvVars["AWS_REGION"] = settings.regionId
         totalEnvVars["AWS_DEFAULT_REGION"] = settings.regionId
 
+        val template = lambdaPackage.templateLocation ?: samTemplate()
+
         val commandLine = SamCommon.getSamCommandLine()
             .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.CONSOLE)
             .withParameters("local")
             .withParameters("invoke")
             .withParameters("--skip-pull-image")
             .withParameters("--template")
-            .withParameters(lambdaPackage.templateLocation.toString())
+            .withParameters(template.toString())
             .withParameters("--event")
             .withParameters(createEventFile())
             .apply { settings.templateDetails?.run { withParameters(logicalName) } }
@@ -51,7 +54,7 @@ class SamRunningState(
         return ProcessHandlerFactory.getInstance().createColoredProcessHandler(commandLine)
     }
 
-    private fun samTemplate(): String {
+    private fun samTemplate(): Path {
         val tempFile = FileUtil.createTempFile("${environment.runProfile.name}-template", ".yaml", true)
         when {
             settings.templateDetails != null -> substituteCodeUri(tempFile, settings.templateDetails)
@@ -64,7 +67,7 @@ class SamRunningState(
             )
         }
 
-        return tempFile.absolutePath
+        return tempFile.toPath()
     }
 
     private fun substituteCodeUri(tempFile: File, templateDetails: SamTemplateDetails) {

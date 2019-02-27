@@ -154,7 +154,7 @@ class SamDeployTest {
                     parameters,
                     bucketRule.createBucket(stackName),
                     false,
-                    false
+                    true
                 ) {
                     override fun createProcess(command: GeneralCommandLine): OSProcessHandler =
                         super.createProcess(command).also {

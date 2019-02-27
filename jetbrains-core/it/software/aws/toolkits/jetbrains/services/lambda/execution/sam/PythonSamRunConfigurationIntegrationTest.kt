@@ -13,6 +13,7 @@ import com.jetbrains.python.psi.PyFile
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -24,6 +25,7 @@ import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 
+@Ignore
 @RunWith(Parameterized::class)
 class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
     companion object {

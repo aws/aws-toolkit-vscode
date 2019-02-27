@@ -28,7 +28,8 @@ class JavaLambdaPackager : LambdaPackager() {
         module: Module,
         templateLocation: Path,
         logicalId: String,
-        envVars: Map<String, String>
+        envVars: Map<String, String>,
+        useContainer: Boolean
     ): CompletionStage<LambdaPackage> {
 
         val function = SamTemplateUtils.findFunctionsFromTemplate(
@@ -49,7 +50,7 @@ class JavaLambdaPackager : LambdaPackager() {
             Lambda.findPsiElementsForHandler(module.project, runtime, handler).firstOrNull()
                 ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
 
-        return buildLambda(module, element, handler, runtime, envVars)
+        return buildLambda(module, element, handler, runtime, envVars, useContainer)
     }
 
     override fun buildLambda(
@@ -57,7 +58,8 @@ class JavaLambdaPackager : LambdaPackager() {
         handlerElement: PsiElement,
         handler: String,
         runtime: Runtime,
-        envVars: Map<String, String>
+        envVars: Map<String, String>,
+        useContainer: Boolean
     ): CompletionStage<LambdaPackage> {
         val buildDir = FileUtil.createTempDirectory("lambdaBuild", null, true)
 

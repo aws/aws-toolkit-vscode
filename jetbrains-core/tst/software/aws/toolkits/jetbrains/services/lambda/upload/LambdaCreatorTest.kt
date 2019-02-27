@@ -81,7 +81,7 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
         val tempFile = FileUtil.createTempFile("lambda", ".zip")
 
         val packager = mock<LambdaPackager> {
-            on { packageLambda(any(), any(), any(), any()) } doReturn CompletableFuture.completedFuture(tempFile.toPath())
+            on { packageLambda(any(), any(), any(), any(), any()) } doReturn CompletableFuture.completedFuture(tempFile.toPath())
         }
 
         val psiFile = projectRule.fixture.addClass(
@@ -158,7 +158,7 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
         val tempFile = FileUtil.createTempFile("lambda", ".zip")
 
         val packager = mock<LambdaPackager> {
-            on { packageLambda(any(), any(), any(), any()) } doReturn CompletableFuture.completedFuture(tempFile.toPath())
+            on { packageLambda(any(), any(), any(), any(), any()) } doReturn CompletableFuture.completedFuture(tempFile.toPath())
         }
 
         val psiFile = projectRule.fixture.addClass(
