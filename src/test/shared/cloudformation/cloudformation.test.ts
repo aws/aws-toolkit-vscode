@@ -140,14 +140,20 @@ describe ('CloudFormation', () => {
     it ('can detect an invalid template', () => {
         const badTemplate = createBaseTemplate()
         delete badTemplate.Resources!.TestResource!.Type
-        assert.throws(() => CloudFormation.validateTemplate(badTemplate),
-                      Error, 'Missing or invalid value in Template for key: Type')
+        assert.throws(
+            () => CloudFormation.validateTemplate(badTemplate),
+            Error,
+            'Template does not contain any Lambda resources'
+        )
     })
 
     it ('can detect an invalid resource', () => {
         const badResource = createBaseResource()
         delete badResource.Properties!.CodeUri
-        assert.throws(() => CloudFormation.validateResource(badResource),
-                      Error, 'Missing or invalid value in Template for key: CodeUri')
+        assert.throws(
+            () => CloudFormation.validateResource(badResource),
+            Error,
+            'Missing or invalid value in Template for key: CodeUri'
+        )
     })
 })

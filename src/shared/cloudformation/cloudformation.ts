@@ -43,13 +43,13 @@ export namespace CloudFormation {
     export interface ResourceProperties {
         Handler: string,
         CodeUri: string,
-        Runtime: string,
+        Runtime?: string,
         Timeout?: number,
         Environment?: Environment
     }
 
     export interface Resource {
-        Type: string,
+        Type: 'AWS::Serverless::Function',
         Properties?: ResourceProperties
     }
 
@@ -90,14 +90,22 @@ export namespace CloudFormation {
     }
 
     export function validateTemplate(template: Template): void {
-        if (!!template.Resources) {
-            for (const resource in template.Resources) {
-                if (typeof resource === 'string') {
-                    validateResource(template.Resources[resource])
-                }
-            }
+        if (!template.Resources) {
+            return
         }
 
+        const lambdaResources = Object.getOwnPropertyNames(template.Resources)
+            .map(key => template.Resources![key])
+            .filter(resource => resource.Type === 'AWS::Serverless::Function')
+            .map(resource => resource as Resource)
+
+        if (lambdaResources.length <= 0) {
+            throw new Error('Template does not contain any Lambda resources')
+        }
+
+        for (const lambdaResource of lambdaResources) {
+            validateResource(lambdaResource)
+        }
     }
 
     export function validateResource(resource: Resource): void {
