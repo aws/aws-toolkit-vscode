@@ -39,8 +39,8 @@ class LambdaCreator internal constructor(
         handler: PsiElement,
         functionDetails: FunctionUploadDetails,
         s3Bucket: String
-    ): CompletionStage<LambdaFunction> = packager.buildLambda(module, handler, functionDetails.handler, functionDetails.runtime)
-        .thenCompose { uploader.upload(functionDetails, it.codeLocation, s3Bucket) }
+    ): CompletionStage<LambdaFunction> = packager.packageLambda(module, handler, functionDetails.handler, functionDetails.runtime)
+        .thenCompose { uploader.upload(functionDetails, it, s3Bucket) }
         .thenCompose { functionCreator.create(module.project, functionDetails, it) }
 
     fun updateLambda(
@@ -49,8 +49,8 @@ class LambdaCreator internal constructor(
         functionDetails: FunctionUploadDetails,
         s3Bucket: String,
         replaceConfiguration: Boolean = true
-    ): CompletionStage<Nothing> = packager.buildLambda(module, handler, functionDetails.handler, functionDetails.runtime)
-        .thenCompose { uploader.upload(functionDetails, it.codeLocation, s3Bucket) }
+    ): CompletionStage<Nothing> = packager.packageLambda(module, handler, functionDetails.handler, functionDetails.runtime)
+        .thenCompose { uploader.upload(functionDetails, it, s3Bucket) }
         .thenCompose { functionCreator.update(functionDetails, it, replaceConfiguration) }
 }
 

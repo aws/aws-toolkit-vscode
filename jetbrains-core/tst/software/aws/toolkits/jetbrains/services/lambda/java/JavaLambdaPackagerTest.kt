@@ -16,6 +16,7 @@ import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.psi.PsiElement
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.PsiTestUtil
+import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.util.PathUtil
 import org.assertj.core.api.Assertions.assertThat
@@ -25,15 +26,12 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.zipEntries
-import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addClass
 import software.aws.toolkits.jetbrains.utils.rules.addModule
 import software.aws.toolkits.jetbrains.utils.rules.addResourceFile
 import software.aws.toolkits.jetbrains.utils.rules.addTestClass
 import java.io.File
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionStage
 import java.util.concurrent.TimeUnit
 
 class JavaLambdaPackagerTest {
@@ -249,15 +247,12 @@ class JavaLambdaPackagerTest {
     private fun runAndVerifyExpectedEntries(module: Module, mainClass: PsiElement, handler: String, vararg entries: String) {
         setUpCompiler()
 
-        val completableFuture = CompletableFuture<LambdaPackage>()
-
-        runInEdt {
-            lambdaPackager.buildLambda(module, mainClass, handler, Runtime.JAVA8).whenDone(completableFuture)
+        val completableFuture = runInEdtAndGet {
+            lambdaPackager.packageLambda(module, mainClass, handler, Runtime.JAVA8).toCompletableFuture()
         }
 
-        completableFuture.thenAccept {
-            assertThat(zipEntries(it.codeLocation)).containsExactlyInAnyOrder(*entries)
-        }.get(30, TimeUnit.SECONDS)
+        val lambdaPackage = completableFuture.get(30, TimeUnit.SECONDS)
+        assertThat(zipEntries(lambdaPackage)).containsExactlyInAnyOrder(*entries)
     }
 
     private fun setUpCompiler() {
@@ -277,13 +272,6 @@ class JavaLambdaPackagerTest {
         runInEdtAndWait {
             PlatformTestUtil.saveProject(project)
             CompilerTestUtil.saveApplicationSettings()
-        }
-    }
-
-    private fun <T> CompletionStage<T>.whenDone(other: CompletableFuture<T>) = whenComplete { result, exception ->
-        when {
-            result != null -> other.complete(result)
-            exception != null -> other.completeExceptionally(exception)
         }
     }
 }

@@ -13,6 +13,7 @@ import com.intellij.openapi.module.Module
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.psi.PsiElement
+import com.intellij.util.io.Compressor
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon
@@ -44,7 +45,7 @@ abstract class LambdaPackager {
     ): CompletionStage<LambdaPackage> {
         val future = CompletableFuture<LambdaPackage>()
         ApplicationManager.getApplication().executeOnPooledThread {
-            val buildDir = FileUtil.createTempDirectory("samBuild", null, true).toPath()
+            val buildDir = FileUtil.createTempDirectory("lambdaBuild", null, true).toPath()
 
             val commandLine = SamCommon.getSamCommandLine()
                 .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.CONSOLE)
@@ -69,7 +70,13 @@ abstract class LambdaPackager {
                             future.completeExceptionally(IllegalStateException("Failed to locate built template, $builtTemplate does not exist"))
                         }
 
-                        future.complete(LambdaPackage(builtTemplate, builtTemplate.parent, emptyMap()))
+                        future.complete(
+                            LambdaPackage(
+                                builtTemplate,
+                                buildDir.resolve(logicalId),
+                                emptyMap()
+                            )
+                        )
                     } else {
                         // TODO Move to message()
                         future.completeExceptionally(IllegalStateException("SAM build command failed"))
@@ -83,15 +90,30 @@ abstract class LambdaPackager {
         return future
     }
 
-    companion object :
-        RuntimeGroupExtensionPointObject<LambdaPackager>(ExtensionPointName("aws.toolkit.lambda.packager"))
+    open fun packageLambda(
+        module: Module,
+        handlerElement: PsiElement,
+        handler: String,
+        runtime: Runtime
+    ): CompletionStage<Path> = buildLambda(module, handlerElement, handler, runtime)
+        .thenApply { lambdaLocation ->
+            val zipLocation = FileUtil.createTempFile("lambdaPackage", "zip", true)
+            Compressor.Zip(zipLocation).use {
+                it.addDirectory(lambdaLocation.codeLocation.toFile())
+            }
+            zipLocation.toPath()
+        }
+
+    companion object : RuntimeGroupExtensionPointObject<LambdaPackager>(
+        ExtensionPointName("aws.toolkit.lambda.packager")
+    )
 }
 
 /**
  * Represents the result of the packager
  *
- * @param templateLocation The path to the build generated template
- * @param codeLocation The path to the output code directory
+ * @param templateLocation The path to the build generated template TODO: Currently nullable during the sam build migration
+ * @param codeLocation The path to the built lambda directory
  * @param mappings Source mappings from original codeLocation to the path inside of the archive
  */
 data class LambdaPackage(

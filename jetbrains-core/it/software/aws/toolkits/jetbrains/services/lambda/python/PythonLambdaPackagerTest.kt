@@ -16,11 +16,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.core.utils.zipEntries
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
 import software.aws.toolkits.jetbrains.utils.rules.PyVirtualEnvSdk
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
+import java.nio.file.Files
 import java.util.concurrent.TimeUnit
+import kotlin.streams.toList
 
 class PythonLambdaPackagerTest {
     @Rule
@@ -139,7 +140,11 @@ class PythonLambdaPackagerTest {
     }
 
     private fun verifyExpectedEntries(lambdaPackage: LambdaPackage, vararg entries: String) {
-        assertThat(zipEntries(lambdaPackage.codeLocation)).containsExactlyInAnyOrder(*entries)
+        val basePath = lambdaPackage.codeLocation.toString()
+        val lambdaEntries = Files.list(lambdaPackage.codeLocation)
+            .map { it.toString().removePrefix(basePath) }
+            .toList()
+        assertThat(lambdaEntries).containsExactlyInAnyOrder(*entries)
     }
 
     private fun verifyPathMappings(lambdaPackage: LambdaPackage, vararg mappings: Pair<String, String>) {

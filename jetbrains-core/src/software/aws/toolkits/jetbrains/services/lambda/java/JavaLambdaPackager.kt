@@ -7,33 +7,20 @@ import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.openapi.compiler.CompilerManager
 import com.intellij.openapi.compiler.CompilerMessageCategory
 import com.intellij.openapi.module.Module
-import com.intellij.openapi.roots.LibraryOrderEntry
-import com.intellij.openapi.roots.ModuleOrderEntry
 import com.intellij.openapi.roots.OrderEnumerator
-import com.intellij.openapi.roots.OrderRootType
-import com.intellij.openapi.roots.libraries.Library
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.psi.PsiElement
-import com.intellij.util.io.exists
-import com.intellij.util.io.inputStream
-import com.intellij.util.io.isDirectory
-import com.intellij.util.io.isHidden
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.core.utils.createTemporaryZipFile
-import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.jetbrains.services.lambda.Lambda
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamTemplateUtils
 import software.aws.toolkits.resources.message
-import java.io.InputStream
-import java.nio.file.Files
+import java.io.File
 import java.nio.file.Path
-import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
-import kotlin.streams.toList
 
 class JavaLambdaPackager : LambdaPackager() {
     // TODO: Remove override when we switch to sam build
@@ -72,6 +59,8 @@ class JavaLambdaPackager : LambdaPackager() {
         runtime: Runtime,
         envVars: Map<String, String>
     ): CompletionStage<LambdaPackage> {
+        val buildDir = FileUtil.createTempDirectory("lambdaBuild", null, true)
+
         val future = CompletableFuture<LambdaPackage>()
         val compilerManager = CompilerManager.getInstance(module.project)
         val compileScope = compilerManager.createModulesCompileScope(arrayOf(module), true, true)
@@ -79,20 +68,9 @@ class JavaLambdaPackager : LambdaPackager() {
         compilerManager.make(compileScope) { aborted, errors, _, context ->
             if (!aborted && errors == 0) {
                 try {
-                    val zipContents = mutableSetOf<ZipEntry>()
-                    entriesForModule(module, zipContents)
-                    val zipFile = createTemporaryZipFile { zip ->
-                        zipContents.forEach {
-                            it.sourceFile.use { sourceFile ->
-                                zip.putNextEntry(
-                                    it.pathInZip,
-                                    sourceFile
-                                )
-                            }
-                        }
-                    }
-                    LOG.debug { "Created temporary zip: $zipFile" }
-                    future.complete(LambdaPackage(zipFile, zipFile))
+                    copyLibraries(module, buildDir)
+                    copyClasses(module, buildDir)
+                    future.complete(LambdaPackage(null, buildDir.toPath()))
                 } catch (e: Exception) {
                     future.completeExceptionally(RuntimeException(message("lambda.package.zip_fail"), e))
                 }
@@ -113,65 +91,38 @@ class JavaLambdaPackager : LambdaPackager() {
         return future
     }
 
-    private fun entriesForModule(module: Module, entries: MutableSet<ZipEntry>) {
-        productionRuntimeEntries(module).forEach {
-            when (it) {
-                is ModuleOrderEntry -> it.module?.run { entriesForModule(this, entries) }
-                is LibraryOrderEntry -> it.library?.run { addLibrary(this, entries) }
-            }
-            true
-        }
-        addModuleFiles(module, entries)
-    }
-
-    private fun addLibrary(library: Library, entries: MutableSet<ZipEntry>) {
-        library.getFiles(OrderRootType.CLASSES).map { Paths.get(it.presentableUrl) }
-            .forEach { entries.add(
-                ZipEntry(
-                    "lib/${it.fileName}",
-                    it
-                )
-            ) }
-    }
-
-    private fun addModuleFiles(module: Module, entries: MutableSet<ZipEntry>) {
+    private fun copyLibraries(module: Module, buildDir: File) {
+        val libDir = File(buildDir, "lib")
         productionRuntimeEntries(module)
-            .withoutDepModules()
-            .withoutLibraries()
+            .librariesOnly()
             .pathsList.pathList
-            .map { Paths.get(it) }
+            .map { File(it) }
             .filter { it.exists() }
-            .flatMap {
-                when {
-                    it.isDirectory() -> toEntries(it)
-                    else -> throw RuntimeException(
-                        message(
-                            "lambda.package.unhandled_file_type",
-                            it
-                        )
-                    )
-                }
-            }
-            .forEach { entries.add(it) }
+            .forEach { copyFileOrDir(it, libDir) }
     }
 
-    private fun productionRuntimeEntries(module: Module) =
-        OrderEnumerator.orderEntries(module).productionOnly().runtimeOnly().withoutSdk()
+    private fun copyClasses(module: Module, buildDir: File) {
+        productionRuntimeEntries(module)
+            .withoutLibraries()
+            .classes()
+            .pathsList.pathList
+            .map { File(it) }
+            .filter { it.exists() }
+            .forEach { copyFileOrDir(it, buildDir) }
+    }
 
-    private fun toEntries(path: Path): List<ZipEntry> =
-        Files.walk(path).use { files ->
-            files.filter { !it.isDirectory() && !it.isHidden() && it.exists() }
-                .map {
-                    ZipEntry(
-                        path.relativize(
-                            it
-                        ).toString().replace('\\', '/'), it
-                    )
-                }.toList()
+    private fun productionRuntimeEntries(module: Module) = OrderEnumerator.orderEntries(module)
+        .recursively()
+        .productionOnly()
+        .runtimeOnly()
+        .withoutSdk()
+
+    private fun copyFileOrDir(source: File, dest: File) {
+        if (source.isDirectory) {
+            FileUtil.copyDir(source, dest, false)
+        } else {
+            FileUtil.copy(source, File(dest, source.name))
         }
-
-    private data class ZipEntry(val pathInZip: String, val sourceFile: InputStream) {
-        constructor(pathInZip: String, sourceFile: Path) : this(pathInZip, sourceFile.inputStream())
     }
 
     companion object {
