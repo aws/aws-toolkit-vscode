@@ -41,9 +41,8 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
         }
 
         const childProcess: ChildProcess = new ChildProcess(samCliLocation, options, ...args)
-        childProcess.start()
 
-        return await childProcess.promise()
+        return await childProcess.run()
     }
 }
 

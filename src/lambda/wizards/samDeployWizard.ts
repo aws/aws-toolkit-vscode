@@ -216,7 +216,7 @@ async function getTemplateChoices(
     ...workspaceFolders: vscode.Uri[]
 ): Promise<SamTemplateQuickPickItem[]> {
     const result: SamTemplateQuickPickItem[] = []
-    for await (const uri of onDetectLocalTemplates({ workspaceFolders })) {
+    for await (const uri of onDetectLocalTemplates({ workspaceUris: workspaceFolders })) {
         result.push(new SamTemplateQuickPickItem(uri))
     }
 

@@ -36,9 +36,7 @@ describe('ChildProcess', async () => {
                 batchFile
             )
 
-            childProcess.start()
-
-            const result = await childProcess.promise()
+            const result = await childProcess.run()
 
             validateChildProcessResult({
                 childProcessResult: result,
@@ -59,9 +57,7 @@ describe('ChildProcess', async () => {
                 command
             )
 
-            childProcess.start()
-
-            const result = await childProcess.promise()
+            const result = await childProcess.run()
 
             validateChildProcessResult({
                 childProcessResult: result,
@@ -78,11 +74,18 @@ describe('ChildProcess', async () => {
                 batchFile
             )
 
-            childProcess.start()
+            // We want to verify that the error is thrown even if the first
+            // invocation is still in progress, so we don't await the promise.
+            // tslint:disable-next-line:no-floating-promises
+            childProcess.run()
 
-            assert.throws(() => {
-                childProcess.start()
-            })
+            try {
+                await childProcess.run()
+            } catch (err) {
+                return
+            }
+
+            assert.fail('Expected exception, but none was thrown.')
         })
     } // END Windows only tests
 
@@ -95,9 +98,7 @@ describe('ChildProcess', async () => {
                 scriptFile
             )
 
-            childProcess.start()
-
-            const result = await childProcess.promise()
+            const result = await childProcess.run()
 
             validateChildProcessResult({
                 childProcessResult: result,
@@ -114,11 +115,18 @@ describe('ChildProcess', async () => {
                 scriptFile
             )
 
-            childProcess.start()
+            // We want to verify that the error is thrown even if the first
+            // invocation is still in progress, so we don't await the promise.
+            // tslint:disable-next-line:no-floating-promises
+            childProcess.run()
 
-            assert.throws(() => {
-                childProcess.start()
-            })
+            try {
+                await childProcess.run()
+            } catch (err) {
+                return
+            }
+
+            assert.fail('Expected exception, but none was thrown.')
         })
     } // END Linux only tests
 
@@ -140,31 +148,13 @@ describe('ChildProcess', async () => {
             command
         )
 
-        childProcess.start()
-
-        const result = await childProcess.promise()
+        const result = await childProcess.run()
 
         validateChildProcessResult({
             childProcessResult: result,
             expectedExitCode: 0,
             expectedOutput: 'hi'
         })
-    })
-
-    it('errs when getting promise without starting', async () => {
-        const batchFile = path.join(tempFolder, 'test-script.bat')
-        writeBatchFile(batchFile)
-
-        const childProcess = new ChildProcess(
-            batchFile
-        )
-
-        try {
-            await childProcess.promise()
-            assert.strictEqual(true, false, 'error expected')
-        } catch (err) {
-            assert.notStrictEqual(err, undefined)
-        }
     })
 
     it('reports error for missing executable', async () => {
@@ -174,9 +164,7 @@ describe('ChildProcess', async () => {
             batchFile
         )
 
-        childProcess.start()
-
-        const result = await childProcess.promise()
+        const result = await childProcess.run()
 
         assert.notStrictEqual(result.exitCode, 0)
         assert.notStrictEqual(result.error, undefined)

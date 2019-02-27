@@ -8,6 +8,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
+import { resumeCreateNewSamApp } from './lambda/commands/createNewSamApp'
 import { RegionNode } from './lambda/explorer/regionNode'
 import { LambdaTreeDataProvider } from './lambda/lambdaTreeDataProvider'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
@@ -88,7 +89,7 @@ export async function activate(context: vscode.ExtensionContext) {
     ]
 
     providers.forEach((p) => {
-        p.initialize()
+        p.initialize(context)
         context.subscriptions.push(vscode.window.registerTreeDataProvider(p.viewProviderId, p))
     })
 
@@ -97,6 +98,8 @@ export async function activate(context: vscode.ExtensionContext) {
     await initializeSamCli()
 
     await ExtensionDisposableFiles.initialize(context)
+
+    await resumeCreateNewSamApp(context)
 }
 
 export function deactivate() {

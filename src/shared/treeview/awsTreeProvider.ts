@@ -5,10 +5,12 @@
 
 'use strict'
 
+import * as vscode from 'vscode'
+
 interface AwsTreeProvider {
     viewProviderId: string
 
-    initialize(): void
+    initialize(context: Pick<vscode.ExtensionContext, 'globalState'>): void
 }
 
 export interface RefreshableAwsTreeProvider extends AwsTreeProvider {
