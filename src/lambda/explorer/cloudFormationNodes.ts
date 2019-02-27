@@ -65,11 +65,7 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
             : [...this.stackNodes.values()]
                 .sort((nodeA, nodeB) =>
                     nodeA.stackName.localeCompare(
-                        nodeB.stackName,
-                        undefined,
-                        {
-                            sensitivity: 'base'
-                        }
+                        nodeB.stackName
                     )
                 )
     }
