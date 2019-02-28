@@ -15,4 +15,5 @@ export interface TelemetryService {
     shutdown(): Promise<void>
     record(event: TelemetryEvent): void
     clearRecords(): void
+    notifyOptOutOptionMade(): void
 }

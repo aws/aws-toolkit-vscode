@@ -25,7 +25,9 @@ export class DefaultTelemetryService implements TelemetryService {
     public startTime: Date
     public readonly persistFilePath: string
     // start off disabled
+    // this flag will only ever be true if the user has made a decision
     private _telemetryEnabled: boolean = false
+    private _telemetryOptionExplicitlyStated = false
 
     private _flushPeriod: number
     private _timer?: NodeJS.Timer
@@ -48,6 +50,10 @@ export class DefaultTelemetryService implements TelemetryService {
         if (publisher !== undefined) {
             this.publisher = publisher
         }
+    }
+
+    public notifyOptOutOptionMade() {
+        this._telemetryOptionExplicitlyStated = true
     }
 
     public async start(): Promise<void> {
@@ -88,6 +94,10 @@ export class DefaultTelemetryService implements TelemetryService {
         return this._telemetryEnabled
     }
     public set telemetryEnabled(value: boolean) {
+        // clear the queue on a state change
+        if (this._telemetryEnabled !== value) {
+            this._eventQueue.length = 0
+        }
         this._telemetryEnabled = value
     }
 
@@ -100,7 +110,11 @@ export class DefaultTelemetryService implements TelemetryService {
     }
 
     public record(event: TelemetryEvent): void {
-        this._eventQueue.push(event)
+        // record events only if telemetry is enabled or the user hasn't expressed a preference
+        // events should only be flushed if the user has consented
+        if (this.telemetryEnabled || !this._telemetryOptionExplicitlyStated) {
+            this._eventQueue.push(event)
+        }
     }
 
     public get records(): ReadonlyArray<TelemetryEvent> {
@@ -121,6 +135,9 @@ export class DefaultTelemetryService implements TelemetryService {
                 await this.publisher.flush()
                 this._eventQueue.length = 0
             }
+        } else if (this._telemetryOptionExplicitlyStated) {
+            // explicitly clear the queue if user has disabled telemetry
+            this._eventQueue.length = 0
         }
     }
 

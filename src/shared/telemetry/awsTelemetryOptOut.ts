@@ -12,12 +12,18 @@ import { SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from './telemetryService'
 const localize = nls.loadMessageBundle()
 
+export enum TelemetryOptOutOptions {
+    Enable,
+    Disable,
+    SameAsVsCode
+}
+
 export class AwsTelemetryOptOut {
     private static readonly AWS_TELEMETRY_KEY = 'telemetry'
     private static readonly TELEMETRY_OPT_OUT_SHOWN = 'awsTelemetryOptOutShown'
 
-    private readonly responseYes: string = localize('AWS.generic.response.yes', 'Yes')
-    private readonly responseNo: string = localize('AWS.generic.response.no', 'No')
+    private readonly responseYes: string = localize('AWS.telemetry.notificationYes', 'Enable')
+    private readonly responseNo: string = localize('AWS.telemetry.notificationNo', 'Disable')
 
     public constructor(
         public readonly service: TelemetryService,
@@ -28,14 +34,14 @@ export class AwsTelemetryOptOut {
             if (event.affectsConfiguration('telemetry.enableTelemetry')
                 && this.settings.readSetting(AwsTelemetryOptOut.AWS_TELEMETRY_KEY) === undefined
             ) {
-                await this.updateTelemetryConfiguration(undefined)
+                await this.updateTelemetryConfiguration(TelemetryOptOutOptions.SameAsVsCode)
             }
         })
     }
 
-    public async updateTelemetryConfiguration(response: string | undefined) {
+    public async updateTelemetryConfiguration(response: TelemetryOptOutOptions) {
         switch (response) {
-            case this.responseYes:
+            case TelemetryOptOutOptions.Enable:
                 await this.settings.writeSetting(
                     AwsTelemetryOptOut.AWS_TELEMETRY_KEY,
                     true,
@@ -44,7 +50,7 @@ export class AwsTelemetryOptOut {
                 this.service.telemetryEnabled = true
                 break
 
-            case this.responseNo:
+            case TelemetryOptOutOptions.Disable:
                 await this.settings.writeSetting(
                     AwsTelemetryOptOut.AWS_TELEMETRY_KEY,
                     false,
@@ -53,7 +59,7 @@ export class AwsTelemetryOptOut {
                 this.service.telemetryEnabled = false
                 break
 
-            default:
+            case TelemetryOptOutOptions.SameAsVsCode:
                 await this.settings.writeSetting(
                     AwsTelemetryOptOut.AWS_TELEMETRY_KEY,
                     undefined,
@@ -65,12 +71,25 @@ export class AwsTelemetryOptOut {
         }
     }
 
+    /**
+     * Caution: you probably do not want to await this method
+     *
+     * This method awaits a showInfo call, which blocks until the user selects an option
+     * or explicitly cancels the dialog. 'Esc' on the dialog will continue to block, waiting for a response
+     * Ensure that you handle this suitably.
+     */
     public async ensureUserNotified(): Promise<void> {
+        let response: string | undefined
         if (!ext.context.globalState.get<boolean>(AwsTelemetryOptOut.TELEMETRY_OPT_OUT_SHOWN)) {
-            const response = await this.showNotification()
-            await this.updateTelemetryConfiguration(response)
+            response = await this.showNotification()
             await ext.context.globalState.update(AwsTelemetryOptOut.TELEMETRY_OPT_OUT_SHOWN, true)
+        } else {
+            response = this.settings.readSetting<string>(AwsTelemetryOptOut.AWS_TELEMETRY_KEY)
         }
+        const enumValue = this.responseToOptionEnumValue(response)
+
+        await this.updateTelemetryConfiguration(enumValue)
+        this.service.notifyOptOutOptionMade()
     }
 
     public async showNotification(): Promise<string | undefined> {
@@ -81,6 +100,19 @@ export class AwsTelemetryOptOut {
         )
 
         return vscode.window.showInformationMessage(notificationMessage, this.responseYes, this.responseNo)
+    }
+
+    private responseToOptionEnumValue(response: string | undefined) {
+        switch (response) {
+            case this.responseYes:
+                return TelemetryOptOutOptions.Enable
+
+            case this.responseNo:
+                return TelemetryOptOutOptions.Disable
+
+            default:
+                return TelemetryOptOutOptions.SameAsVsCode
+        }
     }
 
     private getVSCodeTelemetrySetting(): boolean {
