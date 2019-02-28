@@ -5,6 +5,7 @@ extends:
 linterOptions:
   exclude:
     - node_modules/**
+    - '**/*.json'
 rules:
   # TypeScript-specific
   # These rules find errors related to TypeScript features:

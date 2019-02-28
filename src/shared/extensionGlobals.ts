@@ -10,6 +10,7 @@ import { AWSClientBuilder } from './awsClientBuilder'
 import { AWSContextCommands } from './awsContextCommands'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
 import { AWSStatusBar } from './statusBar'
+import { TelemetryService } from './telemetry/telemetryService'
 
 /**
  * Namespace for common variables used globally in the extension.
@@ -23,4 +24,5 @@ export namespace ext {
     export let sdkClientBuilder: AWSClientBuilder
     export let toolkitClientBuilder: ToolkitClientBuilder
     export let statusBar: AWSStatusBar
+    export let telemetry: TelemetryService
 }
