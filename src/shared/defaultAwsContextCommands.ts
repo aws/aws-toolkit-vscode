@@ -326,7 +326,8 @@ export class DefaultAWSContextCommands {
             detail: r.regionCode
         }))
         const input = await window.showQuickPick(regionsToShow, {
-            placeHolder: localize('AWS.message.selectRegion', 'Select an AWS region')
+            placeHolder: localize('AWS.message.selectRegion', 'Select an AWS region'),
+            matchOnDetail: true,
         })
 
         return input ? input.detail : undefined
