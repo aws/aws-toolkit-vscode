@@ -63,6 +63,19 @@
                     "type": "number",
                     "default": 30000,
                     "markdownDescription": "%AWS.configuration.description.samcli.debug.attach.timeout%"
+                },
+                "aws.telemetry": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "enum": [
+                        "Enable",
+                        "Disable",
+                        "Use the same setting as VS Code"
+                    ],
+                    "default": "Use the same setting as VS Code",
+                    "markdownDescription": "%AWS.configuration.description.telemetry%"
                 }
             }
         },
