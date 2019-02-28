@@ -98,7 +98,37 @@ describe('DefaultTelemetryService', () => {
         assert.strictEqual(mockPublisher.flushCount, 0)
         assert.strictEqual(mockPublisher.enqueueCount, 0)
         assert.strictEqual(mockPublisher.enqueuedItems, 0)
-        // and events are kept in memory
+        // and events are not kept in memory
+        assert.strictEqual(service.records.length, 0)
+    })
+
+    it('events are cleared after user disables telemetry via prompt', async () => {
+        const mockContext = new FakeExtensionContext()
+        const mockPublisher = new MockTelemetryPublisher()
+        const service = new DefaultTelemetryService(mockContext, mockPublisher)
+        service.clearRecords()
+
+        service.flushPeriod = 10
+        await service.start()
+        assert.notStrictEqual(service.timer, undefined)
+
+        // event recorded while decision has not been made
+        service.record({ namespace: 'name', createTime: new Date() })
+        assert.notStrictEqual(service.records.length, 0)
+
+        // user disables telemetry
+        service.telemetryEnabled = false
+        service.notifyOptOutOptionMade()
+        assert.strictEqual(service.records.length, 0)
+
+        await new Promise<any>(resolve => setTimeout(resolve, 50))
+        await service.shutdown()
+
+        // events are never flushed
+        assert.strictEqual(mockPublisher.flushCount, 0)
+        assert.strictEqual(mockPublisher.enqueueCount, 0)
+        assert.strictEqual(mockPublisher.enqueuedItems, 0)
+        // and events are not kept in memory
         assert.strictEqual(service.records.length, 0)
     })
 })

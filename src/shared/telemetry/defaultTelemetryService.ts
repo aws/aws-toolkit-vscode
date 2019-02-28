@@ -94,9 +94,9 @@ export class DefaultTelemetryService implements TelemetryService {
         return this._telemetryEnabled
     }
     public set telemetryEnabled(value: boolean) {
-        // clear the queue on a state change
-        if (this._telemetryEnabled !== value) {
-            this._eventQueue.length = 0
+        // clear the queue on a state change or explicit disable
+        if (!value || this._telemetryEnabled !== value) {
+            this.clearRecords()
         }
         this._telemetryEnabled = value
     }
@@ -133,11 +133,11 @@ export class DefaultTelemetryService implements TelemetryService {
             if (this.publisher !== undefined) {
                 this.publisher.enqueue(...this._eventQueue)
                 await this.publisher.flush()
-                this._eventQueue.length = 0
+                this.clearRecords()
             }
         } else if (this._telemetryOptionExplicitlyStated) {
             // explicitly clear the queue if user has disabled telemetry
-            this._eventQueue.length = 0
+            this.clearRecords()
         }
     }
 
