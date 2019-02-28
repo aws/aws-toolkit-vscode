@@ -94,8 +94,8 @@ export class DefaultTelemetryService implements TelemetryService {
         return this._telemetryEnabled
     }
     public set telemetryEnabled(value: boolean) {
-        // clear the queue on a state change or explicit disable
-        if (!value || this._telemetryEnabled !== value) {
+        // clear the queue on explicit disable
+        if (!value) {
             this.clearRecords()
         }
         this._telemetryEnabled = value
