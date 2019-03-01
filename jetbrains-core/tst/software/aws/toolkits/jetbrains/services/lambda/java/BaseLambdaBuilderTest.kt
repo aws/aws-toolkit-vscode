@@ -28,7 +28,7 @@ abstract class BaseLambdaBuilderTest {
 
     @Before
     open fun setUp() {
-        SamSettings.getInstance().savedExecutablePath = System.getenv().getOrDefault("SAM_CLI_EXEC", "/usr/local/bin/sam")
+        SamSettings.getInstance().savedExecutablePath = System.getenv()["SAM_CLI_EXEC"]
     }
 
     protected fun buildLambda(module: Module, handlerElement: PsiElement, runtime: Runtime, handler: String): BuiltLambda {

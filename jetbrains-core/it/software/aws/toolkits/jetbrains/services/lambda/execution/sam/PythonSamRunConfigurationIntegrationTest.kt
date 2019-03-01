@@ -44,7 +44,7 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
 
     @Before
     fun setUp() {
-        SamSettings.getInstance().savedExecutablePath = System.getenv().getOrDefault("SAM_CLI_EXEC", "sam")
+        SamSettings.getInstance().savedExecutablePath = System.getenv()["SAM_CLI_EXEC"]
 
         val fixture = projectRule.fixture
         fixture.addFileToProject(
@@ -80,6 +80,8 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
 
     @Test
     fun samIsExecuted() {
+        projectRule.fixture.addFileToProject("requirements.txt", "")
+
         val runConfiguration = runConfiguration("src/hello_world.app.lambda_handler")
         assertThat(runConfiguration).isNotNull
 
@@ -90,6 +92,8 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
 
     @Test
     fun envVarsArePassed() {
+        projectRule.fixture.addFileToProject("requirements.txt", "")
+
         val envVars = mutableMapOf("Foo" to "Bar", "Bat" to "Baz")
 
         val runConfiguration = runConfiguration(
@@ -107,6 +111,8 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
 
     @Test
     fun regionIsPassed() {
+        projectRule.fixture.addFileToProject("requirements.txt", "")
+
         val runConfiguration = runConfiguration("src/hello_world.app.env_print")
         assertThat(runConfiguration).isNotNull
 
@@ -118,6 +124,8 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
 
     @Test
     fun credentialsArePassed() {
+        projectRule.fixture.addFileToProject("requirements.txt", "")
+
         val runConfiguration = runConfiguration("src/hello_world.app.env_print")
         assertThat(runConfiguration).isNotNull
 
@@ -130,6 +138,8 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
 
     @Test
     fun samIsExecutedWithDebugger() {
+        projectRule.fixture.addFileToProject("requirements.txt", "")
+
         runInEdtAndWait {
             val document = projectRule.fixture.editor.document
             val lambdaClass = projectRule.fixture.file as PyFile
@@ -158,6 +168,8 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
 
     @Test
     fun samIsExecutedWithDebuggerSourceRoot() {
+        projectRule.fixture.addFileToProject("src/requirements.txt", "")
+
         runInEdtAndWait {
             val document = projectRule.fixture.editor.document
             val lambdaClass = projectRule.fixture.file as PyFile
