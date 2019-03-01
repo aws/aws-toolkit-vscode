@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.lambda.java
 
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.roots.ModuleRootManager
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.psi.PsiElement
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.util.io.isFile
@@ -58,7 +59,7 @@ abstract class BaseLambdaBuilderTest {
         val basePath = builtLambda.codeLocation
         Files.walk(builtLambda.codeLocation).use {
             val lambdaEntries = it.filter(Path::isFile)
-                .map { path -> basePath.relativize(path).toString() }
+                .map { path -> FileUtil.toSystemIndependentName(basePath.relativize(path).toString()) }
                 .toList()
             assertThat(lambdaEntries).containsAll(entries.toList())
         }
