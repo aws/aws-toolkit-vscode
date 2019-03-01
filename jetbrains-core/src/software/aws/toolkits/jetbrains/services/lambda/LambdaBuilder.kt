@@ -128,7 +128,7 @@ abstract class LambdaBuilder {
         }
 
     companion object : RuntimeGroupExtensionPointObject<LambdaBuilder>(
-        ExtensionPointName("aws.toolkit.lambda.packager")
+        ExtensionPointName("aws.toolkit.lambda.builder")
     )
 }
 
