@@ -24,7 +24,7 @@ import org.jetbrains.concurrency.Promise
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import java.io.File
@@ -85,13 +85,12 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
 
         val runConfigSettings = samState.settings
 
-        val packager = LambdaPackager.getInstanceOrThrow(runConfigSettings.runtimeGroup)
+        val packager = LambdaBuilder.getInstanceOrThrow(runConfigSettings.runtimeGroup)
         val buildResult = runConfigSettings.templateDetails?.templateFile?.let {
             packager.buildLambdaFromTemplate(
                 module,
                 Paths.get(it),
-                runConfigSettings.templateDetails.logicalName,
-                runConfigSettings.environmentVariables
+                runConfigSettings.templateDetails.logicalName
             )
         } ?: packager.buildLambda(
             module,
@@ -103,7 +102,7 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
 
         buildResult.thenAccept {
                 runInEdt {
-                    samState.lambdaPackage = it
+                    samState.builtLambda = it
                     buildingPromise.setResult(runner.run(environment, samState))
                 }
             }.exceptionally {

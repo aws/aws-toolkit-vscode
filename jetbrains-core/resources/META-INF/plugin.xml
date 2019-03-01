@@ -56,8 +56,8 @@ If you come across bugs with the toolkit or have feature requests, please raise 
             <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
         </extensionPoint>
 
-        <extensionPoint qualifiedName="aws.toolkit.lambda.packager" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
-            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.LambdaPackager"/>
+        <extensionPoint qualifiedName="aws.toolkit.lambda.builder" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
+            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder"/>
             <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
         </extensionPoint>
 

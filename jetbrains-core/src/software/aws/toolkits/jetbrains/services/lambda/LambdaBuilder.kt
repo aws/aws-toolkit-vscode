@@ -25,11 +25,7 @@ import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 
-/**
- * TODO: We are mid migration of custom packager -> sam build. This class should be renamed to LambdaBuilder since sam
- * build does not create the zip
- */
-abstract class LambdaPackager {
+abstract class LambdaBuilder {
     /**
      * Creates a package for the given lambda including source files archived in the correct format.
      */
@@ -40,16 +36,15 @@ abstract class LambdaPackager {
         runtime: Runtime,
         envVars: Map<String, String> = emptyMap(),
         useContainer: Boolean = false
-    ): CompletionStage<LambdaPackage>
+    ): CompletionStage<BuiltLambda>
 
     open fun buildLambdaFromTemplate(
         module: Module,
         templateLocation: Path,
         logicalId: String,
-        envVars: Map<String, String>,
         useContainer: Boolean = false
-    ): CompletionStage<LambdaPackage> {
-        val future = CompletableFuture<LambdaPackage>()
+    ): CompletionStage<BuiltLambda> {
+        val future = CompletableFuture<BuiltLambda>()
         val codeLocation = SamTemplateUtils.findFunctionsFromTemplate(
             module.project,
             templateLocation.toFile()
@@ -79,7 +74,7 @@ abstract class LambdaPackager {
             }
 
             val pathMappings = listOf(
-                PathMapping(templateLocation.resolve(codeLocation).toString(), "/"),
+                PathMapping(templateLocation.parent.resolve(codeLocation).toString(), "/"),
                 PathMapping(buildDir.resolve(logicalId).toString(), "/")
             )
 
@@ -99,7 +94,7 @@ abstract class LambdaPackager {
                         }
 
                         future.complete(
-                            LambdaPackage(
+                            BuiltLambda(
                                 builtTemplate,
                                 buildDir.resolve(logicalId),
                                 pathMappings
@@ -126,26 +121,26 @@ abstract class LambdaPackager {
         useContainer: Boolean = false
     ): CompletionStage<Path> = buildLambda(module, handlerElement, handler, runtime, emptyMap(), useContainer)
         .thenApply { lambdaLocation ->
-            val zipLocation = FileUtil.createTempFile("lambdaPackage", "zip", true)
+            val zipLocation = FileUtil.createTempFile("builtLambda", "zip", true)
             Compressor.Zip(zipLocation).use {
                 it.addDirectory(lambdaLocation.codeLocation.toFile())
             }
             zipLocation.toPath()
         }
 
-    companion object : RuntimeGroupExtensionPointObject<LambdaPackager>(
+    companion object : RuntimeGroupExtensionPointObject<LambdaBuilder>(
         ExtensionPointName("aws.toolkit.lambda.packager")
     )
 }
 
 /**
- * Represents the result of the packager
+ * Represents the result of building a Lambda
  *
  * @param templateLocation The path to the build generated template TODO: Currently nullable during the sam build migration
  * @param codeLocation The path to the built lambda directory
  * @param mappings Source mappings from original codeLocation to the path inside of the archive
  */
-data class LambdaPackage(
+data class BuiltLambda(
     val templateLocation: Path?,
     val codeLocation: Path,
     val mappings: List<PathMapping> = emptyList()

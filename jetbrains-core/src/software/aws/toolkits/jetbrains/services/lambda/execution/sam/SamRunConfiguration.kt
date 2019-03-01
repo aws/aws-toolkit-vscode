@@ -29,7 +29,7 @@ import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.services.lambda.HandlerCompletionProvider
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
-import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationBase
@@ -243,7 +243,7 @@ class SamRunSettingsEditor(project: Project) : SettingsEditor<SamRunConfiguratio
     private val credentialManager = CredentialManager.getInstance()
 
     init {
-        val supported = LambdaPackager.supportedRuntimeGroups
+        val supported = LambdaBuilder.supportedRuntimeGroups
             .flatMap { it.runtimes }
             .sorted()
 

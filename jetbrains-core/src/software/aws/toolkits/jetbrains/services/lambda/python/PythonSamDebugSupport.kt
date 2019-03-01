@@ -37,7 +37,7 @@ class PythonSamDebugSupport : SamDebugSupport {
         debugPort: Int
     ): XDebugProcessStarter? = object : XDebugProcessStarter() {
         override fun start(session: XDebugSession): XDebugProcess {
-            val mappings = state.lambdaPackage.mappings.map {
+            val mappings = state.builtLambda.mappings.map {
                 PathMapping(
                     it.localRoot,
                     "$TASK_PATH/${it.remoteRoot}"

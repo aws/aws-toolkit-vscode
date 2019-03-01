@@ -26,7 +26,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.iam.IamRole
-import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.utils.delegateMock
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import java.nio.file.Path
@@ -80,7 +80,7 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
 
         val tempFile = FileUtil.createTempFile("lambda", ".zip")
 
-        val packager = mock<LambdaPackager> {
+        val packager = mock<LambdaBuilder> {
             on { packageLambda(any(), any(), any(), any(), any()) } doReturn CompletableFuture.completedFuture(tempFile.toPath())
         }
 
@@ -157,7 +157,7 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
 
         val tempFile = FileUtil.createTempFile("lambda", ".zip")
 
-        val packager = mock<LambdaPackager> {
+        val packager = mock<LambdaBuilder> {
             on { packageLambda(any(), any(), any(), any(), any()) } doReturn CompletableFuture.completedFuture(tempFile.toPath())
         }
 

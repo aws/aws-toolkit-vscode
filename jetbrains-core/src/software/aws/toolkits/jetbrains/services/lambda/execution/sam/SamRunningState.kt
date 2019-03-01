@@ -13,7 +13,7 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.cloudformation.Function
-import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
+import software.aws.toolkits.jetbrains.services.lambda.BuiltLambda
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamTemplateUtils.writeDummySamTemplate
 import java.io.File
 import java.nio.file.Path
@@ -22,7 +22,7 @@ class SamRunningState(
     environment: ExecutionEnvironment,
     val settings: SamRunSettings
 ) : CommandLineState(environment) {
-    internal lateinit var lambdaPackage: LambdaPackage
+    internal lateinit var builtLambda: BuiltLambda
     internal lateinit var runner: SamRunner
 
     override fun startProcess(): ProcessHandler {
@@ -34,7 +34,7 @@ class SamRunningState(
         totalEnvVars["AWS_REGION"] = settings.regionId
         totalEnvVars["AWS_DEFAULT_REGION"] = settings.regionId
 
-        val template = lambdaPackage.templateLocation ?: samTemplate()
+        val template = builtLambda.templateLocation ?: samTemplate()
 
         val commandLine = SamCommon.getSamCommandLine()
             .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.CONSOLE)
@@ -61,7 +61,7 @@ class SamRunningState(
             else -> writeDummySamTemplate(
                 tempFile,
                 settings.runtime,
-                lambdaPackage.codeLocation.toString(),
+                builtLambda.codeLocation.toString(),
                 settings.handler,
                 settings.environmentVariables
             )
@@ -76,7 +76,7 @@ class SamRunningState(
         val template = CloudFormationTemplate.parse(environment.project, file)
         val function = template.getResourceByName(templateDetails.logicalName) as? Function
                 ?: throw IllegalStateException("Failed to locate the resource: ${templateDetails.logicalName}")
-        function.setCodeLocation(lambdaPackage.codeLocation.toString())
+        function.setCodeLocation(builtLambda.codeLocation.toString())
 
         template.saveTo(tempFile)
     }

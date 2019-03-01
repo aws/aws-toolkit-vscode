@@ -28,7 +28,7 @@ import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.services.iam.listRolesFilter
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
-import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode.NEW
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode.UPDATE_CODE
@@ -250,7 +250,7 @@ class EditFunctionDialog(
 
             val s3Bucket = view.sourceBucket.selectedItem as String
 
-            val packager = psiFile.language.runtimeGroup?.let { LambdaPackager.getInstance(it) } ?: return
+            val packager = psiFile.language.runtimeGroup?.let { LambdaBuilder.getInstance(it) } ?: return
             val lambdaCreator = LambdaCreatorFactory.create(AwsClientManager.getInstance(project), packager)
 
             FileDocumentManager.getInstance().saveAllDocuments()
@@ -381,7 +381,7 @@ class UploadToLambdaValidator {
         val runtime = view.runtime.selected()
                 ?: return ValidationInfo(message("lambda.upload_validation.runtime"), view.runtime)
 
-        runtime.runtimeGroup?.let { LambdaPackager.getInstance(it) } ?: return ValidationInfo(
+        runtime.runtimeGroup?.let { LambdaBuilder.getInstance(it) } ?: return ValidationInfo(
             message("lambda.upload_validation.unsupported_runtime", runtime),
             view.runtime
         )

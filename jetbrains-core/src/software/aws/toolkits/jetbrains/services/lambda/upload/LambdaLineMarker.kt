@@ -21,7 +21,7 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplateIndex.Companion.listFunctions
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
-import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.settings.LambdaSettings
@@ -52,7 +52,7 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
 
             val smartPsiElementPointer = SmartPointerManager.createPointer(element)
 
-            if (element.language in LambdaPackager.supportedLanguages) {
+            if (element.language in LambdaBuilder.supportedLanguages) {
                 val executorActions = ExecutorAction.getActions(1)
                 executorActions.forEach {
                     actionGroup.add(LineMarkerActionWrapper(element, it))

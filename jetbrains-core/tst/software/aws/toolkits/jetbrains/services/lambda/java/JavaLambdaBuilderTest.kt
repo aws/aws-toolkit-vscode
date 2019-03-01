@@ -7,34 +7,30 @@ import com.fasterxml.jackson.annotation.JacksonAnnotation
 import com.intellij.compiler.CompilerTestUtil
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.command.WriteCommandAction.writeCommandAction
-import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.projectRoots.impl.JavaAwareProjectJdkTableImpl
 import com.intellij.openapi.roots.CompilerProjectExtension
 import com.intellij.openapi.roots.DependencyScope
 import com.intellij.openapi.roots.ModuleRootModificationUtil
-import com.intellij.psi.PsiElement
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.PsiTestUtil
-import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.util.PathUtil
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.core.utils.zipEntries
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addClass
 import software.aws.toolkits.jetbrains.utils.rules.addModule
 import software.aws.toolkits.jetbrains.utils.rules.addResourceFile
 import software.aws.toolkits.jetbrains.utils.rules.addTestClass
 import java.io.File
-import java.util.concurrent.TimeUnit
+import java.nio.file.Paths
 
-class JavaLambdaPackagerTest {
+class JavaLambdaBuilderTest : BaseLambdaBuilderTest() {
     private val dependentJarPath = PathUtil.getJarPathForClass(JacksonAnnotation::class.java)
     private val testDependencyJarPath = PathUtil.getJarPathForClass(Test::class.java)
     private val testDependencyJarName = File(testDependencyJarPath).name
@@ -44,10 +40,12 @@ class JavaLambdaPackagerTest {
     @JvmField
     val projectRule = HeavyJavaCodeInsightTestFixtureRule()
 
-    private val lambdaPackager = JavaLambdaPackager()
+    override val lambdaBuilder: LambdaBuilder
+        get() = JavaLambdaBuilder()
 
     @Before
-    fun setUp() {
+    override fun setUp() {
+        super.setUp()
         CompilerTestUtil.enableExternalCompiler()
     }
 
@@ -57,11 +55,12 @@ class JavaLambdaPackagerTest {
     }
 
     @Test
-    fun canPackageASingleClassFile() {
+    fun canBuildASingleClassFile() {
         val fixture = projectRule.fixture
         val module = fixture.addModule("aModule")
-        val psiFile = fixture.addClass(
-            module, """
+        val handlerClass = fixture.addClass(
+            module,
+            """
             package com.example;
 
             public class UsefulUtils {
@@ -72,17 +71,24 @@ class JavaLambdaPackagerTest {
             """
         ).containingFile
 
-        runAndVerifyExpectedEntries(module, psiFile, "com.example.UsefulUtils", "com/example/UsefulUtils.class")
+        setUpCompiler()
+
+        val builtLambda = buildLambda(module, handlerClass, Runtime.JAVA8, "com.example.UsefulUtils")
+        verifyEntries(
+            builtLambda,
+            "com/example/UsefulUtils.class"
+        )
     }
 
     @Test
-    fun canPackageAProjectWithDependencies() {
+    fun canBuildAProjectWithDependencies() {
         val fixture = projectRule.fixture
         val module = fixture.addModule("aModule")
         PsiTestUtil.addLibrary(module, dependentJarPath)
 
-        val psiFile = fixture.addClass(
-            module, """
+        val handlerClass = fixture.addClass(
+            module,
+            """
             package com.example;
 
             import java.time.Instant;
@@ -95,18 +101,26 @@ class JavaLambdaPackagerTest {
             """
         ).containingFile
 
-        runAndVerifyExpectedEntries(module, psiFile, "com.example.UsefulUtils", "com/example/UsefulUtils.class", "lib/$dependentJarName")
+        setUpCompiler()
+
+        val builtLambda = buildLambda(module, handlerClass, Runtime.JAVA8, "com.example.UsefulUtils")
+        verifyEntries(
+            builtLambda,
+            "com/example/UsefulUtils.class",
+            "lib/$dependentJarName"
+        )
     }
 
     @Test
-    fun canPackageAMultiModuleProject() {
+    fun canBuildAMultiModuleProject() {
         val fixture = projectRule.fixture
         val mainModule = fixture.addModule("main")
         val dependencyModule = fixture.addModule("dependency")
         val nonDependencyModule = fixture.addModule("nonDependency")
 
-        val mainClass = fixture.addClass(
-            mainModule, """
+        val handlerClass = fixture.addClass(
+            mainModule,
+            """
             package com.example;
 
             import com.example.dependency.SomeClass;
@@ -121,7 +135,8 @@ class JavaLambdaPackagerTest {
 
         fixture.addClass(
             dependencyModule,
-            """package com.example.dependency;
+            """
+            package com.example.dependency;
 
             public class SomeClass {
                 public static String upperCase(String input) {
@@ -135,7 +150,8 @@ class JavaLambdaPackagerTest {
 
         fixture.addClass(
             nonDependencyModule,
-            """package com.example.non.dependency;
+            """
+            package com.example.non.dependency;
 
             public class SomeClass {
                 public static String upperCase(String input) {
@@ -147,11 +163,15 @@ class JavaLambdaPackagerTest {
 
         ModuleRootModificationUtil.addDependency(mainModule, dependencyModule)
 
-        runAndVerifyExpectedEntries(mainModule, mainClass,
-            "com.example.UsefulUtils",
+        setUpCompiler()
+
+        val builtLambda = buildLambda(mainModule, handlerClass, Runtime.JAVA8, "com.example.UsefulUtils")
+        verifyEntries(
+            builtLambda,
             "com/example/UsefulUtils.class",
             "com/example/dependency/SomeClass.class",
-            "lib/$dependentJarName")
+            "lib/$dependentJarName"
+        )
     }
 
     @Test
@@ -159,8 +179,9 @@ class JavaLambdaPackagerTest {
         val fixture = projectRule.fixture
         val module = fixture.addModule("main")
 
-        val mainClass = fixture.addClass(
-            module, """
+        val handlerClass = fixture.addClass(
+            module,
+            """
             package com.example;
 
             public class UsefulUtils {
@@ -173,7 +194,14 @@ class JavaLambdaPackagerTest {
 
         fixture.addResourceFile(module, "foo/bar.txt", "hello world!")
 
-        runAndVerifyExpectedEntries(module, mainClass, "com.example.UsefulUtils", "com/example/UsefulUtils.class", "foo/bar.txt")
+        setUpCompiler()
+
+        val builtLambda = buildLambda(module, handlerClass, Runtime.JAVA8, "com.example.UsefulUtils")
+        verifyEntries(
+            builtLambda,
+            "com/example/UsefulUtils.class",
+            "foo/bar.txt"
+        )
     }
 
     @Test
@@ -181,8 +209,9 @@ class JavaLambdaPackagerTest {
         val fixture = projectRule.fixture
         val module = fixture.addModule("main")
 
-        val mainClass = fixture.addClass(
-            module, """
+        val handlerClass = fixture.addClass(
+            module,
+            """
             package com.example;
 
             public class UsefulUtils {
@@ -194,7 +223,8 @@ class JavaLambdaPackagerTest {
         ).containingFile
 
         fixture.addTestClass(
-            module, """
+            module,
+            """
             package com.example;
 
             import org.junit.Test;
@@ -209,9 +239,125 @@ class JavaLambdaPackagerTest {
             """
         )
 
-        ModuleRootModificationUtil.addModuleLibrary(module, testDependencyJarName, mutableListOf(testDependencyJarPath), mutableListOf(), DependencyScope.TEST)
+        ModuleRootModificationUtil.addModuleLibrary(
+            module,
+            testDependencyJarName,
+            mutableListOf(testDependencyJarPath),
+            mutableListOf(),
+            DependencyScope.TEST
+        )
 
-        runAndVerifyExpectedEntries(module, mainClass, "com.example.UsefulUtils", "com/example/UsefulUtils.class")
+        setUpCompiler()
+
+        val builtLambda = buildLambda(module, handlerClass, Runtime.JAVA8, "com.example.UsefulUtils")
+        verifyEntries(
+            builtLambda,
+            "com/example/UsefulUtils.class"
+        )
+    }
+
+    @Test
+    fun canBuildFromATemplate() {
+        val fixture = projectRule.fixture
+        val module = fixture.addModule("aModule")
+        fixture.addClass(
+            module,
+            """
+            package com.example;
+
+            public class UsefulUtils {
+                public static String upperCase(String input) {
+                    return input.toUpperCase();
+                }
+            }
+            """
+        ).containingFile
+
+        val templateFile = projectRule.fixture.addFileToProject(
+            "template.yaml",
+            """
+            Resources:
+              SomeFunction:
+                Type: AWS::Serverless::Function
+                Properties:
+                  Handler: com.example.UsefulUtils
+                  CodeUri: aModule
+                  Runtime: java8
+                  Timeout: 900
+            """.trimIndent()
+        )
+        val templatePath = Paths.get(templateFile.virtualFile.path)
+
+        setUpCompiler()
+
+        val builtLambda = buildLambdaFromTemplate(module, templatePath, "SomeFunction")
+        verifyEntries(
+            builtLambda,
+            "com/example/UsefulUtils.class"
+        )
+    }
+
+    @Test
+    fun canPackageAMultiModuleProject() {
+        val fixture = projectRule.fixture
+        val mainModule = fixture.addModule("main")
+        val dependencyModule = fixture.addModule("dependency")
+        val nonDependencyModule = fixture.addModule("nonDependency")
+
+        val handlerClass = fixture.addClass(
+            mainModule,
+            """
+            package com.example;
+
+            import com.example.dependency.SomeClass;
+
+            public class UsefulUtils {
+                public static String upperCase(String input) {
+                    return SomeClass.upperCase(input);
+                }
+            }
+            """
+        ).containingFile
+
+        fixture.addClass(
+            dependencyModule,
+            """
+            package com.example.dependency;
+
+            public class SomeClass {
+                public static String upperCase(String input) {
+                    return input.toUpperCase();
+                }
+            }
+            """
+        )
+
+        PsiTestUtil.addLibrary(dependencyModule, dependentJarPath)
+
+        fixture.addClass(
+            nonDependencyModule,
+            """
+            package com.example.non.dependency;
+
+            public class SomeClass {
+                public static String upperCase(String input) {
+                    return input.toUpperCase();
+                }
+            }
+            """
+        )
+
+        ModuleRootModificationUtil.addDependency(mainModule, dependencyModule)
+
+        setUpCompiler()
+
+        val lambdaPackage = packageLambda(mainModule, handlerClass, Runtime.JAVA8, "com.example.UsefulUtils")
+        verifyZipEntries(
+            lambdaPackage,
+            "com/example/UsefulUtils.class",
+            "com/example/dependency/SomeClass.class",
+            "lib/$dependentJarName"
+        )
     }
 
     @Test
@@ -219,8 +365,9 @@ class JavaLambdaPackagerTest {
         val fixture = projectRule.fixture
         val module = fixture.addModule("main")
 
-        val mainClass = fixture.addClass(
-            module, """
+        val handlerClass = fixture.addClass(
+            module,
+            """
             package com.example;
 
             public class UsefulUtils {
@@ -231,28 +378,29 @@ class JavaLambdaPackagerTest {
             """
         )
 
-        ModuleRootModificationUtil.addModuleLibrary(module, testDependencyJarName, mutableListOf(testDependencyJarPath), mutableListOf(), DependencyScope.TEST)
+        ModuleRootModificationUtil.addModuleLibrary(
+            module,
+            testDependencyJarName,
+            mutableListOf(testDependencyJarPath),
+            mutableListOf(),
+            DependencyScope.TEST
+        )
 
-        runAndVerifyExpectedEntries(module, mainClass, "com.example.UsefulUtils", "com/example/UsefulUtils.class")
+        setUpCompiler()
+
+        val builtLambda = buildLambda(module, handlerClass, Runtime.JAVA8, "com.example.UsefulUtils")
+        verifyEntries(
+            builtLambda,
+            "com/example/UsefulUtils.class"
+        )
 
         runInEdt {
             // Modify the file that was compiled to verify there is no lock remaining
             fixture.renameElement(
-                mainClass.findMethodsByName("upperCase", false)[0],
+                handlerClass.findMethodsByName("upperCase", false)[0],
                 "foo"
             )
         }
-    }
-
-    private fun runAndVerifyExpectedEntries(module: Module, mainClass: PsiElement, handler: String, vararg entries: String) {
-        setUpCompiler()
-
-        val completableFuture = runInEdtAndGet {
-            lambdaPackager.packageLambda(module, mainClass, handler, Runtime.JAVA8).toCompletableFuture()
-        }
-
-        val lambdaPackage = completableFuture.get(30, TimeUnit.SECONDS)
-        assertThat(zipEntries(lambdaPackage)).containsExactlyInAnyOrder(*entries)
     }
 
     private fun setUpCompiler() {

@@ -12,9 +12,9 @@ import com.intellij.openapi.util.io.FileUtil
 import com.intellij.psi.PsiElement
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.services.lambda.BuiltLambda
 import software.aws.toolkits.jetbrains.services.lambda.Lambda
-import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
-import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamTemplateUtils
 import software.aws.toolkits.resources.message
 import java.io.File
@@ -22,15 +22,14 @@ import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 
-class JavaLambdaPackager : LambdaPackager() {
+class JavaLambdaBuilder : LambdaBuilder() {
     // TODO: Remove override when we switch to sam build
     override fun buildLambdaFromTemplate(
         module: Module,
         templateLocation: Path,
         logicalId: String,
-        envVars: Map<String, String>,
         useContainer: Boolean
-    ): CompletionStage<LambdaPackage> {
+    ): CompletionStage<BuiltLambda> {
 
         val function = SamTemplateUtils.findFunctionsFromTemplate(
             module.project,
@@ -50,7 +49,7 @@ class JavaLambdaPackager : LambdaPackager() {
             Lambda.findPsiElementsForHandler(module.project, runtime, handler).firstOrNull()
                 ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
 
-        return buildLambda(module, element, handler, runtime, envVars, useContainer)
+        return buildLambda(module, element, handler, runtime, emptyMap(), useContainer)
     }
 
     override fun buildLambda(
@@ -60,10 +59,10 @@ class JavaLambdaPackager : LambdaPackager() {
         runtime: Runtime,
         envVars: Map<String, String>,
         useContainer: Boolean
-    ): CompletionStage<LambdaPackage> {
+    ): CompletionStage<BuiltLambda> {
         val buildDir = FileUtil.createTempDirectory("lambdaBuild", null, true)
 
-        val future = CompletableFuture<LambdaPackage>()
+        val future = CompletableFuture<BuiltLambda>()
         val compilerManager = CompilerManager.getInstance(module.project)
         val compileScope = compilerManager.createModulesCompileScope(arrayOf(module), true, true)
 
@@ -72,7 +71,7 @@ class JavaLambdaPackager : LambdaPackager() {
                 try {
                     copyLibraries(module, buildDir)
                     copyClasses(module, buildDir)
-                    future.complete(LambdaPackage(null, buildDir.toPath()))
+                    future.complete(BuiltLambda(null, buildDir.toPath()))
                 } catch (e: Exception) {
                     future.completeExceptionally(RuntimeException(message("lambda.package.zip_fail"), e))
                 }
@@ -128,6 +127,6 @@ class JavaLambdaPackager : LambdaPackager() {
     }
 
     companion object {
-        val LOG = getLogger<JavaLambdaPackager>()
+        val LOG = getLogger<JavaLambdaBuilder>()
     }
 }

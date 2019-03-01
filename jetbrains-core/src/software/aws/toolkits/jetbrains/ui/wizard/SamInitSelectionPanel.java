@@ -18,7 +18,7 @@ import com.intellij.ui.components.JBLabel;
 import com.intellij.uiDesigner.core.GridConstraints;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager;
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder;
 
 @SuppressWarnings("NullableProblems")
 public class SamInitSelectionPanel {
@@ -36,11 +36,11 @@ public class SamInitSelectionPanel {
         this.projectSettings = projectSettings;
         this.currentSdkSelector = null;
 
-        LambdaPackager.Companion.getSupportedRuntimeGroups()
-                .stream()
-                .flatMap(x -> x.getRuntimes().stream())
-                .sorted()
-                .forEach(y -> runtime.addItem(y));
+        LambdaBuilder.Companion.getSupportedRuntimeGroups()
+                               .stream()
+                               .flatMap(x -> x.getRuntimes().stream())
+                               .sorted()
+                               .forEach(y -> runtime.addItem(y));
 
         SamInitProjectBuilderCommon.setupSamSelectionElements(samExecutableField, editSamExecutableButton, samLabel);
 
