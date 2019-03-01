@@ -101,8 +101,7 @@ abstract class LambdaBuilder {
                             )
                         )
                     } else {
-                        // TODO Move to message()
-                        future.completeExceptionally(IllegalStateException("SAM build command failed"))
+                        future.completeExceptionally(IllegalStateException(message("sam.build.failed")))
                     }
                 }
             })
