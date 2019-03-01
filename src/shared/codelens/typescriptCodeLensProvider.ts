@@ -19,6 +19,7 @@ import { CloudFormation } from '../cloudformation/cloudformation'
 import * as fileSystem from '../filesystem'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
+import { getLogger, Logger } from '../logger'
 import { SamCliBuildInvocation } from '../sam/cli/samCliBuild'
 import {
     DefaultSamCliProcessInvoker,
@@ -53,6 +54,8 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
         document: vscode.TextDocument,
         token: vscode.CancellationToken
     ): Promise<vscode.CodeLens[]> {
+
+        const logger: Logger = getLogger()
         const search: TypescriptLambdaHandlerSearch = new TypescriptLambdaHandlerSearch(document.uri)
         const handlers: LambdaHandlerCandidate[] = await search.findCandidateLambdaHandlers()
 
@@ -78,8 +81,8 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
             } catch (err) {
                 const error = err as Error
 
-                console.error(
-                    `Could not generate 'configure' code lens for handler '${handler.handlerName}': ${error.message}`
+                logger.error(
+                    `Could not generate 'configure' code lens for handler '${handler.handlerName}': `, error
                 )
             }
         })
@@ -208,6 +211,7 @@ class LocalLambdaRunner {
     }
 
     public async run(): Promise<void> {
+        const logger: Logger = getLogger()
         try {
             this.outputChannel.show(true)
             this.outputChannel.appendLine(
@@ -226,8 +230,8 @@ class LocalLambdaRunner {
             await this.invokeLambdaFunction(samBuildTemplate)
 
         } catch (err) {
-            console.log(err)
             const error = err as Error
+            logger.error(error)
 
             this.outputChannel.appendLine(
                 localize(

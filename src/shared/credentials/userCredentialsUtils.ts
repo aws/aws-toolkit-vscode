@@ -13,6 +13,7 @@ import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { EnvironmentVariables } from '../environmentVariables'
 import { writeFileAsync } from '../filesystem'
 import { readFileAsString } from '../filesystemUtilities'
+import { getLogger, Logger } from '../logger'
 import { SystemUtilities } from '../systemUtilities'
 
 /**
@@ -114,6 +115,7 @@ export class UserCredentialsUtils {
         secretKey: string,
         sts?: STS
     ): Promise<CredentialsValidationResult> {
+        const logger: Logger = getLogger()
         try {
             if (!sts) {
                 const awsServiceOpts: ServiceConfigurationOptions = {
@@ -134,8 +136,8 @@ export class UserCredentialsUtils {
 
             if (err instanceof Error) {
                 const error = err as Error
-                console.error(error.message)
                 reason = error.message
+                logger.error(error)
             } else {
                 reason = err as string
             }

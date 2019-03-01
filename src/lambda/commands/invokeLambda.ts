@@ -14,6 +14,7 @@ import { AwsContext } from '../../shared/awsContext'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
+import { getLogger, Logger } from '../../shared/logger'
 import { ResourceFetcher } from '../../shared/resourceFetcher'
 import { FileResourceLocation, WebResourceLocation } from '../../shared/resourceLocation'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
@@ -49,6 +50,9 @@ export async function invokeLambda(params: {
     resourceFetcher: ResourceFetcher,
     element?: FunctionNodeBase, // TODO: Consider replacing 'element'' with something specific and meaningful
 }) {
+
+    const logger: Logger = getLogger()
+
     try {
         const fn: FunctionNodeBase = await selectLambdaNode(params.awsContext, params.element)
         const view = vscode.window.createWebviewPanel(
@@ -67,13 +71,13 @@ export async function invokeLambda(params: {
         })
 
         // ideally need to get the client from the explorer, but the context will do for now
-        console.log('building template...')
+        logger.info('building template...')
 
         const invokeTemplateFn = _.template(LambdaTemplates.INVOKE_TEMPLATE)
         const resourcePath = path.join(ext.context.extensionPath, 'resources', 'vs-lambda-sample-request-manifest.xml')
 
-        console.log(sampleRequestManifestPath)
-        console.log(resourcePath)
+        logger.info(sampleRequestManifestPath)
+        logger.info(resourcePath)
 
         try {
             const sampleInput = await params.resourceFetcher.getResource([
@@ -82,10 +86,10 @@ export async function invokeLambda(params: {
             ])
             const inputs: SampleRequest[] = []
 
-            console.log('querying manifest url')
+            logger.info('querying manifest url')
 
             xml2js.parseString(sampleInput, { explicitArray: false }, (err: Error, result: SampleRequestManifest) => {
-                console.log(result)
+                logger.info(result.toString())
 
                 if (err) {
                     return
@@ -99,7 +103,7 @@ export async function invokeLambda(params: {
             const loadScripts = ExtensionUtilities.getScriptsForHtml(['invokeLambdaVue.js'])
             const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js'])
 
-            console.log(loadLibs)
+            logger.info(loadLibs.toString())
 
             view.webview.html = baseTemplateFn({
                 content: invokeTemplateFn({
@@ -122,12 +126,11 @@ export async function invokeLambda(params: {
                 ext.context.subscriptions
             )
         } catch (err) {
-            console.log('Error getting manifest data..')
-            console.log(err)
+            logger.error('Error getting manifest data..', err as Error)
         }
     } catch (err) {
         const error = err as Error
-        console.log(error.message)
+        logger.error(error)
     }
 }
 
@@ -139,26 +142,29 @@ function createMessageReceivedFunc({fn, outputChannel, ...restParams}: {
     resourcePath: string,
     onPostMessage(message: any): Thenable<boolean>
 }) {
+
+    const logger: Logger = getLogger()
+
     return async (message: CommandMessage) => {
         switch (message.command) {
             case 'sampleRequestSelected':
-                console.log('selected the following sample:')
-                console.log(message.value)
+                logger.info('selected the following sample:')
+                logger.info(message.value ? message.value.toString() : '')
 
                 const sample = await restParams.resourceFetcher.getResource([
                     new WebResourceLocation(`${sampleRequestPath}${message.value}`),
                     new FileResourceLocation(restParams.resourcePath)
                 ])
 
-                console.log(sample)
+                logger.info(sample)
 
                 restParams.onPostMessage({ command: 'loadedSample', sample: sample })
 
                 return
 
             case 'invokeLambda':
-                console.log('invoking lambda function with the following payload:')
-                console.log(message.value)
+                logger.info('invoking lambda function with the following payload:')
+                logger.info(message.value ? message.value.toString() : '')
 
                 outputChannel.show()
                 outputChannel.appendLine('Loading response...')

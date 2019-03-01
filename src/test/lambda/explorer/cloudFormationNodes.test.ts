@@ -21,20 +21,27 @@ import { PlaceholderNode } from '../../../lambda/explorer/placeholderNode'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { ext } from '../../../shared/extensionGlobals'
+import { TestLogger } from '../../../shared/loggerUtils'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
 
 describe('DefaultCloudFormationStackNode', () => {
 
     let fakeStackSummary: CloudFormation.StackSummary
     const fakeIconPathPrefix: string = 'DefaultCloudFormationStackNode'
+    let logger: TestLogger
 
     before(() => {
+        logger = new TestLogger()
         fakeStackSummary = {
             CreationTime: new Date(),
             StackId: '1',
             StackName: 'myStack',
             StackStatus: 'UPDATE_COMPLETE'
         }
+    })
+
+    after(async () => {
+        await logger.cleanupLogger()
     })
 
     // Validates we tagged the node correctly.
@@ -241,6 +248,16 @@ describe('DefaultCloudFormationStackNode', () => {
 })
 
 describe('DefaultCloudFormationNode', () => {
+
+    let logger: TestLogger
+
+    before (() => {
+        logger = new TestLogger()
+    })
+
+    after (async () => {
+        await logger.cleanupLogger()
+    })
 
     it('handles error', async () => {
 

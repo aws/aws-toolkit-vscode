@@ -15,6 +15,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { accessAsync, mkdirAsync, writeFileAsync } from '../../shared/filesystem'
 import { readFileAsString } from '../../shared/filesystemUtilities'
+import { getLogger, Logger } from '../../shared/logger'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
@@ -354,6 +355,8 @@ async function getEventRange(
     context: ConfigureLocalLambdaContext
 ): Promise<vscode.Range> {
 
+    const logger: Logger = getLogger()
+
     const symbols: vscode.DocumentSymbol[] | undefined = await context.executeCommand<vscode.DocumentSymbol[]>(
         'vscode.executeDocumentSymbolProvider',
         editor.document.uri
@@ -370,14 +373,14 @@ async function getEventRange(
 
     const handlersSymbol: vscode.DocumentSymbol | undefined = symbols.find(c => c.name === 'handlers')
     if (!handlersSymbol) {
-        console.error(`Invalid format for document ${editor.document.uri}`)
+        logger.warn(`Invalid format for document ${editor.document.uri}`)
 
         return defaultRange
     }
 
     const handlerSymbol: vscode.DocumentSymbol | undefined = handlersSymbol.children.find(c => c.name === handler)
     if (!handlerSymbol) {
-        console.error(`Unable to find config for handler ${handler}`)
+        logger.warn(`Unable to find config for handler ${handler}`)
 
         return defaultRange
     }

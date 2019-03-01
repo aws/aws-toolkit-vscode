@@ -11,6 +11,7 @@ import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as filesystem from '../filesystem'
+import { getLogger, Logger } from '../logger'
 
 export class DisposableFiles implements vscode.Disposable {
 
@@ -31,6 +32,7 @@ export class DisposableFiles implements vscode.Disposable {
     }
 
     public dispose(): void {
+        const logger: Logger = getLogger()
         if (!this._disposed) {
             try {
                 del.sync(
@@ -59,7 +61,7 @@ export class DisposableFiles implements vscode.Disposable {
                     }
                 })
             } catch (err) {
-                console.error('Error during DisposableFiles dispose', err)
+                logger.error('Error during DisposableFiles dispose: ', err as Error)
             } finally {
                 this._disposed = true
             }

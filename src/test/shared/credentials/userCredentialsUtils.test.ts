@@ -22,19 +22,23 @@ import {
     UserCredentialsUtils,
 } from '../../../shared/credentials/userCredentialsUtils'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
+import { TestLogger } from '../../../shared/loggerUtils'
 
 describe('UserCredentialsUtils', () => {
 
     let tempFolder: string
+    let logger: TestLogger
 
     before(() => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
         tempFolder = fs.mkdtempSync(path.join(os.tmpdir(), 'vsctk'))
+        logger = new TestLogger()
     })
 
-    after(() => {
+    after(async () => {
         del.sync([tempFolder], { force: true })
+        await logger.cleanupLogger()
     })
 
     describe('getCredentialsFilename', () => {

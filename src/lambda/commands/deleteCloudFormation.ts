@@ -11,12 +11,14 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { ext } from '../../shared/extensionGlobals'
+import { getLogger, Logger } from '../../shared/logger'
 import { CloudFormationStackNode } from '../explorer/cloudFormationNodes'
 
 export async function deleteCloudFormation(
     refresh: () => void,
     node?: CloudFormationStackNode
 ) {
+    const logger: Logger = getLogger()
     if (!node) {
         return
     }
@@ -60,6 +62,6 @@ export async function deleteCloudFormation(
             stackName
         ))
 
-        console.error(error.message)
+        logger.error(error)
     }
 }

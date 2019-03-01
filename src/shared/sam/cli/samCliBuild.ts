@@ -6,6 +6,7 @@
 'use strict'
 
 import { fileExists } from '../../filesystemUtilities'
+import { getLogger, Logger } from '../../logger'
 import { ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliProcessInvoker, SamCliProcessInvoker } from './samCliInvoker'
 
@@ -19,6 +20,7 @@ export class SamCliBuildInvocation {
     }
 
     public async execute(): Promise<void> {
+        const logger: Logger = getLogger()
         await this.validate()
 
         const { exitCode, error, stderr, stdout }: ChildProcessResult = await this.invoker.invoke(
@@ -38,12 +40,18 @@ export class SamCliBuildInvocation {
         console.error(`stderr: ${stderr}`)
         console.error(`stdout: ${stdout}`)
 
-        throw new Error(`sam build encountered an error: ${error && error.message ? error.message : stderr || stdout}`)
+        const err =
+            new Error(`sam build encountered an error: ${error && error.message ? error.message : stderr || stdout}`)
+        logger.error(err)
+        throw err
     }
 
     private async validate(): Promise<void> {
+        const logger: Logger = getLogger()
         if (!await fileExists(this.templatePath)) {
-            throw new Error(`template path does not exist: ${this.templatePath}`)
+            const err = new Error(`template path does not exist: ${this.templatePath}`)
+            logger.error(err)
+            throw err
         }
     }
 }

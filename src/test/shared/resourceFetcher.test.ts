@@ -6,6 +6,7 @@
 'use strict'
 
 import * as assert from 'assert'
+import { TestLogger } from '../../shared/loggerUtils'
 import { DefaultRegionProvider } from '../../shared/regions/defaultRegionProvider'
 import { ResourceFetcher } from '../../shared/resourceFetcher'
 import { ResourceLocation } from '../../shared/resourceLocation'
@@ -24,6 +25,16 @@ describe('ResourceFetcher', () => {
             })
         }
     }
+
+    let logger: TestLogger
+
+    before(() => {
+        logger = new TestLogger()
+    })
+
+    after(async () => {
+        await logger.cleanupLogger()
+    })
 
     it('fetches something', async () => {
         const fetchCounter = new ResourceFetcherCounter()
