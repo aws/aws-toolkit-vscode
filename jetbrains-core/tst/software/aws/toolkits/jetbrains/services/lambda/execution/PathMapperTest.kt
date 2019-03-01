@@ -86,6 +86,15 @@ class PathMapperTest {
         assertThat(convertToLocal("remote2/foo")).isEqualTo("local2/foo")
     }
 
+    @Test
+    fun unknownPathsReturnNull() {
+        initMapper {
+        }
+
+        assertThat(mapper.convertToRemote(createLocalFile("foo"))).isNull()
+        assertThat(convertToLocal("foo")).isNull()
+    }
+
     private fun convertToLocal(remote: String) = mapper.convertToLocal(remote)
         ?.removePrefix(FileUtil.normalize(tempFolder.root.absolutePath))
         ?.removePrefix("/")
