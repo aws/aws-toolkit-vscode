@@ -8,6 +8,7 @@ phases:
       - aws sts assume-role --role-arn $ASSUME_ROLE_ARN --role-session-name integ-test > creds.json
       - apt-get update
       - apt-get install jq
+      - apt-get install python3.6
       - export KEY_ID=`jq -r '.Credentials.AccessKeyId' creds.json`
       - export SECRET=`jq -r '.Credentials.SecretAccessKey' creds.json`
       - export TOKEN=`jq -r '.Credentials.SessionToken' creds.json`
