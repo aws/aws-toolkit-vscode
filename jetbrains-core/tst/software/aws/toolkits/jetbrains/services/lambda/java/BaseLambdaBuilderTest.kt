@@ -49,7 +49,7 @@ abstract class BaseLambdaBuilderTest {
 
     protected fun packageLambda(module: Module, handlerElement: PsiElement, runtime: Runtime, handler: String): Path {
         val completableFuture = runInEdtAndGet {
-            lambdaBuilder.packageLambda(module, handlerElement, handler, runtime).toCompletableFuture()
+            lambdaBuilder.packageLambda(module, handlerElement, handler, runtime, true).toCompletableFuture()
         }
 
         return completableFuture.get(3, TimeUnit.MINUTES)
