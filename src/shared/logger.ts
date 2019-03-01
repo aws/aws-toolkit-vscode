@@ -18,7 +18,7 @@ const localize = nls.loadMessageBundle()
 
 const LOG_RELATIVE_PATH: string = path.join('Code', 'logs', 'aws_toolkit')
 const DEFAULT_LOG_LEVEL: string = 'info'
-const DEFAULT_LOG_NAME: string = `aws_toolkit_${makeDateString()}.log`
+const DEFAULT_LOG_NAME: string = `aws_toolkit_${makeDateString('filename')}.log`
 const DEFAULT_OUTPUT_CHANNEL: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Toolkit Logs')
 
 let defaultLogger: Logger
@@ -140,8 +140,7 @@ function releaseLogger(logger: winston.Logger): void {
 }
 
 function formatMessage(level: string, message: ErrorOrString[]): string {
-    const d = new Date()
-    let final: string = `${d.toTimeString()} [${level.toUpperCase()}]:`
+    let final: string = `${makeDateString('logfile')} [${level.toUpperCase()}]:`
     for (const chunk of message) {
         if (chunk instanceof Error) {
             final = `${final} ${chunk.stack}`
@@ -177,16 +176,27 @@ function writeToOutputChannel(messageLevel: number,
 // matches VS Code's log file name format
 // YYYYMMDDThhmmss (note the 'T' prior to time)
 // Uses local timezone
-function makeDateString(): string {
+function makeDateString(type: 'filename' | 'logfile'): string {
     const d = new Date()
+    const isFilename: boolean = type === 'filename'
 
-    return `${d.getFullYear()}` +
+    return `${d.getFullYear()}${chooseSpacer(isFilename, '', '-')}` +
     // String.prototype.padStart() is not available in Typescript...
-    `${(d.getMonth() + 1) < 10 ? '0' + (d.getMonth() + 1).toString() : (d.getMonth() + 1)}` +
-    `${d.getDay() < 10 ? '0' + d.getDay().toString() : d.getDay()}T` +
-    `${d.getHours() < 10 ? '0' + d.getHours().toString() : d.getHours()}` +
-    `${d.getMinutes() < 10 ? '0' + d.getMinutes().toString() : d.getMinutes()}` +
-    `${d.getSeconds() < 10 ? '0' + d.getSeconds().toString() : d.getSeconds()}`
+    `${padNumber(d.getMonth() + 1)}${chooseSpacer(isFilename, '', '-')}` +
+    `${padNumber(d.getDate())}${chooseSpacer(isFilename, 'T', ' ')}` +
+    `${padNumber(d.getHours())}${chooseSpacer(isFilename, '', ':')}` +
+    `${padNumber(d.getMinutes())}${chooseSpacer(isFilename, '', ':')}` +
+    `${padNumber(d.getSeconds())}${chooseSpacer(isFilename, '', ':')}`
+}
+
+function padNumber(num: number): string {
+    return num < 10 ? '0' + num.toString() : num.toString()
+}
+
+function chooseSpacer(isFilename: boolean, ifTrue: string, ifFalse: string): string {
+    if (isFilename) { return ifTrue }
+
+    return ifFalse
 }
 
 function generateWriteParams(logger: winston.Logger,
