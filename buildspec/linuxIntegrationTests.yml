@@ -19,3 +19,7 @@ phases:
     commands:
       - chmod +x gradlew
       - env AWS_ACCESS_KEY_ID=$KEY_ID AWS_SECRET_ACCESS_KEY=$SECRET AWS_SESSION_TOKEN=$TOKEN SAM_CLI_EXEC=$(python -m site --user-base)/bin/sam ./gradlew integrationTest --info --full-stacktrace
+      - VCS_COMMIT_ID="$(git rev-parse HEAD)"
+      - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
+      - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
+      - if [ "$RECORD_UI" ]; then echo "$CODEBUILD_INITIATOR" | grep GitHub && bash <(curl -s https://codecov.io/bash) -t $CODE_COV_TOKEN -F integtest || true fi
