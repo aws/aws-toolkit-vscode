@@ -30,6 +30,7 @@ import { DefaultSettingsConfiguration, SettingsConfiguration } from './shared/se
 import { AWSStatusBar } from './shared/statusBar'
 import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
 import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryService'
+import { registerCommand } from './shared/telemetry/telemetryUtils'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { PromiseSharer } from './shared/utilities/promiseUtilities'
 
@@ -71,18 +72,18 @@ export async function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(...activateCodeLensProviders(awsContext.settingsConfiguration, toolkitOutputChannel))
 
-    vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
-    vscode.commands.registerCommand(
+    registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
+    registerCommand(
         'aws.credential.profile.create',
         async () => await ext.awsContextCommands.onCommandCreateCredentialsProfile()
     )
-    vscode.commands.registerCommand('aws.logout', async () => await ext.awsContextCommands.onCommandLogout())
+    registerCommand('aws.logout', async () => await ext.awsContextCommands.onCommandLogout())
 
-    vscode.commands.registerCommand(
+    registerCommand(
         'aws.showRegion',
         async () => await ext.awsContextCommands.onCommandShowRegion()
     )
-    vscode.commands.registerCommand(
+    registerCommand(
         'aws.hideRegion',
         async (node?: RegionNode) => await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
     )
@@ -142,7 +143,7 @@ function activateCodeLensProviders(
  * Performs SAM CLI relevant extension initialization
  */
 async function initializeSamCli(): Promise<void> {
-    vscode.commands.registerCommand(
+    registerCommand(
         'aws.samcli.detect',
         async () => await PromiseSharer.getExistingPromiseOrCreate(
             'samcli.detect',
@@ -150,7 +151,7 @@ async function initializeSamCli(): Promise<void> {
         )
     )
 
-    vscode.commands.registerCommand(
+    registerCommand(
         'aws.samcli.validate.version',
         async () => {
             const samCliVersionValidator = new SamCliVersionValidator()

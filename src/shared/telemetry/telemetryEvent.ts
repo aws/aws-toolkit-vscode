@@ -9,6 +9,11 @@ import { MetadataEntry, MetricDatum, Unit } from './clienttelemetry'
 
 const NAME_ILLEGAL_CHARS_REGEX = new RegExp('[^\\w+-.:]', 'g')
 
+export interface ResultWithTelemetry<T> {
+    result?: T,
+    telemetryDatum?: Datum
+}
+
 export interface Datum {
     name: string
     value: number

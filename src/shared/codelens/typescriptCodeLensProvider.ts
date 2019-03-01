@@ -28,6 +28,8 @@ import {
 } from '../sam/cli/samCliInvoker'
 import { SamCliLocalInvokeInvocation } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
+import { ResultWithTelemetry } from '../telemetry/telemetryEvent'
+import { defaultMetricDatum, registerCommand } from '../telemetry/telemetryUtils'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
@@ -151,9 +153,11 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
         processInvoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker(),
         taskInvoker: SamCliTaskInvoker = new DefaultSamCliTaskInvoker()
     ): void {
-        vscode.commands.registerCommand(
-            'aws.lambda.local.invoke',
-            async (args: LambdaLocalInvokeArguments) => {
+        const command = 'aws.lambda.local.invoke'
+
+        registerCommand(
+            command,
+            async (args: LambdaLocalInvokeArguments): Promise<ResultWithTelemetry<void>> => {
 
                 let debugPort: number | undefined
 
@@ -172,6 +176,16 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
                 )
 
                 await localLambdaRunner.run()
+
+                const datum = defaultMetricDatum(command)
+                datum.metadata = new Map([
+                    ['runtime', localLambdaRunner.runtime],
+                    ['debug', `${args.debug}`]
+                ])
+
+                return {
+                    telemetryDatum: datum
+                }
             }
         )
     }
@@ -195,7 +209,7 @@ class LocalLambdaRunner {
         private readonly configuration: SettingsConfiguration,
         private readonly localInvokeArgs: LambdaLocalInvokeArguments,
         debugPort: number | undefined,
-        private readonly runtime: string,
+        private readonly _runtime: string,
         private readonly outputChannel: vscode.OutputChannel,
         private readonly processInvoker: SamCliProcessInvoker,
         private readonly taskInvoker: SamCliTaskInvoker
@@ -248,6 +262,10 @@ class LocalLambdaRunner {
             return
         }
 
+    }
+
+    public get runtime(): string {
+        return this._runtime
     }
 
     public get debugPort(): number {

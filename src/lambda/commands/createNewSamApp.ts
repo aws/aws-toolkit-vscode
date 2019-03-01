@@ -41,7 +41,9 @@ export async function resumeCreateNewSamApp(context: Pick<vscode.ExtensionContex
     }
 }
 
-export async function createNewSamApp(context: Pick<vscode.ExtensionContext, 'globalState'>): Promise<void> {
+export async function createNewSamApp(
+    context: Pick<vscode.ExtensionContext, 'globalState'>
+): Promise<Map<string, string> | undefined> {
     const config = await new CreateNewSamAppWizard().run()
     if (!config) {
         return
@@ -66,6 +68,10 @@ export async function createNewSamApp(context: Pick<vscode.ExtensionContext, 'gl
     } else {
         await vscode.window.showTextDocument(uri)
     }
+
+    return new Map([
+        ['runtime', config.runtime]
+    ])
 }
 
 async function getMainUri(config: Pick<SamCliInitArgs, 'location' | 'name'>): Promise<vscode.Uri | undefined> {
