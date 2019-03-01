@@ -36,7 +36,7 @@ abstract class BaseLambdaBuilderTest {
             lambdaBuilder.buildLambda(module, handlerElement, handler, runtime, emptyMap(), true).toCompletableFuture()
         }
 
-        return completableFuture.get(30, TimeUnit.SECONDS)
+        return completableFuture.get(3, TimeUnit.MINUTES)
     }
 
     protected fun buildLambdaFromTemplate(module: Module, template: Path, logicalId: String): BuiltLambda {
@@ -44,7 +44,7 @@ abstract class BaseLambdaBuilderTest {
             lambdaBuilder.buildLambdaFromTemplate(module, template, logicalId, true).toCompletableFuture()
         }
 
-        return completableFuture.get(30, TimeUnit.SECONDS)
+        return completableFuture.get(3, TimeUnit.MINUTES)
     }
 
     protected fun packageLambda(module: Module, handlerElement: PsiElement, runtime: Runtime, handler: String): Path {
@@ -52,7 +52,7 @@ abstract class BaseLambdaBuilderTest {
             lambdaBuilder.packageLambda(module, handlerElement, handler, runtime).toCompletableFuture()
         }
 
-        return completableFuture.get(30, TimeUnit.SECONDS)
+        return completableFuture.get(3, TimeUnit.MINUTES)
     }
 
     protected fun verifyEntries(builtLambda: BuiltLambda, vararg entries: String) {
