@@ -4,10 +4,11 @@
 package software.aws.toolkits.jetbrains.services.lambda.execution
 
 import com.intellij.openapi.util.io.FileUtil
+import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.core.utils.info
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.util.Objects
 
 /**
  * Maps a local path to a remote path. The order of the list indicates the order of priority where first possible
@@ -24,7 +25,7 @@ class PathMapper(private val mappings: List<PathMapping>) {
                 }
             }
         }
-        LOG.info { "Failed to map $remotePath to local file system: $mappings" }
+        LOG.debug { "Failed to map $remotePath to local file system: $mappings" }
         return null
     }
 
@@ -35,7 +36,7 @@ class PathMapper(private val mappings: List<PathMapping>) {
                 return normalizedLocal.replaceFirst(mapping.localRoot, mapping.remoteRoot)
             }
         }
-        LOG.info { "Failed to map $localPath to remote file system: $mappings" }
+        LOG.debug { "Failed to map $localPath to remote file system: $mappings" }
         return null
     }
 
@@ -49,4 +50,18 @@ class PathMapping(localPath: String, remotePath: String) {
     internal val remoteRoot = FileUtil.normalize("$remotePath/")
 
     override fun toString() = "PathMapping(localRoot='$localRoot', remoteRoot='$remoteRoot')"
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as PathMapping
+
+        if (localRoot != other.localRoot) return false
+        if (remoteRoot != other.remoteRoot) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int = Objects.hash(localRoot, remoteRoot)
 }

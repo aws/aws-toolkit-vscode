@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services.lambda.python
 
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.roots.ModuleRootManager
-import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.psi.PsiElement
 import com.intellij.testFramework.PsiTestUtil
@@ -19,8 +18,8 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
+import software.aws.toolkits.jetbrains.services.lambda.execution.PathMapping
 import software.aws.toolkits.jetbrains.settings.SamSettings
-import software.aws.toolkits.jetbrains.utils.rules.PyVirtualEnvSdk
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import java.nio.file.Files
 import java.nio.file.Path
@@ -45,10 +44,11 @@ class PythonLambdaPackagerTest {
         addRequirementsFile("")
         val lambdaPackage = runPackager(projectRule.module, handler)
         verifyExpectedEntries(lambdaPackage, "hello_world/app.py", "requirements.txt")
-//        verifyPathMappings(
-//            lambdaPackage,
-//            "%PROJECT_ROOT%/hello_world/app.py" to "hello_world/app.py"
-//        )
+        verifyPathMappings(
+            lambdaPackage,
+            "%PROJECT_ROOT%" to "/",
+            "%BUILD_ROOT%" to "/"
+        )
     }
 
     @Test
@@ -59,28 +59,25 @@ class PythonLambdaPackagerTest {
 
         val lambdaPackage = runPackager(projectRule.module, handler)
         verifyExpectedEntries(lambdaPackage, "hello_world/app.py", "requirements.txt")
-//        verifyPathMappings(
-//            lambdaPackage,
-//            "%PROJECT_ROOT%/src/app.py" to "app.py"
-//        )
+        verifyPathMappings(
+            lambdaPackage,
+            "%PROJECT_ROOT%/src" to "/",
+            "%BUILD_ROOT%" to "/"
+        )
     }
 
     @Test
     fun testDependenciesAreAdded() {
-        val module = projectRule.module
-        val pyVirtualEnvSdk = PyVirtualEnvSdk(module)
-        pyVirtualEnvSdk.addSitePackage("someLib")
-        ModuleRootModificationUtil.setModuleSdk(module, pyVirtualEnvSdk)
         val handler = addPythonHandler("hello_world")
         addRequirementsFile("", "requests==2.20.0")
 
         val lambdaPackage = runPackager(projectRule.module, handler)
         verifyExpectedEntries(lambdaPackage, "hello_world/app.py", "requests/__init__.py")
-//        verifyPathMappings(
-//            lambdaPackage,
-//            "%PROJECT_ROOT%/hello_world/app.py" to "hello_world/app.py",
-//            "%PROJECT_ROOT%/venv/lib/site-packages/someLib/__init__.py" to "someLib/__init__.py"
-//        )
+        verifyPathMappings(
+            lambdaPackage,
+            "%PROJECT_ROOT%" to "/",
+            "%BUILD_ROOT%" to "/"
+        )
     }
 
     private fun addPythonHandler(subPath: String): PyFunction {
@@ -123,10 +120,14 @@ class PythonLambdaPackagerTest {
 
     private fun verifyPathMappings(lambdaPackage: LambdaPackage, vararg mappings: Pair<String, String>) {
         val basePath = ModuleRootManager.getInstance(projectRule.module).contentRoots[0].path
-        val updatedPaths = mappings.asSequence()
-            .map { (path, file) -> path.replace("%PROJECT_ROOT%", basePath) to file }
-            .toMap()
-        println(lambdaPackage.mappings)
-        assertThat(lambdaPackage.mappings).containsAllEntriesOf(updatedPaths)
+        val updatedPaths = mappings
+            .map { (path, file) ->
+                PathMapping(
+                    path.replace("%PROJECT_ROOT%", basePath)
+                        .replace("%BUILD_ROOT%", lambdaPackage.codeLocation.toString()),
+                    file
+                )
+            }
+        assertThat(lambdaPackage.mappings).containsAll(updatedPaths)
     }
 }

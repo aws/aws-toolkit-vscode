@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.lambda
 
 import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandlerFactory
@@ -16,7 +17,10 @@ import com.intellij.psi.PsiElement
 import com.intellij.util.io.Compressor
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.exists
+import software.aws.toolkits.jetbrains.services.lambda.execution.PathMapping
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamTemplateUtils
+import software.aws.toolkits.resources.message
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
@@ -46,6 +50,19 @@ abstract class LambdaPackager {
         useContainer: Boolean = false
     ): CompletionStage<LambdaPackage> {
         val future = CompletableFuture<LambdaPackage>()
+        val codeLocation = SamTemplateUtils.findFunctionsFromTemplate(
+            module.project,
+            templateLocation.toFile()
+        ).find { it.logicalName == logicalId }
+            ?.codeLocation()
+            ?: throw RuntimeConfigurationError(
+                message(
+                    "lambda.run_configuration.sam.no_such_function",
+                    logicalId,
+                    templateLocation
+                )
+            )
+
         ApplicationManager.getApplication().executeOnPooledThread {
             val buildDir = FileUtil.createTempDirectory("lambdaBuild", null, true).toPath()
 
@@ -60,6 +77,11 @@ abstract class LambdaPackager {
             if (useContainer) {
                 commandLine.withParameters("--use-container")
             }
+
+            val pathMappings = listOf(
+                PathMapping(templateLocation.resolve(codeLocation).toString(), "/"),
+                PathMapping(buildDir.resolve(logicalId).toString(), "/")
+            )
 
             val processHandler = ProcessHandlerFactory.getInstance().createColoredProcessHandler(commandLine)
             processHandler.addProcessListener(object : ProcessAdapter() {
@@ -80,7 +102,7 @@ abstract class LambdaPackager {
                             LambdaPackage(
                                 builtTemplate,
                                 buildDir.resolve(logicalId),
-                                emptyMap()
+                                pathMappings
                             )
                         )
                     } else {
@@ -126,5 +148,5 @@ abstract class LambdaPackager {
 data class LambdaPackage(
     val templateLocation: Path?,
     val codeLocation: Path,
-    val mappings: Map<String, String> = emptyMap()
+    val mappings: List<PathMapping> = emptyList()
 )
