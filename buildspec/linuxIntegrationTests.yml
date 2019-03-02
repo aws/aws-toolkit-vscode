@@ -8,10 +8,11 @@ phases:
       - aws sts assume-role --role-arn $ASSUME_ROLE_ARN --role-session-name integ-test > creds.json
       - apt-get update
       - apt-get install jq
+      - PYTHON_VERSION=3.6.8
       - cd /tmp
-      - wget https://www.python.org/ftp/python/3.6.5/Python-3.6.5.tgz
-      - tar -xvf Python-3.6.5.tgz
-      - cd Python-3.6.5
+      - wget https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz
+      - tar -xvf Python-$PYTHON_VERSION.tgz
+      - cd Python-$PYTHON_VERSION
       - ./configure --enable-loadable-sqlite-extensions --enable-shared
       - make -j8
       - make altinstall
@@ -26,7 +27,7 @@ phases:
   build:
     commands:
       - chmod +x gradlew
-      - env AWS_ACCESS_KEY_ID=$KEY_ID AWS_SECRET_ACCESS_KEY=$SECRET AWS_SESSION_TOKEN=$TOKEN SAM_CLI_EXEC=$(python -m site --user-base)/bin/sam ./gradlew integrationTest --info --full-stacktrace
+      - env AWS_ACCESS_KEY_ID=$KEY_ID AWS_SECRET_ACCESS_KEY=$SECRET AWS_SESSION_TOKEN=$TOKEN SAM_CLI_EXEC=$(python -m site --user-base)/bin/sam ./gradlew integrationTest coverageReport --info --full-stacktrace
       - VCS_COMMIT_ID="$(git rev-parse HEAD)"
       - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
       - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"

@@ -130,6 +130,38 @@ class PythonLambdaBuilderTest : BaseLambdaBuilderTest() {
         )
     }
 
+    @Test
+    fun buildInContainer() {
+        val module = projectRule.module
+        val handler = addPythonHandler("hello_world")
+        addRequirementsFile("")
+        val builtLambda = buildLambda(module, handler, Runtime.PYTHON3_6, "hello_world/app.handle", true)
+        verifyEntries(
+            builtLambda,
+            "hello_world/app.py",
+            "requirements.txt"
+        )
+        verifyPathMappings(
+            module,
+            builtLambda,
+            "%PROJECT_ROOT%" to "/",
+            "%BUILD_ROOT%" to "/"
+        )
+    }
+
+    @Test
+    fun packageInContainer() {
+        val handler = addPythonHandler("hello_world")
+        addRequirementsFile("", "requests==2.20.0")
+
+        val lambdaPackage = packageLambda(projectRule.module, handler, Runtime.PYTHON3_6, "hello_world/app.handle", true)
+        verifyZipEntries(
+            lambdaPackage,
+            "hello_world/app.py",
+            "requests/__init__.py"
+        )
+    }
+
     private fun addPythonHandler(subPath: String): PyFunction {
         val psiFile = projectRule.fixture.addFileToProject(
             "$subPath/app.py",

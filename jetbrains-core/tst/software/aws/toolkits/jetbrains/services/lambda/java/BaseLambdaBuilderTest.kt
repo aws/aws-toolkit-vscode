@@ -31,25 +31,43 @@ abstract class BaseLambdaBuilderTest {
         SamSettings.getInstance().savedExecutablePath = System.getenv()["SAM_CLI_EXEC"]
     }
 
-    protected fun buildLambda(module: Module, handlerElement: PsiElement, runtime: Runtime, handler: String): BuiltLambda {
+    protected fun buildLambda(
+        module: Module,
+        handlerElement: PsiElement,
+        runtime: Runtime,
+        handler: String,
+        useContainer: Boolean = false
+    ): BuiltLambda {
         val completableFuture = runInEdtAndGet {
-            lambdaBuilder.buildLambda(module, handlerElement, handler, runtime, emptyMap(), true).toCompletableFuture()
+            lambdaBuilder.buildLambda(module, handlerElement, handler, runtime, emptyMap(), useContainer)
+                .toCompletableFuture()
         }
 
         return completableFuture.get(3, TimeUnit.MINUTES)
     }
 
-    protected fun buildLambdaFromTemplate(module: Module, template: Path, logicalId: String): BuiltLambda {
+    protected fun buildLambdaFromTemplate(
+        module: Module,
+        template: Path,
+        logicalId: String,
+        useContainer: Boolean = false
+    ): BuiltLambda {
         val completableFuture = runInEdtAndGet {
-            lambdaBuilder.buildLambdaFromTemplate(module, template, logicalId, true).toCompletableFuture()
+            lambdaBuilder.buildLambdaFromTemplate(module, template, logicalId, useContainer).toCompletableFuture()
         }
 
         return completableFuture.get(3, TimeUnit.MINUTES)
     }
 
-    protected fun packageLambda(module: Module, handlerElement: PsiElement, runtime: Runtime, handler: String): Path {
+    protected fun packageLambda(
+        module: Module,
+        handlerElement: PsiElement,
+        runtime: Runtime,
+        handler: String,
+        useContainer: Boolean = false
+    ): Path {
         val completableFuture = runInEdtAndGet {
-            lambdaBuilder.packageLambda(module, handlerElement, handler, runtime, true).toCompletableFuture()
+            lambdaBuilder.packageLambda(module, handlerElement, handler, runtime, useContainer).toCompletableFuture()
         }
 
         return completableFuture.get(3, TimeUnit.MINUTES)

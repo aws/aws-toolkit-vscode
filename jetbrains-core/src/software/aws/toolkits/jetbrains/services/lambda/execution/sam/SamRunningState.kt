@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 
 import com.intellij.execution.configurations.CommandLineState
-import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.runners.ExecutionEnvironment
@@ -37,7 +36,6 @@ class SamRunningState(
         val template = builtLambda.templateLocation ?: samTemplate()
 
         val commandLine = SamCommon.getSamCommandLine()
-            .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.CONSOLE)
             .withParameters("local")
             .withParameters("invoke")
             .withParameters("--skip-pull-image")

@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.ui.wizard
 
-import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.vfs.LocalFileSystem
@@ -24,7 +23,6 @@ class SamInitRunner(
         val tempDir = LocalFileSystem.getInstance().findFileByIoFile(createTempDir())
                 ?: throw RuntimeException("Cannot create temp file")
         val commandLine = SamCommon.getSamCommandLine()
-                .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.CONSOLE)
                 .withParameters("init")
                 .withParameters("--no-input")
                 .withParameters("--name")

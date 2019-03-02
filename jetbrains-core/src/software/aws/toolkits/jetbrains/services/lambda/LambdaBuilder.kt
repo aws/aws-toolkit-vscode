@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.lambda
 
-import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
@@ -17,6 +16,8 @@ import com.intellij.psi.PsiElement
 import com.intellij.util.io.Compressor
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.exists
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.services.lambda.execution.PathMapping
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamTemplateUtils
@@ -62,7 +63,6 @@ abstract class LambdaBuilder {
             val buildDir = FileUtil.createTempDirectory("lambdaBuild", null, true).toPath()
 
             val commandLine = SamCommon.getSamCommandLine()
-                .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.CONSOLE)
                 .withParameters("build")
                 .withParameters("--template")
                 .withParameters(templateLocation.toString())
@@ -82,7 +82,7 @@ abstract class LambdaBuilder {
             processHandler.addProcessListener(object : ProcessAdapter() {
                 override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
                     // TODO: We should find a way to show the output of this in the UI
-                    println(event.text)
+                    LOG.info { event.text }
                 }
 
                 override fun processTerminated(event: ProcessEvent) {
@@ -129,7 +129,9 @@ abstract class LambdaBuilder {
 
     companion object : RuntimeGroupExtensionPointObject<LambdaBuilder>(
         ExtensionPointName("aws.toolkit.lambda.builder")
-    )
+    ) {
+        private val LOG = getLogger<LambdaBuilder>()
+    }
 }
 
 /**
