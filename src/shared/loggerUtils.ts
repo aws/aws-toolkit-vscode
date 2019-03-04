@@ -17,7 +17,7 @@ export class TestLogger {
     private readonly _logfile: string
 
     // initializes a default logger. This persists through all tests.
-    // default logger means that any tested files with logger statements will work.
+    // initializing a default logger means that any tested files with logger statements will work.
     // as a best practice, please initialize a TestLogger before running tests on a file with logger statements.
     public constructor() {
         this._logfile = fs.mkdtempSync(path.join(os.tmpdir(), 'vsctk'))

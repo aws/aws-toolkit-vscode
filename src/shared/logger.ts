@@ -186,7 +186,7 @@ function makeDateString(type: 'filename' | 'logfile'): string {
     `${padNumber(d.getDate())}${chooseSpacer(isFilename, 'T', ' ')}` +
     `${padNumber(d.getHours())}${chooseSpacer(isFilename, '', ':')}` +
     `${padNumber(d.getMinutes())}${chooseSpacer(isFilename, '', ':')}` +
-    `${padNumber(d.getSeconds())}${chooseSpacer(isFilename, '', ':')}`
+    `${padNumber(d.getSeconds())}`
 }
 
 function padNumber(num: number): string {

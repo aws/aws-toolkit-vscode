@@ -149,7 +149,7 @@ function createMessageReceivedFunc({fn, outputChannel, ...restParams}: {
         switch (message.command) {
             case 'sampleRequestSelected':
                 logger.info('selected the following sample:')
-                logger.info(message.value ? message.value.toString() : '')
+                logger.info(String(message.value))
 
                 const sample = await restParams.resourceFetcher.getResource([
                     new WebResourceLocation(`${sampleRequestPath}${message.value}`),
@@ -164,7 +164,7 @@ function createMessageReceivedFunc({fn, outputChannel, ...restParams}: {
 
             case 'invokeLambda':
                 logger.info('invoking lambda function with the following payload:')
-                logger.info(message.value ? message.value.toString() : '')
+                logger.info(String(message.value))
 
                 outputChannel.show()
                 outputChannel.appendLine('Loading response...')
