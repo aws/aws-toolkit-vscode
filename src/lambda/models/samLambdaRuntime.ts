@@ -19,6 +19,7 @@ export type SamLambdaRuntime =
     'nodejs4.3' |
     'nodejs' |
     'dotnetcore2.1' |
+    'dotnetcore2.0' |
     'dotnetcore1.0' |
     'dotnetcore' |
     'dotnet' |
