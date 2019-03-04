@@ -90,11 +90,11 @@ export async function activate(context: vscode.ExtensionContext) {
     // register URLs in extension menu
     vscode.commands.registerCommand(
         'aws.help',
-        () => { vscode.env.openExternal(vscode.Uri.parse(githubUrl)) }
+        () => { vscode.env.openExternal(vscode.Uri.parse(documentationUrl(vscode.env.language))) }
     )
     vscode.commands.registerCommand(
         'aws.github',
-        () => { vscode.env.openExternal(vscode.Uri.parse(documentationUrl(vscode.env.language))) }
+        () => { vscode.env.openExternal(vscode.Uri.parse(githubUrl)) }
     )
 
     const providers = [
