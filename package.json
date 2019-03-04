@@ -81,6 +81,19 @@
                         "Errors, Warnings, Info, and Verbose"
                     ],
                     "markdownDescription": "%AWS.configuration.description.logLevel%"
+                },
+                "aws.telemetry": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "enum": [
+                        "Enable",
+                        "Disable",
+                        "Use the same setting as VS Code"
+                    ],
+                    "default": "Use the same setting as VS Code",
+                    "markdownDescription": "%AWS.configuration.description.telemetry%"
                 }
             }
         },
@@ -294,6 +307,7 @@
         "@types/request": "^2.47.1",
         "@types/semver": "^5.5.0",
         "@types/tcp-port-used": "^1.0.0",
+        "@types/uuid": "^3.4.4",
         "@types/xml2js": "^0.4.3",
         "decache": "^4.4.0",
         "glob": "^7.1.3",
@@ -328,6 +342,7 @@
         "tcp-port-used": "^1.0.1",
         "triple-beam": "^1.3.0",
         "typescript": "^3.1.3",
+        "uuid": "^3.3.2",
         "vscode-nls": "^3.2.4",
         "vue": "^2.5.16",
         "winston": "^3.2.1",

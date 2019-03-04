@@ -19,6 +19,7 @@
             "src",
             "third-party"
         ],
+        "resolveJsonModule": true,
         /* Strict Type-Checking Option */
         "strict": true, /* enable all strict type-checking options */
         /* Additional Checks */

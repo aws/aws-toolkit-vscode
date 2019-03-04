@@ -55,7 +55,7 @@ describe('DefaultAwsClientBuilder', () => {
         // or other unexpected values.
         const semverRegex = (require('semver-regex') as () => RegExp)()
         const userAgentRegex = new RegExp(
-            `^AWS-Toolkit-For-VisualStudio\\/${semverRegex.source} Visual-Studio-Code\\/${semverRegex.source}`
+            `^AWS-Toolkit-For-VSCode\\/${semverRegex.source} Visual-Studio-Code\\/${semverRegex.source}`
         )
 
         it('includes custom user-agent if no options are specified', async () => {

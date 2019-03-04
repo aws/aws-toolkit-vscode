@@ -7,12 +7,10 @@
 
 import * as assert from 'assert'
 import * as del from 'del'
-import * as fs from 'fs'
-import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import * as fileSystem from '../../../shared/filesystem'
-import * as filesystemUtilities from '../../../shared/filesystemUtilities'
+import {  mkdir, writeFile } from '../../../shared/filesystem'
+import { fileExists, mkdtemp } from '../../../shared/filesystemUtilities'
 import { TestLogger } from '../../../shared/loggerUtils'
 import { DisposableFiles, ExtensionDisposableFiles } from '../../../shared/utilities/disposableFiles'
 
@@ -24,10 +22,10 @@ describe('DisposableFiles', async () => {
         logger = new TestLogger()
     })
 
-    beforeEach(() => {
+    beforeEach(async () => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
-        tempFolder = fs.mkdtempSync(path.join(os.tmpdir(), 'vsctk'))
+        tempFolder = await mkdtemp()
     })
 
     afterEach(async () => {
@@ -40,44 +38,44 @@ describe('DisposableFiles', async () => {
 
     it('deletes file on dispose', async () => {
         const tempFile = path.join(tempFolder, 'file.txt')
-        await fileSystem.writeFileAsync(tempFile, 'hi')
+        await writeFile(tempFile, 'hi')
 
         const disposable = new DisposableFiles()
             .addFile(tempFile)
 
         disposable.dispose()
 
-        assert.strictEqual(await filesystemUtilities.fileExists(tempFile), false)
+        assert.strictEqual(await fileExists(tempFile), false)
     })
 
     it('deletes folder on dispose', async () => {
         const testTempFolder = path.join(tempFolder, 'qwerty')
-        await fileSystem.mkdirAsync(testTempFolder)
+        await mkdir(testTempFolder)
 
         const disposable = new DisposableFiles()
             .addFolder(testTempFolder)
 
         disposable.dispose()
 
-        assert.strictEqual(await filesystemUtilities.fileExists(testTempFolder), false)
+        assert.strictEqual(await fileExists(testTempFolder), false)
     })
 
     it('deletes folder containing contents on dispose', async () => {
         const testTempFolder = path.join(tempFolder, 'qwerty')
-        await fileSystem.mkdirAsync(testTempFolder)
-        await fileSystem.writeFileAsync(path.join(testTempFolder, 'file1.txt'), 'hi')
-        await fileSystem.writeFileAsync(path.join(testTempFolder, 'file2.txt'), 'hi')
-        await fileSystem.writeFileAsync(path.join(testTempFolder, 'file3.txt'), 'hi')
-        await fileSystem.mkdirAsync(path.join(testTempFolder, 'subfolder1'))
-        await fileSystem.mkdirAsync(path.join(testTempFolder, 'subfolder2'))
-        await fileSystem.mkdirAsync(path.join(testTempFolder, 'subfolder3'))
+        await mkdir(testTempFolder)
+        await writeFile(path.join(testTempFolder, 'file1.txt'), 'hi')
+        await writeFile(path.join(testTempFolder, 'file2.txt'), 'hi')
+        await writeFile(path.join(testTempFolder, 'file3.txt'), 'hi')
+        await mkdir(path.join(testTempFolder, 'subfolder1'))
+        await mkdir(path.join(testTempFolder, 'subfolder2'))
+        await mkdir(path.join(testTempFolder, 'subfolder3'))
 
         const disposable = new DisposableFiles()
             .addFolder(testTempFolder)
 
         disposable.dispose()
 
-        assert.strictEqual(await filesystemUtilities.fileExists(testTempFolder), false)
+        assert.strictEqual(await fileExists(testTempFolder), false)
     })
 
     it('is okay deleting a parent folder before a child folder', async () => {
@@ -85,10 +83,10 @@ describe('DisposableFiles', async () => {
         const subFolder1 = path.join(tempFolder, 'child1')
         const subFolder2 = path.join(subFolder1, 'child2')
         const subFolder3 = path.join(subFolder2, 'child3')
-        await fileSystem.mkdirAsync(testTempFolder)
-        await fileSystem.mkdirAsync(subFolder1)
-        await fileSystem.mkdirAsync(subFolder2)
-        await fileSystem.mkdirAsync(subFolder3)
+        await mkdir(testTempFolder)
+        await mkdir(subFolder1)
+        await mkdir(subFolder2)
+        await mkdir(subFolder3)
 
         const disposable = new DisposableFiles()
             .addFolder(testTempFolder)
@@ -98,7 +96,7 @@ describe('DisposableFiles', async () => {
 
         disposable.dispose()
 
-        assert.strictEqual(await filesystemUtilities.fileExists(testTempFolder), false)
+        assert.strictEqual(await fileExists(testTempFolder), false)
     })
 
 })
@@ -149,7 +147,7 @@ describe('ExtensionDisposableFiles', async () => {
         assert.ok(ExtensionDisposableFiles.getInstance().toolkitTempFolder)
 
         assert.strictEqual(
-            await filesystemUtilities.fileExists(ExtensionDisposableFiles.getInstance().toolkitTempFolder),
+            await fileExists(ExtensionDisposableFiles.getInstance().toolkitTempFolder),
             true
         )
     })

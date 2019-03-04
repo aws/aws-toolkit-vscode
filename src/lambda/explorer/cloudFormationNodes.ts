@@ -63,6 +63,11 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
 
         return !!this.errorNode ? [this.errorNode]
             : [...this.stackNodes.values()]
+                .sort((nodeA, nodeB) =>
+                    nodeA.stackName.localeCompare(
+                        nodeB.stackName
+                    )
+                )
     }
 
     public async updateChildren(): Promise<void> {
@@ -85,6 +90,8 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
 
 export interface CloudFormationStackNode extends AWSTreeErrorHandlerNode {
     readonly regionCode: string
+    readonly stackId?: CloudFormation.StackId
+    readonly stackName: CloudFormation.StackName
 
     readonly parent: CloudFormationNode
 
@@ -116,6 +123,14 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
         }
     }
 
+    public get stackId(): CloudFormation.StackId | undefined {
+        return this.stackSummary.StackId
+    }
+
+    public get stackName(): CloudFormation.StackName {
+        return this.stackSummary.StackName
+    }
+
     public async getChildren(): Promise<(CloudFormationFunctionNode | PlaceholderNode)[]> {
         await this.handleErrorProneOperation(
             async () => this.updateChildren(),
@@ -142,8 +157,8 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
 
     public update(stackSummary: CloudFormation.StackSummary): void {
         this.stackSummary = stackSummary
-        this.label = `${stackSummary.StackName} [${stackSummary.StackStatus}]`
-        this.tooltip = `${stackSummary.StackName}${os.EOL}${stackSummary.StackId}`
+        this.label = `${this.stackName} [${stackSummary.StackStatus}]`
+        this.tooltip = `${this.stackName}${os.EOL}${this.stackId}`
     }
 
     private async updateChildren(): Promise<void> {

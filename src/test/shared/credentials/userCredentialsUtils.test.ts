@@ -9,7 +9,6 @@ import * as assert from 'assert'
 import * as AWS from 'aws-sdk'
 import * as del from 'del'
 import * as fs from 'fs'
-import * as os from 'os'
 import * as path from 'path'
 import { promisify } from 'util'
 
@@ -22,6 +21,7 @@ import {
     UserCredentialsUtils,
 } from '../../../shared/credentials/userCredentialsUtils'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
+import { mkdtemp } from '../../../shared/filesystemUtilities'
 import { TestLogger } from '../../../shared/loggerUtils'
 
 describe('UserCredentialsUtils', () => {
@@ -29,11 +29,11 @@ describe('UserCredentialsUtils', () => {
     let tempFolder: string
     let logger: TestLogger
 
-    before(() => {
+    before(async () => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
-        tempFolder = fs.mkdtempSync(path.join(os.tmpdir(), 'vsctk'))
         logger = new TestLogger()
+        tempFolder = await mkdtemp()
     })
 
     after(async () => {

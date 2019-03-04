@@ -20,10 +20,17 @@ export async function deleteCloudFormation(
 ) {
     const logger: Logger = getLogger()
     if (!node) {
+        vscode.window.showErrorMessage(
+            localize(
+                'AWS.message.error.cloudFormation.unsupported',
+                'Unable to delete a CloudFormation Stack. No stack provided.',
+            )
+        )
+
         return
     }
 
-    const stackName = node.label || localize('AWS.lambda.policy.unknown.function', 'Unknown')
+    const stackName = node.stackName
 
     const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
     const responseNo: string = localize('AWS.generic.response.no', 'No')

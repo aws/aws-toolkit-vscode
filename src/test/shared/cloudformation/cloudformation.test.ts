@@ -7,13 +7,11 @@
 
 import * as assert from 'assert'
 import * as del from 'del'
-import * as fs from 'fs'
-import * as os from 'os'
 import * as path from 'path'
 
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
-import * as filesystem from '../../../shared/filesystem'
-import * as filesystemUtilities from '../../../shared/filesystemUtilities'
+import { writeFile } from '../../../shared/filesystem'
+import { fileExists, mkdtemp } from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import { assertRejects } from '../utilities/assertUtils'
 
@@ -25,12 +23,12 @@ describe ('CloudFormation', () => {
     before(async () => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
-        tempFolder = fs.mkdtempSync(path.join(os.tmpdir(), 'vsctk'))
+        tempFolder = await mkdtemp()
         filename = path.join(tempFolder, 'temp.yaml')
     })
 
     afterEach(async () => {
-        if (await filesystemUtilities.fileExists(filename)) {
+        if (await fileExists(filename)) {
             await del(filename, { force: true })
         }
     })
@@ -61,7 +59,7 @@ describe ('CloudFormation', () => {
     }
 
     async function strToYamlFile(str: string, file: string): Promise<void> {
-        await filesystem.writeFileAsync(file, str, 'utf8')
+        await writeFile(file, str, 'utf8')
     }
 
     it ('can successfully load a file', async () => {
@@ -142,14 +140,20 @@ describe ('CloudFormation', () => {
     it ('can detect an invalid template', () => {
         const badTemplate = createBaseTemplate()
         delete badTemplate.Resources!.TestResource!.Type
-        assert.throws(() => CloudFormation.validateTemplate(badTemplate),
-                      Error, 'Missing or invalid value in Template for key: Type')
+        assert.throws(
+            () => CloudFormation.validateTemplate(badTemplate),
+            Error,
+            'Template does not contain any Lambda resources'
+        )
     })
 
     it ('can detect an invalid resource', () => {
         const badResource = createBaseResource()
         delete badResource.Properties!.CodeUri
-        assert.throws(() => CloudFormation.validateResource(badResource),
-                      Error, 'Missing or invalid value in Template for key: CodeUri')
+        assert.throws(
+            () => CloudFormation.validateResource(badResource),
+            Error,
+            'Missing or invalid value in Template for key: CodeUri'
+        )
     })
 })

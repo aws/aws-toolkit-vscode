@@ -8,6 +8,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
+import { resumeCreateNewSamApp } from './lambda/commands/createNewSamApp'
 import { RegionNode } from './lambda/explorer/regionNode'
 import { LambdaTreeDataProvider } from './lambda/lambdaTreeDataProvider'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
@@ -28,6 +29,8 @@ import * as SamCliDetection from './shared/sam/cli/samCliDetection'
 import { SamCliVersionValidator } from './shared/sam/cli/samCliVersionValidator'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from './shared/settingsConfiguration'
 import { AWSStatusBar } from './shared/statusBar'
+import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
+import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryService'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { PromiseSharer } from './shared/utilities/promiseUtilities'
 
@@ -60,6 +63,13 @@ export async function activate(context: vscode.ExtensionContext) {
     ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
     ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
     ext.statusBar = new AWSStatusBar(awsContext, context)
+    ext.telemetry = new DefaultTelemetryService(context)
+    new AwsTelemetryOptOut(ext.telemetry, new DefaultSettingsConfiguration(extensionSettingsPrefix))
+        .ensureUserNotified()
+        .catch((err) => {
+            console.warn(`Exception while displaying opt-out message: ${err}`)
+        })
+    await ext.telemetry.start()
 
     context.subscriptions.push(...activateCodeLensProviders(awsContext.settingsConfiguration, toolkitOutputChannel))
 
@@ -90,7 +100,7 @@ export async function activate(context: vscode.ExtensionContext) {
     ]
 
     providers.forEach((p) => {
-        p.initialize()
+        p.initialize(context)
         context.subscriptions.push(vscode.window.registerTreeDataProvider(p.viewProviderId, p))
     })
 
@@ -99,9 +109,12 @@ export async function activate(context: vscode.ExtensionContext) {
     await initializeSamCli()
 
     await ExtensionDisposableFiles.initialize(context)
+
+    await resumeCreateNewSamApp(context)
 }
 
-export function deactivate() {
+export async function deactivate() {
+    await ext.telemetry.shutdown()
 }
 
 function activateCodeLensProviders(
