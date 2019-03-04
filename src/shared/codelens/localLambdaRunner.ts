@@ -5,27 +5,26 @@
 
 'use strict'
 
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
-
 import * as path from 'path'
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
-
+import * as nls from 'vscode-nls'
 import { buildHandlerConfig, getLocalLambdaConfiguration, HandlerConfig } from '../../lambda/local/configureLocalLambda'
 import { detectLocalLambdas } from '../../lambda/local/detectLocalLambdas'
-// import { NodeDebugConfiguration } from '../../lambda/local/nodeDebugConfiguration'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { mkdir, writeFile } from '../filesystem'
 import { SamCliBuildInvocation } from '../sam/cli/samCliBuild'
-import {
-    SamCliProcessInvoker,
-    SamCliTaskInvoker
-} from '../sam/cli/samCliInvoker'
+import { SamCliProcessInvoker, SamCliTaskInvoker } from '../sam/cli/samCliInvoker'
 import { SamCliLocalInvokeInvocation } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
+
+import { getLogger, OutputChannelName } from './codeLensUtils'
+
+const localize = nls.loadMessageBundle()
+
+const logger = getLogger(OutputChannelName.Lambda)
 
 export interface LambdaLocalInvokeArguments {
   document: vscode.TextDocument,
@@ -72,8 +71,7 @@ export class LocalLambdaRunner {
 
   public async run(): Promise<void> {
       try {
-          this.outputChannel.show(true)
-          this.outputChannel.appendLine(
+          logger.info(
               localize(
                   'AWS.output.sam.local.start',
                   'Preparing to run {0} locally...',
@@ -89,9 +87,11 @@ export class LocalLambdaRunner {
           await this.invokeLambdaFunction(samBuildTemplate)
 
       } catch (err) {
+          // TODO: logger.error?
           console.log(err)
           const error = err as Error
 
+        // TODO: Define standard/strategy. Sometimes err.message is/isn't part of msg "Error: {0}"
           this.outputChannel.appendLine(
               localize(
                   'AWS.output.sam.local.error',
@@ -180,31 +180,11 @@ export class LocalLambdaRunner {
       return inputTemplatePath
   }
 
-  // private async determineRootCodeFolder(): Promise<string> {
-  //     const packageJsonPath: string | undefined =
-  //         await filesystemUtilities.findFileInParentPaths(
-  //             path.dirname(this.localInvokeArgs.document.uri.fsPath),
-  //             'package.json'
-  //         )
-
-  //     if (!packageJsonPath) {
-  //         throw new Error(
-  //             localize(
-  //                 'AWS.error.sam.local.package_json_not_found',
-  //                 'Unable to find package.json related to {0}',
-  //                 this.localInvokeArgs.document.uri.fsPath
-  //             )
-  //         )
-  //     }
-
-  //     return path.dirname(packageJsonPath)
-  // }
-
   private async executeSamBuild(
       rootCodeFolder: string,
       inputTemplatePath: string
   ): Promise<string> {
-      this.outputChannel.appendLine(
+      logger.info(
           localize(
               'AWS.output.building.sam.application',
               'Building SAM Application...'
@@ -219,8 +199,7 @@ export class LocalLambdaRunner {
           inputTemplatePath,
           this.processInvoker
       ).execute()
-
-      this.outputChannel.appendLine(
+      logger.info(
           localize(
               'AWS.output.building.sam.application.complete',
               'Build complete.'
@@ -242,7 +221,7 @@ export class LocalLambdaRunner {
   private async invokeLambdaFunction(
       samTemplatePath: string,
   ): Promise<void> {
-      this.outputChannel.appendLine(
+      logger.info(
           localize(
               'AWS.output.starting.sam.app.locally',
               'Starting the SAM Application locally (see Terminal for output)'
@@ -271,7 +250,7 @@ export class LocalLambdaRunner {
       await command.execute()
 
       if (this.localInvokeArgs.debug) {
-          this.outputChannel.appendLine(
+          logger.info(
               localize(
                   'AWS.output.sam.local.waiting',
                   'Waiting for SAM Application to start before attaching debugger...'
@@ -326,8 +305,7 @@ export class LocalLambdaRunner {
         // Enable caller to do last minute preperation before ataching debugger
         await this.onWillAttachDebugger()
       }
-
-      this.outputChannel.appendLine(
+      logger.info(
           localize(
               'AWS.output.sam.local.attaching',
               'Attaching to SAM Application...'
@@ -337,7 +315,7 @@ export class LocalLambdaRunner {
       const attachSuccess: boolean = await vscode.debug.startDebugging(undefined, this.debugConfig)
 
       if (attachSuccess) {
-          this.outputChannel.appendLine(
+          logger.info(
               localize(
                   'AWS.output.sam.local.attach.success',
                   'Debugger attached'
@@ -345,7 +323,7 @@ export class LocalLambdaRunner {
           )
       } else {
           // sam local either failed, or took too long to start up
-          this.outputChannel.appendLine(
+          logger.info(
               localize(
                   'AWS.output.sam.local.attach.failure',
                   // tslint:disable-next-line:max-line-length

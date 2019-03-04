@@ -14,7 +14,7 @@ import { LambdaTreeDataProvider } from './lambda/lambdaTreeDataProvider'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
-import { toolkitOutputChannel } from './shared/codelens/codeLensUtils'
+import { getOutputChannel, OutputChannelName } from './shared/codelens/codeLensUtils'
 import * as pyLensProvider from './shared/codelens/pythonCodeLensProvider'
 import * as tsLensProvider from './shared/codelens/typescriptCodeLensProvider'
 import { extensionSettingsPrefix } from './shared/constants'
@@ -34,6 +34,8 @@ import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
 import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryService'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { PromiseSharer } from './shared/utilities/promiseUtilities'
+
+const toolkitOutputChannel = getOutputChannel(OutputChannelName.ToolKit)
 
 export async function activate(context: vscode.ExtensionContext) {
 
@@ -111,6 +113,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await resumeCreateNewSamApp(context)
     } catch (err) {
+        // TODO: logger.error?
         toolkitOutputChannel.show()
         toolkitOutputChannel.appendLine(`Error activating extension: ${String(err)}`)
         throw err

@@ -17,13 +17,45 @@ import {
 } from '../sam/cli/samCliInvoker'
 import { SettingsConfiguration } from '../settingsConfiguration'
 
-export const toolkitOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel(
-    localize('AWS.channel.aws.toolkit', 'AWS Toolkit')
-)
-export const log = (msg: string): void => {
-    toolkitOutputChannel.show()
-    toolkitOutputChannel.appendLine(msg)
+type LogLevel = 'debug' | 'info' | 'warn' | 'error'
+const log = (channel: vscode.OutputChannel, level: LogLevel, msg: string, err?: Error): void => {
+    channel.show()
+    const _msg = `[${level}]: ${msg}`
+    if (err) {
+        // TODO: Define standard/strategy. Sometimes err.message is part of msg. Probably shouldn't be.
+        channel.appendLine(`${msg}: ${ err.message}`)
+        console[level](new Date().toISOString(), _msg, err.stack)
+    } else {
+        channel.appendLine(msg)
+        console[level](new Date().toISOString(), _msg)
+    }
 }
+
+export enum OutputChannelName {
+    ToolKit = 'ToolKit', // localize('AWS.channel.aws.toolkit', 'AWS Toolkit')
+    Lambda = 'Lambda'
+}
+const outputChannels: {[channelName: string]: vscode.OutputChannel} = {
+    [OutputChannelName.ToolKit.toString()]: vscode.window.createOutputChannel(
+        localize('AWS.channel.aws.toolkit', 'AWS Toolkit')
+    ),
+    [OutputChannelName.Lambda.toString()]: vscode.window.createOutputChannel('AWS Lambda')
+}
+
+export const getOutputChannel = (name: OutputChannelName) => outputChannels[name.toString()]
+
+export const getLogger = (channelName: OutputChannelName) => {
+    const channel = outputChannels[channelName.toString()]
+
+    return {
+        debug: (msg: string) => log(channel, 'debug', msg),
+        info: (msg: string) => log(channel, 'info', msg),
+        warn: (msg: string) => log(channel, 'warn', msg),
+        error: (msg: string, err?: Error) => log(channel, 'error', msg, err)
+    }
+}
+
+const logger = getLogger(OutputChannelName.ToolKit)
 
 export interface CodeLensProviderParams {
     configuration: SettingsConfiguration,
@@ -36,11 +68,11 @@ export const getLambdaHandlerCandidates = async ({uri}: {uri: vscode.Uri}): Prom
     const filename = uri.fsPath
     // DocumentSymbol[]> => {
     if (!vscode.window.activeTextEditor) {
-        log('Oh no, vscode.window.activeTextEditor is not defined!')
+        logger.warn("'vscode.window.activeTextEditor' is not defined!")
 
         return []
     } else {
-        log(`getting symbols for ${uri.fsPath}`)
+        logger.info(`Getting symbols for '${uri.fsPath}'`)
         const symbols: vscode.DocumentSymbol[] = ( // SymbolInformation has less detail (no children)
             (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
                 'vscode.executeDocumentSymbolProvider',
@@ -51,7 +83,7 @@ export const getLambdaHandlerCandidates = async ({uri}: {uri: vscode.Uri}): Prom
         return symbols
             .filter(sym => sym.kind === vscode.SymbolKind.Function)
             .map(symbol => {
-                log(`found symbol: ${path.parse(filename).name}.${symbol.name}`)
+                logger.debug(`Found potential handler: '${path.parse(filename).name}.${symbol.name}'`)
 
                 return {
                     filename,
@@ -99,8 +131,9 @@ export const  makeCodeLenses = async ({ document, token, handlers, lang }: {
           lenses.push(makeConfigureCodeLens(baseParams))
       } catch (err) {
           const error = err as Error
-          console.error(
-              `Could not generate 'configure' code lens for handler '${handler.handlerName}': ${error.message}`
+          logger.error(
+              `Could not generate 'configure' code lens for handler '${handler.handlerName}'`,
+              error
           )
       }
   })

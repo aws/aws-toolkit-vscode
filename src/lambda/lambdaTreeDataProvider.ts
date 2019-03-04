@@ -5,12 +5,11 @@
 
 'use strict'
 
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
-
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import { AwsContext } from '../shared/awsContext'
 import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
+import { getOutputChannel, OutputChannelName } from '../shared/codelens/codeLensUtils'
 import { ext } from '../shared/extensionGlobals'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { ResourceFetcher } from '../shared/resourceFetcher'
@@ -35,6 +34,8 @@ import { DefaultLambdaPolicyProvider, LambdaPolicyView } from './lambdaPolicy'
 import { configureLocalLambda } from './local/configureLocalLambda'
 import * as utils from './utils'
 
+const localize = nls.loadMessageBundle()
+
 export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
     public viewProviderId: string = 'lambda'
     public readonly onDidChangeTreeData: vscode.Event<AWSTreeNodeBase | undefined>
@@ -47,7 +48,7 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         private readonly regionProvider: RegionProvider,
         private readonly resourceFetcher: ResourceFetcher,
         private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string,
-        private readonly lambdaOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda'),
+        private readonly lambdaOutputChannel: vscode.OutputChannel = getOutputChannel(OutputChannelName.Lambda),
     ) {
         this._onDidChangeTreeData = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
         this.onDidChangeTreeData = this._onDidChangeTreeData.event

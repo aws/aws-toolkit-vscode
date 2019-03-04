@@ -8,20 +8,21 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 
+import { NodeDebugConfiguration } from '../../lambda/local/nodeDebugConfiguration'
+import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
+import { DefaultSamCliProcessInvoker, DefaultSamCliTaskInvoker, } from '../sam/cli/samCliInvoker'
+
 import {
     CodeLensProviderParams,
     getInvokeCmdKey,
     getLambdaHandlerCandidates,
-    log,
-    makeCodeLenses } from './codeLensUtils'
+    getLogger,
+    makeCodeLenses,
+    OutputChannelName
+} from './codeLensUtils'
 import { LambdaLocalInvokeArguments, LocalLambdaRunner } from './localLambdaRunner'
 
-import { NodeDebugConfiguration } from '../../lambda/local/nodeDebugConfiguration'
-import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
-import {
-    DefaultSamCliProcessInvoker,
-    DefaultSamCliTaskInvoker,
-} from '../sam/cli/samCliInvoker'
+const logger = getLogger(OutputChannelName.ToolKit)
 
 export const PYTHON_LANGUAGE = 'python'
 // export const PYTHON: vscode.DocumentFilter[] = [ // TODO: Use this or PYTHON_ALLFILES?
@@ -51,7 +52,7 @@ export const initialize = ({
         getInvokeCmdKey('python'),
         async (args: LambdaLocalInvokeArguments) => {
             const samProjectCodeRoot = await getSamPythonProjectDirPath()
-            log(`Project root: ${samProjectCodeRoot}`)
+            logger.debug(`Project root: '${samProjectCodeRoot}'`)
             let debugPort: number | undefined
 
             if (args.debug) {
