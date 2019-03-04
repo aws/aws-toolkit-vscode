@@ -173,8 +173,9 @@ function writeToOutputChannel(messageLevel: number,
     }
 }
 
-// matches VS Code's log file name format
-// YYYYMMDDThhmmss (note the 'T' prior to time)
+// outputs a timestamp with the following formattings:
+// type: 'filename' = YYYYMMDDThhmmss (note the 'T' prior to time, matches VS Code's log file name format)
+// type: 'logFile' = YYYY-MM-DD HH:MM:SS
 // Uses local timezone
 function makeDateString(type: 'filename' | 'logfile'): string {
     const d = new Date()

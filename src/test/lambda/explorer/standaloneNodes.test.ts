@@ -127,6 +127,16 @@ describe('DefaultStandaloneFunctionNode', () => {
 
 describe('DefaultStandaloneFunctionGroupNode', () => {
 
+    let logger: TestLogger
+
+    before(() => {
+        logger = new TestLogger()
+    })
+
+    after(async () => {
+        await logger.cleanupLogger()
+    })
+
     const unusedPathResolver = () => { throw new Error('unused') }
 
     class ThrowErrorDefaultStandaloneFunctionGroupNode extends DefaultStandaloneFunctionGroupNode {
