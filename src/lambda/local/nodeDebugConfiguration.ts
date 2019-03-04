@@ -8,7 +8,7 @@
 import * as vscode from 'vscode'
 
 export interface NodeDebugConfiguration extends vscode.DebugConfiguration {
-    readonly type: 'node'
+    readonly type: 'node' | 'python'
     readonly request: 'attach' | 'launch'
     readonly name: string
     readonly preLaunchTask?: string

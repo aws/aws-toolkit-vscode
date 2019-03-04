@@ -5,11 +5,14 @@
 
 'use strict'
 
+import { Range } from 'vscode'
+
 export interface LambdaHandlerCandidate {
     handlerName: string,
     filename: string,
     positionStart: number,
     positionEnd: number,
+    range?: Range
 }
 
 export interface LambdaHandlerSearch {

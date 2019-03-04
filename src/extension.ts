@@ -14,7 +14,9 @@ import { LambdaTreeDataProvider } from './lambda/lambdaTreeDataProvider'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
-import { TypescriptCodeLensProvider } from './shared/codelens/typescriptCodeLensProvider'
+import { toolkitOutputChannel } from './shared/codelens/codeLensUtils'
+import * as pyLensProvider from './shared/codelens/pythonCodeLensProvider'
+import * as tsLensProvider from './shared/codelens/typescriptCodeLensProvider'
 import { extensionSettingsPrefix } from './shared/constants'
 import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
@@ -42,98 +44,112 @@ export async function activate(context: vscode.ExtensionContext) {
         nls.config()()
     }
 
-    const localize = nls.loadMessageBundle()
-
     ext.context = context
 
-    const toolkitOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel(
-        localize('AWS.channel.aws.toolkit', 'AWS Toolkit')
-    )
+    try {
+        await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
 
-    await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
+        const awsContext = new DefaultAwsContext(new DefaultSettingsConfiguration(extensionSettingsPrefix))
+        const awsContextTrees = new AwsContextTreeCollection()
+        const resourceFetcher = new DefaultResourceFetcher()
+        const regionProvider = new DefaultRegionProvider(context, resourceFetcher)
 
-    const awsContext = new DefaultAwsContext(new DefaultSettingsConfiguration(extensionSettingsPrefix))
-    const awsContextTrees = new AwsContextTreeCollection()
-    const resourceFetcher = new DefaultResourceFetcher()
-    const regionProvider = new DefaultRegionProvider(context, resourceFetcher)
+        ext.awsContextCommands = new DefaultAWSContextCommands(awsContext, awsContextTrees, regionProvider)
+        ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
+        ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
+        ext.statusBar = new AWSStatusBar(awsContext, context)
+        ext.telemetry = new DefaultTelemetryService(context)
+        new AwsTelemetryOptOut(ext.telemetry, new DefaultSettingsConfiguration(extensionSettingsPrefix))
+            .ensureUserNotified()
+            .catch((err) => {
+                console.warn(`Exception while displaying opt-out message: ${err}`)
+            })
+        await ext.telemetry.start()
 
-    ext.awsContextCommands = new DefaultAWSContextCommands(awsContext, awsContextTrees, regionProvider)
-    ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
-    ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
-    ext.statusBar = new AWSStatusBar(awsContext, context)
-    ext.telemetry = new DefaultTelemetryService(context)
-    new AwsTelemetryOptOut(ext.telemetry, new DefaultSettingsConfiguration(extensionSettingsPrefix))
-        .ensureUserNotified()
-        .catch((err) => {
-            console.warn(`Exception while displaying opt-out message: ${err}`)
-        })
-    await ext.telemetry.start()
-
-    context.subscriptions.push(...activateCodeLensProviders(awsContext.settingsConfiguration, toolkitOutputChannel))
-
-    vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
-    vscode.commands.registerCommand(
-        'aws.credential.profile.create',
-        async () => await ext.awsContextCommands.onCommandCreateCredentialsProfile()
-    )
-    vscode.commands.registerCommand('aws.logout', async () => await ext.awsContextCommands.onCommandLogout())
-
-    vscode.commands.registerCommand(
-        'aws.showRegion',
-        async () => await ext.awsContextCommands.onCommandShowRegion()
-    )
-    vscode.commands.registerCommand(
-        'aws.hideRegion',
-        async (node?: RegionNode) => await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
-    )
-
-    const providers = [
-        new LambdaTreeDataProvider(
-            awsContext,
-            awsContextTrees,
-            regionProvider,
-            resourceFetcher,
-            (relativeExtensionPath) => getExtensionAbsolutePath(context, relativeExtensionPath)
+        context.subscriptions.push(
+            ...(await activateCodeLensProviders(awsContext.settingsConfiguration))
         )
-    ]
 
-    providers.forEach((p) => {
-        p.initialize(context)
-        context.subscriptions.push(vscode.window.registerTreeDataProvider(p.viewProviderId, p))
-    })
+        vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
+        vscode.commands.registerCommand(
+            'aws.credential.profile.create',
+            async () => await ext.awsContextCommands.onCommandCreateCredentialsProfile()
+        )
+        vscode.commands.registerCommand('aws.logout', async () => await ext.awsContextCommands.onCommandLogout())
 
-    await ext.statusBar.updateContext(undefined)
+        vscode.commands.registerCommand(
+            'aws.showRegion',
+            async () => await ext.awsContextCommands.onCommandShowRegion()
+        )
+        vscode.commands.registerCommand(
+            'aws.hideRegion',
+            async (node?: RegionNode) => {
+                await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
+            }
+        )
 
-    await initializeSamCli()
+        const providers = [
+            new LambdaTreeDataProvider(
+                awsContext,
+                awsContextTrees,
+                regionProvider,
+                resourceFetcher,
+                (relativeExtensionPath) => getExtensionAbsolutePath(context, relativeExtensionPath)
+            )
+        ]
 
-    await ExtensionDisposableFiles.initialize(context)
+        providers.forEach((p) => {
+            p.initialize(context)
+            context.subscriptions.push(vscode.window.registerTreeDataProvider(p.viewProviderId, p))
+        })
 
-    await resumeCreateNewSamApp(context)
+        await ext.statusBar.updateContext(undefined)
+
+        await initializeSamCli()
+
+        await ExtensionDisposableFiles.initialize(context)
+
+        await resumeCreateNewSamApp(context)
+    } catch (err) {
+        toolkitOutputChannel.show()
+        toolkitOutputChannel.appendLine(`Error activating extension: ${String(err)}`)
+        throw err
+    }
 }
 
 export async function deactivate() {
     await ext.telemetry.shutdown()
 }
 
-function activateCodeLensProviders(
-    configuration: SettingsConfiguration,
-    toolkitOutputChannel: vscode.OutputChannel
-): vscode.Disposable[] {
+async function activateCodeLensProviders(
+    configuration: SettingsConfiguration
+): Promise<vscode.Disposable[]> {
     const disposables: vscode.Disposable[] = []
+    const activeFilePath = vscode.window.activeTextEditor!.document.uri.fsPath
+    if (!activeFilePath) {
+        return disposables
+    }
+    const providerParams = {
+        configuration,
+        toolkitOutputChannel
+    }
 
-    TypescriptCodeLensProvider.initialize(configuration, toolkitOutputChannel)
+    tsLensProvider.initialize(providerParams)
+    disposables.push(vscode.languages.registerCodeLensProvider(
+        [
+            {
+                language: 'javascript',
+                scheme: 'file',
+            }
+        ],
+        tsLensProvider.makeTypescriptCodeLensProvider()
+    ))
 
-    disposables.push(
-        vscode.languages.registerCodeLensProvider(
-            [
-                {
-                    language: 'javascript',
-                    scheme: 'file',
-                },
-            ],
-            new TypescriptCodeLensProvider()
-        )
-    )
+    pyLensProvider.initialize(providerParams)
+    disposables.push(vscode.languages.registerCodeLensProvider(
+        pyLensProvider.PYTHON_ALLFILES,
+        pyLensProvider.makePythonCodeLensProvider()
+    ))
 
     return disposables
 }
