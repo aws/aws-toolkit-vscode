@@ -15,7 +15,7 @@ import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
 import { TypescriptCodeLensProvider } from './shared/codelens/typescriptCodeLensProvider'
-import { extensionSettingsPrefix } from './shared/constants'
+import { documentationUrl, extensionSettingsPrefix, githubUrl } from './shared/constants'
 import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
@@ -90,11 +90,11 @@ export async function activate(context: vscode.ExtensionContext) {
     // register URLs in extension menu
     vscode.commands.registerCommand(
         'aws.help',
-        () => { vscode.env.openExternal(vscode.Uri.parse('https://aws.amazon.com/visualstudiocode/'))}
+        () => { vscode.env.openExternal(vscode.Uri.parse(githubUrl)) }
     )
     vscode.commands.registerCommand(
         'aws.github',
-        () => { vscode.env.openExternal(vscode.Uri.parse('https://github.com/aws/aws-toolkit-vscode'))}
+        () => { vscode.env.openExternal(vscode.Uri.parse(documentationUrl(vscode.env.language))) }
     )
 
     const providers = [

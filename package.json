@@ -278,11 +278,6 @@
                 "category": "AWS"
             },
             {
-                "command": "aws.viewLogs",
-                "title": "%AWS.command.viewLogs%",
-                "category": "AWS"
-            },
-            {
                 "command": "aws.help",
                 "title": "%AWS.command.help%",
                 "category": "AWS"
