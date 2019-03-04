@@ -86,13 +86,14 @@ export const  makeCodeLenses = async ({ document, token, handlers, lang }: {
           throw new Error(`Source file ${document.uri} is external to the current workspace.`)
       }
       const baseParams: CodeLensParams = {
-        document,
-        handlerName: handler.handlerName,
-        range,
-        workspaceFolder
+          document,
+          handlerName: handler.handlerName,
+          range,
+          workspaceFolder,
+          lang
       }
-      lenses.push(makeLocalInvokeCodeLens({...baseParams, lang, debug: false}))
-      lenses.push(makeLocalInvokeCodeLens({...baseParams, lang, debug: true}))
+      lenses.push(makeLocalInvokeCodeLens({...baseParams, debug: false}))
+      lenses.push(makeLocalInvokeCodeLens({...baseParams, debug: true}))
 
       try {
           lenses.push(makeConfigureCodeLens(baseParams))
@@ -112,10 +113,11 @@ export type Language = 'python' | 'javascript'
 export const getInvokeCmdKey = (lang: Language) => `aws.lambda.local.invoke.${lang}`
 
 interface CodeLensParams {
-  document: vscode.TextDocument,
-  handlerName: string,
-  range: vscode.Range,
-  workspaceFolder: vscode.WorkspaceFolder
+    document: vscode.TextDocument,
+    handlerName: string,
+    range: vscode.Range,
+    workspaceFolder: vscode.WorkspaceFolder,
+    lang: Language
 }
 
 const makeLocalInvokeCodeLens = (params: CodeLensParams & {debug: boolean, lang: Language}): vscode.CodeLens => {
