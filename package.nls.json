@@ -17,6 +17,8 @@
     "AWS.telemetry.notificationMessage": "Please help improve the AWS Toolkit by enabling anonymous usage data to be sent to AWS. You can always change your mind later by going to the \"AWS Configuration\" section in your user settings",
     "AWS.telemetry.notificationYes": "Enable",
     "AWS.telemetry.notificationNo": "Disable",
+    "AWS.command.github": "View Source on Github",
+    "AWS.command.help": "View Documentation",
     "AWS.command.login": "Connect to AWS",
     "AWS.command.logout": "Sign out",
     "AWS.command.createNewSamApp": "Create new SAM Application",

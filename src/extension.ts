@@ -87,6 +87,16 @@ export async function activate(context: vscode.ExtensionContext) {
         async (node?: RegionNode) => await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
     )
 
+    // register URLs in extension menu
+    vscode.commands.registerCommand(
+        'aws.help',
+        () => { vscode.env.openExternal(vscode.Uri.parse('https://aws.amazon.com/visualstudiocode/'))}
+    )
+    vscode.commands.registerCommand(
+        'aws.github',
+        () => { vscode.env.openExternal(vscode.Uri.parse('https://github.com/aws/aws-toolkit-vscode'))}
+    )
+
     const providers = [
         new LambdaTreeDataProvider(
             awsContext,

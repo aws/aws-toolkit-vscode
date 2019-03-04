@@ -132,6 +132,26 @@
                     "command": "aws.refreshAwsExplorer",
                     "when": "view == lambda",
                     "group": "navigation@5"
+                },
+                {
+                    "command": "aws.login",
+                    "group": "1_account"
+                },
+                {
+                    "command": "aws.showRegion",
+                    "group": "2_region"
+                },
+                {
+                    "command": "aws.hideRegion",
+                    "group": "2_region"
+                },
+                {
+                    "command": "aws.help",
+                    "group": "z_help"
+                },
+                {
+                    "command": "aws.github",
+                    "group": "z_help"
                 }
             ],
             "view/item/context": [
@@ -255,6 +275,21 @@
             {
                 "command": "aws.showErrorDetails",
                 "title": "%AWS.command.showErrorDetails%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.viewLogs",
+                "title": "%AWS.command.viewLogs%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.help",
+                "title": "%AWS.command.help%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.github",
+                "title": "%AWS.command.github%",
                 "category": "AWS"
             }
         ]
