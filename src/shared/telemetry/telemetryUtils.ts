@@ -19,14 +19,14 @@ export function defaultMetricDatum(name: string): Datum {
 
 export function registerCommand<T>({
     command,
-    callback,
     thisArg,
-    register = vscode.commands.registerCommand
+    register = vscode.commands.registerCommand,
+    callback
 }: {
-    command: string,
-    thisArg?: any,
+    command: string
+    thisArg?: any
     register?: typeof vscode.commands.registerCommand
-    callback(...args: any[]): (Promise<ResultWithTelemetry<T> | void>),
+    callback(...args: any[]): (Promise<ResultWithTelemetry<T> | void>)
 }): vscode.Disposable {
     return register(
         command,
