@@ -38,11 +38,11 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         public readonly onDetectLocalTemplates: typeof detectLocalTemplates,
         private readonly workspaceFoldersResponses: (vscode.Uri[] | undefined)[] = [],
         private readonly showInputBoxReponses: (string | undefined)[] = [],
-        private readonly showQuickPickResponses: (QuickPickResponseItem | undefined)[] = []
+        private readonly promptForSamTemplateResponses: (QuickPickResponseItem | undefined)[] = []
     ) {
         this.workspaceFoldersResponses = workspaceFoldersResponses.reverse()
         this.showInputBoxReponses = showInputBoxReponses.reverse()
-        this.showQuickPickResponses = showQuickPickResponses.reverse()
+        this.promptForSamTemplateResponses = promptForSamTemplateResponses.reverse()
     }
 
     public async showInputBox(
@@ -65,39 +65,12 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         return response
     }
 
-    public showQuickPick(
-        items: string[] | Thenable<string[]>,
-        options: vscode.QuickPickOptions & { canPickMany: true },
-        token?: vscode.CancellationToken
-    ): Thenable<string[] | undefined>
-    public showQuickPick(
-        items: string[] | Thenable<string[]>,
-        options?: vscode.QuickPickOptions,
-        token?: vscode.CancellationToken
-    ): Thenable<string | undefined>
-    public showQuickPick<T extends vscode.QuickPickItem>(
-        items: T[] | Thenable<T[]>,
-        options: vscode.QuickPickOptions & { canPickMany: true },
-        token?: vscode.CancellationToken
-    ): Thenable<T[] | undefined>
-    public async showQuickPick<T extends vscode.QuickPickItem>(
-        items: T[] | Thenable<T[]>,
-        options?: vscode.QuickPickOptions,
-        token?: vscode.CancellationToken
-    ): Promise<T | undefined> {
-        if (this.showQuickPickResponses.length <= 0) {
-            throw new Error('showQuickPick was called more times than expected')
-        }
-
-        return this.showQuickPickResponses.pop() as (T | undefined)
-    }
-
     public async promptUserForSamTemplate(): Promise<vscode.Uri | undefined> {
-        if (this.showQuickPickResponses.length <= 0) {
-            throw new Error('showQuickPick was called more times than expected')
+        if (this.promptForSamTemplateResponses.length <= 0) {
+            throw new Error('promptUserForSamTemplate was called more times than expected')
         }
 
-        const response = this.showQuickPickResponses.pop()
+        const response = this.promptForSamTemplateResponses.pop()
         if (!response) { return undefined }
 
         return response.uri
