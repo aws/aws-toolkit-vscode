@@ -181,23 +181,17 @@ function makeDateString(type: 'filename' | 'logfile'): string {
     const d = new Date()
     const isFilename: boolean = type === 'filename'
 
-    return `${d.getFullYear()}${chooseSpacer(isFilename, '', '-')}` +
+    return `${d.getFullYear()}${isFilename ? '' : '-'}` +
     // String.prototype.padStart() is not available in Typescript...
-    `${padNumber(d.getMonth() + 1)}${chooseSpacer(isFilename, '', '-')}` +
-    `${padNumber(d.getDate())}${chooseSpacer(isFilename, 'T', ' ')}` +
-    `${padNumber(d.getHours())}${chooseSpacer(isFilename, '', ':')}` +
-    `${padNumber(d.getMinutes())}${chooseSpacer(isFilename, '', ':')}` +
+    `${padNumber(d.getMonth() + 1)}${isFilename ? '' : '-'}` +
+    `${padNumber(d.getDate())}${isFilename ? 'T' : ' '}` +
+    `${padNumber(d.getHours())}${isFilename ? '' : ':'}` +
+    `${padNumber(d.getMinutes())}${isFilename ? '' : ':'}` +
     `${padNumber(d.getSeconds())}`
 }
 
 function padNumber(num: number): string {
     return num < 10 ? '0' + num.toString() : num.toString()
-}
-
-function chooseSpacer(isFilename: boolean, ifTrue: string, ifFalse: string): string {
-    if (isFilename) { return ifTrue }
-
-    return ifFalse
 }
 
 function generateWriteParams(logger: winston.Logger,
