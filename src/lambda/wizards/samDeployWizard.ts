@@ -10,6 +10,7 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { detectLocalTemplates } from '../local/detectLocalTemplates'
 import { MultiStepWizard, WizardStep } from './multiStepWizard'
@@ -33,6 +34,15 @@ export interface SamDeployWizardContext {
      * @returns vscode.Uri of a Sam Template. undefined represents cancel.
      */
     promptUserForSamTemplate(): Promise<vscode.Uri | undefined>
+
+    /**
+     * Retrieves an S3 Bucket to deploy to from the user.
+     *
+     * @param initialValue Optional, Initial value to prompt with
+     *
+     * @returns S3 Bucket name. Undefined represents cancel.
+     */
+    promptUserForS3Bucket(initialValue?: string): Promise<string | undefined>
 }
 
 class DefaultSamDeployWizardContext implements SamDeployWizardContext {
@@ -80,6 +90,43 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
         return choices[0].uri
     }
+
+    /**
+     * Retrieves an S3 Bucket to deploy to from the user.
+     *
+     * @param initialValue Optional, Initial value to prompt with
+     *
+     * @returns S3 Bucket name. Undefined represents cancel.
+     */
+    public async promptUserForS3Bucket(initialValue?: string): Promise<string | undefined> {
+        const dlg = input.createInputBox({
+            buttons: [
+                vscode.QuickInputButtons.Back
+            ],
+            options: {
+                title: localize(
+                    'AWS.samcli.deploy.s3Bucket.prompt',
+                    'Enter the AWS S3 bucket to which your code should be deployed'
+                ),
+                ignoreFocusOut: true,
+            }
+        })
+
+        // Pre-populate the value if it was already set
+        if (initialValue) {
+            dlg.value = initialValue
+        }
+
+        return await input.promptUser({
+            inputBox: dlg,
+            onValidateInput: validateS3Bucket,
+            onDidTriggerButton: (button, resolve, reject) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve(undefined)
+                }
+            }
+        })
+    }
 }
 
 export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
@@ -114,19 +161,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     }
 
     private readonly S3_BUCKET: WizardStep = async () => {
-        this.response.s3Bucket = await this.context.showInputBox({
-            value: this.response.s3Bucket,
-            prompt: localize(
-                'AWS.samcli.deploy.s3Bucket.prompt',
-                'Enter the AWS S3 bucket to which your code should be deployed'
-            ),
-            placeHolder: localize(
-                'AWS.samcli.deploy.s3Bucket.placeholder',
-                'S3 bucket name'
-            ),
-            ignoreFocusOut: true,
-            validateInput: validateS3Bucket
-        })
+        this.response.s3Bucket = await this.context.promptUserForS3Bucket(this.response.s3Bucket)
 
         return this.response.s3Bucket ? this.STACK_NAME : this.TEMPLATE
     }
@@ -164,7 +199,7 @@ class SamTemplateQuickPickItem implements vscode.QuickPickItem {
 }
 
 // https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-s3-bucket-naming-requirements.html
-function validateS3Bucket(value: string): string | undefined | null | Thenable<string | undefined | null> {
+function validateS3Bucket(value: string): string | undefined {
     if (value.length < 3 || value.length > 63) {
         return localize(
             'AWS.samcli.deploy.s3Bucket.error.length',

@@ -103,7 +103,6 @@
     "AWS.samcli.detect.settings.updated": "Settings updated.",
     "AWS.samcli.detect.settings.not.updated": "No settings changes necessary.",
     "AWS.samcli.deploy.s3Bucket.prompt": "Enter the AWS S3 bucket to which your code should be deployed",
-    "AWS.samcli.deploy.s3Bucket.placeholder": "S3 bucket name",
     "AWS.samcli.deploy.s3Bucket.error": "S3 bucket cannot be empty",
     "AWS.samcli.deploy.stackName.prompt": "Enter the name to use for the deployed stack",
     "AWS.samcli.deploy.stackName.placeholder": "Stack name",

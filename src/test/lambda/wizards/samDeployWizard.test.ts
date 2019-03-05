@@ -38,11 +38,13 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         public readonly onDetectLocalTemplates: typeof detectLocalTemplates,
         private readonly workspaceFoldersResponses: (vscode.Uri[] | undefined)[] = [],
         private readonly showInputBoxReponses: (string | undefined)[] = [],
-        private readonly promptForSamTemplateResponses: (QuickPickResponseItem | undefined)[] = []
+        private readonly promptForSamTemplateResponses: (QuickPickResponseItem | undefined)[] = [],
+        private readonly promptForS3BucketResponses: (string | undefined)[] = []
     ) {
         this.workspaceFoldersResponses = workspaceFoldersResponses.reverse()
         this.showInputBoxReponses = showInputBoxReponses.reverse()
         this.promptForSamTemplateResponses = promptForSamTemplateResponses.reverse()
+        this.promptForS3BucketResponses = promptForS3BucketResponses.reverse()
     }
 
     public async showInputBox(
@@ -75,6 +77,14 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
 
         return response.uri
     }
+
+    public async promptUserForS3Bucket(initialValue?: string): Promise<string | undefined> {
+        if (this.promptForS3BucketResponses.length <= 0) {
+            throw new Error('promptUserForS3Bucket was called more times than expected')
+        }
+
+        return this.promptForS3BucketResponses.pop()
+    }
 }
 
 function normalizePath(...paths: string[]): string {
@@ -88,7 +98,8 @@ describe('SamDeployWizard', async () => {
                 async function*() { yield* [] },
                 [[]],
                 [],
-                [undefined]
+                [undefined],
+                [],
             ))
             const result = await wizard.run()
 
@@ -100,9 +111,10 @@ describe('SamDeployWizard', async () => {
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
-                [[ vscode.Uri.file(workspaceFolderPath) ]],
+                [[vscode.Uri.file(workspaceFolderPath)]],
                 [],
-                [undefined]
+                [undefined],
+                [],
             ))
             const result = await wizard.run()
 
@@ -114,11 +126,12 @@ describe('SamDeployWizard', async () => {
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
-                [[ vscode.Uri.file(workspaceFolderPath) ]],
-                [ 'mys3bucketname', 'myStackName'],
+                [[vscode.Uri.file(workspaceFolderPath)]],
+                ['myStackName'],
                 [
                     createQuickPickResponseItem(vscode.Uri.file(templatePath))
-                ]
+                ],
+                ['mys3bucketname'],
             ))
             const result = await wizard.run()
 
@@ -140,17 +153,19 @@ describe('SamDeployWizard', async () => {
                     yield vscode.Uri.file(templatePath2)
                 },
                 [
-                    [ vscode.Uri.file(workspaceFolderPath1) ],
-                    [ vscode.Uri.file(workspaceFolderPath2) ]
+                    [vscode.Uri.file(workspaceFolderPath1)],
+                    [vscode.Uri.file(workspaceFolderPath2)]
                 ],
                 [
-                    undefined,
-                    'mys3bucketname',
                     'myStackName'
                 ],
                 [
                     createQuickPickResponseItem(vscode.Uri.file(templatePath1)),
                     createQuickPickResponseItem(vscode.Uri.file(templatePath2)),
+                ],
+                [
+                    undefined, // First time we ask about the S3 Bucket, cancel back to the template step
+                    'mys3bucketname'
                 ]
             ))
             const result = await wizard.run()
@@ -164,14 +179,14 @@ describe('SamDeployWizard', async () => {
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
-                [[ vscode.Uri.file(workspaceFolderPath) ]],
+                [[vscode.Uri.file(workspaceFolderPath)]],
                 [
-                    'mys3bucketname',
                     'myStackName'
                 ],
                 [
                     createQuickPickResponseItem(vscode.Uri.file(templatePath)),
-                ]
+                ],
+                ['mys3bucketname'],
             ))
             const result = await wizard.run()
 
@@ -189,11 +204,12 @@ describe('SamDeployWizard', async () => {
                 try {
                     await new SamDeployWizard(new MockSamDeployWizardContext(
                         async function*() { yield vscode.Uri.file(templatePath) },
-                        [[ vscode.Uri.file(workspaceFolderPath) ]],
-                        [bucketName],
+                        [[vscode.Uri.file(workspaceFolderPath)]],
+                        [],
                         [
                             createQuickPickResponseItem(vscode.Uri.file(templatePath)),
-                        ]
+                        ],
+                        [bucketName],
                     )).run()
                 } catch (err) {
                     return
@@ -243,16 +259,18 @@ describe('SamDeployWizard', async () => {
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
-                [[ vscode.Uri.file(workspaceFolderPath) ]],
+                [[vscode.Uri.file(workspaceFolderPath)]],
                 [
-                    'mys3bucketname1',
                     undefined,
-                    'mys3bucketname2',
                     'myStackName'
                 ],
                 [
                     createQuickPickResponseItem(vscode.Uri.file(templatePath)),
-                ]
+                ],
+                [
+                    'mys3bucketname1',
+                    'mys3bucketname2',
+                ],
             ))
             const result = await wizard.run()
 
@@ -265,14 +283,16 @@ describe('SamDeployWizard', async () => {
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
-                [[ vscode.Uri.file(workspaceFolderPath) ]],
+                [[vscode.Uri.file(workspaceFolderPath)]],
                 [
-                    'mys3bucketname',
                     'myStackName'
                 ],
                 [
                     createQuickPickResponseItem(vscode.Uri.file(templatePath)),
-                ]
+                ],
+                [
+                    'mys3bucketname',
+                ],
             ))
             const result = await wizard.run()
 
@@ -288,11 +308,12 @@ describe('SamDeployWizard', async () => {
                 try {
                     await new SamDeployWizard(new MockSamDeployWizardContext(
                         async function*() { yield vscode.Uri.file(templatePath) },
-                        [[ vscode.Uri.file(workspaceFolderPath) ]],
-                        ['myBucketName', stackName],
+                        [[vscode.Uri.file(workspaceFolderPath)]],
+                        [stackName],
                         [
                             createQuickPickResponseItem(vscode.Uri.file(templatePath)),
-                        ]
+                        ],
+                        ['myBucketName'],
                     )).run()
                 } catch (err) {
                     return
