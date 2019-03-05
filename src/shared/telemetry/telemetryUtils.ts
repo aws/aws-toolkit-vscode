@@ -17,39 +17,41 @@ export function defaultMetricDatum(name: string): Datum {
     }
 }
 
-export function registerCommand<T>(
+export function registerCommand<T>({
+    command,
+    callback,
+    thisArg,
+    register = vscode.commands.registerCommand
+}: {
     command: string,
-    callback: (...args: any[]) => (Promise<ResultWithTelemetry<T> | void>),
-    thisArg?: any
-): vscode.Disposable {
-    return vscode.commands.registerCommand(
+    thisArg?: any,
+    register?: typeof vscode.commands.registerCommand
+    callback(...args: any[]): (Promise<ResultWithTelemetry<T> | void>),
+}): vscode.Disposable {
+    return register(
         command,
-        async (args) => {
+        async (callbackArgs) => {
             const startTime = new Date()
             let hasException = false
             let result: ResultWithTelemetry<T> | void
 
             try {
-                result = await callback(args)
+                result = await callback(callbackArgs)
             } catch (e) {
                 hasException = true
                 throw e
             } finally {
-                let datum: Datum
-                if (result !== undefined && result.telemetryDatum !== undefined) {
-                    datum = result.telemetryDatum
-                } else {
-                    datum = defaultMetricDatum(name)
-                }
-                if (datum.metadata === undefined) {
+                const endTime = new Date()
+                const datum = result && result.telemetryDatum ? result.telemetryDatum : defaultMetricDatum(command)
+                if (!datum.metadata) {
                     datum.metadata = new Map()
                 }
                 datum.metadata.set('hasException', `${hasException}`)
-                datum.metadata.set('duration', `${new Date().getMilliseconds() - startTime.getMilliseconds()}`)
+                datum.metadata.set('duration', `${endTime.getMilliseconds() - startTime.getMilliseconds()}`)
 
                 ext.telemetry.record({
                     namespace: 'Command',
-                    createTime: new Date(),
+                    createTime: startTime,
                     data: [datum]
                 })
             }

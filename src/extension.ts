@@ -72,21 +72,32 @@ export async function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(...activateCodeLensProviders(awsContext.settingsConfiguration, toolkitOutputChannel))
 
-    registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
-    registerCommand(
-        'aws.credential.profile.create',
-        async () => await ext.awsContextCommands.onCommandCreateCredentialsProfile()
-    )
-    registerCommand('aws.logout', async () => await ext.awsContextCommands.onCommandLogout())
+    registerCommand({
+        command: 'aws.login',
+        callback: async () => await ext.awsContextCommands.onCommandLogin()
+    })
 
-    registerCommand(
-        'aws.showRegion',
-        async () => await ext.awsContextCommands.onCommandShowRegion()
-    )
-    registerCommand(
-        'aws.hideRegion',
-        async (node?: RegionNode) => await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
-    )
+    registerCommand({
+        command: 'aws.credential.profile.create',
+        callback: async () => await ext.awsContextCommands.onCommandCreateCredentialsProfile()
+    })
+
+    registerCommand({
+        command: 'aws.logout',
+        callback: async () => await ext.awsContextCommands.onCommandLogout()
+    })
+
+    registerCommand({
+        command: 'aws.showRegion',
+        callback: async () => await ext.awsContextCommands.onCommandShowRegion()
+    })
+
+    registerCommand({
+        command: 'aws.hideRegion',
+        callback: async (node?: RegionNode) => {
+            await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
+        }
+    })
 
     const providers = [
         new LambdaTreeDataProvider(
@@ -143,21 +154,21 @@ function activateCodeLensProviders(
  * Performs SAM CLI relevant extension initialization
  */
 async function initializeSamCli(): Promise<void> {
-    registerCommand(
-        'aws.samcli.detect',
-        async () => await PromiseSharer.getExistingPromiseOrCreate(
+    registerCommand({
+        command: 'aws.samcli.detect',
+        callback: async () => await PromiseSharer.getExistingPromiseOrCreate(
             'samcli.detect',
             async () => await SamCliDetection.detectSamCli(true)
         )
-    )
+    })
 
-    registerCommand(
-        'aws.samcli.validate.version',
-        async () => {
+    registerCommand({
+        command: 'aws.samcli.validate.version',
+        callback: async () => {
             const samCliVersionValidator = new SamCliVersionValidator()
             await samCliVersionValidator.validateAndNotify()
         }
-    )
+    })
 
     await SamCliDetection.detectSamCli(false)
 }

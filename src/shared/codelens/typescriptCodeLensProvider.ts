@@ -155,9 +155,9 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
     ): void {
         const command = 'aws.lambda.local.invoke'
 
-        registerCommand(
-            command,
-            async (args: LambdaLocalInvokeArguments): Promise<ResultWithTelemetry<void>> => {
+        registerCommand({
+            command: command,
+            callback: async (args: LambdaLocalInvokeArguments): Promise<ResultWithTelemetry<void>> => {
 
                 let debugPort: number | undefined
 
@@ -187,7 +187,7 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
                     telemetryDatum: datum
                 }
             }
-        )
+        })
     }
 
     private static async determineDebugPort(): Promise<number> {
