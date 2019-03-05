@@ -26,8 +26,6 @@ export interface SamDeployWizardContext {
 
     readonly workspaceFolders: vscode.Uri[] | undefined
 
-    showInputBox: typeof vscode.window.showInputBox
-
     /**
      * Retrieves the URI of a Sam template to deploy from the user
      *
@@ -65,8 +63,6 @@ export interface SamDeployWizardContext {
 
 class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public readonly onDetectLocalTemplates = detectLocalTemplates
-
-    public readonly showInputBox = vscode.window.showInputBox
 
     public get workspaceFolders(): vscode.Uri[] | undefined {
         return (vscode.workspace.workspaceFolders || []).map(f => f.uri)

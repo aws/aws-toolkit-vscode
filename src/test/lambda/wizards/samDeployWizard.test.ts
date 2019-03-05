@@ -37,36 +37,14 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
     public constructor(
         public readonly onDetectLocalTemplates: typeof detectLocalTemplates,
         private readonly workspaceFoldersResponses: (vscode.Uri[] | undefined)[] = [],
-        private readonly showInputBoxReponses: (string | undefined)[] = [],
         private readonly promptForSamTemplateResponses: (QuickPickResponseItem | undefined)[] = [],
         private readonly promptForS3BucketResponses: (string | undefined)[] = [],
         private readonly promptForStackNameResponses: (string | undefined)[] = [],
     ) {
         this.workspaceFoldersResponses = workspaceFoldersResponses.reverse()
-        this.showInputBoxReponses = showInputBoxReponses.reverse()
         this.promptForSamTemplateResponses = promptForSamTemplateResponses.reverse()
         this.promptForS3BucketResponses = promptForS3BucketResponses.reverse()
         this.promptForStackNameResponses = promptForStackNameResponses.reverse()
-    }
-
-    public async showInputBox(
-        options?: vscode.InputBoxOptions,
-        token?: vscode.CancellationToken
-    ): Promise<string | undefined> {
-        if (this.showInputBoxReponses.length <= 0) {
-            throw new Error('showInputBox was called more times than expected')
-        }
-
-        const response = this.showInputBoxReponses.pop()
-
-        if (response && options && options.validateInput) {
-            const validationResult = options.validateInput(response)
-            if (validationResult) {
-                throw new Error(`Validation error: ${validationResult}`)
-            }
-        }
-
-        return response
     }
 
     public async promptUserForSamTemplate(): Promise<vscode.Uri | undefined> {
@@ -122,7 +100,6 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
                 async function*() { yield* [] },
                 [[]],
-                [],
                 [undefined],
                 [],
                 [],
@@ -138,7 +115,6 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
                 [[vscode.Uri.file(workspaceFolderPath)]],
-                [],
                 [undefined],
                 [],
                 [],
@@ -154,7 +130,6 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
                 [[vscode.Uri.file(workspaceFolderPath)]],
-                [],
                 [
                     createQuickPickResponseItem(vscode.Uri.file(templatePath))
                 ],
@@ -184,7 +159,6 @@ describe('SamDeployWizard', async () => {
                     [vscode.Uri.file(workspaceFolderPath1)],
                     [vscode.Uri.file(workspaceFolderPath2)]
                 ],
-                [],
                 [
                     createQuickPickResponseItem(vscode.Uri.file(templatePath1)),
                     createQuickPickResponseItem(vscode.Uri.file(templatePath2)),
@@ -210,8 +184,6 @@ describe('SamDeployWizard', async () => {
                 async function*() { yield vscode.Uri.file(templatePath) },
                 [[vscode.Uri.file(workspaceFolderPath)]],
                 [
-                ],
-                [
                     createQuickPickResponseItem(vscode.Uri.file(templatePath)),
                 ],
                 ['mys3bucketname'],
@@ -234,7 +206,6 @@ describe('SamDeployWizard', async () => {
                     await new SamDeployWizard(new MockSamDeployWizardContext(
                         async function*() { yield vscode.Uri.file(templatePath) },
                         [[vscode.Uri.file(workspaceFolderPath)]],
-                        [],
                         [
                             createQuickPickResponseItem(vscode.Uri.file(templatePath)),
                         ],
@@ -290,7 +261,6 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
                 [[vscode.Uri.file(workspaceFolderPath)]],
-                [],
                 [
                     createQuickPickResponseItem(vscode.Uri.file(templatePath)),
                 ],
@@ -315,7 +285,6 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
                 [[vscode.Uri.file(workspaceFolderPath)]],
-                [],
                 [
                     createQuickPickResponseItem(vscode.Uri.file(templatePath)),
                 ],
@@ -341,7 +310,6 @@ describe('SamDeployWizard', async () => {
                     await new SamDeployWizard(new MockSamDeployWizardContext(
                         async function*() { yield vscode.Uri.file(templatePath) },
                         [[vscode.Uri.file(workspaceFolderPath)]],
-                        [],
                         [
                             createQuickPickResponseItem(vscode.Uri.file(templatePath)),
                         ],
