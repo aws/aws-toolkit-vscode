@@ -29,7 +29,7 @@ describe('createQuickPick', async () => {
             items: items
         })
 
-        assert.deepEqual(testPicker.items, items)
+        assert.deepStrictEqual(testPicker.items, items)
     })
 
     it('Sets buttons', async () => {
@@ -41,7 +41,7 @@ describe('createQuickPick', async () => {
             buttons: buttons
         })
 
-        assert.deepEqual(testPicker.buttons, buttons)
+        assert.deepStrictEqual(testPicker.buttons, buttons)
     })
 
     it('Sets Options', async () => {
@@ -240,7 +240,7 @@ describe('promptUser', async () => {
         samplePicker.buttons = [buttonOfInterest]
         let handledButtonPress: boolean = false
 
-        picker.promptUser({
+        const promptUserPromise = picker.promptUser({
             picker: samplePicker,
             onDidTriggerButton: (button, resolve, reject) => {
                 assert.strictEqual(
@@ -259,6 +259,10 @@ describe('promptUser', async () => {
 
         assert.strictEqual(handledButtonPress, true, 'Expected button handler to trigger')
         assert.strictEqual(samplePicker.isShowing, true, 'Expected picker to still be showing')
+
+        // Cleanup - this is to satisfy the linter
+        samplePicker.hide()
+        await promptUserPromise
     })
 
     function assertPromptResultEquals(
@@ -313,12 +317,13 @@ describe('promptUser', async () => {
 
         public isShowing: boolean = false
 
-        private onDidHideEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
-        private onDidAcceptEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
-        private onDidChangeValueEmitter: vscode.EventEmitter<string> = new vscode.EventEmitter()
-        private onDidChangeActiveEmitter: vscode.EventEmitter<T[]> = new vscode.EventEmitter()
-        private onDidChangeSelectionEmitter: vscode.EventEmitter<T[]> = new vscode.EventEmitter()
-        private onDidTriggerButtonEmitter: vscode.EventEmitter<vscode.QuickInputButton> = new vscode.EventEmitter()
+        private readonly onDidHideEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
+        private readonly onDidAcceptEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
+        private readonly onDidChangeValueEmitter: vscode.EventEmitter<string> = new vscode.EventEmitter()
+        private readonly onDidChangeActiveEmitter: vscode.EventEmitter<T[]> = new vscode.EventEmitter()
+        private readonly onDidChangeSelectionEmitter: vscode.EventEmitter<T[]> = new vscode.EventEmitter()
+        private readonly onDidTriggerButtonEmitter: vscode.EventEmitter<vscode.QuickInputButton> =
+            new vscode.EventEmitter()
 
         public constructor() {
             this.onDidHide = this.onDidHideEmitter.event
