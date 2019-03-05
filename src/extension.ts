@@ -15,7 +15,7 @@ import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
 import { TypescriptCodeLensProvider } from './shared/codelens/typescriptCodeLensProvider'
-import { extensionSettingsPrefix } from './shared/constants'
+import { documentationUrl, extensionSettingsPrefix, githubUrl } from './shared/constants'
 import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
@@ -28,7 +28,8 @@ import * as SamCliDetection from './shared/sam/cli/samCliDetection'
 import { SamCliVersionValidator } from './shared/sam/cli/samCliVersionValidator'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from './shared/settingsConfiguration'
 import { AWSStatusBar } from './shared/statusBar'
-// import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryService'
+import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
+import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryService'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { PromiseSharer } from './shared/utilities/promiseUtilities'
 
@@ -60,9 +61,13 @@ export async function activate(context: vscode.ExtensionContext) {
     ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
     ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
     ext.statusBar = new AWSStatusBar(awsContext, context)
-    // TODO: uncomment when we have a way to surface a telemetry confirmation prompt to users
-    // ext.telemetry = new DefaultTelemetryService(context)
-    // ext.telemetry.start()
+    ext.telemetry = new DefaultTelemetryService(context)
+    new AwsTelemetryOptOut(ext.telemetry, new DefaultSettingsConfiguration(extensionSettingsPrefix))
+        .ensureUserNotified()
+        .catch((err) => {
+            console.warn(`Exception while displaying opt-out message: ${err}`)
+        })
+    await ext.telemetry.start()
 
     context.subscriptions.push(...activateCodeLensProviders(awsContext.settingsConfiguration, toolkitOutputChannel))
 
@@ -80,6 +85,16 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
         'aws.hideRegion',
         async (node?: RegionNode) => await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
+    )
+
+    // register URLs in extension menu
+    vscode.commands.registerCommand(
+        'aws.help',
+        () => { vscode.env.openExternal(vscode.Uri.parse(documentationUrl)) }
+    )
+    vscode.commands.registerCommand(
+        'aws.github',
+        () => { vscode.env.openExternal(vscode.Uri.parse(githubUrl)) }
     )
 
     const providers = [
@@ -107,8 +122,7 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export async function deactivate() {
-    // TODO: uncomment when we have a way to surface a telemetry confirmation prompt to users
-    // await ext.telemetry.shutdown()
+    await ext.telemetry.shutdown()
 }
 
 function activateCodeLensProviders(
