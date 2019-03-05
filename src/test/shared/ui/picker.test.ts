@@ -356,7 +356,6 @@ describe('promptUser', async () => {
     }
 
     function createSamplePicker(): TestQuickPick<vscode.QuickPickItem> {
-        // const pickerDialog = vscode.window.createQuickPick<vscode.QuickPickItem>()
         const pickerDialog = new TestQuickPick<vscode.QuickPickItem>()
         pickerDialog.items = [
             { label: 'item 1' },
