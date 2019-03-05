@@ -153,6 +153,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                 return {
                     filename: this._filename,
                     handlerName: `${this._baseFilename}.${exportsTarget}`,
+                    // TODO: Eliminate positionStart/positionEnd. Use range: vscode.Range instead
                     positionStart: candidate.getStart(),
                     positionEnd: candidate.end,
                 }
@@ -175,6 +176,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                             handlers.push({
                                 filename: this._filename,
                                 handlerName: `${this._baseFilename}.${exportedFunction}`,
+                                // TODO: Eliminate positionStart/positionEnd. Use range: vscode.Range instead
                                 positionStart: clause.getStart(),
                                 positionEnd: clause.end,
                             })

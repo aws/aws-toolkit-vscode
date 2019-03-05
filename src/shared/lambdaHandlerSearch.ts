@@ -10,6 +10,7 @@ import { Range } from 'vscode'
 export interface LambdaHandlerCandidate {
     handlerName: string,
     filename: string,
+    // TODO: Eliminate positionStart/positionEnd. Use range: vscode.Range instead
     positionStart: number,
     positionEnd: number,
     range?: Range

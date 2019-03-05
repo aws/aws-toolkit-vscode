@@ -69,34 +69,28 @@ export interface CodeLensProviderParams {
 
 export const getLambdaHandlerCandidates = async ({uri}: {uri: vscode.Uri}): Promise<LambdaHandlerCandidate[]> => {
     const filename = uri.fsPath
-    // DocumentSymbol[]> => {
-    if (!vscode.window.activeTextEditor) {
-        logger.warn("'vscode.window.activeTextEditor' is not defined!")
 
-        return []
-    } else {
-        logger.info(`Getting symbols for '${uri.fsPath}'`)
-        const symbols: vscode.DocumentSymbol[] = ( // SymbolInformation has less detail (no children)
-            (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
-                'vscode.executeDocumentSymbolProvider',
-                uri
-            )) || []
-        )
+    logger.info(`Getting symbols for '${uri.fsPath}'`)
+    const symbols: vscode.DocumentSymbol[] = ( // SymbolInformation has less detail (no children)
+        (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
+            'vscode.executeDocumentSymbolProvider',
+            uri
+        )) || []
+    )
 
-        return symbols
-            .filter(sym => sym.kind === vscode.SymbolKind.Function)
-            .map(symbol => {
-                logger.debug(`Found potential handler: '${path.parse(filename).name}.${symbol.name}'`)
+    return symbols
+        .filter(sym => sym.kind === vscode.SymbolKind.Function)
+        .map(symbol => {
+            logger.debug(`Found potential handler: '${path.parse(filename).name}.${symbol.name}'`)
 
-                return {
-                    filename,
-                    handlerName: `${path.parse(filename).name}.${symbol.name}`,
-                    positionStart: symbol.range.start.line,
-                    positionEnd: symbol.range.end.line,
-                    range: symbol.range
-                }
-            })
-    }
+            return {
+                filename,
+                handlerName: `${path.parse(filename).name}.${symbol.name}`,
+                positionStart: symbol.range.start.line,
+                positionEnd: symbol.range.end.line,
+                range: symbol.range
+            }
+        })
 }
 
 export const  makeCodeLenses = async ({ document, token, handlers, lang }: {

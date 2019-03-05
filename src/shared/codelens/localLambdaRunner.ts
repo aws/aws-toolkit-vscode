@@ -79,8 +79,6 @@ export class LocalLambdaRunner {
               )
           )
 
-          // const rootCodeFolder: string = await this.determineRootCodeFolder()
-
           const inputTemplate: string = await this.generateInputTemplate(this.codeRootDirectoryPath)
           const samBuildTemplate: string = await this.executeSamBuild(this.codeRootDirectoryPath, inputTemplate)
 
@@ -267,7 +265,7 @@ export class LocalLambdaRunner {
               timeoutMillis
           )
 
-          await this.attachDebugger(this.debugPort)
+          await this.attachDebugger()
       }
   }
 
@@ -295,11 +293,7 @@ export class LocalLambdaRunner {
       }
   }
 
-  private async attachDebugger(debugPort: number) {
-
-      // if (!this.debugConfig.rootFolder) {
-      //   this.debugConfig.rootFolder = await this.determineRootCodeFolder()
-      // }
+  private async attachDebugger() {
 
       if (this.onWillAttachDebugger) {
         // Enable caller to do last minute preperation before ataching debugger
@@ -323,7 +317,7 @@ export class LocalLambdaRunner {
           )
       } else {
           // sam local either failed, or took too long to start up
-          logger.info(
+          logger.error(
               localize(
                   'AWS.output.sam.local.attach.failure',
                   // tslint:disable-next-line:max-line-length
