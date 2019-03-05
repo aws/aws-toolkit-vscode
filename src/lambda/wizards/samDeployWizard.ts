@@ -43,6 +43,24 @@ export interface SamDeployWizardContext {
      * @returns S3 Bucket name. Undefined represents cancel.
      */
     promptUserForS3Bucket(initialValue?: string): Promise<string | undefined>
+
+    /**
+     * Retrieves a Stack Name to deploy to from the user.
+     *
+     * @param initialValue Optional, Initial value to prompt with
+     * @param validateInput Optional, validates input as it is entered
+     *
+     * @returns Stack name. Undefined represents cancel.
+     */
+    promptUserForStackName(
+        {
+            initialValue,
+            validateInput,
+        }: {
+            initialValue?: string
+            validateInput(value: string): string | undefined
+        }
+    ): Promise<string | undefined>
 }
 
 class DefaultSamDeployWizardContext implements SamDeployWizardContext {
@@ -127,6 +145,52 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             }
         })
     }
+
+    /**
+     * Retrieves a Stack Name to deploy to from the user.
+     *
+     * @param initialValue Optional, Initial value to prompt with
+     * @param validateInput Optional, validates input as it is entered
+     *
+     * @returns Stack name. Undefined represents cancel.
+     */
+    public async promptUserForStackName(
+        {
+            initialValue,
+            validateInput,
+        }: {
+            initialValue?: string
+            validateInput(value: string): string | undefined
+        }
+    ): Promise<string | undefined> {
+        const dlg = input.createInputBox({
+            buttons: [
+                vscode.QuickInputButtons.Back
+            ],
+            options: {
+                title: localize(
+                    'AWS.samcli.deploy.stackName.prompt',
+                    'Enter the name to use for the deployed stack'
+                ),
+                ignoreFocusOut: true,
+            }
+        })
+
+        // Pre-populate the value if it was already set
+        if (initialValue) {
+            dlg.value = initialValue
+        }
+
+        return await input.promptUser({
+            inputBox: dlg,
+            onValidateInput: validateInput,
+            onDidTriggerButton: (button, resolve, reject) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve(undefined)
+                }
+            }
+        })
+    }
 }
 
 export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
@@ -167,18 +231,9 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     }
 
     private readonly STACK_NAME: WizardStep = async () => {
-        this.response.stackName = await this.context.showInputBox({
-            value: this.response.stackName,
-            prompt: localize(
-                'AWS.samcli.deploy.stackName.prompt',
-                'Enter the name to use for the deployed stack'
-            ),
-            placeHolder: localize(
-                'AWS.samcli.deploy.stackName.placeholder',
-                'Stack name'
-            ),
-            ignoreFocusOut: true,
-            validateInput: validateStackName
+        this.response.stackName = await this.context.promptUserForStackName({
+            initialValue: this.response.stackName,
+            validateInput: validateStackName,
         })
 
         return this.response.stackName ? undefined : this.S3_BUCKET
@@ -255,7 +310,7 @@ function validateS3Bucket(value: string): string | undefined {
 // https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html
 // A stack name can contain only alphanumeric characters (case sensitive) and hyphens.
 // It must start with an alphabetic character and cannot be longer than 128 characters.
-function validateStackName(value: string): string | undefined | null | Thenable<string | undefined | null> {
+function validateStackName(value: string): string | undefined {
     if (!/^[a-zA-Z\d\-]+$/.test(value)) {
         return localize(
             'AWS.samcli.deploy.stackName.error.invalidCharacters',
