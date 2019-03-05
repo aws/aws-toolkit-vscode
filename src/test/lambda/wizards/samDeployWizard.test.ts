@@ -14,6 +14,17 @@ import {
     SamDeployWizardContext
 } from '../../../lambda/wizards/samDeployWizard'
 
+interface QuickPickResponseItem extends vscode.QuickPickItem {
+    uri: vscode.Uri
+}
+
+function createQuickPickResponseItem(uri: vscode.Uri): QuickPickResponseItem {
+    return {
+        label: '',
+        uri: uri,
+    }
+}
+
 class MockSamDeployWizardContext implements SamDeployWizardContext {
     public get workspaceFolders(): vscode.Uri[] | undefined {
         if (this.workspaceFoldersResponses.length <= 0) {
@@ -27,7 +38,7 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         public readonly onDetectLocalTemplates: typeof detectLocalTemplates,
         private readonly workspaceFoldersResponses: (vscode.Uri[] | undefined)[] = [],
         private readonly showInputBoxReponses: (string | undefined)[] = [],
-        private readonly showQuickPickResponses: (vscode.QuickPickItem | undefined)[] = []
+        private readonly showQuickPickResponses: (QuickPickResponseItem | undefined)[] = []
     ) {
         this.workspaceFoldersResponses = workspaceFoldersResponses.reverse()
         this.showInputBoxReponses = showInputBoxReponses.reverse()
@@ -80,6 +91,17 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
 
         return this.showQuickPickResponses.pop() as (T | undefined)
     }
+
+    public async promptUserForSamTemplate(): Promise<vscode.Uri | undefined> {
+        if (this.showQuickPickResponses.length <= 0) {
+            throw new Error('showQuickPick was called more times than expected')
+        }
+
+        const response = this.showQuickPickResponses.pop()
+        if (!response) { return undefined }
+
+        return response.uri
+    }
 }
 
 function normalizePath(...paths: string[]): string {
@@ -121,7 +143,9 @@ describe('SamDeployWizard', async () => {
                 async function*() { yield vscode.Uri.file(templatePath) },
                 [[ vscode.Uri.file(workspaceFolderPath) ]],
                 [ 'mys3bucketname', 'myStackName'],
-                [{ uri: vscode.Uri.file(templatePath) } as any as vscode.QuickPickItem]
+                [
+                    createQuickPickResponseItem(vscode.Uri.file(templatePath))
+                ]
             ))
             const result = await wizard.run()
 
@@ -152,8 +176,8 @@ describe('SamDeployWizard', async () => {
                     'myStackName'
                 ],
                 [
-                    { uri: vscode.Uri.file(templatePath1) } as any as vscode.QuickPickItem,
-                    { uri: vscode.Uri.file(templatePath2) } as any as vscode.QuickPickItem
+                    createQuickPickResponseItem(vscode.Uri.file(templatePath1)),
+                    createQuickPickResponseItem(vscode.Uri.file(templatePath2)),
                 ]
             ))
             const result = await wizard.run()
@@ -173,7 +197,7 @@ describe('SamDeployWizard', async () => {
                     'myStackName'
                 ],
                 [
-                    { uri: vscode.Uri.file(templatePath) } as any as vscode.QuickPickItem
+                    createQuickPickResponseItem(vscode.Uri.file(templatePath)),
                 ]
             ))
             const result = await wizard.run()
@@ -194,7 +218,9 @@ describe('SamDeployWizard', async () => {
                         async function*() { yield vscode.Uri.file(templatePath) },
                         [[ vscode.Uri.file(workspaceFolderPath) ]],
                         [bucketName],
-                        [{ uri: vscode.Uri.file(templatePath) } as any as vscode.QuickPickItem]
+                        [
+                            createQuickPickResponseItem(vscode.Uri.file(templatePath)),
+                        ]
                     )).run()
                 } catch (err) {
                     return
@@ -251,7 +277,9 @@ describe('SamDeployWizard', async () => {
                     'mys3bucketname2',
                     'myStackName'
                 ],
-                [ { uri: vscode.Uri.file(templatePath) } as any as vscode.QuickPickItem ]
+                [
+                    createQuickPickResponseItem(vscode.Uri.file(templatePath)),
+                ]
             ))
             const result = await wizard.run()
 
@@ -269,7 +297,9 @@ describe('SamDeployWizard', async () => {
                     'mys3bucketname',
                     'myStackName'
                 ],
-                [{ uri: vscode.Uri.file(templatePath) } as any as vscode.QuickPickItem]
+                [
+                    createQuickPickResponseItem(vscode.Uri.file(templatePath)),
+                ]
             ))
             const result = await wizard.run()
 
@@ -287,7 +317,9 @@ describe('SamDeployWizard', async () => {
                         async function*() { yield vscode.Uri.file(templatePath) },
                         [[ vscode.Uri.file(workspaceFolderPath) ]],
                         ['myBucketName', stackName],
-                        [{ uri: vscode.Uri.file(templatePath) } as any as vscode.QuickPickItem]
+                        [
+                            createQuickPickResponseItem(vscode.Uri.file(templatePath)),
+                        ]
                     )).run()
                 } catch (err) {
                     return

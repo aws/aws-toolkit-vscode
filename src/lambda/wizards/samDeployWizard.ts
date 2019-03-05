@@ -10,6 +10,7 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import * as picker from '../../shared/ui/picker'
 import { detectLocalTemplates } from '../local/detectLocalTemplates'
 import { MultiStepWizard, WizardStep } from './multiStepWizard'
 
@@ -27,6 +28,13 @@ export interface SamDeployWizardContext {
     showInputBox: typeof vscode.window.showInputBox
 
     showQuickPick: typeof vscode.window.showQuickPick
+
+    /**
+     * Retrieves the URI of a Sam template to deploy from the user
+     *
+     * @returns vscode.Uri of a Sam Template. undefined represents cancel.
+     */
+    promptUserForSamTemplate(): Promise<vscode.Uri | undefined>
 }
 
 class DefaultSamDeployWizardContext implements SamDeployWizardContext {
@@ -38,6 +46,43 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
     public get workspaceFolders(): vscode.Uri[] | undefined {
         return (vscode.workspace.workspaceFolders || []).map(f => f.uri)
+    }
+
+    /**
+     * Retrieves the URI of a Sam template to deploy from the user
+     *
+     * @returns vscode.Uri of a Sam Template. undefined represents cancel.
+     */
+    public async promptUserForSamTemplate(): Promise<vscode.Uri | undefined> {
+        const workspaceFolders = this.workspaceFolders || []
+
+        const quickPick = picker.createQuickPick<SamTemplateQuickPickItem>({
+            options: {
+                title: localize(
+                    'AWS.samcli.deploy.template.prompt',
+                    'Which SAM Template would you like to deploy to AWS?'
+                ),
+                matchOnDescription: true,
+            },
+            items: await getTemplateChoices(this.onDetectLocalTemplates, ...workspaceFolders)
+        })
+
+        const choices = await picker.promptUser<SamTemplateQuickPickItem>({
+            picker: quickPick,
+        })
+
+        if (!choices || choices.length === 0) {
+            return undefined
+        }
+
+        if (choices.length > 1) {
+            console.error(
+                `Received ${choices.length} responses from user, expected 1.` +
+                ' Cancelling to prevent deployment of unexpected template.'
+            )
+        }
+
+        return choices[0].uri
     }
 }
 
@@ -67,12 +112,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     }
 
     private readonly TEMPLATE: WizardStep = async () => {
-        const workspaceFolders = this.context.workspaceFolders || []
-        const choice = await this.context.showQuickPick(
-            await getTemplateChoices(this.context.onDetectLocalTemplates, ...workspaceFolders)
-        )
-
-        this.response.template = choice ? choice.uri : undefined
+        this.response.template = await this.context.promptUserForSamTemplate()
 
         return this.response.template ? this.S3_BUCKET : undefined
     }
