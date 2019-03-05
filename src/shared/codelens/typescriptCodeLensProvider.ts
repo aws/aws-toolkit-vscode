@@ -19,7 +19,7 @@ import {
 } from './codeLensUtils'
 import { LambdaLocalInvokeArguments, LocalLambdaRunner } from './localLambdaRunner'
 
-import { NodeDebugConfiguration } from '../../lambda/local/nodeDebugConfiguration'
+import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import {
     DefaultSamCliProcessInvoker,
@@ -27,13 +27,13 @@ import {
 } from '../sam/cli/samCliInvoker'
 import {  TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 
-export const getSamNodeProjectDirPath = async (): Promise<string> => {
-    const activeFilePath = vscode.window.activeTextEditor!.document.uri.fsPath
-    if (!activeFilePath) {
-      throw new Error('"vscode.window.activeTextEditor" not defined')
-    }
+interface NodeDebugConfiguration extends DebugConfiguration {
+    readonly protocol: 'legacy' | 'inspector'
+}
+
+const getSamProjectDirPathForFile = async (filepath: string): Promise<string> => {
     const packageJsonPath: string | undefined = await findFileInParentPaths(
-        path.dirname(activeFilePath),
+        path.dirname(filepath),
         'package.json'
     )
     if (!packageJsonPath) {
@@ -41,7 +41,7 @@ export const getSamNodeProjectDirPath = async (): Promise<string> => {
             localize(
                 'AWS.error.sam.local.package_json_not_found',
                 'Unable to find package.json related to {0}',
-                activeFilePath
+                filepath
             )
         )
     }
@@ -61,10 +61,14 @@ export const initialize = ({
             let debugPort: number | undefined
 
             if (args.debug) {
-                debugPort = 5858
+                debugPort = 5858 // TODO: Use utility to find an available port
             }
 
-            const samProjectCodeRoot = await getSamNodeProjectDirPath()
+            const activeFilePath = vscode.window.activeTextEditor!.document.uri.fsPath
+            if (!activeFilePath) { // Should we log a warning or throw an error?
+              throw new Error('"vscode.window.activeTextEditor" not defined')
+            }
+            const samProjectCodeRoot = await getSamProjectDirPathForFile(activeFilePath)
             const debugConfig: NodeDebugConfiguration = {
                 type: 'node',
                 request: 'attach',
@@ -109,17 +113,11 @@ export const makeTypescriptCodeLensProvider =  (): vscode.CodeLensProvider => {
             const handlers: LambdaHandlerCandidate[] = await search.findCandidateLambdaHandlers()
 
             return makeCodeLenses({
-                                      document,
-                                      handlers,
-                                      token,
-                                      lang: 'javascript'
-                                  })
-        },
-        resolveCodeLens: (
-            codeLens: vscode.CodeLens,
-            token: vscode.CancellationToken
-        ): vscode.ProviderResult<vscode.CodeLens> => {
-            throw new Error('not implemented')
+                document,
+                handlers,
+                token,
+                lang: 'javascript'
+            })
         }
     }
 }

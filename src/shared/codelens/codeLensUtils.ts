@@ -17,13 +17,15 @@ import {
 } from '../sam/cli/samCliInvoker'
 import { SettingsConfiguration } from '../settingsConfiguration'
 
+// ------- Temporary logging utilities to be replaced by upcoming logger implementation --------------
+// TODO: Remove this code and replace usage with upcoming src/shared/logger
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 const log = (channel: vscode.OutputChannel, level: LogLevel, msg: string, err?: Error): void => {
     channel.show()
     const _msg = `[${level}]: ${msg}`
     if (err) {
         // TODO: Define standard/strategy. Sometimes err.message is part of msg. Probably shouldn't be.
-        channel.appendLine(`${msg}: ${ err.message}`)
+        channel.appendLine(`${msg}: ${err.message}`)
         console[level](new Date().toISOString(), _msg, err.stack)
     } else {
         channel.appendLine(msg)
@@ -32,7 +34,7 @@ const log = (channel: vscode.OutputChannel, level: LogLevel, msg: string, err?: 
 }
 
 export enum OutputChannelName {
-    ToolKit = 'ToolKit', // localize('AWS.channel.aws.toolkit', 'AWS Toolkit')
+    ToolKit = 'ToolKit',
     Lambda = 'Lambda'
 }
 const outputChannels: {[channelName: string]: vscode.OutputChannel} = {
@@ -56,6 +58,7 @@ export const getLogger = (channelName: OutputChannelName) => {
 }
 
 const logger = getLogger(OutputChannelName.ToolKit)
+// ------- End temporary logging utilities to be replaced by upcoming logger implementation --------------
 
 export interface CodeLensProviderParams {
     configuration: SettingsConfiguration,
@@ -107,7 +110,6 @@ export const  makeCodeLenses = async ({ document, token, handlers, lang }: {
 
   handlers.forEach(handler => {
       const range = handler.range || new vscode.Range(
-        // Is this a line number (positionStartLine or positionStartChar?)
         document.positionAt(handler.positionStart),
         document.positionAt(handler.positionEnd),
       )

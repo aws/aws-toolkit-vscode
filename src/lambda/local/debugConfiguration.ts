@@ -4,10 +4,10 @@
  */
 
 'use strict'
-
 import * as vscode from 'vscode'
 
-export interface NodeDebugConfiguration extends vscode.DebugConfiguration {
+// TODO: Figure out common attributes of a debug configuration that belong here
+export interface DebugConfiguration extends vscode.DebugConfiguration {
     readonly type: 'node' | 'python'
     readonly request: 'attach' | 'launch'
     readonly name: string
@@ -16,6 +16,5 @@ export interface NodeDebugConfiguration extends vscode.DebugConfiguration {
     readonly port: number
     readonly localRoot: string
     readonly remoteRoot: '/var/task'
-    readonly protocol: 'legacy' | 'inspector'
     readonly skipFiles?: string[]
 }

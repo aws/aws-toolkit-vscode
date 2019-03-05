@@ -8,7 +8,7 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 
-import { NodeDebugConfiguration } from '../../lambda/local/nodeDebugConfiguration'
+import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { DefaultSamCliProcessInvoker, DefaultSamCliTaskInvoker, } from '../sam/cli/samCliInvoker'
 
@@ -33,13 +33,9 @@ export const PYTHON_ALLFILES = [
     { language: PYTHON_LANGUAGE }
 ]
 
-export const getSamPythonProjectDirPath = async (): Promise<string> => {
-    const activeFilePath = vscode.window.activeTextEditor!.document.uri.fsPath
-    if (!activeFilePath) {
-      throw new Error('"vscode.window.activeTextEditor" not defined')
-    }
-
-    return path.dirname(activeFilePath)
+// TODO: Fix this! Implement a more robust/flexible solution. This is just a basic minimal proof of concept.
+const getSamProjectDirPathForFile = async (filepath: string): Promise<string> => {
+    return path.dirname(filepath)
 }
 
 export const initialize = ({
@@ -51,15 +47,20 @@ export const initialize = ({
     vscode.commands.registerCommand(
         getInvokeCmdKey('python'),
         async (args: LambdaLocalInvokeArguments) => {
-            const samProjectCodeRoot = await getSamPythonProjectDirPath()
+            const activeFilePath = vscode.window.activeTextEditor!.document.uri.fsPath
+            if (!activeFilePath) {
+              throw new Error('"vscode.window.activeTextEditor" not defined :(')
+            }
+            const samProjectCodeRoot = await getSamProjectDirPathForFile(activeFilePath)
             logger.debug(`Project root: '${samProjectCodeRoot}'`)
             let debugPort: number | undefined
 
             if (args.debug) {
-                debugPort = 5858
+                debugPort = 5858 // TODO: Use utility to find an available port
             }
 
-            const debugConfig: NodeDebugConfiguration = {
+            // TODO: Figure out Python specific params and create PythonDebugConfiguration if needed
+            const debugConfig: DebugConfiguration = {
                 type: PYTHON_LANGUAGE,
                 request: 'attach',
                 name: 'SamLocalDebug',
@@ -68,7 +69,6 @@ export const initialize = ({
                 port: debugPort!,
                 localRoot: samProjectCodeRoot,
                 remoteRoot: '/var/task',
-                protocol: 'inspector',
                 skipFiles: []
             }
 
@@ -81,8 +81,8 @@ export const initialize = ({
                 processInvoker,
                 taskInvoker,
                 debugConfig,
-                samProjectCodeRoot
-
+                samProjectCodeRoot,
+                // TODO: Use onWillAttachDebugger &/or onDidSamBuild to enable debugging support
             )
 
             await localLambdaRunner.run()
@@ -99,17 +99,11 @@ export const makePythonCodeLensProvider = (): vscode.CodeLensProvider => {
             const handlers: LambdaHandlerCandidate[] = await getLambdaHandlerCandidates({uri: document.uri})
 
             return makeCodeLenses({
-                                      document,
-                                      handlers,
-                                      token,
-                                      lang: 'python'
-                                  })
-        },
-        resolveCodeLens: (
-            codeLens: vscode.CodeLens,
-            token: vscode.CancellationToken
-        ): vscode.ProviderResult<vscode.CodeLens> => {
-            throw new Error('not implemented')
+                document,
+                handlers,
+                token,
+                lang: 'python'
+            })
         }
     }
 }

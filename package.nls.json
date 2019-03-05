@@ -4,6 +4,7 @@
     "AWS.title.creatingCredentialProfile": "Saving new credential profile {0}",
     "AWS.title.selectCredentialProfile": "Select an AWS credential profile",
     "AWS.channel.aws.toolkit": "AWS Toolkit",
+    "AWS.channel.aws.toolkit.activation.error": "Error Activating AWS Toolkit",
     "AWS.codelens.lambda.invoke": "Run Locally",
     "AWS.codelens.lambda.invoke.debug": "Debug Locally",
     "AWS.configuration.title": "AWS Configuration",
