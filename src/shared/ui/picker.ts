@@ -90,7 +90,7 @@ export async function promptUser<T extends vscode.QuickPickItem>(
     const disposables: vscode.Disposable[] = []
 
     try {
-        const pickerShowPromise = new Promise<T[] | undefined>((resolve, reject) => {
+        const response = await new Promise<T[] | undefined>((resolve, reject) => {
 
             picker.onDidAccept(
                 () => {
@@ -113,11 +113,9 @@ export async function promptUser<T extends vscode.QuickPickItem>(
                     disposables
                 )
             }
+
+            picker.show()
         })
-
-        picker.show()
-
-        const response = await pickerShowPromise
 
         return response
     } finally {
