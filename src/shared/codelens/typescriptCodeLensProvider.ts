@@ -209,7 +209,7 @@ class LocalLambdaRunner {
         private readonly configuration: SettingsConfiguration,
         private readonly localInvokeArgs: LambdaLocalInvokeArguments,
         debugPort: number | undefined,
-        private readonly _runtime: string,
+        public readonly runtime: string,
         private readonly outputChannel: vscode.OutputChannel,
         private readonly processInvoker: SamCliProcessInvoker,
         private readonly taskInvoker: SamCliTaskInvoker
@@ -262,10 +262,6 @@ class LocalLambdaRunner {
             return
         }
 
-    }
-
-    public get runtime(): string {
-        return this._runtime
     }
 
     public get debugPort(): number {
