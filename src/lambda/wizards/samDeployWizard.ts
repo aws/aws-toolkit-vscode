@@ -99,6 +99,8 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 `Received ${choices.length} responses from user, expected 1.` +
                 ' Cancelling to prevent deployment of unexpected template.'
             )
+
+            return undefined
         }
 
         return choices[0].uri

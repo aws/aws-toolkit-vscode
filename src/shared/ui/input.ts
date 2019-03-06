@@ -41,12 +41,6 @@ export function createInputBox({
         inputBox.placeholder = options.placeHolder
         inputBox.prompt = options.prompt
         if (options.ignoreFocusOut) { inputBox.ignoreFocusOut = options.ignoreFocusOut }
-        // if (options.validateInput) {
-        //     inputBox.onDidChangeValue(value => {
-        //         const valid = options.validateInput!(value)
-        //         inputBox.validationMessage = valid ? valid.toString() : undefined
-        //     })
-        // }
 
         // TODO : Apply more options as they are needed in the future, and add corresponding tests
     }
