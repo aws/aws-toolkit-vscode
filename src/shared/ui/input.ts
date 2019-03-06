@@ -40,7 +40,7 @@ export function createInputBox({
         inputBox.title = options.title
         inputBox.placeholder = options.placeHolder
         inputBox.prompt = options.prompt
-        if (options.ignoreFocusOut) { inputBox.ignoreFocusOut = options.ignoreFocusOut }
+        if (options.ignoreFocusOut !== undefined) { inputBox.ignoreFocusOut = options.ignoreFocusOut }
 
         // TODO : Apply more options as they are needed in the future, and add corresponding tests
     }

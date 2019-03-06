@@ -15,6 +15,7 @@ describe('createInputBox', async () => {
     afterEach(() => {
         if (testInput) {
             testInput.dispose()
+            testInput = undefined
         }
     })
 
@@ -41,7 +42,7 @@ describe('createInputBox', async () => {
             options: options
         })
 
-        assertPickerOptions(testInput, options)
+        assertInputBoxOptions(testInput, options)
     })
 
     it('Sets boolean Options to false values', async () => {
@@ -53,7 +54,7 @@ describe('createInputBox', async () => {
             options: options
         })
 
-        assertPickerOptions(testInput, options)
+        assertInputBoxOptions(testInput, options)
     })
 
     it('Sets Options to undefined values', async () => {
@@ -64,39 +65,40 @@ describe('createInputBox', async () => {
             options: options
         })
 
-        assertPickerOptions(testInput, options)
+        assertInputBoxOptions(testInput, options)
     })
 
     it('Does not set Options', async () => {
         testInput = input.createInputBox({
         })
 
-        assertPickerOptions(testInput, {})
+        assertInputBoxOptions(testInput, {})
     })
 
-    function assertPickerOptions(
+    function assertInputBoxOptions(
         actualInput: vscode.InputBox,
-        expectedOptions: vscode.QuickPickOptions & input.AdditionalInputBoxOptions
+        expectedOptions: vscode.InputBoxOptions & input.AdditionalInputBoxOptions
     ) {
         assert.strictEqual(
             actualInput.title, expectedOptions.title,
-            `Picker title mismatch, expected ${expectedOptions.title}, got ${actualInput.title}`
+            `InputBox title mismatch, expected ${expectedOptions.title}, got ${actualInput.title}`
         )
 
         assert.strictEqual(
             actualInput.placeholder, expectedOptions.placeHolder,
-            `Picker placeHolder mismatch, expected ${expectedOptions.placeHolder}, got ${actualInput.placeholder}`
+            `InputBox placeHolder mismatch, expected ${expectedOptions.placeHolder}, got ${actualInput.placeholder}`
         )
 
         // vscode.window.createInputBox defaults ignoreFocusOut to true
-        const expectedIgnoreFocusOut = expectedOptions.ignoreFocusOut || true
+        const expectedIgnoreFocusOut =
+            expectedOptions.ignoreFocusOut !== undefined ? expectedOptions.ignoreFocusOut : true
         assert.strictEqual(
             actualInput.ignoreFocusOut, expectedIgnoreFocusOut,
-            `Picker ignoreFocusOut mismatch, expected ${expectedOptions.ignoreFocusOut},` +
+            `InputBox ignoreFocusOut mismatch, expected ${expectedIgnoreFocusOut},` +
             ` got ${actualInput.ignoreFocusOut}`
         )
 
-        // TODO : Test more options as they are added in the picker
+        // TODO : Test more options as they are added in the InputBox
     }
 })
 
@@ -195,7 +197,7 @@ describe('promptUser', async () => {
         assert.strictEqual(promptResult, expectedValue, 'InputBox accepted value was not expected value')
     })
 
-    it('Button can do something and leave picker open', async () => {
+    it('Button can do something and leave input box open', async () => {
         const buttonOfInterest = vscode.QuickInputButtons.Back
         sampleInput.buttons = [buttonOfInterest]
         let handledButtonPress: boolean = false
@@ -218,7 +220,7 @@ describe('promptUser', async () => {
         sampleInput.pressButton(buttonOfInterest)
 
         assert.strictEqual(handledButtonPress, true, 'Expected button handler to trigger')
-        assert.strictEqual(sampleInput.isShowing, true, 'Expected picker to still be showing')
+        assert.strictEqual(sampleInput.isShowing, true, 'Expected input box to still be showing')
 
         // Cleanup - this is to satisfy the linter
         sampleInput.hide()
@@ -229,11 +231,11 @@ describe('promptUser', async () => {
         public value: string = ''
         public placeholder: string | undefined
         public password: boolean = false
-        public onDidChangeValue: vscode.Event<string>
+        public readonly onDidChangeValue: vscode.Event<string>
         public readonly onDidAccept: vscode.Event<void>
         public readonly onDidHide: vscode.Event<void>
         public buttons: ReadonlyArray<vscode.QuickInputButton> = []
-        public onDidTriggerButton: vscode.Event<vscode.QuickInputButton>
+        public readonly onDidTriggerButton: vscode.Event<vscode.QuickInputButton>
         public prompt: string | undefined
         public validationMessage: string | undefined
         public title: string | undefined

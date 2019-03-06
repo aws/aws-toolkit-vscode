@@ -15,6 +15,7 @@ describe('createQuickPick', async () => {
     afterEach(() => {
         if (testPicker) {
             testPicker.dispose()
+            testPicker = undefined
         }
     })
 
@@ -123,10 +124,11 @@ describe('createQuickPick', async () => {
         )
 
         // vscode.window.createQuickPick defaults ignoreFocusOut to true
-        const expectedIgnoreFocusOut = expectedOptions.ignoreFocusOut || true
+        const expectedIgnoreFocusOut =
+            expectedOptions.ignoreFocusOut !== undefined ? expectedOptions.ignoreFocusOut : true
         assert.strictEqual(
             actualPicker.ignoreFocusOut, expectedIgnoreFocusOut,
-            `Picker ignoreFocusOut mismatch, expected ${expectedOptions.ignoreFocusOut},` +
+            `Picker ignoreFocusOut mismatch, expected ${expectedIgnoreFocusOut},` +
             ` got ${actualPicker.ignoreFocusOut}`
         )
 
@@ -295,11 +297,11 @@ describe('promptUser', async () => {
     class TestQuickPick<T extends vscode.QuickPickItem> implements vscode.QuickPick<T> {
         public value: string = ''
         public placeholder: string | undefined
-        public onDidChangeValue: vscode.Event<string>
+        public readonly onDidChangeValue: vscode.Event<string>
         public readonly onDidAccept: vscode.Event<void>
         public readonly onDidHide: vscode.Event<void>
         public buttons: ReadonlyArray<vscode.QuickInputButton> = []
-        public onDidTriggerButton: vscode.Event<vscode.QuickInputButton>
+        public readonly onDidTriggerButton: vscode.Event<vscode.QuickInputButton>
         public items: ReadonlyArray<T> = []
         public canSelectMany: boolean = false
         public matchOnDescription: boolean = false
@@ -307,7 +309,7 @@ describe('promptUser', async () => {
         public activeItems: ReadonlyArray<T> = []
         public readonly onDidChangeActive: vscode.Event<T[]>
         public selectedItems: ReadonlyArray<T> = []
-        public onDidChangeSelection: vscode.Event<T[]>
+        public readonly onDidChangeSelection: vscode.Event<T[]>
         public title: string | undefined
         public step: number | undefined
         public totalSteps: number | undefined

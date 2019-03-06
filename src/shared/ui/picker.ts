@@ -45,7 +45,7 @@ export function createQuickPick<T extends vscode.QuickPickItem>({
         picker.placeholder = options.placeHolder
         if (options.matchOnDescription) { picker.matchOnDescription = options.matchOnDescription }
         if (options.matchOnDetail) { picker.matchOnDetail = options.matchOnDetail }
-        if (options.ignoreFocusOut) { picker.ignoreFocusOut = options.ignoreFocusOut }
+        if (options.ignoreFocusOut !== undefined) { picker.ignoreFocusOut = options.ignoreFocusOut }
 
         // TODO : Apply more options as they are needed in the future, and add corresponding tests
     }
