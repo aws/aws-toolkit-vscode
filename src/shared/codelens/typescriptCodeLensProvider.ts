@@ -19,15 +19,7 @@ import {
 } from '../sam/cli/samCliInvoker'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
-import { LocalLambdaRunner } from './localLambdaRunner'
-
-interface LambdaLocalInvokeArguments {
-    document: vscode.TextDocument,
-    range: vscode.Range,
-    handlerName: string,
-    debug: boolean,
-    workspaceFolder: vscode.WorkspaceFolder
-}
+import { LambdaLocalInvokeArguments, LocalLambdaRunner } from './localLambdaRunner'
 
 export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
     public onDidChangeCodeLenses?: vscode.Event<void> | undefined

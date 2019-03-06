@@ -28,7 +28,7 @@ import { SettingsConfiguration } from '../settingsConfiguration'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 
-interface LambdaLocalInvokeArguments {
+export interface LambdaLocalInvokeArguments {
     document: vscode.TextDocument,
     range: vscode.Range,
     handlerName: string,
@@ -36,7 +36,7 @@ interface LambdaLocalInvokeArguments {
     workspaceFolder: vscode.WorkspaceFolder
 }
 
-interface SAMTemplateEnvironmentVariables {
+export interface SAMTemplateEnvironmentVariables {
     [resource: string]: {
         [key: string]: string
     }
