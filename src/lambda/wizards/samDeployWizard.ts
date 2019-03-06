@@ -10,10 +10,13 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { DefaultRegionProvider } from '../../shared/regions/defaultRegionProvider'
+import { RegionProvider } from '../../shared/regions/regionProvider'
 import { detectLocalTemplates } from '../local/detectLocalTemplates'
 import { MultiStepWizard, WizardStep } from './multiStepWizard'
 
 export interface SamDeployWizardResponse {
+    region: string
     template: vscode.Uri
     s3Bucket: string
     stackName: string
@@ -51,19 +54,26 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     }
 
     protected get startStep() {
-        return this.TEMPLATE
+        return this.REGION
     }
 
     protected getResult(): SamDeployWizardResponse | undefined {
-        if (!this.response.template || !this.response.s3Bucket || !this.response.stackName) {
+        if (!this.response.region || !this.response.template || !this.response.s3Bucket || !this.response.stackName) {
             return undefined
         }
 
         return {
+            region: this.response.region,
             template: this.response.template,
             s3Bucket: this.response.s3Bucket,
             stackName: this.response.stackName
         }
+    }
+
+    private readonly REGION: WizardStep = async () => {
+        // get region value
+        // assign region value
+        return this.response.region ? this.TEMPLATE : undefined
     }
 
     private readonly TEMPLATE: WizardStep = async () => {

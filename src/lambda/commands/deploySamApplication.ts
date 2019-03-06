@@ -29,20 +29,21 @@ export async function deploySamApplication({
         return
     }
 
-    const { template, s3Bucket, stackName } = args
+    const { region, template, s3Bucket, stackName } = args
 
     const tempFolder = await mkdtemp('samDeploy')
     const outputTemplatePath = path.join(tempFolder, 'template.yaml')
     let stage = 'packaging'
     try {
-        const packageInvocation = new SamCliPackageInvocation(template.fsPath, outputTemplatePath, s3Bucket, invoker)
+        const packageInvocation = new SamCliPackageInvocation(template.fsPath, outputTemplatePath,
+                                                              s3Bucket, invoker, region)
         restParams.outputChannel.show(true)
         // TODO: Add nls support
         restParams.outputChannel.appendLine(`Packaging SAM Application to S3 Bucket: ${s3Bucket}`)
         await packageInvocation.execute()
 
         stage = 'deploying'
-        const deployInvocation = new SamCliDeployInvocation(outputTemplatePath, stackName, invoker)
+        const deployInvocation = new SamCliDeployInvocation(outputTemplatePath, stackName, invoker, region)
         // Deploying can take a very long time for Python Lambda's with native dependencies so user needs feedback
         restParams.outputChannel.appendLine(localize(
           'AWS.samcli.deploy.stackName.initiated',
