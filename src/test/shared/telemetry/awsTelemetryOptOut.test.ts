@@ -6,6 +6,7 @@
 'use strict'
 
 import * as assert from 'assert'
+import * as vscode from 'vscode'
 import { AwsTelemetryOptOut, TelemetryOptOutOptions } from '../../../shared/telemetry/awsTelemetryOptOut'
 import { TelemetryEvent } from '../../../shared/telemetry/telemetryEvent'
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
@@ -53,9 +54,10 @@ describe('AwsTelemetryOptOut', () => {
         assert.strictEqual(mockService.telemetryEnabled, false)
     })
 
-    // VS Code has opt-in telemetry by default so this test exists to tell us if Microsoft changes that behavior
-    it('updateTelemetryConfiguration(TelemetryOptOutOptions.SameAsVsCode) enables telemetry', async () => {
+    // VS Code tests use the same preferences as the host editor
+    it('updateTelemetryConfiguration(TelemetryOptOutOptions.SameAsVsCode) matches user setting', async () => {
+        const vscodePreference = !!vscode.workspace.getConfiguration('telemetry').get<boolean>('enableTelemetry')
         await telemetryOptOut.updateTelemetryConfiguration(TelemetryOptOutOptions.SameAsVsCode)
-        assert.strictEqual(mockService.telemetryEnabled, true)
+        assert.strictEqual(mockService.telemetryEnabled, vscodePreference)
     })
 })
