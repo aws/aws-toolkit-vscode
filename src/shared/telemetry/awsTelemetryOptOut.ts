@@ -27,7 +27,9 @@ export class AwsTelemetryOptOut {
 
     public constructor(
         public readonly service: TelemetryService,
-        private readonly settings: SettingsConfiguration
+        private readonly settings: SettingsConfiguration,
+        private readonly getVSCodeTelemetrySetting: () => boolean =
+            () => !!vscode.workspace.getConfiguration('telemetry').get<boolean>('enableTelemetry')
     ) {
         vscode.workspace.onDidChangeConfiguration(async event => {
             // if telemetry.enableTelemetry changed and user has not expressed a preference
@@ -112,16 +114,6 @@ export class AwsTelemetryOptOut {
 
             default:
                 return TelemetryOptOutOptions.SameAsVsCode
-        }
-    }
-
-    private getVSCodeTelemetrySetting(): boolean {
-        const config = vscode.workspace.getConfiguration('telemetry').get<boolean>('enableTelemetry')
-        if (config !== undefined) {
-            return config
-        } else {
-            // fallback to false if this hasn't been set for some reason
-            return false
         }
     }
 }
