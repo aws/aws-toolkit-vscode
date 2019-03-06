@@ -12,6 +12,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
+import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { detectLocalTemplates } from '../local/detectLocalTemplates'
 import { MultiStepWizard, WizardStep } from './multiStepWizard'
 
@@ -243,30 +244,18 @@ class SamTemplateQuickPickItem implements vscode.QuickPickItem {
     public description?: string
     public detail?: string
 
-    private readonly workspaceFolderPath?: string
-
     public constructor(
-        public readonly uri: vscode.Uri
+        public readonly uri: vscode.Uri,
+        showWorkspaceFolderDetails: boolean,
     ) {
-        let label: string
-        const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
+        this.label = SamTemplateQuickPickItem.getLabel(uri)
 
-        if (workspaceFolder) {
-            // If workspace is /usr/foo/code and uri is /usr/foo/code/processor/template.yaml,
-            // show "processor/template.yaml"
-            label = path.relative(workspaceFolder.uri.fsPath, uri.fsPath)
-            this.workspaceFolderPath = workspaceFolder.uri.fsPath
-        } else {
-            // We shouldn't find sam templates outside of a workspace folder. If we do, show the full path.
-            label = uri.fsPath
-        }
+        if (showWorkspaceFolderDetails) {
+            const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
 
-        this.label = label
-    }
-
-    public showWorkspaceInfoInDescription(): void {
-        if (this.workspaceFolderPath) {
-            this.description = `in ${this.workspaceFolderPath}`
+            if (workspaceFolder) {
+                this.description = `in ${workspaceFolder.uri.fsPath}`
+            }
         }
     }
 
@@ -282,6 +271,23 @@ class SamTemplateQuickPickItem implements vscode.QuickPickItem {
         }
 
         return (this.detail || '').localeCompare(rhs.detail || '')
+    }
+
+    public static getLabel(uri: vscode.Uri): string {
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
+
+        if (workspaceFolder) {
+            // If workspace is /usr/foo/code and uri is /usr/foo/code/processor/template.yaml,
+            // show "processor/template.yaml"
+            return path.relative(workspaceFolder.uri.fsPath, uri.fsPath)
+        }
+
+        // We shouldn't find sam templates outside of a workspace folder. If we do, show the full path.
+        console.warn(
+            `Unexpected situation: detected SAM Template ${uri.fsPath} not found within a workspace folder.`
+        )
+
+        return uri.fsPath
     }
 }
 
@@ -373,29 +379,24 @@ async function getTemplateChoices(
     onDetectLocalTemplates: typeof detectLocalTemplates = detectLocalTemplates,
     ...workspaceFolders: vscode.Uri[]
 ): Promise<SamTemplateQuickPickItem[]> {
-    const result: SamTemplateQuickPickItem[] = []
-    for await (const uri of onDetectLocalTemplates({ workspaceUris: workspaceFolders })) {
-        result.push(new SamTemplateQuickPickItem(uri))
-    }
+    const uris = await toArrayAsync(onDetectLocalTemplates({ workspaceUris: workspaceFolders }))
 
-    // Identify which labels are non-unique
-    const dupes = new Set<string>()
-    const labels: string[] = []
+    const uriToLabel: Map<vscode.Uri, string> = new Map<vscode.Uri, string>()
+    const labelCounts: Map<string, number> = new Map()
 
-    result.forEach(item => {
-        if (labels.indexOf(item.label) !== -1) {
-            dupes.add(item.label)
+    uris.forEach(uri => {
+        const label = SamTemplateQuickPickItem.getLabel(uri)
+        uriToLabel.set(uri, label)
+        labelCounts.set(label, 1 + (labelCounts.get(label) || 0))
+    })
+
+    return Array.from(
+        uriToLabel,
+        ([uri, label]) => {
+            const showWorkspaceFolderDetails: boolean = (labelCounts.get(label) || 0) > 1
+
+            return new SamTemplateQuickPickItem(uri, showWorkspaceFolderDetails)
         }
-
-        labels.push(item.label)
-    })
-
-    // For all non-unique labels, show a description indicating which workspace folder it belongs to
-    result
-        .filter(item => dupes.has(item.label))
-        .forEach(item => item.showWorkspaceInfoInDescription())
-
-    return result.sort((a, b) => {
-        return a.compareTo(b)
-    })
+    )
+        .sort((a, b) => a.compareTo(b))
 }
