@@ -14,6 +14,8 @@ import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
 import { ext } from '../shared/extensionGlobals'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { ResourceFetcher } from '../shared/resourceFetcher'
+import { ResultWithTelemetry } from '../shared/telemetry/telemetryEvent'
+import { defaultMetricDatum, registerCommand } from '../shared/telemetry/telemetryUtils'
 import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
@@ -55,58 +57,81 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
     }
 
     public initialize(context: Pick<vscode.ExtensionContext, 'globalState'>): void {
-        vscode.commands.registerCommand('aws.refreshAwsExplorer', async () => this.refresh())
-        vscode.commands.registerCommand(
-            'aws.lambda.createNewSamApp',
-            async () => await createNewSamApp(context)
-        )
+        registerCommand({
+            command: 'aws.refreshAwsExplorer',
+            callback: async () => this.refresh()
+        })
 
-        vscode.commands.registerCommand(
-            'aws.deleteLambda',
-            async (node: StandaloneFunctionNode) => await deleteLambda({
+        const createNewSamAppCommand = 'aws.lambda.createNewSamApp'
+        registerCommand({
+            command: createNewSamAppCommand,
+            callback: async (): Promise<ResultWithTelemetry<void>> => {
+                const metadata = await createNewSamApp(context)
+                const datum = defaultMetricDatum(createNewSamAppCommand)
+                datum.metadata = metadata ? new Map([
+                    ['runtime', metadata.runtime]
+                ]) : undefined
+
+                return {
+                    telemetryDatum: datum
+                }
+            }
+        })
+
+        registerCommand({
+            command: 'aws.deleteLambda',
+            callback: async (node: StandaloneFunctionNode) => await deleteLambda({
                 deleteParams: { functionName: node.configuration.FunctionName || '' },
                 lambdaClient: ext.toolkitClientBuilder.createLambdaClient(node.regionCode),
                 outputChannel: this.lambdaOutputChannel,
                 onRefresh: () => this.refresh(node.parent)
             })
-        )
-        vscode.commands.registerCommand(
-            'aws.deleteCloudFormation',
-            async (node: CloudFormationStackNode) => await deleteCloudFormation(
+        })
+
+        registerCommand({
+            command: 'aws.deleteCloudFormation',
+            callback: async (node: CloudFormationStackNode) => await deleteCloudFormation(
                 () => this.refresh(node.parent),
                 node
             )
-        )
-        vscode.commands.registerCommand(
-            'aws.deploySamApplication',
-            async () => await deploySamApplication({outputChannel: this.lambdaOutputChannel})
-        )
+        })
 
-        vscode.commands.registerCommand(
-            'aws.showErrorDetails',
-            async (node: ErrorNode) => await showErrorDetails(node)
-        )
+        registerCommand({
+            command: 'aws.deploySamApplication',
+            callback: async () => await deploySamApplication({outputChannel: this.lambdaOutputChannel})
+        })
 
-        vscode.commands.registerCommand(
-            'aws.invokeLambda',
-            async (node: FunctionNodeBase) => await invokeLambda({
+        registerCommand({
+            command: 'aws.showErrorDetails',
+            callback: async (node: ErrorNode) => await showErrorDetails(node)
+        })
+
+        registerCommand({
+            command: 'aws.invokeLambda',
+            callback: async (node: FunctionNodeBase) => await invokeLambda({
                 awsContext: this.awsContext,
                 element: node,
                 outputChannel: this.lambdaOutputChannel,
                 resourceFetcher: this.resourceFetcher
             })
-        )
-        vscode.commands.registerCommand('aws.configureLambda', configureLocalLambda)
-        vscode.commands.registerCommand(
-            'aws.getLambdaConfig',
-            async (node: FunctionNodeBase) => await getLambdaConfig(
+        })
+
+        registerCommand({
+            command: 'aws.configureLambda',
+            callback: configureLocalLambda
+        })
+
+        registerCommand({
+            command: 'aws.getLambdaConfig',
+            callback: async (node: FunctionNodeBase) => await getLambdaConfig(
                 this.awsContext,
                 node
-            ))
+            )
+        })
 
-        vscode.commands.registerCommand(
-            'aws.getLambdaPolicy',
-            async (node: FunctionNodeBase) => {
+        registerCommand({
+            command: 'aws.getLambdaPolicy',
+            callback: async (node: FunctionNodeBase) => {
                 const functionNode: FunctionNodeBase = await utils.selectLambdaNode(this.awsContext, node)
 
                 const policyProvider = new DefaultLambdaPolicyProvider(
@@ -116,14 +141,15 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
 
                 const view = new LambdaPolicyView(policyProvider)
                 await view.load()
-            })
+            }
+        })
 
-        vscode.commands.registerCommand(
-            'aws.refreshLambdaProviderNode',
-            async (lambdaProvider: LambdaTreeDataProvider, element: AWSTreeNodeBase) => {
+        registerCommand({
+            command: 'aws.refreshLambdaProviderNode',
+            callback: async (lambdaProvider: LambdaTreeDataProvider, element: AWSTreeNodeBase) => {
                 lambdaProvider._onDidChangeTreeData.fire(element)
             }
-        )
+        })
 
         this.awsContextTrees.addTree(this)
     }

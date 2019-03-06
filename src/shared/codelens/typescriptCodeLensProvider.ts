@@ -18,6 +18,8 @@ import {
     SamCliTaskInvoker
 } from '../sam/cli/samCliInvoker'
 import { SettingsConfiguration } from '../settingsConfiguration'
+import { ResultWithTelemetry } from '../telemetry/telemetryEvent'
+import { defaultMetricDatum, registerCommand } from '../telemetry/telemetryUtils'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { LambdaLocalInvokeArguments, LocalLambdaRunner } from './localLambdaRunner'
 
@@ -126,9 +128,11 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
         processInvoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker(),
         taskInvoker: SamCliTaskInvoker = new DefaultSamCliTaskInvoker()
     ): void {
-        vscode.commands.registerCommand(
-            'aws.lambda.local.invoke',
-            async (args: LambdaLocalInvokeArguments) => {
+        const command = 'aws.lambda.local.invoke'
+
+        registerCommand({
+            command: command,
+            callback: async (args: LambdaLocalInvokeArguments): Promise<ResultWithTelemetry<void>> => {
 
                 let debugPort: number | undefined
 
@@ -147,8 +151,18 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
                 )
 
                 await localLambdaRunner.run()
+
+                const datum = defaultMetricDatum(command)
+                datum.metadata = new Map([
+                    ['runtime', localLambdaRunner.runtime],
+                    ['debug', `${args.debug}`]
+                ])
+
+                return {
+                    telemetryDatum: datum
+                }
             }
-        )
+        })
     }
 
     private static async determineDebugPort(): Promise<number> {
