@@ -41,10 +41,18 @@ export async function resumeCreateNewSamApp(context: Pick<vscode.ExtensionContex
     }
 }
 
-export async function createNewSamApp(context: Pick<vscode.ExtensionContext, 'globalState'>): Promise<void> {
+interface NewSamAppMetadata {
+    runtime: string
+}
+/**
+ * Runs `sam init` in the given context and returns useful metadata about its invocation
+ */
+export async function createNewSamApp(
+    context: Pick<vscode.ExtensionContext, 'globalState'>
+): Promise<NewSamAppMetadata | undefined> {
     const config = await new CreateNewSamAppWizard().run()
     if (!config) {
-        return
+        return undefined
     }
 
     const invocation = new SamCliInitInvocation(config)
@@ -52,7 +60,7 @@ export async function createNewSamApp(context: Pick<vscode.ExtensionContext, 'gl
 
     const uri = await getMainUri(config)
     if (!uri) {
-        return
+        return undefined
     }
 
     if (await addWorkspaceFolder(
@@ -65,6 +73,10 @@ export async function createNewSamApp(context: Pick<vscode.ExtensionContext, 'gl
         context.globalState.update(URI_TO_OPEN_ON_INIT_KEY, uri!.fsPath)
     } else {
         await vscode.window.showTextDocument(uri)
+    }
+
+    return {
+        runtime: config.runtime
     }
 }
 
