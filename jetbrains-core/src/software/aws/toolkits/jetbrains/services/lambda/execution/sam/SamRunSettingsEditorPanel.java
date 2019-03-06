@@ -45,7 +45,7 @@ public final class SamRunSettingsEditorPanel {
     public EditorTextField handler;
     public EnvironmentVariablesTextField environmentVariables;
     private SortedComboBoxModel<Runtime> runtimeModel;
-    public JComboBox runtime;
+    public JComboBox<Runtime> runtime;
     public RegionSelector regionSelector;
     public CredentialProviderSelector credentialSelector;
     public LambdaInputPanel lambdaInput;

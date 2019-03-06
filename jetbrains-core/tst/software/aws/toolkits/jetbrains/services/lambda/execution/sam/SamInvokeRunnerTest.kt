@@ -79,7 +79,7 @@ class SamInvokeRunnerTest {
         val runConfig = createTemplateRunConfiguration(
             project = projectRule.project,
             templateFile = template,
-            logicalFunctionName = "SomeFunction"
+            logicalId = "SomeFunction"
         )
 
         runInEdtAndWait {
@@ -104,7 +104,7 @@ class SamInvokeRunnerTest {
         val runConfig = createTemplateRunConfiguration(
             project = projectRule.project,
             templateFile = template,
-            logicalFunctionName = "SomeFunction"
+            logicalId = "SomeFunction"
         )
 
         runInEdtAndWait {
@@ -129,7 +129,7 @@ class SamInvokeRunnerTest {
         val runConfig = createTemplateRunConfiguration(
             project = projectRule.project,
             templateFile = template,
-            logicalFunctionName = "SomeFunction"
+            logicalId = "SomeFunction"
         )
 
         runInEdtAndWait {
@@ -154,7 +154,7 @@ class SamInvokeRunnerTest {
         val runConfig = createTemplateRunConfiguration(
             project = projectRule.project,
             templateFile = template,
-            logicalFunctionName = "SomeFunction"
+            logicalId = "SomeFunction"
         )
 
         runInEdtAndWait {

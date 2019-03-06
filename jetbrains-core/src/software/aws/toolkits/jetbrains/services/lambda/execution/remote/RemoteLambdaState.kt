@@ -21,7 +21,6 @@ import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.LogType
 import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.services.lambda.execution.remote.LambdaRemoteRunConfiguration.LambdaRemoteRunSettings
 import software.aws.toolkits.jetbrains.utils.formatText
 import software.aws.toolkits.resources.message
 import java.io.OutputStream

@@ -13,22 +13,22 @@ fun createTemplateRunConfiguration(
     project: Project,
     input: String? = "inputText",
     templateFile: String? = null,
-    logicalFunctionName: String? = null,
+    logicalId: String? = null,
     inputIsFile: Boolean = false,
     credentialsProviderId: String? = null,
     region: AwsRegion? = AwsRegion("us-east-1", "us-east-1"),
     environmentVariables: MutableMap<String, String> = mutableMapOf()
 ): SamRunConfiguration {
     val runConfiguration = samRunConfiguration(project)
+    runConfiguration.useTemplate(templateFile, logicalId)
 
-    runConfiguration.configureForTemplate(
-        templateFile = templateFile,
-        logicalFunctionName = logicalFunctionName,
-        input = input,
-        inputIsFile = inputIsFile,
-        envVars = environmentVariables,
-        credentialsProviderId = credentialsProviderId,
-        region = region
+    createBaseRunConfiguration(
+        runConfiguration,
+        region,
+        credentialsProviderId,
+        environmentVariables,
+        inputIsFile,
+        input
     )
 
     return runConfiguration
@@ -45,21 +45,40 @@ fun createHandlerBasedRunConfiguration(
     environmentVariables: MutableMap<String, String> = mutableMapOf()
 ): SamRunConfiguration {
     val runConfiguration = samRunConfiguration(project)
+    runConfiguration.useHandler(runtime, handler)
 
-    runConfiguration.configureForHandler(
-        runtime = runtime,
-        handler = handler,
-        input = input,
-        inputIsFile = inputIsFile,
-        envVars = environmentVariables,
-        credentialsProviderId = credentialsProviderId,
-        region = region
+    createBaseRunConfiguration(
+        runConfiguration,
+        region,
+        credentialsProviderId,
+        environmentVariables,
+        inputIsFile,
+        input
     )
 
     return runConfiguration
 }
 
-private fun samRunConfiguration(project: Project): SamRunConfiguration {
+private fun createBaseRunConfiguration(
+    runConfiguration: SamRunConfiguration,
+    region: AwsRegion?,
+    credentialsProviderId: String?,
+    environmentVariables: MutableMap<String, String>,
+    inputIsFile: Boolean,
+    input: String?
+) {
+    runConfiguration.regionId(region?.id)
+    runConfiguration.credentialProviderId(credentialsProviderId)
+    runConfiguration.environmentVariables(environmentVariables)
+
+    if (inputIsFile) {
+        runConfiguration.useInputFile(input)
+    } else {
+        runConfiguration.useInputText(input)
+    }
+}
+
+fun samRunConfiguration(project: Project): SamRunConfiguration {
     val runManager = RunManager.getInstance(project)
     val factory = LambdaRunConfiguration.getInstance().configurationFactories.first { it is SamRunConfigurationFactory }
     val runConfigurationAndSettings = runManager.createConfiguration("Test", factory)

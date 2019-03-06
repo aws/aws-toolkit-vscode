@@ -26,12 +26,8 @@ class SamRunningState(
 
     override fun startProcess(): ProcessHandler {
         val totalEnvVars = settings.environmentVariables.toMutableMap()
-        settings.credentials?.let {
-            totalEnvVars += it.toEnvironmentVariables()
-        }
-
-        totalEnvVars["AWS_REGION"] = settings.regionId
-        totalEnvVars["AWS_DEFAULT_REGION"] = settings.regionId
+        totalEnvVars += settings.credentials.resolveCredentials().toEnvironmentVariables()
+        totalEnvVars += settings.region.toEnvironmentVariables()
 
         val template = builtLambda.templateLocation ?: samTemplate()
 

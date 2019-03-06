@@ -151,7 +151,7 @@ class SamRunConfigurationTest {
             val runConfiguration = createTemplateRunConfiguration(
                 project = projectRule.project,
                 templateFile = "test",
-                logicalFunctionName = null,
+                logicalId = null,
                 credentialsProviderId = mockId
             )
             assertThat(runConfiguration).isNotNull
@@ -183,7 +183,7 @@ class SamRunConfigurationTest {
             val runConfiguration = createTemplateRunConfiguration(
                 project = projectRule.project,
                 templateFile = template,
-                logicalFunctionName = logicalName,
+                logicalId = logicalName,
                 credentialsProviderId = mockId
             )
             assertThat(runConfiguration).isNotNull
@@ -215,7 +215,7 @@ class SamRunConfigurationTest {
             val runConfiguration = createTemplateRunConfiguration(
                 project = projectRule.project,
                 templateFile = template,
-                logicalFunctionName = logicalName,
+                logicalId = logicalName,
                 credentialsProviderId = mockId
             )
             assertThat(runConfiguration).isNotNull
@@ -323,19 +323,18 @@ class SamRunConfigurationTest {
         """.toElement()
 
         runInEdtAndWait {
-            val runConfiguration = createHandlerBasedRunConfiguration(project = projectRule.project, handler = null)
+            val runConfiguration = samRunConfiguration(projectRule.project)
 
             runConfiguration.readExternal(element)
 
-            val settings = runConfiguration.settings()
-            assertThat(settings.useTemplate).isFalse()
-            assertThat(settings.handler).isEqualTo("helloworld.App::handleRequest")
-            assertThat(settings.runtime).isEqualTo(Runtime.PYTHON3_6.toString())
-            assertThat(settings.environmentVariables).containsAllEntriesOf(mapOf("Foo" to "Bar"))
-            assertThat(settings.regionId).isEqualTo("us-west-2")
-            assertThat(settings.credentialProviderId).isEqualTo("profile:default")
-            assertThat(settings.templateFile).isNull()
-            assertThat(settings.logicalFunctionName).isNull()
+            assertThat(runConfiguration.isUsingTemplate()).isFalse()
+            assertThat(runConfiguration.templateFile()).isNull()
+            assertThat(runConfiguration.logicalId()).isNull()
+            assertThat(runConfiguration.handler()).isEqualTo("helloworld.App::handleRequest")
+            assertThat(runConfiguration.runtime()).isEqualTo(Runtime.PYTHON3_6)
+            assertThat(runConfiguration.environmentVariables()).containsAllEntriesOf(mapOf("Foo" to "Bar"))
+            assertThat(runConfiguration.regionId()).isEqualTo("us-west-2")
+            assertThat(runConfiguration.credentialProviderId()).isEqualTo("profile:default")
         }
     }
 
@@ -363,19 +362,84 @@ class SamRunConfigurationTest {
         """.toElement()
 
         runInEdtAndWait {
-            val runConfiguration = createHandlerBasedRunConfiguration(project = projectRule.project, handler = null)
+            val runConfiguration = samRunConfiguration(projectRule.project)
 
             runConfiguration.readExternal(element)
 
-            val settings = runConfiguration.settings()
-            assertThat(settings.useTemplate).isTrue()
-            assertThat(settings.handler).isNull()
-            assertThat(settings.runtime).isNull()
-            assertThat(settings.environmentVariables).containsAllEntriesOf(mapOf("Foo" to "Bar"))
-            assertThat(settings.regionId).isEqualTo("us-west-2")
-            assertThat(settings.credentialProviderId).isEqualTo("profile:default")
-            assertThat(settings.templateFile).isEqualTo("template.yaml")
-            assertThat(settings.logicalFunctionName).isEqualTo("HelloWorldFunction")
+            assertThat(runConfiguration.isUsingTemplate()).isTrue()
+            assertThat(runConfiguration.templateFile()).isEqualTo("template.yaml")
+            assertThat(runConfiguration.logicalId()).isEqualTo("HelloWorldFunction")
+            assertThat(runConfiguration.handler()).isNull()
+            assertThat(runConfiguration.runtime()).isNull()
+            assertThat(runConfiguration.environmentVariables()).containsAllEntriesOf(mapOf("Foo" to "Bar"))
+            assertThat(runConfiguration.regionId()).isEqualTo("us-west-2")
+            assertThat(runConfiguration.credentialProviderId()).isEqualTo("profile:default")
+        }
+    }
+
+    @Test
+    fun readInputFileBasedDoesNotThrowException() {
+        // This tests for backwards compatibility, data should not be changed except in backwards compatible ways
+        val element = """
+                <configuration name="HelloWorldFunction" type="aws.lambda" factoryName="Local" temporary="true" nameIsGenerated="true">
+                  <option name="credentialProviderId" value="profile:default" />
+                  <option name="environmentVariables">
+                    <map>
+                      <entry key="Foo" value="Bar" />
+                    </map>
+                  </option>
+                  <option name="handler" />
+                  <option name="input" value="event.json" />
+                  <option name="inputIsFile" value="true" />
+                  <option name="logicalFunctionName" value="HelloWorldFunction" />
+                  <option name="regionId" value="us-west-2" />
+                  <option name="runtime" />
+                  <option name="templateFile" value="template.yaml" />
+                  <option name="useTemplate" value="true" />
+                  <method v="2" />
+                </configuration>
+        """.toElement()
+
+        runInEdtAndWait {
+            val runConfiguration = samRunConfiguration(projectRule.project)
+
+            runConfiguration.readExternal(element)
+
+            assertThat(runConfiguration.isUsingInputFile()).isTrue()
+            assertThat(runConfiguration.inputSource()).isEqualTo("event.json")
+        }
+    }
+
+    @Test
+    fun readInputTextBasedDoesNotThrowException() {
+        // This tests for backwards compatibility, data should not be changed except in backwards compatible ways
+        val element = """
+                <configuration name="HelloWorldFunction" type="aws.lambda" factoryName="Local" temporary="true" nameIsGenerated="true">
+                  <option name="credentialProviderId" value="profile:default" />
+                  <option name="environmentVariables">
+                    <map>
+                      <entry key="Foo" value="Bar" />
+                    </map>
+                  </option>
+                  <option name="handler" />
+                  <option name="input" value="{}" />
+                  <option name="inputIsFile" value="false" />
+                  <option name="logicalFunctionName" value="HelloWorldFunction" />
+                  <option name="regionId" value="us-west-2" />
+                  <option name="runtime" />
+                  <option name="templateFile" value="template.yaml" />
+                  <option name="useTemplate" value="true" />
+                  <method v="2" />
+                </configuration>
+        """.toElement()
+
+        runInEdtAndWait {
+            val runConfiguration = samRunConfiguration(projectRule.project)
+
+            runConfiguration.readExternal(element)
+
+            assertThat(runConfiguration.isUsingInputFile()).isFalse()
+            assertThat(runConfiguration.inputSource()).isEqualTo("{}")
         }
     }
 

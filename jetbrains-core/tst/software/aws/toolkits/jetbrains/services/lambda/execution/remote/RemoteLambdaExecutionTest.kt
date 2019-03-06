@@ -32,8 +32,8 @@ import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
-import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.delegateMock
+import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 import java.util.concurrent.CompletableFuture
@@ -131,7 +131,7 @@ class RemoteLambdaExecutionTest {
     }
 
     private fun executeLambda(inputText: String = "Input", inputFile: Boolean = false): Output {
-        val runConfiguration = createRunConfiguration(inputText = inputText, inputFile = inputFile)
+        val runConfiguration = createRunConfiguration(inputSource = inputText, inputFile = inputFile)
 
         val executor = ExecutorRegistry.getInstance().getExecutorById(DefaultRunExecutor.EXECUTOR_ID)
         val executionEnvironment = ExecutionEnvironmentBuilder.create(executor, runConfiguration).build()
@@ -150,14 +150,21 @@ class RemoteLambdaExecutionTest {
         return executionFuture.get(5, TimeUnit.SECONDS)
     }
 
-    private fun createRunConfiguration(inputText: String, inputFile: Boolean): LambdaRemoteRunConfiguration {
+    private fun createRunConfiguration(inputSource: String, inputFile: Boolean): LambdaRemoteRunConfiguration {
         val runManager = RunManager.getInstance(projectRule.project)
         val factory = LambdaRunConfiguration.getInstance().configurationFactories.first { it is LambdaRemoteRunConfigurationFactory }
         val runConfigurationAndSettings = runManager.createConfiguration("Test", factory)
         val runConfiguration = runConfigurationAndSettings.configuration as LambdaRemoteRunConfiguration
         runManager.addConfiguration(runConfigurationAndSettings)
 
-        runConfiguration.configure(CREDENTIAL_ID, REGION_ID, FUNCTION_NAME, inputText, inputFile)
+        runConfiguration.credentialProviderId(CREDENTIAL_ID)
+        runConfiguration.regionId(REGION_ID)
+        runConfiguration.functionName(FUNCTION_NAME)
+        if (inputFile) {
+            runConfiguration.useInputFile(inputSource)
+        } else {
+            runConfiguration.useInputText(inputSource)
+        }
 
         return runConfiguration
     }

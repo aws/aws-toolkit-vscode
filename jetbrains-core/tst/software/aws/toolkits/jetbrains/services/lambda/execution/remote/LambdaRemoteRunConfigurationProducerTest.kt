@@ -50,10 +50,9 @@ class LambdaRemoteRunConfigurationProducerTest {
             val runConfiguration = createRunConfiguration(lambdaLocation)
             assertThat(runConfiguration).isNotNull
             val configuration = runConfiguration?.configuration as LambdaRemoteRunConfiguration
-            val settings = configuration.getInternalSettings()
-            assertThat(settings.functionName).isEqualTo(functionName)
-            assertThat(settings.credentialProviderId).isEqualTo(credentialProviderId)
-            assertThat(settings.regionId).isEqualTo(region.id)
+            assertThat(configuration.functionName()).isEqualTo(functionName)
+            assertThat(configuration.credentialProviderId()).isEqualTo(credentialProviderId)
+            assertThat(configuration.regionId()).isEqualTo(region.id)
             assertThat(configuration.name).isEqualTo("[Remote] $functionName")
         }
     }

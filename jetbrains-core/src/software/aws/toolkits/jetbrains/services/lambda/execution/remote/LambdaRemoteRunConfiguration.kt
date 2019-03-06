@@ -3,9 +3,9 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.remote
 
+import com.intellij.execution.ExecutionException
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.ConfigurationFactory
-import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.configurations.RunProfileState
 import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.execution.runners.ExecutionEnvironment
@@ -14,7 +14,6 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
-import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
@@ -31,100 +30,56 @@ import javax.swing.JPanel
 import kotlin.streams.toList
 
 class LambdaRemoteRunConfigurationFactory(configuration: LambdaRunConfiguration) : ConfigurationFactory(configuration) {
-    override fun createTemplateConfiguration(project: Project): RunConfiguration =
-        LambdaRemoteRunConfiguration(project, this)
+    override fun createTemplateConfiguration(project: Project) = LambdaRemoteRunConfiguration(project, this)
 
     override fun getName(): String = "Remote"
+
+    override fun getOptionsClass() = RemoteLambdaOptions::class.java
 }
 
 class LambdaRemoteRunConfiguration(project: Project, factory: ConfigurationFactory) :
-    LambdaRunConfigurationBase<LambdaRemoteRunConfiguration.MutableRemoteLambdaSettings>(project, factory, "Remote") {
-
-    override var settings = MutableRemoteLambdaSettings()
+    LambdaRunConfigurationBase<RemoteLambdaOptions>(project, factory, "Remote") {
 
     override fun getConfigurationEditor() = RemoteLambdaRunSettingsEditor(project)
 
+    override fun getOptions() = super.getOptions() as RemoteLambdaOptions
+
     override fun checkConfiguration() {
-        settings.validateAndCreateImmutable()
+        functionName() ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_function_specified"))
+
+        resolveCredentials()
+        resolveInput()
     }
 
-    override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState = RemoteLambdaState(
-        environment,
-        settings.validateAndCreateImmutable()
-    )
+    override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState {
+        try {
+            val functionName = functionName()
+                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_function_specified"))
 
-    override fun suggestedName() = "[${message("lambda.run_configuration.remote")}] ${settings.functionName}"
-
-    fun configure(
-        credentialProviderId: String?,
-        regionId: String?,
-        functionName: String?,
-        input: String? = null,
-        inputIsFile: Boolean = false
-    ) {
-        settings.credentialProviderId = credentialProviderId
-        settings.regionId = regionId
-        settings.functionName = functionName
-        settings.input = input
-        settings.inputIsFile = inputIsFile
-    }
-
-    @TestOnly
-    fun getInternalSettings() = settings
-
-    class MutableRemoteLambdaSettings(
-        var credentialProviderId: String? = null,
-        var regionId: String? = null,
-        var functionName: String? = null,
-        input: String? = null,
-        inputIsFile: Boolean = false
-    ) : MutableLambdaRunSettings(input, inputIsFile) {
-        fun validateAndCreateImmutable(): LambdaRemoteRunSettings {
-            val credProviderId = credentialProviderId
-                    ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_credentials_specified"))
-
-            val credentialProvider = try {
-                CredentialManager.getInstance().getCredentialProvider(credProviderId)
-            } catch (e: CredentialProviderNotFound) {
-                throw RuntimeConfigurationError(
-                    message(
-                        "lambda.run_configuration.credential_not_found_error",
-                        credProviderId
-                    )
-                )
-            } catch (e: Exception) {
-                throw RuntimeConfigurationError(
-                    message(
-                        "lambda.run_configuration.credential_error",
-                        e.message ?: "Unknown"
-                    )
-                )
-            }
-
-            val regionId =
-                regionId ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
-            val region = AwsRegionProvider.getInstance().regions()[regionId] ?: throw RuntimeConfigurationError(
-                message(
-                    "lambda.run_configuration.unknown_region",
-                    regionId
-                )
+            return RemoteLambdaState(
+                environment,
+                LambdaRemoteRunSettings(resolveCredentials(), resolveRegion(), functionName, resolveInput())
             )
-            val functionName = functionName
-                    ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_function_specified"))
-
-            val inputText = resolveInputText(input, inputIsFile)
-
-            return LambdaRemoteRunSettings(credentialProvider, region, functionName, inputText)
+        } catch (e: Exception) {
+            throw ExecutionException(e.message, e)
         }
     }
 
-    class LambdaRemoteRunSettings(
-        val credentialProvider: ToolkitCredentialsProvider,
-        val region: AwsRegion,
-        val functionName: String,
-        val input: String
-    )
+    override fun suggestedName() = "[${message("lambda.run_configuration.remote")}] ${functionName()}"
+
+    fun functionName() = options.functionOptions.functionName
+
+    fun functionName(name: String?) {
+        options.functionOptions.functionName = name
+    }
 }
+
+class LambdaRemoteRunSettings(
+    val credentialProvider: ToolkitCredentialsProvider,
+    val region: AwsRegion,
+    val functionName: String,
+    val input: String
+)
 
 class RemoteLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaRemoteRunConfiguration>() {
     private val view = LambdaRemoteRunSettingsEditorPanel(project)
@@ -177,9 +132,7 @@ class RemoteLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaRem
     override fun createEditor(): JPanel = view.panel
 
     override fun resetEditorFrom(configuration: LambdaRemoteRunConfiguration) {
-        val settings = configuration.settings
-
-        settings.credentialProviderId?.let {
+        configuration.credentialProviderId()?.let {
             try {
                 view.credentialSelector.setSelectedCredentialsProvider(credentialManager.getCredentialProvider(it))
             } catch (e: CredentialProviderNotFound) {
@@ -188,27 +141,25 @@ class RemoteLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaRem
                 view.credentialSelector.setSelectedInvalidCredentialsProvider(it)
             }
         }
-        view.regionSelector.selectedRegion = regionProvider.regions()[settings.regionId]
-        view.functionNames.selectedItem = settings.functionName
 
-        if (settings.inputIsFile) {
-            view.lambdaInput.inputFile = settings.input
+        view.regionSelector.selectedRegion = regionProvider.regions()[configuration.regionId()]
+        view.functionNames.selectedItem = configuration.functionName()
+
+        if (configuration.isUsingInputFile()) {
+            view.lambdaInput.inputFile = configuration.inputSource()
         } else {
-            view.lambdaInput.inputText = settings.input
+            view.lambdaInput.inputText = configuration.inputSource()
         }
     }
 
     override fun applyEditorTo(configuration: LambdaRemoteRunConfiguration) {
-        val settings = configuration.settings
-
-        settings.credentialProviderId = view.credentialSelector.getSelectedCredentialsProvider()
-        settings.regionId = view.regionSelector.selectedRegion?.id
-        settings.functionName = view.functionName
-        settings.inputIsFile = view.lambdaInput.isUsingFile
-        settings.input = if (view.lambdaInput.isUsingFile) {
-            view.lambdaInput.inputFile
+        configuration.credentialProviderId(view.credentialSelector.getSelectedCredentialsProvider())
+        configuration.regionId(view.regionSelector.selectedRegion?.id)
+        configuration.functionName(view.functionName)
+        if (view.lambdaInput.isUsingFile) {
+            configuration.useInputFile(view.lambdaInput.inputFile)
         } else {
-            view.lambdaInput.inputText
+            configuration.useInputText(view.lambdaInput.inputText)
         }
     }
 

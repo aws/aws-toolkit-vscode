@@ -57,12 +57,10 @@ class LambdaSamRunConfigurationProducer : RunConfigurationProducer<SamRunConfigu
 
         val runtime = RuntimeGroup.determineRuntime(context.module) ?: RuntimeGroup.determineRuntime(context.project)
         val settings = accountSettings(element.project)
-        configuration.configureForHandler(
-            runtime = runtime,
-            handler = handler,
-            credentialsProviderId = settings.first,
-            region = settings.second
-        )
+        configuration.useHandler(runtime, handler)
+        configuration.credentialProviderId(settings.first)
+        configuration.regionId(settings.second?.id)
+
         return true
     }
 
@@ -70,12 +68,10 @@ class LambdaSamRunConfigurationProducer : RunConfigurationProducer<SamRunConfigu
         val file = element.containingFile?.virtualFile?.path ?: return false
         val function = functionFromElement(element) ?: return false
         val settings = accountSettings(element.project)
-        configuration.configureForTemplate(
-            templateFile = file,
-            logicalFunctionName = function.logicalName,
-            credentialsProviderId = settings.first,
-            region = settings.second
-        )
+        configuration.useTemplate(file, function.logicalName)
+        configuration.credentialProviderId(settings.first)
+        configuration.regionId(settings.second?.id)
+
         return true
     }
 
@@ -86,12 +82,12 @@ class LambdaSamRunConfigurationProducer : RunConfigurationProducer<SamRunConfigu
         }
         val resolver = LambdaHandlerResolver.getInstanceOrThrow(runtimeGroup)
         val handler = resolver.determineHandler(element) ?: return false
-        return configuration.settings.handler == handler
+        return configuration.handler() == handler
     }
 
     private fun isFromTemplateContext(element: YAMLPsiElement, configuration: SamRunConfiguration): Boolean {
-        val templateFile = configuration.settings.templateFile ?: return false
-        val functionName = configuration.settings.logicalFunctionName ?: return false
+        val templateFile = configuration.templateFile() ?: return false
+        val functionName = configuration.logicalId() ?: return false
         val file = element.containingFile?.virtualFile?.path ?: return false
         val function = functionFromElement(element) ?: return false
         return templateFile == file && functionName == function.logicalName

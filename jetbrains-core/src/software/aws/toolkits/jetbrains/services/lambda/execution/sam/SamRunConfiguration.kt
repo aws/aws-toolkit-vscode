@@ -7,7 +7,6 @@ import com.intellij.execution.ExecutionException
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.execution.configurations.RefactoringListenerProvider
-import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.options.SettingsEditor
@@ -18,22 +17,20 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.refactoring.listeners.RefactoringElementAdapter
 import com.intellij.refactoring.listeners.RefactoringElementListener
-import org.jetbrains.annotations.TestOnly
-import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
+import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.services.lambda.HandlerCompletionProvider
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
-import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
+import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationBase
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunConfiguration.MutableLambdaSamRunSettings
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamTemplateUtils.findFunctionsFromTemplate
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.validOrNull
@@ -42,43 +39,66 @@ import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
 import java.io.File
-import javax.swing.JPanel
+import javax.swing.JComponent
 
 class SamRunConfigurationFactory(configuration: LambdaRunConfiguration) : ConfigurationFactory(configuration) {
-    override fun createTemplateConfiguration(project: Project): RunConfiguration =
-        SamRunConfiguration(project, this)
+    override fun createTemplateConfiguration(project: Project) = SamRunConfiguration(project, this)
 
     override fun getName(): String = "Local"
+
+    override fun getOptionsClass() = LocalLambdaOptions::class.java
 }
 
 class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
-    LambdaRunConfigurationBase<MutableLambdaSamRunSettings>(project, factory, "SAM CLI"),
+    LambdaRunConfigurationBase<LocalLambdaOptions>(project, factory, "SAM CLI"),
     RefactoringListenerProvider {
-    override var settings = MutableLambdaSamRunSettings()
+    override fun getOptions() = super.getOptions() as LocalLambdaOptions
 
     override fun getConfigurationEditor() = SamRunSettingsEditor(project)
 
     override fun checkConfiguration() {
-        settings.validateAndCreateImmutable(project)
+        if (SamSettings.getInstance().executablePath.isNullOrEmpty()) {
+            throw RuntimeConfigurationError(message("sam.cli_not_configured")) {
+                ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsConfigurable::class.java)
+            }
+        }
+
+        resolveCredentials()
+
+        val (handler, runtime) = resolveLambdaInfo()
+        handlerPsiElement(handler, runtime) ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
+        regionId() ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
+        resolveInput()
     }
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): SamRunningState {
-        val settings = try {
-            settings.validateAndCreateImmutable(project)
+        try {
+            if (SamSettings.getInstance().executablePath.isNullOrEmpty()) {
+                throw RuntimeConfigurationError(message("sam.cli_not_configured")) {
+                    ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsConfigurable::class.java)
+                }
+            }
+
+            val (handler, runtime, templateDetails) = resolveLambdaInfo()
+            val psiElement = handlerPsiElement(handler, runtime)
+                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
+
+            val samRunSettings = SamRunSettings(
+                runtime,
+                handler,
+                resolveInput(),
+                environmentVariables(),
+                resolveCredentials(),
+                resolveRegion(),
+                psiElement,
+                templateDetails
+            )
+
+            return SamRunningState(environment, samRunSettings)
         } catch (e: Exception) {
-            throw ExecutionException(e.message)
+            throw ExecutionException(e.message, e)
         }
-        return SamRunningState(environment, settings)
     }
-
-    private fun getPsiElement(): PsiElement? = try {
-        settings.validateAndCreateImmutable(project).handlerElement
-    } catch (e: Exception) {
-        null
-    }
-
-    @TestOnly
-    fun settings() = settings
 
     override fun getRefactoringElementListener(element: PsiElement?): RefactoringElementListener? {
         element?.run {
@@ -86,20 +106,20 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
                 LambdaHandlerResolver.getInstance(runtimeGroup)
             } ?: return null
 
-            val handlerPsi = getPsiElement() ?: return null
+            val handlerPsi = handlerPsiElement() ?: return null
 
             if (PsiTreeUtil.isAncestor(element, handlerPsi, false)) {
                 return object : RefactoringElementAdapter() {
-                    private val originalHandler = settings.handler
+                    private val originalHandler = options.functionOptions.handler
 
                     override fun elementRenamedOrMoved(newElement: PsiElement) {
                         handlerResolver.determineHandler(handlerPsi)?.let { newHandler ->
-                            settings.handler = newHandler
+                            options.functionOptions.handler = newHandler
                         }
                     }
 
                     override fun undoElementMovedOrRenamed(newElement: PsiElement, oldQualifiedName: String) {
-                        settings.handler = originalHandler
+                        options.functionOptions.handler = originalHandler
                     }
                 }
             }
@@ -107,133 +127,98 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
         return null
     }
 
-    fun configureForTemplate(
-        templateFile: String?,
-        logicalFunctionName: String?,
-        input: String? = null,
-        inputIsFile: Boolean = false,
-        envVars: MutableMap<String, String> = mutableMapOf(),
-        credentialsProviderId: String? = null,
-        region: AwsRegion? = null
-    ) {
-        settings.useTemplate = true
-        settings.templateFile = templateFile
-        settings.logicalFunctionName = logicalFunctionName
-        settings.input = input
-        settings.inputIsFile = inputIsFile
-        settings.environmentVariables = envVars
-        settings.credentialProviderId = credentialsProviderId
-        settings.regionId = region?.id
+    fun useTemplate(templateLocation: String?, logicalId: String?) {
+        val functionOptions = options.functionOptions
+        functionOptions.useTemplate = true
+
+        functionOptions.templateFile = templateLocation
+        functionOptions.logicalId = logicalId
+
+        functionOptions.handler = null
+        functionOptions.runtime = null
     }
 
-    fun configureForHandler(
-        runtime: Runtime?,
-        handler: String?,
-        input: String? = null,
-        inputIsFile: Boolean = false,
-        envVars: MutableMap<String, String> = mutableMapOf(),
-        credentialsProviderId: String? = null,
-        region: AwsRegion? = null
-    ) {
-        settings.useTemplate = false
-        settings.handler = handler
-        settings.runtime = runtime?.toString()
-        settings.input = input
-        settings.inputIsFile = inputIsFile
-        settings.environmentVariables = envVars
-        settings.credentialProviderId = credentialsProviderId
-        settings.regionId = region?.id
+    fun useHandler(runtime: Runtime?, handler: String?) {
+        val functionOptions = options.functionOptions
+        functionOptions.useTemplate = false
+
+        functionOptions.templateFile = null
+        functionOptions.logicalId = null
+
+        functionOptions.handler = handler
+        functionOptions.runtime = runtime.toString()
     }
 
-    override fun suggestedName(): String? = "[${message("lambda.run_configuration.local")}] ${settings.logicalFunctionName ?: handlerDisplayName()}"
+    fun isUsingTemplate() = options.functionOptions.useTemplate
+
+    fun templateFile() = options.functionOptions.templateFile
+
+    fun logicalId() = options.functionOptions.logicalId
+
+    fun handler() = options.functionOptions.handler
+
+    fun runtime(): Runtime? = Runtime.fromValue(options.functionOptions.runtime)?.validOrNull
+
+    fun environmentVariables() = options.functionOptions.environmentVariables
+
+    fun environmentVariables(envVars: Map<String, String>) {
+        options.functionOptions.environmentVariables = envVars.toMutableMap()
+    }
+
+    override fun suggestedName(): String? {
+        val subName = options.functionOptions.logicalId ?: handlerDisplayName()
+        return "[${message("lambda.run_configuration.local")}] $subName"
+    }
 
     private fun handlerDisplayName(): String? {
-        val handler = settings.handler ?: return null
-        return settings.runtime?.let { Runtime.fromValue(it).runtimeGroup }?.let { LambdaHandlerResolver.getInstance(it) }?.handlerDisplayName(handler) ?: handler
+        val handler = options.functionOptions.handler ?: return null
+        return runtime()
+            ?.runtimeGroup
+            ?.let { LambdaHandlerResolver.getInstance(it) }
+            ?.handlerDisplayName(handler) ?: handler
     }
 
-    class MutableLambdaSamRunSettings(
-        var runtime: String? = null,
-        var handler: String? = null,
-        input: String? = null,
-        inputIsFile: Boolean = false,
-        var environmentVariables: MutableMap<String, String> = mutableMapOf(),
-        var regionId: String? = null,
-        var credentialProviderId: String? = null,
-        var useTemplate: Boolean = false,
-        var templateFile: String? = null,
-        var logicalFunctionName: String? = null
-    ) : LambdaRunConfigurationBase.MutableLambdaRunSettings(input, inputIsFile) {
-        fun validateAndCreateImmutable(project: Project): SamRunSettings {
-            if (SamSettings.getInstance().executablePath.isNullOrEmpty()) {
-                throw RuntimeConfigurationError(message("sam.cli_not_configured")) {
-                    ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsConfigurable::class.java)
-                }
-            }
+    private fun resolveLambdaInfo() = if (isUsingTemplate()) {
+            val template = templateFile()?.takeUnless { it.isEmpty() }
+                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.sam.no_template_specified"))
 
-            if (credentialProviderId == null) {
-                throw RuntimeConfigurationError(message("lambda.run_configuration.no_credentials_specified"))
-            }
+            val functionName = logicalId() ?: throw RuntimeConfigurationError(
+                message("lambda.run_configuration.sam.no_function_specified")
+            )
 
-            val (handler, runtime, templateDetails) = resolveLambdaInfo(project)
-            val element = findPsiElementsForHandler(project, runtime, handler).firstOrNull()
-                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
-            val regionId = regionId ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
-            val inputText = resolveInputText(input, inputIsFile)
-            val credentials = resolveCredentials()
-
-            return SamRunSettings(runtime, handler, inputText, environmentVariables, credentials, regionId, element, templateDetails)
-        }
-
-        private fun resolveLambdaInfo(project: Project): Triple<String, Runtime, SamTemplateDetails?> =
-            if (useTemplate) {
-                val template = templateFile?.takeUnless { it.isEmpty() }
-                        ?: throw RuntimeConfigurationError(message("lambda.run_configuration.sam.no_template_specified"))
-
-                val functionName = logicalFunctionName ?: throw RuntimeConfigurationError(
-                    message("lambda.run_configuration.sam.no_function_specified")
-                )
-
-                val function = findFunctionsFromTemplate(
-                    project,
-                    File(templateFile)
-                ).find { it.logicalName == functionName }
-                        ?: throw RuntimeConfigurationError(
-                            message(
-                                "lambda.run_configuration.sam.no_such_function",
-                                functionName,
-                                template
-                            )
-                        )
-
-                val runtime = function.runtime().let { Runtime.fromValue(it).validOrNull }
-                        ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
-
-                Triple(function.handler(), runtime, SamTemplateDetails(template, functionName))
-            } else {
-                val handler = handler
-                        ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
-                val runtime = runtime?.let { Runtime.fromValue(it) }
-                        ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
-
-                Triple(handler, runtime, null)
-            }
-
-        private fun resolveCredentials(): AwsCredentials? = credentialProviderId?.let {
-            try {
-                val credentialProvider = CredentialManager.getInstance().getCredentialProvider(it)
-                credentialProvider.resolveCredentials()
-            } catch (e: CredentialProviderNotFound) {
-                throw RuntimeConfigurationError(message("lambda.run_configuration.credential_not_found_error", it))
-            } catch (e: Exception) {
-                throw RuntimeConfigurationError(
+            val function = findFunctionsFromTemplate(
+                project,
+                File(template)
+            ).find { it.logicalName == functionName }
+                ?: throw RuntimeConfigurationError(
                     message(
-                        "lambda.run_configuration.credential_error",
-                        e.message ?: "Unknown"
+                        "lambda.run_configuration.sam.no_such_function",
+                        functionName,
+                        template
                     )
                 )
+
+            val runtime = function.runtime().let { Runtime.fromValue(it).validOrNull }
+                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
+
+            Triple(function.handler(), runtime, SamTemplateDetails(template, functionName))
+        } else {
+            val handler = handler()
+                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
+            val runtime = runtime()
+                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
+
+            Triple(handler, runtime, null)
+        }
+
+    private fun handlerPsiElement(handler: String? = handler(), runtime: Runtime? = runtime()) = try {
+        runtime?.let {
+            handler?.let {
+                findPsiElementsForHandler(project, runtime, handler).firstOrNull()
             }
         }
+    } catch (e: Exception) {
+        null
     }
 }
 
@@ -262,26 +247,24 @@ class SamRunSettingsEditor(project: Project) : SettingsEditor<SamRunConfiguratio
         }
     }
 
-    override fun createEditor(): JPanel = view.panel
+    override fun createEditor(): JComponent = view.panel
 
     override fun resetEditorFrom(configuration: SamRunConfiguration) {
-        val settings = configuration.settings
-
-        view.useTemplate.isSelected = settings.useTemplate
-        if (settings.useTemplate) {
+        view.useTemplate.isSelected = configuration.isUsingTemplate()
+        if (configuration.isUsingTemplate()) {
             view.runtime.isEnabled = false
-            view.setTemplateFile(settings.templateFile)
-            view.selectFunction(settings.logicalFunctionName)
+            view.setTemplateFile(configuration.templateFile())
+            view.selectFunction(configuration.logicalId())
         } else {
             view.setTemplateFile(null) // Also clears the functions selector
-            view.runtime.model.selectedItem = settings.runtime?.let { Runtime.fromValue(it).validOrNull }
-            view.handler.setText(settings.handler)
+            view.runtime.model.selectedItem = configuration.runtime()
+            view.handler.setText(configuration.handler())
         }
 
-        view.environmentVariables.envVars = settings.environmentVariables
-        view.regionSelector.selectedRegion = regionProvider.lookupRegionById(settings.regionId)
+        view.environmentVariables.envVars = configuration.environmentVariables()
+        view.regionSelector.selectedRegion = regionProvider.lookupRegionById(configuration.regionId())
 
-        settings.credentialProviderId?.let {
+        configuration.credentialProviderId()?.let {
             try {
                 view.credentialSelector.setSelectedCredentialsProvider(credentialManager.getCredentialProvider(it))
             } catch (e: CredentialProviderNotFound) {
@@ -291,37 +274,27 @@ class SamRunSettingsEditor(project: Project) : SettingsEditor<SamRunConfiguratio
             }
         }
 
-        if (settings.inputIsFile) {
-            view.lambdaInput.inputFile = settings.input
+        if (configuration.isUsingInputFile()) {
+            view.lambdaInput.inputFile = configuration.inputSource()
         } else {
-            view.lambdaInput.inputText = settings.input
+            view.lambdaInput.inputText = configuration.inputSource()
         }
     }
 
     override fun applyEditorTo(configuration: SamRunConfiguration) {
-        val settings = configuration.settings
-
-        settings.useTemplate = view.useTemplate.isSelected
-        if (settings.useTemplate) {
-            settings.templateFile = view.templateFile.text
-            settings.logicalFunctionName = view.function.selected()?.logicalName
-            settings.runtime = null
-            settings.handler = null
+        if (view.useTemplate.isSelected) {
+            configuration.useTemplate(view.templateFile.text, view.function.selected()?.logicalName)
         } else {
-            settings.templateFile = null
-            settings.logicalFunctionName = null
-            settings.runtime = (view.runtime.selected())?.toString()
-            settings.handler = view.handler.text
+            configuration.useHandler(view.runtime.selected(), view.handler.text)
         }
 
-        settings.environmentVariables = view.environmentVariables.envVars.toMutableMap()
-        settings.regionId = view.regionSelector.selectedRegion?.id
-        settings.credentialProviderId = view.credentialSelector.getSelectedCredentialsProvider()
-        settings.inputIsFile = view.lambdaInput.isUsingFile
-        settings.input = if (view.lambdaInput.isUsingFile) {
-            view.lambdaInput.inputFile
+        configuration.environmentVariables(view.environmentVariables.envVars)
+        configuration.regionId(view.regionSelector.selectedRegion?.id)
+        configuration.credentialProviderId(view.credentialSelector.getSelectedCredentialsProvider())
+        if (view.lambdaInput.isUsingFile) {
+            configuration.useInputFile(view.lambdaInput.inputFile)
         } else {
-            view.lambdaInput.inputText
+            configuration.useInputText(view.lambdaInput.inputText)
         }
     }
 }
@@ -331,8 +304,8 @@ class SamRunSettings(
     val handler: String,
     val input: String,
     val environmentVariables: Map<String, String>,
-    val credentials: AwsCredentials?,
-    val regionId: String,
+    val credentials: ToolkitCredentialsProvider,
+    val region: AwsRegion,
     val handlerElement: NavigatablePsiElement,
     val templateDetails: SamTemplateDetails?
 ) {

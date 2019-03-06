@@ -26,6 +26,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
+import software.aws.toolkits.jetbrains.services.lambda.validOrNull
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import java.io.File
 import java.net.ServerSocket
@@ -45,17 +46,18 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
 
         // Requires SamDebugSupport too
         if (DefaultDebugExecutor.EXECUTOR_ID == executorId) {
-            val runtimeValue = if (profile.settings.useTemplate) {
-                SamTemplateUtils.findFunctionsFromTemplate(profile.project, File(profile.settings.templateFile))
-                    .find { it.logicalName == profile.settings.logicalFunctionName }
+            val runtimeValue = if (profile.isUsingTemplate()) {
+                SamTemplateUtils.findFunctionsFromTemplate(profile.project, File(profile.templateFile()))
+                    .find { it.logicalName == profile.logicalId() }
                     ?.runtime()
+                    ?.let {
+                        Runtime.fromValue(it)?.validOrNull
+                    }
             } else {
-                profile.settings.runtime
+                profile.runtime()
             }
 
-            val runtimeGroup = runtimeValue?.let {
-                Runtime.fromValue(runtimeValue).runtimeGroup
-            }
+            val runtimeGroup = runtimeValue?.runtimeGroup
 
             return SamDebugSupport.supportedRuntimeGroups.contains(runtimeGroup)
         }

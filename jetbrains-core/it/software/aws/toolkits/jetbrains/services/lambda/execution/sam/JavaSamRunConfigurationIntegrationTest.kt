@@ -120,7 +120,7 @@ class JavaSamRunConfigurationIntegrationTest {
         val runConfiguration = createTemplateRunConfiguration(
             project = projectRule.project,
             templateFile = templateFile.containingFile.virtualFile.path,
-            logicalFunctionName = "SomeFunction",
+            logicalId = "SomeFunction",
             input = "\"Hello World\"",
             credentialsProviderId = mockId
         )
@@ -150,7 +150,7 @@ class JavaSamRunConfigurationIntegrationTest {
         val runConfiguration = createTemplateRunConfiguration(
             project = projectRule.project,
             templateFile = templateFile.containingFile.virtualFile.path,
-            logicalFunctionName = "SomeFunction",
+            logicalId = "SomeFunction",
             input = "\"Hello World\"",
             credentialsProviderId = mockId
         )

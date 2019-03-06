@@ -25,8 +25,11 @@ class LambdaRemoteRunConfigurationProducer : RunConfigurationProducer<LambdaRemo
         val location = context.location as? RemoteLambdaLocation ?: return false
         val function = location.lambdaFunction
 
-        configuration.configure(function.credentialProviderId, function.region.id, function.name)
+        configuration.credentialProviderId(function.credentialProviderId)
+        configuration.regionId(function.region.id)
+        configuration.functionName(function.name)
         configuration.setGeneratedName()
+
         return true
     }
 
@@ -36,13 +39,14 @@ class LambdaRemoteRunConfigurationProducer : RunConfigurationProducer<LambdaRemo
     ): Boolean {
         val location = context.location as? RemoteLambdaLocation ?: return false
         val function = location.lambdaFunction
-        return configuration.settings.functionName == function.name &&
-                configuration.settings.credentialProviderId == function.credentialProviderId &&
-                configuration.settings.regionId == function.region.id
+        return configuration.functionName() == function.name &&
+                configuration.credentialProviderId() == function.credentialProviderId &&
+                configuration.regionId() == function.region.id
     }
 
     companion object {
-        private fun getFactory(): ConfigurationFactory =
-            LambdaRunConfiguration.getInstance().configurationFactories.first { it is LambdaRemoteRunConfigurationFactory }
+        private fun getFactory(): ConfigurationFactory = LambdaRunConfiguration.getInstance()
+            .configurationFactories
+            .first { it is LambdaRemoteRunConfigurationFactory }
     }
 }
