@@ -10,6 +10,7 @@ import * as immutable from 'immutable'
 // TODO: Can we dynamically determine the available runtimes? We could theoretically parse the
 // output of `sam init --help`, but that's a hack.
 export type SamLambdaRuntime =
+    'python3.7' |
     'python3.6' |
     'python2.7' |
     'python' |
@@ -17,6 +18,7 @@ export type SamLambdaRuntime =
     'nodejs8.10' |
     'nodejs4.3' |
     'nodejs' |
+    'dotnetcore2.1' |
     'dotnetcore2.0' |
     'dotnetcore1.0' |
     'dotnetcore' |
@@ -24,9 +26,11 @@ export type SamLambdaRuntime =
     'go1.x' |
     'go' |
     'java8' |
-    'java'
+    'java' |
+    'ruby2.5'
 
 export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set([
+    'python3.7',
     'python3.6',
     'python2.7',
     'python',
@@ -34,6 +38,7 @@ export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set(
     'nodejs8.10',
     'nodejs4.3',
     'nodejs',
+    'dotnetcore2.1',
     'dotnetcore2.0',
     'dotnetcore1.0',
     'dotnetcore',
@@ -41,7 +46,8 @@ export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set(
     'go1.x',
     'go',
     'java8',
-    'java'
+    'java',
+    'ruby2.5'
 ] as SamLambdaRuntime[])
 
 export enum SamLambdaRuntimeFamily {
@@ -49,11 +55,13 @@ export enum SamLambdaRuntimeFamily {
     NodeJS,
     DotNet,
     Go,
-    Java
+    Java,
+    Ruby
 }
 
 export function getFamily(runtime: string | undefined): SamLambdaRuntimeFamily {
     switch (runtime) {
+        case 'python3.7':
         case 'python3.6':
         case 'python2.7':
         case 'python':
@@ -63,6 +71,7 @@ export function getFamily(runtime: string | undefined): SamLambdaRuntimeFamily {
         case 'nodejs4.3':
         case 'nodejs':
             return SamLambdaRuntimeFamily.NodeJS
+        case 'dotnetcore2.1':
         case 'dotnetcore2.0':
         case 'dotnetcore1.0':
         case 'dotnetcore':
@@ -74,6 +83,8 @@ export function getFamily(runtime: string | undefined): SamLambdaRuntimeFamily {
         case 'java8':
         case 'java':
             return SamLambdaRuntimeFamily.Java
+        case 'ruby2.5':
+            return SamLambdaRuntimeFamily.Ruby
         default:
             throw new Error(`Unrecognized runtime: '${runtime}'`)
 
