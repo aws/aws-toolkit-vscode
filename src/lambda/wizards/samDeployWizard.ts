@@ -82,7 +82,6 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                     'AWS.samcli.deploy.template.prompt',
                     'Which SAM Template would you like to deploy to AWS?'
                 ),
-                matchOnDescription: true,
             },
             items: await getTemplateChoices(this.onDetectLocalTemplates, ...workspaceFolders)
         })
@@ -239,13 +238,48 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
 class SamTemplateQuickPickItem implements vscode.QuickPickItem {
     public readonly label: string
 
-    public readonly description: string
+    public description?: string
+    public detail?: string
+
+    private readonly workspacePath?: string
 
     public constructor(
         public readonly uri: vscode.Uri
     ) {
-        this.label = path.basename(uri.fsPath)
-        this.description = path.dirname(uri.fsPath)
+        let label: string
+        const workspace = vscode.workspace.getWorkspaceFolder(uri)
+
+        if (workspace) {
+            // If workspace is /usr/foo/code and uri is /usr/foo/code/processor/template.yaml,
+            // show "processor/template.yaml"
+            label = path.relative(workspace.uri.fsPath, uri.fsPath)
+            this.workspacePath = workspace.uri.fsPath
+        } else {
+            // We shouldn't find sam templates outside of a workspace folder. If we do, show the full path.
+            label = uri.fsPath
+        }
+
+        this.label = label
+    }
+
+    public showWorkspaceInDescription(): void {
+        if (this.workspacePath) {
+            this.description = `in ${this.workspacePath}`
+        }
+    }
+
+    public compareTo(rhs: SamTemplateQuickPickItem): number {
+        const labelComp = this.label.localeCompare(rhs.label)
+        if (labelComp !== 0) {
+            return labelComp
+        }
+
+        const descriptionComp = (this.description || '').localeCompare(rhs.description || '')
+        if (descriptionComp !== 0) {
+            return descriptionComp
+        }
+
+        return (this.detail || '').localeCompare(rhs.detail || '')
     }
 }
 
@@ -342,5 +376,24 @@ async function getTemplateChoices(
         result.push(new SamTemplateQuickPickItem(uri))
     }
 
-    return result
+    // Identify which labels are non-unique
+    const dupes = new Set<string>()
+    const labels: string[] = []
+
+    result.forEach(item => {
+        if (labels.indexOf(item.label) !== -1) {
+            dupes.add(item.label)
+        }
+
+        labels.push(item.label)
+    })
+
+    // For all non-unique labels, show a description indicating which workspace it belongs to
+    result
+        .filter(item => dupes.has(item.label))
+        .forEach(item => item.showWorkspaceInDescription())
+
+    return result.sort((a, b) => {
+        return a.compareTo(b)
+    })
 }
