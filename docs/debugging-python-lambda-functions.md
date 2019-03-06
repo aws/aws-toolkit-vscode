@@ -132,19 +132,10 @@ With the above steps, you need to manually invoke SAM CLI from the command line,
     }
     ```
 
-3. Open `<app root>/.vscode/launch.json`, and add the following property to the configuration that you created earlier:
+3. Open `<app root>/.vscode/launch.json`, and add the following property to the `Python: Remote Attach` configuration that you created earlier:
 
     ```json
-    {
-        "version": "0.2.0",
-        "configurations": [
-            {
-                "name": "Python: Remote Attach",
-                // ...
-                "preLaunchTask": "Debug Python Lambda Function"
-            }
-        ]
-    }
+    "preLaunchTask": "Debug Python Lambda Function"
     ```
 
 Now you can just press `F5`, and Visual Studio Code will invoke SAM CLI and wait for the `waiting for debugger to attach...` message before attaching the debugger.
