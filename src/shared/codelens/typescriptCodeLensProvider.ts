@@ -11,11 +11,7 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
-<<<<<<< HEAD
 import { getLogger, Logger } from '../logger'
-import { SamCliBuildInvocation } from '../sam/cli/samCliBuild'
-=======
->>>>>>> develop
 import {
     DefaultSamCliProcessInvoker,
     DefaultSamCliTaskInvoker,
