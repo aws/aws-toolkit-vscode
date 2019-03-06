@@ -55,7 +55,7 @@ export class LocalLambdaRunner {
         private readonly configuration: SettingsConfiguration,
         private readonly localInvokeArgs: LambdaLocalInvokeArguments,
         debugPort: number | undefined,
-        private readonly runtime: string,
+        public readonly runtime: string,
         private readonly outputChannel: vscode.OutputChannel,
         private readonly processInvoker: SamCliProcessInvoker,
         private readonly taskInvoker: SamCliTaskInvoker
