@@ -6,7 +6,6 @@
 'use strict'
 
 import * as assert from 'assert'
-import * as vscode from 'vscode'
 import { AwsTelemetryOptOut, TelemetryOptOutOptions } from '../../../shared/telemetry/awsTelemetryOptOut'
 import { TelemetryEvent } from '../../../shared/telemetry/telemetryEvent'
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
@@ -56,8 +55,12 @@ describe('AwsTelemetryOptOut', () => {
 
     // VS Code tests use the same preferences as the host editor
     it('updateTelemetryConfiguration(TelemetryOptOutOptions.SameAsVsCode) matches user setting', async () => {
-        const vscodePreference = !!vscode.workspace.getConfiguration('telemetry').get<boolean>('enableTelemetry')
-        await telemetryOptOut.updateTelemetryConfiguration(TelemetryOptOutOptions.SameAsVsCode)
-        assert.strictEqual(mockService.telemetryEnabled, vscodePreference)
+        const telemetryOptOutVsCodeOptionAlwaysTrue = new AwsTelemetryOptOut(mockService, mockSettings, () => true)
+        await telemetryOptOutVsCodeOptionAlwaysTrue.updateTelemetryConfiguration(TelemetryOptOutOptions.SameAsVsCode)
+        assert.strictEqual(mockService.telemetryEnabled, true)
+
+        const telemetryOptOutVsCodeOptionAlwaysFalse = new AwsTelemetryOptOut(mockService, mockSettings, () => false)
+        await telemetryOptOutVsCodeOptionAlwaysFalse.updateTelemetryConfiguration(TelemetryOptOutOptions.SameAsVsCode)
+        assert.strictEqual(mockService.telemetryEnabled, false)
     })
 })
