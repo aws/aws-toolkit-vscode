@@ -18,8 +18,8 @@ describe('DisposableFiles', async () => {
     let tempFolder: string
     let logger: TestLogger
 
-    before(() => {
-        logger = new TestLogger()
+    before( async () => {
+        logger = await TestLogger.createTestLogger()
     })
 
     beforeEach(async () => {

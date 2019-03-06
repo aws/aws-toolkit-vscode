@@ -19,8 +19,8 @@ describe('SamInfoCliCommand', async () => {
 
     let logger: TestLogger
 
-    before(() => {
-        logger = new TestLogger()
+    before( async () => {
+        logger = await TestLogger.createTestLogger()
     })
 
     after(async () => {

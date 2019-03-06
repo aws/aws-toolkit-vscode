@@ -38,8 +38,8 @@ describe('LambdaPolicyView', async () => {
     let logger: TestLogger
     let autoDisposeView: LambdaPolicyView | undefined
 
-    before(() => {
-        logger = new TestLogger()
+    before( async () => {
+        logger = await TestLogger.createTestLogger()
     })
 
     afterEach(async () => {

@@ -29,10 +29,10 @@ describe('UserCredentialsUtils', () => {
     let tempFolder: string
     let logger: TestLogger
 
-    before(async () => {
+    before( async () => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
-        logger = new TestLogger()
+        logger = await TestLogger.createTestLogger()
         tempFolder = await mkdtemp()
     })
 

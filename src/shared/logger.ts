@@ -35,21 +35,35 @@ export interface Logger {
     releaseLogger(): void
 }
 
+/**
+ * logPath is not required (as Winston will work without a file path defined) but will output errors to stderr.
+ */
 export interface LoggerParams {
     outputChannel?: vscode.OutputChannel
     logPath?: string
     logLevel?: string
 }
 
-// creates default logger object
-// can overwrite defaultLogger if you include params
-export function initialize(params?: LoggerParams): Logger {
+/**
+ * @param params: LoggerParams
+ * Creates the "default logger" (returnable here and through getLogger) using specified parameters or default values.
+ * Initializing again will create a new default logger
+ * --however, existing logger objects using the old default logger will be unaffected.
+ */
+export async function initialize(params?: LoggerParams): Promise<Logger> {
     if (!params) {
         defaultLogger = createLogger({
             outputChannel: DEFAULT_OUTPUT_CHANNEL,
             logPath: getDefaultLogPath()
         })
         // only the default logger (with default params) gets a registered command
+        // check list of registered commands to see if aws.viewLogs has already been registered.
+        // if so, don't register again--this will cause an error visible to the user.
+        for (const command of await vscode.commands.getCommands(true)) {
+            if (command === 'aws.viewLogs') {
+                return defaultLogger
+            }
+        }
         vscode.commands.registerCommand(
             'aws.viewLogs',
             async () => await openLogFile()
@@ -68,7 +82,9 @@ export function initialize(params?: LoggerParams): Logger {
     return defaultLogger
 }
 
-// returns default logger object
+/**
+ * Gets the default logger if it has been initialized with the initialize() function
+ */
 export function getLogger(): Logger {
     if (defaultLogger) {
         return defaultLogger
@@ -76,17 +92,21 @@ export function getLogger(): Logger {
     throw new Error ('Default Logger not initialized. Call logger.initialize() first.')
 }
 
-// creates and returns custom logger
-// it's the caller's responsibility to keep track of this logger object
+/**
+ * @param params: LoggerParams--nothing is required, but a LogPath is highly recommended so Winston doesn't throw errors
+ *
+ * Outputs a logger object that isn't stored anywhere--it's up to the caller to keep track of this.
+ * No cleanup is REQUIRED, but if you wish to directly manipulate the log file while VSCode is still active,
+ * you need to call releaseLogger. This will end the ability to write to the logfile with this logger instance.
+ */
 export function createLogger(params: LoggerParams): Logger {
     let level: string
     if (params.logLevel) {
         level = params.logLevel
     } else {
         const configuration: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
-        level =
-            configuration.readSetting<string>('logLevel') ?
-            configuration.readSetting<string>('logLevel') as string : DEFAULT_LOG_LEVEL
+        const setLevel = configuration.readSetting<string>('logLevel')
+        level = setLevel ? setLevel as string : DEFAULT_LOG_LEVEL
     }
     const transports: Transport[] = []
     if (params.logPath) {

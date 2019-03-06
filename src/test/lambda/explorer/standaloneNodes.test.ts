@@ -24,8 +24,8 @@ describe('DefaultStandaloneFunctionNode', () => {
     const fakeIconPathPrefix: string = 'DefaultStandaloneFunctionNode'
     let logger: TestLogger
 
-    before(() => {
-        logger = new TestLogger()
+    before( async () => {
+        logger = await TestLogger.createTestLogger()
         fakeFunctionConfig = {
             FunctionName: 'testFunctionName',
             FunctionArn: 'testFunctionARN'
@@ -129,8 +129,8 @@ describe('DefaultStandaloneFunctionGroupNode', () => {
 
     let logger: TestLogger
 
-    before(() => {
-        logger = new TestLogger()
+    before ( async () => {
+        logger = await TestLogger.createTestLogger()
     })
 
     after(async () => {

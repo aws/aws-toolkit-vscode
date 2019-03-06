@@ -46,7 +46,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const localize = nls.loadMessageBundle()
 
     ext.context = context
-    logger.initialize()
+    await logger.initialize()
 
     const toolkitOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.toolkit', 'AWS Toolkit')

@@ -19,12 +19,9 @@ export class TestLogger {
     // initializes a default logger. This persists through all tests.
     // initializing a default logger means that any tested files with logger statements will work.
     // as a best practice, please initialize a TestLogger before running tests on a file with logger statements.
-    public constructor() {
-        this._logfile = fs.mkdtempSync(path.join(os.tmpdir(), 'vsctk'))
-        this._logger = l.initialize({
-            logPath: path.join(this._logfile, 'temp.log'),
-            logLevel: 'debug'
-        })
+    private constructor(logfile: string, logger: l.Logger) {
+        this._logger = logger
+        this._logfile = logfile
     }
 
     // cleanupLogger clears out the logger's transports, but the logger will still exist as a default
@@ -40,5 +37,15 @@ export class TestLogger {
         const logText = await filesystemUtilities.readFileAsString(this._logfile as string)
 
         return(logText.includes(str))
+    }
+
+    public static async createTestLogger(): Promise<TestLogger> {
+        const logfile = fs.mkdtempSync(path.join(os.tmpdir(), 'vsctk'))
+        const logger = await l.initialize({
+            logPath: path.join(logfile, 'temp.log'),
+            logLevel: 'debug'
+        })
+
+        return new TestLogger(logfile, logger)
     }
 }

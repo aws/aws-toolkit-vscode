@@ -35,8 +35,8 @@ describe('DefaultCloudFormationStackNode', () => {
     const fakeIconPathPrefix: string = 'DefaultCloudFormationStackNode'
     let logger: TestLogger
 
-    before(() => {
-        logger = new TestLogger()
+    before( async () => {
+        logger = await TestLogger.createTestLogger()
         fakeStackSummary = {
             CreationTime: new Date(),
             StackId: '1',
@@ -256,8 +256,8 @@ describe('DefaultCloudFormationNode', () => {
 
     let logger: TestLogger
 
-    before (() => {
-        logger = new TestLogger()
+    before ( async () => {
+        logger = await TestLogger.createTestLogger()
     })
 
     after (async () => {
