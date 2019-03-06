@@ -7,6 +7,7 @@ import com.intellij.execution.RunManager
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
 
 fun createTemplateRunConfiguration(
@@ -16,7 +17,7 @@ fun createTemplateRunConfiguration(
     logicalId: String? = null,
     inputIsFile: Boolean = false,
     credentialsProviderId: String? = null,
-    region: AwsRegion? = AwsRegion("us-east-1", "us-east-1"),
+    region: AwsRegion? = MockRegionProvider.US_EAST_1,
     environmentVariables: MutableMap<String, String> = mutableMapOf()
 ): SamRunConfiguration {
     val runConfiguration = samRunConfiguration(project)
@@ -41,7 +42,7 @@ fun createHandlerBasedRunConfiguration(
     input: String? = "inputText",
     inputIsFile: Boolean = false,
     credentialsProviderId: String? = null,
-    region: AwsRegion? = AwsRegion("us-east-1", "us-east-1"),
+    region: AwsRegion? = MockRegionProvider.US_EAST_1,
     environmentVariables: MutableMap<String, String> = mutableMapOf()
 ): SamRunConfiguration {
     val runConfiguration = samRunConfiguration(project)

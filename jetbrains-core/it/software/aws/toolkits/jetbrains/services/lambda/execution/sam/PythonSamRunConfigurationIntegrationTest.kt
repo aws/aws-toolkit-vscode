@@ -19,8 +19,8 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
+import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 
@@ -82,7 +82,13 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
     fun samIsExecuted() {
         projectRule.fixture.addFileToProject("requirements.txt", "")
 
-        val runConfiguration = runConfiguration("src/hello_world.app.lambda_handler")
+        val runConfiguration = createHandlerBasedRunConfiguration(
+            project = projectRule.project,
+            runtime = runtime,
+            handler = "src/hello_world.app.lambda_handler",
+            input = "\"Hello World\"",
+            credentialsProviderId = mockId
+        )
         assertThat(runConfiguration).isNotNull
 
         val executeLambda = executeLambda(runConfiguration)
@@ -96,8 +102,12 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
 
         val envVars = mutableMapOf("Foo" to "Bar", "Bat" to "Baz")
 
-        val runConfiguration = runConfiguration(
+        val runConfiguration = createHandlerBasedRunConfiguration(
+            project = projectRule.project,
+            runtime = runtime,
             handler = "src/hello_world.app.env_print",
+            input = "\"Hello World\"",
+            credentialsProviderId = mockId,
             environmentVariables = envVars
         )
         assertThat(runConfiguration).isNotNull
@@ -113,20 +123,32 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
     fun regionIsPassed() {
         projectRule.fixture.addFileToProject("requirements.txt", "")
 
-        val runConfiguration = runConfiguration("src/hello_world.app.env_print")
+        val runConfiguration = createHandlerBasedRunConfiguration(
+            project = projectRule.project,
+            runtime = runtime,
+            handler = "src/hello_world.app.env_print",
+            input = "\"Hello World\"",
+            credentialsProviderId = mockId
+        )
         assertThat(runConfiguration).isNotNull
 
         val executeLambda = executeLambda(runConfiguration)
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(jsonToMap(executeLambda.stdout))
-            .containsEntry("AWS_REGION", "us-west-2")
+            .containsEntry("AWS_REGION", MockRegionProvider.US_EAST_1.id)
     }
 
     @Test
     fun credentialsArePassed() {
         projectRule.fixture.addFileToProject("requirements.txt", "")
 
-        val runConfiguration = runConfiguration("src/hello_world.app.env_print")
+        val runConfiguration = createHandlerBasedRunConfiguration(
+            project = projectRule.project,
+            runtime = runtime,
+            handler = "src/hello_world.app.env_print",
+            input = "\"Hello World\"",
+            credentialsProviderId = mockId
+        )
         assertThat(runConfiguration).isNotNull
 
         val executeLambda = executeLambda(runConfiguration)
@@ -153,7 +175,13 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
             )
         }
 
-        val runConfiguration = runConfiguration("src/hello_world.app.lambda_handler")
+        val runConfiguration = createHandlerBasedRunConfiguration(
+            project = projectRule.project,
+            runtime = runtime,
+            handler = "src/hello_world.app.lambda_handler",
+            input = "\"Hello World\"",
+            credentialsProviderId = mockId
+        )
         assertThat(runConfiguration).isNotNull
 
         val debuggerIsHit = checkBreakPointHit(projectRule.project)
@@ -186,7 +214,13 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
         val srcRoot = projectRule.fixture.file.virtualFile.parent.parent
         PsiTestUtil.addSourceRoot(projectRule.module, srcRoot)
 
-        val runConfiguration = runConfiguration("hello_world.app.lambda_handler")
+        val runConfiguration = createHandlerBasedRunConfiguration(
+            project = projectRule.project,
+            runtime = runtime,
+            handler = "hello_world.app.lambda_handler",
+            input = "\"Hello World\"",
+            credentialsProviderId = mockId
+        )
         assertThat(runConfiguration).isNotNull
 
         val debuggerIsHit = checkBreakPointHit(projectRule.project)
@@ -198,20 +232,6 @@ class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
 
         assertThat(debuggerIsHit.get()).isTrue()
     }
-
-    private fun runConfiguration(
-        handler: String,
-        environmentVariables: MutableMap<String, String> = mutableMapOf()
-    ): SamRunConfiguration =
-        createHandlerBasedRunConfiguration(
-            project = projectRule.project,
-            input = "\"Hello World\"",
-            handler = handler,
-            runtime = runtime,
-            credentialsProviderId = mockId,
-            region = AwsRegion("us-west-2", "us-west-2"),
-            environmentVariables = environmentVariables
-        )
 
     private fun jsonToMap(data: String) = jacksonObjectMapper().readValue<Map<String, String>>(data)
 }
