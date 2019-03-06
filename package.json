@@ -290,7 +290,7 @@
         ]
     },
     "scripts": {
-        "vscode:prepublish": "npm run compile",
+        "vscode:prepublish": "npm run recompile",
         "bundleDeps": "node ./build-scripts/bundleDeps.js",
         "clean": "node ./build-scripts/clean.js",
         "compile": "tsc -p ./ && npm run lint && npm run bundleDeps",
