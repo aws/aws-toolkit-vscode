@@ -114,7 +114,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
      * @returns S3 Bucket name. Undefined represents cancel.
      */
     public async promptUserForS3Bucket(initialValue?: string): Promise<string | undefined> {
-        const dlg = input.createInputBox({
+        const inputBox = input.createInputBox({
             buttons: [
                 vscode.QuickInputButtons.Back
             ],
@@ -129,11 +129,11 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
         // Pre-populate the value if it was already set
         if (initialValue) {
-            dlg.value = initialValue
+            inputBox.value = initialValue
         }
 
         return await input.promptUser({
-            inputBox: dlg,
+            inputBox: inputBox,
             onValidateInput: validateS3Bucket,
             onDidTriggerButton: (button, resolve, reject) => {
                 if (button === vscode.QuickInputButtons.Back) {
@@ -160,7 +160,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             validateInput(value: string): string | undefined
         }
     ): Promise<string | undefined> {
-        const dlg = input.createInputBox({
+        const inputBox = input.createInputBox({
             buttons: [
                 vscode.QuickInputButtons.Back
             ],
@@ -175,11 +175,11 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
         // Pre-populate the value if it was already set
         if (initialValue) {
-            dlg.value = initialValue
+            inputBox.value = initialValue
         }
 
         return await input.promptUser({
-            inputBox: dlg,
+            inputBox: inputBox,
             onValidateInput: validateInput,
             onDidTriggerButton: (button, resolve, reject) => {
                 if (button === vscode.QuickInputButtons.Back) {
@@ -243,19 +243,19 @@ class SamTemplateQuickPickItem implements vscode.QuickPickItem {
     public description?: string
     public detail?: string
 
-    private readonly workspacePath?: string
+    private readonly workspaceFolderPath?: string
 
     public constructor(
         public readonly uri: vscode.Uri
     ) {
         let label: string
-        const workspace = vscode.workspace.getWorkspaceFolder(uri)
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
 
-        if (workspace) {
+        if (workspaceFolder) {
             // If workspace is /usr/foo/code and uri is /usr/foo/code/processor/template.yaml,
             // show "processor/template.yaml"
-            label = path.relative(workspace.uri.fsPath, uri.fsPath)
-            this.workspacePath = workspace.uri.fsPath
+            label = path.relative(workspaceFolder.uri.fsPath, uri.fsPath)
+            this.workspaceFolderPath = workspaceFolder.uri.fsPath
         } else {
             // We shouldn't find sam templates outside of a workspace folder. If we do, show the full path.
             label = uri.fsPath
@@ -264,9 +264,9 @@ class SamTemplateQuickPickItem implements vscode.QuickPickItem {
         this.label = label
     }
 
-    public showWorkspaceInDescription(): void {
-        if (this.workspacePath) {
-            this.description = `in ${this.workspacePath}`
+    public showWorkspaceInfoInDescription(): void {
+        if (this.workspaceFolderPath) {
+            this.description = `in ${this.workspaceFolderPath}`
         }
     }
 
@@ -390,10 +390,10 @@ async function getTemplateChoices(
         labels.push(item.label)
     })
 
-    // For all non-unique labels, show a description indicating which workspace it belongs to
+    // For all non-unique labels, show a description indicating which workspace folder it belongs to
     result
         .filter(item => dupes.has(item.label))
-        .forEach(item => item.showWorkspaceInDescription())
+        .forEach(item => item.showWorkspaceInfoInDescription())
 
     return result.sort((a, b) => {
         return a.compareTo(b)
