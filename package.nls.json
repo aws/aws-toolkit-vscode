@@ -105,7 +105,6 @@
     "AWS.samcli.deploy.s3Bucket.prompt": "Enter the AWS S3 bucket to which your code should be deployed",
     "AWS.samcli.deploy.s3Bucket.error": "S3 bucket cannot be empty",
     "AWS.samcli.deploy.stackName.prompt": "Enter the name to use for the deployed stack",
-    "AWS.samcli.deploy.stackName.placeholder": "Stack name",
     "AWS.samcli.deploy.s3Bucket.error.length": "S3 bucket name must be between 3 and 63 characters long",
     "AWS.samcli.deploy.s3Bucket.error.invalidCharacters": "S3 bucket name may only contain lower-case characters, numbers, periods, and dashes",
     "AWS.samcli.deploy.s3Bucket.error.ipAddress": "S3 bucket name may not be formatted as an IP address (198.51.100.24)",
