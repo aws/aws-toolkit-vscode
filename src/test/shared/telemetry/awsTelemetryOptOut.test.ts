@@ -53,9 +53,14 @@ describe('AwsTelemetryOptOut', () => {
         assert.strictEqual(mockService.telemetryEnabled, false)
     })
 
-    // VS Code has opt-in telemetry by default so this test exists to tell us if Microsoft changes that behavior
-    it('updateTelemetryConfiguration(TelemetryOptOutOptions.SameAsVsCode) enables telemetry', async () => {
-        await telemetryOptOut.updateTelemetryConfiguration(TelemetryOptOutOptions.SameAsVsCode)
+    // VS Code tests use the same preferences as the host editor
+    it('updateTelemetryConfiguration(TelemetryOptOutOptions.SameAsVsCode) matches user setting', async () => {
+        const telemetryOptOutVsCodeOptionAlwaysTrue = new AwsTelemetryOptOut(mockService, mockSettings, () => true)
+        await telemetryOptOutVsCodeOptionAlwaysTrue.updateTelemetryConfiguration(TelemetryOptOutOptions.SameAsVsCode)
         assert.strictEqual(mockService.telemetryEnabled, true)
+
+        const telemetryOptOutVsCodeOptionAlwaysFalse = new AwsTelemetryOptOut(mockService, mockSettings, () => false)
+        await telemetryOptOutVsCodeOptionAlwaysFalse.updateTelemetryConfiguration(TelemetryOptOutOptions.SameAsVsCode)
+        assert.strictEqual(mockService.telemetryEnabled, false)
     })
 })
