@@ -13,10 +13,19 @@ import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
 import { ErrorNode } from '../../../lambda/explorer/errorNode'
 import {
     DefaultStandaloneFunctionGroupNode,
-    DefaultStandaloneFunctionNode
+    DefaultStandaloneFunctionNode,
+    StandaloneFunctionNode
 } from '../../../lambda/explorer/standaloneNodes'
+import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
+import { LambdaClient } from '../../../shared/clients/lambdaClient'
+import { ext } from '../../../shared/extensionGlobals'
 import { TestLogger } from '../../../shared/loggerUtils'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
+import { MockLambdaClient } from '../../shared/clients/mockClients'
+
+async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
+    yield* items
+}
 
 describe('DefaultStandaloneFunctionNode', () => {
 
@@ -24,7 +33,7 @@ describe('DefaultStandaloneFunctionNode', () => {
     const fakeIconPathPrefix: string = 'DefaultStandaloneFunctionNode'
     let logger: TestLogger
 
-    before( async () => {
+    before(async () => {
         logger = await TestLogger.createTestLogger()
         fakeFunctionConfig = {
             FunctionName: 'testFunctionName',
@@ -129,7 +138,7 @@ describe('DefaultStandaloneFunctionGroupNode', () => {
 
     let logger: TestLogger
 
-    before ( async () => {
+    before(async () => {
         logger = await TestLogger.createTestLogger()
     })
 
@@ -137,7 +146,31 @@ describe('DefaultStandaloneFunctionGroupNode', () => {
         await logger.cleanupLogger()
     })
 
-    const unusedPathResolver = () => { throw new Error('unused') }
+    const stubPathResolver = (path: string): string => path
+    const unusedPathResolver = () => { throw new Error('path resolver unused') }
+
+    class FunctionNamesMockLambdaClient extends MockLambdaClient {
+        public constructor(
+            public readonly functionNames: string[] = [],
+            listFunctions: () => AsyncIterableIterator<Lambda.FunctionConfiguration> =
+                () => asyncGenerator<Lambda.FunctionConfiguration>(
+                    functionNames.map<Lambda.FunctionConfiguration>(name => {
+                        return {
+                            FunctionName: name
+                        }
+                    })
+                ),
+        ) {
+            super(
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                listFunctions
+            )
+        }
+    }
 
     class ThrowErrorDefaultStandaloneFunctionGroupNode extends DefaultStandaloneFunctionGroupNode {
         public constructor(
@@ -150,6 +183,62 @@ describe('DefaultStandaloneFunctionGroupNode', () => {
             throw new Error('Hello there!')
         }
     }
+
+    it('Sorts Lambda Function Nodes', async () => {
+        const inputFunctionNames: string[] = [
+            'zebra',
+            'Antelope',
+            'aardvark',
+            'elephant'
+        ]
+
+        ext.toolkitClientBuilder = {
+            createCloudFormationClient(regionCode: string): CloudFormationClient {
+                throw new Error('cloudformation client unused')
+            },
+
+            createLambdaClient(regionCode: string): LambdaClient {
+                return new FunctionNamesMockLambdaClient(inputFunctionNames)
+            }
+        }
+
+        const functionGroupNode = new DefaultStandaloneFunctionGroupNode(
+            new DefaultRegionNode(new RegionInfo('code', 'name'), stubPathResolver),
+            stubPathResolver
+        )
+
+        const children = await functionGroupNode.getChildren()
+
+        assert.ok(children, 'Expected to get Lambda function nodes as children')
+        assert.strictEqual(
+            inputFunctionNames.length,
+            children.length,
+            `Expected ${inputFunctionNames.length} Function children, got ${children.length}`
+        )
+
+        function assertChildNodeFunctionName(
+            actualChildNode: StandaloneFunctionNode | ErrorNode,
+            expectedNodeText: string) {
+
+            assert.strictEqual(
+                actualChildNode instanceof DefaultStandaloneFunctionNode,
+                true,
+                'Child node was not a Standalone Function Node'
+            )
+
+            const node: DefaultStandaloneFunctionNode = actualChildNode as DefaultStandaloneFunctionNode
+            assert.strictEqual(
+                node.functionName,
+                expectedNodeText,
+                `Expected child node to have function name ${expectedNodeText} but got ${node.functionName}`
+            )
+        }
+
+        assertChildNodeFunctionName(children[0], 'aardvark')
+        assertChildNodeFunctionName(children[1], 'Antelope')
+        assertChildNodeFunctionName(children[2], 'elephant')
+        assertChildNodeFunctionName(children[3], 'zebra')
+    })
 
     it('handles error', async () => {
         const testNode = new ThrowErrorDefaultStandaloneFunctionGroupNode(

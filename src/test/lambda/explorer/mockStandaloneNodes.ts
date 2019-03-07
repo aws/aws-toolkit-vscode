@@ -30,6 +30,7 @@ export class MockStandaloneFunctionNode implements StandaloneFunctionNode {
 
     public constructor(
         public readonly regionCode: string = '',
+        public readonly functionName: string = '',
         public readonly parent: StandaloneFunctionGroupNode = {} as any as StandaloneFunctionGroupNode,
         public readonly configuration: Lambda.FunctionConfiguration = {},
         public readonly getChildren: () => Thenable<AWSTreeNodeBase[]> = async () => [],
