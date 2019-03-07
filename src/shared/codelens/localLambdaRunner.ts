@@ -32,7 +32,7 @@ export interface LambdaLocalInvokeArguments {
 
 export interface SAMTemplateEnvironmentVariables {
     [resource: string]: {
-[       key: string]: string
+        [key: string]: string
     }
 }
 
@@ -217,17 +217,17 @@ export class LocalLambdaRunner {
 
         await writeFile(eventPath, JSON.stringify(config.event || {}))
         await writeFile(
-        environmentVariablePath,
-        JSON.stringify(this.getEnvironmentVariables(config))
+            environmentVariablePath,
+            JSON.stringify(this.getEnvironmentVariables(config))
         )
 
         const command = new SamCliLocalInvokeInvocation(
-        LocalLambdaRunner.TEMPLATE_RESOURCE_NAME,
-        samTemplatePath,
-        eventPath,
-        environmentVariablePath,
-        (!!this._debugPort) ? this._debugPort.toString() : undefined,
-        this.taskInvoker
+            LocalLambdaRunner.TEMPLATE_RESOURCE_NAME,
+            samTemplatePath,
+            eventPath,
+            environmentVariablePath,
+            (!!this._debugPort) ? this._debugPort.toString() : undefined,
+            this.taskInvoker
         )
 
         await command.execute()
@@ -292,9 +292,9 @@ export class LocalLambdaRunner {
 
         if (attachSuccess) {
             this.channelLogger.info(
-            'AWS.output.sam.local.attach.success',
-            'Debugger attached'
-        )
+                'AWS.output.sam.local.attach.success',
+                'Debugger attached'
+            )
         } else {
             // sam local either failed, or took too long to start up
             this.channelLogger.error(
