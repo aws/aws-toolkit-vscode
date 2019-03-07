@@ -14,7 +14,7 @@ import { LambdaTreeDataProvider } from './lambda/lambdaTreeDataProvider'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
-import { TypescriptCodeLensProvider } from './shared/codelens/typescriptCodeLensProvider'
+import * as tsLensProvider from './shared/codelens/typescriptCodeLensProvider'
 import { documentationUrl, extensionSettingsPrefix, githubUrl } from './shared/constants'
 import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
@@ -23,7 +23,7 @@ import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
 import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
 import { safeGet } from './shared/extensionUtilities'
-import * as logger from './shared/logger'
+import * as logFactory from './shared/logger'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import * as SamCliDetection from './shared/sam/cli/samCliDetection'
 import { SamCliVersionValidator } from './shared/sam/cli/samCliVersionValidator'
@@ -34,6 +34,7 @@ import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryServ
 import { registerCommand } from './shared/telemetry/telemetryUtils'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { PromiseSharer } from './shared/utilities/promiseUtilities'
+import { getChannelLogger } from './shared/utilities/vsCodeUtils'
 
 export async function activate(context: vscode.ExtensionContext) {
 
@@ -47,92 +48,103 @@ export async function activate(context: vscode.ExtensionContext) {
     const localize = nls.loadMessageBundle()
 
     ext.context = context
-    await logger.initialize()
-
-    const toolkitOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel(
+    await logFactory.initialize()
+    const toolkitOutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.toolkit', 'AWS Toolkit')
     )
+    const lambdaOutputChannel = vscode.window.createOutputChannel('AWS Lambda')
 
-    await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
+    try {
+        await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
 
-    const awsContext = new DefaultAwsContext(new DefaultSettingsConfiguration(extensionSettingsPrefix))
-    const awsContextTrees = new AwsContextTreeCollection()
-    const resourceFetcher = new DefaultResourceFetcher()
-    const regionProvider = new DefaultRegionProvider(context, resourceFetcher)
+        const awsContext = new DefaultAwsContext(new DefaultSettingsConfiguration(extensionSettingsPrefix))
+        const awsContextTrees = new AwsContextTreeCollection()
+        const resourceFetcher = new DefaultResourceFetcher()
+        const regionProvider = new DefaultRegionProvider(context, resourceFetcher)
 
-    ext.awsContextCommands = new DefaultAWSContextCommands(awsContext, awsContextTrees, regionProvider)
-    ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
-    ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
-    ext.statusBar = new AWSStatusBar(awsContext, context)
-    ext.telemetry = new DefaultTelemetryService(context)
-    new AwsTelemetryOptOut(ext.telemetry, new DefaultSettingsConfiguration(extensionSettingsPrefix))
-        .ensureUserNotified()
-        .catch((err) => {
-            console.warn(`Exception while displaying opt-out message: ${err}`)
+        ext.awsContextCommands = new DefaultAWSContextCommands(awsContext, awsContextTrees, regionProvider)
+        ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
+        ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
+        ext.statusBar = new AWSStatusBar(awsContext, context)
+        ext.telemetry = new DefaultTelemetryService(context)
+        new AwsTelemetryOptOut(ext.telemetry, new DefaultSettingsConfiguration(extensionSettingsPrefix))
+            .ensureUserNotified()
+            .catch((err) => {
+                console.warn(`Exception while displaying opt-out message: ${err}`)
+            })
+        await ext.telemetry.start()
+
+        context.subscriptions.push(...activateCodeLensProviders(awsContext.settingsConfiguration, lambdaOutputChannel))
+
+        registerCommand({
+            command: 'aws.login',
+            callback: async () => await ext.awsContextCommands.onCommandLogin()
         })
-    await ext.telemetry.start()
 
-    context.subscriptions.push(...activateCodeLensProviders(awsContext.settingsConfiguration, toolkitOutputChannel))
+        registerCommand({
+            command: 'aws.credential.profile.create',
+            callback: async () => await ext.awsContextCommands.onCommandCreateCredentialsProfile()
+        })
 
-    registerCommand({
-        command: 'aws.login',
-        callback: async () => await ext.awsContextCommands.onCommandLogin()
-    })
+        registerCommand({
+            command: 'aws.logout',
+            callback: async () => await ext.awsContextCommands.onCommandLogout()
+        })
 
-    registerCommand({
-        command: 'aws.credential.profile.create',
-        callback: async () => await ext.awsContextCommands.onCommandCreateCredentialsProfile()
-    })
+        registerCommand({
+            command: 'aws.showRegion',
+            callback: async () => await ext.awsContextCommands.onCommandShowRegion()
+        })
 
-    registerCommand({
-        command: 'aws.logout',
-        callback: async () => await ext.awsContextCommands.onCommandLogout()
-    })
+        registerCommand({
+            command: 'aws.hideRegion',
+            callback: async (node?: RegionNode) => {
+                    await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
+                }
+        })
 
-    registerCommand({
-        command: 'aws.showRegion',
-        callback: async () => await ext.awsContextCommands.onCommandShowRegion()
-    })
-
-    registerCommand({
-        command: 'aws.hideRegion',
-        callback: async (node?: RegionNode) => {
-            await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
-        }
-    })
-
-    // register URLs in extension menu
-    vscode.commands.registerCommand(
-        'aws.help',
-        () => { vscode.env.openExternal(vscode.Uri.parse(documentationUrl)) }
-    )
-    vscode.commands.registerCommand(
-        'aws.github',
-        () => { vscode.env.openExternal(vscode.Uri.parse(githubUrl)) }
-    )
-
-    const providers = [
-        new LambdaTreeDataProvider(
-            awsContext,
-            awsContextTrees,
-            regionProvider,
-            resourceFetcher,
-            (relativeExtensionPath) => getExtensionAbsolutePath(context, relativeExtensionPath)
+        // register URLs in extension menu
+        vscode.commands.registerCommand(
+            'aws.help',
+            () => { vscode.env.openExternal(vscode.Uri.parse(documentationUrl)) }
         )
-    ]
+        vscode.commands.registerCommand(
+            'aws.github',
+            () => { vscode.env.openExternal(vscode.Uri.parse(githubUrl)) }
+        )
 
-    providers.forEach((p) => {
-        p.initialize(context)
-        context.subscriptions.push(vscode.window.registerTreeDataProvider(p.viewProviderId, p))
-    })
+        const providers = [
+            new LambdaTreeDataProvider(
+                awsContext,
+                awsContextTrees,
+                regionProvider,
+                resourceFetcher,
+                (relativeExtensionPath) => getExtensionAbsolutePath(context, relativeExtensionPath),
+                lambdaOutputChannel
+            )
+        ]
 
-    await ext.statusBar.updateContext(undefined)
+        providers.forEach((p) => {
+            p.initialize(context)
+            context.subscriptions.push(vscode.window.registerTreeDataProvider(p.viewProviderId, p))
+        })
 
-    await initializeSamCli()
+        await ext.statusBar.updateContext(undefined)
 
-    await ExtensionDisposableFiles.initialize(context)
+        await initializeSamCli()
 
-    await resumeCreateNewSamApp(context)
+        await ExtensionDisposableFiles.initialize(context)
+
+        await resumeCreateNewSamApp(context)
+    } catch (error) {
+        const channelLogger = getChannelLogger(toolkitOutputChannel)
+        channelLogger.error(
+            'AWS.channel.aws.toolkit.activation.error',
+            'Error Activating AWS Toolkit',
+            error as Error
+        )
+        throw error
+    }
 }
 
 export async function deactivate() {
@@ -144,8 +156,12 @@ function activateCodeLensProviders(
     toolkitOutputChannel: vscode.OutputChannel
 ): vscode.Disposable[] {
     const disposables: vscode.Disposable[] = []
+    const providerParams = {
+        configuration,
+        toolkitOutputChannel
+    }
 
-    TypescriptCodeLensProvider.initialize(configuration, toolkitOutputChannel)
+    tsLensProvider.initialize(providerParams)
 
     disposables.push(
         vscode.languages.registerCodeLensProvider(
@@ -155,7 +171,7 @@ function activateCodeLensProviders(
                     scheme: 'file',
                 },
             ],
-            new TypescriptCodeLensProvider()
+            tsLensProvider.makeTypescriptCodeLensProvider()
         )
     )
 

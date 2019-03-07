@@ -5,171 +5,113 @@
 
 'use strict'
 
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
-
+import * as path from 'path'
 import * as vscode from 'vscode'
 
+import { findFileInParentPaths } from '../filesystemUtilities'
+import { getDebugPort, localize } from '../utilities/vsCodeUtils'
+
+import {
+    CodeLensProviderParams,
+    getInvokeCmdKey,
+    makeCodeLenses
+} from './codeLensUtils'
+import { LambdaLocalInvokeArguments, LocalLambdaRunner } from './localLambdaRunner'
+
+import { NodeDebugConfiguration } from '../../lambda/local/nodeDebugConfiguration'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
-import { getLogger, Logger } from '../logger'
 import {
     DefaultSamCliProcessInvoker,
     DefaultSamCliTaskInvoker,
-    SamCliProcessInvoker,
-    SamCliTaskInvoker
 } from '../sam/cli/samCliInvoker'
-import { SettingsConfiguration } from '../settingsConfiguration'
-import { ResultWithTelemetry } from '../telemetry/telemetryEvent'
-import { defaultMetricDatum, registerCommand } from '../telemetry/telemetryUtils'
+
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
-import { LambdaLocalInvokeArguments, LocalLambdaRunner } from './localLambdaRunner'
 
-export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
-    public onDidChangeCodeLenses?: vscode.Event<void> | undefined
-
-    public async provideCodeLenses(
-        document: vscode.TextDocument,
-        token: vscode.CancellationToken
-    ): Promise<vscode.CodeLens[]> {
-
-        const logger: Logger = getLogger()
-        const search: TypescriptLambdaHandlerSearch = new TypescriptLambdaHandlerSearch(document.uri)
-        const handlers: LambdaHandlerCandidate[] = await search.findCandidateLambdaHandlers()
-
-        const lenses: vscode.CodeLens[] = []
-
-        handlers.forEach(handler => {
-            const range: vscode.Range = new vscode.Range(
-                document.positionAt(handler.positionStart),
-                document.positionAt(handler.positionEnd),
+async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
+    const packageJsonPath: string | undefined = await findFileInParentPaths(
+        path.dirname(filepath),
+        'package.json'
+    )
+    if (!packageJsonPath) {
+        throw new Error( // TODO: Do we want to localize errors? This might be confusing if we need to review logs.
+            localize(
+                'AWS.error.sam.local.package_json_not_found',
+                'Unable to find package.json related to {0}',
+                filepath
             )
-            const workspaceFolder:
-                vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(document.uri)
-
-            if (!workspaceFolder) {
-                throw new Error(`Source file ${document.uri} is external to the current workspace.`)
-            }
-
-            lenses.push(this.generateLocalInvokeCodeLens(document, range, handler.handlerName, false, workspaceFolder))
-            lenses.push(this.generateLocalInvokeCodeLens(document, range, handler.handlerName, true, workspaceFolder))
-
-            try {
-                lenses.push(this.generateConfigureCodeLens(document, range, handler.handlerName, workspaceFolder))
-            } catch (err) {
-                const error = err as Error
-
-                logger.error(
-                    `Could not generate 'configure' code lens for handler '${handler.handlerName}': `, error
-                )
-            }
-        })
-
-        return lenses
+        )
     }
 
-    public resolveCodeLens(
-        codeLens: vscode.CodeLens,
-        token: vscode.CancellationToken
-    ): vscode.ProviderResult<vscode.CodeLens> {
-        throw new Error('not implemented')
-    }
+    return path.dirname(packageJsonPath)
+}
 
-    private generateConfigureCodeLens(
-        document: vscode.TextDocument,
-        range: vscode.Range,
-        handlerName: string,
-        workspaceFolder?: vscode.WorkspaceFolder
-    ) {
-        // Handler will be the fully-qualified name, so we also allow '.' despite it being forbidden in handler names.
-        if (/[^\w\-\.]/.test(handlerName)) {
-            throw new Error(
-                `Invalid handler name: '${handlerName}'. ` +
-                'Handler names can contain only letters, numbers, hyphens, and underscores.'
+export function initialize({
+    configuration,
+    toolkitOutputChannel,
+    processInvoker = new DefaultSamCliProcessInvoker(),
+    taskInvoker = new DefaultSamCliTaskInvoker()
+}: CodeLensProviderParams): void {
+    vscode.commands.registerCommand(
+        getInvokeCmdKey('javascript'),
+        async (args: LambdaLocalInvokeArguments) => {
+
+            const activeFilePath = args.document.uri.fsPath
+            if (!activeFilePath) { // Should we log a warning or throw an error?
+              throw new Error("'vscode.window.activeTextEditor' not defined")
+            }
+            const samProjectCodeRoot = await getSamProjectDirPathForFile(activeFilePath)
+            const debugConfig: NodeDebugConfiguration = {
+                type: 'node',
+                request: 'attach',
+                name: 'SamLocalDebug',
+                preLaunchTask: undefined,
+                address: 'localhost',
+                port: await getDebugPort(),
+                localRoot: samProjectCodeRoot,
+                remoteRoot: '/var/task',
+                protocol: 'inspector',
+                skipFiles: [
+                    '/var/runtime/node_modules/**/*.js',
+                    '<node_internals>/**/*.js'
+                ]
+            }
+
+            if (args.debug) {
+                debugConfig.debugPort = 5858 // TODO: Use utility to find an available port
+            }
+
+            const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
+                configuration,
+                args,
+                args.debug ? debugConfig.port : undefined,
+                'nodejs8.10', // TODO: Remove hard coded value
+                toolkitOutputChannel,
+                processInvoker,
+                taskInvoker,
+                debugConfig,
+                samProjectCodeRoot
             )
+
+            await localLambdaRunner.run()
         }
+    )
+}
 
-        const command = {
-            arguments: [workspaceFolder, handlerName],
-            command: 'aws.configureLambda',
-            title: localize('AWS.command.configureLambda', 'Configure')
+export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
+    return { // CodeLensProvider
+        provideCodeLenses: async (
+            document: vscode.TextDocument,
+            token: vscode.CancellationToken
+        ): Promise<vscode.CodeLens[]> => {
+            const search: TypescriptLambdaHandlerSearch = new TypescriptLambdaHandlerSearch(document.uri)
+            const handlers: LambdaHandlerCandidate[] = await search.findCandidateLambdaHandlers()
+
+            return makeCodeLenses({
+                document,
+                handlers,
+                token,
+                language: 'javascript'
+            })
         }
-
-        return new vscode.CodeLens(range, command)
-    }
-
-    private generateLocalInvokeCodeLens(
-        document: vscode.TextDocument,
-        range: vscode.Range,
-        handlerName: string,
-        debug: boolean,
-        workspaceFolder: vscode.WorkspaceFolder,
-    ): vscode.CodeLens {
-        const title: string = debug ?
-            localize('AWS.codelens.lambda.invoke.debug', 'Debug Locally') :
-            localize('AWS.codelens.lambda.invoke', 'Run Locally')
-
-        const commandArgs: LambdaLocalInvokeArguments = {
-            document,
-            range,
-            handlerName,
-            debug,
-            workspaceFolder,
-        }
-
-        const command: vscode.Command = {
-            arguments: [commandArgs],
-            command: 'aws.lambda.local.invoke',
-            title
-        }
-
-        return new vscode.CodeLens(range, command)
-    }
-
-    public static initialize(
-        configuration: SettingsConfiguration,
-        toolkitOutputChannel: vscode.OutputChannel,
-        processInvoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker(),
-        taskInvoker: SamCliTaskInvoker = new DefaultSamCliTaskInvoker()
-    ): void {
-        const command = 'aws.lambda.local.invoke'
-
-        registerCommand({
-            command: command,
-            callback: async (args: LambdaLocalInvokeArguments): Promise<ResultWithTelemetry<void>> => {
-
-                let debugPort: number | undefined
-
-                if (args.debug) {
-                    debugPort = await TypescriptCodeLensProvider.determineDebugPort()
-                }
-
-                const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
-                    configuration,
-                    args,
-                    debugPort,
-                    'nodejs8.10',
-                    toolkitOutputChannel,
-                    processInvoker,
-                    taskInvoker
-                )
-
-                await localLambdaRunner.run()
-
-                const datum = defaultMetricDatum(command)
-                datum.metadata = new Map([
-                    ['runtime', localLambdaRunner.runtime],
-                    ['debug', `${args.debug}`]
-                ])
-
-                return {
-                    telemetryDatum: datum
-                }
-            }
-        })
-    }
-
-    private static async determineDebugPort(): Promise<number> {
-        // TODO : in the future, move this to a utility class and search for an available port
-        return 5858
     }
 }

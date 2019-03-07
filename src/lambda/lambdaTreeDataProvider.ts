@@ -5,9 +5,6 @@
 
 'use strict'
 
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
-
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
 import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
@@ -20,6 +17,7 @@ import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
 import { intersection, toMap, updateInPlace } from '../shared/utilities/collectionUtils'
+import { localize } from '../shared/utilities/vsCodeUtils'
 import { createNewSamApp } from './commands/createNewSamApp'
 import { deleteCloudFormation } from './commands/deleteCloudFormation'
 import { deleteLambda } from './commands/deleteLambda'
@@ -49,7 +47,7 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         private readonly regionProvider: RegionProvider,
         private readonly resourceFetcher: ResourceFetcher,
         private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string,
-        private readonly lambdaOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda'),
+        private readonly lambdaOutputChannel: vscode.OutputChannel,
     ) {
         this._onDidChangeTreeData = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
         this.onDidChangeTreeData = this._onDidChangeTreeData.event

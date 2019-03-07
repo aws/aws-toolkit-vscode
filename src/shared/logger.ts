@@ -228,7 +228,7 @@ interface WriteToLogParams {
     outputChannel?: vscode.OutputChannel
 }
 
-type ErrorOrString = Error | string
+export type ErrorOrString = Error | string
 
 // forces winston to output only preformatted message
 const logFormat = winston.format.printf(({ message }) => {

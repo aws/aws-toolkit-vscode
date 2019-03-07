@@ -8,6 +8,7 @@
 import * as assert from 'assert'
 import * as AWS from 'aws-sdk'
 import * as vscode from 'vscode'
+import { MockOutputChannel } from '../mockOutputChannel'
 import { RegionNode } from '../../lambda/explorer/regionNode'
 import { LambdaTreeDataProvider } from '../../lambda/lambdaTreeDataProvider'
 import { AwsContext, ContextChangeEventsArgs } from '../../shared/awsContext'
@@ -70,13 +71,15 @@ describe('LambdaProvider', () => {
         const regionProvider = new FakeRegionProvider()
         const awsContextTreeCollection = new AwsContextTreeCollection()
         const resourceFetcher = new FakeResourceFetcher()
+        const mockChannel = new MockOutputChannel()
 
         const lambdaProvider = new LambdaTreeDataProvider(
             awsContext,
             awsContextTreeCollection,
             regionProvider,
             resourceFetcher,
-            (path) => { throw new Error('unused') }
+            (path) => { throw new Error('unused') },
+            mockChannel
         )
 
         const treeNodesPromise = lambdaProvider.getChildren()
