@@ -7,12 +7,16 @@
 
 import * as fse from 'fs-extra'
 import request = require('request')
+import { getLogger, Logger } from './logger'
 import { ResourceFetcher } from './resourceFetcher'
 import { FileResourceLocation, ResourceLocation, WebResourceLocation } from './resourceLocation'
 
 export class DefaultResourceFetcher implements ResourceFetcher {
+
     // Attempts to retrieve a resource from the given locations in order, stopping on the first success.
     public async getResource(resourceLocations: ResourceLocation[]): Promise<string> {
+
+        const logger: Logger = getLogger()
         if (resourceLocations.length === 0) {
             throw new Error('no locations provided to get resource from')
         }
@@ -31,7 +35,8 @@ export class DefaultResourceFetcher implements ResourceFetcher {
                 return Promise.resolve(result)
             } catch (err) {
                 // Log error, then try the next fallback location if there is one.
-                console.log(`Error getting resource from ${resourceLocation.getLocationUri()} : ${err}`)
+                const error = err as Error
+                logger.error(`Error getting resource from ${resourceLocation.getLocationUri()} : `, error)
             }
         }
 

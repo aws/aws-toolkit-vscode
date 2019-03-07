@@ -15,18 +15,25 @@ import {
     DefaultStandaloneFunctionGroupNode,
     DefaultStandaloneFunctionNode
 } from '../../../lambda/explorer/standaloneNodes'
+import { TestLogger } from '../../../shared/loggerUtils'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
 
 describe('DefaultStandaloneFunctionNode', () => {
 
     let fakeFunctionConfig: Lambda.FunctionConfiguration
     const fakeIconPathPrefix: string = 'DefaultStandaloneFunctionNode'
+    let logger: TestLogger
 
-    before(() => {
+    before( async () => {
+        logger = await TestLogger.createTestLogger()
         fakeFunctionConfig = {
             FunctionName: 'testFunctionName',
             FunctionArn: 'testFunctionARN'
         }
+    })
+
+    after(async () => {
+        await logger.cleanupLogger()
     })
 
     // Validates we tagged the node correctly
@@ -119,6 +126,16 @@ describe('DefaultStandaloneFunctionNode', () => {
 })
 
 describe('DefaultStandaloneFunctionGroupNode', () => {
+
+    let logger: TestLogger
+
+    before ( async () => {
+        logger = await TestLogger.createTestLogger()
+    })
+
+    after(async () => {
+        await logger.cleanupLogger()
+    })
 
     const unusedPathResolver = () => { throw new Error('unused') }
 

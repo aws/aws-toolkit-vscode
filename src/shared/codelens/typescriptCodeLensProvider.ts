@@ -11,6 +11,7 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
+import { getLogger, Logger } from '../logger'
 import {
     DefaultSamCliProcessInvoker,
     DefaultSamCliTaskInvoker,
@@ -30,6 +31,8 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
         document: vscode.TextDocument,
         token: vscode.CancellationToken
     ): Promise<vscode.CodeLens[]> {
+
+        const logger: Logger = getLogger()
         const search: TypescriptLambdaHandlerSearch = new TypescriptLambdaHandlerSearch(document.uri)
         const handlers: LambdaHandlerCandidate[] = await search.findCandidateLambdaHandlers()
 
@@ -55,8 +58,8 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
             } catch (err) {
                 const error = err as Error
 
-                console.error(
-                    `Could not generate 'configure' code lens for handler '${handler.handlerName}': ${error.message}`
+                logger.error(
+                    `Could not generate 'configure' code lens for handler '${handler.handlerName}': `, error
                 )
             }
         })

@@ -5,6 +5,7 @@
 
 'use strict'
 
+import { getLogger, Logger } from '../../logger'
 import { ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliProcessInvoker, SamCliProcessInvoker } from './samCliInvoker'
 
@@ -18,6 +19,7 @@ export class SamCliPackageInvocation {
     }
 
     public async execute(): Promise<void> {
+        const logger: Logger = getLogger()
         const { exitCode, error, stderr, stdout }: ChildProcessResult = await this.invoker.invoke(
             'package',
             '--template-file', this.templateFile,
@@ -36,6 +38,8 @@ export class SamCliPackageInvocation {
         console.error(`stdout: ${stdout}`)
 
         const message = error && error.message ? error.message : stderr || stdout
-        throw new Error(`sam package encountered an error: ${message}`)
+        const err = new Error(`sam package encountered an error: ${message}`)
+        logger.error(err)
+        throw err
     }
 }

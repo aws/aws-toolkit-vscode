@@ -23,6 +23,7 @@ import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
 import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
 import { safeGet } from './shared/extensionUtilities'
+import * as logger from './shared/logger'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import * as SamCliDetection from './shared/sam/cli/samCliDetection'
 import { SamCliVersionValidator } from './shared/sam/cli/samCliVersionValidator'
@@ -46,6 +47,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const localize = nls.loadMessageBundle()
 
     ext.context = context
+    await logger.initialize()
 
     const toolkitOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.toolkit', 'AWS Toolkit')

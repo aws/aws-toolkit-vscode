@@ -15,6 +15,7 @@ import {
 } from '../../lambda/lambdaPolicy'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
+import { TestLogger } from '../../shared/loggerUtils'
 import { MockToolkitClientBuilder } from '../shared/clients/mockClients'
 
 class DoNothingLambdaPolicyProvider implements LambdaPolicyProvider {
@@ -34,12 +35,21 @@ class DoNothingLambdaPolicyProvider implements LambdaPolicyProvider {
 
 describe('LambdaPolicyView', async () => {
 
+    let logger: TestLogger
     let autoDisposeView: LambdaPolicyView | undefined
+
+    before( async () => {
+        logger = await TestLogger.createTestLogger()
+    })
 
     afterEach(async () => {
         if (!!autoDisposeView) {
             autoDisposeView.dispose()
         }
+    })
+
+    after(async () => {
+        await logger.cleanupLogger()
     })
 
     it('starts initialized', async () => {
