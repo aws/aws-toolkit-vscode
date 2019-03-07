@@ -46,7 +46,7 @@ function defaultTranslation(message: string, ...args: any[]): string {
     return result
 }
 
-function log({ args = [], channel, level, msg, nlsKey, logger}: LogParams): void {
+function log({ args = [], channel, level, msg, nlsKey, logger }: LogParams): void {
     if (level === 'error') {
         channel.show(true)
     }
@@ -92,12 +92,12 @@ export function getChannelLogger(channel: vscode.OutputChannel, logger: Logger =
             nlsKey,
         }),
         info: (nlsKey: string, msg: string, ...args: ErrorOrString[]) => log({
-           level: 'info',
-           args,
-           channel,
-           logger,
-           msg,
-           nlsKey,
+            level: 'info',
+            args,
+            channel,
+            logger,
+            msg,
+            nlsKey,
         }),
         warn: (nlsKey: string, msg: string, ...args: ErrorOrString[]) => log({
             level: 'warn',

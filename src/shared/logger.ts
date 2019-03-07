@@ -89,7 +89,7 @@ export function getLogger(): Logger {
     if (defaultLogger) {
         return defaultLogger
     }
-    throw new Error ('Default Logger not initialized. Call logger.initialize() first.')
+    throw new Error('Default Logger not initialized. Call logger.initialize() first.')
 }
 
 /**
@@ -177,16 +177,16 @@ function writeToLogs(params: WriteToLogParams): void {
     params.logger.log(params.level, message)
     if (params.outputChannel) {
         writeToOutputChannel(params.logger.levels[params.level],
-                             params.logger.levels[params.logger.level],
-                             message,
-                             params.outputChannel)
+            params.logger.levels[params.logger.level],
+            message,
+            params.outputChannel)
     }
 }
 
 function writeToOutputChannel(messageLevel: number,
-                              logLevel: number,
-                              message: string,
-                              outputChannel: vscode.OutputChannel): void {
+    logLevel: number,
+    message: string,
+    outputChannel: vscode.OutputChannel): void {
     // using default Winston log levels (mapped to numbers): https://github.com/winstonjs/winston#logging
     if (messageLevel <= logLevel) {
         outputChannel.appendLine(message)
@@ -202,12 +202,12 @@ function makeDateString(type: 'filename' | 'logfile'): string {
     const isFilename: boolean = type === 'filename'
 
     return `${d.getFullYear()}${isFilename ? '' : '-'}` +
-    // String.prototype.padStart() is not available in Typescript...
-    `${padNumber(d.getMonth() + 1)}${isFilename ? '' : '-'}` +
-    `${padNumber(d.getDate())}${isFilename ? 'T' : ' '}` +
-    `${padNumber(d.getHours())}${isFilename ? '' : ':'}` +
-    `${padNumber(d.getMinutes())}${isFilename ? '' : ':'}` +
-    `${padNumber(d.getSeconds())}`
+        // String.prototype.padStart() is not available in Typescript...
+        `${padNumber(d.getMonth() + 1)}${isFilename ? '' : '-'}` +
+        `${padNumber(d.getDate())}${isFilename ? 'T' : ' '}` +
+        `${padNumber(d.getHours())}${isFilename ? '' : ':'}` +
+        `${padNumber(d.getMinutes())}${isFilename ? '' : ':'}` +
+        `${padNumber(d.getSeconds())}`
 }
 
 function padNumber(num: number): string {
@@ -215,9 +215,9 @@ function padNumber(num: number): string {
 }
 
 function generateWriteParams(logger: winston.Logger,
-                             level: string,
-                             message: ErrorOrString[],
-                             outputChannel?: vscode.OutputChannel ): WriteToLogParams {
+    level: string,
+    message: ErrorOrString[],
+    outputChannel?: vscode.OutputChannel): WriteToLogParams {
     return { logger: logger, level: level, message: message, outputChannel: outputChannel }
 }
 

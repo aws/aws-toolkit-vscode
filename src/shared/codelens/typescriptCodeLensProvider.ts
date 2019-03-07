@@ -57,7 +57,7 @@ export function initialize({
 
             const activeFilePath = args.document.uri.fsPath
             if (!activeFilePath) { // Should we log a warning or throw an error?
-              throw new Error("'vscode.window.activeTextEditor' not defined")
+                throw new Error("'vscode.window.activeTextEditor' not defined")
             }
             const samProjectCodeRoot = await getSamProjectDirPathForFile(activeFilePath)
             const debugConfig: NodeDebugConfiguration = {

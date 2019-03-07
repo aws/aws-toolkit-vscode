@@ -99,8 +99,8 @@ export async function activate(context: vscode.ExtensionContext) {
         registerCommand({
             command: 'aws.hideRegion',
             callback: async (node?: RegionNode) => {
-                    await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
-                }
+                await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
+            }
         })
 
         // register URLs in extension menu
