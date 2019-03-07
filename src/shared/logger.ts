@@ -89,7 +89,7 @@ export function getLogger(): Logger {
     if (defaultLogger) {
         return defaultLogger
     }
-    throw new Error('Default Logger not initialized. Call logger.initialize() first.')
+    throw new Error ('Default Logger not initialized. Call logger.initialize() first.')
 }
 
 /**
@@ -176,14 +176,16 @@ function writeToLogs(params: WriteToLogParams): void {
     const message = formatMessage(params.level, params.message)
     params.logger.log(params.level, message)
     if (params.outputChannel) {
-        writeToOutputChannel(params.logger.levels[params.level],
+        writeToOutputChannel(
+            params.logger.levels[params.level],
             params.logger.levels[params.logger.level],
             message,
             params.outputChannel)
     }
 }
 
-function writeToOutputChannel(messageLevel: number,
+function writeToOutputChannel(
+    messageLevel: number,
     logLevel: number,
     message: string,
     outputChannel: vscode.OutputChannel): void {
@@ -214,10 +216,12 @@ function padNumber(num: number): string {
     return num < 10 ? '0' + num.toString() : num.toString()
 }
 
-function generateWriteParams(logger: winston.Logger,
+function generateWriteParams(
+    logger: winston.Logger,
     level: string,
     message: ErrorOrString[],
-    outputChannel?: vscode.OutputChannel): WriteToLogParams {
+    outputChannel?: vscode.OutputChannel
+ ): WriteToLogParams {
     return { logger: logger, level: level, message: message, outputChannel: outputChannel }
 }
 

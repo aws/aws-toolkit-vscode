@@ -8,7 +8,6 @@
 import * as assert from 'assert'
 import * as AWS from 'aws-sdk'
 import * as vscode from 'vscode'
-import { MockOutputChannel } from '../mockOutputChannel'
 import { RegionNode } from '../../lambda/explorer/regionNode'
 import { LambdaTreeDataProvider } from '../../lambda/lambdaTreeDataProvider'
 import { AwsContext, ContextChangeEventsArgs } from '../../shared/awsContext'
@@ -17,6 +16,7 @@ import { RegionInfo } from '../../shared/regions/regionInfo'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { ResourceFetcher } from '../../shared/resourceFetcher'
 import { ResourceLocation } from '../../shared/resourceLocation'
+import { MockOutputChannel } from '../mockOutputChannel'
 
 describe('LambdaProvider', () => {
 
