@@ -11,6 +11,7 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
+import { getLogger, Logger } from '../logger'
 import {
     DefaultSamCliProcessInvoker,
     DefaultSamCliTaskInvoker,
@@ -18,6 +19,8 @@ import {
     SamCliTaskInvoker
 } from '../sam/cli/samCliInvoker'
 import { SettingsConfiguration } from '../settingsConfiguration'
+import { ResultWithTelemetry } from '../telemetry/telemetryEvent'
+import { defaultMetricDatum, registerCommand } from '../telemetry/telemetryUtils'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { LambdaLocalInvokeArguments, LocalLambdaRunner } from './localLambdaRunner'
 
@@ -28,6 +31,8 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
         document: vscode.TextDocument,
         token: vscode.CancellationToken
     ): Promise<vscode.CodeLens[]> {
+
+        const logger: Logger = getLogger()
         const search: TypescriptLambdaHandlerSearch = new TypescriptLambdaHandlerSearch(document.uri)
         const handlers: LambdaHandlerCandidate[] = await search.findCandidateLambdaHandlers()
 
@@ -53,8 +58,8 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
             } catch (err) {
                 const error = err as Error
 
-                console.error(
-                    `Could not generate 'configure' code lens for handler '${handler.handlerName}': ${error.message}`
+                logger.error(
+                    `Could not generate 'configure' code lens for handler '${handler.handlerName}': `, error
                 )
             }
         })
@@ -126,9 +131,11 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
         processInvoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker(),
         taskInvoker: SamCliTaskInvoker = new DefaultSamCliTaskInvoker()
     ): void {
-        vscode.commands.registerCommand(
-            'aws.lambda.local.invoke',
-            async (args: LambdaLocalInvokeArguments) => {
+        const command = 'aws.lambda.local.invoke'
+
+        registerCommand({
+            command: command,
+            callback: async (args: LambdaLocalInvokeArguments): Promise<ResultWithTelemetry<void>> => {
 
                 let debugPort: number | undefined
 
@@ -147,8 +154,18 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
                 )
 
                 await localLambdaRunner.run()
+
+                const datum = defaultMetricDatum(command)
+                datum.metadata = new Map([
+                    ['runtime', localLambdaRunner.runtime],
+                    ['debug', `${args.debug}`]
+                ])
+
+                return {
+                    telemetryDatum: datum
+                }
             }
-        )
+        })
     }
 
     private static async determineDebugPort(): Promise<number> {

@@ -10,6 +10,7 @@ import * as vscode from 'vscode'
 import { AwsContext } from '../../shared/awsContext'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
+import { getLogger, Logger } from '../../shared/logger'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { FunctionNodeBase } from '../explorer/functionNode'
 import { LambdaTemplates } from '../templates/lambdaTemplates'
@@ -19,6 +20,7 @@ export async function getLambdaConfig(
     awsContext: AwsContext,
     element?: FunctionNodeBase
 ) {
+    const logger: Logger = getLogger()
     try {
         const fn: FunctionNodeBase = await selectLambdaNode(awsContext, element)
 
@@ -40,6 +42,6 @@ export async function getLambdaConfig(
         })
     } catch (err) {
         const error = err as Error
-        console.log(error.message)
+        logger.error(error)
     }
 }
