@@ -13,6 +13,7 @@ import _ = require('lodash')
 import * as vscode from 'vscode'
 import { LambdaClient } from '../shared/clients/lambdaClient'
 import { ext } from '../shared/extensionGlobals'
+import { getLogger, Logger } from '../shared/logger'
 import { BaseTemplates } from '../shared/templates/baseTemplates'
 import { LambdaPolicyTemplates } from './templates/lambdaTemplates'
 
@@ -77,6 +78,9 @@ export class LambdaPolicyView implements vscode.Disposable {
     }
 
     public async load(): Promise<void> {
+
+        const logger: Logger = getLogger()
+
         this.showLoadingContent()
 
         try {
@@ -84,8 +88,9 @@ export class LambdaPolicyView implements vscode.Disposable {
 
             this.showPolicyContent(policyResponse)
         } catch (err) {
-            console.log('Error loading and showing Lambda Policy', err)
-            this.showError(err as Error)
+            const error = err as Error
+            logger.error('Error loading and showing Lambda Policy', error)
+            this.showError(error)
         }
     }
 

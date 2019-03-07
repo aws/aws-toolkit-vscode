@@ -7,6 +7,7 @@
 
 import * as vscode from 'vscode'
 import { SamLambdaRuntime } from '../../../lambda/models/samLambdaRuntime'
+import { getLogger, Logger } from '../../logger'
 import { ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliProcessInvoker, SamCliProcessInvoker } from './samCliInvoker'
 
@@ -30,6 +31,7 @@ export class SamCliInitInvocation {
     }
 
     public async execute(): Promise<void> {
+        const logger: Logger = getLogger()
         const { exitCode, error, stderr, stdout }: ChildProcessResult = await this.invoker.invoke(
             { cwd: this.location.fsPath },
             'init',
@@ -47,6 +49,8 @@ export class SamCliInitInvocation {
         console.error(`stderr: ${stderr}`)
         console.error(`stdout: ${stdout}`)
 
-        throw new Error(`sam init encountered an error: ${error && error.message || stderr || stdout}`)
+        const err = new Error(`sam init encountered an error: ${error && error.message || stderr || stdout}`)
+        logger.error(err)
+        throw err
     }
 }

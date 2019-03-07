@@ -8,6 +8,7 @@
 import path = require('path')
 import { ExtensionContext } from 'vscode'
 import { endpointsFileUrl } from '../constants'
+import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from '../resourceFetcher'
 import { FileResourceLocation, WebResourceLocation } from '../resourceLocation'
 import { RegionInfo } from './regionInfo'
@@ -42,13 +43,14 @@ export class DefaultRegionProvider implements RegionProvider {
 
     // Returns an array of Regions, and caches them in memory.
     public async getRegionData(): Promise<RegionInfo[]> {
+        const logger: Logger = getLogger()
         if (this._areRegionsLoaded) {
             return this._loadedRegions
         }
 
         let availableRegions: RegionInfo[] = []
         try {
-            console.log('> Downloading latest toolkits endpoint data')
+            logger.info('> Downloading latest toolkits endpoint data')
 
             const resourcePath = path.join(this._context.extensionPath, 'resources', 'endpoints.json')
             const endpointsSource = await this._resourceFetcher.getResource([
@@ -72,7 +74,8 @@ export class DefaultRegionProvider implements RegionProvider {
             this._loadedRegions = availableRegions
         } catch (err) {
             this._areRegionsLoaded = false
-            console.log(`...error downloading endpoints: ${err}`) // TODO: now what, oneline + local failed...?
+            logger.error('...error downloading endpoints: ', err as Error)
+            // TODO: now what, oneline + local failed...?
             availableRegions = []
             this._loadedRegions = []
         }

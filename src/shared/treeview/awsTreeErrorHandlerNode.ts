@@ -7,6 +7,7 @@
 
 import { TreeItemCollapsibleState } from 'vscode'
 import { ErrorNode } from '../../lambda/explorer/errorNode'
+import { getLogger, Logger } from '../logger'
 import { AWSTreeNodeBase } from './awsTreeNodeBase'
 
 export abstract class AWSTreeErrorHandlerNode extends AWSTreeNodeBase {
@@ -20,6 +21,7 @@ export abstract class AWSTreeErrorHandlerNode extends AWSTreeNodeBase {
     }
 
     protected async handleErrorProneOperation(operation: () => Promise<void>, errorLabel: string) {
+        const logger: Logger = getLogger()
         this.errorNode = undefined
         try {
             await operation()
@@ -28,7 +30,7 @@ export abstract class AWSTreeErrorHandlerNode extends AWSTreeNodeBase {
             this.errorNode = new ErrorNode(this, error, errorLabel)
 
             // TODO: Make the possibility to ErrorNode attempt to retry the operation
-            console.error(error.message)
+            logger.error(error)
         }
     }
 }

@@ -9,6 +9,7 @@ import * as del from 'del'
 import * as fs from 'fs'
 import * as vscode from 'vscode'
 import { mkdtemp } from '../filesystemUtilities'
+import { getLogger, Logger } from '../logger'
 
 export class DisposableFiles implements vscode.Disposable {
 
@@ -29,6 +30,7 @@ export class DisposableFiles implements vscode.Disposable {
     }
 
     public dispose(): void {
+        const logger: Logger = getLogger()
         if (!this._disposed) {
             try {
                 del.sync(
@@ -57,7 +59,7 @@ export class DisposableFiles implements vscode.Disposable {
                     }
                 })
             } catch (err) {
-                console.error('Error during DisposableFiles dispose', err)
+                logger.error('Error during DisposableFiles dispose: ', err as Error)
             } finally {
                 this._disposed = true
             }
