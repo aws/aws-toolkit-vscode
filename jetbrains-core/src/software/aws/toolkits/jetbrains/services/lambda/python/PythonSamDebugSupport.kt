@@ -15,8 +15,8 @@ import com.jetbrains.python.debugger.PyLocalPositionConverter
 import com.jetbrains.python.debugger.PySourcePosition
 import software.aws.toolkits.jetbrains.services.lambda.execution.PathMapper
 import software.aws.toolkits.jetbrains.services.lambda.execution.PathMapping
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
+import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamDebugSupport
+import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamRunningState
 
 class PythonSamDebugSupport : SamDebugSupport {
     override fun patchCommandLine(debugPort: Int, state: SamRunningState, commandLine: GeneralCommandLine) {

@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda.execution.sam
+package software.aws.toolkits.jetbrains.services.lambda.execution.local
 
 import com.intellij.execution.configurations.CommandLineState
 import com.intellij.execution.process.ProcessHandler
@@ -13,7 +13,8 @@ import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.cloudformation.Function
 import software.aws.toolkits.jetbrains.services.lambda.BuiltLambda
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamTemplateUtils.writeDummySamTemplate
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.writeDummySamTemplate
 import java.io.File
 import java.nio.file.Path
 

@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda.execution.sam
+package software.aws.toolkits.jetbrains.services.lambda.execution.local
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -25,7 +25,7 @@ import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 
 @RunWith(Parameterized::class)
-class PythonSamRunConfigurationIntegrationTest(private val runtime: Runtime) {
+class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runtime) {
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")

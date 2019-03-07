@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda.execution.sam;
+package software.aws.toolkits.jetbrains.services.lambda.execution.local;
 
 import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.addQuickSelect;
 import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.find;
@@ -36,11 +36,12 @@ import software.amazon.awssdk.services.lambda.model.Runtime;
 import software.aws.toolkits.jetbrains.services.cloudformation.Function;
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupUtil;
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaInputPanel;
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils;
 import software.aws.toolkits.jetbrains.ui.CredentialProviderSelector;
 import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField;
 import software.aws.toolkits.jetbrains.ui.RegionSelector;
 
-public final class SamRunSettingsEditorPanel {
+public final class LocalLambdaRunSettingsEditorPanel {
     public JPanel panel;
     public EditorTextField handler;
     public EnvironmentVariablesTextField environmentVariables;
@@ -58,7 +59,7 @@ public final class SamRunSettingsEditorPanel {
     private final Project project;
     private final TextCompletionProvider handlerCompletionProvider;
 
-    public SamRunSettingsEditorPanel(Project project, TextCompletionProvider handlerCompletionProvider) {
+    public LocalLambdaRunSettingsEditorPanel(Project project, TextCompletionProvider handlerCompletionProvider) {
         this.project = project;
         this.handlerCompletionProvider = handlerCompletionProvider;
 

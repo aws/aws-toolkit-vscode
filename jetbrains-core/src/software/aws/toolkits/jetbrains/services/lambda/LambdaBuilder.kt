@@ -19,8 +19,8 @@ import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.services.lambda.execution.PathMapping
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamTemplateUtils
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import software.aws.toolkits.resources.message
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture

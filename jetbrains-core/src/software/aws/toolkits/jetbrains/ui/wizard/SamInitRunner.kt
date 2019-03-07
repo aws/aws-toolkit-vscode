@@ -9,7 +9,7 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.resources.message
 
 class SamInitRunner(

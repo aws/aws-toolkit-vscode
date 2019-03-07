@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda.execution.sam
+package software.aws.toolkits.jetbrains.services.lambda.execution.local
 
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.configurations.RunProfile
@@ -26,6 +26,8 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import software.aws.toolkits.jetbrains.services.lambda.validOrNull
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import java.io.File

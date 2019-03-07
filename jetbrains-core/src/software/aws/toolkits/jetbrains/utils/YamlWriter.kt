@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda.execution.sam
+package software.aws.toolkits.jetbrains.utils
 
 class YamlWriter internal constructor() {
     private val stringBuilder = StringBuilder()

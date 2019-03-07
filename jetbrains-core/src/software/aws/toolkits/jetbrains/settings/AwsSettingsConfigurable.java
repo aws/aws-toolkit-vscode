@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.Nls.Capitalization;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon;
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon;
 import software.aws.toolkits.jetbrains.services.telemetry.MessageBusService;
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryEnabledChangedNotifier;
 

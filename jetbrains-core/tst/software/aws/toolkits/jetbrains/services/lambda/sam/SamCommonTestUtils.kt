@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda.execution.sam
+package software.aws.toolkits.jetbrains.services.lambda.sam
 
 import com.intellij.openapi.util.SystemInfo
 import java.nio.file.Files
@@ -16,9 +16,11 @@ object SamCommonTestUtils {
         return SamCommon.mapper.writeValueAsString(tree)
     }
 
-    fun getMinVersionAsJson() = getVersionAsJson(SamCommon.expectedSamMinVersion.parsedVersion)
+    fun getMinVersionAsJson() =
+        getVersionAsJson(SamCommon.expectedSamMinVersion.parsedVersion)
 
-    fun getMaxVersionAsJson() = getVersionAsJson(SamCommon.expectedSamMaxVersion.parsedVersion)
+    fun getMaxVersionAsJson() =
+        getVersionAsJson(SamCommon.expectedSamMaxVersion.parsedVersion)
 
     fun makeATestSam(message: String, path: String? = null, exitCode: Int = 0): Path {
         val sam = path?.let {

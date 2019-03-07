@@ -9,7 +9,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommonTestUtils
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommonTestUtils
 import java.nio.file.Path
 
 class AwsSettingsConfigurableTest : SamExecutableDetectorTestBase() {

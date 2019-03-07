@@ -7,7 +7,7 @@ import com.intellij.execution.configurations.ConfigurationTypeBase
 import com.intellij.execution.configurations.ConfigurationTypeUtil
 import icons.AwsIcons
 import software.aws.toolkits.jetbrains.services.lambda.execution.remote.LambdaRemoteRunConfigurationFactory
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunConfigurationFactory
+import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamRunConfigurationFactory
 import software.aws.toolkits.resources.message
 
 class LambdaRunConfiguration :

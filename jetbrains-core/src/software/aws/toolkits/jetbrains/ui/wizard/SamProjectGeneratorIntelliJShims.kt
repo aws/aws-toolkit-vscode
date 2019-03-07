@@ -18,7 +18,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.ProjectTemplatesFactory
 import icons.AwsIcons
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.resources.message
 

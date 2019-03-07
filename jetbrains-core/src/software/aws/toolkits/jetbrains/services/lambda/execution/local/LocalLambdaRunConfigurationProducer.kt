@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda.execution.sam
+package software.aws.toolkits.jetbrains.services.lambda.execution.local
 
 import com.intellij.execution.RunManager
 import com.intellij.execution.RunnerAndConfigurationSettings
@@ -17,10 +17,10 @@ import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsMa
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamTemplateUtils.functionFromElement
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.functionFromElement
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 
-class LambdaSamRunConfigurationProducer : RunConfigurationProducer<SamRunConfiguration>(getFactory()) {
+class LocalLambdaRunConfigurationProducer : RunConfigurationProducer<SamRunConfiguration>(getFactory()) {
     // Filter all Lambda run CONFIGURATIONS down to only ones that are Lambda SAM for this run producer
     override fun getConfigurationSettingsList(runManager: RunManager): List<RunnerAndConfigurationSettings> =
         super.getConfigurationSettingsList(runManager).filter { it.configuration is SamRunConfiguration }

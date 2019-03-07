@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda.execution.sam
+package software.aws.toolkits.jetbrains.services.lambda.sam
 
 import com.intellij.psi.PsiFileFactory
 import com.intellij.testFramework.ProjectRule
@@ -16,8 +16,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import software.aws.toolkits.jetbrains.services.cloudformation.Function
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamTemplateUtils.findFunctionsFromTemplate
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamTemplateUtils.functionFromElement
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.findFunctionsFromTemplate
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.functionFromElement
 
 class SamTemplateUtilsTest {
 

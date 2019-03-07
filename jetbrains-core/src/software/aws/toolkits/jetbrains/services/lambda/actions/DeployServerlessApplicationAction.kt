@@ -22,7 +22,7 @@ import software.aws.toolkits.jetbrains.services.cloudformation.executeChangeSetA
 import software.aws.toolkits.jetbrains.services.cloudformation.validateSamTemplateLambdaRuntimes
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationDialog
 import software.aws.toolkits.jetbrains.services.lambda.deploy.SamDeployDialog
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.settings.DeploySettings
 import software.aws.toolkits.jetbrains.settings.relativeSamPath
 import software.aws.toolkits.jetbrains.utils.notifyError

@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda.execution.sam
+package software.aws.toolkits.jetbrains.services.lambda.execution.local
 
 import com.intellij.execution.Location
 import com.intellij.execution.PsiLocation
@@ -19,10 +19,11 @@ import org.jetbrains.yaml.psi.YAMLFile
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.jetbrains.services.lambda.sam.findByLocation
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.openClass
 
-class LambdaSamRunConfigurationProducerTest {
+class LocalLambdaRunConfigurationProducerTest {
     @Rule
     @JvmField
     val projectRule = JavaCodeInsightTestFixtureRule()
@@ -93,7 +94,7 @@ Resources:
             val psiElement = psiFile.findByLocation("Resources.MyFunction")?.key ?: throw RuntimeException("Can't find function")
             val runConfiguration = createRunConfiguration(psiElement)
 
-            val sut = RunConfigurationProducer.getInstance(LambdaSamRunConfigurationProducer::class.java)
+            val sut = RunConfigurationProducer.getInstance(LocalLambdaRunConfigurationProducer::class.java)
 
             assertThat(
                 sut.isConfigurationFromContext(
@@ -127,7 +128,7 @@ Resources:
     private fun createRunConfiguration(psiElement: PsiElement): ConfigurationFromContext? {
         val dataContext = MapDataContext()
         val context = createContext(psiElement, dataContext)
-        val producer = RunConfigurationProducer.getInstance(LambdaSamRunConfigurationProducer::class.java)
+        val producer = RunConfigurationProducer.getInstance(LocalLambdaRunConfigurationProducer::class.java)
         return producer.createConfigurationFromContext(context)
     }
 

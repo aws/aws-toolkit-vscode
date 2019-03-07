@@ -62,7 +62,7 @@ If you come across bugs with the toolkit or have feature requests, please raise 
         </extensionPoint>
 
         <extensionPoint qualifiedName="aws.toolkit.lambda.sam.debugSupport" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
-            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport"/>
+            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.execution.local.SamDebugSupport"/>
             <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
         </extensionPoint>
 
@@ -116,7 +116,7 @@ If you come across bugs with the toolkit or have feature requests, please raise 
                              key="aws.settings.title"
                              instance="software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable"/>
 
-        <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamInvokeRunner"/>
+        <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.local.SamInvokeRunner"/>
         <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaRunner"/>
         <fileBasedIndex implementation="software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerIndex"/>
         <fileBasedIndex implementation="software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplateIndex"/>
@@ -124,7 +124,7 @@ If you come across bugs with the toolkit or have feature requests, please raise 
         <codeInsight.lineMarkerProvider language="" implementationClass="software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker"/>
         <runLineMarkerContributor language="yaml" implementationClass="software.aws.toolkits.jetbrains.services.lambda.execution.template.YamlLambdaRunLineMarkerContributor"/>
         <configurationType implementation="software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration"/>
-        <runConfigurationProducer implementation="software.aws.toolkits.jetbrains.services.lambda.execution.sam.LambdaSamRunConfigurationProducer"/>
+        <runConfigurationProducer implementation="software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfigurationProducer"/>
         <runConfigurationProducer implementation="software.aws.toolkits.jetbrains.services.lambda.execution.remote.LambdaRemoteRunConfigurationProducer"/>
 
         <registryKey key="aws.toolkit.useUrlConnection"

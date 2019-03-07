@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda.execution.sam
+package software.aws.toolkits.jetbrains.services.lambda.execution.local
 
 import com.intellij.compiler.CompilerTestUtil
 import com.intellij.execution.executors.DefaultDebugExecutor
@@ -26,7 +26,7 @@ import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtu
 import software.aws.toolkits.jetbrains.utils.rules.addClass
 import software.aws.toolkits.jetbrains.utils.rules.addModule
 
-class JavaSamRunConfigurationIntegrationTest {
+class JavaLocalLamdaRunConfigurationIntegrationTest {
     @Rule
     @JvmField
     val projectRule = HeavyJavaCodeInsightTestFixtureRule()

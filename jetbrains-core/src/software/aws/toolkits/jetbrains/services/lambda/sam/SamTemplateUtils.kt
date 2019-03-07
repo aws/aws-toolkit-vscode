@@ -1,6 +1,6 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
-package software.aws.toolkits.jetbrains.services.lambda.execution.sam
+package software.aws.toolkits.jetbrains.services.lambda.sam
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
@@ -12,6 +12,7 @@ import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.cloudformation.Function
 import software.aws.toolkits.jetbrains.services.cloudformation.SERVERLESS_FUNCTION_TYPE
+import software.aws.toolkits.jetbrains.utils.yamlWriter
 import software.aws.toolkits.resources.message
 import java.io.File
 
@@ -27,7 +28,10 @@ object SamTemplateUtils {
         val virtualFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(file) ?: throw RuntimeException(
             message("lambda.sam.template_not_found", file)
         )
-        return findFunctionsFromTemplate(project, virtualFile)
+        return findFunctionsFromTemplate(
+            project,
+            virtualFile
+        )
     }
 
     @JvmStatic

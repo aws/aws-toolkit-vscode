@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda.execution.sam
+package software.aws.toolkits.jetbrains.services.lambda.sam
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.execution.configurations.GeneralCommandLine
@@ -38,7 +38,9 @@ class SamCommon {
 
         private val versionCache = object : FileInfoCache<SemVer>() {
             override fun getFileInfo(path: String): SemVer {
-                val commandLine = getSamCommandLine(path)
+                val commandLine = getSamCommandLine(
+                    path
+                )
                     .withParameters("--info")
 
                 val process = CapturingProcessHandler(commandLine).runProcess()
@@ -92,7 +94,9 @@ class SamCommon {
         }
 
         private fun checkVersion(semVer: SemVer): String? {
-            val samVersionOutOfRangeMessage = message("sam.executable.version_wrong", expectedSamMinVersion, expectedSamMaxVersion, semVer)
+            val samVersionOutOfRangeMessage = message("sam.executable.version_wrong",
+                expectedSamMinVersion,
+                expectedSamMaxVersion, semVer)
             if (semVer >= expectedSamMaxVersion) {
                 return "$samVersionOutOfRangeMessage ${message("sam.executable.version_too_high")}"
             } else if (semVer < expectedSamMinVersion) {
@@ -109,7 +113,11 @@ class SamCommon {
                 ?: return message("sam.cli_not_configured")
 
             return try {
-                checkVersion(versionCache.getResult(sanitizedPath))
+                checkVersion(
+                    versionCache.getResult(
+                        sanitizedPath
+                    )
+                )
             } catch (e: Exception) {
                 return e.message
             }
@@ -156,8 +164,15 @@ class SamCommon {
         }
 
         fun setSourceRoots(projectRoot: VirtualFile, project: Project, modifiableModel: ModifiableRootModel) {
-            val template = SamCommon.getTemplateFromDirectory(projectRoot)
-            val codeUris = SamCommon.getCodeUrisFromTemplate(project, template)
+            val template =
+                getTemplateFromDirectory(
+                    projectRoot
+                )
+            val codeUris =
+                getCodeUrisFromTemplate(
+                    project,
+                    template
+                )
             modifiableModel.contentEntries.forEach { contentEntry ->
                 if (contentEntry.file == projectRoot) {
                     codeUris.forEach { contentEntry.addSourceFolder(it, false) }
@@ -168,7 +183,9 @@ class SamCommon {
         fun excludeSamDirectory(projectRoot: VirtualFile, modifiableModel: ModifiableRootModel) {
             modifiableModel.contentEntries.forEach { contentEntry ->
                 if (contentEntry.file == projectRoot) {
-                    contentEntry.addExcludeFolder(VfsUtilCore.pathToUrl(Paths.get(projectRoot.path, SAM_BUILD_DIR).toString()))
+                    contentEntry.addExcludeFolder(VfsUtilCore.pathToUrl(Paths.get(projectRoot.path,
+                        SAM_BUILD_DIR
+                    ).toString()))
                 }
             }
         }
