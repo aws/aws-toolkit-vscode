@@ -23,27 +23,13 @@ interface LogParams {
     nlsKey: string,
 }
 
-// See: https://raw.githubusercontent.com/Microsoft/vscode-nls/master/src/main.ts
+// TODO: Leverage 3rd party code: https://raw.githubusercontent.com/Microsoft/vscode-nls/master/src/main.ts
 function defaultTranslation(message: string, ...args: any[]): string {
-    let result: string
-    if (args.length === 0) {
-        result = message
-    } else {
-        result = message.replace(/\{(\d+)\}/g, (match, rest) => {
-            const index = (rest as number[])[0]
-            const arg = args[index]
-            let replacement = match
-            if (typeof arg === 'string') {
-                replacement = arg
-            } else if (typeof arg === 'number' || typeof arg === 'boolean' || arg === void 0 || arg === null) {
-                replacement = String(arg)
-            }
-
-            return replacement
-        })
+    if (!args.length) {
+        return message
     }
 
-    return result
+    return `${message}, args: ${JSON.stringify(args)}`
 }
 
 function log({ args = [], channel, level, msg, nlsKey, logger }: LogParams): void {
