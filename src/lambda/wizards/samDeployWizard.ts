@@ -10,8 +10,7 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { DefaultRegionProvider } from '../../shared/regions/defaultRegionProvider'
-import { RegionProvider } from '../../shared/regions/regionProvider'
+import { AWSContextCommands } from '../../shared/awsContextCommands'
 import { detectLocalTemplates } from '../local/detectLocalTemplates'
 import { MultiStepWizard, WizardStep } from './multiStepWizard'
 
@@ -48,6 +47,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     private readonly response: Partial<SamDeployWizardResponse> = {}
 
     public constructor(
+        private readonly contextCommands: Pick<AWSContextCommands, 'onCommandSelectRegion'>,
         private readonly context: SamDeployWizardContext = new DefaultSamDeployWizardContext()
     ) {
         super()
@@ -71,8 +71,8 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     }
 
     private readonly REGION: WizardStep = async () => {
-        // get region value
-        // assign region value
+        this.response.region = await this.contextCommands.onCommandSelectRegion()
+
         return this.response.region ? this.TEMPLATE : undefined
     }
 

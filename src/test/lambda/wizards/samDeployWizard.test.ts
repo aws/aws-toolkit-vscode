@@ -13,6 +13,15 @@ import {
     SamDeployWizard,
     SamDeployWizardContext
 } from '../../../lambda/wizards/samDeployWizard'
+import { AWSContextCommands } from '../../../shared/awsContextCommands'
+
+class MockAwsContextCommands implements Pick<AWSContextCommands, 'onCommandSelectRegion'> {
+
+    public constructor(
+        public onCommandSelectRegion: () => Promise<string | undefined> = async () => await 'us-west-2'
+    ) {}
+
+}
 
 class MockSamDeployWizardContext implements SamDeployWizardContext {
     public get workspaceFolders(): vscode.Uri[] | undefined {
@@ -89,7 +98,8 @@ function normalizePath(...paths: string[]): string {
 describe('SamDeployWizard', async () => {
     describe('TEMPLATE', async () => {
         it('fails gracefully when no templates are found', async () => {
-            const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
+            const wizard = new SamDeployWizard(new MockAwsContextCommands(),
+                                               new MockSamDeployWizardContext(
                 async function*() { yield* [] },
                 [[]],
                 [],
@@ -103,7 +113,8 @@ describe('SamDeployWizard', async () => {
         it('exits wizard when cancelled', async () => {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
-            const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
+            const wizard = new SamDeployWizard(new MockAwsContextCommands(),
+                                               new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
                 [[ vscode.Uri.file(workspaceFolderPath) ]],
                 [],
@@ -117,7 +128,8 @@ describe('SamDeployWizard', async () => {
         it('uses user response as template', async () => {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
-            const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
+            const wizard = new SamDeployWizard(new MockAwsContextCommands(),
+                                               new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
                 [[ vscode.Uri.file(workspaceFolderPath) ]],
                 [ 'mys3bucketname', 'myStackName'],
@@ -137,7 +149,8 @@ describe('SamDeployWizard', async () => {
             const templatePath1 = normalizePath(workspaceFolderPath1, 'template.yaml')
             const templatePath2 = normalizePath(workspaceFolderPath2, 'template.yaml')
 
-            const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
+            const wizard = new SamDeployWizard(new MockAwsContextCommands(),
+                                               new MockSamDeployWizardContext(
                 async function*() {
                     yield vscode.Uri.file(templatePath1)
                     yield vscode.Uri.file(templatePath2)
@@ -165,7 +178,8 @@ describe('SamDeployWizard', async () => {
         it('uses user response as s3Bucket', async () => {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
-            const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
+            const wizard = new SamDeployWizard(new MockAwsContextCommands(),
+                                               new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
                 [[ vscode.Uri.file(workspaceFolderPath) ]],
                 [
@@ -190,7 +204,8 @@ describe('SamDeployWizard', async () => {
                 const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
 
                 try {
-                    await new SamDeployWizard(new MockSamDeployWizardContext(
+                    await new SamDeployWizard(new MockAwsContextCommands(),
+                                              new MockSamDeployWizardContext(
                         async function*() { yield vscode.Uri.file(templatePath) },
                         [[ vscode.Uri.file(workspaceFolderPath) ]],
                         [bucketName],
@@ -242,7 +257,8 @@ describe('SamDeployWizard', async () => {
         it('goes back when cancelled', async () => {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
-            const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
+            const wizard = new SamDeployWizard(new MockAwsContextCommands(),
+                                               new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
                 [[ vscode.Uri.file(workspaceFolderPath) ]],
                 [
@@ -262,7 +278,8 @@ describe('SamDeployWizard', async () => {
         it('uses user response as stackName', async () => {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
-            const wizard = new SamDeployWizard(new MockSamDeployWizardContext(
+            const wizard = new SamDeployWizard(new MockAwsContextCommands(),
+                                               new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
                 [[ vscode.Uri.file(workspaceFolderPath) ]],
                 [
@@ -283,7 +300,8 @@ describe('SamDeployWizard', async () => {
                 const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
 
                 try {
-                    await new SamDeployWizard(new MockSamDeployWizardContext(
+                    await new SamDeployWizard(new MockAwsContextCommands(),
+                                              new MockSamDeployWizardContext(
                         async function*() { yield vscode.Uri.file(templatePath) },
                         [[ vscode.Uri.file(workspaceFolderPath) ]],
                         ['myBucketName', stackName],
