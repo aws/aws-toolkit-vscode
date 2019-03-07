@@ -66,6 +66,7 @@ class CreateIamRoleDialog(
                         close(OK_EXIT_CODE)
                     }, ModalityState.stateForComponent(view.component))
                 } catch (e: Exception) {
+                    LOG.warn(e) { "Failed to create IAM role '${roleName()}'" }
                     setErrorText(e.message)
                     setOKButtonText(message("iam.create.role.create"))
                     isOKActionEnabled = true
