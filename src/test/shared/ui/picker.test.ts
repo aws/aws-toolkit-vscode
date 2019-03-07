@@ -108,24 +108,23 @@ describe('createQuickPick', async () => {
         )
 
         // vscode.window.createQuickPick defaults matchOnDescription to true
-        const expectedMatchOnDescription = expectedOptions.matchOnDescription || true
+        const expectedMatchOnDescription = getValueOrDefault(expectedOptions.matchOnDescription, true)
         assert.strictEqual(
             actualPicker.matchOnDescription, expectedMatchOnDescription,
-            `Picker matchOnDescription mismatch, expected ${expectedOptions.matchOnDescription},` +
+            `Picker matchOnDescription mismatch, expected ${expectedMatchOnDescription},` +
             ` got ${actualPicker.matchOnDescription}`
         )
 
         // vscode.window.createQuickPick defaults matchOnDetail to true
-        const expectedMatchOnDetail = expectedOptions.matchOnDetail || true
+        const expectedMatchOnDetail = getValueOrDefault(expectedOptions.matchOnDetail, true)
         assert.strictEqual(
             actualPicker.matchOnDetail, expectedMatchOnDetail,
-            `Picker matchOnDetail mismatch, expected ${expectedOptions.matchOnDetail},` +
+            `Picker matchOnDetail mismatch, expected ${expectedMatchOnDetail},` +
             ` got ${actualPicker.matchOnDetail}`
         )
 
         // vscode.window.createQuickPick defaults ignoreFocusOut to true
-        const expectedIgnoreFocusOut =
-            expectedOptions.ignoreFocusOut !== undefined ? expectedOptions.ignoreFocusOut : true
+        const expectedIgnoreFocusOut = getValueOrDefault(expectedOptions.ignoreFocusOut, true)
         assert.strictEqual(
             actualPicker.ignoreFocusOut, expectedIgnoreFocusOut,
             `Picker ignoreFocusOut mismatch, expected ${expectedIgnoreFocusOut},` +
@@ -133,6 +132,14 @@ describe('createQuickPick', async () => {
         )
 
         // TODO : Test more options as they are added in the picker
+    }
+
+    function getValueOrDefault<T>(value: T | undefined, defaultValue: T) {
+        if (value !== undefined) {
+            return value
+        }
+
+        return defaultValue
     }
 })
 
