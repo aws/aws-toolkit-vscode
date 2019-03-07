@@ -14,6 +14,7 @@ import { AwsContext } from '../shared/awsContext'
 import { CloudFormationClient } from '../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../shared/clients/lambdaClient'
 import { ext } from '../shared/extensionGlobals'
+import { getLogger, Logger } from '../shared/logger'
 import { toArrayAsync } from '../shared/utilities/collectionUtils'
 import { quickPickLambda } from './commands/quickPickLambda'
 import { FunctionNodeBase } from './explorer/functionNode'
@@ -22,13 +23,16 @@ export async function selectLambdaNode(
     awsContext: AwsContext,
     element?: FunctionNodeBase
 ): Promise<FunctionNodeBase> {
+
+    const logger: Logger = getLogger()
+
     if (element && element.configuration) {
-        console.log('returning preselected node...')
+        logger.info('returning preselected node...')
 
         return element
     }
 
-    console.log('prompting for lambda selection...')
+    logger.info('prompting for lambda selection...')
 
     // TODO: we need to change this into a multi-step command to first obtain the region,
     // then query the lambdas in the region
@@ -66,6 +70,7 @@ export async function* listCloudFormationStacks(
 }
 
 export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableIterator<Lambda.FunctionConfiguration> {
+
     const status = vscode.window.setStatusBarMessage(
         localize('AWS.message.statusBar.loading.lambda', 'Loading Lambdas...'))
 

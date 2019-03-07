@@ -23,6 +23,17 @@ class MockAwsContextCommands implements Pick<AWSContextCommands, 'onCommandSelec
 
 }
 
+interface QuickPickResponseItem extends vscode.QuickPickItem {
+    uri: vscode.Uri
+}
+
+function createQuickPickResponseItem(uri: vscode.Uri): QuickPickResponseItem {
+    return {
+        label: '',
+        uri: uri,
+    }
+}
+
 class MockSamDeployWizardContext implements SamDeployWizardContext {
     public get workspaceFolders(): vscode.Uri[] | undefined {
         if (this.workspaceFoldersResponses.length <= 0) {
@@ -35,59 +46,56 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
     public constructor(
         public readonly onDetectLocalTemplates: typeof detectLocalTemplates,
         private readonly workspaceFoldersResponses: (vscode.Uri[] | undefined)[] = [],
-        private readonly showInputBoxReponses: (string | undefined)[] = [],
-        private readonly showQuickPickResponses: (vscode.QuickPickItem | undefined)[] = []
+        private readonly promptForSamTemplateResponses: (QuickPickResponseItem | undefined)[] = [],
+        private readonly promptForS3BucketResponses: (string | undefined)[] = [],
+        private readonly promptForStackNameResponses: (string | undefined)[] = [],
     ) {
         this.workspaceFoldersResponses = workspaceFoldersResponses.reverse()
-        this.showInputBoxReponses = showInputBoxReponses.reverse()
-        this.showQuickPickResponses = showQuickPickResponses.reverse()
+        this.promptForSamTemplateResponses = promptForSamTemplateResponses.reverse()
+        this.promptForS3BucketResponses = promptForS3BucketResponses.reverse()
+        this.promptForStackNameResponses = promptForStackNameResponses.reverse()
     }
 
-    public async showInputBox(
-        options?: vscode.InputBoxOptions,
-        token?: vscode.CancellationToken
-    ): Promise<string | undefined> {
-        if (this.showInputBoxReponses.length <= 0) {
-            throw new Error('showInputBox was called more times than expected')
+    public async promptUserForSamTemplate(): Promise<vscode.Uri | undefined> {
+        if (this.promptForSamTemplateResponses.length <= 0) {
+            throw new Error('promptUserForSamTemplate was called more times than expected')
         }
 
-        const response = this.showInputBoxReponses.pop()
+        const response = this.promptForSamTemplateResponses.pop()
+        if (!response) { return undefined }
 
-        if (response && options && options.validateInput) {
-            const validationResult = options.validateInput(response)
+        return response.uri
+    }
+
+    public async promptUserForS3Bucket(initialValue?: string): Promise<string | undefined> {
+        if (this.promptForS3BucketResponses.length <= 0) {
+            throw new Error('promptUserForS3Bucket was called more times than expected')
+        }
+
+        return this.promptForS3BucketResponses.pop()
+    }
+
+    public async promptUserForStackName(
+        {
+            validateInput,
+        }: {
+            validateInput(value: string): string | undefined
+        }
+    ): Promise<string | undefined> {
+        if (this.promptForStackNameResponses.length <= 0) {
+            throw new Error('promptUserForStackName was called more times than expected')
+        }
+
+        const response = this.promptForStackNameResponses.pop()
+
+        if (response && validateInput) {
+            const validationResult = validateInput(response)
             if (validationResult) {
                 throw new Error(`Validation error: ${validationResult}`)
             }
         }
 
         return response
-    }
-
-    public showQuickPick(
-        items: string[] | Thenable<string[]>,
-        options: vscode.QuickPickOptions & { canPickMany: true },
-        token?: vscode.CancellationToken
-    ): Thenable<string[] | undefined>
-    public showQuickPick(
-        items: string[] | Thenable<string[]>,
-        options?: vscode.QuickPickOptions,
-        token?: vscode.CancellationToken
-    ): Thenable<string | undefined>
-    public showQuickPick<T extends vscode.QuickPickItem>(
-        items: T[] | Thenable<T[]>,
-        options: vscode.QuickPickOptions & { canPickMany: true },
-        token?: vscode.CancellationToken
-    ): Thenable<T[] | undefined>
-    public async showQuickPick<T extends vscode.QuickPickItem>(
-        items: T[] | Thenable<T[]>,
-        options?: vscode.QuickPickOptions,
-        token?: vscode.CancellationToken
-    ): Promise<T | undefined> {
-        if (this.showQuickPickResponses.length <= 0) {
-            throw new Error('showQuickPick was called more times than expected')
-        }
-
-        return this.showQuickPickResponses.pop() as (T | undefined)
     }
 }
 
@@ -102,8 +110,9 @@ describe('SamDeployWizard', async () => {
                                                new MockSamDeployWizardContext(
                 async function*() { yield* [] },
                 [[]],
+                [undefined],
                 [],
-                [undefined]
+                [],
             ))
             const result = await wizard.run()
 
@@ -116,9 +125,10 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(new MockAwsContextCommands(),
                                                new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
-                [[ vscode.Uri.file(workspaceFolderPath) ]],
+                [[vscode.Uri.file(workspaceFolderPath)]],
+                [undefined],
                 [],
-                [undefined]
+                [],
             ))
             const result = await wizard.run()
 
@@ -131,9 +141,12 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(new MockAwsContextCommands(),
                                                new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
-                [[ vscode.Uri.file(workspaceFolderPath) ]],
-                [ 'mys3bucketname', 'myStackName'],
-                [{ uri: vscode.Uri.file(templatePath) } as any as vscode.QuickPickItem]
+                [[vscode.Uri.file(workspaceFolderPath)]],
+                [
+                    createQuickPickResponseItem(vscode.Uri.file(templatePath))
+                ],
+                ['mys3bucketname'],
+                ['myStackName'],
             ))
             const result = await wizard.run()
 
@@ -156,18 +169,20 @@ describe('SamDeployWizard', async () => {
                     yield vscode.Uri.file(templatePath2)
                 },
                 [
-                    [ vscode.Uri.file(workspaceFolderPath1) ],
-                    [ vscode.Uri.file(workspaceFolderPath2) ]
+                    [vscode.Uri.file(workspaceFolderPath1)],
+                    [vscode.Uri.file(workspaceFolderPath2)]
                 ],
                 [
-                    undefined,
-                    'mys3bucketname',
+                    createQuickPickResponseItem(vscode.Uri.file(templatePath1)),
+                    createQuickPickResponseItem(vscode.Uri.file(templatePath2)),
+                ],
+                [
+                    undefined, // First time we ask about the S3 Bucket, cancel back to the template step
+                    'mys3bucketname'
+                ],
+                [
                     'myStackName'
                 ],
-                [
-                    { uri: vscode.Uri.file(templatePath1) } as any as vscode.QuickPickItem,
-                    { uri: vscode.Uri.file(templatePath2) } as any as vscode.QuickPickItem
-                ]
             ))
             const result = await wizard.run()
 
@@ -181,14 +196,12 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(new MockAwsContextCommands(),
                                                new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
-                [[ vscode.Uri.file(workspaceFolderPath) ]],
+                [[vscode.Uri.file(workspaceFolderPath)]],
                 [
-                    'mys3bucketname',
-                    'myStackName'
+                    createQuickPickResponseItem(vscode.Uri.file(templatePath)),
                 ],
-                [
-                    { uri: vscode.Uri.file(templatePath) } as any as vscode.QuickPickItem
-                ]
+                ['mys3bucketname'],
+                ['myStackName'],
             ))
             const result = await wizard.run()
 
@@ -207,9 +220,12 @@ describe('SamDeployWizard', async () => {
                     await new SamDeployWizard(new MockAwsContextCommands(),
                                               new MockSamDeployWizardContext(
                         async function*() { yield vscode.Uri.file(templatePath) },
-                        [[ vscode.Uri.file(workspaceFolderPath) ]],
+                        [[vscode.Uri.file(workspaceFolderPath)]],
+                        [
+                            createQuickPickResponseItem(vscode.Uri.file(templatePath)),
+                        ],
                         [bucketName],
-                        [{ uri: vscode.Uri.file(templatePath) } as any as vscode.QuickPickItem]
+                        [],
                     )).run()
                 } catch (err) {
                     return
@@ -260,14 +276,18 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(new MockAwsContextCommands(),
                                                new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
-                [[ vscode.Uri.file(workspaceFolderPath) ]],
+                [[vscode.Uri.file(workspaceFolderPath)]],
+                [
+                    createQuickPickResponseItem(vscode.Uri.file(templatePath)),
+                ],
                 [
                     'mys3bucketname1',
-                    undefined,
                     'mys3bucketname2',
+                ],
+                [
+                    undefined,
                     'myStackName'
                 ],
-                [ { uri: vscode.Uri.file(templatePath) } as any as vscode.QuickPickItem ]
             ))
             const result = await wizard.run()
 
@@ -281,12 +301,16 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(new MockAwsContextCommands(),
                                                new MockSamDeployWizardContext(
                 async function*() { yield vscode.Uri.file(templatePath) },
-                [[ vscode.Uri.file(workspaceFolderPath) ]],
+                [[vscode.Uri.file(workspaceFolderPath)]],
+                [
+                    createQuickPickResponseItem(vscode.Uri.file(templatePath)),
+                ],
                 [
                     'mys3bucketname',
+                ],
+                [
                     'myStackName'
                 ],
-                [{ uri: vscode.Uri.file(templatePath) } as any as vscode.QuickPickItem]
             ))
             const result = await wizard.run()
 
@@ -303,9 +327,12 @@ describe('SamDeployWizard', async () => {
                     await new SamDeployWizard(new MockAwsContextCommands(),
                                               new MockSamDeployWizardContext(
                         async function*() { yield vscode.Uri.file(templatePath) },
-                        [[ vscode.Uri.file(workspaceFolderPath) ]],
-                        ['myBucketName', stackName],
-                        [{ uri: vscode.Uri.file(templatePath) } as any as vscode.QuickPickItem]
+                        [[vscode.Uri.file(workspaceFolderPath)]],
+                        [
+                            createQuickPickResponseItem(vscode.Uri.file(templatePath)),
+                        ],
+                        ['myBucketName'],
+                        [stackName],
                     )).run()
                 } catch (err) {
                     return

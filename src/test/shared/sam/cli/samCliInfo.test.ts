@@ -6,6 +6,7 @@
 'use strict'
 
 import * as assert from 'assert'
+import { TestLogger } from '../../../../shared/loggerUtils'
 import { SamCliInfoInvocation, SamCliInfoResponse } from '../../../../shared/sam/cli/samCliInfo'
 
 describe('SamInfoCliCommand', async () => {
@@ -15,6 +16,16 @@ describe('SamInfoCliCommand', async () => {
             return super.convertOutput(text)
         }
     }
+
+    let logger: TestLogger
+
+    before( async () => {
+        logger = await TestLogger.createTestLogger()
+    })
+
+    after(async () => {
+        await logger.cleanupLogger()
+    })
 
     it('converts sam info response to SamCliInfoResponse', async () => {
         const response: SamCliInfoResponse | undefined = new TestSamCliInfoCommand()

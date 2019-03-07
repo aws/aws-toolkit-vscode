@@ -11,10 +11,16 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import {  mkdir, writeFile } from '../../../shared/filesystem'
 import { fileExists, mkdtemp } from '../../../shared/filesystemUtilities'
+import { TestLogger } from '../../../shared/loggerUtils'
 import { DisposableFiles, ExtensionDisposableFiles } from '../../../shared/utilities/disposableFiles'
 
 describe('DisposableFiles', async () => {
     let tempFolder: string
+    let logger: TestLogger
+
+    before( async () => {
+        logger = await TestLogger.createTestLogger()
+    })
 
     beforeEach(async () => {
         // Make a temp folder for all these tests
@@ -24,6 +30,10 @@ describe('DisposableFiles', async () => {
 
     afterEach(async () => {
         await del([tempFolder], { force: true })
+    })
+
+    after(async () => {
+        await logger.cleanupLogger()
     })
 
     it('deletes file on dispose', async () => {
