@@ -8,7 +8,16 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 
+import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { findFileInParentPaths } from '../filesystemUtilities'
+import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
+import {
+    DefaultSamCliProcessInvoker,
+    DefaultSamCliTaskInvoker,
+} from '../sam/cli/samCliInvoker'
+import { ResultWithTelemetry } from '../telemetry/telemetryEvent'
+import { defaultMetricDatum, registerCommand } from '../telemetry/telemetryUtils'
+import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { getDebugPort, localize } from '../utilities/vsCodeUtils'
 
 import {
@@ -18,14 +27,9 @@ import {
 } from './codeLensUtils'
 import { LambdaLocalInvokeArguments, LocalLambdaRunner } from './localLambdaRunner'
 
-import { NodeDebugConfiguration } from '../../lambda/local/nodeDebugConfiguration'
-import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
-import {
-    DefaultSamCliProcessInvoker,
-    DefaultSamCliTaskInvoker,
-} from '../sam/cli/samCliInvoker'
-
-import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
+interface NodeDebugConfiguration extends DebugConfiguration {
+    readonly protocol: 'legacy' | 'inspector'
+}
 
 async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
     const packageJsonPath: string | undefined = await findFileInParentPaths(
@@ -51,15 +55,12 @@ export function initialize({
     processInvoker = new DefaultSamCliProcessInvoker(),
     taskInvoker = new DefaultSamCliTaskInvoker()
 }: CodeLensProviderParams): void {
-    vscode.commands.registerCommand(
-        getInvokeCmdKey('javascript'),
-        async (args: LambdaLocalInvokeArguments) => {
+    const command = getInvokeCmdKey('javascript')
 
-            const activeFilePath = args.document.uri.fsPath
-            if (!activeFilePath) { // Should we log a warning or throw an error?
-                throw new Error("'vscode.window.activeTextEditor' not defined")
-            }
-            const samProjectCodeRoot = await getSamProjectDirPathForFile(activeFilePath)
+    registerCommand({
+        command: command,
+        callback: async (args: LambdaLocalInvokeArguments): Promise<ResultWithTelemetry<void>> => {
+            const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
             const debugConfig: NodeDebugConfiguration = {
                 type: 'node',
                 request: 'attach',
@@ -76,14 +77,9 @@ export function initialize({
                 ]
             }
 
-            if (args.debug) {
-                debugConfig.debugPort = 5858 // TODO: Use utility to find an available port
-            }
-
             const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
                 configuration,
                 args,
-                args.debug ? debugConfig.port : undefined,
                 'nodejs8.10', // TODO: Remove hard coded value
                 toolkitOutputChannel,
                 processInvoker,
@@ -93,8 +89,17 @@ export function initialize({
             )
 
             await localLambdaRunner.run()
+            const datum = defaultMetricDatum(command)
+            datum.metadata = new Map([
+                ['runtime', localLambdaRunner.runtime],
+                ['debug', `${args.isDebug}`]
+            ])
+
+            return {
+                telemetryDatum: datum
+            }
         }
-    )
+    })
 }
 
 export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {

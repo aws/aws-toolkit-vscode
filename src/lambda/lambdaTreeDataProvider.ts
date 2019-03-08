@@ -47,7 +47,7 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         private readonly regionProvider: RegionProvider,
         private readonly resourceFetcher: ResourceFetcher,
         private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string,
-        private readonly lambdaOutputChannel: vscode.OutputChannel,
+        private readonly lambdaOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda'),
     ) {
         this._onDidChangeTreeData = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
         this.onDidChangeTreeData = this._onDidChangeTreeData.event

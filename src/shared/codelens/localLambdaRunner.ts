@@ -20,13 +20,14 @@ import { SettingsConfiguration } from '../settingsConfiguration'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 
+import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { getChannelLogger, localize } from '../utilities/vsCodeUtils'
 
 export interface LambdaLocalInvokeArguments {
     document: vscode.TextDocument,
     range: vscode.Range,
     handlerName: string,
-    debug: boolean,
+    isDebug: boolean,
     workspaceFolder: vscode.WorkspaceFolder
 }
 
@@ -48,23 +49,16 @@ export class LocalLambdaRunner {
     public constructor(
         private readonly configuration: SettingsConfiguration,
         private readonly localInvokeArgs: LambdaLocalInvokeArguments,
-        debugPort: number | undefined,
         public readonly runtime: string,
         private readonly outputChannel: vscode.OutputChannel,
         private readonly processInvoker: SamCliProcessInvoker,
         private readonly taskInvoker: SamCliTaskInvoker,
-        private readonly debugConfig: vscode.DebugConfiguration,
+        private readonly debugConfig: DebugConfiguration,
         private readonly codeRootDirectoryPath: string,
         private readonly onWillAttachDebugger?: () => Promise<void>,
         private readonly onDidSamBuild?: () => Promise<void>,
         private readonly channelLogger = getChannelLogger(outputChannel)
-    ) {
-        if (localInvokeArgs.debug && !debugPort) {
-            throw new Error('Debug port must be provided when launching in debug mode')
-        }
-
-        this._debugPort = debugPort
-    }
+    ) {}
 
     public async run(): Promise<void> {
         try {
@@ -103,15 +97,6 @@ export class LocalLambdaRunner {
 
             return
         }
-
-    }
-
-    public get debugPort(): number {
-        if (!this._debugPort) {
-            throw new Error('Debug port was expected but is undefined')
-        }
-
-        return this._debugPort
     }
 
     private async getBaseBuildFolder(): Promise<string> {
@@ -232,7 +217,7 @@ export class LocalLambdaRunner {
 
         await command.execute()
 
-        if (this.localInvokeArgs.debug) {
+        if (this.localInvokeArgs.isDebug) {
             this.channelLogger.info(
                 'AWS.output.sam.local.waiting',
                 'Waiting for SAM Application to start before attaching debugger...'
@@ -244,7 +229,7 @@ export class LocalLambdaRunner {
             )
 
             await tcpPortUsed.waitUntilUsed(
-                this.debugPort,
+                this.debugConfig.port,
                 LocalLambdaRunner.SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS,
                 timeoutMillis
             )

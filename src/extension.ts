@@ -14,6 +14,7 @@ import { LambdaTreeDataProvider } from './lambda/lambdaTreeDataProvider'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
+import * as pyLensProvider from './shared/codelens/pythonCodeLensProvider'
 import * as tsLensProvider from './shared/codelens/typescriptCodeLensProvider'
 import { documentationUrl, extensionSettingsPrefix, githubUrl } from './shared/constants'
 import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
@@ -52,7 +53,6 @@ export async function activate(context: vscode.ExtensionContext) {
     const toolkitOutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.toolkit', 'AWS Toolkit')
     )
-    const lambdaOutputChannel = vscode.window.createOutputChannel('AWS Lambda')
 
     try {
         await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
@@ -74,7 +74,7 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         await ext.telemetry.start()
 
-        context.subscriptions.push(...activateCodeLensProviders(awsContext.settingsConfiguration, lambdaOutputChannel))
+        context.subscriptions.push(...activateCodeLensProviders(awsContext.settingsConfiguration, toolkitOutputChannel))
 
         registerCommand({
             command: 'aws.login',
@@ -119,8 +119,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 awsContextTrees,
                 regionProvider,
                 resourceFetcher,
-                (relativeExtensionPath) => getExtensionAbsolutePath(context, relativeExtensionPath),
-                lambdaOutputChannel
+                (relativeExtensionPath) => getExtensionAbsolutePath(context, relativeExtensionPath)
             )
         ]
 
@@ -174,6 +173,12 @@ function activateCodeLensProviders(
             tsLensProvider.makeTypescriptCodeLensProvider()
         )
     )
+
+    pyLensProvider.initialize(providerParams)
+    disposables.push(vscode.languages.registerCodeLensProvider(
+        pyLensProvider.PYTHON_ALLFILES,
+        pyLensProvider.makePythonCodeLensProvider()
+    ))
 
     return disposables
 }

@@ -45,10 +45,10 @@ export async function makeCodeLenses({ document, token, handlers, language }: {
 
     handlers.forEach(handler => {
         // handler.range is a RangeOrCharOffset union type. Extract vscode.Range.
-        const range = new vscode.Range(
-            document.positionAt(handler.positionStart),
-            document.positionAt(handler.positionEnd),
-        )
+        const range = (handler.range instanceof vscode.Range) ? handler.range : new vscode.Range(
+            document.positionAt(handler.range.positionStart),
+            document.positionAt(handler.range.positionEnd),
+          )
         const workspaceFolder:
             vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(document.uri)
 
@@ -63,7 +63,10 @@ export async function makeCodeLenses({ document, token, handlers, language }: {
             language
         }
         lenses.push(makeLocalInvokeCodeLens({ ...baseParams, debug: false }))
-        lenses.push(makeLocalInvokeCodeLens({ ...baseParams, debug: true }))
+        if (language !== 'python') {
+            // TODO: Add debugging supporte for Python and make this run unconditionally
+            lenses.push(makeLocalInvokeCodeLens({ ...baseParams, debug: true }))
+        }
 
         try {
             lenses.push(makeConfigureCodeLens(baseParams))
@@ -78,8 +81,8 @@ export async function makeCodeLenses({ document, token, handlers, language }: {
     return lenses
 }
 
-export function getInvokeCmdKey(lang: Language) {
-    return `aws.lambda.local.invoke.${lang}`
+export function getInvokeCmdKey(language: Language) {
+    return `aws.lambda.local.invoke.${language}`
 }
 
 function makeLocalInvokeCodeLens(

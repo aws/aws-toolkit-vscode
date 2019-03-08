@@ -28,8 +28,12 @@ function defaultTranslation(message: string, ...args: any[]): string {
     if (!args.length) {
         return message
     }
+    try {
+        return `${message} - args: ${JSON.stringify(args)}`
+    } catch (error) {
+        return `${message} - args: ${String(args)}`
+    }
 
-    return `${message}, args: ${JSON.stringify(args)}`
 }
 
 function log({ args = [], channel, level, msg, nlsKey, logger }: LogParams): void {
