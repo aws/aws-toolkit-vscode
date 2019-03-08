@@ -9,6 +9,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.IdeBorderFactory;
 import com.intellij.ui.SortedComboBoxModel;
+import com.intellij.util.ui.JBUI;
 import java.util.List;
 import javax.swing.JPanel;
 import org.jetbrains.annotations.NotNull;
@@ -31,7 +32,9 @@ public class LambdaRemoteRunSettingsEditorPanel {
     public LambdaRemoteRunSettingsEditorPanel(Project project) {
         this.project = project;
 
-        lambdaInputPanel.setBorder(IdeBorderFactory.createTitledBorder(message("lambda.input.label")));
+        lambdaInputPanel.setBorder(IdeBorderFactory.createTitledBorder(message("lambda.input.label"),
+                                                                       false,
+                                                                       JBUI.emptyInsets()));
     }
 
     private void createUIComponents() {
