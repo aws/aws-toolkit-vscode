@@ -68,11 +68,7 @@ export function initialize({
     const runtime = 'python3.7' // TODO: Remove hard coded value
 
     const invokeLambda = async (args: LambdaLocalInvokeArguments) => {
-        const activeFilePath = vscode.window.activeTextEditor!.document.uri.fsPath
-        if (!activeFilePath) {
-            throw new Error('"vscode.window.activeTextEditor" not defined :(')
-        }
-        const samProjectCodeRoot = await getSamProjectDirPathForFile(activeFilePath)
+        const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
         logger.debug(`Project root: '${samProjectCodeRoot}'`)
         let debugPort: number | undefined
 
