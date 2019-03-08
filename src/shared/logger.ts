@@ -17,16 +17,18 @@ import { DefaultSettingsConfiguration, SettingsConfiguration } from './settingsC
 const localize = nls.loadMessageBundle()
 
 const LOG_RELATIVE_PATH: string = path.join('Code', 'logs', 'aws_toolkit')
-const DEFAULT_LOG_LEVEL: string = 'info'
+const DEFAULT_LOG_LEVEL: LogLevel = 'info'
 const DEFAULT_LOG_NAME: string = `aws_toolkit_${makeDateString('filename')}.log`
 const DEFAULT_OUTPUT_CHANNEL: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Toolkit Logs')
 
 let defaultLogger: Logger
 
+export type LogLevel = 'debug' | 'verbose' | 'info' | 'warn' | 'error'
+
 export interface Logger {
     logPath?: string
     outputChannel?: vscode.OutputChannel
-    level: string
+    level: LogLevel
     debug(...message: ErrorOrString[]): void
     verbose(...message: ErrorOrString[]): void
     info(...message: ErrorOrString[]): void
@@ -41,7 +43,7 @@ export interface Logger {
 export interface LoggerParams {
     outputChannel?: vscode.OutputChannel
     logPath?: string
-    logLevel?: string
+    logLevel?: LogLevel
 }
 
 /**
@@ -100,13 +102,13 @@ export function getLogger(): Logger {
  * you need to call releaseLogger. This will end the ability to write to the logfile with this logger instance.
  */
 export function createLogger(params: LoggerParams): Logger {
-    let level: string
+    let level: LogLevel
     if (params.logLevel) {
         level = params.logLevel
-    } else {
+    } else { // level is required in LoggerParams which is required, so else can never happen
         const configuration: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
         const setLevel = configuration.readSetting<string>('logLevel')
-        level = setLevel ? setLevel as string : DEFAULT_LOG_LEVEL
+        level = setLevel ? setLevel as LogLevel : DEFAULT_LOG_LEVEL
     }
     const transports: Transport[] = []
     if (params.logPath) {
@@ -117,13 +119,13 @@ export function createLogger(params: LoggerParams): Logger {
         format: winston.format.combine(
             logFormat
         ),
-        level: level,
-        transports: transports
+        level,
+        transports
     })
 
     return {
         logPath: params.logPath,
-        level: level,
+        level,
         outputChannel: params.outputChannel,
         debug: (...message: ErrorOrString[]) =>
             writeToLogs(generateWriteParams(newLogger, 'debug', message, params.outputChannel)),
@@ -159,7 +161,7 @@ function releaseLogger(logger: winston.Logger): void {
     logger.clear()
 }
 
-function formatMessage(level: string, message: ErrorOrString[]): string {
+function formatMessage(level: LogLevel, message: ErrorOrString[]): string {
     let final: string = `${makeDateString('logfile')} [${level.toUpperCase()}]:`
     for (const chunk of message) {
         if (chunk instanceof Error) {
@@ -218,7 +220,7 @@ function padNumber(num: number): string {
 
 function generateWriteParams(
     logger: winston.Logger,
-    level: string,
+    level: LogLevel,
     message: ErrorOrString[],
     outputChannel?: vscode.OutputChannel
  ): WriteToLogParams {
@@ -227,7 +229,7 @@ function generateWriteParams(
 
 interface WriteToLogParams {
     logger: winston.Logger
-    level: string
+    level: LogLevel
     message: ErrorOrString[]
     outputChannel?: vscode.OutputChannel
 }

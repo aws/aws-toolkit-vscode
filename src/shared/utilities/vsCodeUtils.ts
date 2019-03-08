@@ -8,11 +8,9 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 export const localize = nls.loadMessageBundle()
 
-import { ErrorOrString, getLogger, Logger } from '../logger'
+import { ErrorOrString, getLogger, Logger, LogLevel } from '../logger'
 
 // ------- Experimental combined output channel & traditional logger  --------------
-
-type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
 interface LogParams {
     args: ErrorOrString[],
