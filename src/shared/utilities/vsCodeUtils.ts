@@ -24,14 +24,14 @@ interface LogParams {
 }
 
 // TODO: Leverage 3rd party code: https://raw.githubusercontent.com/Microsoft/vscode-nls/master/src/main.ts
-function defaultTranslation(message: string, ...args: any[]): string {
-    if (!args.length) {
-        return message
+function format(template: string, ...templateParams: any[]): string {
+    if (!templateParams.length) {
+        return template
     }
     try {
-        return `${message} - args: ${JSON.stringify(args)}`
+        return `${template} - args: ${JSON.stringify(templateParams)}`
     } catch (error) {
-        return `${message} - args: ${String(args)}`
+        return `${template} - args: ${String(templateParams)}`
     }
 
 }
@@ -47,9 +47,8 @@ function log({ args = [], channel, level, msg, nlsKey, logger }: LogParams): voi
         channel.appendLine(
             localize(nlsKey, msg, arg0.message, ...restArgs)
         )
-        // TODO: Swap to use new logging facility when available
         logger[level](
-            defaultTranslation(msg, arg0.message, ...restArgs)
+            format(msg, arg0.message, ...restArgs)
         )
         if (arg0.stack) {
             logger[level](arg0.stack)
@@ -59,9 +58,8 @@ function log({ args = [], channel, level, msg, nlsKey, logger }: LogParams): voi
         channel.appendLine(
             localize(nlsKey, msg, ...args)
         )
-        // TODO: Swap to use new logging facility when available
         logger[level](
-            defaultTranslation(msg, ...args)
+            format(msg, ...args)
         )
     }
 }
