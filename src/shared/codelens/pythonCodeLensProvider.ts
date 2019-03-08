@@ -32,7 +32,7 @@ const getSamProjectDirPathForFile = async (filepath: string): Promise<string> =>
     return path.dirname(filepath)
 }
 
-export const getLambdaHandlerCandidates = async ({ uri }: { uri: vscode.Uri }): Promise<LambdaHandlerCandidate[]> => {
+const getLambdaHandlerCandidates = async ({ uri }: { uri: vscode.Uri }): Promise<LambdaHandlerCandidate[]> => {
     const logger = getLogger()
     const filename = uri.fsPath
 
