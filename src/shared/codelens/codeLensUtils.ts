@@ -8,17 +8,15 @@
 import * as vscode from 'vscode'
 
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
+import { getLogger } from '../logger'
 import {
     SamCliProcessInvoker,
     SamCliTaskInvoker
 } from '../sam/cli/samCliInvoker'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import { ResultWithTelemetry } from '../telemetry/telemetryEvent'
-import * as telemUtils from '../telemetry/telemetryUtils'
-
-import { getLogger } from '../logger'
+import { Datum } from '../telemetry/telemetryEvent'
+import { defaultMetricDatum } from '../telemetry/telemetryUtils'
 import { localize } from '../utilities/vsCodeUtils'
-import { LambdaLocalInvokeArguments } from './localLambdaRunner'
 
 export type Language = 'python' | 'javascript'
 
@@ -126,43 +124,18 @@ function makeConfigureCodeLens({
     return new vscode.CodeLens(range, command)
 }
 
-// Make basic telemetry a bit easier
-export async function doDefaultTelemetry<T>(params: {
+export function getMetricDatum({command, isDebug, runtime}: {
     command: string,
-    dataMap: Map<string, string>, // TODO: Why not {[key: string]: string}?
-    callback(): Promise<any | void>,
-}): Promise<ResultWithTelemetry<T>> {
-    await params.callback()
-
-    return {
-        telemetryDatum: {
-            ...telemUtils.defaultMetricDatum(params.command),
-            metadata: params.dataMap
-        },
-    }
-}
-
-export function registerCommand({command, runtime, callback}: {
-    command: string
+    isDebug: boolean,
     runtime: string,
-    callback(args: LambdaLocalInvokeArguments): Promise<void>
-}) {
-    const logger = getLogger()
-
-    return telemUtils.registerCommand({
-        command: command,
-        callback: async (args: LambdaLocalInvokeArguments) => {
-            return await doDefaultTelemetry({
-                command,
-                callback: async () => {
-                    await callback(args)
-                    logger.info(`Running ${command} with ${runtime}`)
-                },
-                dataMap: new Map([
-                    ['runtime', runtime],
-                    ['debug', `${args.isDebug}`]
-                ])
-            })
+}): { datum: Datum } {
+    return {
+        datum: {
+            ...defaultMetricDatum(command),
+            metadata: new Map([
+                ['runtime', runtime],
+                ['debug', `${isDebug}`]
+            ])
         }
-    })
+    }
 }

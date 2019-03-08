@@ -7,7 +7,7 @@
 
 import * as vscode from 'vscode'
 import { ext } from '../extensionGlobals'
-import { Datum, ResultWithTelemetry } from './telemetryEvent'
+import { Datum } from './telemetryEvent'
 
 export function defaultMetricDatum(name: string): Datum {
     return {
@@ -26,14 +26,14 @@ export function registerCommand<T>({
     command: string
     thisArg?: any
     register?: typeof vscode.commands.registerCommand
-    callback(...args: any[]): (Promise<ResultWithTelemetry<T> | void>)
+    callback(...args: any[]): (Promise<T & { datum?: Datum } | void>)
 }): vscode.Disposable {
     return register(
         command,
         async (callbackArgs) => {
             const startTime = new Date()
             let hasException = false
-            let result: ResultWithTelemetry<T> | void
+            let result: T & { datum?: Datum } | void
 
             try {
                 result = await callback(callbackArgs)
@@ -42,7 +42,7 @@ export function registerCommand<T>({
                 throw e
             } finally {
                 const endTime = new Date()
-                const datum = result && result.telemetryDatum ? result.telemetryDatum : defaultMetricDatum(command)
+                const datum = result && result.datum ? result.datum : defaultMetricDatum(command)
                 if (!datum.metadata) {
                     datum.metadata = new Map()
                 }
@@ -55,6 +55,12 @@ export function registerCommand<T>({
                     data: [datum]
                 })
             }
+
+            if (result && result.datum) {
+                delete result.datum
+            }
+
+            return result
         },
         thisArg
     )

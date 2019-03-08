@@ -15,14 +15,16 @@ import {
     DefaultSamCliProcessInvoker,
     DefaultSamCliTaskInvoker,
 } from '../sam/cli/samCliInvoker'
+import { Datum } from '../telemetry/telemetryEvent'
+import { registerCommand } from '../telemetry/telemetryUtils'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { getDebugPort, localize } from '../utilities/vsCodeUtils'
 
 import {
     CodeLensProviderParams,
     getInvokeCmdKey,
+    getMetricDatum,
     makeCodeLenses,
-    registerCommand
 } from './codeLensUtils'
 import { LambdaLocalInvokeArguments, LocalLambdaRunner } from './localLambdaRunner'
 
@@ -85,7 +87,7 @@ export function initialize({
             configuration,
             args,
             debugPort,
-            'nodejs8.10', // TODO: Remove hard coded value
+            runtime,
             toolkitOutputChannel,
             processInvoker,
             taskInvoker,
@@ -96,10 +98,18 @@ export function initialize({
         await localLambdaRunner.run()
     }
 
+    const command = getInvokeCmdKey('javascript')
     registerCommand({
-        runtime,
-        command: getInvokeCmdKey('javascript'),
-        callback: async (args: LambdaLocalInvokeArguments) => await invokeLambda(args)
+        command: command,
+        callback: async (args: LambdaLocalInvokeArguments): Promise<{ datum: Datum }> => {
+            await invokeLambda(args)
+
+            return getMetricDatum({
+                isDebug: args.isDebug,
+                command,
+                runtime,
+            })
+        }
     })
 }
 
