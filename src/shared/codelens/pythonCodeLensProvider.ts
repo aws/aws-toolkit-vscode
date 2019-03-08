@@ -17,7 +17,8 @@ import { getDebugPort } from '../utilities/vsCodeUtils'
 import {
     CodeLensProviderParams,
     getInvokeCmdKey,
-    makeCodeLenses
+    makeCodeLenses,
+    registerCommand,
 } from './codeLensUtils'
 import { LambdaLocalInvokeArguments, LocalLambdaRunner } from './localLambdaRunner'
 
@@ -56,54 +57,65 @@ export const getLambdaHandlerCandidates = async ({ uri }: { uri: vscode.Uri }): 
         })
 }
 
-export const initialize = ({
+export function initialize({
     configuration,
     toolkitOutputChannel,
     processInvoker = new DefaultSamCliProcessInvoker(),
     taskInvoker = new DefaultSamCliTaskInvoker()
-}: CodeLensProviderParams): void => {
+}: CodeLensProviderParams): void {
     const logger = getLogger()
-    vscode.commands.registerCommand(
-        getInvokeCmdKey('python'),
-        async (args: LambdaLocalInvokeArguments) => {
-            const activeFilePath = vscode.window.activeTextEditor!.document.uri.fsPath
-            if (!activeFilePath) {
-                throw new Error('"vscode.window.activeTextEditor" not defined :(')
-            }
-            const samProjectCodeRoot = await getSamProjectDirPathForFile(activeFilePath)
-            logger.debug(`Project root: '${samProjectCodeRoot}'`)
 
-            // TODO: Figure out Python specific params and create PythonDebugConfiguration if needed
-            const debugConfig: DebugConfiguration = {
-                type: PYTHON_LANGUAGE,
-                request: 'attach',
-                name: 'SamLocalDebug',
-                preLaunchTask: undefined,
-                address: 'localhost',
-                port: await getDebugPort(),
-                localRoot: samProjectCodeRoot,
-                remoteRoot: '/var/task',
-                skipFiles: []
-            }
+    const runtime = 'python3.7' // TODO: Remove hard coded value
 
-            const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
-                configuration,
-                args,
-                'python3.7', // TODO: Remove hard coded value
-                toolkitOutputChannel,
-                processInvoker,
-                taskInvoker,
-                debugConfig,
-                samProjectCodeRoot,
-                // TODO: Use onWillAttachDebugger &/or onDidSamBuild to enable debugging support
-            )
-
-            await localLambdaRunner.run()
+    const invokeLambda = async (args: LambdaLocalInvokeArguments) => {
+        const activeFilePath = vscode.window.activeTextEditor!.document.uri.fsPath
+        if (!activeFilePath) {
+            throw new Error('"vscode.window.activeTextEditor" not defined :(')
         }
-    )
+        const samProjectCodeRoot = await getSamProjectDirPathForFile(activeFilePath)
+        logger.debug(`Project root: '${samProjectCodeRoot}'`)
+        let debugPort: number | undefined
+
+        if (args.isDebug) {
+            debugPort = await getDebugPort()
+        }
+        // TODO: Figure out Python specific params and create PythonDebugConfiguration if needed
+        const debugConfig: DebugConfiguration = {
+            type: PYTHON_LANGUAGE,
+            request: 'attach',
+            name: 'SamLocalDebug',
+            preLaunchTask: undefined,
+            address: 'localhost',
+            port: debugPort!,
+            localRoot: samProjectCodeRoot,
+            remoteRoot: '/var/task',
+            skipFiles: []
+        }
+
+        const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
+            configuration,
+            args,
+            debugPort,
+            'python3.7', // TODO: Remove hard coded value
+            toolkitOutputChannel,
+            processInvoker,
+            taskInvoker,
+            debugConfig,
+            samProjectCodeRoot,
+            // TODO: Use onWillAttachDebugger &/or onDidSamBuild to enable debugging support
+        )
+
+        await localLambdaRunner.run()
+    }
+
+    registerCommand({
+        runtime,
+        command: getInvokeCmdKey('python'),
+        callback: invokeLambda
+    })
 }
 
-export const makePythonCodeLensProvider = (): vscode.CodeLensProvider => {
+export function makePythonCodeLensProvider(): vscode.CodeLensProvider {
     return { // CodeLensProvider
         provideCodeLenses: async (
             document: vscode.TextDocument,

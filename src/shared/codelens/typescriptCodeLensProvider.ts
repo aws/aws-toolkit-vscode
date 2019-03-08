@@ -15,15 +15,14 @@ import {
     DefaultSamCliProcessInvoker,
     DefaultSamCliTaskInvoker,
 } from '../sam/cli/samCliInvoker'
-import { ResultWithTelemetry } from '../telemetry/telemetryEvent'
-import { defaultMetricDatum, registerCommand } from '../telemetry/telemetryUtils'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { getDebugPort, localize } from '../utilities/vsCodeUtils'
 
 import {
     CodeLensProviderParams,
     getInvokeCmdKey,
-    makeCodeLenses
+    makeCodeLenses,
+    registerCommand
 } from './codeLensUtils'
 import { LambdaLocalInvokeArguments, LocalLambdaRunner } from './localLambdaRunner'
 
@@ -55,50 +54,52 @@ export function initialize({
     processInvoker = new DefaultSamCliProcessInvoker(),
     taskInvoker = new DefaultSamCliTaskInvoker()
 }: CodeLensProviderParams): void {
-    const command = getInvokeCmdKey('javascript')
+    const runtime = 'nodejs8.10' // TODO: Remove hard coded value
+
+    const invokeLambda = async (args: LambdaLocalInvokeArguments) => {
+        const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
+        let debugPort: number | undefined
+
+        if (args.isDebug) {
+            debugPort  = await getDebugPort()
+        }
+
+        // TODO: Figure out Python specific params and create PythonDebugConfiguration if needed
+        const debugConfig: NodeDebugConfiguration = {
+            type: 'node',
+            request: 'attach',
+            name: 'SamLocalDebug',
+            preLaunchTask: undefined,
+            address: 'localhost',
+            port: debugPort!,
+            localRoot: samProjectCodeRoot,
+            remoteRoot: '/var/task',
+            protocol: 'inspector',
+            skipFiles: [
+                '/var/runtime/node_modules/**/*.js',
+                '<node_internals>/**/*.js'
+            ]
+        }
+
+        const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
+            configuration,
+            args,
+            debugPort,
+            'nodejs8.10', // TODO: Remove hard coded value
+            toolkitOutputChannel,
+            processInvoker,
+            taskInvoker,
+            debugConfig,
+            samProjectCodeRoot
+        )
+
+        await localLambdaRunner.run()
+    }
 
     registerCommand({
-        command: command,
-        callback: async (args: LambdaLocalInvokeArguments): Promise<ResultWithTelemetry<void>> => {
-            const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
-            const debugConfig: NodeDebugConfiguration = {
-                type: 'node',
-                request: 'attach',
-                name: 'SamLocalDebug',
-                preLaunchTask: undefined,
-                address: 'localhost',
-                port: await getDebugPort(),
-                localRoot: samProjectCodeRoot,
-                remoteRoot: '/var/task',
-                protocol: 'inspector',
-                skipFiles: [
-                    '/var/runtime/node_modules/**/*.js',
-                    '<node_internals>/**/*.js'
-                ]
-            }
-
-            const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
-                configuration,
-                args,
-                'nodejs8.10', // TODO: Remove hard coded value
-                toolkitOutputChannel,
-                processInvoker,
-                taskInvoker,
-                debugConfig,
-                samProjectCodeRoot
-            )
-
-            await localLambdaRunner.run()
-            const datum = defaultMetricDatum(command)
-            datum.metadata = new Map([
-                ['runtime', localLambdaRunner.runtime],
-                ['debug', `${args.isDebug}`]
-            ])
-
-            return {
-                telemetryDatum: datum
-            }
-        }
+        runtime,
+        command: getInvokeCmdKey('javascript'),
+        callback: async (args: LambdaLocalInvokeArguments) => await invokeLambda(args)
     })
 }
 

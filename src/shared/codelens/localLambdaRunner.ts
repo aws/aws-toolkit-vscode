@@ -49,7 +49,8 @@ export class LocalLambdaRunner {
     public constructor(
         private readonly configuration: SettingsConfiguration,
         private readonly localInvokeArgs: LambdaLocalInvokeArguments,
-        public readonly runtime: string,
+        debugPort: number | undefined,
+        private readonly runtime: string,
         private readonly outputChannel: vscode.OutputChannel,
         private readonly processInvoker: SamCliProcessInvoker,
         private readonly taskInvoker: SamCliTaskInvoker,
@@ -58,7 +59,13 @@ export class LocalLambdaRunner {
         private readonly onWillAttachDebugger?: () => Promise<void>,
         private readonly onDidSamBuild?: () => Promise<void>,
         private readonly channelLogger = getChannelLogger(outputChannel)
-    ) {}
+    ) {
+        if (localInvokeArgs.isDebug && !debugPort) {
+            throw new Error('Debug port must be provided when launching in debug mode')
+        }
+
+        this._debugPort = debugPort
+    }
 
     public async run(): Promise<void> {
         try {
@@ -97,6 +104,15 @@ export class LocalLambdaRunner {
 
             return
         }
+
+    }
+
+    public get debugPort(): number {
+        if (!this._debugPort) {
+            throw new Error('Debug port was expected but is undefined')
+        }
+
+        return this._debugPort
     }
 
     private async getBaseBuildFolder(): Promise<string> {
@@ -229,7 +245,7 @@ export class LocalLambdaRunner {
             )
 
             await tcpPortUsed.waitUntilUsed(
-                this.debugConfig.port,
+                this.debugPort,
                 LocalLambdaRunner.SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS,
                 timeoutMillis
             )
