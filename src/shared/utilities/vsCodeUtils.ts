@@ -10,8 +10,6 @@ export const localize = nls.loadMessageBundle()
 
 import { ErrorOrString, getLogger, Logger, LogLevel } from '../logger'
 
-// ------- Experimental combined output channel & traditional logger  --------------
-
 interface LogParams {
     args: ErrorOrString[],
     channel: vscode.OutputChannel,
@@ -30,32 +28,17 @@ function log({ args = [], channel, level, msg, nlsKey, logger }: LogParams): voi
     if (level === 'error') {
         channel.show(true)
     }
-    const [arg0, ...restArgs] = args
 
-    if (arg0 && arg0 instanceof Error) {
-        // TODO: Define standard/strategy. Sometimes err.message is part of msg. Probably shouldn't be.
-        channel.appendLine(
-            localize(nlsKey, msg, arg0.message, ...restArgs)
-        )
-        logger[level](
-            localize(nlsKey, msg, arg0.message, ...restArgs)
-            // TODO: Use english if/when we get multi lang support
-            // format(msg, arg0.message, ...restArgs)
-        )
-        if (arg0.stack) {
-            logger[level](arg0.stack)
-        }
-
-    } else {
-        channel.appendLine(
-            localize(nlsKey, msg, ...args)
-        )
-        logger[level](
-            // TODO: Use english if/when we get multi lang support
-            localize(nlsKey, msg, ...args)
-            // format(msg, ...args)
-        )
-    }
+    // Check for Error types and make them pretty
+    const prettyArgs = args.map(arg =>  arg instanceof Error ? arg.message : arg)
+    channel.appendLine(
+        localize(nlsKey, msg, ...prettyArgs)
+    )
+    logger[level](
+        // TODO: Use english if/when we get multi lang support
+        localize(nlsKey, msg, ...prettyArgs)
+        // format(msg, ...args)
+    )
 }
 
 /**
@@ -65,6 +48,14 @@ function log({ args = [], channel, level, msg, nlsKey, logger }: LogParams): voi
  */
 export function getChannelLogger(channel: vscode.OutputChannel, logger: Logger = getLogger()) {
     return {
+        verbose: (nlsKey: string, msg: string, ...args: ErrorOrString[]) => log({
+            level: 'verbose',
+            args,
+            channel,
+            logger,
+            msg,
+            nlsKey,
+        }),
         debug: (nlsKey: string, msg: string, ...args: ErrorOrString[]) => log({
             level: 'debug',
             args,
@@ -99,7 +90,6 @@ export function getChannelLogger(channel: vscode.OutputChannel, logger: Logger =
         })
     }
 }
-// ------- End experimental combined output channel & traditional logger  --------------
 
 export async function getDebugPort(): Promise<number> {
     // TODO: Find available port
