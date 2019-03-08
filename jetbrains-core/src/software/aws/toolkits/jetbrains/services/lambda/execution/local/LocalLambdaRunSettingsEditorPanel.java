@@ -19,6 +19,7 @@ import com.intellij.ui.IdeBorderFactory;
 import com.intellij.ui.SortedComboBoxModel;
 import com.intellij.util.textCompletion.TextCompletionProvider;
 import com.intellij.util.textCompletion.TextFieldWithCompletion;
+import com.intellij.util.ui.JBUI;
 import com.intellij.util.ui.UIUtil;
 import java.io.File;
 import java.util.Collections;
@@ -54,7 +55,7 @@ public final class LocalLambdaRunSettingsEditorPanel {
     public JComboBox<Function> function;
     private DefaultComboBoxModel<Function> functionModels;
     public TextFieldWithBrowseButton templateFile;
-    JPanel lambdaInputPanel;
+    public JPanel lambdaInputPanel;
 
     private final Project project;
     private final TextCompletionProvider handlerCompletionProvider;
@@ -63,7 +64,10 @@ public final class LocalLambdaRunSettingsEditorPanel {
         this.project = project;
         this.handlerCompletionProvider = handlerCompletionProvider;
 
-        lambdaInputPanel.setBorder(IdeBorderFactory.createTitledBorder(message("lambda.input.label")));
+        lambdaInputPanel.setBorder(IdeBorderFactory.createTitledBorder(message("lambda.input.label"),
+                                                                       false,
+                                                                       JBUI.emptyInsets())
+        );
         useTemplate.addActionListener(e -> updateComponents());
         addQuickSelect(templateFile.getTextField(), useTemplate, this::updateComponents);
         templateFile.addActionListener(new TemplateFileBrowseListener());

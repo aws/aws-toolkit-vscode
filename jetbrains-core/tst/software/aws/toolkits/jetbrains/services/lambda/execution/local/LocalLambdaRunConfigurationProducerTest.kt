@@ -46,7 +46,7 @@ class LocalLambdaRunConfigurationProducerTest {
         runInEdtAndWait {
             val runConfiguration = createRunConfiguration(lambdaMethod)
             assertThat(runConfiguration).isNotNull
-            val configuration = runConfiguration?.configuration as SamRunConfiguration
+            val configuration = runConfiguration?.configuration as LocalLambdaRunConfiguration
             assertThat(configuration.isUsingTemplate()).isFalse()
             assertThat(configuration.runtime()).isEqualTo(Runtime.JAVA8)
             assertThat(configuration.handler()).isEqualTo("com.example.LambdaHandler::handleRequest")
@@ -70,7 +70,7 @@ Resources:
             val psiElement = psiFile.findByLocation("Resources.MyFunction")?.key ?: throw RuntimeException("Can't find function")
             val runConfiguration = createRunConfiguration(psiElement)
             assertThat(runConfiguration).isNotNull
-            val configuration = runConfiguration?.configuration as SamRunConfiguration
+            val configuration = runConfiguration?.configuration as LocalLambdaRunConfiguration
             assertThat(configuration.isUsingTemplate()).isTrue()
             assertThat(configuration.templateFile()).isEqualTo(psiFile.containingFile.virtualFile.path)
             assertThat(configuration.logicalId()).isEqualTo("MyFunction")
@@ -98,7 +98,7 @@ Resources:
 
             assertThat(
                 sut.isConfigurationFromContext(
-                    runConfiguration?.configuration as SamRunConfiguration,
+                    runConfiguration?.configuration as LocalLambdaRunConfiguration,
                     createContext(psiElement, MapDataContext())
                 )
             ).isTrue()

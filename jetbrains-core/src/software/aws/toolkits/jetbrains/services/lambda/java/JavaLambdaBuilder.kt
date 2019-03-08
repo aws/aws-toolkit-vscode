@@ -15,6 +15,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.lambda.BuiltLambda
 import software.aws.toolkits.jetbrains.services.lambda.Lambda
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import software.aws.toolkits.resources.message
 import java.io.File
@@ -28,7 +29,7 @@ class JavaLambdaBuilder : LambdaBuilder() {
         module: Module,
         templateLocation: Path,
         logicalId: String,
-        useContainer: Boolean
+        samOptions: SamOptions
     ): CompletionStage<BuiltLambda> {
 
         val function = SamTemplateUtils.findFunctionsFromTemplate(
@@ -49,7 +50,7 @@ class JavaLambdaBuilder : LambdaBuilder() {
             Lambda.findPsiElementsForHandler(module.project, runtime, handler).firstOrNull()
                 ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
 
-        return buildLambda(module, element, handler, runtime, emptyMap(), useContainer)
+        return buildLambda(module, element, handler, runtime, emptyMap(), samOptions)
     }
 
     override fun buildLambda(
@@ -58,7 +59,7 @@ class JavaLambdaBuilder : LambdaBuilder() {
         handler: String,
         runtime: Runtime,
         envVars: Map<String, String>,
-        useContainer: Boolean
+        samOptions: SamOptions
     ): CompletionStage<BuiltLambda> {
         val buildDir = FileUtil.createTempDirectory("lambdaBuild", null, true)
 

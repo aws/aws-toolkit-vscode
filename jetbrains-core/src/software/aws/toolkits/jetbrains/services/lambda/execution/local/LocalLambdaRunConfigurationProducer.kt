@@ -17,15 +17,15 @@ import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsMa
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
-import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.functionFromElement
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.functionFromElement
 
-class LocalLambdaRunConfigurationProducer : RunConfigurationProducer<SamRunConfiguration>(getFactory()) {
+class LocalLambdaRunConfigurationProducer : RunConfigurationProducer<LocalLambdaRunConfiguration>(getFactory()) {
     // Filter all Lambda run CONFIGURATIONS down to only ones that are Lambda SAM for this run producer
     override fun getConfigurationSettingsList(runManager: RunManager): List<RunnerAndConfigurationSettings> =
-        super.getConfigurationSettingsList(runManager).filter { it.configuration is SamRunConfiguration }
+        super.getConfigurationSettingsList(runManager).filter { it.configuration is LocalLambdaRunConfiguration }
 
-    override fun setupConfigurationFromContext(configuration: SamRunConfiguration, context: ConfigurationContext, sourceElement: Ref<PsiElement>): Boolean {
+    override fun setupConfigurationFromContext(configuration: LocalLambdaRunConfiguration, context: ConfigurationContext, sourceElement: Ref<PsiElement>): Boolean {
         val element = context.psiLocation ?: return false
         val parent = element.parent
         val result = when (parent) {
@@ -38,7 +38,7 @@ class LocalLambdaRunConfigurationProducer : RunConfigurationProducer<SamRunConfi
         return result
     }
 
-    override fun isConfigurationFromContext(configuration: SamRunConfiguration, context: ConfigurationContext): Boolean {
+    override fun isConfigurationFromContext(configuration: LocalLambdaRunConfiguration, context: ConfigurationContext): Boolean {
         val element = context.psiLocation ?: return false
         val parent = element.parent
         return when (parent) {
@@ -47,7 +47,7 @@ class LocalLambdaRunConfigurationProducer : RunConfigurationProducer<SamRunConfi
         }
     }
 
-    private fun setupFromSourceFile(element: PsiElement, context: ConfigurationContext, configuration: SamRunConfiguration): Boolean {
+    private fun setupFromSourceFile(element: PsiElement, context: ConfigurationContext, configuration: LocalLambdaRunConfiguration): Boolean {
         val runtimeGroup = element.language.runtimeGroup ?: return false
         if (runtimeGroup !in LambdaHandlerResolver.supportedRuntimeGroups) {
             return false
@@ -64,7 +64,7 @@ class LocalLambdaRunConfigurationProducer : RunConfigurationProducer<SamRunConfi
         return true
     }
 
-    private fun setupFromTemplate(element: YAMLPsiElement, configuration: SamRunConfiguration): Boolean {
+    private fun setupFromTemplate(element: YAMLPsiElement, configuration: LocalLambdaRunConfiguration): Boolean {
         val file = element.containingFile?.virtualFile?.path ?: return false
         val function = functionFromElement(element) ?: return false
         val settings = accountSettings(element.project)
@@ -75,7 +75,7 @@ class LocalLambdaRunConfigurationProducer : RunConfigurationProducer<SamRunConfi
         return true
     }
 
-    private fun isFromSourceFileContext(element: PsiElement, configuration: SamRunConfiguration): Boolean {
+    private fun isFromSourceFileContext(element: PsiElement, configuration: LocalLambdaRunConfiguration): Boolean {
         val runtimeGroup = element.language.runtimeGroup ?: return false
         if (runtimeGroup !in LambdaHandlerResolver.supportedRuntimeGroups) {
             return false
@@ -85,7 +85,7 @@ class LocalLambdaRunConfigurationProducer : RunConfigurationProducer<SamRunConfi
         return configuration.handler() == handler
     }
 
-    private fun isFromTemplateContext(element: YAMLPsiElement, configuration: SamRunConfiguration): Boolean {
+    private fun isFromTemplateContext(element: YAMLPsiElement, configuration: LocalLambdaRunConfiguration): Boolean {
         val templateFile = configuration.templateFile() ?: return false
         val functionName = configuration.logicalId() ?: return false
         val file = element.containingFile?.virtualFile?.path ?: return false
@@ -94,7 +94,7 @@ class LocalLambdaRunConfigurationProducer : RunConfigurationProducer<SamRunConfi
     }
 
     companion object {
-        private fun getFactory() = LambdaRunConfiguration.getInstance().configurationFactories.first { it is SamRunConfigurationFactory }
+        private fun getFactory() = LambdaRunConfiguration.getInstance().configurationFactories.first { it is LocalLambdaRunConfigurationFactory }
         private fun accountSettings(project: Project): Pair<String?, AwsRegion?> {
             val settingsManager = ProjectAccountSettingsManager.getInstance(project)
             val region = try {

@@ -21,7 +21,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
 fun executeLambda(
-    runConfiguration: SamRunConfiguration,
+    runConfiguration: LocalLambdaRunConfiguration,
     executorId: String = DefaultRunExecutor.EXECUTOR_ID
 ): Output {
     val executor = ExecutorRegistry.getInstance().getExecutorById(executorId)

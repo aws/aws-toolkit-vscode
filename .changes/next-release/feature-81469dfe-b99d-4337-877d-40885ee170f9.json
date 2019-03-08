@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "You can now specify a docker network when locally running a Lambda"
+}

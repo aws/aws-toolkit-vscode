@@ -443,7 +443,46 @@ class LocalLambdaRunConfigurationTest {
         }
     }
 
-    private fun getState(runConfiguration: SamRunConfiguration): SamRunningState {
+    @Test
+    fun readSamSettings() {
+        // This tests for backwards compatibility, data should not be changed except in backwards compatible ways
+        val element = """
+                <configuration name="HelloWorldFunction" type="aws.lambda" factoryName="Local" temporary="true" nameIsGenerated="true">
+                  <option name="credentialProviderId" value="profile:default" />
+                  <option name="environmentVariables">
+                    <map>
+                      <entry key="Foo" value="Bar" />
+                    </map>
+                  </option>
+                  <option name="handler" />
+                  <option name="input" value="{}" />
+                  <option name="inputIsFile" value="false" />
+                  <option name="logicalFunctionName" value="HelloWorldFunction" />
+                  <option name="regionId" value="us-west-2" />
+                  <option name="runtime" />
+                  <option name="templateFile" value="template.yaml" />
+                  <option name="useTemplate" value="true" />
+                  <sam>
+                    <option name="buildInContainer" value="true" />
+                    <option name="dockerNetwork" value="aws-lambda" />
+                    <option name="skipImagePull" value="true" />
+                  </sam>
+                  <method v="2" />
+                </configuration>
+        """.toElement()
+
+        runInEdtAndWait {
+            val runConfiguration = samRunConfiguration(projectRule.project)
+
+            runConfiguration.readExternal(element)
+
+            assertThat(runConfiguration.skipPullImage()).isTrue()
+            assertThat(runConfiguration.buildInContainer()).isTrue()
+            assertThat(runConfiguration.dockerNetwork()).isEqualTo("aws-lambda")
+        }
+    }
+
+    private fun getState(runConfiguration: LocalLambdaRunConfiguration): SamRunningState {
         val executor = ExecutorRegistry.getInstance().getExecutorById(DefaultRunExecutor.EXECUTOR_ID)
         return runConfiguration.getState(executor, mock { on { project } doReturn projectRule.project })
     }

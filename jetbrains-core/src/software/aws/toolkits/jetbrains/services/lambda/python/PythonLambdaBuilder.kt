@@ -12,6 +12,7 @@ import com.intellij.psi.PsiElement
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.BuiltLambda
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import java.util.concurrent.CompletionStage
 
@@ -22,7 +23,7 @@ class PythonLambdaBuilder : LambdaBuilder() {
         handler: String,
         runtime: Runtime,
         envVars: Map<String, String>,
-        useContainer: Boolean
+        samOptions: SamOptions
     ): CompletionStage<BuiltLambda> {
         val handlerVirtualFile = handlerElement.containingFile?.virtualFile
             ?: throw IllegalArgumentException("Handler file must be backed by a VirtualFile")
@@ -31,7 +32,7 @@ class PythonLambdaBuilder : LambdaBuilder() {
         val customTemplate = FileUtil.createTempFile("template", ".yaml", true)
         SamTemplateUtils.writeDummySamTemplate(customTemplate, runtime, baseDir, handler, envVars)
 
-        return buildLambdaFromTemplate(module, customTemplate.toPath(), "Function", useContainer)
+        return buildLambdaFromTemplate(module, customTemplate.toPath(), "Function", samOptions)
     }
 
     private fun getBaseDirectory(project: Project, virtualFile: VirtualFile): VirtualFile {

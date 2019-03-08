@@ -17,6 +17,7 @@ import software.aws.toolkits.core.utils.zipEntries
 import software.aws.toolkits.jetbrains.services.lambda.BuiltLambda
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.execution.PathMapping
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import java.nio.file.Files
 import java.nio.file.Path
@@ -38,8 +39,10 @@ abstract class BaseLambdaBuilderTest {
         handler: String,
         useContainer: Boolean = false
     ): BuiltLambda {
+        val samOptions = SamOptions()
+        samOptions.buildInContainer = useContainer
         val completableFuture = runInEdtAndGet {
-            lambdaBuilder.buildLambda(module, handlerElement, handler, runtime, emptyMap(), useContainer)
+            lambdaBuilder.buildLambda(module, handlerElement, handler, runtime, emptyMap(), samOptions)
                 .toCompletableFuture()
         }
 
@@ -52,8 +55,10 @@ abstract class BaseLambdaBuilderTest {
         logicalId: String,
         useContainer: Boolean = false
     ): BuiltLambda {
+        val samOptions = SamOptions()
+        samOptions.buildInContainer = useContainer
         val completableFuture = runInEdtAndGet {
-            lambdaBuilder.buildLambdaFromTemplate(module, template, logicalId, useContainer).toCompletableFuture()
+            lambdaBuilder.buildLambdaFromTemplate(module, template, logicalId, samOptions).toCompletableFuture()
         }
 
         return completableFuture.get(3, TimeUnit.MINUTES)
@@ -66,8 +71,10 @@ abstract class BaseLambdaBuilderTest {
         handler: String,
         useContainer: Boolean = false
     ): Path {
+        val samOptions = SamOptions()
+        samOptions.buildInContainer = useContainer
         val completableFuture = runInEdtAndGet {
-            lambdaBuilder.packageLambda(module, handlerElement, handler, runtime, useContainer).toCompletableFuture()
+            lambdaBuilder.packageLambda(module, handlerElement, handler, runtime, samOptions).toCompletableFuture()
         }
 
         return completableFuture.get(3, TimeUnit.MINUTES)

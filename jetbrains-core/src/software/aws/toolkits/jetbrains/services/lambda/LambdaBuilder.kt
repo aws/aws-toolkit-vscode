@@ -19,6 +19,7 @@ import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.services.lambda.execution.PathMapping
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import software.aws.toolkits.resources.message
@@ -35,15 +36,15 @@ abstract class LambdaBuilder {
         handlerElement: PsiElement,
         handler: String,
         runtime: Runtime,
-        envVars: Map<String, String> = emptyMap(),
-        useContainer: Boolean = false
+        envVars: Map<String, String>,
+        samOptions: SamOptions
     ): CompletionStage<BuiltLambda>
 
     open fun buildLambdaFromTemplate(
         module: Module,
         templateLocation: Path,
         logicalId: String,
-        useContainer: Boolean = false
+        samOptions: SamOptions
     ): CompletionStage<BuiltLambda> {
         val future = CompletableFuture<BuiltLambda>()
         val codeLocation = SamTemplateUtils.findFunctionsFromTemplate(
@@ -69,9 +70,7 @@ abstract class LambdaBuilder {
                 .withParameters("--build-dir")
                 .withParameters(buildDir.toString())
 
-            if (useContainer) {
-                commandLine.withParameters("--use-container")
-            }
+            samOptions.patchCommandLine(commandLine)
 
             val pathMappings = listOf(
                 PathMapping(templateLocation.parent.resolve(codeLocation).toString(), "/"),
@@ -117,8 +116,8 @@ abstract class LambdaBuilder {
         handlerElement: PsiElement,
         handler: String,
         runtime: Runtime,
-        useContainer: Boolean = false
-    ): CompletionStage<Path> = buildLambda(module, handlerElement, handler, runtime, emptyMap(), useContainer)
+        samOptions: SamOptions
+    ): CompletionStage<Path> = buildLambda(module, handlerElement, handler, runtime, emptyMap(), samOptions)
         .thenApply { lambdaLocation ->
             val zipLocation = FileUtil.createTempFile("builtLambda", "zip", true)
             Compressor.Zip(zipLocation).use {

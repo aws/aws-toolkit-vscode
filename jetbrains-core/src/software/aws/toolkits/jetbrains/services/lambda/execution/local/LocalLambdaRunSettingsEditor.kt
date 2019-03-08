@@ -15,14 +15,10 @@ import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import javax.swing.JComponent
 
-class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<SamRunConfiguration>() {
-    private val view = LocalLambdaRunSettingsEditorPanel(
-        project,
-        HandlerCompletionProvider(project)
-    )
+class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LocalLambdaRunConfiguration>() {
+    private val view = LocalLambdaRunSettingsEditorPanel(project, HandlerCompletionProvider(project))
     private val regionProvider = AwsRegionProvider.getInstance()
-    private val credentialManager =
-        CredentialManager.getInstance()
+    private val credentialManager = CredentialManager.getInstance()
 
     init {
         val supported = LambdaBuilder.supportedRuntimeGroups
@@ -48,7 +44,7 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<SamRunConf
 
     override fun createEditor(): JComponent = view.panel
 
-    override fun resetEditorFrom(configuration: SamRunConfiguration) {
+    override fun resetEditorFrom(configuration: LocalLambdaRunConfiguration) {
         view.useTemplate.isSelected = configuration.isUsingTemplate()
         if (configuration.isUsingTemplate()) {
             view.runtime.isEnabled = false
@@ -80,7 +76,7 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<SamRunConf
         }
     }
 
-    override fun applyEditorTo(configuration: SamRunConfiguration) {
+    override fun applyEditorTo(configuration: LocalLambdaRunConfiguration) {
         if (view.useTemplate.isSelected) {
             configuration.useTemplate(view.templateFile.text, view.function.selected()?.logicalName)
         } else {

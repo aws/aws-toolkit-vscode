@@ -3,12 +3,15 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.local
 
+import com.intellij.execution.ExecutionBundle
 import com.intellij.execution.ExecutionException
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.execution.configurations.RefactoringListenerProvider
 import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.openapi.options.SettingsEditor
+import com.intellij.openapi.options.SettingsEditorGroup
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.psi.NavigatablePsiElement
@@ -24,28 +27,34 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationBase
-import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.findFunctionsFromTemplate
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.findFunctionsFromTemplate
 import software.aws.toolkits.jetbrains.services.lambda.validOrNull
 import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.resources.message
 import java.io.File
 
-class SamRunConfigurationFactory(configuration: LambdaRunConfiguration) : ConfigurationFactory(configuration) {
-    override fun createTemplateConfiguration(project: Project) = SamRunConfiguration(project, this)
+class LocalLambdaRunConfigurationFactory(configuration: LambdaRunConfiguration) : ConfigurationFactory(configuration) {
+    override fun createTemplateConfiguration(project: Project) = LocalLambdaRunConfiguration(project, this)
 
     override fun getName(): String = "Local"
 
     override fun getOptionsClass() = LocalLambdaOptions::class.java
 }
 
-class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
+class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactory) :
     LambdaRunConfigurationBase<LocalLambdaOptions>(project, factory, "SAM CLI"),
     RefactoringListenerProvider {
     override fun getOptions() = super.getOptions() as LocalLambdaOptions
 
-    override fun getConfigurationEditor() = LocalLambdaRunSettingsEditor(project)
+    override fun getConfigurationEditor(): SettingsEditor<LocalLambdaRunConfiguration> {
+        val group = SettingsEditorGroup<LocalLambdaRunConfiguration>()
+        group.addEditor(ExecutionBundle.message("run.configuration.configuration.tab.title"), LocalLambdaRunSettingsEditor(project))
+        group.addEditor(message("lambda.run_configuration.sam"), SamSettingsEditor())
+        return group
+    }
 
     override fun checkConfiguration() {
         if (SamSettings.getInstance().executablePath.isNullOrEmpty()) {
@@ -74,6 +83,9 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
             val psiElement = handlerPsiElement(handler, runtime)
                 ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
 
+            val samOptions = SamOptions()
+            samOptions.copyFrom(options.samOptions)
+
             val samRunSettings = SamRunSettings(
                 runtime,
                 handler,
@@ -82,7 +94,8 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
                 resolveCredentials(),
                 resolveRegion(),
                 psiElement,
-                templateDetails
+                templateDetails,
+                samOptions
             )
 
             return SamRunningState(environment, samRunSettings)
@@ -156,6 +169,24 @@ class SamRunConfiguration(project: Project, factory: ConfigurationFactory) :
         options.functionOptions.environmentVariables = envVars.toMutableMap()
     }
 
+    fun dockerNetwork(): String? = options.samOptions.dockerNetwork
+
+    fun dockerNetwork(network: String?) {
+        options.samOptions.dockerNetwork = network
+    }
+
+    fun skipPullImage(): Boolean = options.samOptions.skipImagePull
+
+    fun skipPullImage(skip: Boolean) {
+        options.samOptions.skipImagePull = skip
+    }
+
+    fun buildInContainer(): Boolean = options.samOptions.buildInContainer
+
+    fun buildInContainer(useContainer: Boolean) {
+        options.samOptions.buildInContainer = useContainer
+    }
+
     override fun suggestedName(): String? {
         val subName = options.functionOptions.logicalId ?: handlerDisplayName()
         return "[${message("lambda.run_configuration.local")}] $subName"
@@ -221,7 +252,8 @@ class SamRunSettings(
     val credentials: ToolkitCredentialsProvider,
     val region: AwsRegion,
     val handlerElement: NavigatablePsiElement,
-    val templateDetails: SamTemplateDetails?
+    val templateDetails: SamTemplateDetails?,
+    val samOptions: SamOptions
 ) {
     val runtimeGroup: RuntimeGroup = runtime.runtimeGroup
         ?: throw IllegalStateException("Attempting to run SAM for unsupported runtime $runtime")

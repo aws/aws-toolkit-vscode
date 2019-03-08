@@ -38,7 +38,7 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
     override fun getRunnerId(): String = "SamInvokeRunner"
 
     override fun canRun(executorId: String, profile: RunProfile): Boolean {
-        if (profile !is SamRunConfiguration) {
+        if (profile !is LocalLambdaRunConfiguration) {
             return false
         }
 
@@ -94,14 +94,16 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
             packager.buildLambdaFromTemplate(
                 module,
                 Paths.get(it),
-                runConfigSettings.templateDetails.logicalName
+                runConfigSettings.templateDetails.logicalName,
+                runConfigSettings.samOptions
             )
         } ?: packager.buildLambda(
             module,
             runConfigSettings.handlerElement,
             runConfigSettings.handler,
             runConfigSettings.runtime,
-            runConfigSettings.environmentVariables
+            runConfigSettings.environmentVariables,
+            runConfigSettings.samOptions
         )
 
         buildResult.thenAccept {

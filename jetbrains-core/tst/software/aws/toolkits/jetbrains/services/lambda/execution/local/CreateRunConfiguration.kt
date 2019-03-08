@@ -19,7 +19,7 @@ fun createTemplateRunConfiguration(
     credentialsProviderId: String? = null,
     region: AwsRegion? = MockRegionProvider.US_EAST_1,
     environmentVariables: MutableMap<String, String> = mutableMapOf()
-): SamRunConfiguration {
+): LocalLambdaRunConfiguration {
     val runConfiguration = samRunConfiguration(project)
     runConfiguration.useTemplate(templateFile, logicalId)
 
@@ -44,7 +44,7 @@ fun createHandlerBasedRunConfiguration(
     credentialsProviderId: String? = null,
     region: AwsRegion? = MockRegionProvider.US_EAST_1,
     environmentVariables: MutableMap<String, String> = mutableMapOf()
-): SamRunConfiguration {
+): LocalLambdaRunConfiguration {
     val runConfiguration = samRunConfiguration(project)
     runConfiguration.useHandler(runtime, handler)
 
@@ -61,7 +61,7 @@ fun createHandlerBasedRunConfiguration(
 }
 
 private fun createBaseRunConfiguration(
-    runConfiguration: SamRunConfiguration,
+    runConfiguration: LocalLambdaRunConfiguration,
     region: AwsRegion?,
     credentialsProviderId: String?,
     environmentVariables: MutableMap<String, String>,
@@ -79,11 +79,11 @@ private fun createBaseRunConfiguration(
     }
 }
 
-fun samRunConfiguration(project: Project): SamRunConfiguration {
+fun samRunConfiguration(project: Project): LocalLambdaRunConfiguration {
     val runManager = RunManager.getInstance(project)
-    val factory = LambdaRunConfiguration.getInstance().configurationFactories.first { it is SamRunConfigurationFactory }
+    val factory = LambdaRunConfiguration.getInstance().configurationFactories.first { it is LocalLambdaRunConfigurationFactory }
     val runConfigurationAndSettings = runManager.createConfiguration("Test", factory)
-    val runConfiguration = runConfigurationAndSettings.configuration as SamRunConfiguration
+    val runConfiguration = runConfigurationAndSettings.configuration as LocalLambdaRunConfiguration
     runManager.addConfiguration(runConfigurationAndSettings)
     return runConfiguration
 }

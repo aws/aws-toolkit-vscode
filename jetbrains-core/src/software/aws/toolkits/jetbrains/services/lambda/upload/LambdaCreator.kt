@@ -16,8 +16,9 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
-import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
+import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
 import software.aws.toolkits.resources.message
 import java.nio.file.Path
@@ -39,7 +40,9 @@ class LambdaCreator internal constructor(
         handler: PsiElement,
         functionDetails: FunctionUploadDetails,
         s3Bucket: String
-    ): CompletionStage<LambdaFunction> = builder.packageLambda(module, handler, functionDetails.handler, functionDetails.runtime)
+    ): CompletionStage<LambdaFunction> = builder.packageLambda(module, handler, functionDetails.handler, functionDetails.runtime,
+        SamOptions()
+    )
         .thenCompose { uploader.upload(functionDetails, it, s3Bucket) }
         .thenCompose { functionCreator.create(module.project, functionDetails, it) }
 
@@ -49,7 +52,9 @@ class LambdaCreator internal constructor(
         functionDetails: FunctionUploadDetails,
         s3Bucket: String,
         replaceConfiguration: Boolean = true
-    ): CompletionStage<Nothing> = builder.packageLambda(module, handler, functionDetails.handler, functionDetails.runtime)
+    ): CompletionStage<Nothing> = builder.packageLambda(module, handler, functionDetails.handler, functionDetails.runtime,
+        SamOptions()
+    )
         .thenCompose { uploader.upload(functionDetails, it, s3Bucket) }
         .thenCompose { functionCreator.update(functionDetails, it, replaceConfiguration) }
 }
