@@ -10,6 +10,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { mkdtemp } from '../../shared/filesystemUtilities'
+import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { SamCliDeployInvocation } from '../../shared/sam/cli/samCliDeploy'
 import { DefaultSamCliProcessInvoker, SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvoker'
 import { SamCliPackageInvocation } from '../../shared/sam/cli/samCliPackage'
@@ -33,16 +34,30 @@ export async function deploySamApplication({
     const deployApplicationPromise = new Promise(async (resolve, reject) => {
 
         const tempFolder = await mkdtemp('samDeploy')
+        const buildDestination = path.join(tempFolder, 'build')
+        const buildTemplatePath = path.join(buildDestination, 'template.yaml')
         const outputTemplatePath = path.join(tempFolder, 'template.yaml')
-        let stage = 'packaging'
+        let stage = 'starting up'
         try {
-            const packageInvocation = new SamCliPackageInvocation(
+            restParams.outputChannel.show(true)
+            stage = 'building'
+            const build = new SamCliBuildInvocation(
+                buildDestination,
+                undefined,
                 template.fsPath,
+                invoker
+            )
+            // TODO: Add nls support
+            restParams.outputChannel.appendLine('Building SAM Application...')
+            await build.execute()
+
+            stage = 'packaging'
+            const packageInvocation = new SamCliPackageInvocation(
+                buildTemplatePath,
                 outputTemplatePath,
                 s3Bucket,
                 invoker
             )
-            restParams.outputChannel.show(true)
             // TODO: Add nls support
             restParams.outputChannel.appendLine(`Packaging SAM Application to S3 Bucket: ${s3Bucket}`)
             await packageInvocation.execute()
