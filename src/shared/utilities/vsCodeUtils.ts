@@ -19,11 +19,6 @@ interface LogParams {
     nlsKey: string,
 }
 
-// TODO: Leverage 3rd party code: https://raw.githubusercontent.com/Microsoft/vscode-nls/master/src/main.ts
-// function format(template: string, ...templateParams: any[]): string {
-// .......
-// }
-
 function log({ args = [], channel, level, msg, nlsKey, logger }: LogParams): void {
     if (level === 'error') {
         channel.show(true)
