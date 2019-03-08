@@ -206,7 +206,7 @@ function makeDateString(type: 'filename' | 'logfile'): string {
     const isFilename: boolean = type === 'filename'
 
     return `${d.getFullYear()}${isFilename ? '' : '-'}` +
-        // String.prototype.padStart() is not available in Typescript...
+        // String.prototype.padStart() is not in Nodejs version we're using...
         `${padNumber(d.getMonth() + 1)}${isFilename ? '' : '-'}` +
         `${padNumber(d.getDate())}${isFilename ? 'T' : ' '}` +
         `${padNumber(d.getHours())}${isFilename ? '' : ':'}` +
