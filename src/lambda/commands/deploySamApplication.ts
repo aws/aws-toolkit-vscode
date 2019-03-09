@@ -31,7 +31,7 @@ export async function deploySamApplication({
     }
 
     const { template, s3Bucket, stackName } = args
-    const deployApplicationPromise = new Promise(async (resolve, reject) => {
+    const deployApplicationPromise = new Promise<void>(async (resolve, reject) => {
 
         const tempFolder = await mkdtemp('samDeploy')
         const buildDestination = path.join(tempFolder, 'build')
