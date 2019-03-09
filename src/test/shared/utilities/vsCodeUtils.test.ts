@@ -49,8 +49,6 @@ class MockLogger implements Logger {
     }
 }
 
-const sillyKey = 'silly.key'
-
 describe('vsCodeUtils', async () => {
 
     let logger: MockLogger
@@ -79,7 +77,7 @@ describe('vsCodeUtils', async () => {
                     const expectedMsg = localize(nlsKey, nslTemplate, ...prettyTokens)
                     console.debug('\t\texpected msg:', expectedMsg)
                     try {
-                        channelLogger[level](sillyKey, expectedMsg) // Log it
+                        channelLogger[level](nlsKey, nslTemplate, ...templateTokens) // Log it
                         assert(
                             logger.logs[level].has(expectedMsg),
                             `logger missing msg: ${expectedMsg} in ${JSON.stringify(Array.from(logger.logs[level]))}`
@@ -106,25 +104,25 @@ describe('vsCodeUtils', async () => {
         {
             title: 'logs message properly w/o template 1 string template params',
             nlsKey: 'silly.key2',
-            nslTemplate: 'Nice to meet you {0}',
+            nslTemplate: 'Nice to meet you "{0}"',
             templateTokens: ['bob'],
         },
         {
             title: 'logs message properly w/o template 2 string template params',
             nlsKey: 'silly.key3',
-            nslTemplate: 'Hey {0}, meet {1}',
+            nslTemplate: 'Hey "{0}", meet "{1}"',
             templateTokens: ['bob', 'joe'],
         },
         {
             title: 'logs message properly with 2 template params: errro, string',
             nlsKey: 'silly.key4',
-            nslTemplate: 'Oh no {1}, we found an error: {0}',
+            nslTemplate: 'Oh no "{1}", we found an error: "{0}"',
             templateTokens: [new Error('Stock market crash'), 'joe'],
         },
         {
             title: 'logs message properly w/o template 2 Error template params',
             nlsKey: 'silly.key3',
-            nslTemplate: '1st Error {0}; 2nd error: {1}',
+            nslTemplate: '1st Error "{0}"; 2nd error: "{1}"',
             templateTokens: [new Error('Error zero'), new Error('Error one')],
         },
     ]
