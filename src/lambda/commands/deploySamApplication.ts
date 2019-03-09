@@ -37,7 +37,7 @@ export async function deploySamApplication({
         const buildDestination = path.join(tempFolder, 'build')
         const buildTemplatePath = path.join(buildDestination, 'template.yaml')
         const outputTemplatePath = path.join(tempFolder, 'template.yaml')
-        let stage = 'starting up'
+        let stage: 'starting up' | 'building' | 'packaging' | 'deploying' = 'starting up'
         try {
             restParams.outputChannel.show(true)
             stage = 'building'
