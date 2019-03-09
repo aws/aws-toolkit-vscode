@@ -9,13 +9,12 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import { ErrorOrString, initialize, Logger, LogLevel } from '../../../shared/logger'
+import { ErrorOrString, Logger, LogLevel } from '../../../shared/logger'
 import { getChannelLogger } from '../../../shared/utilities/vsCodeUtils'
 
 import { MockOutputChannel } from '../../mockOutputChannel'
 
 const localize: nls.LocalizeFunc = nls.loadMessageBundle()
-initialize() // :(
 
 class MockLogger implements Logger {
     public logs = {
@@ -49,13 +48,10 @@ class MockLogger implements Logger {
     }
 }
 
-describe('vsCodeUtils', async () => {
+describe('vsCodeUtils getChannelLogger', async () => {
 
     let logger: MockLogger
     let outputChannel: MockOutputChannel
-
-// before(async () => {
-    // })
 
     beforeEach(async () => {
         logger = new MockLogger()
@@ -96,31 +92,37 @@ describe('vsCodeUtils', async () => {
 
     const testData = [
         {
-            title: 'logs message properly w/o template params',
+            title: 'logs w/o template params',
             nlsKey: 'silly.key1',
             nslTemplate: 'Yay',
             templateTokens: undefined,
         },
         {
-            title: 'logs message properly w/o template 1 string template params',
+            title: 'logs with 1 string template param',
             nlsKey: 'silly.key2',
             nslTemplate: 'Nice to meet you "{0}"',
             templateTokens: ['bob'],
         },
         {
-            title: 'logs message properly w/o template 2 string template params',
+            title: 'logs with 2 string template params',
             nlsKey: 'silly.key3',
             nslTemplate: 'Hey "{0}", meet "{1}"',
             templateTokens: ['bob', 'joe'],
         },
         {
-            title: 'logs message properly with 2 template params: errro, string',
+            title: 'logs with 3 string template params',
+            nlsKey: 'silly.key3',
+            nslTemplate: 'Hey "{0}", meet "{1}" and "{2}"',
+            templateTokens: ['bob', 'joe', 'kim'],
+        },
+        {
+            title: 'logs with 2 template params: errro, string',
             nlsKey: 'silly.key4',
             nslTemplate: 'Oh no "{1}", we found an error: "{0}"',
             templateTokens: [new Error('Stock market crash'), 'joe'],
         },
         {
-            title: 'logs message properly w/o template 2 Error template params',
+            title: 'logs with 2 template params: errro, error',
             nlsKey: 'silly.key3',
             nslTemplate: '1st Error "{0}"; 2nd error: "{1}"',
             templateTokens: [new Error('Error zero'), new Error('Error one')],
