@@ -23,6 +23,7 @@ import { TestLogger } from '../../../shared/loggerUtils'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { MockLambdaClient } from '../../shared/clients/mockClients'
 
+// TODO : Consolidate all asyncGenerator calls into a shared utility method
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
 }
@@ -221,9 +222,9 @@ describe('DefaultStandaloneFunctionGroupNode', () => {
             expectedNodeText: string) {
 
             assert.strictEqual(
-                actualChildNode instanceof DefaultStandaloneFunctionNode,
+                'functionName' in actualChildNode,
                 true,
-                'Child node was not a Standalone Function Node'
+                'Child node expected to contain functionName property'
             )
 
             const node: DefaultStandaloneFunctionNode = actualChildNode as DefaultStandaloneFunctionNode
