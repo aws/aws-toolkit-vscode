@@ -19,7 +19,7 @@ import {
     SamCliTaskInvoker
 } from '../sam/cli/samCliInvoker'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import { ResultWithTelemetry } from '../telemetry/telemetryEvent'
+import { Datum } from '../telemetry/telemetryEvent'
 import { defaultMetricDatum, registerCommand } from '../telemetry/telemetryUtils'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { LambdaLocalInvokeArguments, LocalLambdaRunner } from './localLambdaRunner'
@@ -135,7 +135,7 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
 
         registerCommand({
             command: command,
-            callback: async (args: LambdaLocalInvokeArguments): Promise<ResultWithTelemetry<void>> => {
+            callback: async (args: LambdaLocalInvokeArguments): Promise<{ datum: Datum }> => {
 
                 let debugPort: number | undefined
 
@@ -162,7 +162,7 @@ export class TypescriptCodeLensProvider implements vscode.CodeLensProvider {
                 ])
 
                 return {
-                    telemetryDatum: datum
+                    datum
                 }
             }
         })
