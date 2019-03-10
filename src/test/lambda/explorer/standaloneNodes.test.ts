@@ -162,14 +162,9 @@ describe('DefaultStandaloneFunctionGroupNode', () => {
                     })
                 ),
         ) {
-            super(
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
+            super({
                 listFunctions
-            )
+            })
         }
     }
 
