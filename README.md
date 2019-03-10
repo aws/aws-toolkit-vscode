@@ -20,7 +20,7 @@ Follow the instructions [here](https://docs.aws.amazon.com/serverless-applicatio
 
 The toolkit has not been released to the marketplace, so in order to try it you must build and run from source:
 
-> Note: [`git`](https://git-scm.com/downloads) and [`npm`](https://nodejs.org/) **version 6.4.1 or higher** are required to build from source.
+> Note: [`git`](https://git-scm.com/downloads), [node](https://nodejs.org/) **Version 10 or higher**, and [`npm`](https://npmjs.org/) **version 6.4.1 or higher** are required to build from source.
 
 1. Clone the repository
 
