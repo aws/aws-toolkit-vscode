@@ -6,82 +6,115 @@
 'use strict'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-export const localize = nls.loadMessageBundle()
 
-import { ErrorOrString, getLogger, Logger, LogLevel } from '../logger'
+export const localize: TemplateParser = nls.loadMessageBundle()
 
-interface LogParams {
-    args: ErrorOrString[],
-    channel: vscode.OutputChannel,
-    level: LogLevel,
-    logger: Logger,
-    msg: string,
+// TODO: initialize NLS here rather than extension.ts. Prefer packages to import localize from here
+// Advantages:
+//  • Ensure we only call nls.config once
+//  • Don't have to call nls.loadMessageBundle() in every file
+
+import { BasicLogger, ErrorOrString, getLogger, LogLevel } from '../logger'
+
+export interface TemplateParams {
     nlsKey: string,
+    nlsTemplate: string,
+    templateTokens?: ErrorOrString[],
 }
 
-function log({ args = [], channel, level, msg, nlsKey, logger }: LogParams): void {
+export interface TemplateParser {
+    (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]): string
+}
+
+export function processTemplate({
+    nlsKey,
+    nlsTemplate,
+    templateTokens = [],
+}: TemplateParams & {onLocalize?: TemplateParser}) {
+    const prettyTokens: Exclude<ErrorOrString, Error>[] = []
+    const errors: Error[] = []
+    if (templateTokens) {
+        templateTokens.forEach(token =>  {
+            if (token instanceof Error) {
+                prettyTokens.push(token.message)
+                errors.push(token)
+            } else {
+                prettyTokens.push(token)
+            }
+        })
+    }
+    const prettyMessage = localize(nlsKey, nlsTemplate, ...prettyTokens)
+
+    return {
+        errors,
+        prettyMessage,
+        prettyTokens // returned for test purposes
+    }
+}
+
+function log({
+    nlsKey,
+    nlsTemplate,
+    templateTokens,
+    channel,
+    level,
+    logger
+}: TemplateParams & {channel: vscode.OutputChannel, level: LogLevel, logger: BasicLogger }): void {
     if (level === 'error') {
         channel.show(true)
     }
-
-    // Check for Error types and make them pretty
-    const prettyArgs = args.map(arg =>  arg instanceof Error ? arg.message : arg)
-    channel.appendLine(
-        localize(nlsKey, msg, ...prettyArgs)
-    )
-    logger[level](
-        // TODO: Use english if/when we get multi lang support
-        localize(nlsKey, msg, ...prettyArgs)
-        // format(msg, ...args)
-    )
+    const {prettyMessage, errors} = processTemplate({nlsKey, nlsTemplate, templateTokens})
+    channel.appendLine(prettyMessage)
+    // TODO: Log in english if/when we get multi lang support
+    // Log pretty message then Error objects (so logger might show stack traces)
+    logger[level](...[prettyMessage, ...errors])
 }
 
 /**
  * Wrapper around normal logger that writes to output channel and normal logs.
  * Avoids making two log statements when writing to output channel and improves consistency
- * @param channelName: Name of the output channel to write to
  */
-export function getChannelLogger(channel: vscode.OutputChannel, logger: Logger = getLogger()) {
+export function getChannelLogger(channel: vscode.OutputChannel, logger: BasicLogger = getLogger()) {
     return {
-        verbose: (nlsKey: string, msg: string, ...args: ErrorOrString[]) => log({
+        verbose: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) => log({
             level: 'verbose',
-            args,
+            nlsKey,
+            nlsTemplate,
+            templateTokens,
             channel,
             logger,
-            msg,
-            nlsKey,
         }),
-        debug: (nlsKey: string, msg: string, ...args: ErrorOrString[]) => log({
+        debug: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) => log({
             level: 'debug',
-            args,
+            nlsKey,
+            nlsTemplate,
+            templateTokens,
             channel,
             logger,
-            msg,
-            nlsKey,
         }),
-        info: (nlsKey: string, msg: string, ...args: ErrorOrString[]) => log({
+        info: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) => log({
             level: 'info',
-            args,
+            nlsKey,
+            nlsTemplate,
+            templateTokens,
             channel,
             logger,
-            msg,
-            nlsKey,
         }),
-        warn: (nlsKey: string, msg: string, ...args: ErrorOrString[]) => log({
+        warn: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) => log({
             level: 'warn',
-            args,
+            nlsKey,
+            nlsTemplate,
+            templateTokens,
             channel,
             logger,
-            msg,
-            nlsKey,
         }),
-        error: (nlsKey: string, msg: string, ...args: ErrorOrString[]) => log({
+        error: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) => log({
             level: 'error',
-            args,
+            nlsKey,
+            nlsTemplate,
+            templateTokens,
             channel,
             logger,
-            msg,
-            nlsKey,
         })
     }
 }

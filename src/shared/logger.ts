@@ -25,15 +25,18 @@ let defaultLogger: Logger
 
 export type LogLevel = 'debug' | 'verbose' | 'info' | 'warn' | 'error'
 
-export interface Logger {
-    logPath?: string
-    outputChannel?: vscode.OutputChannel
-    level: LogLevel
+export interface BasicLogger {
     debug(...message: ErrorOrString[]): void
     verbose(...message: ErrorOrString[]): void
     info(...message: ErrorOrString[]): void
     warn(...message: ErrorOrString[]): void
     error(...message: ErrorOrString[]): void
+
+}
+export interface Logger extends BasicLogger {
+    logPath?: string
+    outputChannel?: vscode.OutputChannel
+    level: LogLevel
     releaseLogger(): void
 }
 
@@ -234,7 +237,7 @@ interface WriteToLogParams {
     outputChannel?: vscode.OutputChannel
 }
 
-export type ErrorOrString = Error | string
+export type ErrorOrString = Error | string // TODO: Consider renaming to Loggable & including number
 
 // forces winston to output only preformatted message
 const logFormat = winston.format.printf(({ message }) => {

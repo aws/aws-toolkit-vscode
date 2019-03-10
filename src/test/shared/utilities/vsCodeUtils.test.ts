@@ -7,16 +7,14 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import * as nls from 'vscode-nls'
 
-import { ErrorOrString, Logger, LogLevel } from '../../../shared/logger'
-import { getChannelLogger } from '../../../shared/utilities/vsCodeUtils'
+import { BasicLogger, ErrorOrString, LogLevel } from '../../../shared/logger'
+import { getChannelLogger, localize, processTemplate, TemplateParams } from '../../../shared/utilities/vsCodeUtils'
 
 import { MockOutputChannel } from '../../mockOutputChannel'
 
-const localize: nls.LocalizeFunc = nls.loadMessageBundle()
+class MockLogger implements BasicLogger {
 
-class MockLogger implements Logger {
     public logs = {
         verbose: new Set<string>(),
         debug: new Set<string>(),
@@ -24,27 +22,24 @@ class MockLogger implements Logger {
         warn: new Set<string>(),
         error: new Set<string>(),
     }
-    public level: LogLevel = 'debug'
-    public logPath: string = '/tmp/logs'
     public outputChannel?: vscode.OutputChannel
-
-    public releaseLogger() {
-        // do nothing
-    }
     public verbose(...messages: ErrorOrString[]) {
-        this.logs.verbose.add(String(messages[0])) // localize always returns a single string
+        this.logs.verbose.add(MockLogger.format(messages))
     }
     public debug(...messages: ErrorOrString[]) {
-        this.logs.debug.add(String(messages[0]))
+        this.logs.debug.add(MockLogger.format(messages))
     }
     public info(...messages: ErrorOrString[]) {
-        this.logs.info.add(String(messages[0]))
+        this.logs.info.add(MockLogger.format(messages))
     }
     public warn(...messages: ErrorOrString[]) {
-        this.logs.warn.add(String(messages[0]))
+        this.logs.warn.add(MockLogger.format(messages))
     }
     public error(...messages: ErrorOrString[]) {
-        this.logs.error.add(String(messages[0]))
+        this.logs.error.add(MockLogger.format(messages))
+    }
+    public static format(messages: ErrorOrString[]) {
+        return JSON.stringify(messages.map(msg => msg instanceof Error ? msg.message : msg))
     }
 }
 
@@ -58,29 +53,58 @@ describe('vsCodeUtils getChannelLogger', async () => {
         outputChannel = new MockOutputChannel()
     })
 
-    const testWith = ({title, nlsKey, nslTemplate, templateTokens = []}: {
-        title: string,
-        nlsKey: string,
-        nslTemplate: string,
-        templateTokens?: ErrorOrString[],
-    }) => {
+    const testWith = ({
+        title, nlsKey, nlsTemplate, templateTokens = []
+    }: TemplateParams & { title: string }) => {
         describe(title, function() {
             const logLevels: LogLevel[] = ['verbose', 'debug', 'info', 'warn', 'error']
             logLevels.forEach( level => {
                 it(`with ${level} `, function() {
-                    const channelLogger = getChannelLogger(outputChannel, logger) as any
-                    const prettyTokens = templateTokens.map(token =>  token instanceof Error ? token.message : token)
-                    const expectedMsg = localize(nlsKey, nslTemplate, ...prettyTokens)
-                    console.debug('\t\texpected msg:', expectedMsg)
+                    const expectedPrettyTokens: Exclude<ErrorOrString, Error>[] = []
+                    const expectedErrorTokens: Error[] = []
+                    templateTokens.forEach(token => {
+                         if (token instanceof Error) {
+                            expectedPrettyTokens.push(token.message)
+                            expectedErrorTokens.push(token)
+                         } else {
+                            expectedPrettyTokens.push(token)
+                         }
+                     })
+                    const expectedPrettyMsg = localize(nlsKey, nlsTemplate, ...expectedPrettyTokens)
+                    const expectedLogMsg = MockLogger.format([expectedPrettyMsg, ...expectedErrorTokens])
+                    console.debug('\t\texpected pretty msg:', expectedPrettyMsg)
                     try {
-                        channelLogger[level](nlsKey, nslTemplate, ...templateTokens) // Log it
+                        // Use channelLoggger to log it
+                        const channelLogger = getChannelLogger(outputChannel, logger) as any
+                        channelLogger[level](nlsKey, nlsTemplate, ...templateTokens)
+                        // Test logger write
                         assert(
-                            logger.logs[level].has(expectedMsg),
-                            `logger missing msg: ${expectedMsg} in ${JSON.stringify(Array.from(logger.logs[level]))}`
+                            logger.logs[level].has(expectedLogMsg),
+                            `logger missing msg: ${expectedLogMsg} in ${JSON.stringify(Array.from(logger.logs[level]))}`
                         )
+                        // Test channel write
                         assert(
-                            outputChannel.value.indexOf(expectedMsg) >= 0,
-                            `channel missing msg: ${expectedMsg} in ${outputChannel.value}`
+                            outputChannel.value.indexOf(expectedPrettyMsg) >= 0,
+                            `channel missing msg: ${expectedPrettyMsg} in ${outputChannel.value}`
+                        )
+
+                        // Test processTemplate
+                        const {
+                            prettyMessage: actualPrettyMsg,
+                            errors: actualErrorTokens
+                        } = processTemplate({
+                            nlsKey,
+                            nlsTemplate,
+                            templateTokens
+                        })
+                        assert(
+                            expectedPrettyMsg === actualPrettyMsg,
+                            `expected pretty msg to be ${expectedPrettyMsg}, found ${actualPrettyMsg}`
+                        )
+                        assert.deepStrictEqual(
+                            expectedErrorTokens,
+                            actualErrorTokens,
+                            `expected error tokens to be ${expectedErrorTokens}, found ${actualErrorTokens}`
                         )
                     } catch (error) {
                         assert.fail(`Error testing ${level} level: ${String(error)}`)
@@ -94,38 +118,44 @@ describe('vsCodeUtils getChannelLogger', async () => {
         {
             title: 'logs w/o template params',
             nlsKey: 'silly.key1',
-            nslTemplate: 'Yay',
+            nlsTemplate: 'Yay',
             templateTokens: undefined,
         },
         {
             title: 'logs with 1 string template param',
             nlsKey: 'silly.key2',
-            nslTemplate: 'Nice to meet you "{0}"',
+            nlsTemplate: 'Nice to meet you "{0}"',
             templateTokens: ['bob'],
         },
         {
             title: 'logs with 2 string template params',
             nlsKey: 'silly.key3',
-            nslTemplate: 'Hey "{0}", meet "{1}"',
+            nlsTemplate: 'Hey "{0}", meet "{1}"',
             templateTokens: ['bob', 'joe'],
         },
         {
             title: 'logs with 3 string template params',
             nlsKey: 'silly.key3',
-            nslTemplate: 'Hey "{0}", meet "{1}" and "{2}"',
+            nlsTemplate: 'Hey "{0}", meet "{1}" and "{2}"',
             templateTokens: ['bob', 'joe', 'kim'],
         },
         {
             title: 'logs with 2 template params: errro, string',
             nlsKey: 'silly.key4',
-            nslTemplate: 'Oh no "{1}", we found an error: "{0}"',
+            nlsTemplate: 'Oh no "{1}", we found an error: "{0}"',
             templateTokens: [new Error('Stock market crash'), 'joe'],
         },
         {
-            title: 'logs with 2 template params: errro, error',
+            title: 'logs with 2 template params: error, error',
             nlsKey: 'silly.key3',
-            nslTemplate: '1st Error "{0}"; 2nd error: "{1}"',
+            nlsTemplate: '1st Error "{0}"; 2nd error: "{1}"',
             templateTokens: [new Error('Error zero'), new Error('Error one')],
+        },
+        {
+            title: 'logs with 3 template params: string, error, error',
+            nlsKey: 'silly.key3',
+            nlsTemplate: 'Oh my "{0}", there are errors: 1st Error "{0}"; 2nd error: "{1}"',
+            templateTokens: ['Bob', new Error('Error zero'), new Error('Error one')],
         },
     ]
 
