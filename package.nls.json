@@ -122,6 +122,7 @@
     "AWS.samcli.deploy.stackName.error.invalidCharacters": "A stack name may contain only alphanumeric characters (case sensitive) and hyphens",
     "AWS.samcli.deploy.stackName.error.firstCharacter": "A stack name must begin with an alphabetic character",
     "AWS.samcli.deploy.stackName.error.length": "A stack name must not be longer than 128 characters",
+    "AWS.samcli.deploy.statusbar.message": "$(cloud-upload) Deploying SAM Application to {0}...",
     "AWS.samcli.deploy.template.prompt": "Which SAM Template would you like to deploy to AWS?",
     "AWS.samcli.configured.location": "Configured SAM CLI Location: {0}",
     "AWS.samcli.error.notFound": "Unable to find the SAM CLI, which is required to create new Serverless Applications and debug them locally. If you have already installed the SAM CLI, update your User Settings by locating it.",
