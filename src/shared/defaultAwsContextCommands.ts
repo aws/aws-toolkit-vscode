@@ -122,11 +122,6 @@ export class DefaultAWSContextCommands {
         }
     }
 
-    public async onCommandSelectRegion(filter: (region: RegionInfo) => boolean = () => true
-        ): Promise<string | undefined> {
-        return await this.promptForFilteredRegion(filter)
-    }
-
     public async onCommandHideRegion(regionCode?: string) {
         const region = regionCode || await this.promptForRegion(await this._awsContext.getExplorerRegions())
         if (region) {
