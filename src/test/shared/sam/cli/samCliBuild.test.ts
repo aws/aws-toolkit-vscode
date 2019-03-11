@@ -73,12 +73,12 @@ describe('SamCliBuildInvocation', async () => {
             assert.strictEqual(args[0], 'build', 'Expected first arg to be the build command')
         })
 
-        await new SamCliBuildInvocation(
-            nonRelevantArg,
-            nonRelevantArg,
-            placeholderTemplateFile,
-            processInvoker,
-        ).execute()
+        await new SamCliBuildInvocation({
+            buildDir: nonRelevantArg,
+            baseDir: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            invoker: processInvoker,
+        }).execute()
     })
 
     it('Passes Build Dir to sam cli', async () => {
@@ -89,12 +89,12 @@ describe('SamCliBuildInvocation', async () => {
             assertArgsContainArgument(args, '--build-dir', expectedBuildDir)
         })
 
-        await new SamCliBuildInvocation(
-            expectedBuildDir,
-            nonRelevantArg,
-            placeholderTemplateFile,
-            processInvoker,
-        ).execute()
+        await new SamCliBuildInvocation({
+            buildDir: expectedBuildDir,
+            baseDir: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            invoker: processInvoker,
+        }).execute()
     })
 
     it('Passes Base Dir to sam cli', async () => {
@@ -105,12 +105,12 @@ describe('SamCliBuildInvocation', async () => {
             assertArgsContainArgument(args, '--base-dir', expectedBaseDir)
         })
 
-        await new SamCliBuildInvocation(
-            nonRelevantArg,
-            expectedBaseDir,
-            placeholderTemplateFile,
-            processInvoker,
-        ).execute()
+        await new SamCliBuildInvocation({
+            buildDir: nonRelevantArg,
+            baseDir: expectedBaseDir,
+            templatePath: placeholderTemplateFile,
+            invoker: processInvoker,
+        }).execute()
     })
 
     it('Passes Template to sam cli', async () => {
@@ -120,12 +120,12 @@ describe('SamCliBuildInvocation', async () => {
             assertArgsContainArgument(args, '--template', placeholderTemplateFile)
         })
 
-        await new SamCliBuildInvocation(
-            nonRelevantArg,
-            nonRelevantArg,
-            placeholderTemplateFile,
-            processInvoker,
-        ).execute()
+        await new SamCliBuildInvocation({
+            buildDir: nonRelevantArg,
+            baseDir: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            invoker: processInvoker,
+        }).execute()
     })
 
     function assertArgsContainArgument(

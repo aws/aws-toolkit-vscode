@@ -10,7 +10,19 @@ import { getLogger, Logger } from '../../logger'
 import { ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliProcessInvoker, SamCliProcessInvoker } from './samCliInvoker'
 
+export interface SamCliBuildInvocationArguments {
+    buildDir: string,
+    baseDir: string | undefined,
+    templatePath: string,
+    invoker: SamCliProcessInvoker,
+}
+
 export class SamCliBuildInvocation {
+    private readonly buildDir: string
+    private readonly baseDir?: string
+    private readonly templatePath: string
+    private readonly invoker: SamCliProcessInvoker
+
     /**
      * @param buildDir The path to a folder where the built artifacts are stored.
      * @param baseDir Resolves relative paths to the function's source code with respect to this folder.
@@ -18,11 +30,15 @@ export class SamCliBuildInvocation {
      * @param invoker Manages the sam cli execution. Defaults to DefaultSamCliProcessInvoker
      */
     public constructor(
-        private readonly buildDir: string,
-        private readonly baseDir: string | undefined,
-        private readonly templatePath: string,
-        private readonly invoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker()
+        {
+            invoker = new DefaultSamCliProcessInvoker(),
+            ...params
+        }: SamCliBuildInvocationArguments,
     ) {
+        this.buildDir = params.buildDir
+        this.baseDir = params.baseDir
+        this.templatePath = params.templatePath
+        this.invoker = invoker
     }
 
     public async execute(): Promise<void> {
