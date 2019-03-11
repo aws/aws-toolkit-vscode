@@ -11,9 +11,15 @@ import { ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliProcessInvoker, SamCliProcessInvoker } from './samCliInvoker'
 
 export class SamCliBuildInvocation {
+    /**
+     * @param buildDir The path to a folder where the built artifacts are stored.
+     * @param baseDir Resolves relative paths to the function's source code with respect to this folder.
+     * @param templatePath Location of the SAM Template to build
+     * @param invoker Manages the sam cli execution. Defaults to DefaultSamCliProcessInvoker
+     */
     public constructor(
         private readonly buildDir: string,
-        private readonly baseDir: string,
+        private readonly baseDir: string | undefined,
         private readonly templatePath: string,
         private readonly invoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker()
     ) {
@@ -23,11 +29,20 @@ export class SamCliBuildInvocation {
         const logger: Logger = getLogger()
         await this.validate()
 
-        const { exitCode, error, stderr, stdout }: ChildProcessResult = await this.invoker.invoke(
+        const invokeArgs: string[] = [
             'build',
             '--build-dir', this.buildDir,
-            '--base-dir', this.baseDir,
-            '--template', this.templatePath
+            '--template', this.templatePath,
+        ]
+
+        if (this.baseDir) {
+            invokeArgs.push(
+                '--base-dir', this.baseDir,
+            )
+        }
+
+        const { exitCode, error, stderr, stdout }: ChildProcessResult = await this.invoker.invoke(
+            ...invokeArgs
         )
 
         if (exitCode === 0) {
