@@ -113,33 +113,38 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         return choices[0].uri
     }
 
-    public async promptUserForRegion(regionProvider: RegionProvider,
-                                     initialRegionCode: string): Promise<string | undefined> {
+    public async promptUserForRegion(
+        regionProvider: RegionProvider,
+        initialRegionCode: string
+    ): Promise<string | undefined> {
         const logger = getLogger()
         const regionData = await regionProvider.getRegionData()
 
-        const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
-            options: {
-                title: localize('AWS.samcli.deploy.region.prompt',
-                                'Which AWS Region would you like to deploy to?'),
-                value: initialRegionCode || '',
-                matchOnDetail: true,
-                ignoreFocusOut: true,
-            },
-            items: regionData.map(r => ({
-                label: r.regionName,
-                detail: r.regionCode,
-                // this is the only way to get this to show on going back
-                // this will make it so it always shows even when searching for something else
-                alwaysShow: r.regionCode === initialRegionCode,
-                description: r.regionCode === initialRegionCode ? localize('AWS.samcli.deploy.region.previousRegion',
-                                                                           'Selected Previously')
-                                                                : ''
-            })),
-            buttons: [
-                vscode.QuickInputButtons.Back
-            ],
-        })
+        const quickPick = picker.createQuickPick<vscode.QuickPickItem>(
+            {
+                options: {
+                    title: localize('AWS.samcli.deploy.region.prompt',
+                                    'Which AWS Region would you like to deploy to?'),
+                    value: initialRegionCode || '',
+                    matchOnDetail: true,
+                    ignoreFocusOut: true,
+                },
+                items: regionData.map(r => (
+                    {
+                        label: r.regionName,
+                        detail: r.regionCode,
+                        // this is the only way to get this to show on going back
+                        // this will make it so it always shows even when searching for something else
+                        alwaysShow: r.regionCode === initialRegionCode,
+                        description: r.regionCode === initialRegionCode ?
+                            localize('AWS.samcli.deploy.region.previousRegion', 'Selected Previously') : ''
+                    }
+                )),
+                buttons: [
+                    vscode.QuickInputButtons.Back
+                ],
+            }
+        )
 
         const choices = await picker.promptUser<vscode.QuickPickItem>({
             picker: quickPick,
@@ -184,9 +189,11 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                     'Enter the AWS S3 bucket to which your code should be deployed'
                 ),
                 ignoreFocusOut: true,
-                prompt: localize('AWS.samcli.deploy.s3Bucket.region',
-                                 'S3 bucket must be in selected region: {0}',
-                                 selectedRegion)
+                prompt: localize(
+                    'AWS.samcli.deploy.s3Bucket.region',
+                    'S3 bucket must be in selected region: {0}',
+                    selectedRegion
+                )
             }
         })
 
