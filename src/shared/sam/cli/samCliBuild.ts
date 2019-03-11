@@ -11,9 +11,22 @@ import { ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliProcessInvoker, SamCliProcessInvoker } from './samCliInvoker'
 
 export interface SamCliBuildInvocationArguments {
+    /**
+     * The path to a folder where the built artifacts are stored.
+     */
     buildDir: string,
+    /**
+     * Resolves relative paths to the function's source code with respect to this folder.
+     * By default, relative paths are resolved with respect to the template's location.
+     */
     baseDir: string | undefined,
+    /**
+     * Location of the SAM Template to build
+     */
     templatePath: string,
+    /**
+     * Manages the sam cli execution.
+     */
     invoker: SamCliProcessInvoker,
 }
 
@@ -24,10 +37,8 @@ export class SamCliBuildInvocation {
     private readonly invoker: SamCliProcessInvoker
 
     /**
-     * @param buildDir The path to a folder where the built artifacts are stored.
-     * @param baseDir Resolves relative paths to the function's source code with respect to this folder.
-     * @param templatePath Location of the SAM Template to build
-     * @param invoker Manages the sam cli execution. Defaults to DefaultSamCliProcessInvoker
+     * @see SamCliBuildInvocationArguments for parameter info
+     * invoker - Defaults to DefaultSamCliProcessInvoker
      */
     public constructor(
         {
