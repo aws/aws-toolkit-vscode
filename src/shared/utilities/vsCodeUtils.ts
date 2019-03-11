@@ -6,15 +6,10 @@
 'use strict'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-
-export const localize: TemplateParser = nls.loadMessageBundle()
-
-// TODO: Consider NLS here rather than extension.ts. Prefer packages to import localize from here
-// Advantages:
-//  • Ensure we only call nls.config once
-//  • Don't have to call nls.loadMessageBundle() in every file
-
 import { BasicLogger, ErrorOrString, getLogger, LogLevel } from '../logger'
+
+// TODO: Consider NLS initialization/configuration here & have packages to import localize from here
+export const localize: TemplateParser = nls.loadMessageBundle()
 
 export interface TemplateParams {
     nlsKey: string,

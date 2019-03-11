@@ -41,6 +41,10 @@ class MockLogger implements BasicLogger {
     }
 }
 
+interface IndexableLogger {
+    [logLevel: string]: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) => void
+}
+
 describe('vsCodeUtils getChannelLogger', async () => {
 
     let logger: MockLogger
@@ -72,8 +76,8 @@ describe('vsCodeUtils getChannelLogger', async () => {
                     const expectedLogMsg = MockLogger.format([expectedPrettyMsg, ...expectedErrorTokens])
                     console.debug('\t\texpected pretty msg:', expectedPrettyMsg)
                     try {
-                        // Use channelLoggger to log it
-                        const channelLogger = getChannelLogger(outputChannel, logger) as any
+                        // Use channelLogger to log it
+                        const channelLogger: IndexableLogger = getChannelLogger(outputChannel, logger)
                         channelLogger[level](nlsKey, nlsTemplate, ...templateTokens)
                         // Test logger write
                         assert(
