@@ -14,7 +14,7 @@ import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
 import { ext } from '../shared/extensionGlobals'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { ResourceFetcher } from '../shared/resourceFetcher'
-import { ResultWithTelemetry } from '../shared/telemetry/telemetryEvent'
+import { Datum } from '../shared/telemetry/telemetryEvent'
 import { defaultMetricDatum, registerCommand } from '../shared/telemetry/telemetryUtils'
 import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
@@ -65,7 +65,7 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         const createNewSamAppCommand = 'aws.lambda.createNewSamApp'
         registerCommand({
             command: createNewSamAppCommand,
-            callback: async (): Promise<ResultWithTelemetry<void>> => {
+            callback: async (): Promise<{ datum: Datum }> => {
                 const metadata = await createNewSamApp(context)
                 const datum = defaultMetricDatum(createNewSamAppCommand)
                 datum.metadata = metadata ? new Map([
@@ -73,7 +73,7 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
                 ]) : undefined
 
                 return {
-                    telemetryDatum: datum
+                    datum
                 }
             }
         })

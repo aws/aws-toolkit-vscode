@@ -20,7 +20,7 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
     public constructor(
         private readonly cloudFormationClient: CloudFormationClient = new MockCloudFormationClient(),
 
-        private readonly lambdaClient: LambdaClient = new MockLambdaClient()
+        private readonly lambdaClient: LambdaClient = new MockLambdaClient({})
     ) {
     }
 
@@ -38,7 +38,7 @@ export class MockCloudFormationClient implements CloudFormationClient {
         public readonly regionCode: string = '',
 
         public readonly deleteStack: (name: string) => Promise<void> =
-            async (name: string) => {},
+            async (name: string) => { },
 
         public readonly listStacks: (statusFilter?: string[]) => AsyncIterableIterator<CloudFormation.StackSummary> =
             (statusFilter?: string[]) => asyncGenerator([]),
@@ -52,23 +52,34 @@ export class MockCloudFormationClient implements CloudFormationClient {
 }
 
 export class MockLambdaClient implements LambdaClient {
-    public constructor(
-        public readonly regionCode: string = '',
+    public readonly regionCode: string
+    public readonly deleteFunction: (name: string) => Promise<void>
+    public readonly getFunctionConfiguration: (name: string) => Promise<Lambda.FunctionConfiguration>
+    public readonly invoke: (name: string, payload?: Lambda._Blob) => Promise<Lambda.InvocationResponse>
+    public readonly getPolicy: (name: string) => Promise<Lambda.GetPolicyResponse>
+    public readonly listFunctions: () => AsyncIterableIterator<Lambda.FunctionConfiguration>
 
-        public readonly deleteFunction: (name: string) => Promise<void> =
-            async (name: string) => {},
+    public constructor({
+        regionCode = '',
+        deleteFunction = async (name: string) => { },
+        getFunctionConfiguration = async (name: string) => ({}),
+        invoke = async (name: string, payload?: Lambda._Blob) => ({}),
+        getPolicy = async (name: string) => ({}),
+        listFunctions = () => asyncGenerator([])
 
-        public readonly getFunctionConfiguration: (name: string) => Promise<Lambda.FunctionConfiguration> =
-            async (name: string) => ({}),
-
-        public readonly invoke: (name: string, payload?: Lambda._Blob) => Promise<Lambda.InvocationResponse> =
-            async (name: string, payload?: Lambda._Blob) => ({}),
-
-        public readonly getPolicy: (name: string) => Promise<Lambda.GetPolicyResponse> =
-            async (name: string) => ({}),
-
-        public readonly listFunctions: () => AsyncIterableIterator<Lambda.FunctionConfiguration> =
-            () => asyncGenerator([])
-    ) {
+    }: {
+        regionCode?: string
+        deleteFunction?(name: string): Promise<void>
+        getFunctionConfiguration?(name: string): Promise<Lambda.FunctionConfiguration>
+        invoke?(name: string, payload?: Lambda._Blob): Promise<Lambda.InvocationResponse>
+        getPolicy?(name: string): Promise<Lambda.GetPolicyResponse>
+        listFunctions?(): AsyncIterableIterator<Lambda.FunctionConfiguration>
+    }) {
+        this.regionCode = regionCode
+        this.deleteFunction = deleteFunction
+        this.getFunctionConfiguration = getFunctionConfiguration
+        this.invoke = invoke
+        this.getPolicy = getPolicy
+        this.listFunctions = listFunctions
     }
 }
