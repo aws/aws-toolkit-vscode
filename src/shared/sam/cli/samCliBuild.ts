@@ -39,6 +39,10 @@ export interface SamCliBuildInvocationArguments {
      * If not specified, the Lambda containers will only connect to the default bridge Docker network.
      */
     dockerNetwork?: string,
+    /**
+     * Specifies whether the command should skip pulling down the latest Docker image for Lambda runtime.
+     */
+    skipPullImage?: boolean,
 }
 
 export class SamCliBuildInvocation {
@@ -48,16 +52,19 @@ export class SamCliBuildInvocation {
     private readonly invoker: SamCliProcessInvoker
     private readonly useContainer: boolean
     private readonly dockerNetwork?: string
+    private readonly skipPullImage: boolean
 
     /**
      * @see SamCliBuildInvocationArguments for parameter info
      * invoker - Defaults to DefaultSamCliProcessInvoker
      * useContainer - Defaults to false
+     * skipPullImage - Defaults to false
      */
     public constructor(
         {
             invoker = new DefaultSamCliProcessInvoker(),
             useContainer = false,
+            skipPullImage = false,
             ...params
         }: SamCliBuildInvocationArguments,
     ) {
@@ -67,6 +74,7 @@ export class SamCliBuildInvocation {
         this.invoker = invoker
         this.useContainer = useContainer
         this.dockerNetwork = params.dockerNetwork
+        this.skipPullImage = skipPullImage
     }
 
     public async execute(): Promise<void> {
@@ -88,6 +96,12 @@ export class SamCliBuildInvocation {
         if (this.useContainer) {
             invokeArgs.push(
                 '--use-container',
+            )
+        }
+
+        if (this.skipPullImage) {
+            invokeArgs.push(
+                '--skip-pull-image',
             )
         }
 

@@ -117,11 +117,7 @@ describe('SamCliBuildInvocation', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
         const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
-            assert.strictEqual(
-                args.indexOf('--base-dir'),
-                -1,
-                'Did not expect --base-dir arg'
-            )
+            assertArgNotPresent(args, '--base-dir')
         })
 
         await new SamCliBuildInvocation({
@@ -169,11 +165,7 @@ describe('SamCliBuildInvocation', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
         const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
-            assert.strictEqual(
-                args.indexOf('--use-container'),
-                -1,
-                'Did not expect --use-container arg'
-            )
+            assertArgNotPresent(args, '--use-container')
         })
 
         await new SamCliBuildInvocation({
@@ -188,11 +180,7 @@ describe('SamCliBuildInvocation', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
         const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
-            assert.strictEqual(
-                args.indexOf('--use-container'),
-                -1,
-                'Did not expect --use-container arg'
-            )
+            assertArgNotPresent(args, '--use-container')
         })
 
         await new SamCliBuildInvocation({
@@ -222,11 +210,55 @@ describe('SamCliBuildInvocation', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
         const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
-            assert.strictEqual(
-                args.indexOf('--docker-network'),
+            assertArgNotPresent(args, '--docker-network')
+        })
+
+        await new SamCliBuildInvocation({
+            buildDir: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            invoker: processInvoker,
+        }).execute()
+    })
+
+    it('skipPullImage = true passes --skip-pull-image to sam cli', async () => {
+        const nonRelevantArg = 'arg is not of interest to this test'
+
+        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+            assert.notStrictEqual(
+                args.indexOf('--skip-pull-image'),
                 -1,
-                'Did not expect --docker-network arg'
+                'Expected --skip-pull-image arg'
             )
+        })
+
+        await new SamCliBuildInvocation({
+            buildDir: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            invoker: processInvoker,
+            skipPullImage: true,
+        }).execute()
+    })
+
+    it('skipPullImage = false does not pass --skip-pull-image to sam cli', async () => {
+        const nonRelevantArg = 'arg is not of interest to this test'
+
+        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+            assertArgNotPresent(args, '--skip-pull-image')
+        })
+
+        await new SamCliBuildInvocation({
+            buildDir: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            invoker: processInvoker,
+            skipPullImage: false,
+        }).execute()
+    })
+
+    it('skipPullImage = undefined does not pass --skip-pull-image to sam cli', async () => {
+        const nonRelevantArg = 'arg is not of interest to this test'
+
+        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+            assertArgNotPresent(args, '--skip-pull-image')
         })
 
         await new SamCliBuildInvocation({
@@ -245,5 +277,16 @@ describe('SamCliBuildInvocation', async () => {
         assert.notStrictEqual(argPos, -1, `Expected arg ${argOfInterest} was not found`)
         assert.ok(args.length >= argPos + 2, `Args does not contain a value for ${argOfInterest}`)
         assert.strictEqual(args[argPos + 1], expectedArgValue, `Arg ${argOfInterest} did not have expected value`)
+    }
+
+    function assertArgNotPresent(
+        args: any[],
+        argOfInterest: string,
+    ) {
+        assert.strictEqual(
+            args.indexOf(argOfInterest),
+            -1,
+            `Did not expect ${argOfInterest} arg`
+        )
     }
 })
