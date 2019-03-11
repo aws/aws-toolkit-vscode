@@ -87,29 +87,10 @@ export class SamCliBuildInvocation {
             '--template', this.templatePath,
         ]
 
-        if (this.baseDir) {
-            invokeArgs.push(
-                '--base-dir', this.baseDir,
-            )
-        }
-
-        if (this.useContainer) {
-            invokeArgs.push(
-                '--use-container',
-            )
-        }
-
-        if (this.skipPullImage) {
-            invokeArgs.push(
-                '--skip-pull-image',
-            )
-        }
-
-        if (this.dockerNetwork) {
-            invokeArgs.push(
-                '--docker-network', this.dockerNetwork
-            )
-        }
+        this.addArgumentIf(invokeArgs, !!this.baseDir, '--base-dir', this.baseDir!)
+        this.addArgumentIf(invokeArgs, !!this.dockerNetwork, '--docker-network', this.dockerNetwork!)
+        this.addArgumentIf(invokeArgs, !!this.useContainer, '--use-container')
+        this.addArgumentIf(invokeArgs, !!this.skipPullImage, '--skip-pull-image')
 
         const { exitCode, error, stderr, stdout }: ChildProcessResult = await this.invoker.invoke(
             ...invokeArgs
@@ -129,6 +110,12 @@ export class SamCliBuildInvocation {
             new Error(`sam build encountered an error: ${error && error.message ? error.message : stderr || stdout}`)
         logger.error(err)
         throw err
+    }
+
+    private addArgumentIf(args: string[], addIfConditional: boolean, ...argsToAdd: string[]) {
+        if (addIfConditional) {
+            args.push(...argsToAdd)
+        }
     }
 
     private async validate(): Promise<void> {
