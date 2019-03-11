@@ -17,9 +17,9 @@ export interface SamCliBuildInvocationArguments {
     buildDir: string,
     /**
      * Resolves relative paths to the function's source code with respect to this folder.
-     * By default, relative paths are resolved with respect to the template's location.
+     * If omitted, relative paths are resolved with respect to the template's location.
      */
-    baseDir: string | undefined,
+    baseDir?: string,
     /**
      * Location of the SAM Template to build
      */
@@ -28,6 +28,11 @@ export interface SamCliBuildInvocationArguments {
      * Manages the sam cli execution.
      */
     invoker: SamCliProcessInvoker,
+    /**
+     * If your functions depend on packages that have natively compiled dependencies,
+     * use this flag to build your function inside an AWS Lambda-like Docker container.
+     */
+    useContainer?: boolean,
 }
 
 export class SamCliBuildInvocation {
@@ -35,14 +40,17 @@ export class SamCliBuildInvocation {
     private readonly baseDir?: string
     private readonly templatePath: string
     private readonly invoker: SamCliProcessInvoker
+    private readonly useContainer: boolean
 
     /**
      * @see SamCliBuildInvocationArguments for parameter info
      * invoker - Defaults to DefaultSamCliProcessInvoker
+     * useContainer - Defaults to false
      */
     public constructor(
         {
             invoker = new DefaultSamCliProcessInvoker(),
+            useContainer = false,
             ...params
         }: SamCliBuildInvocationArguments,
     ) {
@@ -50,6 +58,7 @@ export class SamCliBuildInvocation {
         this.baseDir = params.baseDir
         this.templatePath = params.templatePath
         this.invoker = invoker
+        this.useContainer = useContainer
     }
 
     public async execute(): Promise<void> {
@@ -65,6 +74,12 @@ export class SamCliBuildInvocation {
         if (this.baseDir) {
             invokeArgs.push(
                 '--base-dir', this.baseDir,
+            )
+        }
+
+        if (this.useContainer) {
+            invokeArgs.push(
+                '--use-container',
             )
         }
 

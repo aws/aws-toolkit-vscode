@@ -113,6 +113,24 @@ describe('SamCliBuildInvocation', async () => {
         }).execute()
     })
 
+    it('Does not pass Base Dir to sam cli', async () => {
+        const nonRelevantArg = 'arg is not of interest to this test'
+
+        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+            assert.strictEqual(
+                args.indexOf('--base-dir'),
+                -1,
+                'Did not expect --base-dir arg'
+            )
+        })
+
+        await new SamCliBuildInvocation({
+            buildDir: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            invoker: processInvoker,
+        }).execute()
+    })
+
     it('Passes Template to sam cli', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
@@ -123,6 +141,62 @@ describe('SamCliBuildInvocation', async () => {
         await new SamCliBuildInvocation({
             buildDir: nonRelevantArg,
             baseDir: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            invoker: processInvoker,
+        }).execute()
+    })
+
+    it('useContainer = true passes --use-container to sam cli', async () => {
+        const nonRelevantArg = 'arg is not of interest to this test'
+
+        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+            assert.notStrictEqual(
+                args.indexOf('--use-container'),
+                -1,
+                'Expected --use-container arg'
+            )
+        })
+
+        await new SamCliBuildInvocation({
+            buildDir: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            invoker: processInvoker,
+            useContainer: true,
+        }).execute()
+    })
+
+    it('useContainer = false does not pass --use-container to sam cli', async () => {
+        const nonRelevantArg = 'arg is not of interest to this test'
+
+        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+            assert.strictEqual(
+                args.indexOf('--use-container'),
+                -1,
+                'Did not expect --use-container arg'
+            )
+        })
+
+        await new SamCliBuildInvocation({
+            buildDir: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            invoker: processInvoker,
+            useContainer: false,
+        }).execute()
+    })
+
+    it('useContainer = undefined does not pass --use-container to sam cli', async () => {
+        const nonRelevantArg = 'arg is not of interest to this test'
+
+        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+            assert.strictEqual(
+                args.indexOf('--use-container'),
+                -1,
+                'Did not expect --use-container arg'
+            )
+        })
+
+        await new SamCliBuildInvocation({
+            buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
             invoker: processInvoker,
         }).execute()
