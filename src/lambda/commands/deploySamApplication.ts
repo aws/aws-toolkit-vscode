@@ -9,7 +9,6 @@ import * as del from 'del'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { AWSContextCommands } from '../../shared/awsContextCommands'
 import { mkdtemp } from '../../shared/filesystemUtilities'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { SamCliDeployInvocation } from '../../shared/sam/cli/samCliDeploy'
@@ -25,7 +24,6 @@ export async function deploySamApplication({
 }: {
     invoker?: SamCliProcessInvoker
     outputChannel: vscode.OutputChannel
-    awsContextCommands: AWSContextCommands,
     regionProvider: RegionProvider
 }) {
     const args: SamDeployWizardResponse | undefined = await new SamDeployWizard(restParams.regionProvider).run()
