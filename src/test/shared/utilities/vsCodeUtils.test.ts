@@ -156,7 +156,7 @@ describe('vsCodeUtils getChannelLogger', async () => {
         {
             title: 'logs with 3 template params: string, error, error',
             nlsKey: 'silly.key7',
-            nlsTemplate: 'Oh my "{0}", there are errors: 1st Error "{0}"; 2nd error: "{1}"',
+            nlsTemplate: 'Oh my "{0}", there are errors: 1st Error "{1}"; 2nd error: "{2}"',
             templateTokens: ['Bob', new Error('Error zero'), new Error('Error one')],
         },
     ]
