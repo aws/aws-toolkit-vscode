@@ -33,6 +33,12 @@ export interface SamCliBuildInvocationArguments {
      * use this flag to build your function inside an AWS Lambda-like Docker container.
      */
     useContainer?: boolean,
+    /**
+     * Specifies the name or id of an existing Docker network to Lambda Docker containers should connect to,
+     * along with the default bridge network.
+     * If not specified, the Lambda containers will only connect to the default bridge Docker network.
+     */
+    dockerNetwork?: string,
 }
 
 export class SamCliBuildInvocation {
@@ -41,6 +47,7 @@ export class SamCliBuildInvocation {
     private readonly templatePath: string
     private readonly invoker: SamCliProcessInvoker
     private readonly useContainer: boolean
+    private readonly dockerNetwork?: string
 
     /**
      * @see SamCliBuildInvocationArguments for parameter info
@@ -59,6 +66,7 @@ export class SamCliBuildInvocation {
         this.templatePath = params.templatePath
         this.invoker = invoker
         this.useContainer = useContainer
+        this.dockerNetwork = params.dockerNetwork
     }
 
     public async execute(): Promise<void> {
@@ -80,6 +88,12 @@ export class SamCliBuildInvocation {
         if (this.useContainer) {
             invokeArgs.push(
                 '--use-container',
+            )
+        }
+
+        if (this.dockerNetwork) {
+            invokeArgs.push(
+                '--docker-network', this.dockerNetwork
             )
         }
 

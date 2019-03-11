@@ -202,6 +202,40 @@ describe('SamCliBuildInvocation', async () => {
         }).execute()
     })
 
+    it('Passes docker network to sam cli', async () => {
+        const expectedDockerNetwork = 'hello-world'
+        const nonRelevantArg = 'arg is not of interest to this test'
+
+        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+            assertArgsContainArgument(args, '--docker-network', expectedDockerNetwork)
+        })
+
+        await new SamCliBuildInvocation({
+            buildDir: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            invoker: processInvoker,
+            dockerNetwork: expectedDockerNetwork
+        }).execute()
+    })
+
+    it('Does not pass docker network to sam cli', async () => {
+        const nonRelevantArg = 'arg is not of interest to this test'
+
+        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+            assert.strictEqual(
+                args.indexOf('--docker-network'),
+                -1,
+                'Did not expect --docker-network arg'
+            )
+        })
+
+        await new SamCliBuildInvocation({
+            buildDir: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            invoker: processInvoker,
+        }).execute()
+    })
+
     function assertArgsContainArgument(
         args: any[],
         argOfInterest: string,
