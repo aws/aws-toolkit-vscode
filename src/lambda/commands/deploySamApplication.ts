@@ -31,8 +31,7 @@ export async function deploySamApplication({
     }
 
     const { template, s3Bucket, stackName } = args
-    const deployApplicationPromise = new Promise<void>(async (resolve, reject) => {
-
+    const deployApplicationPromise = (async () => {
         const tempFolder = await mkdtemp('samDeploy')
         const buildDestination = path.join(tempFolder, 'build')
         const buildTemplatePath = path.join(buildDestination, 'template.yaml')
@@ -86,9 +85,8 @@ export async function deploySamApplication({
             await del(tempFolder, {
                 force: true
             })
-            resolve()
         }
-    })
+    })()
 
     vscode.window.setStatusBarMessage(
         localize(
