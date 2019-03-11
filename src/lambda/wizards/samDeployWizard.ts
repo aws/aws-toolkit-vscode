@@ -46,7 +46,7 @@ export interface SamDeployWizardContext {
      *
      * @returns S3 Bucket name. Undefined represents cancel.
      */
-    promptUserForS3Bucket(initialValue?: string): Promise<string | undefined>
+    promptUserForS3Bucket(selectedRegion?: string, initialValue?: string): Promise<string | undefined>
 
     /**
      * Retrieves a Stack Name to deploy to from the user.
@@ -114,7 +114,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     }
 
     public async promptUserForRegion(regionProvider: RegionProvider,
-                                     initialValue: string): Promise<string | undefined> {
+                                     initialRegionCode: string): Promise<string | undefined> {
         const logger = getLogger()
         const regionData = await regionProvider.getRegionData()
 
@@ -122,7 +122,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             options: {
                 title: localize('AWS.samcli.deploy.region.prompt',
                                 'Which AWS Region would you like to deploy to?'),
-                value: initialValue || '',
+                value: initialRegionCode || '',
                 matchOnDetail: true,
                 ignoreFocusOut: true,
             },
@@ -131,10 +131,10 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 detail: r.regionCode,
                 // this is the only way to get this to show on going back
                 // this will make it so it always shows even when searching for something else
-                alwaysShow: r.regionCode === initialValue,
-                description: r.regionCode === initialValue ? localize('AWS.samcli.deploy.region.previousRegion',
-                                                                      'Selected Previously')
-                                                           : ''
+                alwaysShow: r.regionCode === initialRegionCode,
+                description: r.regionCode === initialRegionCode ? localize('AWS.samcli.deploy.region.previousRegion',
+                                                                           'Selected Previously')
+                                                                : ''
             })),
             buttons: [
                 vscode.QuickInputButtons.Back
@@ -173,7 +173,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
      *
      * @returns S3 Bucket name. Undefined represents cancel.
      */
-    public async promptUserForS3Bucket(initialValue?: string): Promise<string | undefined> {
+    public async promptUserForS3Bucket(selectedRegion: string, initialValue?: string): Promise<string | undefined> {
         const inputBox = input.createInputBox({
             buttons: [
                 vscode.QuickInputButtons.Back
@@ -184,6 +184,9 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                     'Enter the AWS S3 bucket to which your code should be deployed'
                 ),
                 ignoreFocusOut: true,
+                prompt: localize('AWS.samcli.deploy.s3Bucket.region',
+                                 'S3 bucket must be in selected region: {0}',
+                                 selectedRegion)
             }
         })
 
@@ -290,7 +293,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     }
 
     private readonly S3_BUCKET: WizardStep = async () => {
-        this.response.s3Bucket = await this.context.promptUserForS3Bucket(this.response.s3Bucket)
+        this.response.s3Bucket = await this.context.promptUserForS3Bucket(this.response.region, this.response.s3Bucket)
 
         return this.response.s3Bucket ? this.STACK_NAME : this.REGION
     }
