@@ -60,7 +60,14 @@ export async function deploySamApplication({
         vscode.window.showInformationMessage(msg)
     } catch (err) {
         // TODO: Add nls support
-        const msg = `Failed to deploy SAM application. Error while ${stage}: ${String(err)}`
+        let msg = `Failed to deploy SAM application. Error while ${stage}: ${String(err)}`
+        // tslint:disable-next-line:max-line-length
+        // detect error message from https://github.com/aws/aws-cli/blob/4ff0cbacbac69a21d4dd701921fe0759cf7852ed/awscli/customizations/cloudformation/exceptions.py#L42
+        // and append region to assist in troubleshooting the error
+        // (command uses CLI configured value--users that don't know this and omit region won't see error)
+        if (msg.includes(`aws cloudformation describe-stack-events --stack-name ${args.stackName}`)) {
+            msg += ` --region ${args.region}`
+        }
         restParams.outputChannel.appendLine(msg)
         // TODO: Is this the right way to provide this feedback?
         vscode.window.showWarningMessage(msg)
