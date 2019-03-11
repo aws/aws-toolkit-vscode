@@ -10,7 +10,8 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { AWSContextCommands } from '../../shared/awsContextCommands'
+import { getLogger } from '../../shared/logger'
+import { RegionProvider } from '../../shared/regions/regionProvider'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
@@ -34,7 +35,9 @@ export interface SamDeployWizardContext {
      *
      * @returns vscode.Uri of a Sam Template. undefined represents cancel.
      */
-    promptUserForSamTemplate(): Promise<vscode.Uri | undefined>
+    promptUserForSamTemplate(initialValue?: vscode.Uri): Promise<vscode.Uri | undefined>
+
+    promptUserForRegion(regionProvider: RegionProvider, initialValue?: string): Promise<string | undefined>
 
     /**
      * Retrieves an S3 Bucket to deploy to from the user.
@@ -76,7 +79,8 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
      *
      * @returns vscode.Uri of a Sam Template. undefined represents cancel.
      */
-    public async promptUserForSamTemplate(): Promise<vscode.Uri | undefined> {
+    public async promptUserForSamTemplate(initialValue?: vscode.Uri): Promise<vscode.Uri | undefined> {
+        const logger = getLogger()
         const workspaceFolders = this.workspaceFolders || []
 
         const quickPick = picker.createQuickPick<SamTemplateQuickPickItem>({
@@ -84,7 +88,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 title: localize(
                     'AWS.samcli.deploy.template.prompt',
                     'Which SAM Template would you like to deploy to AWS?'
-                ),
+                )
             },
             items: await getTemplateChoices(this.onDetectLocalTemplates, ...workspaceFolders)
         })
@@ -98,7 +102,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         }
 
         if (choices.length > 1) {
-            console.error(
+            logger.warn(
                 `Received ${choices.length} responses from user, expected 1.` +
                 ' Cancelling to prevent deployment of unexpected template.'
             )
@@ -107,6 +111,59 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         }
 
         return choices[0].uri
+    }
+
+    public async promptUserForRegion(regionProvider: RegionProvider,
+                                     initialValue: string): Promise<string | undefined> {
+        const logger = getLogger()
+        const regionData = await regionProvider.getRegionData()
+
+        const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
+            options: {
+                title: localize('AWS.samcli.deploy.region.prompt',
+                                'Which AWS Region would you like to deploy to?'),
+                value: initialValue || '',
+                matchOnDetail: true,
+                ignoreFocusOut: true,
+            },
+            items: regionData.map(r => ({
+                label: r.regionName,
+                detail: r.regionCode,
+                // this is the only way to get this to show on going back
+                // this will make it so it always shows even when searching for something else
+                alwaysShow: r.regionCode === initialValue,
+                description: r.regionCode === initialValue ? localize('AWS.samcli.deploy.region.previousRegion',
+                                                                      'Selected Previously')
+                                                           : ''
+            })),
+            buttons: [
+                vscode.QuickInputButtons.Back
+            ],
+        })
+
+        const choices = await picker.promptUser<vscode.QuickPickItem>({
+            picker: quickPick,
+            onDidTriggerButton: (button, resolve, reject) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve(undefined)
+                }
+            }
+        })
+
+        if (!choices || choices.length === 0) {
+            return undefined
+        }
+
+        if (choices.length > 1) {
+            logger.warn(
+                `Received ${choices.length} responses from user, expected 1.` +
+                ' Cancelling to prevent deployment of unexpected template.'
+            )
+
+            return undefined
+        }
+
+        return choices[0].detail
     }
 
     /**
@@ -197,45 +254,45 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     private readonly response: Partial<SamDeployWizardResponse> = {}
 
     public constructor(
-        private readonly contextCommands: Pick<AWSContextCommands, 'onCommandSelectRegion'>,
+        private readonly regionProvider: RegionProvider,
         private readonly context: SamDeployWizardContext = new DefaultSamDeployWizardContext()
     ) {
         super()
     }
 
     protected get startStep() {
-        return this.REGION
+        return this.TEMPLATE
     }
 
     protected getResult(): SamDeployWizardResponse | undefined {
-        if (!this.response.region || !this.response.template || !this.response.s3Bucket || !this.response.stackName) {
+        if (!this.response.template || !this.response.region || !this.response.s3Bucket || !this.response.stackName) {
             return undefined
         }
 
         return {
-            region: this.response.region,
             template: this.response.template,
+            region: this.response.region,
             s3Bucket: this.response.s3Bucket,
             stackName: this.response.stackName
         }
     }
 
-    private readonly REGION: WizardStep = async () => {
-        this.response.region = await this.contextCommands.onCommandSelectRegion()
+    private readonly TEMPLATE: WizardStep = async () => {
+        this.response.template = await this.context.promptUserForSamTemplate(this.response.template)
 
-        return this.response.region ? this.TEMPLATE : undefined
+        return this.response.template ? this.REGION : undefined
     }
 
-    private readonly TEMPLATE: WizardStep = async () => {
-        this.response.template = await this.context.promptUserForSamTemplate()
+    private readonly REGION: WizardStep = async () => {
+        this.response.region = await this.context.promptUserForRegion(this.regionProvider, this.response.region)
 
-        return this.response.template ? this.S3_BUCKET : undefined
+        return this.response.region ? this.S3_BUCKET : this.TEMPLATE
     }
 
     private readonly S3_BUCKET: WizardStep = async () => {
         this.response.s3Bucket = await this.context.promptUserForS3Bucket(this.response.s3Bucket)
 
-        return this.response.s3Bucket ? this.STACK_NAME : this.TEMPLATE
+        return this.response.s3Bucket ? this.STACK_NAME : this.REGION
     }
 
     private readonly STACK_NAME: WizardStep = async () => {

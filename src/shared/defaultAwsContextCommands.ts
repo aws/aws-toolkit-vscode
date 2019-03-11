@@ -112,7 +112,7 @@ export class DefaultAWSContextCommands {
 
     public async onCommandShowRegion() {
         const explorerRegions = new Set(await this._awsContext.getExplorerRegions())
-        const newRegion = await this.onCommandSelectRegion(
+        const newRegion = await this.promptForFilteredRegion(
             candidateRegion => !explorerRegions.has(candidateRegion.regionCode)
         )
 

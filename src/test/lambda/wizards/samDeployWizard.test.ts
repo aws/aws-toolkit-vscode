@@ -13,25 +13,34 @@ import {
     SamDeployWizard,
     SamDeployWizardContext
 } from '../../../lambda/wizards/samDeployWizard'
-import { AWSContextCommands } from '../../../shared/awsContextCommands'
+import { RegionInfo } from '../../../shared/regions/regionInfo'
+import { RegionProvider } from '../../../shared/regions/regionProvider'
 
-class MockAwsContextCommands implements Pick<AWSContextCommands, 'onCommandSelectRegion'> {
-
-    public constructor(
-        public onCommandSelectRegion: () => Promise<string | undefined> = async () => await 'us-west-2'
-    ) {}
-
-}
-
-interface QuickPickResponseItem extends vscode.QuickPickItem {
+interface QuickPickUriResponseItem extends vscode.QuickPickItem {
     uri: vscode.Uri
 }
 
-function createQuickPickResponseItem(uri: vscode.Uri): QuickPickResponseItem {
+function createQuickPickUriResponseItem(uri: vscode.Uri): QuickPickUriResponseItem {
     return {
         label: '',
         uri: uri,
     }
+}
+
+interface QuickPickRegionResponseItem extends vscode.QuickPickItem {
+    detail: string
+}
+
+function createQuickPickRegionResponseItem(detail: string): QuickPickRegionResponseItem {
+    return {
+        label: '',
+        detail: detail,
+    }
+}
+
+class MockRegionProvider implements RegionProvider {
+    public async getRegionData(): Promise<RegionInfo[]> { return [{ regionCode: 'us-west-2',
+                                                                    regionName: 'TEST REGION'}] }
 }
 
 class MockSamDeployWizardContext implements SamDeployWizardContext {
@@ -46,12 +55,14 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
     public constructor(
         public readonly onDetectLocalTemplates: typeof detectLocalTemplates,
         private readonly workspaceFoldersResponses: (vscode.Uri[] | undefined)[] = [],
-        private readonly promptForSamTemplateResponses: (QuickPickResponseItem | undefined)[] = [],
+        private readonly promptForSamTemplateResponses: (QuickPickUriResponseItem | undefined)[] = [],
+        private readonly promptForRegionResponses: (QuickPickRegionResponseItem | undefined)[] = [],
         private readonly promptForS3BucketResponses: (string | undefined)[] = [],
         private readonly promptForStackNameResponses: (string | undefined)[] = [],
     ) {
         this.workspaceFoldersResponses = workspaceFoldersResponses.reverse()
         this.promptForSamTemplateResponses = promptForSamTemplateResponses.reverse()
+        this.promptForRegionResponses = promptForRegionResponses.reverse()
         this.promptForS3BucketResponses = promptForS3BucketResponses.reverse()
         this.promptForStackNameResponses = promptForStackNameResponses.reverse()
     }
@@ -73,6 +84,18 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         }
 
         return this.promptForS3BucketResponses.pop()
+    }
+
+    public async promptUserForRegion(regionProvider: RegionProvider,
+                                     initialValue?: string): Promise<string | undefined> {
+        if (this.promptForRegionResponses.length <= 0) {
+            throw new Error('promptUserForRegion was called more times than expected')
+        }
+
+        const response = this.promptForRegionResponses.pop()
+        if (!response) { return undefined }
+
+        return response.detail
     }
 
     public async promptUserForStackName(
@@ -106,14 +129,16 @@ function normalizePath(...paths: string[]): string {
 describe('SamDeployWizard', async () => {
     describe('TEMPLATE', async () => {
         it('fails gracefully when no templates are found', async () => {
-            const wizard = new SamDeployWizard(new MockAwsContextCommands(),
-                                               new MockSamDeployWizardContext(
-                async function*() { yield* [] },
-                [[]],
-                [undefined],
-                [],
-                [],
-            ))
+            const wizard = new SamDeployWizard(
+                new MockRegionProvider(),
+                new MockSamDeployWizardContext(
+                    async function*() { yield* [] },
+                    [[]],
+                    [undefined],
+                    [],
+                    [],
+                )
+            )
             const result = await wizard.run()
 
             assert.ok(!result)
@@ -122,14 +147,16 @@ describe('SamDeployWizard', async () => {
         it('exits wizard when cancelled', async () => {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
-            const wizard = new SamDeployWizard(new MockAwsContextCommands(),
-                                               new MockSamDeployWizardContext(
-                async function*() { yield vscode.Uri.file(templatePath) },
-                [[vscode.Uri.file(workspaceFolderPath)]],
-                [undefined],
-                [],
-                [],
-            ))
+            const wizard = new SamDeployWizard(
+                    new MockRegionProvider(),
+                    new MockSamDeployWizardContext(
+                    async function*() { yield vscode.Uri.file(templatePath) },
+                    [[vscode.Uri.file(workspaceFolderPath)]],
+                    [undefined],
+                    [],
+                    [],
+                )
+            )
             const result = await wizard.run()
 
             assert.ok(!result)
@@ -138,20 +165,101 @@ describe('SamDeployWizard', async () => {
         it('uses user response as template', async () => {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
-            const wizard = new SamDeployWizard(new MockAwsContextCommands(),
-                                               new MockSamDeployWizardContext(
-                async function*() { yield vscode.Uri.file(templatePath) },
-                [[vscode.Uri.file(workspaceFolderPath)]],
-                [
-                    createQuickPickResponseItem(vscode.Uri.file(templatePath))
-                ],
-                ['mys3bucketname'],
-                ['myStackName'],
-            ))
+            const wizard = new SamDeployWizard(
+                new MockRegionProvider(),
+                new MockSamDeployWizardContext(
+                    async function*() { yield vscode.Uri.file(templatePath) },
+                    [[vscode.Uri.file(workspaceFolderPath)]],
+                    [
+                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath))
+                    ],
+                    [
+                        createQuickPickRegionResponseItem('asdf')
+                    ],
+                    ['mys3bucketname'],
+                    ['myStackName'],
+                )
+            )
             const result = await wizard.run()
 
             assert.ok(result)
             assert.strictEqual(result!.template.fsPath, templatePath)
+        })
+    })
+
+    describe('REGION', async () => {
+        it('uses user response for region', async () => {
+            const workspaceFolderPath = normalizePath('my', 'workspace', 'folder', '1')
+            const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
+            const region = 'us-east-1'
+
+            const wizard = new SamDeployWizard(
+                new MockRegionProvider(),
+                new MockSamDeployWizardContext(
+                    async function*() {
+                        yield vscode.Uri.file(templatePath)
+                    },
+                    [
+                        [vscode.Uri.file(workspaceFolderPath)]
+                    ],
+                    [
+                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath))
+                    ],
+                    [
+                        createQuickPickRegionResponseItem(region)
+                    ],
+                    [
+                        'mys3bucketname'
+                    ],
+                    [
+                        'myStackName'
+                    ],
+                )
+            )
+            const result = await wizard.run()
+
+            assert.ok(result)
+            assert.strictEqual(result!.region, region)
+        })
+
+        it('goes back when cancelled', async () => {
+            const workspaceFolderPath1 = normalizePath('my', 'workspace', 'folder', '1')
+            const workspaceFolderPath2 = normalizePath('my', 'workspace', 'folder', '2')
+            const templatePath1 = normalizePath(workspaceFolderPath1, 'template.yaml')
+            const templatePath2 = normalizePath(workspaceFolderPath2, 'template.yaml')
+            const region = 'us-east-1'
+
+            const wizard = new SamDeployWizard(
+                new MockRegionProvider(),
+                new MockSamDeployWizardContext(
+                    async function*() {
+                        yield vscode.Uri.file(templatePath1)
+                        yield vscode.Uri.file(templatePath2)
+                    },
+                    [
+                        [vscode.Uri.file(workspaceFolderPath1)],
+                        [vscode.Uri.file(workspaceFolderPath2)]
+                    ],
+                    [
+                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath1)),
+                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath2)),
+                    ],
+                    [
+                        undefined, // First time we ask about the S3 Bucket, cancel back to the template step
+                        createQuickPickRegionResponseItem(region)
+                    ],
+                    [
+                        'mys3bucketname'
+                    ],
+                    [
+                        'myStackName'
+                    ],
+                )
+            )
+            const result = await wizard.run()
+
+            assert.ok(result)
+            assert.strictEqual(result!.template.fsPath, templatePath2)
         })
     })
 
@@ -161,48 +269,62 @@ describe('SamDeployWizard', async () => {
             const workspaceFolderPath2 = normalizePath('my', 'workspace', 'folder', '2')
             const templatePath1 = normalizePath(workspaceFolderPath1, 'template.yaml')
             const templatePath2 = normalizePath(workspaceFolderPath2, 'template.yaml')
+            const region1 = 'us-east-1'
+            const region2 = 'us-east-2'
 
-            const wizard = new SamDeployWizard(new MockAwsContextCommands(),
-                                               new MockSamDeployWizardContext(
-                async function*() {
-                    yield vscode.Uri.file(templatePath1)
-                    yield vscode.Uri.file(templatePath2)
-                },
-                [
-                    [vscode.Uri.file(workspaceFolderPath1)],
-                    [vscode.Uri.file(workspaceFolderPath2)]
-                ],
-                [
-                    createQuickPickResponseItem(vscode.Uri.file(templatePath1)),
-                    createQuickPickResponseItem(vscode.Uri.file(templatePath2)),
-                ],
-                [
-                    undefined, // First time we ask about the S3 Bucket, cancel back to the template step
-                    'mys3bucketname'
-                ],
-                [
-                    'myStackName'
-                ],
-            ))
+            const wizard = new SamDeployWizard(
+                new MockRegionProvider(),
+                new MockSamDeployWizardContext(
+                    async function*() {
+                        yield vscode.Uri.file(templatePath1)
+                        yield vscode.Uri.file(templatePath2)
+                    },
+                    [
+                        [vscode.Uri.file(workspaceFolderPath1)],
+                        [vscode.Uri.file(workspaceFolderPath2)]
+                    ],
+                    [
+                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath1)),
+                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath2)),
+                    ],
+                    [
+                        createQuickPickRegionResponseItem(region1),
+                        createQuickPickRegionResponseItem(region2)
+                    ],
+                    [
+                        undefined, // First time we ask about the S3 Bucket, cancel back to the region step
+                        'mys3bucketname'
+                    ],
+                    [
+                        'myStackName'
+                    ],
+                )
+            )
             const result = await wizard.run()
 
             assert.ok(result)
-            assert.strictEqual(result!.template.fsPath, templatePath2)
+            assert.strictEqual(result!.template.fsPath, templatePath1)
+            assert.strictEqual(result!.region, region2)
         })
 
         it('uses user response as s3Bucket', async () => {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
-            const wizard = new SamDeployWizard(new MockAwsContextCommands(),
-                                               new MockSamDeployWizardContext(
-                async function*() { yield vscode.Uri.file(templatePath) },
-                [[vscode.Uri.file(workspaceFolderPath)]],
-                [
-                    createQuickPickResponseItem(vscode.Uri.file(templatePath)),
-                ],
-                ['mys3bucketname'],
-                ['myStackName'],
-            ))
+            const wizard = new SamDeployWizard(
+                new MockRegionProvider(),
+                new MockSamDeployWizardContext(
+                    async function*() { yield vscode.Uri.file(templatePath) },
+                    [[vscode.Uri.file(workspaceFolderPath)]],
+                    [
+                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath)),
+                    ],
+                    [
+                        createQuickPickRegionResponseItem('asdf')
+                    ],
+                    ['mys3bucketname'],
+                    ['myStackName'],
+                )
+            )
             const result = await wizard.run()
 
             assert.ok(result)
@@ -217,16 +339,21 @@ describe('SamDeployWizard', async () => {
                 const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
 
                 try {
-                    await new SamDeployWizard(new MockAwsContextCommands(),
-                                              new MockSamDeployWizardContext(
-                        async function*() { yield vscode.Uri.file(templatePath) },
-                        [[vscode.Uri.file(workspaceFolderPath)]],
-                        [
-                            createQuickPickResponseItem(vscode.Uri.file(templatePath)),
-                        ],
-                        [bucketName],
-                        [],
-                    )).run()
+                    await new SamDeployWizard(
+                        new MockRegionProvider(),
+                        new MockSamDeployWizardContext(
+                            async function*() { yield vscode.Uri.file(templatePath) },
+                            [[vscode.Uri.file(workspaceFolderPath)]],
+                            [
+                                createQuickPickUriResponseItem(vscode.Uri.file(templatePath)),
+                            ],
+                            [
+                                createQuickPickRegionResponseItem('asdf')
+                            ],
+                            [bucketName],
+                            [],
+                        )
+                    ).run()
                 } catch (err) {
                     return
                 }
@@ -273,22 +400,27 @@ describe('SamDeployWizard', async () => {
         it('goes back when cancelled', async () => {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
-            const wizard = new SamDeployWizard(new MockAwsContextCommands(),
-                                               new MockSamDeployWizardContext(
-                async function*() { yield vscode.Uri.file(templatePath) },
-                [[vscode.Uri.file(workspaceFolderPath)]],
-                [
-                    createQuickPickResponseItem(vscode.Uri.file(templatePath)),
-                ],
-                [
-                    'mys3bucketname1',
-                    'mys3bucketname2',
-                ],
-                [
-                    undefined,
-                    'myStackName'
-                ],
-            ))
+            const wizard = new SamDeployWizard(
+                new MockRegionProvider(),
+                new MockSamDeployWizardContext(
+                    async function*() { yield vscode.Uri.file(templatePath) },
+                    [[vscode.Uri.file(workspaceFolderPath)]],
+                    [
+                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath)),
+                    ],
+                    [
+                        createQuickPickRegionResponseItem('asdf')
+                    ],
+                    [
+                        'mys3bucketname1',
+                        'mys3bucketname2',
+                    ],
+                    [
+                        undefined,
+                        'myStackName'
+                    ],
+                )
+            )
             const result = await wizard.run()
 
             assert.ok(result)
@@ -298,20 +430,25 @@ describe('SamDeployWizard', async () => {
         it('uses user response as stackName', async () => {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
-            const wizard = new SamDeployWizard(new MockAwsContextCommands(),
-                                               new MockSamDeployWizardContext(
-                async function*() { yield vscode.Uri.file(templatePath) },
-                [[vscode.Uri.file(workspaceFolderPath)]],
-                [
-                    createQuickPickResponseItem(vscode.Uri.file(templatePath)),
-                ],
-                [
-                    'mys3bucketname',
-                ],
-                [
-                    'myStackName'
-                ],
-            ))
+            const wizard = new SamDeployWizard(
+                new MockRegionProvider(),
+                new MockSamDeployWizardContext(
+                    async function*() { yield vscode.Uri.file(templatePath) },
+                    [[vscode.Uri.file(workspaceFolderPath)]],
+                    [
+                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath)),
+                    ],
+                    [
+                        createQuickPickRegionResponseItem('asdf')
+                    ],
+                    [
+                        'mys3bucketname',
+                    ],
+                    [
+                        'myStackName'
+                    ],
+                )
+            )
             const result = await wizard.run()
 
             assert.ok(result)
@@ -324,16 +461,21 @@ describe('SamDeployWizard', async () => {
                 const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
 
                 try {
-                    await new SamDeployWizard(new MockAwsContextCommands(),
-                                              new MockSamDeployWizardContext(
-                        async function*() { yield vscode.Uri.file(templatePath) },
-                        [[vscode.Uri.file(workspaceFolderPath)]],
-                        [
-                            createQuickPickResponseItem(vscode.Uri.file(templatePath)),
-                        ],
-                        ['myBucketName'],
-                        [stackName],
-                    )).run()
+                    await new SamDeployWizard(
+                        new MockRegionProvider(),
+                        new MockSamDeployWizardContext(
+                            async function*() { yield vscode.Uri.file(templatePath) },
+                            [[vscode.Uri.file(workspaceFolderPath)]],
+                            [
+                                createQuickPickUriResponseItem(vscode.Uri.file(templatePath)),
+                            ],
+                            [
+                                createQuickPickRegionResponseItem('asdf')
+                            ],
+                            ['myBucketName'],
+                            [stackName],
+                        )
+                    ).run()
                 } catch (err) {
                     return
                 }
