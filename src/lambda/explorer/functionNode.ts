@@ -30,4 +30,8 @@ export abstract class FunctionNodeBase extends AWSTreeNodeBase {
         this.label = this.configuration.FunctionName || ''
         this.tooltip = `${this.configuration.FunctionName}${os.EOL}${this.configuration.FunctionArn}`
     }
+
+    public get functionName(): string {
+        return this.configuration.FunctionName || ''
+    }
 }
