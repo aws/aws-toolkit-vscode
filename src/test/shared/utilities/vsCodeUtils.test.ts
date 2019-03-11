@@ -7,10 +7,8 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-
 import { BasicLogger, ErrorOrString, LogLevel } from '../../../shared/logger'
 import { getChannelLogger, localize, processTemplate, TemplateParams } from '../../../shared/utilities/vsCodeUtils'
-
 import { MockOutputChannel } from '../../mockOutputChannel'
 
 class MockLogger implements BasicLogger {

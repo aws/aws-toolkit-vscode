@@ -9,7 +9,7 @@ import * as nls from 'vscode-nls'
 
 export const localize: TemplateParser = nls.loadMessageBundle()
 
-// TODO: initialize NLS here rather than extension.ts. Prefer packages to import localize from here
+// TODO: Consider NLS here rather than extension.ts. Prefer packages to import localize from here
 // Advantages:
 //  • Ensure we only call nls.config once
 //  • Don't have to call nls.loadMessageBundle() in every file
@@ -30,7 +30,7 @@ export function processTemplate({
     nlsKey,
     nlsTemplate,
     templateTokens = [],
-}: TemplateParams & {onLocalize?: TemplateParser}) {
+}: TemplateParams & {onLocalize?: TemplateParser}): {errors: Error[], prettyMessage: string } {
     const prettyTokens: Exclude<ErrorOrString, Error>[] = []
     const errors: Error[] = []
     if (templateTokens) {
@@ -48,7 +48,6 @@ export function processTemplate({
     return {
         errors,
         prettyMessage,
-        prettyTokens // returned for test purposes
     }
 }
 
