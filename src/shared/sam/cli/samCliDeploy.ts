@@ -13,7 +13,8 @@ export class SamCliDeployInvocation {
     public constructor(
         private readonly templateFile: string,
         private readonly stackName: string,
-        private readonly invoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker()
+        private readonly invoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker(),
+        private readonly region: string
     ) {
     }
 
@@ -23,7 +24,8 @@ export class SamCliDeployInvocation {
             'deploy',
             '--template-file', this.templateFile,
             '--stack-name', this.stackName,
-            '--capabilities', 'CAPABILITY_IAM'
+            '--capabilities', 'CAPABILITY_IAM',
+            '--region', this.region
         )
 
         if (exitCode === 0) {

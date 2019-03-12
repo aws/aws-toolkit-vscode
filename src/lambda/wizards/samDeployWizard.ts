@@ -10,6 +10,8 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { getLogger } from '../../shared/logger'
+import { RegionProvider } from '../../shared/regions/regionProvider'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
@@ -17,6 +19,7 @@ import { detectLocalTemplates } from '../local/detectLocalTemplates'
 import { MultiStepWizard, WizardStep } from './multiStepWizard'
 
 export interface SamDeployWizardResponse {
+    region: string
     template: vscode.Uri
     s3Bucket: string
     stackName: string
@@ -32,7 +35,9 @@ export interface SamDeployWizardContext {
      *
      * @returns vscode.Uri of a Sam Template. undefined represents cancel.
      */
-    promptUserForSamTemplate(): Promise<vscode.Uri | undefined>
+    promptUserForSamTemplate(initialValue?: vscode.Uri): Promise<vscode.Uri | undefined>
+
+    promptUserForRegion(regionProvider: RegionProvider, initialValue?: string): Promise<string | undefined>
 
     /**
      * Retrieves an S3 Bucket to deploy to from the user.
@@ -41,7 +46,7 @@ export interface SamDeployWizardContext {
      *
      * @returns S3 Bucket name. Undefined represents cancel.
      */
-    promptUserForS3Bucket(initialValue?: string): Promise<string | undefined>
+    promptUserForS3Bucket(selectedRegion?: string, initialValue?: string): Promise<string | undefined>
 
     /**
      * Retrieves a Stack Name to deploy to from the user.
@@ -74,7 +79,8 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
      *
      * @returns vscode.Uri of a Sam Template. undefined represents cancel.
      */
-    public async promptUserForSamTemplate(): Promise<vscode.Uri | undefined> {
+    public async promptUserForSamTemplate(initialValue?: vscode.Uri): Promise<vscode.Uri | undefined> {
+        const logger = getLogger()
         const workspaceFolders = this.workspaceFolders || []
 
         const quickPick = picker.createQuickPick<SamTemplateQuickPickItem>({
@@ -82,7 +88,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 title: localize(
                     'AWS.samcli.deploy.template.prompt',
                     'Which SAM Template would you like to deploy to AWS?'
-                ),
+                )
             },
             items: await getTemplateChoices(this.onDetectLocalTemplates, ...workspaceFolders)
         })
@@ -96,7 +102,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         }
 
         if (choices.length > 1) {
-            console.error(
+            logger.warn(
                 `Received ${choices.length} responses from user, expected 1.` +
                 ' Cancelling to prevent deployment of unexpected template.'
             )
@@ -107,6 +113,64 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         return choices[0].uri
     }
 
+    public async promptUserForRegion(
+        regionProvider: RegionProvider,
+        initialRegionCode: string
+    ): Promise<string | undefined> {
+        const logger = getLogger()
+        const regionData = await regionProvider.getRegionData()
+
+        const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
+            options: {
+                title: localize(
+                    'AWS.samcli.deploy.region.prompt',
+                    'Which AWS Region would you like to deploy to?'
+                    ),
+                value: initialRegionCode || '',
+                matchOnDetail: true,
+                ignoreFocusOut: true,
+            },
+            items: regionData.map(r => (
+                {
+                    label: r.regionName,
+                    detail: r.regionCode,
+                    // this is the only way to get this to show on going back
+                    // this will make it so it always shows even when searching for something else
+                    alwaysShow: r.regionCode === initialRegionCode,
+                    description: r.regionCode === initialRegionCode ?
+                        localize('AWS.samcli.deploy.region.previousRegion', 'Selected Previously') : ''
+                }
+            )),
+            buttons: [
+                vscode.QuickInputButtons.Back
+            ],
+        })
+
+        const choices = await picker.promptUser<vscode.QuickPickItem>({
+            picker: quickPick,
+            onDidTriggerButton: (button, resolve, reject) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve(undefined)
+                }
+            }
+        })
+
+        if (!choices || choices.length === 0) {
+            return undefined
+        }
+
+        if (choices.length > 1) {
+            logger.warn(
+                `Received ${choices.length} responses from user, expected 1.` +
+                ' Cancelling to prevent deployment of unexpected template.'
+            )
+
+            return undefined
+        }
+
+        return choices[0].detail
+    }
+
     /**
      * Retrieves an S3 Bucket to deploy to from the user.
      *
@@ -114,7 +178,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
      *
      * @returns S3 Bucket name. Undefined represents cancel.
      */
-    public async promptUserForS3Bucket(initialValue?: string): Promise<string | undefined> {
+    public async promptUserForS3Bucket(selectedRegion: string, initialValue?: string): Promise<string | undefined> {
         const inputBox = input.createInputBox({
             buttons: [
                 vscode.QuickInputButtons.Back
@@ -125,6 +189,11 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                     'Enter the AWS S3 bucket to which your code should be deployed'
                 ),
                 ignoreFocusOut: true,
+                prompt: localize(
+                    'AWS.samcli.deploy.s3Bucket.region',
+                    'S3 bucket must be in selected region: {0}',
+                    selectedRegion
+                )
             }
         })
 
@@ -195,6 +264,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     private readonly response: Partial<SamDeployWizardResponse> = {}
 
     public constructor(
+        private readonly regionProvider: RegionProvider,
         private readonly context: SamDeployWizardContext = new DefaultSamDeployWizardContext()
     ) {
         super()
@@ -205,27 +275,34 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     }
 
     protected getResult(): SamDeployWizardResponse | undefined {
-        if (!this.response.template || !this.response.s3Bucket || !this.response.stackName) {
+        if (!this.response.template || !this.response.region || !this.response.s3Bucket || !this.response.stackName) {
             return undefined
         }
 
         return {
             template: this.response.template,
+            region: this.response.region,
             s3Bucket: this.response.s3Bucket,
             stackName: this.response.stackName
         }
     }
 
     private readonly TEMPLATE: WizardStep = async () => {
-        this.response.template = await this.context.promptUserForSamTemplate()
+        this.response.template = await this.context.promptUserForSamTemplate(this.response.template)
 
-        return this.response.template ? this.S3_BUCKET : undefined
+        return this.response.template ? this.REGION : undefined
+    }
+
+    private readonly REGION: WizardStep = async () => {
+        this.response.region = await this.context.promptUserForRegion(this.regionProvider, this.response.region)
+
+        return this.response.region ? this.S3_BUCKET : this.TEMPLATE
     }
 
     private readonly S3_BUCKET: WizardStep = async () => {
-        this.response.s3Bucket = await this.context.promptUserForS3Bucket(this.response.s3Bucket)
+        this.response.s3Bucket = await this.context.promptUserForS3Bucket(this.response.region, this.response.s3Bucket)
 
-        return this.response.s3Bucket ? this.STACK_NAME : this.TEMPLATE
+        return this.response.s3Bucket ? this.STACK_NAME : this.REGION
     }
 
     private readonly STACK_NAME: WizardStep = async () => {
