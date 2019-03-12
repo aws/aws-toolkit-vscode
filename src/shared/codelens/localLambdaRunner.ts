@@ -251,14 +251,14 @@ export class LocalLambdaRunner {
             JSON.stringify(this.getEnvironmentVariables(config))
         )
 
-        const command = new SamCliLocalInvokeInvocation(
-            LocalLambdaRunner.TEMPLATE_RESOURCE_NAME,
-            samTemplatePath,
+        const command = new SamCliLocalInvokeInvocation({
+            templateResourceName: LocalLambdaRunner.TEMPLATE_RESOURCE_NAME,
+            templatePath: samTemplatePath,
             eventPath,
-            environmentVariablePath,
-            (!!this._debugPort) ? this._debugPort.toString() : undefined,
-            this.taskInvoker
-        )
+            environmentVariablePath: environmentVariablePath,
+            debugPort: (!!this._debugPort) ? this._debugPort.toString() : undefined,
+            invoker: this.taskInvoker
+        })
 
         await command.execute()
 

@@ -74,14 +74,13 @@ describe('SamCliLocalInvokeInvocation', async () => {
             assert.strictEqual(args[1], 'invoke', 'Expected second arg to be invoke')
         })
 
-        await new SamCliLocalInvokeInvocation(
-            nonRelevantArg,
-            placeholderTemplateFile,
-            placeholderEventFile,
-            nonRelevantArg,
-            undefined,
-            taskInvoker
-        ).execute()
+        await new SamCliLocalInvokeInvocation({
+            templateResourceName: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            eventPath: placeholderEventFile,
+            environmentVariablePath: nonRelevantArg,
+            invoker: taskInvoker
+        }).execute()
     })
 
     it('Passes template resource name to sam cli', async () => {
@@ -90,14 +89,13 @@ describe('SamCliLocalInvokeInvocation', async () => {
             assertArgIsPresent(args, expectedResourceName)
         })
 
-        await new SamCliLocalInvokeInvocation(
-            expectedResourceName,
-            placeholderTemplateFile,
-            placeholderEventFile,
-            nonRelevantArg,
-            undefined,
-            taskInvoker
-        ).execute()
+        await new SamCliLocalInvokeInvocation({
+            templateResourceName: expectedResourceName,
+            templatePath: placeholderTemplateFile,
+            eventPath: placeholderEventFile,
+            environmentVariablePath: nonRelevantArg,
+            invoker: taskInvoker
+        }).execute()
     })
 
     it('Passes template path to sam cli', async () => {
@@ -105,14 +103,13 @@ describe('SamCliLocalInvokeInvocation', async () => {
             assertArgsContainArgument(args, '--template', placeholderTemplateFile)
         })
 
-        await new SamCliLocalInvokeInvocation(
-            nonRelevantArg,
-            placeholderTemplateFile,
-            placeholderEventFile,
-            nonRelevantArg,
-            undefined,
-            taskInvoker
-        ).execute()
+        await new SamCliLocalInvokeInvocation({
+            templateResourceName: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            eventPath: placeholderEventFile,
+            environmentVariablePath: nonRelevantArg,
+            invoker: taskInvoker
+        }).execute()
     })
 
     it('Passes event path to sam cli', async () => {
@@ -120,14 +117,13 @@ describe('SamCliLocalInvokeInvocation', async () => {
             assertArgsContainArgument(args, '--event', placeholderEventFile)
         })
 
-        await new SamCliLocalInvokeInvocation(
-            nonRelevantArg,
-            placeholderTemplateFile,
-            placeholderEventFile,
-            nonRelevantArg,
-            undefined,
-            taskInvoker
-        ).execute()
+        await new SamCliLocalInvokeInvocation({
+            templateResourceName: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            eventPath: placeholderEventFile,
+            environmentVariablePath: nonRelevantArg,
+            invoker: taskInvoker
+        }).execute()
     })
 
     it('Passes env-vars path to sam cli', async () => {
@@ -136,14 +132,13 @@ describe('SamCliLocalInvokeInvocation', async () => {
             assertArgsContainArgument(args, '--env-vars', expectedEnvVarsPath)
         })
 
-        await new SamCliLocalInvokeInvocation(
-            nonRelevantArg,
-            placeholderTemplateFile,
-            placeholderEventFile,
-            expectedEnvVarsPath,
-            undefined,
-            taskInvoker
-        ).execute()
+        await new SamCliLocalInvokeInvocation({
+            templateResourceName: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            eventPath: placeholderEventFile,
+            environmentVariablePath: expectedEnvVarsPath,
+            invoker: taskInvoker
+        }).execute()
     })
 
     it('Passes debug port to sam cli', async () => {
@@ -152,14 +147,14 @@ describe('SamCliLocalInvokeInvocation', async () => {
             assertArgsContainArgument(args, '-d', expectedDebugPort)
         })
 
-        await new SamCliLocalInvokeInvocation(
-            nonRelevantArg,
-            placeholderTemplateFile,
-            placeholderEventFile,
-            nonRelevantArg,
-            expectedDebugPort,
-            taskInvoker
-        ).execute()
+        await new SamCliLocalInvokeInvocation({
+            templateResourceName: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            eventPath: placeholderEventFile,
+            environmentVariablePath: nonRelevantArg,
+            debugPort: expectedDebugPort,
+            invoker: taskInvoker
+        }).execute()
     })
 
     it('undefined debug port does not pass to sam cli', async () => {
@@ -167,14 +162,14 @@ describe('SamCliLocalInvokeInvocation', async () => {
             assertArgNotPresent(args, '-d')
         })
 
-        await new SamCliLocalInvokeInvocation(
-            nonRelevantArg,
-            placeholderTemplateFile,
-            placeholderEventFile,
-            nonRelevantArg,
-            undefined,
-            taskInvoker
-        ).execute()
+        await new SamCliLocalInvokeInvocation({
+            templateResourceName: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            eventPath: placeholderEventFile,
+            environmentVariablePath: nonRelevantArg,
+            debugPort: undefined,
+            invoker: taskInvoker
+        }).execute()
     })
 
     function assertArgsContainArgument(

@@ -9,15 +9,34 @@ import * as vscode from 'vscode'
 import { fileExists } from '../../filesystemUtilities'
 import { DefaultSamCliTaskInvoker, SamCliTaskInvoker } from './samCliInvoker'
 
+export interface SamCliLocalInvokeInvocationArguments {
+    templateResourceName: string,
+    templatePath: string,
+    eventPath: string,
+    environmentVariablePath: string,
+    debugPort?: string,
+    invoker: SamCliTaskInvoker,
+}
+
 export class SamCliLocalInvokeInvocation {
-    public constructor(
-        private readonly templateResourceName: string,
-        private readonly templatePath: string,
-        private readonly eventPath: string,
-        private readonly environmentVariablePath: string,
-        private readonly debugPort?: string,
-        private readonly invoker: SamCliTaskInvoker = new DefaultSamCliTaskInvoker()
+    private readonly templateResourceName: string
+    private readonly templatePath: string
+    private readonly eventPath: string
+    private readonly environmentVariablePath: string
+    private readonly debugPort?: string
+    private readonly invoker: SamCliTaskInvoker
+
+    public constructor({
+        invoker = new DefaultSamCliTaskInvoker(),
+        ...params
+    }: SamCliLocalInvokeInvocationArguments
     ) {
+        this.templateResourceName = params.templateResourceName
+        this.templatePath = params.templatePath
+        this.eventPath = params.eventPath
+        this.environmentVariablePath = params.environmentVariablePath
+        this.debugPort = params.debugPort
+        this.invoker = invoker
     }
 
     public async execute(): Promise<void> {
