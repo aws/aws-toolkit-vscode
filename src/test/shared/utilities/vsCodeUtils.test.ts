@@ -48,10 +48,6 @@ class MockLogger implements BasicLogger {
     }
 }
 
-interface IndexableChannelLogger {
-    [logLevel: string]: TemplateHandler
-}
-
 interface TestCaseParams {
     logLevel: string,
     testDataCase: TestData,
@@ -119,7 +115,7 @@ describe('vsCodeUtils getChannelLogger', function() {
 
     let logger: MockLogger
     let outputChannel: MockOutputChannel
-    let channelLogger: ChannelLogger
+    let channelLogger: ChannelLogger & {[logLevel: string]: TemplateHandler}
 
     before(async () => {
         await initialize()
@@ -169,7 +165,7 @@ describe('vsCodeUtils getChannelLogger', function() {
         testDataCase
     }: TestCaseParams) => {
         // Log message to channel
-        (channelLogger as unknown as IndexableChannelLogger)[logLevel](
+        channelLogger[logLevel](
             testDataCase.nlsKey,
             testDataCase.nlsTemplate,
             ...(testDataCase.templateTokens || [])
@@ -196,7 +192,7 @@ describe('vsCodeUtils getChannelLogger', function() {
         logLevel, testDataCase
     }: TestCaseParams) => {
         // Log message to channel
-        (channelLogger as unknown as IndexableChannelLogger)[logLevel](
+        channelLogger[logLevel](
             testDataCase.nlsKey,
             testDataCase.nlsTemplate,
             ...(testDataCase.templateTokens || [])
