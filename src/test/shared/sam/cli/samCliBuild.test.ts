@@ -25,7 +25,7 @@ describe('SamCliBuildInvocation', async () => {
         public stderr: string = ''
     }
 
-    class TextProcessInvoker implements SamCliProcessInvoker {
+    class TestProcessInvoker implements SamCliProcessInvoker {
 
         public constructor(
             private readonly onInvoke: (...args: any[]) => void
@@ -68,7 +68,7 @@ describe('SamCliBuildInvocation', async () => {
     it('Passes build command to sam cli', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
-        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+        const processInvoker: SamCliProcessInvoker = new TestProcessInvoker((args: any[]) => {
             assert.ok(args.length > 0, 'Expected args to be present')
             assert.strictEqual(args[0], 'build', 'Expected first arg to be the build command')
         })
@@ -85,7 +85,7 @@ describe('SamCliBuildInvocation', async () => {
         const expectedBuildDir = '/build'
         const nonRelevantArg = 'arg is not of interest to this test'
 
-        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+        const processInvoker: SamCliProcessInvoker = new TestProcessInvoker((args: any[]) => {
             assertArgsContainArgument(args, '--build-dir', expectedBuildDir)
         })
 
@@ -101,7 +101,7 @@ describe('SamCliBuildInvocation', async () => {
         const expectedBaseDir = '/src'
         const nonRelevantArg = 'arg is not of interest to this test'
 
-        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+        const processInvoker: SamCliProcessInvoker = new TestProcessInvoker((args: any[]) => {
             assertArgsContainArgument(args, '--base-dir', expectedBaseDir)
         })
 
@@ -116,7 +116,7 @@ describe('SamCliBuildInvocation', async () => {
     it('Does not pass Base Dir to sam cli', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
-        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+        const processInvoker: SamCliProcessInvoker = new TestProcessInvoker((args: any[]) => {
             assertArgNotPresent(args, '--base-dir')
         })
 
@@ -130,7 +130,7 @@ describe('SamCliBuildInvocation', async () => {
     it('Passes Template to sam cli', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
-        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+        const processInvoker: SamCliProcessInvoker = new TestProcessInvoker((args: any[]) => {
             assertArgsContainArgument(args, '--template', placeholderTemplateFile)
         })
 
@@ -145,7 +145,7 @@ describe('SamCliBuildInvocation', async () => {
     it('passes --use-container to sam cli if useContainer is true', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
-        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+        const processInvoker: SamCliProcessInvoker = new TestProcessInvoker((args: any[]) => {
             assert.notStrictEqual(
                 args.indexOf('--use-container'),
                 -1,
@@ -164,7 +164,7 @@ describe('SamCliBuildInvocation', async () => {
     it('does not pass --use-container to sam cli if useContainer is false', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
-        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+        const processInvoker: SamCliProcessInvoker = new TestProcessInvoker((args: any[]) => {
             assertArgNotPresent(args, '--use-container')
         })
 
@@ -179,7 +179,7 @@ describe('SamCliBuildInvocation', async () => {
     it('does not pass --use-container to sam cli if useContainer is undefined', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
-        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+        const processInvoker: SamCliProcessInvoker = new TestProcessInvoker((args: any[]) => {
             assertArgNotPresent(args, '--use-container')
         })
 
@@ -194,7 +194,7 @@ describe('SamCliBuildInvocation', async () => {
         const expectedDockerNetwork = 'hello-world'
         const nonRelevantArg = 'arg is not of interest to this test'
 
-        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+        const processInvoker: SamCliProcessInvoker = new TestProcessInvoker((args: any[]) => {
             assertArgsContainArgument(args, '--docker-network', expectedDockerNetwork)
         })
 
@@ -209,7 +209,7 @@ describe('SamCliBuildInvocation', async () => {
     it('Does not pass docker network to sam cli if undefined', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
-        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+        const processInvoker: SamCliProcessInvoker = new TestProcessInvoker((args: any[]) => {
             assertArgNotPresent(args, '--docker-network')
         })
 
@@ -223,7 +223,7 @@ describe('SamCliBuildInvocation', async () => {
     it('passes --skip-pull-image to sam cli if skipPullImage is true', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
-        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+        const processInvoker: SamCliProcessInvoker = new TestProcessInvoker((args: any[]) => {
             assert.notStrictEqual(
                 args.indexOf('--skip-pull-image'),
                 -1,
@@ -242,7 +242,7 @@ describe('SamCliBuildInvocation', async () => {
     it('does not pass --skip-pull-image to sam cli if skipPullImageis false', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
-        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+        const processInvoker: SamCliProcessInvoker = new TestProcessInvoker((args: any[]) => {
             assertArgNotPresent(args, '--skip-pull-image')
         })
 
@@ -257,7 +257,7 @@ describe('SamCliBuildInvocation', async () => {
     it('does not pass --skip-pull-image to sam cli if skipPullImage is undefined', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
-        const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
+        const processInvoker: SamCliProcessInvoker = new TestProcessInvoker((args: any[]) => {
             assertArgNotPresent(args, '--skip-pull-image')
         })
 
