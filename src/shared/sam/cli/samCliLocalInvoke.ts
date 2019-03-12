@@ -10,6 +10,7 @@ import { fileExists } from '../../filesystemUtilities'
 import { DefaultSamCliTaskInvoker, SamCliTaskInvoker } from './samCliInvoker'
 
 export interface SamCliLocalInvokeInvocationArguments {
+    // Todo : comments incoming...
     templateResourceName: string,
     templatePath: string,
     eventPath: string,
@@ -32,6 +33,12 @@ export class SamCliLocalInvokeInvocation {
     private readonly dockerNetwork?: string
     private readonly skipPullImage: boolean
 
+    /**
+     * @see SamCliLocalInvokeInvocationArguments for parameter info
+     * invoker - Defaults to DefaultSamCliTaskInvoker
+     * useContainer - Defaults to false (function will be built on local machine instead of in a docker image)
+     * skipPullImage - Defaults to false (the latest Docker image will be pulled down if necessary)
+     */
     public constructor({
         invoker = new DefaultSamCliTaskInvoker(),
         useContainer = false,
