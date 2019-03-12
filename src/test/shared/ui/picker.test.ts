@@ -33,6 +33,21 @@ describe('createQuickPick', async () => {
         assert.deepStrictEqual(testPicker.items, items)
     })
 
+    it('Sets item options', async () => {
+        const items: vscode.QuickPickItem[] = [
+            {
+                label: 'label',
+                detail: 'detail',
+                alwaysShow: true,
+                description: 'description',
+            }
+        ]
+
+        testPicker = picker.createQuickPick({ items: items })
+
+        assert.deepStrictEqual(testPicker.items, items)
+    })
+
     it('Sets buttons', async () => {
         const buttons: vscode.QuickInputButton[] = [
             vscode.QuickInputButtons.Back
@@ -52,6 +67,7 @@ describe('createQuickPick', async () => {
             matchOnDescription: true,
             matchOnDetail: true,
             ignoreFocusOut: true,
+            value: 'test value',
         }
 
         testPicker = picker.createQuickPick({
