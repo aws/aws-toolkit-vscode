@@ -142,7 +142,7 @@ describe('SamCliBuildInvocation', async () => {
         }).execute()
     })
 
-    it('useContainer = true passes --use-container to sam cli', async () => {
+    it('passes --use-container to sam cli if useContainer is true', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
         const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
@@ -161,7 +161,7 @@ describe('SamCliBuildInvocation', async () => {
         }).execute()
     })
 
-    it('useContainer = false does not pass --use-container to sam cli', async () => {
+    it('does not pass --use-container to sam cli if useContainer is false', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
         const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
@@ -176,7 +176,7 @@ describe('SamCliBuildInvocation', async () => {
         }).execute()
     })
 
-    it('useContainer = undefined does not pass --use-container to sam cli', async () => {
+    it('does not pass --use-container to sam cli if useContainer is undefined', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
         const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
@@ -206,7 +206,7 @@ describe('SamCliBuildInvocation', async () => {
         }).execute()
     })
 
-    it('Does not pass docker network to sam cli', async () => {
+    it('Does not pass docker network to sam cli if undefined', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
         const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
@@ -220,7 +220,7 @@ describe('SamCliBuildInvocation', async () => {
         }).execute()
     })
 
-    it('skipPullImage = true passes --skip-pull-image to sam cli', async () => {
+    it('passes --skip-pull-image to sam cli if skipPullImage is true', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
         const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
@@ -239,7 +239,7 @@ describe('SamCliBuildInvocation', async () => {
         }).execute()
     })
 
-    it('skipPullImage = false does not pass --skip-pull-image to sam cli', async () => {
+    it('does not pass --skip-pull-image to sam cli if skipPullImageis false', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
         const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {
@@ -254,7 +254,7 @@ describe('SamCliBuildInvocation', async () => {
         }).execute()
     })
 
-    it('skipPullImage = undefined does not pass --skip-pull-image to sam cli', async () => {
+    it('does not pass --skip-pull-image to sam cli if skipPullImage is undefined', async () => {
         const nonRelevantArg = 'arg is not of interest to this test'
 
         const processInvoker: SamCliProcessInvoker = new TextProcessInvoker((args: any[]) => {

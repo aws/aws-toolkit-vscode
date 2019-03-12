@@ -57,8 +57,8 @@ export class SamCliBuildInvocation {
     /**
      * @see SamCliBuildInvocationArguments for parameter info
      * invoker - Defaults to DefaultSamCliProcessInvoker
-     * useContainer - Defaults to false
-     * skipPullImage - Defaults to false
+     * useContainer - Defaults to false (function will be built on local machine instead of in a docker image)
+     * skipPullImage - Defaults to false (the latest Docker image will be pulled down if necessary)
      */
     public constructor(
         {
