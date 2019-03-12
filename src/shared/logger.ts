@@ -108,7 +108,7 @@ export function createLogger(params: LoggerParams): Logger {
     let level: LogLevel
     if (params.logLevel) {
         level = params.logLevel
-    } else { // level is required in LoggerParams which is required, so else can never happen
+    } else {
         const configuration: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
         const setLevel = configuration.readSetting<string>('logLevel')
         level = setLevel ? setLevel as LogLevel : DEFAULT_LOG_LEVEL
