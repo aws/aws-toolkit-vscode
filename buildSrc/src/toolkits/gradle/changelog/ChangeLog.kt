@@ -29,7 +29,11 @@ inline fun <reified T : Any> readFile(f: File): T {
 
 @JsonSerialize(using = ChangeType.Serializer::class)
 enum class ChangeType(val sectionTitle: String) {
-    FEATURE("Feature"), BUGFIX("Bug Fix"), DEPRECATION("Deprecation"), REMOVAL("Removal");
+    FEATURE("Feature"),
+    BUGFIX("Bug Fix"),
+    BREAKING("Breaking Change"),
+    DEPRECATION("Deprecation"),
+    REMOVAL("Removal");
 
     class Serializer : StdSerializer<ChangeType>(ChangeType::class.java) {
         override fun serialize(value: ChangeType, gen: JsonGenerator?, provider: SerializerProvider?) {
