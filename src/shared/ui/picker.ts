@@ -13,6 +13,7 @@ import * as vscode from 'vscode'
  */
 export interface AdditionalQuickPickOptions {
     title?: string
+    value?: string
 }
 
 /**
@@ -43,6 +44,7 @@ export function createQuickPick<T extends vscode.QuickPickItem>({
     if (options) {
         picker.title = options.title
         picker.placeholder = options.placeHolder
+        picker.value = options.value || ''
         if (options.matchOnDescription !== undefined) { picker.matchOnDescription = options.matchOnDescription }
         if (options.matchOnDetail !== undefined) { picker.matchOnDetail = options.matchOnDetail }
         if (options.ignoreFocusOut !== undefined) { picker.ignoreFocusOut = options.ignoreFocusOut }
