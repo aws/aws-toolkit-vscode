@@ -255,7 +255,7 @@ export class LocalLambdaRunner {
             templateResourceName: LocalLambdaRunner.TEMPLATE_RESOURCE_NAME,
             templatePath: samTemplatePath,
             eventPath,
-            environmentVariablePath: environmentVariablePath,
+            environmentVariablePath,
             debugPort: (!!this._debugPort) ? this._debugPort.toString() : undefined,
             invoker: this.taskInvoker
         })
