@@ -55,6 +55,11 @@ export class DefaultStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode 
 
         return !!this.errorNode ? [this.errorNode]
             : [...this.functionNodes.values()]
+                .sort((nodeA, nodeB) =>
+                    nodeA.functionName.localeCompare(
+                        nodeB.functionName
+                    )
+                )
     }
 
     public async updateChildren(): Promise<void> {
