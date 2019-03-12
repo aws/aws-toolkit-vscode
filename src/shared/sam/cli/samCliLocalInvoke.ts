@@ -10,15 +10,44 @@ import { fileExists } from '../../filesystemUtilities'
 import { DefaultSamCliTaskInvoker, SamCliTaskInvoker } from './samCliInvoker'
 
 export interface SamCliLocalInvokeInvocationArguments {
-    // Todo : comments incoming...
+    /**
+     * The name of the resource in the SAM Template to be invoked.
+     */
     templateResourceName: string,
+    /**
+     * Location of the SAM Template to invoke locally against.
+     */
     templatePath: string,
+    /**
+     * Location of the file containing the Lambda Function event payload.
+     */
     eventPath: string,
+    /**
+     * Location of the file containing the environment variables to invoke the Lambda Function against.
+     */
     environmentVariablePath: string,
+    /**
+     * When specified, starts the Lambda function container in debug mode and exposes this port on the local host.
+     */
     debugPort?: string,
+    /**
+     * Manages the sam cli execution.
+     */
     invoker: SamCliTaskInvoker,
+    /**
+     * If your functions depend on packages that have natively compiled dependencies,
+     * use this flag to build your function inside an AWS Lambda-like Docker container.
+     */
     useContainer?: boolean,
+    /**
+     * Specifies the name or id of an existing Docker network to Lambda Docker containers should connect to,
+     * along with the default bridge network.
+     * If not specified, the Lambda containers will only connect to the default bridge Docker network.
+     */
     dockerNetwork?: string,
+    /**
+     * Specifies whether the command should skip pulling down the latest Docker image for Lambda runtime.
+     */
     skipPullImage?: boolean,
 }
 
