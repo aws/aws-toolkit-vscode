@@ -64,14 +64,12 @@ class SamCommonTest {
     @Test
     fun compatableSamVersion() {
         val versions = arrayOf(
-            "0.7.0",
-            "0.7.123",
-            "0.7.999999999",
-            "0.7.0-beta",
-            "0.7.0-beta+build",
-            "0.8.0",
-            "0.9.0",
-            "0.10.0"
+            "0.${SamCommon.expectedSamMinVersion.minor}.0",
+            "0.${SamCommon.expectedSamMinVersion.minor}.123",
+            "0.${SamCommon.expectedSamMinVersion.minor}.999999999",
+            "0.${SamCommon.expectedSamMinVersion.minor}.0-beta",
+            "0.${SamCommon.expectedSamMinVersion.minor}.0-beta+build",
+            "0.${SamCommon.expectedSamMaxVersion.minor - 1}.0"
         )
         for (version in versions) {
             assertNull(SamCommon.validate(makeATestSam(getVersionAsJson(version)).toString()))

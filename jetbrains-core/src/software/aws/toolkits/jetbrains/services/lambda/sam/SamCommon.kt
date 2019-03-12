@@ -31,7 +31,7 @@ class SamCommon {
         const val SAM_INVALID_OPTION_SUBSTRING = "no such option"
 
         // Inclusive
-        val expectedSamMinVersion = SemVer("0.7.0", 0, 7, 0)
+        val expectedSamMinVersion = SemVer("0.13.0", 0, 13, 0)
 
         // Exclusive
         val expectedSamMaxVersion = SemVer("0.16.0", 0, 16, 0)
