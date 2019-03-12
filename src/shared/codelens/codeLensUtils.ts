@@ -65,7 +65,7 @@ export async function makeCodeLenses({ document, token, handlers, language }: {
         }
         lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: false }))
         if (language !== 'python') {
-            // TODO: Add debugging supporte for Python and make this run unconditionally
+            // TODO: Add debugging support for Python and make this run unconditionally
             lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: true }))
         }
 
