@@ -151,7 +151,7 @@ describe('vsCodeUtils getChannelLogger', function() {
                     ...expectedPrettyTokens
                 )
 
-                return await onRunTest({
+                await onRunTest({
                     logLevel,
                     testDataCase,
                     expectedPrettyMsg,
