@@ -80,37 +80,37 @@ const testData: TestData[] = [
     {
         title: 'logs with 1 string template param',
         nlsKey: 'silly.key2',
-        nlsTemplate: 'Nice to meet you "{0}"',
+        nlsTemplate: "Nice to meet you '{0}'",
         templateTokens: ['bob'],
     },
     {
         title: 'logs with 2 string template params',
         nlsKey: 'silly.key3',
-        nlsTemplate: 'Hey "{0}", meet "{1}"',
+        nlsTemplate: "Hey '{0}', meet '{1}'",
         templateTokens: ['bob', 'joe'],
     },
     {
         title: 'logs with 3 string template params',
         nlsKey: 'silly.key4',
-        nlsTemplate: 'Hey "{0}", meet "{1}" and "{2}"',
+        nlsTemplate: "Hey '{0}', meet '{1}' and '{2}",
         templateTokens: ['bob', 'joe', 'kim'],
     },
     {
         title: 'logs with 2 template params: errro, string',
         nlsKey: 'silly.key5',
-        nlsTemplate: 'Oh no "{1}", we found an error: "{0}"',
+        nlsTemplate: "Oh no '{1}', we found an error: '{0}'",
         templateTokens: [new Error('Stock market crash'), 'joe'],
     },
     {
         title: 'logs with 2 template params: error, error',
         nlsKey: 'silly.key6',
-        nlsTemplate: '1st Error "{0}"; 2nd error: "{1}"',
+        nlsTemplate: "1st Error '{0}'; 2nd error: '{1}'",
         templateTokens: [new Error('Error zero'), new Error('Error one')],
     },
     {
         title: 'logs with 3 template params: string, error, error',
         nlsKey: 'silly.key7',
-        nlsTemplate: 'Oh my "{0}", there are errors: 1st Error "{1}"; 2nd error: "{2}"',
+        nlsTemplate: "Oh my '{0}', there are errors: 1st Error '{1}'; 2nd error: '{2}'",
         templateTokens: ['Bob', new Error('Error zero'), new Error('Error one')],
     },
 ]
@@ -166,20 +166,24 @@ describe('vsCodeUtils getChannelLogger', function() {
         logLevel,
         expectedPrettyMsg,
         expectedErrorTokens,
-        expectedPrettyTokens,
         testDataCase
     }: TestCaseParams) => {
         // Log message to channel
         (channelLogger as unknown as IndexableChannelLogger)[logLevel](
             testDataCase.nlsKey,
             testDataCase.nlsTemplate,
-            ...expectedPrettyTokens
+            ...(testDataCase.templateTokens || [])
         )
         const expectedLogMsg = MockLogger.format([expectedPrettyMsg, ...expectedErrorTokens])
         assert(
             logger.logs[logLevel].has(expectedLogMsg),
-            `logger missing msg: ${expectedLogMsg} in ${JSON.stringify(Array.from(logger.logs[logLevel]))}` +
-            ` input: ${JSON.stringify({ ...testDataCase })}`
+            `
+            expectedLogMsg:
+                ${expectedLogMsg}
+            error.logs:
+                ${JSON.stringify(Array.from(logger.logs[logLevel]))}
+            input:
+                ${JSON.stringify({ ...testDataCase, expectedPrettyMsg, expectedErrorTokens }, undefined, 2)}`
         )
     }
     it('should log to common logger', async () => {
@@ -195,13 +199,13 @@ describe('vsCodeUtils getChannelLogger', function() {
         (channelLogger as unknown as IndexableChannelLogger)[logLevel](
             testDataCase.nlsKey,
             testDataCase.nlsTemplate,
-            ...expectedPrettyTokens
+            ...(testDataCase.templateTokens || [])
         )
 
         assert(
             outputChannel.value.indexOf(expectedPrettyMsg) >= 0,
             `channel missing msg: ${expectedPrettyMsg} in ${outputChannel.value}` +
-            ` input: ${JSON.stringify({ ...testDataCase })}`
+            ` input: ${JSON.stringify({ ...testDataCase, expectedPrettyTokens })}`
         )
     }
     it('should log to channel logger', async () => {
