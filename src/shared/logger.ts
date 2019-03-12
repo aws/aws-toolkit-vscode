@@ -210,7 +210,7 @@ function makeDateString(type: 'filename' | 'logfile'): string {
     const isFilename: boolean = type === 'filename'
 
     return `${d.getFullYear()}${isFilename ? '' : '-'}` +
-        // String.prototype.padStart() is not in Nodejs version we're using...
+        // String.prototype.padStart() was introduced in ES7, but we target ES6.
         `${padNumber(d.getMonth() + 1)}${isFilename ? '' : '-'}` +
         `${padNumber(d.getDate())}${isFilename ? 'T' : ' '}` +
         `${padNumber(d.getHours())}${isFilename ? '' : ':'}` +
@@ -240,7 +240,7 @@ interface WriteToLogParams {
 
 export type ErrorOrString = Error | string // TODO: Consider renaming to Loggable & including number
 
-// forces winston to output only preformatted message
+// forces winston to output only pre-formatted message
 const logFormat = winston.format.printf(({ message }) => {
     return message
 })
