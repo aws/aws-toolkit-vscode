@@ -21,11 +21,15 @@ export interface TemplateParser {
     (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]): string
 }
 
-export function processTemplate({
+export interface TemplateHandler {
+    (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]): void
+}
+
+export function processTemplate<T extends TemplateParams>({
     nlsKey,
     nlsTemplate,
     templateTokens = [],
-}: TemplateParams & {onLocalize?: TemplateParser}): {errors: Error[], prettyMessage: string } {
+}: T): {errors: Error[], prettyMessage: string } {
     const prettyTokens: Exclude<ErrorOrString, Error>[] = []
     const errors: Error[] = []
     if (templateTokens) {
@@ -62,6 +66,14 @@ function log({
     // TODO: Log in english if/when we get multi lang support
     // Log pretty message then Error objects (so logger might show stack traces)
     logger[level](...[prettyMessage, ...errors])
+}
+
+export interface ChannelLogger {
+    verbose: TemplateHandler
+    debug: TemplateHandler
+    info: TemplateHandler
+    warn: TemplateHandler
+    error: TemplateHandler
 }
 
 /**
