@@ -23,8 +23,6 @@ const DEFAULT_OUTPUT_CHANNEL: vscode.OutputChannel = vscode.window.createOutputC
 
 let defaultLogger: Logger
 
-export type LogLevel = 'debug' | 'verbose' | 'info' | 'warn' | 'error'
-
 export interface BasicLogger {
     debug(...message: ErrorOrString[]): void
     verbose(...message: ErrorOrString[]): void
@@ -33,6 +31,9 @@ export interface BasicLogger {
     error(...message: ErrorOrString[]): void
 
 }
+
+export type LogLevel = keyof BasicLogger
+
 export interface Logger extends BasicLogger {
     logPath?: string
     outputChannel?: vscode.OutputChannel
