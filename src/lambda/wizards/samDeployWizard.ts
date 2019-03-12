@@ -120,31 +120,31 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         const logger = getLogger()
         const regionData = await regionProvider.getRegionData()
 
-        const quickPick = picker.createQuickPick<vscode.QuickPickItem>(
-            {
-                options: {
-                    title: localize('AWS.samcli.deploy.region.prompt',
-                                    'Which AWS Region would you like to deploy to?'),
-                    value: initialRegionCode || '',
-                    matchOnDetail: true,
-                    ignoreFocusOut: true,
-                },
-                items: regionData.map(r => (
-                    {
-                        label: r.regionName,
-                        detail: r.regionCode,
-                        // this is the only way to get this to show on going back
-                        // this will make it so it always shows even when searching for something else
-                        alwaysShow: r.regionCode === initialRegionCode,
-                        description: r.regionCode === initialRegionCode ?
-                            localize('AWS.samcli.deploy.region.previousRegion', 'Selected Previously') : ''
-                    }
-                )),
-                buttons: [
-                    vscode.QuickInputButtons.Back
-                ],
-            }
-        )
+        const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
+            options: {
+                title: localize(
+                    'AWS.samcli.deploy.region.prompt',
+                    'Which AWS Region would you like to deploy to?'
+                    ),
+                value: initialRegionCode || '',
+                matchOnDetail: true,
+                ignoreFocusOut: true,
+            },
+            items: regionData.map(r => (
+                {
+                    label: r.regionName,
+                    detail: r.regionCode,
+                    // this is the only way to get this to show on going back
+                    // this will make it so it always shows even when searching for something else
+                    alwaysShow: r.regionCode === initialRegionCode,
+                    description: r.regionCode === initialRegionCode ?
+                        localize('AWS.samcli.deploy.region.previousRegion', 'Selected Previously') : ''
+                }
+            )),
+            buttons: [
+                vscode.QuickInputButtons.Back
+            ],
+        })
 
         const choices = await picker.promptUser<vscode.QuickPickItem>({
             picker: quickPick,
