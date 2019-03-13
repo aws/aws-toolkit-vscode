@@ -7,8 +7,8 @@
 
 import * as vscode from 'vscode'
 
-export interface NodeDebugConfiguration extends vscode.DebugConfiguration {
-    readonly type: 'node'
+export interface DebugConfiguration extends vscode.DebugConfiguration {
+    readonly type: 'node' | 'python'
     readonly request: 'attach' | 'launch'
     readonly name: string
     readonly preLaunchTask?: string
@@ -16,6 +16,5 @@ export interface NodeDebugConfiguration extends vscode.DebugConfiguration {
     readonly port: number
     readonly localRoot: string
     readonly remoteRoot: '/var/task'
-    readonly protocol: 'legacy' | 'inspector'
     readonly skipFiles?: string[]
 }
