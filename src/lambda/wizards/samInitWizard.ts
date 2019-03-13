@@ -17,7 +17,6 @@ import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import * as lambdaRuntime from '../models/samLambdaRuntime'
 import { MultiStepWizard, WizardStep } from '../wizards/multiStepWizard'
-
 export interface CreateNewSamAppWizardContext {
     readonly lambdaRuntimes: immutable.Set<lambdaRuntime.SamLambdaRuntime>
     readonly workspaceFolders: vscode.WorkspaceFolder[] | undefined
@@ -30,42 +29,14 @@ export interface CreateNewSamAppWizardContext {
 
     promptUserForName(): Promise<string | undefined>
 
-    showInputBox(
-        options?: vscode.InputBoxOptions,
-        token?: vscode.CancellationToken
-    ): Thenable<string | undefined>
-
     showOpenDialog(
         options: vscode.OpenDialogOptions
     ): Thenable<vscode.Uri[] | undefined>
-
-    showQuickPick(
-        items: string[] | Thenable<string[]>,
-        options: vscode.QuickPickOptions & { canPickMany: true },
-        token?: vscode.CancellationToken
-    ): Thenable<string[] | undefined>
-    showQuickPick(
-        items: string[] | Thenable<string[]>,
-        options?: vscode.QuickPickOptions,
-        token?: vscode.CancellationToken
-    ): Thenable<string | undefined>
-    showQuickPick<T extends vscode.QuickPickItem>(
-        items: T[] | Thenable<T[]>,
-        options: vscode.QuickPickOptions & { canPickMany: true },
-        token?: vscode.CancellationToken
-    ): Thenable<T[] | undefined>
-    showQuickPick<T extends vscode.QuickPickItem>(
-        items: T[] | Thenable<T[]>,
-        options?: vscode.QuickPickOptions,
-        token?: vscode.CancellationToken
-    ): Thenable<T | undefined>
 }
 
 class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
     public readonly lambdaRuntimes = lambdaRuntime.samLambdaRuntimes
-    public readonly showInputBox = vscode.window.showInputBox
     public readonly showOpenDialog = vscode.window.showOpenDialog
-    public readonly showQuickPick = vscode.window.showQuickPick
 
     public get workspaceFolders(): vscode.WorkspaceFolder[] | undefined {
         return vscode.workspace.workspaceFolders
@@ -74,45 +45,32 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
     public async promptUserForRuntime(
         currRuntime?: lambdaRuntime.SamLambdaRuntime
     ): Promise<lambdaRuntime.SamLambdaRuntime | undefined> {
-
-        const quickPick = await picker.createQuickPick<vscode.QuickPickItem>({
+        const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
                 ignoreFocusOut: true,
-                placeHolder: localize(
+                title: localize(
                     'AWS.samcli.initWizard.runtime.prompt',
                     'Select a SAM Application Runtime'
                 ),
-                value: String(currRuntime) || ''
+                value: currRuntime ? currRuntime : ''
             },
-            items: lambdaRuntime.samLambdaRuntimes
+            items: this.lambdaRuntimes
                 .toArray()
                 .sort()
                 .map(runtime => ({
                     label: runtime,
                     alwaysShow: runtime === currRuntime,
                     description: runtime === currRuntime ?
-                        localize('AWS.samcli.deploy.region.previousRegion', 'Selected Previously') : ''
+                        localize('AWS.samcli.wizard.selectedPreviously', 'Selected Previously') : ''
                 }))
         })
 
         const choices = await picker.promptUser({
             picker: quickPick
         })
+        const val = picker.verifySinglePickerOutput(choices)
 
-        if (!choices || choices.length === 0) {
-            return undefined
-        }
-
-        if (choices.length > 1) {
-            console.error(
-                `Received ${choices.length} responses from user, expected 1.` +
-                ' Cancelling to prevent deployment of unexpected template.'
-            )
-
-            return undefined
-        }
-
-        return choices[0].label as lambdaRuntime.SamLambdaRuntime
+        return val ? val.label as lambdaRuntime.SamLambdaRuntime : undefined
     }
 
     public async promptUserForLocation(): Promise<vscode.Uri | undefined> {
@@ -120,12 +78,12 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
             .map<FolderQuickPickItem>(f => new WorkspaceFolderQuickPickItem(f))
             .concat([new BrowseFolderQuickPickItem(this)])
 
-        const quickPick = await picker.createQuickPick({
+        const quickPick = picker.createQuickPick({
             options: {
                 ignoreFocusOut: true,
-                placeHolder: localize(
+                title: localize(
                     'AWS.samcli.initWizard.location.prompt',
-                    'Select a location for your new project'
+                    'Select a workspace folder for your new project'
                 )
             },
             items: items,
@@ -142,28 +100,15 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
                 }
             }
         })
+        const val = picker.verifySinglePickerOutput<FolderQuickPickItem>(choices)
 
-        if (!choices || choices.length === 0) {
-            return undefined
-        }
-
-        if (choices.length > 1) {
-            console.error(
-                `Received ${choices.length} responses from user, expected 1.` +
-                ' Cancelling to prevent deployment of unexpected template.'
-            )
-
-            return undefined
-        }
-
-        return choices[0].getUri()
+        return val ? val.getUri() : undefined
     }
 
     public async promptUserForName(): Promise<string | undefined> {
-        const inputBox = await input.createInputBox({
+        const inputBox = input.createInputBox({
             options: {
-                title: '',
-                prompt: localize(
+                title: localize(
                     'AWS.samcli.initWizard.name.prompt',
                     'Choose a name for your new application'
                 ),

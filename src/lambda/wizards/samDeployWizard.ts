@@ -80,7 +80,6 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
      * @returns vscode.Uri of a Sam Template. undefined represents cancel.
      */
     public async promptUserForSamTemplate(initialValue?: vscode.Uri): Promise<vscode.Uri | undefined> {
-        const logger = getLogger()
         const workspaceFolders = this.workspaceFolders || []
 
         const quickPick = picker.createQuickPick<SamTemplateQuickPickItem>({
@@ -96,28 +95,15 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         const choices = await picker.promptUser<SamTemplateQuickPickItem>({
             picker: quickPick,
         })
+        const val = picker.verifySinglePickerOutput<SamTemplateQuickPickItem>(choices)
 
-        if (!choices || choices.length === 0) {
-            return undefined
-        }
-
-        if (choices.length > 1) {
-            logger.warn(
-                `Received ${choices.length} responses from user, expected 1.` +
-                ' Cancelling to prevent deployment of unexpected template.'
-            )
-
-            return undefined
-        }
-
-        return choices[0].uri
+        return val ? val.uri : undefined
     }
 
     public async promptUserForRegion(
         regionProvider: RegionProvider,
         initialRegionCode: string
     ): Promise<string | undefined> {
-        const logger = getLogger()
         const regionData = await regionProvider.getRegionData()
 
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
@@ -138,7 +124,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                     // this will make it so it always shows even when searching for something else
                     alwaysShow: r.regionCode === initialRegionCode,
                     description: r.regionCode === initialRegionCode ?
-                        localize('AWS.samcli.deploy.region.previousRegion', 'Selected Previously') : ''
+                        localize('AWS.samcli.wizard.selectedPreviously', 'Selected Previously') : ''
                 }
             )),
             buttons: [
@@ -154,21 +140,9 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 }
             }
         })
+        const val = picker.verifySinglePickerOutput(choices)
 
-        if (!choices || choices.length === 0) {
-            return undefined
-        }
-
-        if (choices.length > 1) {
-            logger.warn(
-                `Received ${choices.length} responses from user, expected 1.` +
-                ' Cancelling to prevent deployment of unexpected template.'
-            )
-
-            return undefined
-        }
-
-        return choices[0].detail
+        return val ? val.detail : undefined
     }
 
     /**
@@ -351,6 +325,7 @@ class SamTemplateQuickPickItem implements vscode.QuickPickItem {
     }
 
     public static getLabel(uri: vscode.Uri): string {
+        const logger = getLogger()
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
 
         if (workspaceFolder) {
@@ -360,7 +335,7 @@ class SamTemplateQuickPickItem implements vscode.QuickPickItem {
         }
 
         // We shouldn't find sam templates outside of a workspace folder. If we do, show the full path.
-        console.warn(
+        logger.warn(
             `Unexpected situation: detected SAM Template ${uri.fsPath} not found within a workspace folder.`
         )
 
