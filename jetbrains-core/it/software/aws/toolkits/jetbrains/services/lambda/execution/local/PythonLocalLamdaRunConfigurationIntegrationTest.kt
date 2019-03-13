@@ -21,6 +21,7 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 
@@ -88,6 +89,29 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
             handler = "src/hello_world.app.lambda_handler",
             input = "\"Hello World\"",
             credentialsProviderId = mockId
+        )
+        assertThat(runConfiguration).isNotNull
+
+        val executeLambda = executeLambda(runConfiguration)
+        assertThat(executeLambda.exitCode).isEqualTo(0)
+        assertThat(executeLambda.stdout).contains("Hello world")
+    }
+
+    @Test
+    fun samIsExecutedWithContainer() {
+        projectRule.fixture.addFileToProject("requirements.txt", "")
+
+        val samOptions = SamOptions().apply {
+            this.buildInContainer = true
+        }
+
+        val runConfiguration = createHandlerBasedRunConfiguration(
+            project = projectRule.project,
+            runtime = runtime,
+            handler = "src/hello_world.app.lambda_handler",
+            input = "\"Hello World\"",
+            credentialsProviderId = mockId,
+            samOptions = samOptions
         )
         assertThat(runConfiguration).isNotNull
 

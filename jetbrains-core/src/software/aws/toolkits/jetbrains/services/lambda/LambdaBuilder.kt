@@ -19,8 +19,8 @@ import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.services.lambda.execution.PathMapping
-import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import software.aws.toolkits.resources.message
 import java.nio.file.Path
@@ -70,7 +70,20 @@ abstract class LambdaBuilder {
                 .withParameters("--build-dir")
                 .withParameters(buildDir.toString())
 
-            samOptions.patchCommandLine(commandLine)
+            if (samOptions.buildInContainer) {
+                commandLine.withParameters("--use-container")
+            }
+
+            if (samOptions.skipImagePull) {
+                commandLine.withParameters("--skip-pull-image")
+            }
+
+            samOptions.dockerNetwork?.let {
+                if (it.isNotBlank()) {
+                    commandLine.withParameters("--docker-network")
+                        .withParameters(it.trim())
+                }
+            }
 
             val pathMappings = listOf(
                 PathMapping(templateLocation.parent.resolve(codeLocation).toString(), "/"),

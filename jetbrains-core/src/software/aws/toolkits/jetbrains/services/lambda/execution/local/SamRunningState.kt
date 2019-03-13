@@ -43,7 +43,17 @@ class SamRunningState(
             .withEnvironment(totalEnvVars)
             .withEnvironment("PYTHONUNBUFFERED", "1") // Force SAM to not buffer stdout/stderr so it gets shown in IDE
 
-        settings.samOptions.patchCommandLine(commandLine)
+        val samOptions = settings.samOptions
+        if (samOptions.skipImagePull) {
+            commandLine.withParameters("--skip-pull-image")
+        }
+
+        samOptions.dockerNetwork?.let {
+            if (it.isNotBlank()) {
+                commandLine.withParameters("--docker-network")
+                    .withParameters(it.trim())
+            }
+        }
 
         runner.patchCommandLine(this, commandLine)
 

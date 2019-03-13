@@ -9,6 +9,7 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 
 fun createTemplateRunConfiguration(
     project: Project,
@@ -18,7 +19,8 @@ fun createTemplateRunConfiguration(
     inputIsFile: Boolean = false,
     credentialsProviderId: String? = null,
     region: AwsRegion? = MockRegionProvider.US_EAST_1,
-    environmentVariables: MutableMap<String, String> = mutableMapOf()
+    environmentVariables: MutableMap<String, String> = mutableMapOf(),
+    samOptions: SamOptions = SamOptions()
 ): LocalLambdaRunConfiguration {
     val runConfiguration = samRunConfiguration(project)
     runConfiguration.useTemplate(templateFile, logicalId)
@@ -29,7 +31,8 @@ fun createTemplateRunConfiguration(
         credentialsProviderId,
         environmentVariables,
         inputIsFile,
-        input
+        input,
+        samOptions
     )
 
     return runConfiguration
@@ -43,7 +46,8 @@ fun createHandlerBasedRunConfiguration(
     inputIsFile: Boolean = false,
     credentialsProviderId: String? = null,
     region: AwsRegion? = MockRegionProvider.US_EAST_1,
-    environmentVariables: MutableMap<String, String> = mutableMapOf()
+    environmentVariables: MutableMap<String, String> = mutableMapOf(),
+    samOptions: SamOptions = SamOptions()
 ): LocalLambdaRunConfiguration {
     val runConfiguration = samRunConfiguration(project)
     runConfiguration.useHandler(runtime, handler)
@@ -54,7 +58,8 @@ fun createHandlerBasedRunConfiguration(
         credentialsProviderId,
         environmentVariables,
         inputIsFile,
-        input
+        input,
+        samOptions
     )
 
     return runConfiguration
@@ -66,7 +71,8 @@ private fun createBaseRunConfiguration(
     credentialsProviderId: String?,
     environmentVariables: MutableMap<String, String>,
     inputIsFile: Boolean,
-    input: String?
+    input: String?,
+    samOptions: SamOptions
 ) {
     runConfiguration.regionId(region?.id)
     runConfiguration.credentialProviderId(credentialsProviderId)
@@ -77,6 +83,10 @@ private fun createBaseRunConfiguration(
     } else {
         runConfiguration.useInputText(input)
     }
+
+    runConfiguration.buildInContainer(samOptions.buildInContainer)
+    runConfiguration.skipPullImage(samOptions.skipImagePull)
+    runConfiguration.dockerNetwork(samOptions.dockerNetwork)
 }
 
 fun samRunConfiguration(project: Project): LocalLambdaRunConfiguration {
