@@ -9,16 +9,12 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
-import { findFileInParentPaths } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
-import {
-    DefaultSamCliProcessInvoker,
-    DefaultSamCliTaskInvoker,
-} from '../sam/cli/samCliInvoker'
+import { getLogger } from '../logger'
+import { DefaultSamCliProcessInvoker, DefaultSamCliTaskInvoker, } from '../sam/cli/samCliInvoker'
 import { Datum } from '../telemetry/telemetryEvent'
 import { registerCommand } from '../telemetry/telemetryUtils'
-import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
-import { getDebugPort, localize } from '../utilities/vsCodeUtils'
+import { getDebugPort } from '../utilities/vsCodeUtils'
 
 import {
     CodeLensProviderParams,
@@ -28,26 +24,39 @@ import {
 } from './codeLensUtils'
 import { LambdaLocalInvokeArguments, LocalLambdaRunner } from './localLambdaRunner'
 
-interface NodeDebugConfiguration extends DebugConfiguration {
-    readonly protocol: 'legacy' | 'inspector'
+export const PYTHON_LANGUAGE = 'python'
+export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
+    { language: PYTHON_LANGUAGE }
+]
+
+// TODO: Fix this! Implement a more robust/flexible solution. This is just a basic minimal proof of concept.
+const getSamProjectDirPathForFile = async (filepath: string): Promise<string> => {
+    return path.dirname(filepath)
 }
 
-async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
-    const packageJsonPath: string | undefined = await findFileInParentPaths(
-        path.dirname(filepath),
-        'package.json'
-    )
-    if (!packageJsonPath) {
-        throw new Error( // TODO: Do we want to localize errors? This might be confusing if we need to review logs.
-            localize(
-                'AWS.error.sam.local.package_json_not_found',
-                'Unable to find package.json related to {0}',
-                filepath
-            )
-        )
-    }
+const getLambdaHandlerCandidates = async ({ uri }: { uri: vscode.Uri }): Promise<LambdaHandlerCandidate[]> => {
+    const logger = getLogger()
+    const filename = uri.fsPath
 
-    return path.dirname(packageJsonPath)
+    logger.info(`Getting symbols for '${uri.fsPath}'`)
+    const symbols: vscode.DocumentSymbol[] = ( // SymbolInformation has less detail (no children)
+        (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
+            'vscode.executeDocumentSymbolProvider',
+            uri
+        )) || []
+    )
+
+    return symbols
+        .filter(sym => sym.kind === vscode.SymbolKind.Function)
+        .map(symbol => {
+            logger.debug(`Found potential handler: '${path.parse(filename).name}.${symbol.name}'`)
+
+            return {
+                filename,
+                handlerName: `${path.parse(filename).name}.${symbol.name}`,
+                range: symbol.range
+            }
+        })
 }
 
 export function initialize({
@@ -56,19 +65,21 @@ export function initialize({
     processInvoker = new DefaultSamCliProcessInvoker(),
     taskInvoker = new DefaultSamCliTaskInvoker()
 }: CodeLensProviderParams): void {
-    const runtime = 'nodejs8.10' // TODO: Remove hard coded value
+    const logger = getLogger()
+
+    const runtime = 'python3.7' // TODO: Remove hard coded value
 
     const invokeLambda = async (args: LambdaLocalInvokeArguments) => {
         const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
+        logger.debug(`Project root: '${samProjectCodeRoot}'`)
         let debugPort: number | undefined
 
         if (args.isDebug) {
-            debugPort  = await getDebugPort()
+            debugPort = await getDebugPort()
         }
-
         // TODO: Figure out Python specific params and create PythonDebugConfiguration if needed
-        const debugConfig: NodeDebugConfiguration = {
-            type: 'node',
+        const debugConfig: DebugConfiguration = {
+            type: PYTHON_LANGUAGE,
             request: 'attach',
             name: 'SamLocalDebug',
             preLaunchTask: undefined,
@@ -76,11 +87,7 @@ export function initialize({
             port: debugPort!,
             localRoot: samProjectCodeRoot,
             remoteRoot: '/var/task',
-            protocol: 'inspector',
-            skipFiles: [
-                '/var/runtime/node_modules/**/*.js',
-                '<node_internals>/**/*.js'
-            ]
+            skipFiles: []
         }
 
         const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
@@ -92,13 +99,14 @@ export function initialize({
             processInvoker,
             taskInvoker,
             debugConfig,
-            samProjectCodeRoot
+            samProjectCodeRoot,
+            // TODO: Use onWillAttachDebugger &/or onDidSamBuild to enable debugging support
         )
 
         await localLambdaRunner.run()
     }
 
-    const command = getInvokeCmdKey('javascript')
+    const command = getInvokeCmdKey('python')
     registerCommand({
         command: command,
         callback: async (args: LambdaLocalInvokeArguments): Promise<{ datum: Datum }> => {
@@ -113,20 +121,19 @@ export function initialize({
     })
 }
 
-export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
+export function makePythonCodeLensProvider(): vscode.CodeLensProvider {
     return { // CodeLensProvider
         provideCodeLenses: async (
             document: vscode.TextDocument,
             token: vscode.CancellationToken
         ): Promise<vscode.CodeLens[]> => {
-            const search: TypescriptLambdaHandlerSearch = new TypescriptLambdaHandlerSearch(document.uri)
-            const handlers: LambdaHandlerCandidate[] = await search.findCandidateLambdaHandlers()
+            const handlers: LambdaHandlerCandidate[] = await getLambdaHandlerCandidates({ uri: document.uri })
 
             return makeCodeLenses({
                 document,
                 handlers,
                 token,
-                language: 'javascript'
+                language: 'python'
             })
         }
     }

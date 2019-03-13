@@ -16,6 +16,7 @@ import { RegionInfo } from '../../shared/regions/regionInfo'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { ResourceFetcher } from '../../shared/resourceFetcher'
 import { ResourceLocation } from '../../shared/resourceLocation'
+import { MockOutputChannel } from '../mockOutputChannel'
 
 describe('LambdaProvider', () => {
 
@@ -70,13 +71,15 @@ describe('LambdaProvider', () => {
         const regionProvider = new FakeRegionProvider()
         const awsContextTreeCollection = new AwsContextTreeCollection()
         const resourceFetcher = new FakeResourceFetcher()
+        const mockChannel = new MockOutputChannel()
 
         const lambdaProvider = new LambdaTreeDataProvider(
             awsContext,
             awsContextTreeCollection,
             regionProvider,
             resourceFetcher,
-            (path) => { throw new Error('unused') }
+            (path) => { throw new Error('unused') },
+            mockChannel
         )
 
         const treeNodesPromise = lambdaProvider.getChildren()
