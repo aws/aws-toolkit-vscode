@@ -73,7 +73,7 @@ export async function findFileInParentPaths(searchFolder: string, fileToFind: st
 }
 
 const _mkdtemp = promisify(fs.mkdtemp)
-// TODO: (fs.mkdtemp) Fails on OSX is prefix contains path separator
+// TODO: (fs.mkdtemp) Fails on OSX if prefix contains path separator
 //       Add support for nested directories on OSX.
 export const  mkdtemp = async (prefix = 'vsctk') => {
     if (!isTempDir) {
