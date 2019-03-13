@@ -16,7 +16,7 @@ import {
     tempDirPath
 } from '../../shared/filesystemUtilities'
 
-describe.only('filesystemUtilities', () => {
+describe('filesystemUtilities', () => {
     const targetFilename = 'findThisFile12345.txt'
     let targetFilePath: string
     const nonExistingTargetFilename = 'doNotFindThisFile12345.txt'

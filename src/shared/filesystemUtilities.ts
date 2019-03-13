@@ -14,6 +14,7 @@ import { access, mkdir, PathLike, readdir, readFile } from './filesystem'
 const DEFAULT_ENCODING: BufferEncoding = 'utf8'
 
 export const tempDirPath = path.join(
+    // https://github.com/aws/aws-toolkit-vscode/issues/240
     os.type() === 'Darwin' ? '/tmp' : os.tmpdir(),
     'aws-toolkit-vscode'
 )
