@@ -217,7 +217,7 @@ class WorkspaceFolderQuickPickItem implements FolderQuickPickItem {
 class BrowseFolderQuickPickItem implements FolderQuickPickItem {
     public readonly label = localize(
         'AWS.samcli.initWizard.name.browse.label',
-        'Browse...'
+        'Choose a different folder...'
     )
 
     public constructor(
