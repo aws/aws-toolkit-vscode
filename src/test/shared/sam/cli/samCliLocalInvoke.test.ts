@@ -12,7 +12,7 @@ import * as vscode from 'vscode'
 import { writeFile } from '../../../../shared/filesystem'
 import { mkdtemp } from '../../../../shared/filesystemUtilities'
 import { TestLogger } from '../../../../shared/loggerUtils'
-import { DefaultSamCliTaskInvoker } from '../../../../shared/sam/cli/samCliInvoker'
+import { SamCliTaskInvoker } from '../../../../shared/sam/cli/samCliInvoker'
 import { SamCliLocalInvokeInvocation } from '../../../../shared/sam/cli/samCliLocalInvoke'
 
 describe('SamCliLocalInvokeInvocation', async () => {
@@ -26,7 +26,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
         }
     }
 
-    class TestTaskInvoker implements DefaultSamCliTaskInvoker {
+    class TestTaskInvoker implements SamCliTaskInvoker {
         public constructor(
             private readonly onInvoke: (...args: any[]) => void
         ) {
@@ -68,7 +68,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
     })
 
     it('Passes local invoke command to sam cli', async () => {
-        const taskInvoker: DefaultSamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
+        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
             assert.ok(args.length >= 2, 'Expected args to be present')
             assert.strictEqual(args[0], 'local', 'Expected first arg to be local')
             assert.strictEqual(args[1], 'invoke', 'Expected second arg to be invoke')
@@ -85,7 +85,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
 
     it('Passes template resource name to sam cli', async () => {
         const expectedResourceName = 'HelloWorldResource'
-        const taskInvoker: DefaultSamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
+        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
             assertArgIsPresent(args, expectedResourceName)
         })
 
@@ -99,7 +99,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
     })
 
     it('Passes template path to sam cli', async () => {
-        const taskInvoker: DefaultSamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
+        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
             assertArgsContainArgument(args, '--template', placeholderTemplateFile)
         })
 
@@ -113,7 +113,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
     })
 
     it('Passes event path to sam cli', async () => {
-        const taskInvoker: DefaultSamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
+        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
             assertArgsContainArgument(args, '--event', placeholderEventFile)
         })
 
@@ -128,7 +128,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
 
     it('Passes env-vars path to sam cli', async () => {
         const expectedEnvVarsPath = 'envvars.json'
-        const taskInvoker: DefaultSamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
+        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
             assertArgsContainArgument(args, '--env-vars', expectedEnvVarsPath)
         })
 
@@ -143,7 +143,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
 
     it('Passes debug port to sam cli', async () => {
         const expectedDebugPort = '1234'
-        const taskInvoker: DefaultSamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
+        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
             assertArgsContainArgument(args, '-d', expectedDebugPort)
         })
 
@@ -158,7 +158,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
     })
 
     it('undefined debug port does not pass to sam cli', async () => {
-        const taskInvoker: DefaultSamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
+        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
             assertArgNotPresent(args, '-d')
         })
 
@@ -173,7 +173,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
     })
 
     it('passes --use-container to sam cli if useContainer is true', async () => {
-        const taskInvoker: DefaultSamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
+        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
             assertArgIsPresent(args, '--use-container')
         })
 
@@ -188,7 +188,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
     })
 
     it('does not pass --use-container to sam cli if useContainer is false', async () => {
-        const taskInvoker: DefaultSamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
+        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
             assertArgNotPresent(args, '--use-container')
         })
 
@@ -203,7 +203,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
     })
 
     it('does not pass --use-container to sam cli if useContainer is undefined', async () => {
-        const taskInvoker: DefaultSamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
+        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
             assertArgNotPresent(args, '--use-container')
         })
 
@@ -220,7 +220,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
     it('Passes docker network to sam cli', async () => {
         const expectedDockerNetwork = 'hello-world'
 
-        const taskInvoker: DefaultSamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
+        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
             assertArgsContainArgument(args, '--docker-network', expectedDockerNetwork)
         })
 
@@ -235,7 +235,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
     })
 
     it('Does not pass docker network to sam cli when undefined', async () => {
-        const taskInvoker: DefaultSamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
+        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
             assertArgNotPresent(args, '--docker-network')
         })
 
@@ -250,7 +250,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
     })
 
     it('passes --skip-pull-image to sam cli if skipPullImage is true', async () => {
-        const taskInvoker: DefaultSamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
+        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
             assertArgIsPresent(args, '--skip-pull-image')
         })
 
@@ -265,7 +265,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
     })
 
     it('does not pass --skip-pull-image to sam cli if skipPullImage is false', async () => {
-        const taskInvoker: DefaultSamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
+        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
             assertArgNotPresent(args, '--skip-pull-image')
         })
 
@@ -280,7 +280,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
     })
 
     it('does not pass --skip-pull-image to sam cli if skipPullImage is undefined', async () => {
-        const taskInvoker: DefaultSamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
+        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
             assertArgNotPresent(args, '--skip-pull-image')
         })
 
