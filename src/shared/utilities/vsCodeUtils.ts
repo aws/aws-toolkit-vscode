@@ -29,11 +29,11 @@ export function processTemplate<T extends TemplateParams>({
     nlsKey,
     nlsTemplate,
     templateTokens = [],
-}: T): {errors: Error[], prettyMessage: string } {
+}: T): { errors: Error[], prettyMessage: string } {
     const prettyTokens: Exclude<ErrorOrString, Error>[] = []
     const errors: Error[] = []
     if (templateTokens) {
-        templateTokens.forEach(token =>  {
+        templateTokens.forEach(token => {
             if (token instanceof Error) {
                 prettyTokens.push(token.message)
                 errors.push(token)
@@ -57,11 +57,11 @@ function log({
     channel,
     level,
     logger
-}: TemplateParams & {channel: vscode.OutputChannel, level: LogLevel, logger: BasicLogger }): void {
+}: TemplateParams & { channel: vscode.OutputChannel, level: LogLevel, logger: BasicLogger }): void {
     if (level === 'error') {
         channel.show(true)
     }
-    const {prettyMessage, errors} = processTemplate({nlsKey, nlsTemplate, templateTokens})
+    const { prettyMessage, errors } = processTemplate({ nlsKey, nlsTemplate, templateTokens })
     channel.appendLine(prettyMessage)
     // TODO: Log in english if/when we get multi lang support
     // Log pretty message then Error objects (so logger might show stack traces)
@@ -69,6 +69,8 @@ function log({
 }
 
 export interface ChannelLogger {
+    readonly channel: vscode.OutputChannel,
+    readonly logger: BasicLogger,
     verbose: TemplateHandler
     debug: TemplateHandler
     info: TemplateHandler
@@ -81,7 +83,9 @@ export interface ChannelLogger {
  * Avoids making two log statements when writing to output channel and improves consistency
  */
 export function getChannelLogger(channel: vscode.OutputChannel, logger: BasicLogger = getLogger()) {
-    return {
+    return Object.freeze({
+        channel,
+        logger,
         verbose: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) => log({
             level: 'verbose',
             nlsKey,
@@ -122,7 +126,7 @@ export function getChannelLogger(channel: vscode.OutputChannel, logger: BasicLog
             channel,
             logger,
         })
-    }
+    })
 }
 
 export async function getDebugPort(): Promise<number> {

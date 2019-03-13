@@ -115,7 +115,7 @@ describe('vsCodeUtils getChannelLogger', function() {
 
     let logger: MockLogger
     let outputChannel: MockOutputChannel
-    let channelLogger: ChannelLogger & {[logLevel: string]: TemplateHandler}
+    let channelLogger: ChannelLogger
 
     before(async () => {
         await initialize()
@@ -165,7 +165,7 @@ describe('vsCodeUtils getChannelLogger', function() {
         testDataCase
     }: TestCaseParams) => {
         // Log message to channel
-        channelLogger[logLevel](
+        (channelLogger as unknown as { [logLevel: string]: TemplateHandler })[logLevel](
             testDataCase.nlsKey,
             testDataCase.nlsTemplate,
             ...(testDataCase.templateTokens || [])
@@ -182,9 +182,6 @@ describe('vsCodeUtils getChannelLogger', function() {
                 ${JSON.stringify({ ...testDataCase, expectedPrettyMsg, expectedErrorTokens }, undefined, 2)}`
         )
     }
-    it('should log to common logger', async () => {
-        await runEachTestCase(assertCommonLoggerWorks)
-    })
 
     const assertChannelLoggerWorks: TestRunner = async ({
         expectedPrettyMsg,
@@ -192,7 +189,7 @@ describe('vsCodeUtils getChannelLogger', function() {
         logLevel, testDataCase
     }: TestCaseParams) => {
         // Log message to channel
-        channelLogger[logLevel](
+        (channelLogger as unknown as { [logLevel: string]: TemplateHandler })[logLevel](
             testDataCase.nlsKey,
             testDataCase.nlsTemplate,
             ...(testDataCase.templateTokens || [])
@@ -204,9 +201,6 @@ describe('vsCodeUtils getChannelLogger', function() {
             ` input: ${JSON.stringify({ ...testDataCase, expectedPrettyTokens })}`
         )
     }
-    it('should log to channel logger', async () => {
-        await runEachTestCase(assertChannelLoggerWorks)
-    })
 
     const assertProcessTemplateWorks: TestRunner = async ({
         testDataCase,
@@ -230,8 +224,31 @@ describe('vsCodeUtils getChannelLogger', function() {
             ` input: ${JSON.stringify({ ...testDataCase })}`
         )
     }
+
+    it('should log to common logger', async () => {
+        await runEachTestCase(assertCommonLoggerWorks)
+    })
+
+    it('should log to channel logger', async () => {
+        await runEachTestCase(assertChannelLoggerWorks)
+    })
+
     it('should processTemplate', async () => {
         await runEachTestCase(assertProcessTemplateWorks)
+    })
+
+    it('should expose output channel', async () => {
+        assert(
+            channelLogger.channel === outputChannel,
+            'channelLogger.channel !== outputChannel'
+        )
+    })
+
+    it('should expose logger', async () => {
+        assert(
+            channelLogger.logger === logger,
+            'channelLogger.logger !== logger'
+        )
     })
 
 })
