@@ -70,7 +70,7 @@ export class LocalLambdaRunner {
     public async run(): Promise<void> {
         try {
             // Switch over to the output channel so the user has feedback that we're getting things ready
-            this.outputChannel.show(true)
+            this.channelLogger.channel.show(true)
 
             this.channelLogger.info(
                 'AWS.output.sam.local.start',
