@@ -95,6 +95,10 @@ abstract class LambdaBuilder {
                 override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
                     // TODO: We should find a way to show the output of this in the UI
                     LOG.info { event.text }
+
+                    if (ApplicationManager.getApplication().isUnitTestMode) {
+                        println("SAM CLI: ${event.text}")
+                    }
                 }
 
                 override fun processTerminated(event: ProcessEvent) {

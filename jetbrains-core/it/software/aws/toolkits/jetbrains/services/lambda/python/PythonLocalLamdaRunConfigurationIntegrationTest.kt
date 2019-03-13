@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda.execution.local
+package software.aws.toolkits.jetbrains.services.lambda.python
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -21,6 +21,9 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.sam.checkBreakPointHit
+import software.aws.toolkits.jetbrains.services.lambda.sam.executeLambda
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
@@ -116,6 +119,7 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
         assertThat(runConfiguration).isNotNull
 
         val executeLambda = executeLambda(runConfiguration)
+
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(executeLambda.stdout).contains("Hello world")
     }
@@ -137,6 +141,7 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
         assertThat(runConfiguration).isNotNull
 
         val executeLambda = executeLambda(runConfiguration)
+
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(jsonToMap(executeLambda.stdout))
             .containsEntry("Foo", "Bar")
@@ -157,6 +162,7 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
         assertThat(runConfiguration).isNotNull
 
         val executeLambda = executeLambda(runConfiguration)
+
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(jsonToMap(executeLambda.stdout))
             .containsEntry("AWS_REGION", MockRegionProvider.US_EAST_1.id)
@@ -176,6 +182,7 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
         assertThat(runConfiguration).isNotNull
 
         val executeLambda = executeLambda(runConfiguration)
+
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(jsonToMap(executeLambda.stdout))
             .containsEntry("AWS_ACCESS_KEY_ID", mockCreds.accessKeyId())

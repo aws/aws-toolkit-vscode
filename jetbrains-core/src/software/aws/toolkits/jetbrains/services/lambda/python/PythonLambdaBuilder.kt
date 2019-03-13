@@ -30,9 +30,10 @@ class PythonLambdaBuilder : LambdaBuilder() {
 
         val baseDir = getBaseDirectory(module.project, handlerVirtualFile).path
         val customTemplate = FileUtil.createTempFile("template", ".yaml", true)
-        SamTemplateUtils.writeDummySamTemplate(customTemplate, runtime, baseDir, handler, envVars)
+        val logicalId = "Function"
+        SamTemplateUtils.writeDummySamTemplate(customTemplate, logicalId, runtime, baseDir, handler, envVars)
 
-        return buildLambdaFromTemplate(module, customTemplate.toPath(), "Function", samOptions)
+        return buildLambdaFromTemplate(module, customTemplate.toPath(), logicalId, samOptions)
     }
 
     private fun getBaseDirectory(project: Project, virtualFile: VirtualFile): VirtualFile {

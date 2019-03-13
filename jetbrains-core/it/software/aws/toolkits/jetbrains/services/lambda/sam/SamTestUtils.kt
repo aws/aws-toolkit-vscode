@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda.execution.local
+package software.aws.toolkits.jetbrains.services.lambda.sam
 
 import com.intellij.execution.ExecutorRegistry
 import com.intellij.execution.Output
@@ -17,6 +17,7 @@ import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugSessionListener
 import com.intellij.xdebugger.XDebuggerManager
 import com.intellij.xdebugger.XDebuggerManagerListener
+import software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfiguration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 

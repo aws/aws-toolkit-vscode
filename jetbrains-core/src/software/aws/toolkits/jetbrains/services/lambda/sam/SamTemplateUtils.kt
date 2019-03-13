@@ -50,6 +50,7 @@ object SamTemplateUtils {
 
     fun writeDummySamTemplate(
         tempFile: File,
+        logicalId: String,
         runtime: Runtime,
         codeUri: String,
         handler: String,
@@ -57,7 +58,7 @@ object SamTemplateUtils {
     ) {
         tempFile.writeText(yamlWriter {
             mapping("Resources") {
-                mapping("Function") {
+                mapping(logicalId) {
                     keyValue("Type", SERVERLESS_FUNCTION_TYPE)
                     mapping("Properties") {
                         keyValue("Handler", handler)

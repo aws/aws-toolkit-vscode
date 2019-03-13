@@ -66,6 +66,7 @@ class SamRunningState(
             settings.templateDetails != null -> substituteCodeUri(tempFile, settings.templateDetails)
             else -> writeDummySamTemplate(
                 tempFile,
+                "Function",
                 settings.runtime,
                 builtLambda.codeLocation.toString(),
                 settings.handler,
