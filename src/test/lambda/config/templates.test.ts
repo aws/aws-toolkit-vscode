@@ -12,6 +12,69 @@ import { load, LoadTemplatesConfigContext } from '../../../lambda/config/templat
 
 describe('templates', async () => {
     describe('load', async () => {
+        it('loads a valid file without parameter overrides', async () => {
+            const rawJson = `{
+                "templates": {
+                    "relative/path/to/template.yaml": {
+                    }
+                }
+            }`
+
+            const context: LoadTemplatesConfigContext = {
+                logger: { warn(...message: (Error | string)[]) {} },
+                readFile: async pathLike => rawJson
+            }
+
+            const config = await load('', context)
+
+            assert.ok(config)
+            assert.ok(config.templates)
+            assert.strictEqual(Object.getOwnPropertyNames(config.templates).length, 1)
+
+            const template = config.templates['relative/path/to/template.yaml']
+            assert.ok(template)
+            assert.strictEqual(Object.getOwnPropertyNames(template).length, 0)
+        })
+
+        it('loads a valid file with parameter overrides', async () => {
+            const rawJson = `{
+                "templates": {
+                    "relative/path/to/template.yaml": {
+                        "parameterOverrides": {
+                            "myParam1": "myValue1",
+                            "myParam2": "myValue2",
+                        }
+                    }
+                }
+            }`
+
+            const context: LoadTemplatesConfigContext = {
+                logger: { warn(...message: (Error | string)[]) {} },
+                readFile: async pathLike => rawJson
+            }
+
+            const config = await load('', context)
+
+            assert.ok(config)
+            assert.ok(config.templates)
+            assert.strictEqual(Object.getOwnPropertyNames(config.templates).length, 1)
+
+            const template = config.templates['relative/path/to/template.yaml']
+            assert.ok(template)
+            assert.strictEqual(Object.getOwnPropertyNames(template).length, 1)
+
+            const parameterOverrides = template.parameterOverrides
+            assert.ok(parameterOverrides)
+            assert.strictEqual(Object.getOwnPropertyNames(parameterOverrides).length, 2)
+
+            const myParam1 = Object.getOwnPropertyDescriptor(parameterOverrides, 'myParam1')
+            const myParam2 = Object.getOwnPropertyDescriptor(parameterOverrides, 'myParam2')
+            assert.ok(myParam1)
+            assert.ok(myParam2)
+            assert.strictEqual(myParam1!.value, 'myValue1')
+            assert.strictEqual(myParam2!.value, 'myValue2')
+        })
+
         it('logs a message on error loading file', async () => {
             let warnCount: number = 0
             const context: LoadTemplatesConfigContext = {

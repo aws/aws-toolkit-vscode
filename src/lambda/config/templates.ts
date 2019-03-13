@@ -7,6 +7,7 @@
 
 import { parse, ParseError, ParseErrorCode } from 'jsonc-parser'
 import * as os from 'os'
+import * as path from 'path'
 import * as vscode from 'vscode'
 import * as fsUtils from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
@@ -28,6 +29,19 @@ export interface LoadTemplatesConfigContext {
     readFile(path: string): Promise<string>
 }
 
+function getWorkspaceFolderPath(input: Pick<vscode.WorkspaceFolder, 'uri'> | vscode.Uri | string): string {
+    if (typeof input === 'string') {
+        return input
+    }
+
+    const workspaceFolder = input as Pick<vscode.WorkspaceFolder, 'uri'>
+    if (workspaceFolder.uri) {
+        return workspaceFolder.uri.fsPath
+    }
+
+    return (input as vscode.Uri).fsPath
+}
+
 export function load(
     workspaceFolder: Pick<vscode.WorkspaceFolder, 'uri'>,
     context?: LoadTemplatesConfigContext
@@ -44,25 +58,17 @@ export async function load(
     workspaceFolderOrUriOrPath: Pick<vscode.WorkspaceFolder, 'uri'> | vscode.Uri | string,
     context: LoadTemplatesConfigContext = {
         logger: getLogger(),
-        readFile: async path => await fsUtils.readFileAsString(path)
+        readFile: async p => await fsUtils.readFileAsString(p)
     }
 ): Promise<TemplatesConfig> {
-    const getWorkspaceFolderPath = (input: Pick<vscode.WorkspaceFolder, 'uri'> | vscode.Uri | string): string => {
-        if (typeof input === 'string') {
-            return input
-        }
-
-        const workspaceFolder = input as Pick<vscode.WorkspaceFolder, 'uri'>
-        if (workspaceFolder.uri) {
-            return workspaceFolder.uri.fsPath
-        }
-
-        return (input as vscode.Uri).fsPath
-    }
-    const workspaceFolderPath = getWorkspaceFolderPath(workspaceFolderOrUriOrPath)
+    const templatesConfigPath = path.join(
+        getWorkspaceFolderPath(workspaceFolderOrUriOrPath),
+        '.aws',
+        'templates.json'
+    )
 
     try {
-        const raw = await context.readFile(workspaceFolderPath)
+        const raw = await context.readFile(templatesConfigPath)
         const errors: ParseError[] = []
         const config = parse(raw, errors) as TemplatesConfig
         if (errors.length > 0) {
@@ -93,7 +99,7 @@ function formatParseError(error: ParseError) {
 
 // Reverse enum mappings are only generated for non-const numerical enums,
 // but ParseErrorCode is a const enum. So we have to reverse-map manually.
-function getParseErrorDescription(code: ParseErrorCode) {
+function getParseErrorDescription(code: ParseErrorCode): string {
     switch (code) {
         case ParseErrorCode.CloseBraceExpected:
             return 'close brace expected'
