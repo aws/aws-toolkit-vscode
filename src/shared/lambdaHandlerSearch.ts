@@ -4,12 +4,19 @@
  */
 
 'use strict'
+import { Range } from 'vscode'
+
+export interface AbsoluteCharOffset {
+    positionStart: number,
+    positionEnd: number
+}
+
+export type RangeOrCharOffset = Range | AbsoluteCharOffset
 
 export interface LambdaHandlerCandidate {
     handlerName: string,
     filename: string,
-    positionStart: number,
-    positionEnd: number,
+    range: RangeOrCharOffset
 }
 
 export interface LambdaHandlerSearch {
