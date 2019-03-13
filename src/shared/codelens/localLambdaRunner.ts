@@ -184,12 +184,13 @@ export class LocalLambdaRunner {
 
         const samBuildOutputFolder = path.join(await this.getBaseBuildFolder(), 'output')
 
-        await new SamCliBuildInvocation(
-            samBuildOutputFolder,
-            rootCodeFolder,
-            inputTemplatePath,
-            this.processInvoker
-        ).execute()
+        await new SamCliBuildInvocation({
+            buildDir: samBuildOutputFolder,
+            baseDir: rootCodeFolder,
+            templatePath: inputTemplatePath,
+            invoker: this.processInvoker
+        }).execute()
+
         this.channelLogger.info(
             'AWS.output.building.sam.application.complete',
             'Build complete.'
