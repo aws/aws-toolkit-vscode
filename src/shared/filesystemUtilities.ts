@@ -18,8 +18,6 @@ export const tempDirPath = path.join(
     'aws-toolkit-vscode'
 )
 
-let isTempDir: boolean // Unknown if it exists. Lazy populate
-
 export async function fileExists(filePath: string): Promise<boolean> {
     try {
         await access(filePath)
@@ -73,15 +71,15 @@ export async function findFileInParentPaths(searchFolder: string, fileToFind: st
 }
 
 const _mkdtemp = promisify(fs.mkdtemp)
-// TODO: (fs.mkdtemp) Fails on OSX if prefix contains path separator
-//       Add support for nested directories on OSX.
-export const  mkdtemp = async (prefix = 'vsctk') => {
-    if (!isTempDir) {
-        if (!await fileExists(tempDirPath)) {
-            await mkdir(tempDirPath)
-        }
-        isTempDir = true
+export const  mkdtemp = async (...relativePathParts: string[]) => {
+    const _relativePathParts = relativePathParts || ['vsctk']
+    const tmpPath = path.join(tempDirPath, ..._relativePathParts)
+    const tmpPathParent = path.dirname(tmpPath)
+    // fs.mkdtemp fails on OSX if prefix contains path separator
+    // so we must create intermediate dirs if needed
+    if (!await fileExists(tmpPathParent)) {
+        await mkdir(tmpPathParent)
     }
 
-    return _mkdtemp(path.join(tempDirPath, prefix))
+    return _mkdtemp(tmpPath)
 }

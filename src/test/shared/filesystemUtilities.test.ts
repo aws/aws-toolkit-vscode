@@ -9,7 +9,7 @@ import * as assert from 'assert'
 import * as del from 'del'
 import * as path from 'path'
 import { mkdir, writeFile } from '../../shared/filesystem'
-import { findFileInParentPaths, mkdtemp, tempDirPath } from '../../shared/filesystemUtilities'
+import { fileExists, findFileInParentPaths, mkdtemp, tempDirPath } from '../../shared/filesystemUtilities'
 
 describe('filesystemUtilities', () => {
     const targetFilename = 'findThisFile12345.txt'
@@ -34,6 +34,26 @@ describe('filesystemUtilities', () => {
             assert(
                 tempFolder.indexOf(tempDirPath) === 0,
                 `expected tempFolder ('${tempFolder}') to be in tempDirPath ('${tempDirPath}')`
+            )
+            const tmpDirExists = await fileExists(tempFolder)
+            assert(
+                tmpDirExists,
+                `tempFolder should exist: '${tempFolder}'`
+            )
+        })
+    })
+
+    describe('mkdtemp nested', () => {
+        it('makes nested temp dirs', async () => {
+            const nestedTempDirPath = await mkdtemp('nestedSubfolder', 'moreNestedSubfolder')
+            assert(
+                nestedTempDirPath.indexOf(tempDirPath) === 0,
+                `expected nestedTempDirPath ('${nestedTempDirPath}') to be in tempDirPath ('${tempDirPath}')`
+            )
+            const tmpDirExists = await fileExists(nestedTempDirPath)
+            assert(
+                tmpDirExists,
+                `tempFolder should exist: '${nestedTempDirPath}'`
             )
         })
     })
