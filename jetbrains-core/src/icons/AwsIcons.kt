@@ -20,6 +20,7 @@ object AwsIcons {
     }
 
     object Resources {
+        @JvmField val CLOUDFORMATION_STACK = IconLoader.getIcon("/icons/resources/CloudFormationStack.svg") // 16x16
         @JvmField val LAMBDA_FUNCTION = IconLoader.getIcon("/icons/resources/LambdaFunction.svg") // 16x16
         @JvmField val SERVERLESS_APP = IconLoader.getIcon("/icons/resources/ServerlessApp.svg") // 16x16
     }
