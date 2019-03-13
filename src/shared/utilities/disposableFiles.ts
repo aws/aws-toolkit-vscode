@@ -85,7 +85,7 @@ export class ExtensionDisposableFiles extends DisposableFiles {
             throw new Error('ExtensionDisposableFiles already initialized')
         }
 
-        const toolkitTempFolder: string = await mkdtemp('aws-toolkit-vscode-')
+        const toolkitTempFolder: string = await mkdtemp()
 
         ExtensionDisposableFiles.INSTANCE = new ExtensionDisposableFiles(toolkitTempFolder)
 

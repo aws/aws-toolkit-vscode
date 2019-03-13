@@ -9,9 +9,16 @@ import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 import { promisify } from 'util'
-import { access, PathLike, readdir, readFile } from './filesystem'
+import { access, mkdir, PathLike, readdir, readFile } from './filesystem'
 
 const DEFAULT_ENCODING: BufferEncoding = 'utf8'
+
+export const tempDirPath = path.join(
+    os.type() === 'Darwin' ? '/tmp' : os.tmpdir(),
+    'aws-toolkit-vscode'
+)
+
+let isTempDir: boolean // Unknown if it exists. Lazy populate
 
 export async function fileExists(filePath: string): Promise<boolean> {
     try {
@@ -65,14 +72,14 @@ export async function findFileInParentPaths(searchFolder: string, fileToFind: st
     return findFileInParentPaths(parentPath, fileToFind)
 }
 
-export const getTempDirPath = (prefix: string = 'vsctk') => {
-    return path.join(
-        os.type() === 'Darwin' ? '/tmp' : os.tmpdir(),
-        prefix
-    )
-}
-
 const _mkdtemp = promisify(fs.mkdtemp)
-export const  mkdtemp = async (prefix?: string) => {
-    return _mkdtemp(getTempDirPath(prefix))
+export const  mkdtemp = async (prefix = 'vsctk') => {
+    if (!isTempDir) {
+        if (!await fileExists(tempDirPath)) {
+            await mkdir(tempDirPath)
+        }
+        isTempDir = true
+    }
+
+    return _mkdtemp(path.join(tempDirPath, prefix))
 }

@@ -7,8 +7,6 @@
 
 import * as assert from 'assert'
 import * as del from 'del'
-import * as fs from 'fs'
-import * as os from 'os'
 import * as path from 'path'
 import * as filesystemUtilities from '../../shared/filesystemUtilities'
 import * as logger from '../../shared/logger'
@@ -19,7 +17,7 @@ describe('logger', () => {
     let testLogger: logger.Logger
 
     before(async () => {
-        tempFolder = fs.mkdtempSync(path.join(os.tmpdir(), 'vsctk'))
+        tempFolder = await filesystemUtilities.mkdtemp()
         testLogger = logger.createLogger({
             // no output channel since we can't check the output channel's content...
             logPath: path.join(tempFolder, 'temp.log'),
