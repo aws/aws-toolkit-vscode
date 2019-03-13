@@ -121,7 +121,9 @@ These steps are relevant for javascript lambda functions, and assume you have a 
     {
         "version": "2.0.0",
         "tasks": [
+
             <In here you may have 0 or more task entries>
+
         ]
     }    
     ```
@@ -171,7 +173,9 @@ These steps are relevant for javascript lambda functions, and assume you have a 
     {
         "version": "2.0.0",
         "tasks": [
+
             <In here you may have 0 or more additional task entries>
+
             {
                 "label": "launchLambdaFunction",
                 .
@@ -194,7 +198,9 @@ These steps are relevant for javascript lambda functions, and assume you have a 
     {
         "version": "0.2.0",
         "configurations": [
+
             <There may be 0 or more launch cofigurations in here already>
+
         ]
     }
     ```
@@ -225,7 +231,9 @@ These steps are relevant for javascript lambda functions, and assume you have a 
     {
         "version": "0.2.0",
         "configurations": [
+
             <There may be 0 or more launch cofigurations in here already>
+
             {
                 "type": "node",
                 "request": "launch",
