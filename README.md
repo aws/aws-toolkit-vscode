@@ -178,9 +178,7 @@ These steps are relevant for javascript lambda functions, and assume you have a 
 
             {
                 "label": "launchLambdaFunction",
-                .
-                .
-                .
+                ... remainder of launchLambdaFunction entry would be here, omitted for brevity ...
             }
         ]
     }    
