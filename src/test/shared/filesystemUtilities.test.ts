@@ -9,7 +9,7 @@ import * as assert from 'assert'
 import * as del from 'del'
 import * as path from 'path'
 import { mkdir, writeFile } from '../../shared/filesystem'
-import { findFileInParentPaths, mkdtemp } from '../../shared/filesystemUtilities'
+import { findFileInParentPaths, mkdtemp, tempDirPath } from '../../shared/filesystemUtilities'
 
 describe('filesystemUtilities', () => {
     const targetFilename = 'findThisFile12345.txt'
@@ -27,6 +27,15 @@ describe('filesystemUtilities', () => {
 
     afterEach(async () => {
         await del([tempFolder], { force: true })
+    })
+
+    describe('mkdtemp', () => {
+        it(`makes temp dirs under filesystemUtilities.tempDirPath ('${tempDirPath}')`, async () => {
+            assert(
+                tempFolder.indexOf(tempDirPath) === 0,
+                `expected tempFolder ('${tempFolder}') to be in tempDirPath ('${tempDirPath}')`
+            )
+        })
     })
 
     describe('findFileInParentPaths', () => {
