@@ -43,11 +43,12 @@ export async function deploySamApplication({
             restParams.outputChannel.show(true)
             stage = 'building'
             const build = new SamCliBuildInvocation(
-                buildDestination,
-                undefined,
-                template.fsPath,
-                invoker
-            )
+                {
+                    buildDir: buildDestination,
+                    baseDir: undefined,
+                    templatePath: template.fsPath,
+                    invoker
+                })
             // TODO: Add nls support
             restParams.outputChannel.appendLine('Building SAM Application...')
             await build.execute()
