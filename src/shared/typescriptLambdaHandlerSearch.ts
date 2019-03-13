@@ -11,6 +11,11 @@ import * as vscode from 'vscode'
 import { readFileAsString } from './filesystemUtilities'
 import { LambdaHandlerCandidate, LambdaHandlerSearch } from './lambdaHandlerSearch'
 
+const getRange = (node: ts.Node) => ({
+    positionStart: node.getStart(),
+    positionEnd: node.end,
+})
+
 /**
  * Detects functions that could possibly be used as Lambda Function Handlers from a Typescript file.
  */
@@ -153,8 +158,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                 return {
                     filename: this._filename,
                     handlerName: `${this._baseFilename}.${exportsTarget}`,
-                    positionStart: candidate.getStart(),
-                    positionEnd: candidate.end,
+                    range: getRange(candidate),
                 }
             })
     }
@@ -175,8 +179,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                             handlers.push({
                                 filename: this._filename,
                                 handlerName: `${this._baseFilename}.${exportedFunction}`,
-                                positionStart: clause.getStart(),
-                                positionEnd: clause.end,
+                                range: getRange(clause),
                             })
                         }
                     }
@@ -201,8 +204,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                 handlers.push({
                     filename: this._filename,
                     handlerName: `${this._baseFilename}.${exportNode.name.getText()}`,
-                    positionStart: exportNode.getStart(),
-                    positionEnd: exportNode.end,
+                    range: getRange(exportNode),
                 })
             } else if (ts.isVariableStatement(exportNode)) {
                 exportNode.declarationList.forEachChild(declaration => {
@@ -217,8 +219,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                         handlers.push({
                             filename: this._filename,
                             handlerName: `${this._baseFilename}.${declaration.name.getText()}`,
-                            positionStart: declaration.getStart(),
-                            positionEnd: declaration.end,
+                            range: getRange(declaration),
                         })
                     }
                 })
