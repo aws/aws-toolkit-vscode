@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Java8 functions using `sam build` can now be deployed"
+}

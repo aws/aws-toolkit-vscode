@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.cloudformation
 
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
@@ -60,6 +61,7 @@ Resources:
     }
 
     @Test
+    @Ignore("All supported runtimes are deployable now")
     fun notDeployable_notSupportedRuntimes() {
         val virtualFile = projectRule.fixture.openFile("template.yaml", """
 Resources:
@@ -85,6 +87,7 @@ Resources:
     }
 
     @Test
+    @Ignore("All supported runtimes are deployable now")
     fun multipleTemplates() {
         val virtualFile1 = projectRule.fixture.openFile("template1.yaml", """
 Resources:
