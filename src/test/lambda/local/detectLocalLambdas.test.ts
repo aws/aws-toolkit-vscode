@@ -10,7 +10,7 @@ import * as del from 'del'
 import * as path from 'path'
 import { Uri, WorkspaceFolder } from 'vscode'
 import { detectLocalLambdas } from '../../../lambda/local/detectLocalLambdas'
-import { mkdtemp } from '../../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { createWorkspaceFolder, saveTemplate } from './util'
 
 describe('detectLocalLambdas', () => {
@@ -91,7 +91,7 @@ describe('detectLocalLambdas', () => {
     it('detects lambdas in multi-folder workspace', async () => {
         assert.strictEqual(workspacePaths.length, 1)
 
-        workspacePaths.push(await mkdtemp('vsctk2'))
+        workspacePaths.push(await makeTemporaryToolkitFolder('vsctk2'))
         workspaceFolders.push({
             uri: Uri.file(workspacePaths[1]),
             name: path.basename(workspacePaths[1]),

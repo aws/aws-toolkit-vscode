@@ -9,9 +9,14 @@ import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 import { promisify } from 'util'
-import { access, PathLike, readdir, readFile } from './filesystem'
+import { access, mkdir, PathLike, readdir, readFile } from './filesystem'
 
 const DEFAULT_ENCODING: BufferEncoding = 'utf8'
+
+export const tempDirPath = path.join(
+    os.type() === 'Darwin' ? '/tmp' : os.tmpdir(),
+    'aws-toolkit-vscode'
+)
 
 export async function fileExists(filePath: string): Promise<boolean> {
     try {
@@ -65,14 +70,16 @@ export async function findFileInParentPaths(searchFolder: string, fileToFind: st
     return findFileInParentPaths(parentPath, fileToFind)
 }
 
-export const getTempDirPath = (prefix: string = 'vsctk') => {
-    return path.join(
-        os.type() === 'Darwin' ? '/tmp' : os.tmpdir(),
-        prefix
-    )
-}
+const mkdtemp = promisify(fs.mkdtemp)
+export const  makeTemporaryToolkitFolder = async (...relativePathParts: string[]) => {
+    const _relativePathParts = relativePathParts || ['vsctk']
+    const tmpPath = path.join(tempDirPath, ..._relativePathParts)
+    const tmpPathParent = path.dirname(tmpPath)
+    // fs.makeTemporaryToolkitFolder fails on OSX if prefix contains path separator
+    // so we must create intermediate dirs if needed
+    if (!await fileExists(tmpPathParent)) {
+        await mkdir(tmpPathParent, { recursive: true })
+    }
 
-const _mkdtemp = promisify(fs.mkdtemp)
-export const  mkdtemp = async (prefix?: string) => {
-    return _mkdtemp(getTempDirPath(prefix))
+    return mkdtemp(tmpPath)
 }

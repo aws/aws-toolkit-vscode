@@ -8,7 +8,7 @@
 import * as del from 'del'
 import * as fs from 'fs'
 import * as vscode from 'vscode'
-import { mkdtemp } from '../filesystemUtilities'
+import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
 import { getLogger, Logger } from '../logger'
 
 export class DisposableFiles implements vscode.Disposable {
@@ -85,7 +85,7 @@ export class ExtensionDisposableFiles extends DisposableFiles {
             throw new Error('ExtensionDisposableFiles already initialized')
         }
 
-        const toolkitTempFolder: string = await mkdtemp('aws-toolkit-vscode-')
+        const toolkitTempFolder: string = await makeTemporaryToolkitFolder()
 
         ExtensionDisposableFiles.INSTANCE = new ExtensionDisposableFiles(toolkitTempFolder)
 

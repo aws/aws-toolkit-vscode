@@ -10,7 +10,7 @@ import * as del from 'del'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import {  mkdir, writeFile } from '../../../shared/filesystem'
-import { fileExists, mkdtemp } from '../../../shared/filesystemUtilities'
+import { fileExists, makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { TestLogger } from '../../../shared/loggerUtils'
 import { DisposableFiles, ExtensionDisposableFiles } from '../../../shared/utilities/disposableFiles'
 
@@ -25,7 +25,7 @@ describe('DisposableFiles', async () => {
     beforeEach(async () => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
-        tempFolder = await mkdtemp()
+        tempFolder = await makeTemporaryToolkitFolder()
     })
 
     afterEach(async () => {

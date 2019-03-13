@@ -18,7 +18,7 @@ const functionsToTest = [
     'readdir',
     'stat',
     'mkdir',
-    'mkdtemp',
+    'makeTemporaryToolkitFolder',
     'writeFile',
 ]
 

@@ -21,7 +21,7 @@ import {
     UserCredentialsUtils,
 } from '../../../shared/credentials/userCredentialsUtils'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
-import { mkdtemp } from '../../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { TestLogger } from '../../../shared/loggerUtils'
 
 describe('UserCredentialsUtils', () => {
@@ -33,7 +33,7 @@ describe('UserCredentialsUtils', () => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
         logger = await TestLogger.createTestLogger()
-        tempFolder = await mkdtemp()
+        tempFolder = await makeTemporaryToolkitFolder()
     })
 
     after(async () => {

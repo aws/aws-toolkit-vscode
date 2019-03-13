@@ -10,7 +10,7 @@ import { SpawnOptions } from 'child_process'
 import * as del from 'del'
 import * as path from 'path'
 import { writeFile } from '../../../../shared/filesystem'
-import { mkdtemp } from '../../../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import { TestLogger } from '../../../../shared/loggerUtils'
 import { SamCliBuildInvocation } from '../../../../shared/sam/cli/samCliBuild'
 import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvoker'
@@ -52,7 +52,7 @@ describe('SamCliBuildInvocation', async () => {
     })
 
     beforeEach(async () => {
-        tempFolder = await mkdtemp()
+        tempFolder = await makeTemporaryToolkitFolder()
         placeholderTemplateFile = path.join(tempFolder, 'template.yaml')
         await writeFile(placeholderTemplateFile, '')
     })

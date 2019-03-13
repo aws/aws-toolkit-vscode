@@ -11,7 +11,7 @@ import * as path from 'path'
 
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { writeFile } from '../../../shared/filesystem'
-import { fileExists, mkdtemp } from '../../../shared/filesystemUtilities'
+import { fileExists, makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import { assertRejects } from '../utilities/assertUtils'
 
@@ -23,7 +23,7 @@ describe ('CloudFormation', () => {
     before(async () => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
-        tempFolder = await mkdtemp()
+        tempFolder = await makeTemporaryToolkitFolder()
         filename = path.join(tempFolder, 'temp.yaml')
     })
 

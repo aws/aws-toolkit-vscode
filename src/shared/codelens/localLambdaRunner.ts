@@ -12,7 +12,7 @@ import { buildHandlerConfig, getLocalLambdaConfiguration, HandlerConfig } from '
 import { detectLocalLambdas } from '../../lambda/local/detectLocalLambdas'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { writeFile } from '../filesystem'
-import { mkdtemp } from '../filesystemUtilities'
+import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
 import { SamCliBuildInvocation } from '../sam/cli/samCliBuild'
 import { SamCliProcessInvoker, SamCliTaskInvoker } from '../sam/cli/samCliInvoker'
 import { SamCliLocalInvokeInvocation } from '../sam/cli/samCliLocalInvoke'
@@ -118,7 +118,7 @@ export class LocalLambdaRunner {
     private async getBaseBuildFolder(): Promise<string> {
         // TODO: Clean up folder structure
         if (!this._baseBuildFolder) {
-            this._baseBuildFolder = await mkdtemp()
+            this._baseBuildFolder = await makeTemporaryToolkitFolder()
             ExtensionDisposableFiles.getInstance().addFolder(this._baseBuildFolder)
         }
 
