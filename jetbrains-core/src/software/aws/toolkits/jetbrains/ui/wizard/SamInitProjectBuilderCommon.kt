@@ -28,20 +28,41 @@ abstract class SamProjectTemplate {
     fun getIcon() = AwsIcons.Resources.SERVERLESS_APP
 
     fun build(runtime: Runtime, outputDir: VirtualFile) {
-        doBuild(runtime, outputDir)
-        TelemetryService.getInstance().record("SamProjectInit") {
-            datum(getName()) {
-                metadata("runtime", runtime.name)
-                metadata("samVersion", SamCommon.getVersionString())
+        var hasException = false
+        try {
+            doBuild(runtime, outputDir)
+        } catch (e: Throwable) {
+            hasException = true
+            throw e
+        } finally {
+            TelemetryService.getInstance().record("SAM") {
+                datum("Init") {
+                    metadata("name", getName())
+                    metadata("runtime", runtime.name)
+                    metadata("samVersion", SamCommon.getVersionString())
+                    metadata("hasException", hasException)
+                }
             }
         }
     }
 
-    protected open fun doBuild(runtime: Runtime, outputDir: VirtualFile) {
-        SamInitRunner(AwsModuleType.ID, outputDir, runtime).execute()
+    private fun doBuild(runtime: Runtime, outputDir: VirtualFile) {
+        SamInitRunner(
+            AwsModuleType.ID,
+            outputDir,
+            runtime,
+            location(),
+            dependencyManager()
+        ).execute()
     }
 
+    protected open fun location(): String? = null
+
+    protected open fun dependencyManager(): String? = null
+
     open fun supportedRuntimes(): Set<Runtime> = Runtime.knownValues().toSet()
+
+    open fun unsupportedRuntimes(): Set<Runtime> = emptySet()
 }
 
 @JvmOverloads

@@ -5,7 +5,7 @@ package software.aws.toolkits.jetbrains.ui.wizard
 
 import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import software.amazon.awssdk.services.lambda.model.Runtime
@@ -16,34 +16,38 @@ class SamInitRunner(
     private val name: String,
     private val outputDir: VirtualFile,
     private val runtime: Runtime,
-    private val location: String? = null
+    private val location: String? = null,
+    private val dependencyManager: String? = null
 ) {
     fun execute() = ApplicationManager.getApplication().runWriteAction {
         // set output to a temp dir
-        val tempDir = LocalFileSystem.getInstance().findFileByIoFile(createTempDir())
-                ?: throw RuntimeException("Cannot create temp file")
+        val tempDir = createTempDir()
         val commandLine = SamCommon.getSamCommandLine()
                 .withParameters("init")
                 .withParameters("--no-input")
                 .withParameters("--name")
                 .withParameters(name)
                 .withParameters("--runtime")
-                .withParameters(runtime.toString()).withParameters("--output-dir")
+                .withParameters(runtime.toString())
+                .withParameters("--output-dir")
                 .withParameters(tempDir.path)
                 .apply {
-                    if (location != null) {
+                    location?.let {
                         this.withParameters("--location")
-                                .withParameters(location)
+                            .withParameters(it)
+                    }
+
+                    dependencyManager?.let {
+                        this.withParameters("--dependency-manager")
+                            .withParameters(it)
                     }
                 }
-        // run
+
         val process = CapturingProcessHandler(commandLine).runProcess()
         if (process.exitCode != 0) {
             throw RuntimeException("${message("sam.init.execution_error")}: ${process.stderrLines.last()}")
         }
 
-        val samOutput = VfsUtil.getChildren(tempDir)[0]
-        // copy from temp dir to output dir
-        VfsUtil.copyDirectory(null, samOutput, outputDir, null)
+        FileUtil.copyDirContent(tempDir.resolve(name), VfsUtil.virtualToIoFile(outputDir))
     }
 }

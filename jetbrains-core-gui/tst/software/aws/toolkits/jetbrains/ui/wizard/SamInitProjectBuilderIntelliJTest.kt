@@ -51,7 +51,7 @@ class SamInitProjectBuilderIntelliJTest : GuiTestCase() {
                 button("Next").click()
                 Pause.pause(1000)
                 combobox("Runtime:").selectItem("java8")
-                combobox("SAM Template:").selectItem("AWS SAM Hello World")
+                combobox("SAM Template:").selectItem("AWS SAM Hello World (Maven)")
                 button("Finish").click()
             }
             // wait for background tasks
