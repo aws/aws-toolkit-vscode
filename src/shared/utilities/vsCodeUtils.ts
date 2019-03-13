@@ -69,6 +69,8 @@ function log({
 }
 
 export interface ChannelLogger {
+    readonly channel: vscode.OutputChannel,
+    readonly logger: BasicLogger,
     verbose: TemplateHandler
     debug: TemplateHandler
     info: TemplateHandler
@@ -81,7 +83,9 @@ export interface ChannelLogger {
  * Avoids making two log statements when writing to output channel and improves consistency
  */
 export function getChannelLogger(channel: vscode.OutputChannel, logger: BasicLogger = getLogger()) {
-    return {
+    return Object.freeze({
+        channel,
+        logger,
         verbose: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) => log({
             level: 'verbose',
             nlsKey,
@@ -122,7 +126,7 @@ export function getChannelLogger(channel: vscode.OutputChannel, logger: BasicLog
             channel,
             logger,
         })
-    }
+    })
 }
 
 export async function getDebugPort(): Promise<number> {

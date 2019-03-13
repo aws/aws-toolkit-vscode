@@ -115,7 +115,7 @@ describe('vsCodeUtils getChannelLogger', function() {
 
     let logger: MockLogger
     let outputChannel: MockOutputChannel
-    let channelLogger: ChannelLogger & {[logLevel: string]: TemplateHandler}
+    let channelLogger: ChannelLogger
 
     before(async () => {
         await initialize()
@@ -165,7 +165,7 @@ describe('vsCodeUtils getChannelLogger', function() {
         testDataCase
     }: TestCaseParams) => {
         // Log message to channel
-        channelLogger[logLevel](
+        (channelLogger as unknown as {[logLevel: string]: TemplateHandler})[logLevel](
             testDataCase.nlsKey,
             testDataCase.nlsTemplate,
             ...(testDataCase.templateTokens || [])
@@ -192,7 +192,7 @@ describe('vsCodeUtils getChannelLogger', function() {
         logLevel, testDataCase
     }: TestCaseParams) => {
         // Log message to channel
-        channelLogger[logLevel](
+        (channelLogger as unknown as {[logLevel: string]: TemplateHandler})[logLevel](
             testDataCase.nlsKey,
             testDataCase.nlsTemplate,
             ...(testDataCase.templateTokens || [])
