@@ -9,6 +9,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
 import { resumeCreateNewSamApp } from './lambda/commands/createNewSamApp'
+import { SamParameterCompletionItemProvider } from './lambda/config/samParameterCompletionItemProvider'
 import { RegionNode } from './lambda/explorer/regionNode'
 import { LambdaTreeDataProvider } from './lambda/lambdaTreeDataProvider'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
@@ -133,6 +134,20 @@ export async function activate(context: vscode.ExtensionContext) {
         await initializeSamCli()
 
         await ExtensionDisposableFiles.initialize(context)
+
+        // TODO: Completion providers may be registered per-workspace folder instead of session-wide.
+        //       Should we watch the open workspace folders, and dynamically register/deregister the
+        //       completion provider based on whether the workspace folder looks like it contains a
+        //       SAM app?
+        vscode.languages.registerCompletionItemProvider(
+            {
+                language: 'json',
+                scheme: 'file',
+                pattern: '**/.aws/parameters.json'
+            },
+            new SamParameterCompletionItemProvider(),
+            '"'
+        )
 
         await resumeCreateNewSamApp(context)
     } catch (error) {
