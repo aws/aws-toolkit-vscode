@@ -36,7 +36,7 @@ export class DefaultLoadTemplatesConfigContext implements LoadTemplatesConfigCon
     public async saveDocumentIfDirty(editorPath: string): Promise<void> {
         const path = _path.normalize(vscode.Uri.file(editorPath).fsPath)
         const document = vscode.workspace.textDocuments.find(doc => {
-            if (doc.isDirty) {
+            if (!doc.isDirty) {
                 return false
             }
 
