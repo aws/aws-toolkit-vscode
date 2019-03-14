@@ -101,19 +101,34 @@ You can debug your Serverless Application's Lambda Function locally using the Co
 
 These steps are relevant for javascript lambda functions, and assume you have a properly configured Serverless Application template file.
 
-* Define the payload that will be passed into your lambda function. Create a file next to your `template.yaml` called `event.json` and put an empty JSON object in the file:
+* Create a file that defines the payload that will be passed into your lambda function. Create a file next to your `template.yaml` called `event.json` and put an empty JSON object in the file:
 
     ```javascript
     {
     }
     ```
 
+    After you have debugging set up, you can return to this file and change its contents to be the payload you want to debug with.
+
 * Define a task responsible for running the lambda function locally using SAM CLI. From the **Command Palette**, select `Tasks: Configure Task`.
 
   * If your workspace does not have a `tasks.json` file, you will be prompted further. Select `Create tasks.json file from template`, then `Others`. Delete the echo task from the newly created file.
   * If your workspace does have a `tasks.json` file, select one of your existing task definitions, or select `Open tasks.json file` to open the file.
 
-* Create an entry in the `tasks` array
+* You should be looking at a `tasks.json` file that looks similar to this:
+
+    ```json
+    {
+        "version": "2.0.0",
+        "tasks": [
+
+            <In here you may have 0 or more task entries>
+
+        ]
+    }    
+    ```
+
+    Add the following task entry into the `tasks` array
 
     ```json
     {
@@ -152,31 +167,83 @@ These steps are relevant for javascript lambda functions, and assume you have a 
     }
     ```
 
+    Your `tasks.json` file should now look similar to this:
+    
+    ```json
+    {
+        "version": "2.0.0",
+        "tasks": [
+
+            <In here you may have 0 or more additional task entries>
+
+            {
+                "label": "launchLambdaFunction",
+                ... remainder of launchLambdaFunction entry would be here, omitted for brevity ...
+            }
+        ]
+    }    
+    ```
+
   * Save the `tasks.json` file
 
 * Define a Debug Configuration to attach to the task you just defined. From the **Command Palette**, select `Debug: Open launch.json`.
 
   * If you are asked to Select an Environment, select `Node.js`, and the file will be created for you. You can delete the `Launch Program` configuration entry that was initially created in the file.
 
-* Create an entry in the `configurations` array
+* You should now see a `launch.json` file that looks similar to this:
 
-```javascript
-{
-    "type": "node",
-    "request": "launch",
-    "name": "Debug Local Lambda: <your function name here>",
-    "preLaunchTask": "launchLambdaFunction",
-    "address": "localhost",
-    "port": 5858,
-    "localRoot": "${workspaceFolder}/hello-world", // This is the workspace relative location of the folder referenced by your Serverless Application template resource's CodeUri
-    "remoteRoot": "/var/task",
-    "protocol": "inspector",
-    "skipFiles": [
-        "/var/runtime/node_modules/**/*.js",
-        "<node_internals>/**/*.js"
-    ]
-}
-```
+    ```javascript
+    {
+        "version": "0.2.0",
+        "configurations": [
+
+            <There may be 0 or more launch cofigurations in here already>
+
+        ]
+    }
+    ```
+
+    Add the following configuration entry into the `configurations` array
+
+    ```javascript
+    {
+        "type": "node",
+        "request": "launch",
+        "name": "Debug Local Lambda: <your function name here>",
+        "preLaunchTask": "launchLambdaFunction",
+        "address": "localhost",
+        "port": 5858,
+        "localRoot": "${workspaceFolder}/hello-world", // This is the workspace relative location of the folder referenced by your Serverless Application template resource's CodeUri
+        "remoteRoot": "/var/task",
+        "protocol": "inspector",
+        "skipFiles": [
+            "/var/runtime/node_modules/**/*.js",
+            "<node_internals>/**/*.js"
+        ]
+    }
+    ```
+
+    Your `launch.json` file should now look similar to this:
+
+    ```javascript
+    {
+        "version": "0.2.0",
+        "configurations": [
+
+            <There may be 0 or more launch cofigurations in here already>
+
+            {
+                "type": "node",
+                "request": "launch",
+                "name": "Debug Local Lambda: <your function name here>",
+                "preLaunchTask": "launchLambdaFunction",
+                .
+                .
+                .
+            }
+        ]
+    }
+    ```
 
 * Save the `launch.json` file
 
