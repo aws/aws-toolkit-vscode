@@ -1,8 +1,8 @@
 'use strict';
 
 /*
-    This script is called from npm run compile.
-    It copies non-code files to out/.
+    This script is called from npm run compile. It copies the
+    files and directories listed in `relativePaths` to `out/`.
 */
 
 const fs = require('fs-extra');

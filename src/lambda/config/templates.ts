@@ -7,10 +7,9 @@
 
 import { parse, ParseError, ParseErrorCode } from 'jsonc-parser'
 import * as os from 'os'
-import * as path from 'path'
+import * as _path from 'path'
 import * as vscode from 'vscode'
 import * as fsUtils from '../../shared/filesystemUtilities'
-import { getLogger, Logger } from '../../shared/logger'
 
 export interface TemplatesConfig {
     templates: {
@@ -25,49 +24,54 @@ export interface TemplateConfig {
 }
 
 export interface LoadTemplatesConfigContext {
-    logger: Pick<Logger, 'warn'>
-    readFile(path: string): Promise<string>
+    fileExists(path: string): Thenable<boolean>
+    readFile(path: string): Thenable<string>
+    saveDocumentIfDirty(editorPath: string): Thenable<void>
 }
 
-function getWorkspaceFolderPath(input: Pick<vscode.WorkspaceFolder, 'uri'> | vscode.Uri | string): string {
-    if (typeof input === 'string') {
-        return input
-    }
+export class DefaultLoadTemplatesConfigContext implements LoadTemplatesConfigContext {
+    public readonly fileExists = fsUtils.fileExists
+    public readonly readFile = fsUtils.readFileAsString
 
-    const workspaceFolder = input as Pick<vscode.WorkspaceFolder, 'uri'>
-    if (workspaceFolder.uri) {
-        return workspaceFolder.uri.fsPath
-    }
+    public async saveDocumentIfDirty(editorPath: string): Promise<void> {
+        const path = _path.normalize(vscode.Uri.file(editorPath).fsPath)
+        const document = vscode.workspace.textDocuments.find(doc => {
+            if (doc.isDirty) {
+                return false
+            }
 
-    return (input as vscode.Uri).fsPath
+            if (_path.normalize(doc.uri.fsPath) !== path) {
+                return false
+            }
+
+            return true
+        })
+
+        if (document) {
+            await document.save()
+        }
+    }
 }
 
-export function load(
-    workspaceFolder: Pick<vscode.WorkspaceFolder, 'uri'>,
-    context?: LoadTemplatesConfigContext
-): Promise<TemplatesConfig>
-export function load(
-    workspaceUri: vscode.Uri,
-    context?: LoadTemplatesConfigContext
-): Promise<TemplatesConfig>
-export function load(
-    workspacePath: string,
-    context?: LoadTemplatesConfigContext
-): Promise<TemplatesConfig>
 export async function load(
-    workspaceFolderOrUriOrPath: Pick<vscode.WorkspaceFolder, 'uri'> | vscode.Uri | string,
-    context: LoadTemplatesConfigContext = {
-        logger: getLogger(),
-        readFile: async p => await fsUtils.readFileAsString(p)
-    }
+    workspaceFolderPath: string,
+    context: LoadTemplatesConfigContext = new DefaultLoadTemplatesConfigContext()
 ): Promise<TemplatesConfig> {
-    const templatesConfigPath = path.join(
-        getWorkspaceFolderPath(workspaceFolderOrUriOrPath),
+    const templatesConfigPath = _path.join(
+        workspaceFolderPath,
         '.aws',
         'templates.json'
     )
 
     try {
+        await context.saveDocumentIfDirty(templatesConfigPath)
+
+        if (!(await context.fileExists(templatesConfigPath))) {
+            return {
+                templates: {}
+            }
+        }
+
         const raw = await context.readFile(templatesConfigPath)
         const errors: ParseError[] = []
         const config = parse(raw, errors) as TemplatesConfig
@@ -85,11 +89,7 @@ export async function load(
             err = (err as any[])[0]
         }
 
-        context.logger.warn(`Could not load .aws/templates.json: ${err}`)
-
-        return {
-            templates: {}
-        }
+        throw new Error(`Could not load .aws/templates.json: ${err}`)
     }
 }
 

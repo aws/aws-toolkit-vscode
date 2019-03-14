@@ -7,8 +7,23 @@
 
 import * as assert from 'assert'
 import * as path from 'path'
-import * as vscode from 'vscode'
 import { load, LoadTemplatesConfigContext } from '../../../lambda/config/templates'
+
+class MockLoadTemplatesConfigContext {
+    public readonly fileExists: (path: string) => Thenable<boolean>
+    public readonly readFile: (path: string) => Thenable<string>
+    public readonly saveDocumentIfDirty: (editorPath: string) => Thenable<void>
+
+    public constructor({
+        fileExists = async _path => true,
+        readFile = async _path => '',
+        saveDocumentIfDirty = async _path => {}
+    }: Partial<LoadTemplatesConfigContext>) {
+        this.fileExists = fileExists
+        this.readFile = readFile
+        this.saveDocumentIfDirty = saveDocumentIfDirty
+    }
+}
 
 describe('templates', async () => {
     describe('load', async () => {
@@ -20,10 +35,9 @@ describe('templates', async () => {
                 }
             }`
 
-            const context: LoadTemplatesConfigContext = {
-                logger: { warn(...message: (Error | string)[]) {} },
+            const context = new MockLoadTemplatesConfigContext({
                 readFile: async pathLike => rawJson
-            }
+            })
 
             const config = await load('', context)
 
@@ -42,16 +56,15 @@ describe('templates', async () => {
                     "relative/path/to/template.yaml": {
                         "parameterOverrides": {
                             "myParam1": "myValue1",
-                            "myParam2": "myValue2",
+                            "myParam2": "myValue2"
                         }
                     }
                 }
             }`
 
-            const context: LoadTemplatesConfigContext = {
-                logger: { warn(...message: (Error | string)[]) {} },
+            const context = new MockLoadTemplatesConfigContext({
                 readFile: async pathLike => rawJson
-            }
+            })
 
             const config = await load('', context)
 
@@ -75,29 +88,10 @@ describe('templates', async () => {
             assert.strictEqual(myParam2!.value, 'myValue2')
         })
 
-        it('logs a message on error loading file', async () => {
-            let warnCount: number = 0
-            const context: LoadTemplatesConfigContext = {
-                logger: {
-                    warn(...message: (Error | string)[]) {
-                        assert.strictEqual(message.length, 1)
-                        assert.strictEqual(message[0], 'Could not load .aws/templates.json: Error: oh no')
-                        warnCount++
-                    }
-                },
-                readFile: async pathLike => { throw new Error('oh no') }
-            }
-
-            await load('', context)
-
-            assert.strictEqual(warnCount, 1)
-        })
-
-        it('returns a minimal config on error loading file', async () => {
-            const context: LoadTemplatesConfigContext = {
-                logger: { warn(...message: (Error | string)[]) {} },
-                readFile: async pathLike => { throw new Error('oh no') }
-            }
+        it('returns minimal config on missing file', async () => {
+            const context = new MockLoadTemplatesConfigContext({
+                fileExists: async pathLike => false
+            })
 
             const config = await load('', context)
 
@@ -106,26 +100,42 @@ describe('templates', async () => {
             assert.strictEqual(Object.getOwnPropertyNames(config.templates).length, 0)
         })
 
-        it('gracefully handles invalid JSON', async () => {
-            let warnCount: number = 0
-            const context: LoadTemplatesConfigContext = {
-                logger: {
-                    warn(...message: (Error | string)[]) {
-                        assert.strictEqual(message.length, 1)
-                        assert.strictEqual(
-                            message[0],
-                            // tslint:disable-next-line:max-line-length
-                            'Could not load .aws/templates.json: Error: Could not parse .aws/templates.json: close brace expected at offset 1, length 0'
-                        )
-                        warnCount++
-                    }
-                },
-                readFile: async pathLike => '{'
+        it('throws on error loading file', async () => {
+            const context = new MockLoadTemplatesConfigContext({
+                readFile: async pathLike => { throw new Error('oh no') },
+            })
+
+            try {
+                await load('', context)
+            } catch (err) {
+                assert.ok(err)
+                assert.strictEqual(String(err), 'Error: Could not load .aws/templates.json: Error: oh no')
+
+                return
             }
 
-            await load('', context)
+            assert.fail()
+        })
 
-            assert.strictEqual(warnCount, 1)
+        it('gracefully handles invalid JSON', async () => {
+            const context = new MockLoadTemplatesConfigContext({
+                readFile: async pathLike => '{',
+            })
+
+            try {
+                await load('', context)
+            } catch (err) {
+                assert.ok(err)
+                assert.strictEqual(
+                    String(err),
+                    // tslint:disable-next-line:max-line-length
+                    'Error: Could not load .aws/templates.json: Error: Could not parse .aws/templates.json: close brace expected at offset 1, length 0'
+                )
+
+                return
+            }
+
+            assert.fail()
         })
 
         it('supports JSON comments', async () => {
@@ -140,10 +150,9 @@ describe('templates', async () => {
                 }
             }`
 
-            const context: LoadTemplatesConfigContext = {
-                logger: { warn(...message: (Error | string)[]) {} },
-                readFile: async pathLike => rawJson
-            }
+            const context = new MockLoadTemplatesConfigContext({
+                readFile: async pathLike => rawJson,
+            })
 
             const config = await load('', context)
 
@@ -156,56 +165,15 @@ describe('templates', async () => {
             assert.strictEqual(Object.getOwnPropertyNames(template).length, 0)
         })
 
-        it('reads from the correct path when a workspaceFolder is provided', async () => {
+        it('reads the correct path', async () => {
             const readArgs: string[] = []
-            const context: LoadTemplatesConfigContext = {
-                logger: { warn(...message: (Error | string)[]) {} },
+            const context = new MockLoadTemplatesConfigContext({
                 readFile: async pathLike => {
                     readArgs.push(pathLike)
 
                     return '{}'
-                }
-            }
-
-            await load(
-                { uri: vscode.Uri.file(path.join('my', 'path')) },
-                context
-            )
-
-            assert.strictEqual(readArgs.length, 1)
-            assert.strictEqual(readArgs[0], path.sep + path.join('my', 'path'))
-        })
-
-        it('reads from the correct path when a uri is provided', async () => {
-            const readArgs: string[] = []
-            const context: LoadTemplatesConfigContext = {
-                logger: { warn(...message: (Error | string)[]) {} },
-                readFile: async pathLike => {
-                    readArgs.push(pathLike)
-
-                    return '{}'
-                }
-            }
-
-            await load(
-                vscode.Uri.file(path.join('my', 'path')),
-                context
-            )
-
-            assert.strictEqual(readArgs.length, 1)
-            assert.strictEqual(readArgs[0], path.sep + path.join('my', 'path'))
-        })
-
-        it('reads the correct path when a string is provided', async () => {
-            const readArgs: string[] = []
-            const context: LoadTemplatesConfigContext = {
-                logger: { warn(...message: (Error | string)[]) {} },
-                readFile: async pathLike => {
-                    readArgs.push(pathLike)
-
-                    return '{}'
-                }
-            }
+                },
+            })
 
             await load(
                 path.join('my', 'path'),
@@ -213,7 +181,37 @@ describe('templates', async () => {
             )
 
             assert.strictEqual(readArgs.length, 1)
-            assert.strictEqual(readArgs[0], path.join('my', 'path'))
+            assert.strictEqual(readArgs[0], path.join('my', 'path', '.aws', 'templates.json'))
+        })
+
+        it('saves dirty documents before loading', async () => {
+            const saveArgs: string[] = []
+            let read: boolean = false
+            let readBeforeSave: boolean = false
+            const context = new MockLoadTemplatesConfigContext({
+                readFile: async pathLike => {
+                    read = true
+
+                    return '{}'
+                },
+                saveDocumentIfDirty: async pathLike => {
+                    saveArgs.push(pathLike)
+
+                    if (read) {
+                        // If we throw here, the exception will be swallowed by `load`'s error handling.
+                        readBeforeSave = true
+                    }
+                }
+            })
+
+            await load(
+                path.join('my', 'path'),
+                context
+            )
+
+            assert.strictEqual(readBeforeSave, false)
+            assert.strictEqual(saveArgs.length, 1)
+            assert.strictEqual(saveArgs[0], path.join('my', 'path', '.aws', 'templates.json'))
         })
     })
 })

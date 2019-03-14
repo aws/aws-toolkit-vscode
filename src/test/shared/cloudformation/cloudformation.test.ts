@@ -81,6 +81,38 @@ describe ('CloudFormation', () => {
         assert.deepStrictEqual(loadedTemplate, createBaseTemplate())
     })
 
+    it ('can successfully load a file with parameters', async () => {
+        const yamlStr: string =
+`Parameters:
+    MyParam1:
+        Type: String
+    MyParam2:
+        Type: Number
+    MyParam3:
+        Type: List<Number>
+    MyParam4:
+        Type: CommaDelimitedList
+    MyParam5:
+        Type: AWS::EC2::AvailabilityZone::Name
+    MyParam6:
+        Type: AWS::SSM::Parameter::Value<AWS::EC2::AvailabilityZone::Name>`
+
+        await strToYamlFile(yamlStr, filename)
+        const loadedTemplate = await CloudFormation.load(filename)
+        const expectedTemplate: CloudFormation.Template = {
+            Parameters: {
+                MyParam1: { Type: 'String' },
+                MyParam2: { Type: 'Number' },
+                MyParam3: { Type: 'List<Number>' },
+                MyParam4: { Type: 'CommaDelimitedList' },
+                MyParam5: { Type: 'AWS::EC2::AvailabilityZone::Name' },
+                MyParam6: { Type: 'AWS::SSM::Parameter::Value<AWS::EC2::AvailabilityZone::Name>' },
+            }
+        }
+
+        assert.deepStrictEqual(loadedTemplate, expectedTemplate)
+    })
+
     it ('only loads YAML with valid types', async () => {
         // timeout is not a number
         const badYamlStr: string =
