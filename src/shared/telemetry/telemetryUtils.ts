@@ -30,13 +30,13 @@ export function registerCommand<T>({
 }): vscode.Disposable {
     return register(
         command,
-        async (callbackArgs) => {
+        async (...callbackArgs: any[]) => {
             const startTime = new Date()
             let hasException = false
             let result: T & { datum?: Datum } | void
 
             try {
-                result = await callback(callbackArgs)
+                result = await callback(...callbackArgs)
             } catch (e) {
                 hasException = true
                 throw e
