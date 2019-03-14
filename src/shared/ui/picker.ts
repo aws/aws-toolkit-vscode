@@ -6,6 +6,7 @@
 'use strict'
 
 import * as vscode from 'vscode'
+import { getLogger } from '../logger'
 
 /**
  * Options to configure the behavior of the quick pick UI.
@@ -124,4 +125,24 @@ export async function promptUser<T extends vscode.QuickPickItem>(
         disposables.forEach(d => d.dispose() as void)
         picker.hide()
     }
+}
+
+export function verifySinglePickerOutput<T extends vscode.QuickPickItem>(
+    choices: T[] | undefined
+): T | undefined {
+    const logger = getLogger()
+    if (!choices || choices.length === 0) {
+        return undefined
+    }
+
+    if (choices.length > 1) {
+        logger.warn(
+            `Received ${choices.length} responses from user, expected 1.` +
+            ' Cancelling to prevent deployment of unexpected template.'
+        )
+
+        return undefined
+    }
+
+    return choices[0]
 }

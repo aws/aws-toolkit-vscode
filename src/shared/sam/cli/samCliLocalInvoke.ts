@@ -9,15 +9,81 @@ import * as vscode from 'vscode'
 import { fileExists } from '../../filesystemUtilities'
 import { DefaultSamCliTaskInvoker, SamCliTaskInvoker } from './samCliInvoker'
 
+export interface SamCliLocalInvokeInvocationArguments {
+    /**
+     * The name of the resource in the SAM Template to be invoked.
+     */
+    templateResourceName: string,
+    /**
+     * Location of the SAM Template to invoke locally against.
+     */
+    templatePath: string,
+    /**
+     * Location of the file containing the Lambda Function event payload.
+     */
+    eventPath: string,
+    /**
+     * Location of the file containing the environment variables to invoke the Lambda Function against.
+     */
+    environmentVariablePath: string,
+    /**
+     * When specified, starts the Lambda function container in debug mode and exposes this port on the local host.
+     */
+    debugPort?: string,
+    /**
+     * Manages the sam cli execution.
+     */
+    invoker: SamCliTaskInvoker,
+    /**
+     * If your functions depend on packages that have natively compiled dependencies,
+     * use this flag to build your function inside an AWS Lambda-like Docker container.
+     */
+    useContainer?: boolean,
+    /**
+     * Specifies the name or id of an existing Docker network to Lambda Docker containers should connect to,
+     * along with the default bridge network.
+     * If not specified, the Lambda containers will only connect to the default bridge Docker network.
+     */
+    dockerNetwork?: string,
+    /**
+     * Specifies whether the command should skip pulling down the latest Docker image for Lambda runtime.
+     */
+    skipPullImage?: boolean,
+}
+
 export class SamCliLocalInvokeInvocation {
-    public constructor(
-        private readonly templateResourceName: string,
-        private readonly templatePath: string,
-        private readonly eventPath: string,
-        private readonly environmentVariablePath: string,
-        private readonly debugPort?: string,
-        private readonly invoker: SamCliTaskInvoker = new DefaultSamCliTaskInvoker()
+    private readonly templateResourceName: string
+    private readonly templatePath: string
+    private readonly eventPath: string
+    private readonly environmentVariablePath: string
+    private readonly debugPort?: string
+    private readonly invoker: SamCliTaskInvoker
+    private readonly useContainer: boolean
+    private readonly dockerNetwork?: string
+    private readonly skipPullImage: boolean
+
+    /**
+     * @see SamCliLocalInvokeInvocationArguments for parameter info
+     * invoker - Defaults to DefaultSamCliTaskInvoker
+     * useContainer - Defaults to false (function will be built on local machine instead of in a docker image)
+     * skipPullImage - Defaults to false (the latest Docker image will be pulled down if necessary)
+     */
+    public constructor({
+        invoker = new DefaultSamCliTaskInvoker(),
+        useContainer = false,
+        skipPullImage = false,
+        ...params
+    }: SamCliLocalInvokeInvocationArguments
     ) {
+        this.templateResourceName = params.templateResourceName
+        this.templatePath = params.templatePath
+        this.eventPath = params.eventPath
+        this.environmentVariablePath = params.environmentVariablePath
+        this.debugPort = params.debugPort
+        this.invoker = invoker
+        this.useContainer = useContainer
+        this.dockerNetwork = params.dockerNetwork
+        this.skipPullImage = skipPullImage
     }
 
     public async execute(): Promise<void> {
@@ -34,9 +100,11 @@ export class SamCliLocalInvokeInvocation {
             '--env-vars',
             this.environmentVariablePath
         ]
-        if (!!this.debugPort) {
-            args.push('-d', this.debugPort)
-        }
+
+        this.addArgumentIf(args, !!this.debugPort, '-d', this.debugPort!)
+        this.addArgumentIf(args, !!this.dockerNetwork, '--docker-network', this.dockerNetwork!)
+        this.addArgumentIf(args, !!this.useContainer, '--use-container')
+        this.addArgumentIf(args, !!this.skipPullImage, '--skip-pull-image')
 
         const execution = new vscode.ShellExecution('sam', args)
 
@@ -62,6 +130,12 @@ export class SamCliLocalInvokeInvocation {
 
         if (!await fileExists(this.eventPath)) {
             throw new Error(`event path does not exist: ${this.eventPath}`)
+        }
+    }
+
+    private addArgumentIf(args: string[], addIfConditional: boolean, ...argsToAdd: string[]) {
+        if (addIfConditional) {
+            args.push(...argsToAdd)
         }
     }
 }
