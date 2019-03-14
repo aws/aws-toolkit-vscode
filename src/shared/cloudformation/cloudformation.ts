@@ -53,7 +53,84 @@ export namespace CloudFormation {
         Properties?: ResourceProperties
     }
 
+    // TODO: Can we automatically detect changes to the CFN spec and apply them here?
+    // tslint:disable-next-line:max-line-length
+    // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html#parameters-section-structure-properties
+    export type ParameterType =
+        'String' |
+        'Number' |
+        'List<Number>' |
+        'CommaDelimitedList' |
+        AWSSpecificParameterType |
+        SSMParameterType
+
+    // tslint:disable-next-line:max-line-length
+    // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html#aws-specific-parameter-types
+    type AWSSpecificParameterType =
+        'AWS::EC2::AvailabilityZone::Name' |
+        'AWS::EC2::Image::Id' |
+        'AWS::EC2::KeyPair::KeyName' |
+        'AWS::EC2::SecurityGroup::GroupName' |
+        'AWS::EC2::SecurityGroup::Id' |
+        'AWS::EC2::Subnet::Id' |
+        'AWS::EC2::Volume::Id' |
+        'AWS::EC2::VPC::Id' |
+        'AWS::Route53::HostedZone::Id' |
+        'List<AWS::EC2::AvailabilityZone::Name>' |
+        'List<AWS::EC2::Image::Id>' |
+        'List<AWS::EC2::Instance::Id>' |
+        'List<AWS::EC2::SecurityGroup::GroupName>' |
+        'List<AWS::EC2::SecurityGroup::Id>' |
+        'List<AWS::EC2::Subnet::Id>' |
+        'List<AWS::EC2::Volume::Id>' |
+        'List<AWS::EC2::VPC::Id>' |
+        'List<AWS::Route53::HostedZone::Id>'
+
+    // tslint:disable-next-line:max-line-length
+    // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html#aws-ssm-parameter-types
+    type SSMParameterType =
+        'AWS::SSM::Parameter::Name' |
+        'AWS::SSM::Parameter::Value<String>' |
+        'AWS::SSM::Parameter::Value<List<String>>' |
+        'AWS::SSM::Parameter::Value<CommaDelimitedList>' |
+        'AWS::SSM::Parameter::Value<AWS::EC2::AvailabilityZone::Name>' |
+        'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>' |
+        'AWS::SSM::Parameter::Value<AWS::EC2::KeyPair::KeyName>' |
+        'AWS::SSM::Parameter::ValueAWS::EC2::SecurityGroup::GroupName<>' |
+        'AWS::SSM::Parameter::Value<AWS::EC2::SecurityGroup::Id>' |
+        'AWS::SSM::Parameter::Value<AWS::EC2::Subnet::Id>' |
+        'AWS::SSM::Parameter::Value<AWS::EC2::Volume::Id>' |
+        'AWS::SSM::Parameter::Value<AWS::EC2::VPC::Id>' |
+        'AWS::SSM::Parameter::Value<AWS::Route53::HostedZone::Id>' |
+        'AWS::SSM::Parameter::Value<List<AWS::EC2::AvailabilityZone::Name>>' |
+        'AWS::SSM::Parameter::Value<List<AWS::EC2::Image::Id>>' |
+        'AWS::SSM::Parameter::Value<List<AWS::EC2::KeyPair::KeyName>>' |
+        'AWS::SSM::Parameter::Value<List<AWS::EC2::SecurityGroup::GroupName>>' |
+        'AWS::SSM::Parameter::Value<List<AWS::EC2::SecurityGroup::Id>>' |
+        'AWS::SSM::Parameter::Value<List<AWS::EC2::Subnet::Id>>' |
+        'AWS::SSM::Parameter::Value<List<AWS::EC2::Volume::Id>>' |
+        'AWS::SSM::Parameter::Value<List<AWS::EC2::VPC::Id>>' |
+        'AWS::SSM::Parameter::Value<List<AWS::Route53::HostedZone::Id>>'
+
+    export interface Parameter {
+        Type: ParameterType
+        AllowedPattern?: string
+        AllowValues?: string[]
+        ConstraintDescription?: string
+        Default?: any
+        Description?: string
+        MaxLength?: number
+        MaxValue?: number
+        MinLength?: number
+        MinValue?: number
+        NoEcho?: boolean
+    }
+
     export interface Template {
+        Parameters?: {
+            [key: string]: Parameter
+        }
+
         Resources?: {
             [key: string]: Resource
         }
