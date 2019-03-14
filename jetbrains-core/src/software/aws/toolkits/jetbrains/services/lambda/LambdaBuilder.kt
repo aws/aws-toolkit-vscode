@@ -153,12 +153,12 @@ abstract class LambdaBuilder {
 /**
  * Represents the result of building a Lambda
  *
- * @param templateLocation The path to the build generated template TODO: Currently nullable during the sam build migration
+ * @param templateLocation The path to the build generated template
  * @param codeLocation The path to the built lambda directory
  * @param mappings Source mappings from original codeLocation to the path inside of the archive
  */
 data class BuiltLambda(
-    val templateLocation: Path?,
+    val templateLocation: Path,
     val codeLocation: Path,
     val mappings: List<PathMapping> = emptyList()
 )

@@ -24,7 +24,7 @@ import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtu
 import software.aws.toolkits.jetbrains.utils.rules.addClass
 import software.aws.toolkits.jetbrains.utils.rules.addModule
 
-class JavaLocalLamdaRunConfigurationIntegrationTest {
+class JavaLocalLambdaRunConfigurationIntegrationTest {
     @Rule
     @JvmField
     val projectRule = HeavyJavaCodeInsightTestFixtureRule()

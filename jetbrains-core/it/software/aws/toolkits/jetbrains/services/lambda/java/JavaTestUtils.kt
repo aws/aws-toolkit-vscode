@@ -69,6 +69,10 @@ private fun copyGradleFiles(fixtureRule: HeavyJavaCodeInsightTestFixtureRule) {
 private fun copyPath(fixtureRule: HeavyJavaCodeInsightTestFixtureRule, root: Path, path: Path) {
     if (path.isDirectory()) {
         Files.list(path).forEach {
+            // Skip over files like .DS_Store. No gradlew related files start with a "." so safe to skip
+            if (it.fileName.toString().startsWith(".")) {
+                return@forEach
+            }
             copyPath(fixtureRule, root, it)
         }
     } else {
