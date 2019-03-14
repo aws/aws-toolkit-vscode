@@ -69,6 +69,9 @@ export class LocalLambdaRunner {
 
     public async run(): Promise<void> {
         try {
+            // Switch over to the output channel so the user has feedback that we're getting things ready
+            this.channelLogger.channel.show(true)
+
             this.channelLogger.info(
                 'AWS.output.sam.local.start',
                 'Preparing to run {0} locally...',
@@ -223,14 +226,14 @@ export class LocalLambdaRunner {
             JSON.stringify(this.getEnvironmentVariables(config))
         )
 
-        const command = new SamCliLocalInvokeInvocation(
-            LocalLambdaRunner.TEMPLATE_RESOURCE_NAME,
-            samTemplatePath,
+        const command = new SamCliLocalInvokeInvocation({
+            templateResourceName: LocalLambdaRunner.TEMPLATE_RESOURCE_NAME,
+            templatePath: samTemplatePath,
             eventPath,
             environmentVariablePath,
-            (!!this._debugPort) ? this._debugPort.toString() : undefined,
-            this.taskInvoker
-        )
+            debugPort: (!!this._debugPort) ? this._debugPort.toString() : undefined,
+            invoker: this.taskInvoker
+        })
 
         await command.execute()
 
