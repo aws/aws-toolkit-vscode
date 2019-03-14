@@ -88,21 +88,6 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
 
     }
 
-    public async showInputBox(
-        options?: vscode.InputBoxOptions | undefined,
-        token?: vscode.CancellationToken | undefined
-    ): Promise<string | undefined> {
-        if (Array.isArray(this.inputBoxResult)) {
-            if (this.inputBoxResult.length <= 0) {
-                throw new Error('showInputBox was called more times than expected')
-            }
-
-            return this.inputBoxResult.pop()
-        }
-
-        return this.inputBoxResult
-    }
-
     public async showOpenDialog(
         options: vscode.OpenDialogOptions
     ): Promise<vscode.Uri[] | undefined> {
@@ -117,41 +102,34 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
         return this.openDialogResult as vscode.Uri[]
     }
 
-    public showQuickPick(
-        items: string[] | Thenable<string[]>,
-        options: vscode.QuickPickOptions & { canPickMany: true },
-        token?: vscode.CancellationToken
-    ): Thenable<string[] | undefined>
-    public showQuickPick(
-        items: string[] | Thenable<string[]>,
-        options?: vscode.QuickPickOptions,
-        token?: vscode.CancellationToken
-    ): Thenable<string | undefined>
-    public showQuickPick<T extends vscode.QuickPickItem>(
-        items: T[] | Thenable<T[]>,
-        options: vscode.QuickPickOptions & { canPickMany: true },
-        token?: vscode.CancellationToken
-    ): Thenable<T[] | undefined>
-    public showQuickPick<T extends vscode.QuickPickItem>(
-        items: T[] | Thenable<T[]>,
-        options?: vscode.QuickPickOptions,
-        token?: vscode.CancellationToken
-    ): Thenable<T | undefined>
-    public async showQuickPick<T extends vscode.QuickPickItem>(
-        items: string[] | Thenable<string[]> | T[] | Thenable<T[]>,
-        options?: vscode.QuickPickOptions,
-        token?: vscode.CancellationToken
-    ): Promise<string | T | string[] | T[] | undefined> {
-        // Just return the first item in `items`.
-        const resolvedItems: string[] | T[] = Array.isArray(items) ?
-            items as string[] | T[] :
-            await (items as (Thenable<string[]> | Thenable<T[]>))
+    public async promptUserForRuntime(
+        currRuntime?: SamLambdaRuntime
+    ): Promise<SamLambdaRuntime | undefined> {
+        return this.lambdaRuntimes.toArray().pop()
+    }
 
-        if (resolvedItems.length <= 0) {
-            return undefined
+    public async promptUserForLocation(): Promise<vscode.Uri | undefined> {
+        if (this.workspaceFolders && this.workspaceFolders.length > 0) {
+            const temp = this.workspaceFolders[0]
+
+            return temp ? temp.uri : undefined
+        } else {
+            const locations = await this.showOpenDialog({})
+
+            return locations ? locations.pop() : undefined
+        }
+    }
+
+    public async promptUserForName(): Promise<string | undefined> {
+        if (typeof this.inputBoxResult === 'string') {
+            return this.inputBoxResult
         }
 
-        return resolvedItems[0]
+        if (this.inputBoxResult.length <= 0) {
+            throw new Error('inputBoxResult was called more times than expected')
+        }
+
+        return this.inputBoxResult.pop()
     }
 }
 
