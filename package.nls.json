@@ -137,7 +137,6 @@
     "AWS.samcli.userChoice.update.awstoolkit.url": "Update AWS Toolkit",
     "AWS.samcli.initWizard.location.prompt": "Select a workspace folder for your new project",
     "AWS.samcli.initWizard.name.prompt": "Choose a name for your new application",
-    "AWS.samcli.initWizard.name.placeholder": "application name",
     "AWS.samcli.initWizard.name.browse.label": "Choose a different folder...",
     "AWS.samcli.initWizard.name.browse.openLabel": "Open",
     "AWS.samcli.initWizard.name.error.empty": "Application name cannot be empty",
