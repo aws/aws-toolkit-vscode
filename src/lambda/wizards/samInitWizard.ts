@@ -112,10 +112,6 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
                     'AWS.samcli.initWizard.name.prompt',
                     'Choose a name for your new application'
                 ),
-                placeHolder: localize(
-                    'AWS.samcli.initWizard.name.placeholder',
-                    'Application name'
-                ),
                 ignoreFocusOut: true,
             },
             buttons: [
