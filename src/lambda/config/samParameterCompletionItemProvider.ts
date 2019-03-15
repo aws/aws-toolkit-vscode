@@ -17,6 +17,12 @@ export interface SamParameterCompletionItemProviderContext extends LoadSymbolsCo
     loadTemplate: typeof CloudFormation.load
 }
 
+/**
+ * Provides completion items (i.e. intellisense) for parameter names when editting `.aws/templates.json`,
+ * by reading the list of parameters from the associated SAM template.
+ *
+ * This class may be modified in the future to also provide suggestions for parameter values, etc.
+ */
 export class SamParameterCompletionItemProvider implements vscode.CompletionItemProvider {
     public constructor(
         private readonly context: SamParameterCompletionItemProviderContext = {
@@ -135,6 +141,8 @@ async function getTemplateParameters(
     templateUri: vscode.Uri,
     context: Pick<SamParameterCompletionItemProviderContext, 'loadTemplate'>
 ): Promise<(CloudFormation.Parameter & { Name: string })[]> {
+    // TODO: Consider caching results per-file, and invalidating
+    //       the cache based on the file's last modified time.
     const template = await context.loadTemplate(templateUri.fsPath)
     const parameters = template.Parameters
 

@@ -135,10 +135,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await ExtensionDisposableFiles.initialize(context)
 
-        // TODO: Completion providers may be registered per-workspace folder instead of session-wide.
-        //       Should we watch the open workspace folders, and dynamically register/deregister the
-        //       completion provider based on whether the workspace folder looks like it contains a
-        //       SAM app?
         vscode.languages.registerCompletionItemProvider(
             {
                 language: 'json',
