@@ -9,7 +9,7 @@ import * as assert from 'assert'
 import * as del from 'del'
 import * as fs from 'fs'
 import * as path from 'path'
-import { mkdtemp } from '../../../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import { DefaultSamCliConfiguration, SamCliConfiguration } from '../../../../shared/sam/cli/samCliConfiguration'
 import { SamCliLocationProvider } from '../../../../shared/sam/cli/samCliLocator'
 import { TestSettingsConfiguration } from '../../../utilities/testSettingsConfiguration'
@@ -20,7 +20,7 @@ describe('SamCliConfiguration', () => {
     let settingsConfiguration: TestSettingsConfiguration
 
     beforeEach(async () => {
-        tempFolder = await mkdtemp()
+        tempFolder = await makeTemporaryToolkitFolder()
         settingsConfiguration = new TestSettingsConfiguration()
     })
 

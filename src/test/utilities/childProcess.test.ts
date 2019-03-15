@@ -10,7 +10,7 @@ import * as del from 'del'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { mkdtemp } from '../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { ChildProcess, ChildProcessResult } from '../../shared/utilities/childProcess'
 
 describe('ChildProcess', async () => {
@@ -20,7 +20,7 @@ describe('ChildProcess', async () => {
     beforeEach(async () => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
-        tempFolder = await mkdtemp()
+        tempFolder = await makeTemporaryToolkitFolder()
     })
 
     afterEach(() => {
