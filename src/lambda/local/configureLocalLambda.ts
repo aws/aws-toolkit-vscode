@@ -10,13 +10,13 @@
 import { parse } from 'jsonc-parser'
 import * as os from 'os'
 import * as path from 'path'
-import * as sleep from 'sleep-promise'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { access, mkdir, writeFile } from '../../shared/filesystem'
 import { readFileAsString } from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
+import { getChildrenRange, loadSymbols } from '../../shared/utilities/symbolUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -151,40 +151,16 @@ function getTabSize(editor?: vscode.TextEditor): number {
     }
 }
 
-async function loadSymbols(
-    uri: vscode.Uri,
-    context: ConfigureLocalLambdaContext,
-    maxAttempts = 10,
-    retryDelayMillis = 200
-): Promise<vscode.DocumentSymbol[] | undefined> {
-
-    const symbols = await context.executeCommand<vscode.DocumentSymbol[]>(
-        'vscode.executeDocumentSymbolProvider',
-        uri
-    )
-    // checking if symbols exists as this can fail if the VS Code JSON symbol provider is not yet initialized
-    if (symbols) {
-        // file has symbols if JSON with at least one valid top-level key/value pair
-        return symbols
-    }
-
-    if (maxAttempts <= 0) {
-        return undefined
-    }
-
-    // waiting before retry to wait for JSON parser
-    await sleep(retryDelayMillis)
-
-    return await loadSymbols(uri, context, maxAttempts - 1, retryDelayMillis)
-}
-
 async function prepareConfig(
     editor: vscode.TextEditor,
     handler: string,
     context: ConfigureLocalLambdaContext
 ): Promise<boolean> {
 
-    let symbols: vscode.DocumentSymbol[] | undefined = await loadSymbols(editor.document.uri, context)
+    let symbols: vscode.DocumentSymbol[] | undefined = await loadSymbols({
+        uri: editor.document.uri,
+        context
+    })
     let shouldOverwrite: boolean = false
     let shouldLoop: boolean = !symbols
 
@@ -207,7 +183,12 @@ async function prepareConfig(
                 // Retry => reload saved file
                 // executeCommand from earlier loadSymbols runs opens the file in editor
                 // this means that a user can edit their JSON and successfully retry loading
-                symbols = await loadSymbols(editor.document.uri, context, 0, 0)
+                symbols = await loadSymbols({
+                    uri: editor.document.uri,
+                    context,
+                    maxRetries: 0,
+                    retryDelayMillis: 0
+                })
                 break
             }
             case responseOverwrite: {
@@ -390,29 +371,5 @@ async function getEventRange(
         return handlerSymbol.range
     }
 
-    return getChildrenRange(eventSymbol)
-}
-
-async function getChildrenRange(symbol: vscode.DocumentSymbol) {
-    const ranges: vscode.Range[] = symbol.children.map(c => c.range)
-
-    let start: vscode.Position | undefined
-    let end: vscode.Position | undefined
-
-    for (const range of ranges) {
-        if (!start || range.start.isBefore(start)) {
-            start = range.start
-        }
-
-        if (!end || range.end.isAfter(end)) {
-            end = range.end
-        }
-    }
-
-    if (!start || !end) {
-        // If symbol has no children, default ito
-        return symbol.range
-    }
-
-    return new vscode.Range(start, end)
+    return await getChildrenRange(eventSymbol)
 }
