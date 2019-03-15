@@ -14,36 +14,26 @@ const del = require('del')
 const fs = require('fs')
 const path = require('path')
 
-function exists(path) {
-    try {
-        fs.accessSync(path)
-        return true
-    } catch(e) {
-        return false
-    }
-}
-
-function getOutDir() {
-    return path.join(__dirname, '..', 'out')
-}
-
 (async () => {
+    for (const arg of process.argv.slice(1)) {
+        const directory = path.join(__dirname, '..', arg)
 
-    const outDir = getOutDir()
-
-    if (!exists(outDir)) {
-        console.log(`${outDir} does not exist. Skipping clean.`)
-        return
-    }
-
-    console.log(`Removing ${outDir} ...`)
-
-    await del(
-        outDir,
-        {
-            force: true,
+        try {
+            fs.accessSync(directory)
+        } catch (e) {
+            console.log(`Could not access '${directory}'. Skipping clean.`)
+            return
         }
-    )
 
-    console.log('Done')
+        console.log(`Removing ${directory} ...`)
+
+        await del(
+            directory,
+            {
+                force: true,
+            }
+        )
+
+        console.log('Done')
+    }
 })()
