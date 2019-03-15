@@ -9,7 +9,7 @@ import * as del from 'del'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { mkdtemp } from '../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { SamCliDeployInvocation } from '../../shared/sam/cli/samCliDeploy'
@@ -34,7 +34,7 @@ export async function deploySamApplication({
 
     const { region, template, s3Bucket, stackName } = args
     const deployApplicationPromise = (async () => {
-        const tempFolder = await mkdtemp('samDeploy')
+        const tempFolder = await makeTemporaryToolkitFolder('samDeploy')
         const buildDestination = path.join(tempFolder, 'build')
         const buildTemplatePath = path.join(buildDestination, 'template.yaml')
         const outputTemplatePath = path.join(tempFolder, 'template.yaml')

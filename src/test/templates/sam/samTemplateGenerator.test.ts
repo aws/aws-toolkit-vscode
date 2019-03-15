@@ -9,7 +9,7 @@ import * as assert from 'assert'
 import * as del from 'del'
 import * as path from 'path'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
-import { mkdtemp } from '../../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import { SamTemplateGenerator } from '../../../shared/templates/sam/samTemplateGenerator'
 
@@ -27,7 +27,7 @@ describe('SamTemplateGenerator', () => {
     let tempFolder: string
 
     beforeEach(async () => {
-        tempFolder = await mkdtemp()
+        tempFolder = await makeTemporaryToolkitFolder()
         templateFilename = path.join(tempFolder, 'template.yml')
     })
 

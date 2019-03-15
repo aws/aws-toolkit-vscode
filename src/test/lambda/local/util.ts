@@ -9,13 +9,13 @@ import * as os from 'os'
 import * as path from 'path'
 import { Uri, WorkspaceFolder } from 'vscode'
 import { writeFile } from '../../../shared/filesystem'
-import { mkdtemp } from '../../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
 export async function createWorkspaceFolder(prefix: string): Promise<{
     workspacePath: string
     workspaceFolder: WorkspaceFolder
 }> {
-    const workspacePath = await mkdtemp(prefix)
+    const workspacePath = await makeTemporaryToolkitFolder(prefix)
 
     return {
         workspacePath,

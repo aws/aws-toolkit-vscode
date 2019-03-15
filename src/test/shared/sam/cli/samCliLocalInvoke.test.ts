@@ -10,7 +10,7 @@ import * as del from 'del'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { writeFile } from '../../../../shared/filesystem'
-import { mkdtemp } from '../../../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import { TestLogger } from '../../../../shared/loggerUtils'
 import { SamCliTaskInvoker } from '../../../../shared/sam/cli/samCliInvoker'
 import { SamCliLocalInvokeInvocation } from '../../../../shared/sam/cli/samCliLocalInvoke'
@@ -52,7 +52,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
     })
 
     beforeEach(async () => {
-        tempFolder = await mkdtemp()
+        tempFolder = await makeTemporaryToolkitFolder()
         placeholderTemplateFile = path.join(tempFolder, 'template.yaml')
         placeholderEventFile = path.join(tempFolder, 'event.json')
         await writeFile(placeholderTemplateFile, '')

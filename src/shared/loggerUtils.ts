@@ -6,8 +6,6 @@
 'use strict'
 
 import * as del from 'del'
-import * as fs from 'fs'
-import * as os from 'os'
 import * as path from 'path'
 import * as filesystemUtilities from './filesystemUtilities'
 import * as l from './logger'
@@ -40,7 +38,7 @@ export class TestLogger {
     }
 
     public static async createTestLogger(): Promise<TestLogger> {
-        const logfile = fs.mkdtempSync(path.join(os.tmpdir(), 'vsctk'))
+        const logfile = await filesystemUtilities.makeTemporaryToolkitFolder()
         const logger = await l.initialize({
             logPath: path.join(logfile, 'temp.log'),
             logLevel: 'debug'
