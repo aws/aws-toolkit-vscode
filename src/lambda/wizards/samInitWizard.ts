@@ -114,7 +114,7 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
                 ),
                 placeHolder: localize(
                     'AWS.samcli.initWizard.name.placeholder',
-                    'application name'
+                    'Application name'
                 ),
                 ignoreFocusOut: true,
             },
