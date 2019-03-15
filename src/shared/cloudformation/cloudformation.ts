@@ -142,7 +142,9 @@ export namespace CloudFormation {
         }
     }
 
-    export async function load(filename: string): Promise<Template> {
+    export async function load(
+        filename: string
+    ): Promise<Template> {
 
         if (!await SystemUtilities.fileExists(filename)) {
             throw new Error(`Template file not found: ${filename}`)
