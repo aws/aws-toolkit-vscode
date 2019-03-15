@@ -15,6 +15,65 @@ import {
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { Logger } from '../../../shared/logger'
 
+function createTemplatesSymbol({
+    uri = vscode.Uri.file(path.join('my', 'template', 'uri')),
+    includeOverrides = false,
+    parameterName
+}: {
+    uri?: vscode.Uri,
+    includeOverrides?: boolean,
+    parameterName?: string
+}) {
+    const templatesSymbol = new vscode.DocumentSymbol(
+        'templates',
+        'myDetail',
+        vscode.SymbolKind.Object,
+        new vscode.Range(0, 0, 10, 0),
+        new vscode.Range(0, 0, 0, 10)
+    )
+
+    if (!uri) {
+        return templatesSymbol
+    }
+
+    const templateSymbol = new vscode.DocumentSymbol(
+        uri.fsPath,
+        'myDetail',
+        vscode.SymbolKind.Object,
+        new vscode.Range(1, 0, 9, 0),
+        new vscode.Range(1, 0, 1, 10)
+    )
+    templatesSymbol.children.push(templateSymbol)
+
+    if (!includeOverrides) {
+        return templatesSymbol
+    }
+
+    const parameterOverridesSymbol = new vscode.DocumentSymbol(
+        'parameterOverrides',
+        'myDetail',
+        vscode.SymbolKind.Object,
+        new vscode.Range(2, 0, 8, 0),
+        new vscode.Range(2, 0, 2, 10)
+    )
+    templateSymbol.children.push(parameterOverridesSymbol)
+
+    if (!parameterName) {
+        return templatesSymbol
+    }
+
+    const parameterOverrideSymbol = new vscode.DocumentSymbol(
+        parameterName,
+        'myDetail',
+        vscode.SymbolKind.Property,
+        new vscode.Range(3, 0, 7, 0),
+        new vscode.Range(3, 0, 3, 10)
+    )
+    parameterOverridesSymbol.children.push(parameterOverrideSymbol)
+
+    return templatesSymbol
+}
+
 class MockSamParameterCompletionItemProviderContext implements SamParameterCompletionItemProviderContext {
     public readonly logger: Pick<Logger, 'warn'>
     public readonly getWorkspaceFolder: typeof vscode.workspace.getWorkspaceFolder
@@ -108,38 +167,10 @@ describe('SamParameterCompletionItemProvider', async () => {
     })
 
     it('suggests all parameter names if user has not started typing the parameter name', async () => {
-        const templatesSymbol = new vscode.DocumentSymbol(
-            'templates',
-            'myDetail',
-            vscode.SymbolKind.Object,
-            new vscode.Range(0, 0, 10, 0),
-            new vscode.Range(0, 0, 0, 10)
-        )
-        const templateSymbol = new vscode.DocumentSymbol(
-            path.join('my', 'template', 'uri'),
-            'myDetail',
-            vscode.SymbolKind.Object,
-            new vscode.Range(1, 0, 9, 0),
-            new vscode.Range(1, 0, 1, 10)
-        )
-        const parameterOverridesSymbol = new vscode.DocumentSymbol(
-            'parameterOverrides',
-            'myDetail',
-            vscode.SymbolKind.Object,
-            new vscode.Range(2, 0, 8, 0),
-            new vscode.Range(2, 0, 2, 10)
-        )
-        const parameterOverrideSymbol = new vscode.DocumentSymbol(
-            'myParamName',
-            'myDetail',
-            vscode.SymbolKind.Property,
-            new vscode.Range(3, 0, 7, 0),
-            new vscode.Range(3, 0, 3, 10)
-        )
-
-        parameterOverridesSymbol.children.push(parameterOverrideSymbol)
-        templateSymbol.children.push(parameterOverridesSymbol)
-        templatesSymbol.children.push(templateSymbol)
+        const templatesSymbol = createTemplatesSymbol({
+            includeOverrides: true,
+            parameterName: 'myParamName'
+        })
 
         const provider = new SamParameterCompletionItemProvider(new MockSamParameterCompletionItemProviderContext({
             executeCommand: async <T>() => [ templatesSymbol ] as any as T,
@@ -176,38 +207,10 @@ describe('SamParameterCompletionItemProvider', async () => {
     })
 
     it('suggests only matching parameter names if user has started typing the parameter name', async () => {
-        const templatesSymbol = new vscode.DocumentSymbol(
-            'templates',
-            'myDetail',
-            vscode.SymbolKind.Object,
-            new vscode.Range(0, 0, 10, 0),
-            new vscode.Range(0, 0, 0, 10)
-        )
-        const templateSymbol = new vscode.DocumentSymbol(
-            vscode.Uri.file(path.join('my', 'template', 'uri')).fsPath,
-            'myDetail',
-            vscode.SymbolKind.Object,
-            new vscode.Range(1, 0, 9, 0),
-            new vscode.Range(1, 0, 1, 10)
-        )
-        const parameterOverridesSymbol = new vscode.DocumentSymbol(
-            'parameterOverrides',
-            'myDetail',
-            vscode.SymbolKind.Object,
-            new vscode.Range(2, 0, 8, 0),
-            new vscode.Range(2, 0, 2, 10)
-        )
-        const parameterOverrideSymbol = new vscode.DocumentSymbol(
-            'MyParamName',
-            'myDetail',
-            vscode.SymbolKind.Property,
-            new vscode.Range(3, 0, 7, 0),
-            new vscode.Range(3, 0, 3, 10)
-        )
-
-        parameterOverridesSymbol.children.push(parameterOverrideSymbol)
-        templateSymbol.children.push(parameterOverridesSymbol)
-        templatesSymbol.children.push(templateSymbol)
+        const templatesSymbol = createTemplatesSymbol({
+            includeOverrides: true,
+            parameterName: 'myParamName'
+        })
 
         const provider = new SamParameterCompletionItemProvider(new MockSamParameterCompletionItemProviderContext({
             executeCommand: async <T>() => [ templatesSymbol ] as any as T,
@@ -264,38 +267,10 @@ describe('SamParameterCompletionItemProvider', async () => {
     })
 
     it('recovers gracefully if cursor is not within the `templates` property', async () => {
-        const templatesSymbol = new vscode.DocumentSymbol(
-            'templates',
-            'myDetail',
-            vscode.SymbolKind.Object,
-            new vscode.Range(0, 0, 10, 0),
-            new vscode.Range(0, 0, 0, 10)
-        )
-        const templateSymbol = new vscode.DocumentSymbol(
-            path.join('my', 'template', 'uri'),
-            'myDetail',
-            vscode.SymbolKind.Object,
-            new vscode.Range(1, 0, 9, 0),
-            new vscode.Range(1, 0, 1, 10)
-        )
-        const parameterOverridesSymbol = new vscode.DocumentSymbol(
-            'parameterOverrides',
-            'myDetail',
-            vscode.SymbolKind.Object,
-            new vscode.Range(2, 0, 8, 0),
-            new vscode.Range(2, 0, 2, 10)
-        )
-        const parameterOverrideSymbol = new vscode.DocumentSymbol(
-            'MyParamName',
-            'myDetail',
-            vscode.SymbolKind.Property,
-            new vscode.Range(3, 0, 7, 0),
-            new vscode.Range(3, 0, 3, 10)
-        )
-
-        parameterOverridesSymbol.children.push(parameterOverrideSymbol)
-        templateSymbol.children.push(parameterOverridesSymbol)
-        templatesSymbol.children.push(templateSymbol)
+        const templatesSymbol = createTemplatesSymbol({
+            includeOverrides: true,
+            parameterName: 'myParamName'
+        })
 
         const provider = new SamParameterCompletionItemProvider(new MockSamParameterCompletionItemProviderContext({
             executeCommand: async <T>() => [ templatesSymbol ] as any as T,
@@ -333,23 +308,7 @@ describe('SamParameterCompletionItemProvider', async () => {
     })
 
     it('recovers gracefully if `parameterOverrides` is not defined for this template', async () => {
-        const templatesSymbol = new vscode.DocumentSymbol(
-            'templates',
-            'myDetail',
-            vscode.SymbolKind.Object,
-            new vscode.Range(0, 0, 10, 0),
-            new vscode.Range(0, 0, 0, 10)
-        )
-        const templateSymbol = new vscode.DocumentSymbol(
-            path.join('my', 'template', 'uri'),
-            'myDetail',
-            vscode.SymbolKind.Object,
-            new vscode.Range(1, 0, 9, 0),
-            new vscode.Range(1, 0, 1, 10)
-        )
-
-        templatesSymbol.children.push(templateSymbol)
-
+        const templatesSymbol = createTemplatesSymbol({})
         const provider = new SamParameterCompletionItemProvider(new MockSamParameterCompletionItemProviderContext({
             executeCommand: async <T>() => [ templatesSymbol ] as any as T,
             getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
@@ -386,38 +345,10 @@ describe('SamParameterCompletionItemProvider', async () => {
     })
 
     it('recovers gracefully if cursor is not within the `parameterOverrides` property', async () => {
-        const templatesSymbol = new vscode.DocumentSymbol(
-            'templates',
-            'myDetail',
-            vscode.SymbolKind.Object,
-            new vscode.Range(0, 0, 10, 0),
-            new vscode.Range(0, 0, 0, 10)
-        )
-        const templateSymbol = new vscode.DocumentSymbol(
-            path.join('my', 'template', 'uri'),
-            'myDetail',
-            vscode.SymbolKind.Object,
-            new vscode.Range(1, 0, 9, 0),
-            new vscode.Range(1, 0, 1, 10)
-        )
-        const parameterOverridesSymbol = new vscode.DocumentSymbol(
-            'parameterOverrides',
-            'myDetail',
-            vscode.SymbolKind.Object,
-            new vscode.Range(2, 0, 8, 0),
-            new vscode.Range(2, 0, 2, 10)
-        )
-        const parameterOverrideSymbol = new vscode.DocumentSymbol(
-            'MyParamName',
-            'myDetail',
-            vscode.SymbolKind.Property,
-            new vscode.Range(3, 0, 7, 0),
-            new vscode.Range(3, 0, 3, 10)
-        )
-
-        parameterOverridesSymbol.children.push(parameterOverrideSymbol)
-        templateSymbol.children.push(parameterOverridesSymbol)
-        templatesSymbol.children.push(templateSymbol)
+        const templatesSymbol = createTemplatesSymbol({
+            includeOverrides: true,
+            parameterName: 'myParamName'
+        })
 
         const provider = new SamParameterCompletionItemProvider(new MockSamParameterCompletionItemProviderContext({
             executeCommand: async <T>() => [ templatesSymbol ] as any as T,
@@ -455,38 +386,10 @@ describe('SamParameterCompletionItemProvider', async () => {
     })
 
     it('recovers gracefully if cursor is not within a property name within `parameterOverrides`', async () => {
-        const templatesSymbol = new vscode.DocumentSymbol(
-            'templates',
-            'myDetail',
-            vscode.SymbolKind.Object,
-            new vscode.Range(0, 0, 10, 0),
-            new vscode.Range(0, 0, 0, 10)
-        )
-        const templateSymbol = new vscode.DocumentSymbol(
-            path.join('my', 'template', 'uri'),
-            'myDetail',
-            vscode.SymbolKind.Object,
-            new vscode.Range(1, 0, 9, 0),
-            new vscode.Range(1, 0, 1, 10)
-        )
-        const parameterOverridesSymbol = new vscode.DocumentSymbol(
-            'parameterOverrides',
-            'myDetail',
-            vscode.SymbolKind.Object,
-            new vscode.Range(2, 0, 8, 0),
-            new vscode.Range(2, 0, 2, 10)
-        )
-        const parameterOverrideSymbol = new vscode.DocumentSymbol(
-            'MyParamName',
-            'myDetail',
-            vscode.SymbolKind.Property,
-            new vscode.Range(3, 0, 7, 0),
-            new vscode.Range(3, 0, 3, 10)
-        )
-
-        parameterOverridesSymbol.children.push(parameterOverrideSymbol)
-        templateSymbol.children.push(parameterOverridesSymbol)
-        templatesSymbol.children.push(templateSymbol)
+        const templatesSymbol = createTemplatesSymbol({
+            includeOverrides: true,
+            parameterName: 'myParamName'
+        })
 
         const provider = new SamParameterCompletionItemProvider(new MockSamParameterCompletionItemProviderContext({
             executeCommand: async <T>() => [ templatesSymbol ] as any as T,
