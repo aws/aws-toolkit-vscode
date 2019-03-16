@@ -29,9 +29,9 @@ inline fun <reified T : Any> readFile(f: File): T {
 
 @JsonSerialize(using = ChangeType.Serializer::class)
 enum class ChangeType(val sectionTitle: String) {
+    BREAKING("Breaking Change"),
     FEATURE("Feature"),
     BUGFIX("Bug Fix"),
-    BREAKING("Breaking Change"),
     DEPRECATION("Deprecation"),
     REMOVAL("Removal");
 
