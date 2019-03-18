@@ -19,6 +19,7 @@ const functionsToTest = [
     'stat',
     'mkdir',
     'mkdtemp',
+    'unlink',
     'writeFile',
 ]
 
