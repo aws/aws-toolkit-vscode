@@ -13,7 +13,7 @@ import { detectLocalLambdas } from '../../lambda/local/detectLocalLambdas'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { writeFile } from '../filesystem'
 import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
-import { SamCliBuildInvocation } from '../sam/cli/samCliBuild'
+import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from '../sam/cli/samCliBuild'
 import { SamCliProcessInvoker, SamCliTaskInvoker } from '../sam/cli/samCliInvoker'
 import { SamCliLocalInvokeInvocation } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
@@ -23,18 +23,25 @@ import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { getChannelLogger, localize } from '../utilities/vsCodeUtils'
 
-export interface LambdaLocalInvokeArguments {
+export interface LambdaLocalInvokeParams {
     document: vscode.TextDocument,
     range: vscode.Range,
     handlerName: string,
     isDebug: boolean,
-    workspaceFolder: vscode.WorkspaceFolder
+    workspaceFolder: vscode.WorkspaceFolder,
 }
 
 export interface SAMTemplateEnvironmentVariables {
     [resource: string]: {
         [key: string]: string
     }
+}
+
+export interface OnDidSamBuildParams {
+    buildDir: string,
+    debugPort: number,
+    handlerName: string,
+    isDebug: boolean
 }
 
 export class LocalLambdaRunner {
@@ -48,7 +55,7 @@ export class LocalLambdaRunner {
 
     public constructor(
         private readonly configuration: SettingsConfiguration,
-        private readonly localInvokeArgs: LambdaLocalInvokeArguments,
+        private readonly localInvokeParams: LambdaLocalInvokeParams,
         debugPort: number | undefined,
         private readonly runtime: string,
         private readonly outputChannel: vscode.OutputChannel,
@@ -56,11 +63,12 @@ export class LocalLambdaRunner {
         private readonly taskInvoker: SamCliTaskInvoker,
         private readonly debugConfig: DebugConfiguration,
         private readonly codeRootDirectoryPath: string,
+        private readonly manifestPath?: string,
+        private readonly onDidSamBuild?: (params: OnDidSamBuildParams) => Promise<void>,
         private readonly onWillAttachDebugger?: () => Promise<void>,
-        private readonly onDidSamBuild?: () => Promise<void>,
-        private readonly channelLogger = getChannelLogger(outputChannel)
+        private readonly channelLogger = getChannelLogger(outputChannel),
     ) {
-        if (localInvokeArgs.isDebug && !debugPort) {
+        if (localInvokeParams.isDebug && !debugPort) {
             throw new Error('Debug port must be provided when launching in debug mode')
         }
 
@@ -75,7 +83,7 @@ export class LocalLambdaRunner {
             this.channelLogger.info(
                 'AWS.output.sam.local.start',
                 'Preparing to run {0} locally...',
-                this.localInvokeArgs.handlerName
+                this.localInvokeParams.handlerName
             )
 
             const inputTemplate: string = await this.generateInputTemplate(this.codeRootDirectoryPath)
@@ -141,15 +149,15 @@ export class LocalLambdaRunner {
         // Make function handler relative to baseDir
         const handlerFileRelativePath = path.relative(
             rootCodeFolder,
-            path.dirname(this.localInvokeArgs.document.uri.fsPath)
+            path.dirname(this.localInvokeParams.document.uri.fsPath)
         )
 
         const relativeFunctionHandler = path.join(
             handlerFileRelativePath,
-            this.localInvokeArgs.handlerName
+            this.localInvokeParams.handlerName
         ).replace('\\', '/')
 
-        const workspaceFolder = vscode.workspace.getWorkspaceFolder(this.localInvokeArgs.workspaceFolder.uri)
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(this.localInvokeParams.workspaceFolder.uri)
         let existingTemplateResource: CloudFormation.Resource | undefined
         if (workspaceFolder) {
             const lambdas = await detectLocalLambdas([workspaceFolder])
@@ -184,12 +192,16 @@ export class LocalLambdaRunner {
 
         const samBuildOutputFolder = path.join(await this.getBaseBuildFolder(), 'output')
 
-        await new SamCliBuildInvocation({
+        const samCliArgs: SamCliBuildInvocationArguments = {
             buildDir: samBuildOutputFolder,
             baseDir: rootCodeFolder,
             templatePath: inputTemplatePath,
             invoker: this.processInvoker
-        }).execute()
+        }
+        if (this.manifestPath) {
+            samCliArgs.manifestPath = this.manifestPath
+        }
+        await new SamCliBuildInvocation(samCliArgs).execute()
 
         this.channelLogger.info(
             'AWS.output.building.sam.application.complete',
@@ -198,7 +210,12 @@ export class LocalLambdaRunner {
 
         if (this.onDidSamBuild) {
             // Enable post build tasks if needed
-            await this.onDidSamBuild()
+            await this.onDidSamBuild({
+                buildDir: samBuildOutputFolder,
+                debugPort: this._debugPort!, // onDidSamBuild will only be called for debug, _debugPort will be defined
+                handlerName: this.localInvokeParams.handlerName,
+                isDebug: this.localInvokeParams.isDebug
+             })
         }
 
         return path.join(samBuildOutputFolder, 'template.yaml')
@@ -237,7 +254,7 @@ export class LocalLambdaRunner {
 
         await command.execute()
 
-        if (this.localInvokeArgs.isDebug) {
+        if (this.localInvokeParams.isDebug) {
             this.channelLogger.info(
                 'AWS.output.sam.local.waiting',
                 'Waiting for SAM Application to start before attaching debugger...'
@@ -259,14 +276,14 @@ export class LocalLambdaRunner {
     }
 
     private async getConfig(): Promise<HandlerConfig> {
-        const workspaceFolder = vscode.workspace.getWorkspaceFolder(this.localInvokeArgs.document.uri)
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(this.localInvokeParams.document.uri)
         if (!workspaceFolder) {
             return buildHandlerConfig()
         }
 
         const config: HandlerConfig = await getLocalLambdaConfiguration(
             workspaceFolder,
-            this.localInvokeArgs.handlerName
+            this.localInvokeParams.handlerName
         )
 
         return config

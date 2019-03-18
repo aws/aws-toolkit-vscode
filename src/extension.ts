@@ -75,7 +75,9 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         await ext.telemetry.start()
 
-        context.subscriptions.push(...activateCodeLensProviders(awsContext.settingsConfiguration, toolkitOutputChannel))
+        context.subscriptions.push(
+            ...await activateCodeLensProviders(awsContext.settingsConfiguration, toolkitOutputChannel)
+        )
 
         registerCommand({
             command: 'aws.login',
@@ -161,10 +163,10 @@ export async function deactivate() {
     await ext.telemetry.shutdown()
 }
 
-function activateCodeLensProviders(
+async function activateCodeLensProviders(
     configuration: SettingsConfiguration,
     toolkitOutputChannel: vscode.OutputChannel
-): vscode.Disposable[] {
+): Promise<vscode.Disposable[]> {
     const disposables: vscode.Disposable[] = []
     const providerParams = {
         configuration,
@@ -188,7 +190,7 @@ function activateCodeLensProviders(
     pyLensProvider.initialize(providerParams)
     disposables.push(vscode.languages.registerCodeLensProvider(
         pyLensProvider.PYTHON_ALLFILES,
-        pyLensProvider.makePythonCodeLensProvider()
+        await pyLensProvider.makePythonCodeLensProvider()
     ))
 
     return disposables

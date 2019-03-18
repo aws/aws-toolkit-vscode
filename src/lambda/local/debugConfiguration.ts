@@ -11,10 +11,25 @@ export interface DebugConfiguration extends vscode.DebugConfiguration {
     readonly type: 'node' | 'python'
     readonly request: 'attach' | 'launch'
     readonly name: string
+    readonly port: number
+}
+
+export interface NodejsDebugConfiguration extends DebugConfiguration {
+    readonly type: 'node'
     readonly preLaunchTask?: string
     readonly address: 'localhost'
-    readonly port: number
     readonly localRoot: string
     readonly remoteRoot: '/var/task'
     readonly skipFiles?: string[]
+}
+
+export interface PythonDebugConfiguration extends DebugConfiguration {
+    type: 'python'
+    host: string
+    pathMappings: [
+        {
+            localRoot: string
+            remoteRoot: string
+        }
+    ]
 }
