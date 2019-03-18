@@ -22,7 +22,7 @@ export type Language = 'python' | 'javascript'
 
 export interface CodeLensProviderParams {
     configuration: SettingsConfiguration,
-    toolkitOutputChannel: vscode.OutputChannel, // TODO: Rename this lambdaOuputChannel? ouputChannel? Provide both?
+    outputChannel: vscode.OutputChannel,
     processInvoker?: SamCliProcessInvoker,
     taskInvoker?: SamCliTaskInvoker
 }
@@ -68,9 +68,9 @@ export async function makeCodeLenses({ document, token, handlers, language }: {
             language
         }
         lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: false }))
-        if (language !== 'python') {
-            // TODO: Add debugging support for Python and make this run unconditionally
-            lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: true }))
+        if (language !== 'python' || process.platform === 'win32') {
+            // TODO: Run this unconditionally once we figure out remaining python debugging oddities
+            lenses.push(makeLocalInvokeCodeLens({...baseParams, isDebug: true}))
         }
 
         try {

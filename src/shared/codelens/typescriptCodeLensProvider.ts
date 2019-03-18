@@ -8,7 +8,7 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 
-import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
+import { NodejsDebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { findFileInParentPaths } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import {
@@ -26,11 +26,7 @@ import {
     getMetricDatum,
     makeCodeLenses,
 } from './codeLensUtils'
-import { LambdaLocalInvokeArguments, LocalLambdaRunner } from './localLambdaRunner'
-
-interface NodeDebugConfiguration extends DebugConfiguration {
-    readonly protocol: 'legacy' | 'inspector'
-}
+import { LambdaLocalInvokeParams, LocalLambdaRunner } from './localLambdaRunner'
 
 async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
     const packageJsonPath: string | undefined = await findFileInParentPaths(
@@ -52,22 +48,21 @@ async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
 
 export function initialize({
     configuration,
-    toolkitOutputChannel,
+    outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultSamCliProcessInvoker(),
     taskInvoker = new DefaultSamCliTaskInvoker()
 }: CodeLensProviderParams): void {
     const runtime = 'nodejs8.10' // TODO: Remove hard coded value
 
-    const invokeLambda = async (args: LambdaLocalInvokeArguments) => {
-        const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
+    const invokeLambda = async (params: LambdaLocalInvokeParams) => {
+        const samProjectCodeRoot = await getSamProjectDirPathForFile(params.document.uri.fsPath)
         let debugPort: number | undefined
 
-        if (args.isDebug) {
+        if (params.isDebug) {
             debugPort  = await getDebugPort()
         }
 
-        // TODO: Figure out Python specific params and create PythonDebugConfiguration if needed
-        const debugConfig: NodeDebugConfiguration = {
+        const debugConfig: NodejsDebugConfiguration = {
             type: 'node',
             request: 'attach',
             name: 'SamLocalDebug',
@@ -85,7 +80,7 @@ export function initialize({
 
         const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
             configuration,
-            args,
+            params,
             debugPort,
             runtime,
             toolkitOutputChannel,
@@ -101,11 +96,11 @@ export function initialize({
     const command = getInvokeCmdKey('javascript')
     registerCommand({
         command: command,
-        callback: async (args: LambdaLocalInvokeArguments): Promise<{ datum: Datum }> => {
-            await invokeLambda(args)
+        callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
+            await invokeLambda(params)
 
             return getMetricDatum({
-                isDebug: args.isDebug,
+                isDebug: params.isDebug,
                 command,
                 runtime,
             })
