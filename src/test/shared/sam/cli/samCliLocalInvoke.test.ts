@@ -172,51 +172,6 @@ describe('SamCliLocalInvokeInvocation', async () => {
         }).execute()
     })
 
-    it('passes --use-container to sam cli if useContainer is true', async () => {
-        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
-            assertArgIsPresent(args, '--use-container')
-        })
-
-        await new SamCliLocalInvokeInvocation({
-            templateResourceName: nonRelevantArg,
-            templatePath: placeholderTemplateFile,
-            eventPath: placeholderEventFile,
-            environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
-            useContainer: true,
-        }).execute()
-    })
-
-    it('does not pass --use-container to sam cli if useContainer is false', async () => {
-        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
-            assertArgNotPresent(args, '--use-container')
-        })
-
-        await new SamCliLocalInvokeInvocation({
-            templateResourceName: nonRelevantArg,
-            templatePath: placeholderTemplateFile,
-            eventPath: placeholderEventFile,
-            environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
-            useContainer: false,
-        }).execute()
-    })
-
-    it('does not pass --use-container to sam cli if useContainer is undefined', async () => {
-        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
-            assertArgNotPresent(args, '--use-container')
-        })
-
-        await new SamCliLocalInvokeInvocation({
-            templateResourceName: nonRelevantArg,
-            templatePath: placeholderTemplateFile,
-            eventPath: placeholderEventFile,
-            environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
-            useContainer: undefined,
-        }).execute()
-    })
-
     it('Passes docker network to sam cli', async () => {
         const expectedDockerNetwork = 'hello-world'
 

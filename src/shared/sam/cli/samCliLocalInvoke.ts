@@ -35,11 +35,6 @@ export interface SamCliLocalInvokeInvocationArguments {
      */
     invoker: SamCliTaskInvoker,
     /**
-     * If your functions depend on packages that have natively compiled dependencies,
-     * use this flag to build your function inside an AWS Lambda-like Docker container.
-     */
-    useContainer?: boolean,
-    /**
      * Specifies the name or id of an existing Docker network to Lambda Docker containers should connect to,
      * along with the default bridge network.
      * If not specified, the Lambda containers will only connect to the default bridge Docker network.
@@ -58,19 +53,16 @@ export class SamCliLocalInvokeInvocation {
     private readonly environmentVariablePath: string
     private readonly debugPort?: string
     private readonly invoker: SamCliTaskInvoker
-    private readonly useContainer: boolean
     private readonly dockerNetwork?: string
     private readonly skipPullImage: boolean
 
     /**
      * @see SamCliLocalInvokeInvocationArguments for parameter info
      * invoker - Defaults to DefaultSamCliTaskInvoker
-     * useContainer - Defaults to false (function will be built on local machine instead of in a docker image)
      * skipPullImage - Defaults to false (the latest Docker image will be pulled down if necessary)
      */
     public constructor({
         invoker = new DefaultSamCliTaskInvoker(),
-        useContainer = false,
         skipPullImage = false,
         ...params
     }: SamCliLocalInvokeInvocationArguments
@@ -81,7 +73,6 @@ export class SamCliLocalInvokeInvocation {
         this.environmentVariablePath = params.environmentVariablePath
         this.debugPort = params.debugPort
         this.invoker = invoker
-        this.useContainer = useContainer
         this.dockerNetwork = params.dockerNetwork
         this.skipPullImage = skipPullImage
     }
@@ -103,7 +94,6 @@ export class SamCliLocalInvokeInvocation {
 
         this.addArgumentIf(args, !!this.debugPort, '-d', this.debugPort!)
         this.addArgumentIf(args, !!this.dockerNetwork, '--docker-network', this.dockerNetwork!)
-        this.addArgumentIf(args, !!this.useContainer, '--use-container')
         this.addArgumentIf(args, !!this.skipPullImage, '--skip-pull-image')
 
         const execution = new vscode.ShellExecution('sam', args)
