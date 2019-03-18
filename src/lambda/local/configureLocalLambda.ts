@@ -23,13 +23,13 @@ const localize = nls.loadMessageBundle()
 export interface HandlerConfig {
     event: {},
     environmentVariables: {
-        [ name: string ]: string
+        [name: string]: string
     }
 }
 
 export interface HandlersConfig {
     handlers: {
-        [ handler: string ]: HandlerConfig | undefined
+        [handler: string]: HandlerConfig | undefined
     }
 }
 
@@ -165,15 +165,23 @@ async function prepareConfig(
     let shouldLoop: boolean = !symbols
 
     while (!symbols && shouldLoop) {
-        const responseRetry: string     = localize('AWS.message.prompt.cantLoadHandlers.retry',
-                                                   'Retry')
-        const responseOverwrite: string = localize('AWS.message.prompt.cantLoadHandlers.overwrite',
-                                                   'Overwrite existing handlers.json')
-        const responseCancel: string    = localize('AWS.message.prompt.cantLoadHandlers.cancel',
-                                                   'Cancel')
+        const responseRetry: string = localize(
+            'AWS.message.prompt.cantLoadHandlers.retry',
+            'Retry'
+        )
+        const responseOverwrite: string = localize(
+            'AWS.message.prompt.cantLoadHandlers.overwrite',
+            'Overwrite existing handlers.json'
+        )
+        const responseCancel: string = localize(
+            'AWS.message.prompt.cantLoadHandlers.cancel',
+            'Cancel'
+        )
         const failMessage = await context.showInformationMessage(
-            localize('AWS.message.prompt.cantLoadHandlers.message',
-                     'There was an issue parsing your handlers.json file.'),
+            localize(
+                'AWS.message.prompt.cantLoadHandlers.message',
+                'There was an issue parsing your handlers.json file.'
+            ),
             responseRetry,
             responseOverwrite,
             responseCancel
