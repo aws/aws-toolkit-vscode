@@ -4,7 +4,6 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
-    ext.kotlinVersion = "$kotlinVersion"
 
     repositories {
         maven {
@@ -104,8 +103,8 @@ subprojects {
             sourceDirs -= file("it")
             testSourceDirs += file("it")
 
-            sourceDirs -= file("it-resources")
-            testSourceDirs += file("it-resources")
+            resourceDirs -= file("it-resources")
+            testResourceDirs += file("it-resources")
         }
     }
 
