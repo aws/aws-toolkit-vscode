@@ -14,7 +14,8 @@ import {
     getParameterNames,
     getParameters,
     GetParametersContext,
-} from '../../../lambda/config/parameterUtils'
+} from '../../../lambda/utilities/parameterUtils'
+import { getNormalizedRelativePath } from '../../../shared/utilities/pathUtils'
 
 describe('parameterUtils', async () => {
     describe('getParameters', async () => {
@@ -132,13 +133,9 @@ describe('parameterUtils', async () => {
     })
 
     describe('getOverriddenParameters', async () => {
-        const workspaceFolderPath = path.join('my', 'workspace', 'folder')
-        const relativeTemplatePath = path.join('my', 'template.yaml')
-        const templatePath = path.join(workspaceFolderPath, relativeTemplatePath)
-
-        const workspaceFolderUri = vscode.Uri.file(workspaceFolderPath)
-        const relativeTemplateUri = vscode.Uri.file(relativeTemplatePath)
-        const templateUri = vscode.Uri.file(templatePath)
+        const workspaceFolderUri = vscode.Uri.file(path.join('my', 'workspace', 'folder'))
+        const templateUri = vscode.Uri.file(path.join(workspaceFolderUri.fsPath, 'some', 'template.yaml'))
+        const templateId = getNormalizedRelativePath(workspaceFolderUri.fsPath, templateUri.fsPath)
 
         it('throws if template is not in the workspace', async () => {
             const context: GetOverriddenParametersContext = {
@@ -180,7 +177,7 @@ describe('parameterUtils', async () => {
                 }),
                 loadTemplatesConfig: async () => ({
                     templates: {
-                        [relativeTemplateUri.fsPath]: {}
+                        [templateId]: {}
                     }
                 })
             }
@@ -196,7 +193,7 @@ describe('parameterUtils', async () => {
                 }),
                 loadTemplatesConfig: async () => ({
                     templates: {
-                        [relativeTemplateUri.fsPath]: {
+                        [templateId]: {
                             parameterOverrides: {}
                         }
                     }
@@ -215,7 +212,7 @@ describe('parameterUtils', async () => {
                 }),
                 loadTemplatesConfig: async () => ({
                     templates: {
-                        [relativeTemplateUri.fsPath]: {
+                        [templateId]: {
                             parameterOverrides: {
                                 MyParamName1: 'MyParamValue1',
                                 MyParamName2: 'MyParamValue2',

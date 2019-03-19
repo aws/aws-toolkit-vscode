@@ -5,10 +5,10 @@
 
 'use strict'
 
-import * as path from 'path'
 import * as vscode from 'vscode'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
-import { load as loadTemplatesConfig } from './templates'
+import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'
+import { load as loadTemplatesConfig } from '../config/templates'
 
 export interface GetParametersContext {
     loadTemplate: typeof CloudFormation.load
@@ -40,7 +40,7 @@ export async function getParameters(
 export async function getParameterNames(
     templateUri: vscode.Uri,
     context: GetParametersContext = { loadTemplate: CloudFormation.load }
-) {
+): Promise<string[]> {
     return [...(await getParameters(templateUri, context)).keys()]
 }
 
@@ -64,7 +64,7 @@ export async function getOverriddenParameters(
         throw new Error(`The template ${templateUri.fsPath} is not in the workspace`)
     }
 
-    const relativeTemplatePath = vscode.Uri.file(path.relative(workspaceFolder.uri.fsPath, templateUri.fsPath)).fsPath
+    const relativeTemplatePath = getNormalizedRelativePath(workspaceFolder.uri.fsPath, templateUri.fsPath)
     const templatesConfig = await context.loadTemplatesConfig(workspaceFolder.uri.fsPath)
     const templateConfig = templatesConfig.templates[relativeTemplatePath]
     if (!templateConfig || !templateConfig.parameterOverrides) {
