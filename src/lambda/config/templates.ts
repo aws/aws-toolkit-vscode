@@ -7,12 +7,10 @@
 
 // Use jsonc-parser.parse instead of JSON.parse, as JSONC can handle comments. VS Code uses jsonc-parser
 // under the hood to provide symbols for JSON documents, so this will keep us consistent with VS code.
-import * as fs from 'fs'
 import { parse, ParseError, ParseErrorCode } from 'jsonc-parser'
 import * as os from 'os'
 import * as _path from 'path'
 import * as vscode from 'vscode'
-import { writeFile } from '../../shared/filesystem'
 import * as fsUtils from '../../shared/filesystemUtilities'
 
 export interface TemplatesConfig {
@@ -72,16 +70,6 @@ export class DefaultLoadTemplatesConfigContext implements LoadTemplatesConfigCon
             await document.save()
         }
     }
-}
-
-export interface TemplatesConfigPopulatorContext {
-    loadTemplatesConfigContext: LoadTemplatesConfigContext
-    writeFile(path: fs.PathLike | number, data: any): Thenable<void>
-}
-
-export class DefaultTemplatesConfigPopulatorContext implements TemplatesConfigPopulatorContext {
-    public readonly writeFile = writeFile
-    public readonly loadTemplatesConfigContext = new DefaultLoadTemplatesConfigContext()
 }
 
 export function getTemplatesConfigPath(workspaceFolderPath: string): string {
@@ -197,12 +185,9 @@ function getParseErrorDescription(code: ParseErrorCode): string {
 export class TemplatesConfigPopulator {
     private isDirty: boolean = false
 
-    private constructor(
-        private readonly templatesConfigPath: string,
+    public constructor(
         private config: TemplatesConfig,
-        private readonly context: TemplatesConfigPopulatorContext = new DefaultTemplatesConfigPopulatorContext(),
     ) {
-
     }
 
     public ensureTemplateSectionExists(templateRelativePath: string): TemplatesConfigPopulator {
@@ -254,17 +239,14 @@ export class TemplatesConfigPopulator {
         return this
     }
 
-    public async save(): Promise<void> {
-        if (this.isDirty) {
-            await this.context.writeFile(
-                this.templatesConfigPath,
-                JSON.stringify(this.config, undefined, 4)
-            )
+    public getResults(): {
+        isDirty: boolean,
+        templatesConfig: TemplatesConfig
+    } {
+        return {
+            isDirty: this.isDirty,
+            templatesConfig: this.config
         }
-    }
-
-    public getTemplatesConfig(): TemplatesConfig {
-        return this.config
     }
 
     private ensureTemplatesSectionExists(): TemplatesConfigPopulator {
@@ -292,17 +274,5 @@ export class TemplatesConfigPopulator {
         }
 
         return this
-    }
-
-    public static async builder(
-        templatesConfigPath: string,
-        context: TemplatesConfigPopulatorContext = new DefaultTemplatesConfigPopulatorContext()
-    ): Promise<TemplatesConfigPopulator> {
-        const config: TemplatesConfig = await loadTemplatesConfig(
-            templatesConfigPath,
-            context.loadTemplatesConfigContext
-        )
-
-        return new TemplatesConfigPopulator(templatesConfigPath, config, context)
     }
 }

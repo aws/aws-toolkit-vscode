@@ -6,12 +6,14 @@
 'use strict'
 
 import * as vscode from 'vscode'
+import { writeFile } from '../../shared/filesystem'
 import { getLogger, Logger } from '../../shared/logger'
 import { getChildrenRange } from '../../shared/utilities/symbolUtilities'
 import {
     getTemplateRelativePath,
     getTemplatesConfigPath,
     HandlerConfig,
+    load,
     TemplatesConfigPopulator
 } from '../config/templates'
 
@@ -37,13 +39,19 @@ export async function configureLocalLambda(
 
     const templateRelativePath = getTemplateRelativePath(samTemplate.fsPath, workspaceFolder.uri.fsPath)
     const configPath: string = getTemplatesConfigPath(workspaceFolder.uri.fsPath)
-    const configPathUri = vscode.Uri.file(configPath)
 
-    const templatesConfigEnsurer: TemplatesConfigPopulator = (await TemplatesConfigPopulator.builder(configPath))
+    const configPopulationResult = new TemplatesConfigPopulator(await load(configPath))
         .ensureTemplateHandlerPropertiesExist(templateRelativePath, handler)
+        .getResults()
 
-    await templatesConfigEnsurer.save()
+    if (configPopulationResult.isDirty) {
+        await writeFile(
+            configPath,
+            JSON.stringify(configPopulationResult.templatesConfig, undefined, 4)
+        )
+    }
 
+    const configPathUri = vscode.Uri.file(configPath)
     const editor: vscode.TextEditor = await context.showTextDocument(configPathUri)
     // Perf: TextDocument.save is smart enough to no-op if the document is not dirty.
     await editor.document.save()
@@ -62,12 +70,11 @@ export async function getLocalLambdaConfiguration(
     const templateRelativePath = getTemplateRelativePath(samTemplate.fsPath, workspaceFolder.uri.fsPath)
     const configPath: string = getTemplatesConfigPath(workspaceFolder.uri.fsPath)
 
-    const templatesConfigEnsurer: TemplatesConfigPopulator = await TemplatesConfigPopulator.builder(configPath)
-    const templatesConfig = templatesConfigEnsurer
+    const configPopulationResult = new TemplatesConfigPopulator(await load(configPath))
         .ensureTemplateHandlerSectionExists(templateRelativePath, handler)
-        .getTemplatesConfig()
+        .getResults()
 
-    return templatesConfig.templates[templateRelativePath].handlers![handler]!
+    return configPopulationResult.templatesConfig.templates[templateRelativePath].handlers![handler]!
 }
 
 async function getEventRange(
