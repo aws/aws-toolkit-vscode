@@ -80,8 +80,8 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
 
         val tempFile = FileUtil.createTempFile("lambda", ".zip")
 
-        val packager = mock<LambdaBuilder> {
-            on { packageLambda(any(), any(), any(), any(), any()) } doReturn CompletableFuture.completedFuture(tempFile.toPath())
+        val lambdaBuilder = mock<LambdaBuilder> {
+            on { packageLambda(any(), any(), any(), any(), any(), any()) } doReturn CompletableFuture.completedFuture(tempFile.toPath())
         }
 
         val psiFile = projectRule.fixture.addClass(
@@ -96,7 +96,7 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
             """
         ).containingFile
 
-        val lambdaCreator = LambdaCreatorFactory.create(mockClientManager.manager(), packager)
+        val lambdaCreator = LambdaCreatorFactory.create(mockClientManager.manager(), lambdaBuilder)
         lambdaCreator.createLambda(projectRule.module, psiFile, functionDetails, s3Bucket).toCompletableFuture()
             .get(5, TimeUnit.SECONDS)
 
@@ -157,8 +157,8 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
 
         val tempFile = FileUtil.createTempFile("lambda", ".zip")
 
-        val packager = mock<LambdaBuilder> {
-            on { packageLambda(any(), any(), any(), any(), any()) } doReturn CompletableFuture.completedFuture(tempFile.toPath())
+        val lambdaBuilder = mock<LambdaBuilder> {
+            on { packageLambda(any(), any(), any(), any(), any(), any()) } doReturn CompletableFuture.completedFuture(tempFile.toPath())
         }
 
         val psiFile = projectRule.fixture.addClass(
@@ -173,7 +173,7 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
             """
         ).containingFile
 
-        val lambdaCreator = LambdaCreatorFactory.create(mockClientManager.manager(), packager)
+        val lambdaCreator = LambdaCreatorFactory.create(mockClientManager.manager(), lambdaBuilder)
         lambdaCreator.updateLambda(projectRule.module, psiFile, functionDetails, s3Bucket).toCompletableFuture()
             .get(5, TimeUnit.SECONDS)
 

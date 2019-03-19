@@ -141,8 +141,9 @@ abstract class LambdaBuilder {
         handlerElement: PsiElement,
         handler: String,
         runtime: Runtime,
-        samOptions: SamOptions
-    ): CompletionStage<Path> = buildLambda(module, handlerElement, handler, runtime, emptyMap(), samOptions)
+        samOptions: SamOptions,
+        onStart: (ProcessHandler) -> Unit = {}
+    ): CompletionStage<Path> = buildLambda(module, handlerElement, handler, runtime, emptyMap(), samOptions, onStart)
         .thenApply { lambdaLocation ->
             val zipLocation = FileUtil.createTempFile("builtLambda", "zip", true)
             Compressor.Zip(zipLocation).use {
@@ -173,11 +174,13 @@ data class BuiltLambda(
 
 // TODO Use these in this class
 sealed class BuildLambdaRequest
+
 data class BuildLambdaFromTemplate(
     val templateLocation: Path,
     val logicalId: String,
     val samOptions: SamOptions
 ) : BuildLambdaRequest()
+
 data class BuildLambdaFromHandler(
     val handlerElement: PsiElement,
     val handler: String,
@@ -185,3 +188,10 @@ data class BuildLambdaFromHandler(
     val envVars: Map<String, String>,
     val samOptions: SamOptions
 ) : BuildLambdaRequest()
+
+data class PackageLambdaFromHandler(
+    val handlerElement: PsiElement,
+    val handler: String,
+    val runtime: Runtime,
+    val samOptions: SamOptions
+)

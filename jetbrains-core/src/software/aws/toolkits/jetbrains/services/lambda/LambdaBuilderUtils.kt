@@ -15,15 +15,17 @@ import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessListener
 import com.intellij.execution.process.ProcessOutputTypes
-import com.intellij.openapi.application.ModalityState
-import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.module.Module
+import com.intellij.openapi.progress.PerformInBackgroundOption
 import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.Key
 import software.aws.toolkits.resources.message
+import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 
@@ -31,79 +33,116 @@ object LambdaBuilderUtils {
     fun buildAndReport(
         module: Module,
         runtimeGroup: RuntimeGroup,
-        request: BuildLambdaRequest
+        request: BuildLambdaRequest,
+        lambdaBuilder: LambdaBuilder = LambdaBuilder.getInstanceOrThrow(runtimeGroup)
     ): CompletionStage<BuiltLambda> {
-        val future = CompletableFuture<BuiltLambda>()
         val project = module.project
 
         val buildViewManager = ServiceManager.getService(project, BuildViewManager::class.java)
         val workingDir = ModuleRootManager.getInstance(module).contentRoots.getOrNull(0)?.path ?: ""
+        val descriptor = DefaultBuildDescriptor(
+            request,
+            message("sam.build.title"),
+            workingDir,
+            System.currentTimeMillis()
+        )
 
-        runInEdt(ModalityState.NON_MODAL) {
-            val descriptor = DefaultBuildDescriptor(request, message("sam.build.title"), workingDir, System.currentTimeMillis())
-            buildViewManager.onEvent(StartBuildEventImpl(descriptor, message("sam.build.title")))
+        buildViewManager.onEvent(StartBuildEventImpl(descriptor, message("sam.build.title")))
 
-            // TODO: Make cancellable
-            object : Task.Backgroundable(module.project, message("sam.build.running"), false) {
+        return runSamBuildInBackground(project) {
+            runSamBuild(
+                lambdaBuilder,
+                module,
+                request,
+                BuildProcessListener(request, buildViewManager)
+            )
+        }
+    }
+
+    fun packageAndReport(
+        module: Module,
+        runtimeGroup: RuntimeGroup,
+        request: PackageLambdaFromHandler,
+        lambdaBuilder: LambdaBuilder = LambdaBuilder.getInstanceOrThrow(runtimeGroup)
+    ): CompletionStage<Path> {
+        val project = module.project
+
+        val buildViewManager = ServiceManager.getService(project, BuildViewManager::class.java)
+        val workingDir = ModuleRootManager.getInstance(module).contentRoots.getOrNull(0)?.path ?: ""
+        val descriptor = DefaultBuildDescriptor(
+            request,
+            message("sam.build.title"),
+            workingDir,
+            System.currentTimeMillis()
+        )
+
+        buildViewManager.onEvent(StartBuildEventImpl(descriptor, message("sam.build.title")))
+
+        return runSamBuildInBackground(project) {
+            lambdaBuilder.packageLambda(
+                module,
+                request.handlerElement,
+                request.handler,
+                request.runtime,
+                request.samOptions
+            ) { it.addProcessListener(BuildProcessListener(request, buildViewManager)) }
+        }
+    }
+
+    private inline fun <T> runSamBuildInBackground(project: Project, crossinline task: () -> CompletionStage<T>): CompletionStage<T> {
+        val future = CompletableFuture<T>()
+
+        // TODO: Make cancellable
+        ProgressManager.getInstance().run(
+            object : Task.Backgroundable(
+                project,
+                message("sam.build.running"),
+                false,
+                PerformInBackgroundOption.ALWAYS_BACKGROUND
+            ) {
                 // This call needs to block so the progress bar is alive the entire time
                 override fun run(indicator: ProgressIndicator) {
                     // TODO: Flatten futures by making LambdaBuilder not return completable future
-                    runSamBuild(
-                        module,
-                        runtimeGroup,
-                        request,
-                        BuildProcessListener(
-                            request,
-                            buildViewManager
-                        )
-                    )
-                        .handle { builtLambda, error ->
-                            error?.let {
-                                future.completeExceptionally(error)
-                            } ?: future.complete(builtLambda)
-                        }
-                        .toCompletableFuture().get()
+                    task.invoke().handle { result, error ->
+                        error?.let {
+                            future.completeExceptionally(error)
+                        } ?: future.complete(result)
+                    }.toCompletableFuture().get()
                 }
-
-                override fun shouldStartInBackground(): Boolean = true
-            }.queue()
-        }
+            }
+        )
 
         return future
     }
 
     private fun runSamBuild(
+        lambdaBuilder: LambdaBuilder,
         module: Module,
-        runtimeGroup: RuntimeGroup,
         request: BuildLambdaRequest,
         processListener: ProcessListener
-    ): CompletionStage<BuiltLambda> {
-        val lambdaBuilder = LambdaBuilder.getInstanceOrThrow(runtimeGroup)
-
-        return when (request) {
-            is BuildLambdaFromTemplate -> {
-                lambdaBuilder.buildLambdaFromTemplate(
-                    module,
-                    request.templateLocation,
-                    request.logicalId,
-                    request.samOptions
-                ) { it.addProcessListener(processListener) }
-            }
-            is BuildLambdaFromHandler -> {
-                lambdaBuilder.buildLambda(
-                    module,
-                    request.handlerElement,
-                    request.handler,
-                    request.runtime,
-                    request.envVars,
-                    request.samOptions
-                ) { it.addProcessListener(processListener) }
-            }
+    ): CompletionStage<BuiltLambda> = when (request) {
+        is BuildLambdaFromTemplate -> {
+            lambdaBuilder.buildLambdaFromTemplate(
+                module,
+                request.templateLocation,
+                request.logicalId,
+                request.samOptions
+            ) { it.addProcessListener(processListener) }
+        }
+        is BuildLambdaFromHandler -> {
+            lambdaBuilder.buildLambda(
+                module,
+                request.handlerElement,
+                request.handler,
+                request.runtime,
+                request.envVars,
+                request.samOptions
+            ) { it.addProcessListener(processListener) }
         }
     }
 
     private class BuildProcessListener(
-        private val request: BuildLambdaRequest,
+        private val request: Any,
         private val progressListener: BuildProgressListener
     ) : ProcessAdapter() {
 
