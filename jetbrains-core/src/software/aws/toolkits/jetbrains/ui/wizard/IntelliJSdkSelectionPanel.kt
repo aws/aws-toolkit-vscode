@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.ui.wizard
 
-import com.intellij.ide.util.projectWizard.AbstractNewProjectStep
 import com.intellij.ide.util.projectWizard.SdkSettingsStep
 import com.intellij.ide.util.projectWizard.WizardContext
 import com.intellij.openapi.projectRoots.Sdk
@@ -17,7 +16,7 @@ import java.awt.event.ItemEvent
 import javax.swing.JComponent
 import javax.swing.JLabel
 
-class IntelliJSdkSelectionPanel(callback: AbstractNewProjectStep.AbstractCallback<SamNewProjectSettings>, generator: SamProjectGenerator) : SdkSelectionPanelBase(callback, generator) {
+class IntelliJSdkSelectionPanel(generator: SamProjectGenerator) : SdkSelectionPanelBase(generator) {
     private var currentSdk: Sdk? = null
     private val dummyContext = object : WizardContext(null, {}) {
         override fun setProjectJdk(sdk: Sdk?) {

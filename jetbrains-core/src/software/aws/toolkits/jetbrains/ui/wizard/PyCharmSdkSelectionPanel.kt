@@ -23,9 +23,11 @@ import javax.swing.JPanel
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 
-class PyCharmSdkSelectionPanel(callback: AbstractNewProjectStep.AbstractCallback<SamNewProjectSettings>, generator: SamProjectGenerator) : SdkSelectionPanelBase(callback, generator) {
+class PyCharmSdkSelectionPanel(generator: SamProjectGenerator) : SdkSelectionPanelBase(generator) {
     private var documentListener: DocumentListener? = null
     override lateinit var sdkSelectionPanel: PyAddSdkGroupPanel
+
+    private val callback = object : AbstractNewProjectStep.AbstractCallback<PyNewProjectSettings>() {}
 
     private fun newSdkPanel(): PyAddSdkGroupPanel =
     // construct a py-specific settings step and grab its sdk panel instance

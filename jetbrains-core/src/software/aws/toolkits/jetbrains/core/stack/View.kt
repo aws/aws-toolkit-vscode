@@ -26,11 +26,11 @@ enum class Page(val icon: Icon) {
 }
 
 enum class StatusType(val icon: Icon, private val animatedIconStrategy: (() -> AnimatedIcon)? = null) {
-    UNKNOWN(AllIcons.Actions.Clear),
+    UNKNOWN(AllIcons.RunConfigurations.TestUnknown),
     PROGRESS(AllIcons.Process.ProgressResume, { AnimatedIcon.FS() }),
-    COMPLETED(AllIcons.Process.State.GreenOK),
-    DELETED(AllIcons.Process.State.YellowStr),
-    FAILED(AllIcons.Process.State.RedExcl);
+    COMPLETED(AllIcons.RunConfigurations.ToolbarPassed),
+    DELETED(AllIcons.RunConfigurations.ToolbarSkipped),
+    FAILED(AllIcons.RunConfigurations.ToolbarFailed);
 
     val animatedIconIfPossible: Icon get() = animatedIconStrategy?.let { it() } ?: icon
 

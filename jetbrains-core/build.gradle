@@ -5,11 +5,11 @@ apply plugin: 'org.jetbrains.intellij'
 
 intellij {
     def rootIntelliJTask = rootProject.intellij
-    version rootIntelliJTask.version
+    version ideVersion("IC")
     pluginName rootIntelliJTask.pluginName
     updateSinceUntilBuild rootIntelliJTask.updateSinceUntilBuild
     downloadSources = rootIntelliJTask.downloadSources
-    plugins = ["PythonCore:2018.3.183.4284.148", "yaml"]
+    plugins = idePlugins("IC")
 }
 
 runIde {

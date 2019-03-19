@@ -106,7 +106,7 @@ class SamProjectRuntimeSelectionStep(
 class SamProjectGeneratorSettingsPeer(private val generator: SamProjectGenerator) : ProjectGeneratorPeer<SamNewProjectSettings> {
     private val templateComboBox = ComboBox<SamProjectTemplate>()
     private val basePanel = SamInitSelectionPanel(settings)
-    val sdkPanel: SdkSelectionPanelImpl by lazy { SdkSelectionPanelImpl(NOOP_CALLBACK, generator) }
+    val sdkPanel: SdkSelectionPanelImpl by lazy { SdkSelectionPanelImpl(generator) }
 
     // need a listener to autorun this? this hook is used in PyCharm
     override fun validate(): ValidationInfo? {

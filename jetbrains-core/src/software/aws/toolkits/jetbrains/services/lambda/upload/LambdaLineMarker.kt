@@ -20,8 +20,8 @@ import software.amazon.awssdk.services.lambda.model.LambdaException
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplateIndex.Companion.listFunctions
-import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
+import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.settings.LambdaSettings
@@ -34,6 +34,7 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
 
     override fun getIcon(): Icon? = AwsIcons.Resources.LAMBDA_FUNCTION
 
+    @Suppress("DEPRECATION") // Non-deprecated constructor for LineMarkerInfo not introduced till 2019.1
     override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<*>? {
         // Only process leaf elements
         if (element.firstChild != null) {
@@ -62,9 +63,13 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
             }
 
             object : LineMarkerInfo<PsiElement>(
-                    element, element.textRange, icon, Pass.LINE_MARKERS,
-                    null, null,
-                    GutterIconRenderer.Alignment.CENTER
+                element,
+                element.textRange,
+                icon,
+                Pass.LINE_MARKERS,
+                null,
+                null,
+                GutterIconRenderer.Alignment.CENTER
             ) {
                 override fun createGutterRenderer(): GutterIconRenderer? = LambdaGutterIcon(this, actionGroup)
             }

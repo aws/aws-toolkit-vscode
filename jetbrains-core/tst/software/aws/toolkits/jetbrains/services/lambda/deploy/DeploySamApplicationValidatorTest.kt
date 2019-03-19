@@ -150,8 +150,8 @@ class DeploySamApplicationValidatorTest {
     }
 
     private class TestParameter(
-        name: String,
-        defaultValue: String
+        var name: String,
+        var defaultValue: String
     ) : Parameter {
         override fun getScalarProperty(key: String): String {
             throw NotImplementedError()
@@ -165,8 +165,6 @@ class DeploySamApplicationValidatorTest {
             throw NotImplementedError()
         }
 
-        var name: String = name
-        var defaultValue: String = defaultValue
         var description: String? = null
         var constraintDescription: String? = null
 

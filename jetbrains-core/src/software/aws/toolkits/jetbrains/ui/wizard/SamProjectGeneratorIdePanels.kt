@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.ui.wizard
 
-import com.intellij.ide.util.projectWizard.AbstractNewProjectStep
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.util.PlatformUtils
@@ -22,7 +21,7 @@ interface SdkSelectionPanel {
     fun validateAll(): List<ValidationInfo>?
 }
 
-abstract class SdkSelectionPanelBase(val callback: AbstractNewProjectStep.AbstractCallback<SamNewProjectSettings>, val generator: SamProjectGenerator) : SdkSelectionPanel {
+abstract class SdkSelectionPanelBase(val generator: SamProjectGenerator) : SdkSelectionPanel {
     override fun registerListeners() {}
 
     override fun transformUI(panel: SamInitSelectionPanel) {
@@ -36,7 +35,7 @@ abstract class SdkSelectionPanelBase(val callback: AbstractNewProjectStep.Abstra
     override fun validateAll(): List<ValidationInfo>? = null
 }
 
-class NoOpSdkSelectionPanel(callback: AbstractNewProjectStep.AbstractCallback<SamNewProjectSettings>, generator: SamProjectGenerator) : SdkSelectionPanelBase(callback, generator) {
+class NoOpSdkSelectionPanel(generator: SamProjectGenerator) : SdkSelectionPanelBase(generator) {
     override val sdkSelectionPanel: JComponent
         get() = JPanel()
 
@@ -47,16 +46,16 @@ class NoOpSdkSelectionPanel(callback: AbstractNewProjectStep.AbstractCallback<Sa
     override fun validateAll(): List<ValidationInfo>? = null
 }
 
-class SdkSelectionPanelImpl(private val callback: AbstractNewProjectStep.AbstractCallback<SamNewProjectSettings>, val generator: SamProjectGenerator) : SdkSelectionPanel {
+class SdkSelectionPanelImpl(val generator: SamProjectGenerator) : SdkSelectionPanel {
     private val delegate: SdkSelectionPanelBase by lazy {
         when {
             PlatformUtils.isIntelliJ() -> {
-                IntelliJSdkSelectionPanel(callback, generator)
+                IntelliJSdkSelectionPanel(generator)
             }
             PlatformUtils.isPyCharm() -> {
-                PyCharmSdkSelectionPanel(callback, generator)
+                PyCharmSdkSelectionPanel(generator)
             }
-            else -> { NoOpSdkSelectionPanel(callback, generator) }
+            else -> { NoOpSdkSelectionPanel(generator) }
         }
     }
 

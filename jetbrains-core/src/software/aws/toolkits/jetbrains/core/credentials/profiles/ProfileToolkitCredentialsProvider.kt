@@ -3,9 +3,10 @@
 
 package software.aws.toolkits.jetbrains.core.credentials.profiles
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
-import com.intellij.openapi.application.invokeAndWaitIfNeed
 import com.intellij.openapi.ui.Messages
+import com.intellij.openapi.util.Ref
 import com.intellij.util.text.nullize
 import icons.AwsIcons
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
@@ -151,12 +152,20 @@ class ProfileToolkitCredentialsProvider(
             }
         }.build()
 
-    private fun getMfaToken(name: String, mfaSerial: String): String = invokeAndWaitIfNeed(ModalityState.any()) {
-        Messages.showInputDialog(
-            message("credentials.profile.mfa.message", mfaSerial),
-            message("credentials.profile.mfa.title", name),
-            AwsIcons.Logos.IAM_LARGE
-        ) ?: throw IllegalStateException("MFA challenge is required")
+    private fun getMfaToken(name: String, mfaSerial: String): String {
+        val result = Ref<String>()
+
+        ApplicationManager.getApplication().invokeAndWait({
+            val mfaCode: String = Messages.showInputDialog(
+                message("credentials.profile.mfa.message", mfaSerial),
+                message("credentials.profile.mfa.title", name),
+                AwsIcons.Logos.IAM_LARGE
+            ) ?: throw IllegalStateException("MFA challenge is required")
+
+            result.set(mfaCode)
+        }, ModalityState.any())
+
+        return result.get()
     }
 
     private fun validateChain() {

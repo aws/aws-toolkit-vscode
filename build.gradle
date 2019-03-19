@@ -18,6 +18,8 @@ buildscript {
     }
 }
 
+apply from: 'intellijJVersions.gradle'
+
 group 'software.aws.toolkits'
 version toolkitVersion
 
@@ -183,7 +185,7 @@ apply plugin: 'org.jetbrains.intellij'
 apply plugin: ChangeLogPlugin
 
 intellij {
-    version "IC-" + ideaVersion
+    version ideVersion("IC")
     pluginName 'aws-jetbrains-toolkit'
     updateSinceUntilBuild false
     downloadSources = System.getenv("CI") == null
@@ -191,6 +193,7 @@ intellij {
         alternativeIdePath = System.env.ALTERNATIVE_IDE
     }
 }
+
 publishPlugin {
     username publishUsername
     password publishPassword

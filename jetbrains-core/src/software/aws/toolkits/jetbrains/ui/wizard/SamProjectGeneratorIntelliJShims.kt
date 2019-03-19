@@ -101,7 +101,7 @@ class NullBuilder : ModuleBuilder() {
 
     override fun getModuleType(): ModuleType<*> = AwsModuleType.INSTANCE
 
-    override fun setupRootModel(modifiableRootModel: ModifiableRootModel?) {}
+    override fun setupRootModel(modifiableRootModel: ModifiableRootModel) {}
 }
 
 class AwsModuleType : ModuleType<ModuleBuilder>(ID) {
