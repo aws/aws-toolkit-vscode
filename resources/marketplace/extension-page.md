@@ -32,7 +32,7 @@ After you install the AWS Toolkit for Visual Studio Code, you must complete thes
 
 To use this Toolkit to develop [serverless applications with AWS](https://aws.amazon.com/serverless/), you must also do the following on the local machine where the Toolkit is installed:
 
-1. Install the [AWS Command Line Interface (AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html).
+1. Install the [AWS Command Line Interface (AWS CLI)](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html).
 1. Install and then run [Docker](https://docs.docker.com/install/).
 1. Install the [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html).
 
@@ -124,7 +124,7 @@ For more information, see [Creating a Serverless Application](https://docs.aws.a
 
 #### <a id="run-debug-serverless-application"></a>Run or Debug a Serverless Application
 
-In the **AWS: Explorer** Side Bar, after you choose the **AWS** icon in the Activity Bar, CodeLenses display within open serverless application code files above functions that use AWS Lambda function handler syntax. (A _handler_ is a function that Lambda calls to start execution of a Lambda function.) These CodeLenses enable you to run or debug the corresponding serverless application locally. CodeLens actions here include:
+After you choose the **AWS** icon in the Activity Bar, CodeLenses display within open serverless application code files above functions that use AWS Lambda function handler syntax. (A _handler_ is a function that Lambda calls to start execution of a Lambda function.) These CodeLenses enable you to run or debug the corresponding serverless application locally. CodeLens actions here include:
 
 * **Configure**, for specifying function configurations such as an event payload and environment variables.
 * **Run Locally**, for running the function without debugging.
