@@ -10,6 +10,7 @@ import * as vscode from 'vscode'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
 import { getLogger, Logger } from '../../shared/logger'
 import { getChildrenRange, loadSymbols, LoadSymbolsContext } from '../../shared/utilities/symbolUtilities'
+import { getParameterNames } from './parameterUtils'
 
 export interface SamParameterCompletionItemProviderContext extends LoadSymbolsContext {
     logger: Pick<Logger, 'warn'>
@@ -69,15 +70,15 @@ export class SamParameterCompletionItemProvider implements vscode.CompletionItem
         }
 
         const prefix = this.getWordAt(document, position)
-        const templateParameters = await getTemplateParameters(templateUri, this.context)
+        const templateParameterNames = await getParameterNames(templateUri, this.context)
 
-        return templateParameters
-            .filter(parameter => !prefix || parameter.Name.startsWith(prefix))
-            .map(parameter => {
+        return templateParameterNames
+            .filter(name => !prefix || name.startsWith(prefix))
+            .map(name => {
                 const completionItem: vscode.CompletionItem = {
                     kind: vscode.CompletionItemKind.Reference,
-                    label: parameter.Name,
-                    insertText: parameter.Name,
+                    label: name,
+                    insertText: name,
                     range: new vscode.Range(position, position)
                 }
 
@@ -135,23 +136,4 @@ async function getTemplateUri({ workspaceUri, symbols, position }: {
     }
 
     return vscode.Uri.file(path.join(workspaceUri.fsPath, template.name))
-}
-
-async function getTemplateParameters(
-    templateUri: vscode.Uri,
-    context: Pick<SamParameterCompletionItemProviderContext, 'loadTemplate'>
-): Promise<(CloudFormation.Parameter & { Name: string })[]> {
-    // TODO: Consider caching results per-file, and invalidating
-    //       the cache based on the file's last modified time.
-    const template = await context.loadTemplate(templateUri.fsPath)
-    const parameters = template.Parameters
-
-    if (!parameters) {
-        return []
-    }
-
-    return Object.getOwnPropertyNames(parameters).map(name => ({
-        Name: name,
-        ...parameters[name]
-    }))
 }
