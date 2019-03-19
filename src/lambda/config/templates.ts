@@ -100,7 +100,7 @@ export async function load(
         workspaceFolderPath,
     )
 
-    return await loadTemplatesConfig(templatesConfigPath)
+    return await loadTemplatesConfig(templatesConfigPath, context)
 }
 
 async function loadTemplatesConfig(
