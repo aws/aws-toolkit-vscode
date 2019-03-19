@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.lambda.execution.local
 
 import com.intellij.execution.configurations.CommandLineState
+import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.runners.ExecutionEnvironment
@@ -14,10 +15,15 @@ import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 
 class SamRunningState(
     environment: ExecutionEnvironment,
-    val settings: SamRunSettings
+    val settings: LocalLambdaSettings
 ) : CommandLineState(environment) {
     internal lateinit var builtLambda: BuiltLambda
-    internal lateinit var runner: SamRunner
+
+    internal val runner = if (environment.executor.id == DefaultDebugExecutor.EXECUTOR_ID) {
+        SamDebugger()
+    } else {
+        SamRunner()
+    }
 
     override fun startProcess(): ProcessHandler {
         val totalEnvVars = settings.environmentVariables.toMutableMap()

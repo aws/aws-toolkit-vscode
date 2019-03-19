@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.python
 
+import com.intellij.execution.process.ProcessHandler
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
@@ -23,7 +24,8 @@ class PythonLambdaBuilder : LambdaBuilder() {
         handler: String,
         runtime: Runtime,
         envVars: Map<String, String>,
-        samOptions: SamOptions
+        samOptions: SamOptions,
+        onStart: (ProcessHandler) -> Unit
     ): CompletionStage<BuiltLambda> {
         val handlerVirtualFile = handlerElement.containingFile?.virtualFile
             ?: throw IllegalArgumentException("Handler file must be backed by a VirtualFile")
@@ -33,7 +35,7 @@ class PythonLambdaBuilder : LambdaBuilder() {
         val logicalId = "Function"
         SamTemplateUtils.writeDummySamTemplate(customTemplate, logicalId, runtime, baseDir, handler, envVars)
 
-        return buildLambdaFromTemplate(module, customTemplate.toPath(), logicalId, samOptions)
+        return buildLambdaFromTemplate(module, customTemplate.toPath(), logicalId, samOptions, onStart)
     }
 
     private fun getBaseDirectory(project: Project, virtualFile: VirtualFile): VirtualFile {

@@ -6,8 +6,10 @@ package software.aws.toolkits.jetbrains.services.lambda
 import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
+import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.util.Key
@@ -37,28 +39,32 @@ abstract class LambdaBuilder {
         handler: String,
         runtime: Runtime,
         envVars: Map<String, String>,
-        samOptions: SamOptions
+        samOptions: SamOptions,
+        onStart: (ProcessHandler) -> Unit = {}
     ): CompletionStage<BuiltLambda>
 
     open fun buildLambdaFromTemplate(
         module: Module,
         templateLocation: Path,
         logicalId: String,
-        samOptions: SamOptions
+        samOptions: SamOptions,
+        onStart: (ProcessHandler) -> Unit = {}
     ): CompletionStage<BuiltLambda> {
         val future = CompletableFuture<BuiltLambda>()
-        val codeLocation = SamTemplateUtils.findFunctionsFromTemplate(
-            module.project,
-            templateLocation.toFile()
-        ).find { it.logicalName == logicalId }
-            ?.codeLocation()
-            ?: throw RuntimeConfigurationError(
-                message(
-                    "lambda.run_configuration.sam.no_such_function",
-                    logicalId,
-                    templateLocation
+        val codeLocation = ReadAction.compute<String, Throwable> {
+            SamTemplateUtils.findFunctionsFromTemplate(
+                module.project,
+                templateLocation.toFile()
+            ).find { it.logicalName == logicalId }
+                ?.codeLocation()
+                ?: throw RuntimeConfigurationError(
+                    message(
+                        "lambda.run_configuration.sam.no_such_function",
+                        logicalId,
+                        templateLocation
+                    )
                 )
-            )
+        }
 
         ApplicationManager.getApplication().executeOnPooledThread {
             val buildDir = FileUtil.createTempDirectory("lambdaBuild", null, true).toPath()
@@ -122,6 +128,8 @@ abstract class LambdaBuilder {
                 }
             })
 
+            onStart.invoke(processHandler)
+
             processHandler.startNotify()
         }
 
@@ -162,3 +170,18 @@ data class BuiltLambda(
     val codeLocation: Path,
     val mappings: List<PathMapping> = emptyList()
 )
+
+// TODO Use these in this class
+sealed class BuildLambdaRequest
+data class BuildLambdaFromTemplate(
+    val templateLocation: Path,
+    val logicalId: String,
+    val samOptions: SamOptions
+) : BuildLambdaRequest()
+data class BuildLambdaFromHandler(
+    val handlerElement: PsiElement,
+    val handler: String,
+    val runtime: Runtime,
+    val envVars: Map<String, String>,
+    val samOptions: SamOptions
+) : BuildLambdaRequest()

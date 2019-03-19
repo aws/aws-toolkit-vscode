@@ -5,7 +5,9 @@ package software.aws.toolkits.jetbrains.services.lambda.execution.local
 
 import com.intellij.execution.ExecutionException
 import com.intellij.execution.ExecutorRegistry
+import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.execution.executors.DefaultRunExecutor
+import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.testFramework.runInEdtAndWait
 import com.nhaarman.mockitokotlin2.doReturn
@@ -79,9 +81,9 @@ class LocalLambdaRunConfigurationTest {
                 credentialsProviderId = mockId
             )
             assertThat(runConfiguration).isNotNull
-            assertThatThrownBy { getState(runConfiguration) }
-                .isInstanceOf(ExecutionException::class.java)
-                .hasMessage(message("sam.cli_not_configured"))
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
+                .hasMessageContaining("Invalid SAM CLI executable configured:")
         }
     }
 
@@ -484,6 +486,10 @@ class LocalLambdaRunConfigurationTest {
 
     private fun getState(runConfiguration: LocalLambdaRunConfiguration): SamRunningState {
         val executor = ExecutorRegistry.getInstance().getExecutorById(DefaultRunExecutor.EXECUTOR_ID)
-        return runConfiguration.getState(executor, mock { on { project } doReturn projectRule.project })
+        val environmentMock = mock<ExecutionEnvironment> {
+            on { project } doReturn projectRule.project
+            on { getExecutor() } doReturn executor
+        }
+        return runConfiguration.getState(executor, environmentMock)
     }
 }

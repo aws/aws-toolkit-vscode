@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.java
 
+import com.intellij.execution.process.ProcessHandler
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.io.FileUtil
@@ -23,14 +24,15 @@ class JavaLambdaBuilder : LambdaBuilder() {
         handler: String,
         runtime: Runtime,
         envVars: Map<String, String>,
-        samOptions: SamOptions
+        samOptions: SamOptions,
+        onStart: (ProcessHandler) -> Unit
     ): CompletionStage<BuiltLambda> {
         val baseDir = getBaseDirectory(module).path
         val customTemplate = FileUtil.createTempFile("template", ".yaml", true)
         val logicalId = "Function"
         SamTemplateUtils.writeDummySamTemplate(customTemplate, logicalId, runtime, baseDir, handler, envVars)
 
-        return buildLambdaFromTemplate(module, customTemplate.toPath(), logicalId, samOptions)
+        return buildLambdaFromTemplate(module, customTemplate.toPath(), logicalId, samOptions, onStart)
     }
 
     private fun getBaseDirectory(module: Module): VirtualFile {

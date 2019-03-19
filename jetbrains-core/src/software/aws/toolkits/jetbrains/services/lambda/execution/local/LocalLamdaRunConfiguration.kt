@@ -28,13 +28,14 @@ import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationBase
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.findFunctionsFromTemplate
 import software.aws.toolkits.jetbrains.services.lambda.validOrNull
 import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
-import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.resources.message
 import java.io.File
+import java.nio.file.Path
 
 class LocalLambdaRunConfigurationFactory(configuration: LambdaRunConfiguration) : ConfigurationFactory(configuration) {
     override fun createTemplateConfiguration(project: Project) = LocalLambdaRunConfiguration(project, this)
@@ -57,8 +58,8 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
     }
 
     override fun checkConfiguration() {
-        if (SamSettings.getInstance().executablePath.isNullOrEmpty()) {
-            throw RuntimeConfigurationError(message("sam.cli_not_configured")) {
+        SamCommon.validate()?.let {
+            throw RuntimeConfigurationError(message("lambda.run_configuration.sam.invalid_executable", it)) {
                 ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsConfigurable::class.java)
             }
         }
@@ -73,12 +74,6 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): SamRunningState {
         try {
-            if (SamSettings.getInstance().executablePath.isNullOrEmpty()) {
-                throw RuntimeConfigurationError(message("sam.cli_not_configured")) {
-                    ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsConfigurable::class.java)
-                }
-            }
-
             val (handler, runtime, templateDetails) = resolveLambdaInfo()
             val psiElement = handlerPsiElement(handler, runtime)
                 ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
@@ -86,7 +81,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
             val samOptions = SamOptions()
             samOptions.copyFrom(options.samOptions)
 
-            val samRunSettings = SamRunSettings(
+            val samRunSettings = LocalLambdaSettings(
                 runtime,
                 handler,
                 resolveInput(),
@@ -208,9 +203,11 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
                 message("lambda.run_configuration.sam.no_function_specified")
             )
 
+            val templateFile = File(template)
+
             val function = findFunctionsFromTemplate(
                 project,
-                File(template)
+                templateFile
             ).find { it.logicalName == functionName }
                 ?: throw RuntimeConfigurationError(
                     message(
@@ -223,7 +220,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
             val runtime = function.runtime().let { Runtime.fromValue(it).validOrNull }
                 ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
 
-            Triple(function.handler(), runtime, SamTemplateDetails(template, functionName))
+            Triple(function.handler(), runtime, SamTemplateDetails(templateFile.toPath(), functionName))
         } else {
             val handler = handler()
                 ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
@@ -244,7 +241,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
     }
 }
 
-class SamRunSettings(
+class LocalLambdaSettings(
     val runtime: Runtime,
     val handler: String,
     val input: String,
@@ -259,4 +256,4 @@ class SamRunSettings(
         ?: throw IllegalStateException("Attempting to run SAM for unsupported runtime $runtime")
 }
 
-data class SamTemplateDetails(val templateFile: String, val logicalName: String)
+data class SamTemplateDetails(val templateFile: Path, val logicalName: String)
