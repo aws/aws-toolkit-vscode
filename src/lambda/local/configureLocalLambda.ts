@@ -38,12 +38,12 @@ export async function configureLocalLambda(
 ): Promise<void> {
 
     const templateRelativePath = getTemplateRelativePath(samTemplate.fsPath, workspaceFolder.uri.fsPath)
-    const configPath: string = getTemplatesConfigPath(workspaceFolder.uri.fsPath)
 
-    const configPopulationResult = new TemplatesConfigPopulator(await load(configPath))
+    const configPopulationResult = new TemplatesConfigPopulator(await load(workspaceFolder.uri.fsPath))
         .ensureTemplateHandlerPropertiesExist(templateRelativePath, handler)
         .getResults()
 
+    const configPath: string = getTemplatesConfigPath(workspaceFolder.uri.fsPath)
     if (configPopulationResult.isDirty) {
         await writeFile(
             configPath,
@@ -68,9 +68,8 @@ export async function getLocalLambdaConfiguration(
     samTemplate: vscode.Uri,
 ): Promise<HandlerConfig> {
     const templateRelativePath = getTemplateRelativePath(samTemplate.fsPath, workspaceFolder.uri.fsPath)
-    const configPath: string = getTemplatesConfigPath(workspaceFolder.uri.fsPath)
 
-    const configPopulationResult = new TemplatesConfigPopulator(await load(configPath))
+    const configPopulationResult = new TemplatesConfigPopulator(await load(workspaceFolder.uri.fsPath))
         .ensureTemplateHandlerSectionExists(templateRelativePath, handler)
         .getResults()
 
