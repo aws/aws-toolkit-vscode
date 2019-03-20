@@ -188,7 +188,7 @@ describe('getMainSourceFile', async () => {
                     getLocalTemplates: (...workspaceUris: vscode.Uri[]) => toAsyncIterable([templateUri]),
                     loadSamTemplate: async uri => {
                         const template = createTestTemplate()
-                        template.Resources!.HelloWorld.Properties!.Runtime = runtime
+                        template.Resources!.HelloWorld!.Properties!.Runtime = runtime
 
                         return template
                     },
@@ -304,7 +304,7 @@ describe('getMainSourceFile', async () => {
                     getLocalTemplates: (...workspaceUris: vscode.Uri[]) => toAsyncIterable([templateUri]),
                     loadSamTemplate: async uri => {
                         const template = createTestTemplate()
-                        template.Resources!.HelloWorld.Properties!.Runtime = runtime
+                        template.Resources!.HelloWorld!.Properties!.Runtime = runtime
 
                         return template
                     },
