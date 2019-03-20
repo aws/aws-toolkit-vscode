@@ -6,27 +6,28 @@
 'use strict'
 
 import * as vscode from 'vscode'
-import { writeFile } from '../../shared/filesystem'
+import * as fsUtils from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
+import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'
 import { getChildrenRange } from '../../shared/utilities/symbolUtilities'
+import { saveDocumentIfDirty } from '../../shared/utilities/textDocumentUtilities'
 import {
     getTemplatesConfigPath,
     HandlerConfig,
-    load,
+    loadTemplatesConfigFromJson,
+    TemplatesConfig,
     TemplatesConfigPopulator
 } from '../config/templates'
 
 export interface ConfigureLocalLambdaContext {
     showTextDocument: typeof vscode.window.showTextDocument
     executeCommand: typeof vscode.commands.executeCommand
-    showInformationMessage: typeof vscode.window.showInformationMessage
 }
 
 class DefaultConfigureLocalLambdaContext implements ConfigureLocalLambdaContext {
     public readonly showTextDocument = vscode.window.showTextDocument
     public readonly executeCommand = vscode.commands.executeCommand
-    public readonly showInformationMessage = vscode.window.showInformationMessage
 }
 
 // Precondition: `handler` is a valid lambda handler name.
@@ -39,22 +40,35 @@ export async function configureLocalLambda(
 
     const templateRelativePath = getNormalizedRelativePath(workspaceFolder.uri.fsPath, samTemplate.fsPath)
 
-    const configPopulationResult = new TemplatesConfigPopulator(await load(workspaceFolder.uri.fsPath))
+    const configPath: string = getTemplatesConfigPath(workspaceFolder.uri.fsPath)
+    const configPathUri = vscode.Uri.file(configPath)
+    const editor: vscode.TextEditor = await context.showTextDocument(configPathUri)
+
+    const configPopulationResult = new TemplatesConfigPopulator(
+        editor.document.getText(),
+        {
+            formattingOptions: {
+                insertSpaces: true,
+                tabSize: getTabSize(editor),
+                eol: editor.document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n',
+            }
+        }
+    )
         .ensureTemplateHandlerPropertiesExist(templateRelativePath, handler)
         .getResults()
 
-    const configPath: string = getTemplatesConfigPath(workspaceFolder.uri.fsPath)
     if (configPopulationResult.isDirty) {
-        await writeFile(
-            configPath,
-            JSON.stringify(configPopulationResult.templatesConfig, undefined, 4)
-        )
-    }
+        await editor.edit(eb => {
+            eb.replace(
+                new vscode.Range(
+                    editor.document.positionAt(0),
+                    editor.document.positionAt(editor.document.getText().length),
+                ),
+                configPopulationResult.json)
+        })
 
-    const configPathUri = vscode.Uri.file(configPath)
-    const editor: vscode.TextEditor = await context.showTextDocument(configPathUri)
-    // Perf: TextDocument.save is smart enough to no-op if the document is not dirty.
-    await editor.document.save()
+        // We don't save the doc. The user has the option to revert changes, or make further edits.
+    }
 
     await context.showTextDocument(
         editor.document,
@@ -67,13 +81,37 @@ export async function getLocalLambdaConfiguration(
     handler: string,
     samTemplate: vscode.Uri,
 ): Promise<HandlerConfig> {
+    const configPath: string = getTemplatesConfigPath(workspaceFolder.uri.fsPath)
     const templateRelativePath = getNormalizedRelativePath(workspaceFolder.uri.fsPath, samTemplate.fsPath)
 
-    const configPopulationResult = new TemplatesConfigPopulator(await load(workspaceFolder.uri.fsPath))
+    await saveDocumentIfDirty(configPath)
+
+    let rawConfig: string = '{}'
+    if (await fsUtils.fileExists(configPath)) {
+        rawConfig = await fsUtils.readFileAsString(configPath)
+    }
+
+    const configPopulationResult = new TemplatesConfigPopulator(rawConfig)
         .ensureTemplateHandlerSectionExists(templateRelativePath, handler)
         .getResults()
 
-    return configPopulationResult.templatesConfig.templates[templateRelativePath]!.handlers![handler]!
+    const config: TemplatesConfig = loadTemplatesConfigFromJson(configPopulationResult.json)
+
+    return config.templates[templateRelativePath]!.handlers![handler]!
+}
+
+function getTabSize(editor?: vscode.TextEditor): number {
+    const tabSize = !editor ? undefined : editor.options.tabSize
+
+    switch (typeof tabSize) {
+        case 'number':
+            return tabSize
+        case 'string':
+            return Number.parseInt(tabSize, 10)
+        default:
+            // If we couldn't determine the tabSize at the document, workspace, or user level, default to 4.
+            return new DefaultSettingsConfiguration('editor').readSetting<number>('tabSize') || 4
+    }
 }
 
 async function getEventRange(

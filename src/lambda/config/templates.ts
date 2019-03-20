@@ -7,11 +7,11 @@
 
 // Use jsonc-parser.parse instead of JSON.parse, as JSONC can handle comments. VS Code uses jsonc-parser
 // under the hood to provide symbols for JSON documents, so this will keep us consistent with VS code.
-import { parse, ParseError, ParseErrorCode } from 'jsonc-parser'
+import * as jsonParser from 'jsonc-parser'
 import * as os from 'os'
 import * as _path from 'path'
-import * as vscode from 'vscode'
 import * as fsUtils from '../../shared/filesystemUtilities'
+import { saveDocumentIfDirty } from '../../shared/utilities/textDocumentUtilities'
 
 export interface TemplatesConfig {
     templates: {
@@ -52,24 +52,7 @@ export class DefaultLoadTemplatesConfigContext implements LoadTemplatesConfigCon
     public readonly fileExists = fsUtils.fileExists
     public readonly readFile = fsUtils.readFileAsString
 
-    public async saveDocumentIfDirty(editorPath: string): Promise<void> {
-        const path = _path.normalize(vscode.Uri.file(editorPath).fsPath)
-        const document = vscode.workspace.textDocuments.find(doc => {
-            if (!doc.isDirty) {
-                return false
-            }
-
-            if (_path.normalize(doc.uri.fsPath) !== path) {
-                return false
-            }
-
-            return true
-        })
-
-        if (document) {
-            await document.save()
-        }
-    }
+    public saveDocumentIfDirty = saveDocumentIfDirty
 }
 
 export function getTemplatesConfigPath(workspaceFolderPath: string): string {
@@ -105,17 +88,8 @@ async function loadTemplatesConfig(
         }
 
         const raw = await context.readFile(path)
-        const errors: ParseError[] = []
-        const config = parse(raw, errors) as TemplatesConfig
-        if (errors.length > 0) {
-            const message = errors.length === 1 ?
-                ` ${formatParseError(errors[0])}` :
-                `${os.EOL}${errors.map(formatParseError).join(os.EOL)}`
 
-            throw new Error(`Could not parse .aws/templates.json:${message}`)
-        }
-
-        return config
+        return loadTemplatesConfigFromJson(raw)
     } catch (err) {
         if (Array.isArray(err) && (err as any[]).length === 1) {
             err = (err as any[])[0]
@@ -125,45 +99,61 @@ async function loadTemplatesConfig(
     }
 }
 
-function formatParseError(error: ParseError) {
+export function loadTemplatesConfigFromJson(
+    json: string
+): TemplatesConfig {
+    const errors: jsonParser.ParseError[] = []
+    const config = jsonParser.parse(json, errors) as TemplatesConfig
+    if (errors.length > 0) {
+        const message = errors.length === 1 ?
+            ` ${formatParseError(errors[0])}` :
+            `${os.EOL}${errors.map(formatParseError).join(os.EOL)}`
+
+        throw new Error(`Could not parse .aws/templates.json:${message}`)
+    }
+
+    return config
+}
+
+function formatParseError(error: jsonParser.ParseError) {
     return `${getParseErrorDescription(error.error)} at offset ${error.offset}, length ${error.length}`
 }
 
 // Reverse enum mappings are only generated for non-const numerical enums,
 // but ParseErrorCode is a const enum. So we have to reverse-map manually.
-function getParseErrorDescription(code: ParseErrorCode): string {
+function getParseErrorDescription(code: jsonParser.ParseErrorCode): string {
     switch (code) {
-        case ParseErrorCode.CloseBraceExpected:
+        case jsonParser.ParseErrorCode.CloseBraceExpected:
             return 'close brace expected'
-        case ParseErrorCode.CloseBracketExpected:
+        case jsonParser.ParseErrorCode.CloseBracketExpected:
             return 'close bracket expected'
-        case ParseErrorCode.ColonExpected:
+        case jsonParser.ParseErrorCode.ColonExpected:
             return 'colon expected'
-        case ParseErrorCode.CommaExpected:
+        case jsonParser.ParseErrorCode.CommaExpected:
             return 'command expected'
-        case ParseErrorCode.EndOfFileExpected:
+        case jsonParser.ParseErrorCode.EndOfFileExpected:
             return 'end of file expected'
-        case ParseErrorCode.InvalidCharacter:
+        case jsonParser.ParseErrorCode.InvalidCharacter:
             return 'invalid character'
-        case ParseErrorCode.InvalidCommentToken:
+        case jsonParser.ParseErrorCode.InvalidCommentToken:
             return 'invalid comment token'
-        case ParseErrorCode.InvalidEscapeCharacter:
+        case jsonParser.ParseErrorCode.InvalidEscapeCharacter:
             return 'invalid escape character'
-        case ParseErrorCode.InvalidNumberFormat:
+        case jsonParser.ParseErrorCode.InvalidNumberFormat:
             return 'invalid number format'
-        case ParseErrorCode.InvalidSymbol:
+        case jsonParser.ParseErrorCode.InvalidSymbol:
             return 'invalid symbol'
-        case ParseErrorCode.InvalidUnicode:
+        case jsonParser.ParseErrorCode.InvalidUnicode:
             return 'invalid unicode'
-        case ParseErrorCode.PropertyNameExpected:
+        case jsonParser.ParseErrorCode.PropertyNameExpected:
             return 'property name expected'
-        case ParseErrorCode.UnexpectedEndOfComment:
+        case jsonParser.ParseErrorCode.UnexpectedEndOfComment:
             return 'unexpected end of comment'
-        case ParseErrorCode.UnexpectedEndOfNumber:
+        case jsonParser.ParseErrorCode.UnexpectedEndOfNumber:
             return 'unexpected end of number'
-        case ParseErrorCode.UnexpectedEndOfString:
+        case jsonParser.ParseErrorCode.UnexpectedEndOfString:
             return 'unexpected end of string'
-        case ParseErrorCode.ValueExpected:
+        case jsonParser.ParseErrorCode.ValueExpected:
             return 'value expected'
         // By omitting the default case, we force the compiler to yell at us
         // if any enum members are added/removed/changed.
@@ -174,17 +164,20 @@ export class TemplatesConfigPopulator {
     private isDirty: boolean = false
 
     public constructor(
-        private config: TemplatesConfig,
+        private json: string,
+        private readonly modificationOptions: jsonParser.ModificationOptions = {
+            formattingOptions: {
+                insertSpaces: true,
+                tabSize: 4,
+            },
+        }
     ) {
     }
 
     public ensureTemplateSectionExists(templateRelativePath: string): TemplatesConfigPopulator {
         this.ensureTemplatesSectionExists()
 
-        if (!this.config.templates[templateRelativePath]) {
-            this.config.templates[templateRelativePath] = {}
-            this.isDirty = true
-        }
+        this.ensureJsonObjectExists(['templates', templateRelativePath], {})
 
         return this
     }
@@ -195,13 +188,13 @@ export class TemplatesConfigPopulator {
     ): TemplatesConfigPopulator {
         this.ensureTemplateHandlersSectionExists(templateRelativePath)
 
-        if (!this.config.templates[templateRelativePath]!.handlers![handler]) {
-            this.config.templates[templateRelativePath]!.handlers![handler] = {
+        this.ensureJsonObjectExists(
+            ['templates', templateRelativePath, 'handlers', handler],
+            {
                 event: {},
                 environmentVariables: {}
             }
-            this.isDirty = true
-        }
+        )
 
         return this
     }
@@ -212,43 +205,63 @@ export class TemplatesConfigPopulator {
     ): TemplatesConfigPopulator {
         this.ensureTemplateHandlerSectionExists(templateRelativePath, handler)
 
-        const handlerConfig: HandlerConfig = this.config.templates[templateRelativePath]!.handlers![handler]!
+        this.ensureJsonObjectExists(
+            ['templates', templateRelativePath, 'handlers', handler, 'event'],
+            {}
+        )
 
-        if (!handlerConfig.event) {
-            handlerConfig.event = {}
-            this.isDirty = true
-        }
-
-        if (!handlerConfig.environmentVariables) {
-            handlerConfig.environmentVariables = {}
-            this.isDirty = true
-        }
+        this.ensureJsonObjectExists(
+            ['templates', templateRelativePath, 'handlers', handler, 'environmentVariables'],
+            {}
+        )
 
         return this
     }
 
     public getResults(): {
         isDirty: boolean,
-        templatesConfig: TemplatesConfig
+        json: string,
     } {
         return {
             isDirty: this.isDirty,
-            templatesConfig: this.config
+            json: this.json,
+        }
+    }
+
+    private isUnexpectedObjectType(nodeType: jsonParser.NodeType): boolean {
+        return nodeType === 'array'
+            || nodeType === 'property'
+            || nodeType === 'string'
+            || nodeType === 'number'
+            || nodeType === 'boolean'
+    }
+
+    private ensureJsonObjectExists(jsonPath: jsonParser.JSONPath, value: any) {
+        const root = jsonParser.parseTree(this.json)
+        const template = jsonParser.findNodeAtLocation(root, jsonPath)
+
+        if (template && this.isUnexpectedObjectType(template.type)) {
+            // tslint:disable-next-line:max-line-length
+            throw new Error(`Invalid configuration. Field ${jsonPath.join('/')} was expected to be an object, but was ${template.type.toString()} instead`)
+        }
+
+        if (!template || template.type === 'null') {
+            const edits = jsonParser.modify(
+                this.json,
+                jsonPath,
+                value,
+                this.modificationOptions
+            )
+
+            if (edits.length > 0) {
+                this.json = jsonParser.applyEdits(this.json, edits)
+                this.isDirty = true
+            }
         }
     }
 
     private ensureTemplatesSectionExists(): TemplatesConfigPopulator {
-        if (!this.config) {
-            this.config = {
-                templates: {}
-            }
-            this.isDirty = true
-        }
-
-        if (!this.config.templates) {
-            this.config.templates = {}
-            this.isDirty = true
-        }
+        this.ensureJsonObjectExists(['templates'], {})
 
         return this
     }
@@ -256,10 +269,7 @@ export class TemplatesConfigPopulator {
     private ensureTemplateHandlersSectionExists(templateRelativePath: string): TemplatesConfigPopulator {
         this.ensureTemplateSectionExists(templateRelativePath)
 
-        if (!this.config.templates[templateRelativePath]!.handlers) {
-            this.config.templates[templateRelativePath]!.handlers = {}
-            this.isDirty = true
-        }
+        this.ensureJsonObjectExists(['templates', templateRelativePath, 'handlers'], {})
 
         return this
     }
