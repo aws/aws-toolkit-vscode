@@ -23,7 +23,7 @@ describe('getNormalizedRelativePath', async () => {
 
 describe('normalizeSeparator', async () => {
     it('normalizes separators', async () => {
-        const actual = normalizeSeparator(`a${path.posix.sep}b${path.win32.sep}c`)
+        const actual = normalizeSeparator(`a${path.sep}b${path.sep}c`)
 
         assert.strictEqual(actual, 'a/b/c')
     })
