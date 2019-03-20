@@ -231,6 +231,13 @@ describe('getTemplatesConfigPath', async () => {
 
 describe('TemplatesConfigPopulatorContext', async () => {
 
+    const testModificationOptions = {
+        formattingOptions: {
+            tabSize: 4,
+            insertSpaces: true,
+        }
+    }
+
     it('handles ModificationOptions', async () => {
         const inputJson: string = '{}'
 
@@ -266,7 +273,7 @@ describe('TemplatesConfigPopulatorContext', async () => {
     }
 }`
 
-        const results = new TemplatesConfigPopulator(inputJson)
+        const results = new TemplatesConfigPopulator(inputJson, testModificationOptions)
             .ensureTemplateSectionExists('someprocessor')
             .getResults()
 
@@ -286,7 +293,7 @@ describe('TemplatesConfigPopulatorContext', async () => {
     }
 }`
 
-        const results = new TemplatesConfigPopulator(inputJson)
+        const results = new TemplatesConfigPopulator(inputJson, testModificationOptions)
             .ensureTemplateSectionExists('someprocessor')
             .getResults()
 
@@ -308,7 +315,7 @@ describe('TemplatesConfigPopulatorContext', async () => {
     }
 }`
 
-        const results = new TemplatesConfigPopulator(inputJson)
+        const results = new TemplatesConfigPopulator(inputJson, testModificationOptions)
             .ensureTemplateSectionExists('someprocessor')
             .getResults()
 
@@ -325,7 +332,7 @@ describe('TemplatesConfigPopulatorContext', async () => {
         }`
 
         assert.throws(
-            () => new TemplatesConfigPopulator(inputJson)
+            () => new TemplatesConfigPopulator(inputJson, testModificationOptions)
                 .ensureTemplateSectionExists('someprocessor'),
             {
                 message: 'Invalid configuration',
@@ -350,7 +357,7 @@ describe('TemplatesConfigPopulatorContext', async () => {
     }
 }`
 
-        const results = new TemplatesConfigPopulator(inputJson)
+        const results = new TemplatesConfigPopulator(inputJson, testModificationOptions)
             .ensureTemplateHandlerSectionExists('someprocessor', 'processor')
             .getResults()
 
@@ -369,7 +376,7 @@ describe('TemplatesConfigPopulatorContext', async () => {
         }`
 
         assert.throws(
-            () => new TemplatesConfigPopulator(inputJson)
+            () => new TemplatesConfigPopulator(inputJson, testModificationOptions)
                 .ensureTemplateHandlerSectionExists('someprocessor', 'processor'),
             {
                 message: 'Invalid configuration',
@@ -389,7 +396,7 @@ describe('TemplatesConfigPopulatorContext', async () => {
         }`
 
         assert.throws(
-            () => new TemplatesConfigPopulator(inputJson)
+            () => new TemplatesConfigPopulator(inputJson, testModificationOptions)
                 .ensureTemplateHandlerSectionExists('someprocessor', 'processor'),
             {
                 message: 'Invalid configuration',
@@ -411,7 +418,7 @@ describe('TemplatesConfigPopulatorContext', async () => {
         }`
 
         assert.throws(
-            () => new TemplatesConfigPopulator(inputJson)
+            () => new TemplatesConfigPopulator(inputJson, testModificationOptions)
                 .ensureTemplateHandlerSectionExists('someprocessor', 'processor'),
             {
                 message: 'Invalid configuration',
@@ -443,7 +450,7 @@ describe('TemplatesConfigPopulatorContext', async () => {
     }
 }`
 
-        const results = new TemplatesConfigPopulator(inputJson)
+        const results = new TemplatesConfigPopulator(inputJson, testModificationOptions)
             .ensureTemplateHandlerSectionExists('someprocessor', 'processor')
             .getResults()
 
@@ -476,7 +483,7 @@ describe('TemplatesConfigPopulatorContext', async () => {
     }
 }`
 
-        const results = new TemplatesConfigPopulator(inputJson)
+        const results = new TemplatesConfigPopulator(inputJson, testModificationOptions)
             .ensureTemplateHandlerSectionExists('someprocessor', 'processor')
             .getResults()
 
@@ -501,7 +508,7 @@ describe('TemplatesConfigPopulatorContext', async () => {
     }
 }`
 
-        const results = new TemplatesConfigPopulator(inputJson)
+        const results = new TemplatesConfigPopulator(inputJson, testModificationOptions)
             .ensureTemplateHandlerPropertiesExist('someprocessor', 'processor')
             .getResults()
 
@@ -523,7 +530,7 @@ describe('TemplatesConfigPopulatorContext', async () => {
         }`
 
         assert.throws(
-            () => new TemplatesConfigPopulator(inputJson)
+            () => new TemplatesConfigPopulator(inputJson, testModificationOptions)
                 .ensureTemplateHandlerPropertiesExist('someprocessor', 'processor'),
             {
                 message: 'Invalid configuration',
@@ -547,7 +554,7 @@ describe('TemplatesConfigPopulatorContext', async () => {
         }`
 
         assert.throws(
-            () => new TemplatesConfigPopulator(inputJson)
+            () => new TemplatesConfigPopulator(inputJson, testModificationOptions)
                 .ensureTemplateHandlerPropertiesExist('someprocessor', 'processor'),
             {
                 message: 'Invalid configuration',
@@ -583,7 +590,7 @@ describe('TemplatesConfigPopulatorContext', async () => {
     }
 }`
 
-        const results = new TemplatesConfigPopulator(inputJson)
+        const results = new TemplatesConfigPopulator(inputJson, testModificationOptions)
             .ensureTemplateHandlerPropertiesExist('someprocessor', 'processor')
             .getResults()
 
@@ -620,7 +627,7 @@ describe('TemplatesConfigPopulatorContext', async () => {
     }
 }`
 
-        const results = new TemplatesConfigPopulator(inputJson)
+        const results = new TemplatesConfigPopulator(inputJson, testModificationOptions)
             .ensureTemplateHandlerPropertiesExist('someprocessor', 'processor')
             .getResults()
 
@@ -657,7 +664,7 @@ describe('TemplatesConfigPopulatorContext', async () => {
     }
 }`
 
-        const results = new TemplatesConfigPopulator(inputJson)
+        const results = new TemplatesConfigPopulator(inputJson, testModificationOptions)
             .ensureTemplateHandlerPropertiesExist('someprocessor', 'processor')
             .getResults()
 

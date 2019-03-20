@@ -11,6 +11,7 @@ import * as jsonParser from 'jsonc-parser'
 import * as os from 'os'
 import * as _path from 'path'
 import * as fsUtils from '../../shared/filesystemUtilities'
+import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 import { saveDocumentIfDirty } from '../../shared/utilities/textDocumentUtilities'
 
 export interface TemplatesConfig {
@@ -189,7 +190,7 @@ export class TemplatesConfigPopulator {
         private readonly modificationOptions: jsonParser.ModificationOptions = {
             formattingOptions: {
                 insertSpaces: true,
-                tabSize: 4,
+                tabSize: new DefaultSettingsConfiguration('editor').readSetting<number>('tabSize') || 4,
             },
         }
     ) {
