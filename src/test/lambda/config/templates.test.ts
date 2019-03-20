@@ -8,7 +8,6 @@
 import * as assert from 'assert'
 import * as path from 'path'
 import {
-    getTemplateRelativePath,
     getTemplatesConfigPath,
     HandlerConfig,
     load,
@@ -229,18 +228,6 @@ describe('getTemplatesConfigPath', async () => {
         const configPath = getTemplatesConfigPath(path.join('my', 'workspace'))
 
         assert.strictEqual(configPath, path.join('my', 'workspace', '.aws', 'templates.json'))
-    })
-})
-
-describe('getTemplateRelativePath', async () => {
-    it('returns expected path', async () => {
-        const workspaceFolderPath = path.join('my', 'workspace')
-        const expectedRelativePath = path.join('processors', 'template.yaml')
-        const templatePath = path.join(workspaceFolderPath, expectedRelativePath)
-
-        const relativePath = getTemplateRelativePath(templatePath, workspaceFolderPath)
-
-        assert.strictEqual(relativePath, expectedRelativePath.replace(path.sep, path.posix.sep))
     })
 })
 

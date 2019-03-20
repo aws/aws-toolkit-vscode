@@ -8,9 +8,9 @@
 import * as vscode from 'vscode'
 import { writeFile } from '../../shared/filesystem'
 import { getLogger, Logger } from '../../shared/logger'
+import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'
 import { getChildrenRange } from '../../shared/utilities/symbolUtilities'
 import {
-    getTemplateRelativePath,
     getTemplatesConfigPath,
     HandlerConfig,
     load,
@@ -37,7 +37,7 @@ export async function configureLocalLambda(
     context: ConfigureLocalLambdaContext = new DefaultConfigureLocalLambdaContext()
 ): Promise<void> {
 
-    const templateRelativePath = getTemplateRelativePath(samTemplate.fsPath, workspaceFolder.uri.fsPath)
+    const templateRelativePath = getNormalizedRelativePath(workspaceFolder.uri.fsPath, samTemplate.fsPath)
 
     const configPopulationResult = new TemplatesConfigPopulator(await load(workspaceFolder.uri.fsPath))
         .ensureTemplateHandlerPropertiesExist(templateRelativePath, handler)
@@ -67,13 +67,13 @@ export async function getLocalLambdaConfiguration(
     handler: string,
     samTemplate: vscode.Uri,
 ): Promise<HandlerConfig> {
-    const templateRelativePath = getTemplateRelativePath(samTemplate.fsPath, workspaceFolder.uri.fsPath)
+    const templateRelativePath = getNormalizedRelativePath(workspaceFolder.uri.fsPath, samTemplate.fsPath)
 
     const configPopulationResult = new TemplatesConfigPopulator(await load(workspaceFolder.uri.fsPath))
         .ensureTemplateHandlerSectionExists(templateRelativePath, handler)
         .getResults()
 
-    return configPopulationResult.templatesConfig.templates[templateRelativePath].handlers![handler]!
+    return configPopulationResult.templatesConfig.templates[templateRelativePath]!.handlers![handler]!
 }
 
 async function getEventRange(

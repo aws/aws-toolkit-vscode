@@ -80,18 +80,6 @@ export function getTemplatesConfigPath(workspaceFolderPath: string): string {
     )
 }
 
-export function getTemplateRelativePath(
-    templatePath: string,
-    workspaceFolderPath: string
-): string {
-    const relativePath = _path.relative(workspaceFolderPath, templatePath)
-
-    return relativePath.replace(
-        _path.sep,
-        '/'
-    )
-}
-
 export async function load(
     workspaceFolderPath: string,
     context: LoadTemplatesConfigContext = new DefaultLoadTemplatesConfigContext()
@@ -207,8 +195,8 @@ export class TemplatesConfigPopulator {
     ): TemplatesConfigPopulator {
         this.ensureTemplateHandlersSectionExists(templateRelativePath)
 
-        if (!this.config.templates[templateRelativePath].handlers![handler]) {
-            this.config.templates[templateRelativePath].handlers![handler] = {
+        if (!this.config.templates[templateRelativePath]!.handlers![handler]) {
+            this.config.templates[templateRelativePath]!.handlers![handler] = {
                 event: {},
                 environmentVariables: {}
             }
@@ -224,7 +212,7 @@ export class TemplatesConfigPopulator {
     ): TemplatesConfigPopulator {
         this.ensureTemplateHandlerSectionExists(templateRelativePath, handler)
 
-        const handlerConfig: HandlerConfig = this.config.templates[templateRelativePath].handlers![handler]!
+        const handlerConfig: HandlerConfig = this.config.templates[templateRelativePath]!.handlers![handler]!
 
         if (!handlerConfig.event) {
             handlerConfig.event = {}
@@ -268,8 +256,8 @@ export class TemplatesConfigPopulator {
     private ensureTemplateHandlersSectionExists(templateRelativePath: string): TemplatesConfigPopulator {
         this.ensureTemplateSectionExists(templateRelativePath)
 
-        if (!this.config.templates[templateRelativePath].handlers) {
-            this.config.templates[templateRelativePath].handlers = {}
+        if (!this.config.templates[templateRelativePath]!.handlers) {
+            this.config.templates[templateRelativePath]!.handlers = {}
             this.isDirty = true
         }
 
