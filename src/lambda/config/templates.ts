@@ -52,7 +52,7 @@ export class DefaultLoadTemplatesConfigContext implements LoadTemplatesConfigCon
     public readonly fileExists = fsUtils.fileExists
     public readonly readFile = fsUtils.readFileAsString
 
-    public saveDocumentIfDirty = saveDocumentIfDirty
+    public readonly saveDocumentIfDirty = saveDocumentIfDirty
 }
 
 export function getTemplatesConfigPath(workspaceFolderPath: string): string {
