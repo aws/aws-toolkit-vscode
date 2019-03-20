@@ -107,7 +107,7 @@ async function getEventRange(
     }
 
     const templateSymbol: vscode.DocumentSymbol | undefined =
-        templatesSymbol!.children.find(c => c.name === relativeTemplatePath)
+        templatesSymbol.children.find(c => c.name === relativeTemplatePath)
     if (!templateSymbol) {
         logger.warn(`Unable to find template section ${relativeTemplatePath} in ${editor.document.uri}`)
 
