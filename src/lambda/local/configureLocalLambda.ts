@@ -125,6 +125,8 @@ function showTemplatesConfigurationError(
     error: TemplatesConfigFieldTypeError,
     showErrorMessage: typeof vscode.window.showErrorMessage = vscode.window.showErrorMessage
 ) {
+    const logger: Logger = getLogger()
+
     showErrorMessage(
         localize(
             'AWS.lambda.configure.error.fieldtype',
@@ -135,6 +137,9 @@ function showTemplatesConfigurationError(
             error.expectedType,
         )
     )
+
+    // tslint:disable-next-line:max-line-length
+    logger.error(`Error detected in templates.json: ${error.message}. Field: ${error.jsonPath.join('.')}, expected: ${error.expectedType}, was: ${error.actualType}`)
 }
 
 function getTabSize(editor?: vscode.TextEditor): number {
