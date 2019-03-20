@@ -50,11 +50,12 @@ describe('SamTemplateGenerator', () => {
         assert.ok(template.Resources)
         assert.notStrictEqual(Object.keys(template.Resources!).length, 0)
 
-        const resource: CloudFormation.Resource = template.Resources![sampleResourceNameValue]
-        assert.strictEqual(resource.Properties!.CodeUri, sampleCodeUriValue)
-        assert.strictEqual(resource.Properties!.Handler, sampleFunctionHandlerValue)
-        assert.strictEqual(resource.Properties!.Runtime, sampleRuntimeValue)
-        assert.deepStrictEqual(resource.Properties!.Environment, sampleEnvironment)
+        const resource = template.Resources![sampleResourceNameValue]
+        assert.ok(resource)
+        assert.strictEqual(resource!.Properties!.CodeUri, sampleCodeUriValue)
+        assert.strictEqual(resource!.Properties!.Handler, sampleFunctionHandlerValue)
+        assert.strictEqual(resource!.Properties!.Runtime, sampleRuntimeValue)
+        assert.deepStrictEqual(resource!.Properties!.Environment, sampleEnvironment)
     })
 
     it('errs if resource name is missing', async () => {

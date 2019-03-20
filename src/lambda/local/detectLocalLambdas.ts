@@ -64,14 +64,14 @@ async function detectLambdasFromTemplate(
     }
 
     return Object.getOwnPropertyNames(resources)
-        .filter(key => resources[key].Type === 'AWS::Serverless::Function')
+        .filter(key => resources[key]!.Type === 'AWS::Serverless::Function')
         .map(key => ({
             lambda: key,
             workspaceFolder,
             templatePath,
-            protocol: getDebugProtocol(resources[key]),
-            handler: getHandler(resources[key]),
-            resource: resources[key]
+            protocol: getDebugProtocol(resources[key]!),
+            handler: getHandler(resources[key]!),
+            resource: resources[key]!
         }))
 }
 
