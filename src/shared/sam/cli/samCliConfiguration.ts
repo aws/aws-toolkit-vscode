@@ -9,11 +9,8 @@ import * as vscode from 'vscode'
 import * as filesystemUtilities from '../../filesystemUtilities'
 import { SettingsConfiguration } from '../../settingsConfiguration'
 import { SamCliLocationProvider } from './samCliLocator'
-import { SamCliVersionValidator } from './samCliVersionValidator'
 
 export interface SamCliConfiguration {
-    validator: SamCliVersionValidator
-
     getSamCliLocation(): string | undefined
 
     setSamCliLocation(location: string | undefined): Promise<void>
@@ -25,20 +22,13 @@ export class DefaultSamCliConfiguration implements SamCliConfiguration {
     public static readonly CONFIGURATION_KEY_SAMCLI_LOCATION: string = 'samcli.location'
     private readonly _configuration: SettingsConfiguration
     private readonly _samCliLocationProvider: SamCliLocationProvider
-    private readonly _validator: SamCliVersionValidator
 
     public constructor(
         configuration: SettingsConfiguration,
         samCliLocationProvider: SamCliLocationProvider,
-        validator?: SamCliVersionValidator
     ) {
         this._configuration = configuration
         this._samCliLocationProvider = samCliLocationProvider
-        this._validator = validator || new SamCliVersionValidator()
-    }
-
-    public get validator(): SamCliVersionValidator {
-        return this._validator
     }
 
     public getSamCliLocation(): string | undefined {

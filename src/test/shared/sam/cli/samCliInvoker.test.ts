@@ -6,35 +6,56 @@
 'use strict'
 
 import * as assert from 'assert'
+import { Stats } from 'fs'
+import { TestLogger } from '../../../../shared/loggerUtils'
 import { SamCliConfiguration } from '../../../../shared/sam/cli/samCliConfiguration'
-import { DefaultSamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvoker'
-import { SamCliVersion } from '../../../../shared/sam/cli/samCliVersion'
-import { SamCliVersionValidator } from '../../../../shared/sam/cli/samCliVersionValidator'
+import {
+    DefaultSamCliProcessInvoker,
+    makeSamCliProcessInvokerContext
+} from '../../../../shared/sam/cli/samCliInvoker'
 import { assertRejects } from '../../utilities/assertUtils'
 
 describe('DefaultSamCliInvoker', async () => {
-    it('throws if sam cli location is not known', async () => {
-        const config: SamCliConfiguration = {
-            getSamCliLocation: () => undefined,
-            validator: new SamCliVersionValidator({
-                getSamCliVersion: async () => SamCliVersion.MINIMUM_SAM_CLI_VERSION_INCLUSIVE
-            })
-        } as any as SamCliConfiguration
 
-        const invoker = new DefaultSamCliProcessInvoker(config)
+    let logger: TestLogger
+
+    before( async () => {
+        logger = await TestLogger.createTestLogger()
+    })
+
+    after(async () => {
+        await logger.cleanupLogger()
+    })
+
+    it('throws if sam cli location is not known', async () => {
+        const context = makeSamCliProcessInvokerContext({
+            cliConfig: {
+                getSamCliLocation: () => undefined
+            } as any as SamCliConfiguration
+        })
+
+        const invoker = new DefaultSamCliProcessInvoker(context)
 
         await assertRejects(async () => await invoker.invoke())
     })
 
     it('returns an error if the AWS Toolkit is out of date', async () => {
         const testHighLevel = '999999.9999.999999'
-        const config: SamCliConfiguration = {
-            validator: new SamCliVersionValidator({
-                getSamCliVersion: async () => testHighLevel
-            })
-        } as any as SamCliConfiguration
+        const testDate = new Date(12345)
+        const testStat = new Stats()
+        testStat.mtime = testDate
 
-        const invoker = new DefaultSamCliProcessInvoker(config)
+        const context = makeSamCliProcessInvokerContext({
+            cliConfig: {
+                getSamCliLocation: () => 'filler'
+            } as any as SamCliConfiguration,
+            cliUtils: {
+                stat: async () => testStat
+            },
+            cliInfo: { info: { version: testHighLevel }, lastModified: testDate }
+        })
+
+        const invoker = new DefaultSamCliProcessInvoker(context)
 
         const result = await invoker.invoke()
         assert.strictEqual(result.exitCode, 1)
@@ -43,13 +64,21 @@ describe('DefaultSamCliInvoker', async () => {
 
     it('returns an error if the SAM CLI is out of date', async () => {
         const testLowLevel = '0.0.1'
-        const config: SamCliConfiguration = {
-            validator: new SamCliVersionValidator({
-                getSamCliVersion: async () => testLowLevel
-            })
-        } as any as SamCliConfiguration
+        const testDate = new Date(12345)
+        const testStat = new Stats()
+        testStat.mtime = testDate
 
-        const invoker = new DefaultSamCliProcessInvoker(config)
+        const context = makeSamCliProcessInvokerContext({
+            cliConfig: {
+                getSamCliLocation: () => 'filler'
+            } as any as SamCliConfiguration,
+            cliUtils: {
+                stat: async () => testStat
+            },
+            cliInfo: { info: { version: testLowLevel }, lastModified: testDate }
+        })
+
+        const invoker = new DefaultSamCliProcessInvoker(context)
 
         const result = await invoker.invoke()
         assert.strictEqual(result.exitCode, 1)

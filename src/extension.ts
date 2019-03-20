@@ -27,7 +27,6 @@ import { safeGet } from './shared/extensionUtilities'
 import * as logFactory from './shared/logger'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import * as SamCliDetection from './shared/sam/cli/samCliDetection'
-import { SamCliVersionValidator } from './shared/sam/cli/samCliVersionValidator'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from './shared/settingsConfiguration'
 import { AWSStatusBar } from './shared/statusBar'
 import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
@@ -193,14 +192,6 @@ async function initializeSamCli(): Promise<void> {
             'samcli.detect',
             async () => await SamCliDetection.detectSamCli(true)
         )
-    })
-
-    registerCommand({
-        command: 'aws.samcli.validate.version',
-        callback: async () => {
-            const samCliVersionValidator = new SamCliVersionValidator()
-            await samCliVersionValidator.validateAndNotify()
-        }
     })
 
     await SamCliDetection.detectSamCli(false)

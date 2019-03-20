@@ -12,7 +12,7 @@ import * as vscode from 'vscode'
 import { writeFile } from '../../../../shared/filesystem'
 import { mkdtemp } from '../../../../shared/filesystemUtilities'
 import { TestLogger } from '../../../../shared/loggerUtils'
-import { SamCliTaskInvoker } from '../../../../shared/sam/cli/samCliInvoker'
+import { SamCliTaskInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { SamCliLocalInvokeInvocation } from '../../../../shared/sam/cli/samCliLocalInvoke'
 
 describe('SamCliLocalInvokeInvocation', async () => {

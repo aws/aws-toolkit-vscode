@@ -5,26 +5,34 @@
 
 'use strict'
 
+import * as semver from 'semver'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { samAboutInstallUrl } from '../../constants'
-import {
-    DefaultSamCliVersionProvider,
-    SamCliVersion,
-    SamCliVersionProvider,
-    SamCliVersionValidation
-} from './samCliVersion'
 
 const localize = nls.loadMessageBundle()
 
+export enum SamCliVersionValidation {
+    Valid = 'Valid',
+    VersionTooLow = 'VersionTooLow',
+    VersionTooHigh = 'VersionTooHigh',
+    VersionNotParseable = 'VersionNotParseable',
+}
+
+export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE = '0.7.0'
+export const MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE = '0.16.0'
+
 export interface SamCliVersionValidatorResult {
-    version: string,
+    version?: string,
     validation: SamCliVersionValidation
 }
 
-export class SamCliVersionValidator {
-    private static readonly STATUS_BAR_DURATION_MILLIS: number = 3333
+export interface SamCliVersionValidator {
+    getCliValidationStatus(version?: string): Promise<SamCliVersionValidatorResult>
+    notifyVersionIsNotValid(validationResult: SamCliVersionValidatorResult): Promise<void>
+}
 
+export class DefaultSamCliVersionValidator implements SamCliVersionValidator {
     private static readonly ACTION_GO_TO_SAM_CLI_PAGE = localize(
         'AWS.samcli.userChoice.visit.install.url',
         'Get SAM CLI'
@@ -35,31 +43,10 @@ export class SamCliVersionValidator {
         'Update AWS Toolkit'
     )
 
-    private readonly _versionProvider: SamCliVersionProvider
-
-    public constructor(versionProvider?: SamCliVersionProvider) {
-        this._versionProvider = versionProvider || new DefaultSamCliVersionProvider()
-    }
-
-    public async validate(): Promise<SamCliVersionValidatorResult> {
-        const version = await this._versionProvider.getSamCliVersion()
-
+    public async getCliValidationStatus(version?: string): Promise<SamCliVersionValidatorResult> {
         return {
             version: version,
-            validation: SamCliVersion.validate(version)
-        }
-    }
-
-    /**
-     * Call this to determine the SAM CLI version, and inform the user whether or not the version is acceptable
-     */
-    public async validateAndNotify(): Promise<void> {
-        const validationResult = await this.validate()
-
-        if (validationResult.validation === SamCliVersionValidation.Valid) {
-            await this.notifyVersionIsValid(validationResult.version)
-        } else {
-            await this.notifyVersionIsNotValid(validationResult)
+            validation: this.getValidationStatus(version)
         }
     }
 
@@ -72,8 +59,8 @@ export class SamCliVersionValidator {
                 // tslint:disable-next-line:max-line-length
                 'Your SAM CLI version {0} does not meet requirements ({1}\u00a0\u2264\u00a0version\u00a0<\u00a0{2}). {3}',
                 validationResult.version,
-                SamCliVersion.MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
-                SamCliVersion.MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE,
+                MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
+                MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE,
                 this.getNotificationRecommendation(validationResult.validation)
             ),
             ...actions
@@ -84,15 +71,24 @@ export class SamCliVersionValidator {
         }
     }
 
-    private async notifyVersionIsValid(version: string): Promise<void> {
-        vscode.window.setStatusBarMessage(
-            localize(
-                'AWS.samcli.notification.version.valid',
-                'Your SAM CLI version {0} is valid.',
-                version
-            ),
-            SamCliVersionValidator.STATUS_BAR_DURATION_MILLIS
-        )
+    private getValidationStatus(version?: string): SamCliVersionValidation {
+        if (!version) {
+            return SamCliVersionValidation.VersionNotParseable
+        }
+
+        if (!semver.valid(version)) {
+            return SamCliVersionValidation.VersionNotParseable
+        }
+
+        if (semver.lt(version, MINIMUM_SAM_CLI_VERSION_INCLUSIVE)) {
+            return SamCliVersionValidation.VersionTooLow
+        }
+
+        if (semver.gte(version, MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE)) {
+            return SamCliVersionValidation.VersionTooHigh
+        }
+
+        return SamCliVersionValidation.Valid
     }
 
     private getNotificationRecommendation(validation: SamCliVersionValidation): string {
@@ -129,7 +125,7 @@ export class SamCliVersionValidator {
             case SamCliVersionValidation.VersionTooLow:
             case SamCliVersionValidation.VersionNotParseable:
             default:
-                actions.push(SamCliVersionValidator.ACTION_GO_TO_SAM_CLI_PAGE)
+                actions.push(DefaultSamCliVersionValidator.ACTION_GO_TO_SAM_CLI_PAGE)
                 break
         }
 
@@ -137,9 +133,9 @@ export class SamCliVersionValidator {
     }
 
     private async handleUserResponse(userResponse: string): Promise<void> {
-        if (userResponse === SamCliVersionValidator.ACTION_GO_TO_SAM_CLI_PAGE) {
+        if (userResponse === DefaultSamCliVersionValidator.ACTION_GO_TO_SAM_CLI_PAGE) {
             await vscode.env.openExternal(vscode.Uri.parse(samAboutInstallUrl))
-        } else if (userResponse === SamCliVersionValidator.ACTION_GO_TO_AWS_TOOLKIT_PAGE) {
+        } else if (userResponse === DefaultSamCliVersionValidator.ACTION_GO_TO_AWS_TOOLKIT_PAGE) {
             // TODO : direct to AWS Toolkit page when there is one
         }
     }

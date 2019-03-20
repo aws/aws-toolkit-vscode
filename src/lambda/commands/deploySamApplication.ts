@@ -13,14 +13,15 @@ import { mkdtemp } from '../../shared/filesystemUtilities'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { SamCliDeployInvocation } from '../../shared/sam/cli/samCliDeploy'
-import { DefaultSamCliProcessInvoker, SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvoker'
+import { DefaultSamCliProcessInvoker, makeSamCliProcessInvokerContext } from '../../shared/sam/cli/samCliInvoker'
+import { SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvokerUtils'
 import { SamCliPackageInvocation } from '../../shared/sam/cli/samCliPackage'
 import { SamDeployWizard, SamDeployWizardResponse } from '../wizards/samDeployWizard'
 
 const localize = nls.loadMessageBundle()
 
 export async function deploySamApplication({
-    invoker = new DefaultSamCliProcessInvoker(),
+    invoker = new DefaultSamCliProcessInvoker(makeSamCliProcessInvokerContext()),
     ...restParams
 }: {
     invoker?: SamCliProcessInvoker

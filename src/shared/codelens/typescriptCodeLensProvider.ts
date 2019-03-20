@@ -14,6 +14,7 @@ import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import {
     DefaultSamCliProcessInvoker,
     DefaultSamCliTaskInvoker,
+    makeSamCliProcessInvokerContext,
 } from '../sam/cli/samCliInvoker'
 import { Datum } from '../telemetry/telemetryEvent'
 import { registerCommand } from '../telemetry/telemetryUtils'
@@ -53,7 +54,7 @@ async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
 export function initialize({
     configuration,
     toolkitOutputChannel,
-    processInvoker = new DefaultSamCliProcessInvoker(),
+    processInvoker = new DefaultSamCliProcessInvoker(makeSamCliProcessInvokerContext()),
     taskInvoker = new DefaultSamCliTaskInvoker()
 }: CodeLensProviderParams): void {
     const runtime = 'nodejs8.10' // TODO: Remove hard coded value

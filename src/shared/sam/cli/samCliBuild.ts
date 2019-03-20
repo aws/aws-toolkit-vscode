@@ -8,7 +8,8 @@
 import { fileExists } from '../../filesystemUtilities'
 import { getLogger, Logger } from '../../logger'
 import { ChildProcessResult } from '../../utilities/childProcess'
-import { DefaultSamCliProcessInvoker, SamCliProcessInvoker } from './samCliInvoker'
+import { DefaultSamCliProcessInvoker, makeSamCliProcessInvokerContext } from './samCliInvoker'
+import { SamCliProcessInvoker } from './samCliInvokerUtils'
 
 export interface SamCliBuildInvocationArguments {
     /**
@@ -62,7 +63,7 @@ export class SamCliBuildInvocation {
      */
     public constructor(
         {
-            invoker = new DefaultSamCliProcessInvoker(),
+            invoker = new DefaultSamCliProcessInvoker(makeSamCliProcessInvokerContext()),
             useContainer = false,
             skipPullImage = false,
             ...params
