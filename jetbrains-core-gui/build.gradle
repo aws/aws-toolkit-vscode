@@ -5,7 +5,7 @@ apply plugin: 'org.jetbrains.intellij'
 apply plugin: 'jacoco'
 
 dependencies {
-    compile rootProject
+    compile project(":jetbrains-core")
 }
 
 intellij {
@@ -14,7 +14,7 @@ intellij {
     pluginName rootIntelliJTask.pluginName
     updateSinceUntilBuild rootIntelliJTask.updateSinceUntilBuild
     downloadSources = rootIntelliJTask.downloadSources
-    plugins = rootIntelliJTask.plugins + ['com.intellij.testGuiFramework:183.5429.1']
+    plugins = rootIntelliJTask.plugins + ['com.intellij.testGuiFramework:183.6156.8']
 }
 
 jacoco.applyTo(runIde)
