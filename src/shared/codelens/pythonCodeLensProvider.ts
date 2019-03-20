@@ -9,14 +9,14 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 
 import { PythonDebugConfiguration } from '../../lambda/local/debugConfiguration'
-import { rename, writeFile } from '../filesystem'
+import { writeFile } from '../filesystem'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
 import { DefaultSamCliProcessInvoker, DefaultSamCliTaskInvoker, } from '../sam/cli/samCliInvoker'
 import { Datum } from '../telemetry/telemetryEvent'
 import { registerCommand } from '../telemetry/telemetryUtils'
-import { getDebugPort } from '../utilities/vsCodeUtils'
+import { getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
 
 import {
     CodeLensProviderParams,
@@ -24,7 +24,13 @@ import {
     getMetricDatum,
     makeCodeLenses,
 } from './codeLensUtils'
-import { LambdaLocalInvokeParams, LocalLambdaRunner, OnDidSamBuildParams } from './localLambdaRunner'
+import {
+    executeSamBuild,
+    invokeLambdaFunction,
+    LambdaLocalInvokeParams,
+    makeBuildDir,
+    makeInputTemplate,
+} from './localLambdaRunner'
 
 export const PYTHON_LANGUAGE = 'python'
 export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
@@ -63,18 +69,18 @@ const getLambdaHandlerCandidates = async ({ uri }: { uri: vscode.Uri }): Promise
 
 // Add create debugging manifest/requirements.txt containing ptvsd
 const makePythonDebugManifest = async (params: {
-    samProjectCodeRoot: string
+    samProjectCodeRoot: string,
+    outputDir: string
 }): Promise<string | undefined> => {
     let manifestText = ''
     const manfestPath = path.join(params.samProjectCodeRoot, 'requirements.txt')
     if (fileExists(manfestPath)) {
         manifestText = await readFileAsString(manfestPath)
     }
-    getLogger().debug('makePythonDebugManifest - samProjectCodeRoot:', params.samProjectCodeRoot)
+    getLogger().debug(`makePythonDebugManifest - params: ${JSON.stringify(params, undefined, 2)}`)
     if (manifestText.indexOf('ptvsd') < 0 ) { // TODO: Make this logic more robust
         manifestText += '\nptvsd'
-        // TODO: Decide where we should put the debugManifestPath
-        const debugManifestPath = path.join(params.samProjectCodeRoot, 'debug-requirements.txt')
+        const debugManifestPath = path.join(params.outputDir, 'debug-requirements.txt')
         await writeFile(debugManifestPath, manifestText)
 
         return debugManifestPath
@@ -82,72 +88,74 @@ const makePythonDebugManifest = async (params: {
     // else we don't need to override the manifest. nothing to return
 }
 
-const getBackupHandlerFilePrefix = (handlerFilePrefix: string) => {
-    return `${handlerFilePrefix}_orig`
-}
-
-// Create debuggable Lambda handler if needed
-const onDidSamBuild = async (params: OnDidSamBuildParams) => {
-    const logger = getLogger()
-    logger.info(`onDidSamBuild - params: ${JSON.stringify(params, undefined, 2)}`)
-    if (params.isDebug) {
-        const samBuildProjectDir = path.join(params.buildDir, 'awsToolkitSamLocalResource')
-        const [handlerFilePrefix, handlerFunctionName] = params.handlerName.split('.')
-        const originalHandlerFilePath = path.join(samBuildProjectDir, `${handlerFilePrefix}.py`)
-        const newHandlerFilePath = path.join(samBuildProjectDir, `${getBackupHandlerFilePrefix(handlerFilePrefix)}.py`)
-        await rename(originalHandlerFilePath, newHandlerFilePath)
-        await makeLambdaDebugFile({
-            handlerFunctionName,
-            handlerFilePrefix,
-            debugPort: params.debugPort,
-            samBuildProjectDir: samBuildProjectDir
-        })
-    }
-}
-
 // tslint:disable:no-trailing-whitespace
 const makeLambdaDebugFile = async (params: {
-    handlerFunctionName: string,
-    handlerFilePrefix: string,
+    handlerName: string,
     debugPort: number,
-    samBuildProjectDir: string
-}) => {
-    if (!params.samBuildProjectDir) {
-        throw new Error('Must specify params.samBuildProjectDir')
+    outputDir: string
+}): Promise<{outFilePath: string, debugHandlerName: string}> => {
+    if (!params.outputDir) {
+        throw new Error('Must specify outputDir')
     }
     const logger = getLogger()
+
+    const [handlerFilePrefix, handlerFunctionName] = params.handlerName.split('.')
+    const debugHandlerFileName = `${handlerFilePrefix}_debug`
+    const debugHandlerFunctionName = 'lambda_handler'
     try {
         logger.info('makeLambdaDebugFile - params:', JSON.stringify(params, undefined, 2))
         const template = `
 import ptvsd
-from ${getBackupHandlerFilePrefix(params.handlerFilePrefix)} import ${params.handlerFunctionName} as _handler
-
-print('waiting for debugger to attach...')
-# Enable ptvsd on 0.0.0.0 address and on port 5890 that we'll connect later with our IDE
-ptvsd.enable_attach(address=('0.0.0.0', ${params.debugPort}), redirect_output=True)
-ptvsd.wait_for_attach()
-print('debugger attached')
+from ${handlerFilePrefix} import ${handlerFunctionName} as _handler
 
 
-def ${params.handlerFunctionName}(event, context):
+def ${debugHandlerFunctionName}(event, context):
+    print('waiting for debugger to attach...')
+    # Enable ptvsd on 0.0.0.0 address and on port 5890 that we'll connect later with our IDE
+    ptvsd.enable_attach(address=('0.0.0.0', ${params.debugPort}), redirect_output=True)
+    ptvsd.wait_for_attach()
+    print('debugger attached')
     return _handler(event, context)
 
 `
 
-        const outFilePath = path.join(params.samBuildProjectDir, `${params.handlerFilePrefix}.py`)
+        const outFilePath = path.join(params.outputDir, `${debugHandlerFileName}.py`)
         logger.info('makeLambdaDebugFile - outFilePath:', outFilePath)
         await writeFile(outFilePath, template)
+
+        return {
+            outFilePath,
+            debugHandlerName: `${debugHandlerFileName}.${debugHandlerFunctionName}`
+        }
     } catch (err) {
         logger.error('makeLambdaDebugFile failed:', err)
+        throw err
     }
 }
 
-export function initialize({
+const makeDebugConfig = ({debugPort}: {debugPort?: number}): PythonDebugConfiguration => {
+    return {
+        type: PYTHON_LANGUAGE,
+        request: 'attach',
+        name: 'SamLocalDebug',
+        host: 'localhost',
+        port: debugPort!,
+        pathMappings: [
+            {
+                // tslint:disable-next-line:no-invalid-template-strings
+                localRoot: '${workspaceFolder}/hello_world',
+                remoteRoot: '/var/task'
+            }
+        ],
+    }
+}
+
+export async function initialize({
     configuration,
     toolkitOutputChannel,
     processInvoker = new DefaultSamCliProcessInvoker(),
     taskInvoker = new DefaultSamCliTaskInvoker()
-}: CodeLensProviderParams): void {
+}: CodeLensProviderParams): Promise<void> {
     const logger = getLogger()
 
     const runtime = 'python3.6' // TODO: Remove hard coded value
@@ -155,41 +163,64 @@ export function initialize({
     const invokeLambda = async (args: LambdaLocalInvokeParams) => {
         const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
         logger.info(`Project root: '${samProjectCodeRoot}'`)
-        let debugPort: number | undefined
 
+        const baseBuildDir = await makeBuildDir()
+
+        let debugPort = args.isDebug ? await getDebugPort() : undefined
+        const debugConfig: PythonDebugConfiguration = makeDebugConfig({debugPort})
+
+        let handlerName: string
+        let manifestPath: string | undefined
         if (args.isDebug) {
             debugPort = await getDebugPort()
+            const {debugHandlerName} = await makeLambdaDebugFile({
+                handlerName: args.handlerName,
+                debugPort: debugConfig.port,
+                outputDir: samProjectCodeRoot,
+            })
+            handlerName = debugHandlerName
+            manifestPath = await makePythonDebugManifest({
+                samProjectCodeRoot,
+                outputDir: baseBuildDir
+            })
+        } else {
+            handlerName = args.handlerName
         }
-        // TODO: Figure out Python specific params and create PythonDebugConfiguration if needed
-        const debugConfig: PythonDebugConfiguration = {
-            type: PYTHON_LANGUAGE,
-            request: 'attach',
-            name: 'SamLocalDebug',
-            host: 'localhost',
-            port: debugPort!,
-            pathMappings: [
-                {
-                    localRoot: samProjectCodeRoot,
-                    remoteRoot: '/var/task'
-                }
-            ],
-        }
-
-        const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
-            configuration,
-            args,
-            debugPort,
+        const inputTemplatePath = await makeInputTemplate({
+            baseBuildDir,
+            codeDir: samProjectCodeRoot,
+            documentUri: args.document.uri,
+            handlerName,
             runtime,
-            toolkitOutputChannel,
-            processInvoker,
-            taskInvoker,
-            debugConfig,
-            samProjectCodeRoot,
-            await makePythonDebugManifest({ samProjectCodeRoot }),
-            onDidSamBuild
-        )
+            workspaceUri: args.workspaceFolder.uri
+        })
+        logger.info(`+++ debug stuff: ${
+            JSON.stringify({inputTemplatePath, handlerName, manifestPath}, undefined, 2)
+        }`)
 
-        await localLambdaRunner.run()
+        const channelLogger = getChannelLogger(toolkitOutputChannel)
+        const codeDir = samProjectCodeRoot
+        const samTemplatePath: string = await executeSamBuild({
+            baseBuildDir,
+            channelLogger,
+            codeDir,
+            inputTemplatePath,
+            manifestPath,
+            samProcessInvoker: processInvoker,
+
+        })
+
+        await invokeLambdaFunction({
+            baseBuildDir,
+            channelLogger,
+            configuration,
+            debugConfig,
+            samTaskInvoker: taskInvoker,
+            samTemplatePath,
+            documentUri: args.document.uri,
+            handlerName,
+            isDebug: args.isDebug,
+        })
     }
 
     const command = getInvokeCmdKey('python')
