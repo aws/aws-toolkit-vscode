@@ -12,5 +12,5 @@ export function getNormalizedRelativePath(from: string, to: string): string {
 }
 
 export function normalizeSeparator(path: string) {
-    return path.replace(_path.sep, _path.posix.sep)
+    return path.split(_path.sep).join(_path.posix.sep)
 }
