@@ -281,11 +281,6 @@
                 "category": "AWS"
             },
             {
-                "command": "aws.samcli.validate.version",
-                "title": "%AWS.command.samcli.validate.version%",
-                "category": "AWS"
-            },
-            {
                 "command": "aws.deleteCloudFormation",
                 "title": "%AWS.command.deleteCloudFormation%",
                 "category": "AWS"
