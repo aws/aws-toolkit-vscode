@@ -21,11 +21,11 @@ import toolkits.gradle.changelog.GithubWriter
 import toolkits.gradle.changelog.JetBrainsWriter
 import toolkits.gradle.changelog.MAPPER
 import toolkits.gradle.changelog.ReleaseCreator
-import java.io.Console
 import java.io.File
 import java.io.FileFilter
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Scanner
 import java.util.UUID
 
 /* ktlint-disable custom-ktlint-rules:log-not-lazy */
@@ -98,32 +98,36 @@ open class NewChange : ChangeLogTask() {
             project.property("description") as? String?
         } else null
 
-        val console = System.console()
+        val input = Scanner(System.`in`)
         val file = when {
             changeType != null && description != null -> createChange(changeType, description)
-            console != null -> promptForChange(console, changeType)
-            changeType != null -> throw RuntimeException("Cannot determine description - try running with --no-daemon")
-            else -> throw RuntimeException("Cannot determine changeType and description - try running with --no-daemon")
+            else -> promptForChange(input, changeType)
         }
         git?.stage(file)
     }
 
-    private fun promptForChange(console: Console, existingChangeType: ChangeType?): File {
-        val changeType = existingChangeType ?: promptForChangeType(console)
+    private fun promptForChange(input: Scanner, existingChangeType: ChangeType?): File {
+        val changeType = existingChangeType ?: promptForChangeType(input)
 
-        val description = console.readLine("> Please enter a change description: ")
+        logger.lifecycle("> Please enter a change description: ")
+        val description = input.nextLine()
 
         return createChange(changeType, description)
     }
 
-    private fun promptForChangeType(console: Console): ChangeType = console.readLine(
-        "\n\n%s\n> Please enter change type (1): ",
-        ChangeType.values().mapIndexed { index, changeType -> "${index + 1}. ${changeType.sectionTitle}" }.joinToString("\n")
-    ).let {
-        if (it.isNotBlank()) {
-            ChangeType.values()[it.toInt() - 1]
-        } else {
-            ChangeType.FEATURE
+    private fun promptForChangeType(input: Scanner): ChangeType {
+        val changeList = ChangeType.values()
+            .mapIndexed { index, changeType -> "${index + 1}. ${changeType.sectionTitle}" }
+            .joinToString("\n")
+        val newFeatureIndex = ChangeType.FEATURE.ordinal + 1
+        logger.lifecycle("\n$changeList\n> Please enter change type ($newFeatureIndex): ")
+
+        return input.nextLine().let {
+            if (it.isNotBlank()) {
+                ChangeType.values()[it.toInt() - 1]
+            } else {
+                ChangeType.FEATURE
+            }
         }
     }
 

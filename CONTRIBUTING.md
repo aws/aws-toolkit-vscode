@@ -49,7 +49,7 @@ To send us a pull request, please:
    
 4. Generate a change log entry for your change using 
 
-   ```./gradlew newChange --no-daemon``` 
+   ```./gradlew newChange --console plain``` 
    
    and following the prompts. Change log entries should describe the change
    succinctly and may include Git-Flavored Markdown ([GFM](https://github.github.com/gfm/)). Reference the Github Issue # if relevant.

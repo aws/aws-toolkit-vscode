@@ -217,7 +217,7 @@ check.dependsOn verifyPlugin
 def publishedProjects = subprojects.findAll { !it.name.contains("test")}
 
 jacoco {
-    toolVersion = "0.8.2"
+    toolVersion = "0.8.3" // TODO: Remove with Gradle 5.3
 }
 
 task coverageReport(type: JacocoReport) {
