@@ -91,6 +91,7 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
                 break
             case SamCliVersionValidation.VersionTooLow:
             case SamCliVersionValidation.VersionNotParseable:
+            default:
                 const samVersionTooLowMessage = 'SAM CLI is out of date'
                 errorResult.error = new Error(samVersionTooLowMessage)
                 errorResult.stdout = samVersionTooLowMessage
