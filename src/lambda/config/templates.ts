@@ -160,6 +160,27 @@ function getParseErrorDescription(code: jsonParser.ParseErrorCode): string {
     }
 }
 
+export class TemplatesConfigFieldTypeError extends Error {
+    public readonly jsonPath: jsonParser.JSONPath
+    public readonly expectedType: jsonParser.NodeType
+    public readonly actualType: jsonParser.NodeType
+
+    public constructor({
+        ...params
+    }: {
+        message?: string,
+        jsonPath: jsonParser.JSONPath,
+        expectedType: jsonParser.NodeType,
+        actualType: jsonParser.NodeType,
+    }) {
+        super(params.message)
+
+        this.jsonPath = params.jsonPath
+        this.expectedType = params.expectedType
+        this.actualType = params.actualType
+    }
+}
+
 export class TemplatesConfigPopulator {
     private isDirty: boolean = false
 
@@ -238,14 +259,18 @@ export class TemplatesConfigPopulator {
 
     private ensureJsonObjectExists(jsonPath: jsonParser.JSONPath, value: any) {
         const root = jsonParser.parseTree(this.json)
-        const template = jsonParser.findNodeAtLocation(root, jsonPath)
+        const node = jsonParser.findNodeAtLocation(root, jsonPath)
 
-        if (template && this.isUnexpectedObjectType(template.type)) {
-            // tslint:disable-next-line:max-line-length
-            throw new Error(`Invalid configuration. Field ${jsonPath.join('/')} was expected to be an object, but was ${template.type.toString()} instead`)
+        if (node && this.isUnexpectedObjectType(node.type)) {
+            throw new TemplatesConfigFieldTypeError({
+                message: 'Invalid configuration',
+                jsonPath: jsonPath,
+                actualType: node.type,
+                expectedType: 'object',
+            })
         }
 
-        if (!template || template.type === 'null') {
+        if (!node || node.type === 'null') {
             const edits = jsonParser.modify(
                 this.json,
                 jsonPath,

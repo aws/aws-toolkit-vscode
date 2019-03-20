@@ -327,7 +327,12 @@ describe('TemplatesConfigPopulatorContext', async () => {
         assert.throws(
             () => new TemplatesConfigPopulator(inputJson)
                 .ensureTemplateSectionExists('someprocessor'),
-            /Invalid configuration. Field templates was expected to be an object, but was number instead/
+            {
+                message: 'Invalid configuration',
+                jsonPath: ['templates'],
+                expectedType: 'object',
+                actualType: 'number',
+            }
         )
     })
 
@@ -366,8 +371,12 @@ describe('TemplatesConfigPopulatorContext', async () => {
         assert.throws(
             () => new TemplatesConfigPopulator(inputJson)
                 .ensureTemplateHandlerSectionExists('someprocessor', 'processor'),
-            // tslint:disable-next-line:max-line-length
-            /Invalid configuration. Field templates\/someprocessor was expected to be an object, but was boolean instead/
+            {
+                message: 'Invalid configuration',
+                jsonPath: ['templates', 'someprocessor'],
+                expectedType: 'object',
+                actualType: 'boolean',
+            }
         )
     })
 
@@ -382,8 +391,12 @@ describe('TemplatesConfigPopulatorContext', async () => {
         assert.throws(
             () => new TemplatesConfigPopulator(inputJson)
                 .ensureTemplateHandlerSectionExists('someprocessor', 'processor'),
-            // tslint:disable-next-line:max-line-length
-            /Invalid configuration. Field templates\/someprocessor\/handlers was expected to be an object, but was array instead/
+            {
+                message: 'Invalid configuration',
+                jsonPath: ['templates', 'someprocessor', 'handlers'],
+                expectedType: 'object',
+                actualType: 'array',
+            }
         )
     })
 
@@ -400,8 +413,12 @@ describe('TemplatesConfigPopulatorContext', async () => {
         assert.throws(
             () => new TemplatesConfigPopulator(inputJson)
                 .ensureTemplateHandlerSectionExists('someprocessor', 'processor'),
-            // tslint:disable-next-line:max-line-length
-            /Invalid configuration. Field templates\/someprocessor\/handlers\/processor was expected to be an object, but was string instead/
+            {
+                message: 'Invalid configuration',
+                jsonPath: ['templates', 'someprocessor', 'handlers', 'processor'],
+                expectedType: 'object',
+                actualType: 'string',
+            }
         )
     })
 
@@ -508,8 +525,12 @@ describe('TemplatesConfigPopulatorContext', async () => {
         assert.throws(
             () => new TemplatesConfigPopulator(inputJson)
                 .ensureTemplateHandlerPropertiesExist('someprocessor', 'processor'),
-            // tslint:disable-next-line:max-line-length
-            /Invalid configuration. Field templates\/someprocessor\/handlers\/processor was expected to be an object, but was string instead/
+            {
+                message: 'Invalid configuration',
+                jsonPath: ['templates', 'someprocessor', 'handlers', 'processor'],
+                expectedType: 'object',
+                actualType: 'string',
+            }
         )
     })
 
@@ -528,8 +549,12 @@ describe('TemplatesConfigPopulatorContext', async () => {
         assert.throws(
             () => new TemplatesConfigPopulator(inputJson)
                 .ensureTemplateHandlerPropertiesExist('someprocessor', 'processor'),
-            // tslint:disable-next-line:max-line-length
-            /Invalid configuration. Field templates\/someprocessor\/handlers\/processor\/event was expected to be an object, but was number instead/
+            {
+                message: 'Invalid configuration',
+                jsonPath: ['templates', 'someprocessor', 'handlers', 'processor', 'event'],
+                expectedType: 'object',
+                actualType: 'number',
+            }
         )
     })
 
