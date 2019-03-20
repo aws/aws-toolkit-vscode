@@ -6,6 +6,7 @@
 'use strict'
 
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import * as fsUtils from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
@@ -17,17 +18,22 @@ import {
     HandlerConfig,
     loadTemplatesConfigFromJson,
     TemplatesConfig,
+    TemplatesConfigFieldTypeError,
     TemplatesConfigPopulator
 } from '../config/templates'
+
+const localize = nls.loadMessageBundle()
 
 export interface ConfigureLocalLambdaContext {
     showTextDocument: typeof vscode.window.showTextDocument
     executeCommand: typeof vscode.commands.executeCommand
+    showErrorMessage: typeof vscode.window.showErrorMessage
 }
 
 class DefaultConfigureLocalLambdaContext implements ConfigureLocalLambdaContext {
     public readonly showTextDocument = vscode.window.showTextDocument
     public readonly executeCommand = vscode.commands.executeCommand
+    public readonly showErrorMessage = vscode.window.showErrorMessage
 }
 
 // Precondition: `handler` is a valid lambda handler name.
@@ -37,43 +43,50 @@ export async function configureLocalLambda(
     samTemplate: vscode.Uri,
     context: ConfigureLocalLambdaContext = new DefaultConfigureLocalLambdaContext()
 ): Promise<void> {
-
     const templateRelativePath = getNormalizedRelativePath(workspaceFolder.uri.fsPath, samTemplate.fsPath)
 
     const configPath: string = getTemplatesConfigPath(workspaceFolder.uri.fsPath)
     const configPathUri = vscode.Uri.file(configPath)
     const editor: vscode.TextEditor = await context.showTextDocument(configPathUri)
 
-    const configPopulationResult = new TemplatesConfigPopulator(
-        editor.document.getText(),
-        {
-            formattingOptions: {
-                insertSpaces: true,
-                tabSize: getTabSize(editor),
-                eol: editor.document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n',
+    try {
+        const configPopulationResult = new TemplatesConfigPopulator(
+            editor.document.getText(),
+            {
+                formattingOptions: {
+                    insertSpaces: true,
+                    tabSize: getTabSize(editor),
+                    eol: editor.document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n',
+                }
             }
+        )
+            .ensureTemplateHandlerPropertiesExist(templateRelativePath, handler)
+            .getResults()
+
+        if (configPopulationResult.isDirty) {
+            await editor.edit(eb => {
+                eb.replace(
+                    new vscode.Range(
+                        editor.document.positionAt(0),
+                        editor.document.positionAt(editor.document.getText().length),
+                    ),
+                    configPopulationResult.json)
+            })
+
+            // We don't save the doc. The user has the option to revert changes, or make further edits.
         }
-    )
-        .ensureTemplateHandlerPropertiesExist(templateRelativePath, handler)
-        .getResults()
 
-    if (configPopulationResult.isDirty) {
-        await editor.edit(eb => {
-            eb.replace(
-                new vscode.Range(
-                    editor.document.positionAt(0),
-                    editor.document.positionAt(editor.document.getText().length),
-                ),
-                configPopulationResult.json)
-        })
-
-        // We don't save the doc. The user has the option to revert changes, or make further edits.
+        await context.showTextDocument(
+            editor.document,
+            { selection: await getEventRange(editor, templateRelativePath, handler, context) }
+        )
+    } catch (e) {
+        if (e instanceof TemplatesConfigFieldTypeError) {
+            showTemplatesConfigurationError(e, context.showErrorMessage)
+        } else {
+            throw e
+        }
     }
-
-    await context.showTextDocument(
-        editor.document,
-        { selection: await getEventRange(editor, templateRelativePath, handler, context) }
-    )
 }
 
 export async function getLocalLambdaConfiguration(
@@ -81,23 +94,47 @@ export async function getLocalLambdaConfiguration(
     handler: string,
     samTemplate: vscode.Uri,
 ): Promise<HandlerConfig> {
-    const configPath: string = getTemplatesConfigPath(workspaceFolder.uri.fsPath)
-    const templateRelativePath = getNormalizedRelativePath(workspaceFolder.uri.fsPath, samTemplate.fsPath)
+    try {
+        const configPath: string = getTemplatesConfigPath(workspaceFolder.uri.fsPath)
+        const templateRelativePath = getNormalizedRelativePath(workspaceFolder.uri.fsPath, samTemplate.fsPath)
 
-    await saveDocumentIfDirty(configPath)
+        await saveDocumentIfDirty(configPath)
 
-    let rawConfig: string = '{}'
-    if (await fsUtils.fileExists(configPath)) {
-        rawConfig = await fsUtils.readFileAsString(configPath)
+        let rawConfig: string = '{}'
+        if (await fsUtils.fileExists(configPath)) {
+            rawConfig = await fsUtils.readFileAsString(configPath)
+        }
+
+        const configPopulationResult = new TemplatesConfigPopulator(rawConfig)
+            .ensureTemplateHandlerSectionExists(templateRelativePath, handler)
+            .getResults()
+
+        const config: TemplatesConfig = loadTemplatesConfigFromJson(configPopulationResult.json)
+
+        return config.templates[templateRelativePath]!.handlers![handler]!
+    } catch (e) {
+        if (e instanceof TemplatesConfigFieldTypeError) {
+            showTemplatesConfigurationError(e)
+        }
+
+        throw e
     }
+}
 
-    const configPopulationResult = new TemplatesConfigPopulator(rawConfig)
-        .ensureTemplateHandlerSectionExists(templateRelativePath, handler)
-        .getResults()
-
-    const config: TemplatesConfig = loadTemplatesConfigFromJson(configPopulationResult.json)
-
-    return config.templates[templateRelativePath]!.handlers![handler]!
+function showTemplatesConfigurationError(
+    error: TemplatesConfigFieldTypeError,
+    showErrorMessage: typeof vscode.window.showErrorMessage = vscode.window.showErrorMessage
+) {
+    showErrorMessage(
+        localize(
+            'AWS.lambda.configure.error.fieldtype',
+            // tslint:disable-next-line:max-line-length
+            'Your templates.json file has an issue. {0} was detected as {1} instead of {2}. Please change or remove this field, and try again.',
+            error.jsonPath.join('.'),
+            error.actualType,
+            error.expectedType,
+        )
+    )
 }
 
 function getTabSize(editor?: vscode.TextEditor): number {
