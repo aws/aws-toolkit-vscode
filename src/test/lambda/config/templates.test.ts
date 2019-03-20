@@ -84,7 +84,7 @@ describe('templates', async () => {
             assert.ok(template)
             assert.strictEqual(Object.getOwnPropertyNames(template).length, 1)
 
-            const parameterOverrides = template.parameterOverrides
+            const parameterOverrides = template!.parameterOverrides
             assert.ok(parameterOverrides)
             assert.strictEqual(Object.getOwnPropertyNames(parameterOverrides).length, 2)
 

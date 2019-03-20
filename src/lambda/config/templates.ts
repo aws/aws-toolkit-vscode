@@ -15,13 +15,13 @@ import * as fsUtils from '../../shared/filesystemUtilities'
 
 export interface TemplatesConfig {
     templates: {
-        [relativePath: string]: TemplateConfig
+        [relativePath: string]: TemplateConfig | undefined
     }
 }
 
 export interface TemplateConfig {
     parameterOverrides?: {
-        [key: string]: string
+        [key: string]: string | undefined
     },
     handlers?: {
         [handler: string]: HandlerConfig | undefined
