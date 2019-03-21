@@ -76,10 +76,6 @@ public class DeployServerlessApplicationPanel {
         return parameters;
     }
 
-    public JComponent getTemplateEditorComponent() {
-        return environmentVariablesTable.getComponent();
-    }
-
     private void createUIComponents() {
         environmentVariablesTable = new EnvVariablesTable();
         stackParameters = new Wrapper();

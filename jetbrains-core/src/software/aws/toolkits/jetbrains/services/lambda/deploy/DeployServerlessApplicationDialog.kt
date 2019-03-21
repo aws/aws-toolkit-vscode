@@ -186,8 +186,10 @@ class DeploySamApplicationValidator {
 
         if (unsetParameters.any()) {
             return ValidationInfo(
-                    message("serverless.application.deploy.validation.template.values.missing", unsetParameters.joinToString(", ")),
-                    view.templateEditorComponent
+                message(
+                    "serverless.application.deploy.validation.template.values.missing",
+                    unsetParameters.joinToString(", ")
+                )
             )
         }
 
