@@ -16,9 +16,11 @@ const functionsToTest = [
     'access',
     'readFile',
     'readdir',
+    'rename',
     'stat',
     'mkdir',
     'mkdtemp',
+    'unlink',
     'writeFile',
 ]
 

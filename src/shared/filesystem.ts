@@ -26,6 +26,10 @@ export const readFile = promisify(fs.readFile)
 
 export const readdir = promisify(fs.readdir)
 
+export const rename = promisify(fs.rename)
+
 export const stat = promisify(fs.stat)
+
+export const unlink = promisify(fs.unlink)
 
 export const writeFile = promisify(fs.writeFile)

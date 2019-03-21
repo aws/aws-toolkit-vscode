@@ -9,7 +9,7 @@ import * as assert from 'assert'
 import * as del from 'del'
 import * as path from 'path'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
-import { mkdtemp } from '../../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import { SamTemplateGenerator } from '../../../shared/templates/sam/samTemplateGenerator'
 
@@ -27,7 +27,7 @@ describe('SamTemplateGenerator', () => {
     let tempFolder: string
 
     beforeEach(async () => {
-        tempFolder = await mkdtemp()
+        tempFolder = await makeTemporaryToolkitFolder()
         templateFilename = path.join(tempFolder, 'template.yml')
     })
 
@@ -50,11 +50,12 @@ describe('SamTemplateGenerator', () => {
         assert.ok(template.Resources)
         assert.notStrictEqual(Object.keys(template.Resources!).length, 0)
 
-        const resource: CloudFormation.Resource = template.Resources![sampleResourceNameValue]
-        assert.strictEqual(resource.Properties!.CodeUri, sampleCodeUriValue)
-        assert.strictEqual(resource.Properties!.Handler, sampleFunctionHandlerValue)
-        assert.strictEqual(resource.Properties!.Runtime, sampleRuntimeValue)
-        assert.deepStrictEqual(resource.Properties!.Environment, sampleEnvironment)
+        const resource = template.Resources![sampleResourceNameValue]
+        assert.ok(resource)
+        assert.strictEqual(resource!.Properties!.CodeUri, sampleCodeUriValue)
+        assert.strictEqual(resource!.Properties!.Handler, sampleFunctionHandlerValue)
+        assert.strictEqual(resource!.Properties!.Runtime, sampleRuntimeValue)
+        assert.deepStrictEqual(resource!.Properties!.Environment, sampleEnvironment)
     })
 
     it('errs if resource name is missing', async () => {

@@ -9,7 +9,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { DefaultCredentialsFileReaderWriter } from '../../../shared/credentials/defaultCredentialsFileReaderWriter'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
-import { mkdtemp } from '../../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
 describe('DefaultCredentialsFileReaderWriter', () => {
 
@@ -20,7 +20,7 @@ describe('DefaultCredentialsFileReaderWriter', () => {
     before(async () => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
-        tempFolder = await mkdtemp()
+        tempFolder = await makeTemporaryToolkitFolder()
 
         const credentialsFilename = path.join(tempFolder, 'credentials-1')
         const configFilename = path.join(tempFolder, 'config-1')

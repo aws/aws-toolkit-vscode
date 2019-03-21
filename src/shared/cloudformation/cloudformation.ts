@@ -128,11 +128,11 @@ export namespace CloudFormation {
 
     export interface Template {
         Parameters?: {
-            [key: string]: Parameter
+            [key: string]: Parameter | undefined
         }
 
         Resources?: {
-            [key: string]: Resource
+            [key: string]: Resource | undefined
         }
     }
 
@@ -142,7 +142,9 @@ export namespace CloudFormation {
         }
     }
 
-    export async function load(filename: string): Promise<Template> {
+    export async function load(
+        filename: string
+    ): Promise<Template> {
 
         if (!await SystemUtilities.fileExists(filename)) {
             throw new Error(`Template file not found: ${filename}`)
@@ -172,7 +174,7 @@ export namespace CloudFormation {
         }
 
         const lambdaResources = Object.getOwnPropertyNames(template.Resources)
-            .map(key => template.Resources![key])
+            .map(key => template.Resources![key]!)
             .filter(resource => resource.Type === 'AWS::Serverless::Function')
             .map(resource => resource as Resource)
 

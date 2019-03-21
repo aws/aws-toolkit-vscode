@@ -10,7 +10,7 @@ import * as del from 'del'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { writeFile } from '../../../../shared/filesystem'
-import { mkdtemp } from '../../../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import { TestLogger } from '../../../../shared/loggerUtils'
 import { SamCliTaskInvoker } from '../../../../shared/sam/cli/samCliInvoker'
 import { SamCliLocalInvokeInvocation } from '../../../../shared/sam/cli/samCliLocalInvoke'
@@ -52,7 +52,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
     })
 
     beforeEach(async () => {
-        tempFolder = await mkdtemp()
+        tempFolder = await makeTemporaryToolkitFolder()
         placeholderTemplateFile = path.join(tempFolder, 'template.yaml')
         placeholderEventFile = path.join(tempFolder, 'event.json')
         await writeFile(placeholderTemplateFile, '')
@@ -169,51 +169,6 @@ describe('SamCliLocalInvokeInvocation', async () => {
             environmentVariablePath: nonRelevantArg,
             debugPort: undefined,
             invoker: taskInvoker
-        }).execute()
-    })
-
-    it('passes --use-container to sam cli if useContainer is true', async () => {
-        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
-            assertArgIsPresent(args, '--use-container')
-        })
-
-        await new SamCliLocalInvokeInvocation({
-            templateResourceName: nonRelevantArg,
-            templatePath: placeholderTemplateFile,
-            eventPath: placeholderEventFile,
-            environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
-            useContainer: true,
-        }).execute()
-    })
-
-    it('does not pass --use-container to sam cli if useContainer is false', async () => {
-        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
-            assertArgNotPresent(args, '--use-container')
-        })
-
-        await new SamCliLocalInvokeInvocation({
-            templateResourceName: nonRelevantArg,
-            templatePath: placeholderTemplateFile,
-            eventPath: placeholderEventFile,
-            environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
-            useContainer: false,
-        }).execute()
-    })
-
-    it('does not pass --use-container to sam cli if useContainer is undefined', async () => {
-        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
-            assertArgNotPresent(args, '--use-container')
-        })
-
-        await new SamCliLocalInvokeInvocation({
-            templateResourceName: nonRelevantArg,
-            templatePath: placeholderTemplateFile,
-            eventPath: placeholderEventFile,
-            environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
-            useContainer: undefined,
         }).execute()
     })
 
