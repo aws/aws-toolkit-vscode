@@ -10,9 +10,14 @@
 import * as jsonParser from 'jsonc-parser'
 import * as os from 'os'
 import * as _path from 'path'
+import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import * as fsUtils from '../../shared/filesystemUtilities'
+import { getLogger, Logger } from '../../shared/logger'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 import { saveDocumentIfDirty } from '../../shared/utilities/textDocumentUtilities'
+
+const localize = nls.loadMessageBundle()
 
 export interface TemplatesConfig {
     templates: {
@@ -114,6 +119,27 @@ export function loadTemplatesConfigFromJson(
     }
 
     return config
+}
+
+export function showTemplatesConfigurationError(
+    error: TemplatesConfigFieldTypeError,
+    showErrorMessage: typeof vscode.window.showErrorMessage = vscode.window.showErrorMessage
+) {
+    const logger: Logger = getLogger()
+
+    showErrorMessage(
+        localize(
+            'AWS.lambda.configure.error.fieldtype',
+            // tslint:disable-next-line:max-line-length
+            'Your templates.json file has an issue. {0} was detected as {1} instead of {2}. Please change or remove this field, and try again.',
+            error.jsonPath.join('.'),
+            error.actualType,
+            error.expectedType,
+        )
+    )
+
+    // tslint:disable-next-line:max-line-length
+    logger.error(`Error detected in templates.json: ${error.message}. Field: ${error.jsonPath.join('.')}, expected: ${error.expectedType}, was: ${error.actualType}`)
 }
 
 function formatParseError(error: jsonParser.ParseError) {
@@ -240,6 +266,21 @@ export class TemplatesConfigPopulator {
         return this
     }
 
+    public ensureTemplateParameterOverrideExists(
+        templateRelativePath: string,
+        parameterName: string
+     ): TemplatesConfigPopulator {
+        this.ensureTemplateParameterOverridesSectionExists(templateRelativePath)
+
+        this.ensureJsonObjectExists(
+            ['templates', templateRelativePath, 'parameterOverrides', parameterName],
+            '',
+            ['string', 'null']
+        )
+
+        return this
+     }
+
     public getResults(): {
         isDirty: boolean,
         json: string,
@@ -250,19 +291,16 @@ export class TemplatesConfigPopulator {
         }
     }
 
-    private isUnexpectedObjectType(nodeType: jsonParser.NodeType): boolean {
-        return nodeType === 'array'
-            || nodeType === 'property'
-            || nodeType === 'string'
-            || nodeType === 'number'
-            || nodeType === 'boolean'
-    }
-
-    private ensureJsonObjectExists(jsonPath: jsonParser.JSONPath, value: any) {
+    private ensureJsonObjectExists(
+        jsonPath: jsonParser.JSONPath,
+        value: any,
+        allowedTypes: jsonParser.NodeType[] = ['object', 'null']
+    ) {
         const root = jsonParser.parseTree(this.json)
         const node = jsonParser.findNodeAtLocation(root, jsonPath)
+        const allowedTypesSet = new Set(allowedTypes)
 
-        if (node && this.isUnexpectedObjectType(node.type)) {
+        if (node && !allowedTypesSet.has(node.type)) {
             throw new TemplatesConfigFieldTypeError({
                 message: 'Invalid configuration',
                 jsonPath: jsonPath,
@@ -296,6 +334,17 @@ export class TemplatesConfigPopulator {
         this.ensureTemplateSectionExists(templateRelativePath)
 
         this.ensureJsonObjectExists(['templates', templateRelativePath, 'handlers'], {})
+
+        return this
+    }
+
+    private ensureTemplateParameterOverridesSectionExists(templateRelativePath: string): TemplatesConfigPopulator {
+        this.ensureTemplateSectionExists(templateRelativePath)
+
+        this.ensureJsonObjectExists(
+            ['templates', templateRelativePath, 'parameterOverrides'],
+            {}
+        )
 
         return this
     }
