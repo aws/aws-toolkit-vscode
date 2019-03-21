@@ -37,7 +37,7 @@
                                         "environmentVariables": {
                                             "type": "object",
                                             "default": {},
-                                            "description": "Environment variables passed to the Lambda function when it is run locally."
+                                            "description": "Overrides the environment variable values defined in the SAM Template when running the Lambda function locally."
                                         }
                                     }
                                 }
