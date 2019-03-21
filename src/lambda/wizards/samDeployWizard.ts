@@ -14,11 +14,14 @@ import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
-import { toArrayAsync } from '../../shared/utilities/collectionUtils'
+import { difference, filter, toArrayAsync } from '../../shared/utilities/collectionUtils'
+import { configureParameterOverrides } from '../config/configureParameterOverrides'
 import { detectLocalTemplates } from '../local/detectLocalTemplates'
+import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
 import { MultiStepWizard, WizardStep } from './multiStepWizard'
 
 export interface SamDeployWizardResponse {
+    parameterOverrides: Map<string, string>
     region: string
     template: vscode.Uri
     s3Bucket: string
@@ -31,11 +34,45 @@ export interface SamDeployWizardContext {
     readonly workspaceFolders: vscode.Uri[] | undefined
 
     /**
+     * Returns the parameters in the specified template, or `undefined`
+     * if the template does not include a `Parameters` section. `required`
+     * is set to `true` if the parameter does not have a default value.
+     *
+     * @param templateUri The URL of the SAM template to inspect.
+     */
+    getParameters: typeof getParameters
+
+    /**
+     * Returns the names and values of parameters from the specified template
+     * that have been overridden in `templates.json`, or `undefined` if `templates.json`
+     * does not include a `parameterOverrides` section for the specified template.
+     *
+     * @param templateUri
+     */
+    getOverriddenParameters: typeof getOverriddenParameters
+
+    /**
      * Retrieves the URI of a Sam template to deploy from the user
      *
      * @returns vscode.Uri of a Sam Template. undefined represents cancel.
      */
     promptUserForSamTemplate(initialValue?: vscode.Uri): Promise<vscode.Uri | undefined>
+
+    /**
+     * Prompts the user to configure parameter overrides, then either pre-fills and opens
+     * `templates.json`, or returns true.
+     *
+     * @param options.templateUri The URL of the SAM template to inspect.
+     * @param options.missingParameters The names of required parameters that are not yet overridden.
+     * @returns A value indicating whether the wizard should procede. `false` if `missingParameters` was
+     *          non-empty, or if it was empty and the user opted to configure overrides instead of continuing.
+     */
+    configureParameterOverrides(
+        options: {
+            templateUri: vscode.Uri
+            missingParameters?: Set<string>
+        }
+    ): Promise<boolean>
 
     promptUserForRegion(regionProvider: RegionProvider, initialValue?: string): Promise<string | undefined>
 
@@ -67,8 +104,22 @@ export interface SamDeployWizardContext {
     ): Promise<string | undefined>
 }
 
+function getSingleResponse(responses: vscode.QuickPickItem[] | undefined): string | undefined {
+    if (!responses) {
+        return undefined
+    }
+
+    if (responses.length !== 1) {
+        throw new Error(`Expected a single response, but got ${responses.length}`)
+    }
+
+    return responses[0].label
+}
+
 class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public readonly onDetectLocalTemplates = detectLocalTemplates
+    public readonly getParameters = getParameters
+    public readonly getOverriddenParameters = getOverriddenParameters
 
     public get workspaceFolders(): vscode.Uri[] | undefined {
         return (vscode.workspace.workspaceFolders || []).map(f => f.uri)
@@ -98,6 +149,89 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         const val = picker.verifySinglePickerOutput<SamTemplateQuickPickItem>(choices)
 
         return val ? val.uri : undefined
+    }
+
+    public async configureParameterOverrides(
+        {
+            templateUri,
+            missingParameters = new Set<string>()
+        }: {
+            templateUri: vscode.Uri
+            missingParameters?: Set<string>
+        }
+    ): Promise<boolean> {
+        if (missingParameters.size < 1) {
+            const prompt = localize(
+                'AWS.samcli.deploy.parameters.optionalPrompt.message',
+                'The template {0} contains parameters. ' +
+                'Would you like to override the default values for these parameters?',
+                templateUri.fsPath
+            )
+            const responseYes = localize(
+                'AWS.samcli.deploy.parameters.optionalPrompt.responseYes',
+                'Yes'
+            )
+            const responseNo = localize(
+                'AWS.samcli.deploy.parameters.optionalPrompt.responseNo',
+                'No'
+            )
+
+            const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
+                options: {
+                    title: prompt
+                },
+                items: [
+                    { label: responseYes },
+                    { label: responseNo }
+                ]
+            })
+            const response = getSingleResponse(await picker.promptUser({ picker: quickPick }))
+            if (response === responseYes) {
+                return true
+            }
+
+            await configureParameterOverrides({
+                templateUri,
+                requiredParameterNames: missingParameters.keys()
+            })
+
+            return false
+        } else {
+            const prompt = localize(
+                'AWS.samcli.deploy.parameters.mandatoryPrompt.message',
+                'The template {0} contains parameters without default values. ' +
+                'In order to deploy, you must provide values for these parameters. ' +
+                'Configure them now?',
+                templateUri.fsPath
+            )
+            const responseConfigure = localize(
+                'AWS.samcli.deploy.parameters.mandatoryPrompt.responseConfigure',
+                'Configure'
+            )
+            const responseCancel = localize(
+                'AWS.samcli.deploy.parameters.mandatoryPrompt.responseCancel',
+                'Cancel'
+            )
+
+            const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
+                options: {
+                    title: prompt
+                },
+                items: [
+                    { label: responseConfigure },
+                    { label: responseCancel }
+                ]
+            })
+            const response = getSingleResponse(await picker.promptUser({ picker: quickPick }))
+            if (response === responseConfigure) {
+                await configureParameterOverrides({
+                    templateUri,
+                    requiredParameterNames: missingParameters.keys()
+                })
+            }
+
+            return false
+        }
     }
 
     public async promptUserForRegion(
@@ -249,11 +383,18 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     }
 
     protected getResult(): SamDeployWizardResponse | undefined {
-        if (!this.response.template || !this.response.region || !this.response.s3Bucket || !this.response.stackName) {
+        if (
+            !this.response.parameterOverrides ||
+            !this.response.template ||
+            !this.response.region ||
+            !this.response.s3Bucket ||
+            !this.response.stackName
+        ) {
             return undefined
         }
 
         return {
+            parameterOverrides: this.response.parameterOverrides,
             template: this.response.template,
             region: this.response.region,
             s3Bucket: this.response.s3Bucket,
@@ -264,12 +405,61 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     private readonly TEMPLATE: WizardStep = async () => {
         this.response.template = await this.context.promptUserForSamTemplate(this.response.template)
 
-        return this.response.template ? this.REGION : undefined
+        return this.response.template ? this.PARAMETER_OVERRIDES : undefined
+    }
+
+    private readonly PARAMETER_OVERRIDES: WizardStep = async () => {
+        if (!this.response.template) {
+            throw new Error('Unexpected state: TEMPLATE step is complete, but no template was selected')
+        }
+
+        const parameters = await this.context.getParameters(this.response.template)
+        if (parameters.size < 1) {
+            this.response.parameterOverrides = new Map<string, string>()
+
+            return this.REGION
+        }
+
+        const requiredParameterNames = new Set<string>(
+            filter(parameters.keys(), name => parameters.get(name)!.required)
+        )
+        const overriddenParameters = await this.context.getOverriddenParameters(this.response.template)
+        if (!overriddenParameters) {
+            // In there are no missing required parameters case, it isn't mandatory to override any parameters,
+            // but we still want to inform users of the option to override. Once we have prompted (i.e., if the
+            // parameter overrides section is empty instead of undefined), don't prompt again unless required.
+            const options = {
+                templateUri: this.response.template,
+                missingParameters: requiredParameterNames.size > 0 ? requiredParameterNames : undefined
+            }
+
+            this.response.parameterOverrides = new Map<string, string>()
+
+            return await this.context.configureParameterOverrides(options) ?
+                this.REGION :
+                undefined
+        }
+
+        const missingParameters = difference(requiredParameterNames, overriddenParameters.keys())
+        if (missingParameters.size > 0) {
+            await this.context.configureParameterOverrides({
+                templateUri: this.response.template,
+                missingParameters
+            })
+
+            return undefined
+        }
+
+        this.response.parameterOverrides = overriddenParameters
+
+        return this.REGION
     }
 
     private readonly REGION: WizardStep = async () => {
         this.response.region = await this.context.promptUserForRegion(this.regionProvider, this.response.region)
 
+        // The PARAMETER_OVERRIDES step is part of the TEMPLATE step from the user's perspective,
+        // so we go back to the TEMPLATE step instead of PARAMETER_OVERRIDES.
         return this.response.region ? this.S3_BUCKET : this.TEMPLATE
     }
 
