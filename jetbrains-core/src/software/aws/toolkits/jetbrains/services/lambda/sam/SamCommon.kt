@@ -108,6 +108,7 @@ class SamCommon {
         /**
          * @return The error message to display, else null if it is valid
          */
+        @JvmOverloads
         fun validate(path: String? = SamSettings.getInstance().executablePath): String? {
             val sanitizedPath = path.nullize(true)
                 ?: return message("sam.cli_not_configured")

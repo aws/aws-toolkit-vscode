@@ -13,15 +13,17 @@ import javax.swing.JTextField;
 import java.awt.Dimension;
 import java.awt.event.ItemEvent;
 import com.intellij.openapi.ui.ComboBox;
+import com.intellij.openapi.ui.ValidationInfo;
 import com.intellij.ui.ColoredListCellRenderer;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.uiDesigner.core.GridConstraints;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder;
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon;
 
 @SuppressWarnings("NullableProblems")
-public class SamInitSelectionPanel {
+public class SamInitSelectionPanel implements ValidatablePanel {
     @NotNull JPanel mainPanel;
     @NotNull public ComboBox<Runtime> runtime;
     @NotNull public JTextField samExecutableField;
@@ -114,6 +116,17 @@ public class SamInitSelectionPanel {
         }
 
         currentSdkSelector = sdkSelector;
+    }
+
+    @Nullable
+    @Override
+    public ValidationInfo validate() {
+        // validate against currently saved sam path
+        String samValidationMessage = SamCommon.Companion.validate();
+        if (samValidationMessage != null) {
+            return new ValidationInfo(samValidationMessage, samExecutableField);
+        }
+        return null;
     }
 
     public void hideRuntime() {

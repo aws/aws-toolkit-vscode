@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.ui.wizard
 
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.DefaultProjectFactory
+import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.VirtualFile
 import icons.AwsIcons
@@ -17,6 +18,10 @@ import software.aws.toolkits.jetbrains.settings.SamSettings
 import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JTextField
+
+interface ValidatablePanel {
+    fun validate(): ValidationInfo? = null
+}
 
 abstract class SamProjectTemplate {
     abstract fun getName(): String

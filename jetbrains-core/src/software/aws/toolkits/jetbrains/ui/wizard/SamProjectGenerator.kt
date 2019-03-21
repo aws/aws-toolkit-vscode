@@ -108,10 +108,13 @@ class SamProjectGeneratorSettingsPeer(private val generator: SamProjectGenerator
     private val basePanel = SamInitSelectionPanel(settings)
     val sdkPanel: SdkSelectionPanelImpl by lazy { SdkSelectionPanelImpl(generator) }
 
-    // need a listener to autorun this? this hook is used in PyCharm
+    /**
+     * This hook is used in PyCharm and is called via {@link SamProjectBuilder#modifySettingsStep} for IntelliJ
+     */
     override fun validate(): ValidationInfo? {
         val validationErrors = sdkPanel.validateAll()
-        return validationErrors?.firstOrNull()
+
+        return basePanel.validate() ?: validationErrors?.firstOrNull()
     }
 
     override fun getSettings(): SamNewProjectSettings = generator.settings
