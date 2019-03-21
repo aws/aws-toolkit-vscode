@@ -386,7 +386,7 @@
         "fs-extra": "^6.0.1",
         "handlebars": "^4.1.0",
         "immutable": "^4.0.0-rc.12",
-        "js-yaml": "^3.12.0",
+        "js-yaml": "^3.13.0",
         "jsonc-parser": "^2.0.2",
         "lodash": "^4.17.11",
         "npm": "^6.4.1",
