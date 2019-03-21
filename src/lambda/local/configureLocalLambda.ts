@@ -7,6 +7,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+import { writeFile } from '../../shared/filesystem'
 import * as fsUtils from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
@@ -28,12 +29,16 @@ export interface ConfigureLocalLambdaContext {
     showTextDocument: typeof vscode.window.showTextDocument
     executeCommand: typeof vscode.commands.executeCommand
     showErrorMessage: typeof vscode.window.showErrorMessage
+    fileExists: typeof fsUtils.fileExists
+    writeFile: typeof writeFile
 }
 
 class DefaultConfigureLocalLambdaContext implements ConfigureLocalLambdaContext {
     public readonly showTextDocument = vscode.window.showTextDocument
     public readonly executeCommand = vscode.commands.executeCommand
     public readonly showErrorMessage = vscode.window.showErrorMessage
+    public readonly fileExists = fsUtils.fileExists
+    public readonly writeFile = writeFile
 }
 
 // Precondition: `handler` is a valid lambda handler name.
@@ -46,6 +51,11 @@ export async function configureLocalLambda(
     const templateRelativePath = getNormalizedRelativePath(workspaceFolder.uri.fsPath, samTemplate.fsPath)
 
     const configPath: string = getTemplatesConfigPath(workspaceFolder.uri.fsPath)
+
+    if (!await context.fileExists(configPath)) {
+        await context.writeFile(configPath, '{}')
+    }
+
     const configPathUri = vscode.Uri.file(configPath)
     const editor: vscode.TextEditor = await context.showTextDocument(configPathUri)
 
