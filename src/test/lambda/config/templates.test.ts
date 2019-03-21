@@ -338,7 +338,7 @@ describe('TemplatesConfigPopulator', async () => {
                 {
                     message: 'Invalid configuration',
                     jsonPath: ['templates'],
-                    expectedType: 'object',
+                    expectedTypes: ['object', 'null'],
                     actualType: 'number',
                 }
             )
@@ -384,7 +384,7 @@ describe('TemplatesConfigPopulator', async () => {
                 {
                     message: 'Invalid configuration',
                     jsonPath: ['templates', 'someprocessor'],
-                    expectedType: 'object',
+                    expectedTypes: ['object', 'null'],
                     actualType: 'boolean',
                 }
             )
@@ -404,7 +404,7 @@ describe('TemplatesConfigPopulator', async () => {
                 {
                     message: 'Invalid configuration',
                     jsonPath: ['templates', 'someprocessor', 'handlers'],
-                    expectedType: 'object',
+                    expectedTypes: ['object', 'null'],
                     actualType: 'array',
                 }
             )
@@ -426,7 +426,7 @@ describe('TemplatesConfigPopulator', async () => {
                 {
                     message: 'Invalid configuration',
                     jsonPath: ['templates', 'someprocessor', 'handlers', 'processor'],
-                    expectedType: 'object',
+                    expectedTypes: ['object', 'null'],
                     actualType: 'string',
                 }
             )
@@ -540,7 +540,7 @@ describe('TemplatesConfigPopulator', async () => {
                 {
                     message: 'Invalid configuration',
                     jsonPath: ['templates', 'someprocessor', 'handlers', 'processor'],
-                    expectedType: 'object',
+                    expectedTypes: ['object', 'null'],
                     actualType: 'string',
                 }
             )
@@ -564,7 +564,7 @@ describe('TemplatesConfigPopulator', async () => {
                 {
                     message: 'Invalid configuration',
                     jsonPath: ['templates', 'someprocessor', 'handlers', 'processor', 'event'],
-                    expectedType: 'object',
+                    expectedTypes: ['object', 'null'],
                     actualType: 'number',
                 }
             )
