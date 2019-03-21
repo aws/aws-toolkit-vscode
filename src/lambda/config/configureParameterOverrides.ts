@@ -11,6 +11,7 @@ import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'
 import { getChildrenRange } from '../../shared/utilities/symbolUtilities'
 import { getTabSize } from '../../shared/utilities/textDocumentUtilities'
 import {
+    ensureTemplatesConfigFileExists,
     getTemplatesConfigPath,
     showTemplatesConfigurationError,
     TemplatesConfigFieldTypeError,
@@ -53,6 +54,7 @@ export async function configureParameterOverrides(
     }
 
     const configPath = getTemplatesConfigPath(workspaceFolder.uri.fsPath)
+    await ensureTemplatesConfigFileExists(configPath)
     const editor: vscode.TextEditor = await context.showTextDocument(vscode.Uri.file(configPath))
 
     const relativeTemplatePath = getNormalizedRelativePath(workspaceFolder.uri.fsPath, templateUri.fsPath)
