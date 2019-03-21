@@ -12,6 +12,7 @@ import * as os from 'os'
 import * as _path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+import { access, mkdir, writeFile } from '../../shared/filesystem'
 import * as fsUtils from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
@@ -140,6 +141,20 @@ export function showTemplatesConfigurationError(
 
     // tslint:disable-next-line:max-line-length
     logger.error(`Error detected in templates.json: ${error.message}. Field: ${error.jsonPath.join('.')}, expected: ${error.expectedType}, was: ${error.actualType}`)
+}
+
+export async function ensureTemplatesConfigFileExists(path: string): Promise<void> {
+    try {
+        await access(_path.dirname(path))
+    } catch {
+        await mkdir(_path.dirname(path), { recursive: true })
+    }
+
+    try {
+        await access(path)
+    } catch {
+        await writeFile(path, '{}')
+    }
 }
 
 function formatParseError(error: jsonParser.ParseError) {
