@@ -5,6 +5,7 @@
 
 'use strict'
 
+import { platform } from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 
@@ -222,6 +223,14 @@ export async function initialize({
             documentUri: args.document.uri,
             handlerName,
             isDebug: args.isDebug,
+            onWillAttachDebugger: async () => {
+                if (platform() === 'darwin') {
+                    await new Promise(resolve => {
+                        logger.info(`${platform()} hack: sleeeping......`)
+                        setTimeout(resolve, 1500)
+                    })
+                }
+            }
         })
     }
 
