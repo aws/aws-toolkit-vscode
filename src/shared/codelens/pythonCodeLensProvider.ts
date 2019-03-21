@@ -29,7 +29,10 @@ import { LambdaLocalInvokeArguments, LocalLambdaRunner } from './localLambdaRunn
 
 export const PYTHON_LANGUAGE = 'python'
 export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
-    { language: PYTHON_LANGUAGE }
+    {
+        scheme: 'file',
+        language: PYTHON_LANGUAGE
+    }
 ]
 
 // TODO: Fix this! Implement a more robust/flexible solution. This is just a basic minimal proof of concept.

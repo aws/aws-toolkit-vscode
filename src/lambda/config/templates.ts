@@ -10,6 +10,7 @@
 import * as jsonParser from 'jsonc-parser'
 import * as os from 'os'
 import * as _path from 'path'
+import { access, mkdir, writeFile } from '../../shared/filesystem'
 import * as fsUtils from '../../shared/filesystemUtilities'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 import { saveDocumentIfDirty } from '../../shared/utilities/textDocumentUtilities'
@@ -114,6 +115,20 @@ export function loadTemplatesConfigFromJson(
     }
 
     return config
+}
+
+export async function ensureTemplatesConfigFileExists(path: string): Promise<void> {
+    try {
+        await access(_path.dirname(path))
+    } catch {
+        await mkdir(_path.dirname(path), { recursive: true })
+    }
+
+    try {
+        await access(path)
+    } catch {
+        await writeFile(path, '{}')
+    }
 }
 
 function formatParseError(error: jsonParser.ParseError) {

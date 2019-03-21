@@ -39,7 +39,7 @@ These instructions outline how you can debug a lambda handler locally using the 
 
 1. Open `<app root>/.vscode/launch.json` (create a new file if it does not already exist), and add the following contents:
 
-    ```json
+    ```jsonc
     {
         "version": "0.2.0",
         "configurations": [
@@ -95,7 +95,7 @@ With the above steps, you need to manually invoke SAM CLI from the command line,
 1. Open `<app root>/.vscode/tasks.json` (create a new file if it does not already exist).
 2. Add the following contents to `tasks.json`:
 
-    ```json
+    ```jsonc
     {
         "label": "Debug Python Lambda Function",
         "type": "shell",
@@ -134,7 +134,7 @@ With the above steps, you need to manually invoke SAM CLI from the command line,
 
 3. Open `<app root>/.vscode/launch.json`, and add the following property to the `Python: Remote Attach` configuration that you created earlier:
 
-    ```json
+    ```jsonc
     "preLaunchTask": "Debug Python Lambda Function"
     ```
 
