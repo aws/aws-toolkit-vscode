@@ -9,6 +9,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
 import { resumeCreateNewSamApp } from './lambda/commands/createNewSamApp'
+import { SamParameterCompletionItemProvider } from './lambda/config/samParameterCompletionItemProvider'
 import { RegionNode } from './lambda/explorer/regionNode'
 import { LambdaTreeDataProvider } from './lambda/lambdaTreeDataProvider'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
@@ -132,6 +133,16 @@ export async function activate(context: vscode.ExtensionContext) {
         await initializeSamCli()
 
         await ExtensionDisposableFiles.initialize(context)
+
+        vscode.languages.registerCompletionItemProvider(
+            {
+                language: 'json',
+                scheme: 'file',
+                pattern: '**/.aws/parameters.json'
+            },
+            new SamParameterCompletionItemProvider(),
+            '"'
+        )
 
         await resumeCreateNewSamApp(context)
     } catch (error) {

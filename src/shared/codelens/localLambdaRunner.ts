@@ -8,11 +8,11 @@
 import * as path from 'path'
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
-import { buildHandlerConfig, getLocalLambdaConfiguration, HandlerConfig } from '../../lambda/local/configureLocalLambda'
+import { getLocalLambdaConfiguration } from '../../lambda/local/configureLocalLambda'
 import { detectLocalLambdas } from '../../lambda/local/detectLocalLambdas'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { writeFile } from '../filesystem'
-import { mkdtemp } from '../filesystemUtilities'
+import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
 import { SamCliBuildInvocation } from '../sam/cli/samCliBuild'
 import { SamCliProcessInvoker, SamCliTaskInvoker } from '../sam/cli/samCliInvokerUtils'
 import { SamCliLocalInvokeInvocation } from '../sam/cli/samCliLocalInvoke'
@@ -20,6 +20,7 @@ import { SettingsConfiguration } from '../settingsConfiguration'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 
+import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { getChannelLogger, localize } from '../utilities/vsCodeUtils'
 
@@ -28,7 +29,8 @@ export interface LambdaLocalInvokeArguments {
     range: vscode.Range,
     handlerName: string,
     isDebug: boolean,
-    workspaceFolder: vscode.WorkspaceFolder
+    workspaceFolder: vscode.WorkspaceFolder,
+    samTemplate: vscode.Uri,
 }
 
 export interface SAMTemplateEnvironmentVariables {
@@ -121,7 +123,7 @@ export class LocalLambdaRunner {
     private async getBaseBuildFolder(): Promise<string> {
         // TODO: Clean up folder structure
         if (!this._baseBuildFolder) {
-            this._baseBuildFolder = await mkdtemp()
+            this._baseBuildFolder = await makeTemporaryToolkitFolder()
             ExtensionDisposableFiles.getInstance().addFolder(this._baseBuildFolder)
         }
 
@@ -261,12 +263,13 @@ export class LocalLambdaRunner {
     private async getConfig(): Promise<HandlerConfig> {
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(this.localInvokeArgs.document.uri)
         if (!workspaceFolder) {
-            return buildHandlerConfig()
+            return generateDefaultHandlerConfig()
         }
 
         const config: HandlerConfig = await getLocalLambdaConfiguration(
             workspaceFolder,
-            this.localInvokeArgs.handlerName
+            this.localInvokeArgs.handlerName,
+            this.localInvokeArgs.samTemplate
         )
 
         return config

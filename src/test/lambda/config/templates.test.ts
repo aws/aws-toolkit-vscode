@@ -7,7 +7,12 @@
 
 import * as assert from 'assert'
 import * as path from 'path'
-import { load, LoadTemplatesConfigContext } from '../../../lambda/config/templates'
+import {
+    getTemplatesConfigPath,
+    load,
+    LoadTemplatesConfigContext,
+    TemplatesConfigPopulator
+} from '../../../lambda/config/templates'
 
 class MockLoadTemplatesConfigContext {
     public readonly fileExists: (path: string) => Thenable<boolean>
@@ -17,7 +22,7 @@ class MockLoadTemplatesConfigContext {
     public constructor({
         fileExists = async _path => true,
         readFile = async _path => '',
-        saveDocumentIfDirty = async _path => {}
+        saveDocumentIfDirty = async _path => { }
     }: Partial<LoadTemplatesConfigContext>) {
         this.fileExists = fileExists
         this.readFile = readFile
@@ -76,7 +81,7 @@ describe('templates', async () => {
             assert.ok(template)
             assert.strictEqual(Object.getOwnPropertyNames(template).length, 1)
 
-            const parameterOverrides = template.parameterOverrides
+            const parameterOverrides = template!.parameterOverrides
             assert.ok(parameterOverrides)
             assert.strictEqual(Object.getOwnPropertyNames(parameterOverrides).length, 2)
 
@@ -213,5 +218,460 @@ describe('templates', async () => {
             assert.strictEqual(saveArgs.length, 1)
             assert.strictEqual(saveArgs[0], path.join('my', 'path', '.aws', 'templates.json'))
         })
+    })
+})
+
+describe('getTemplatesConfigPath', async () => {
+    it('returns expected path', async () => {
+        const configPath = getTemplatesConfigPath(path.join('my', 'workspace'))
+
+        assert.strictEqual(configPath, path.join('my', 'workspace', '.aws', 'templates.json'))
+    })
+})
+
+describe('TemplatesConfigPopulatorContext', async () => {
+
+    const testModificationOptions = {
+        formattingOptions: {
+            tabSize: 4,
+            insertSpaces: true,
+        }
+    }
+
+    it('handles ModificationOptions', async () => {
+        const inputJson: string = '{}'
+
+        const expectedJson: string = String.raw`{
+        "templates": {
+                "someprocessor": {}
+        }
+}`
+
+        const results = new TemplatesConfigPopulator(
+            inputJson,
+            {
+                formattingOptions: {
+                    tabSize: 8,
+                    insertSpaces: true,
+                }
+            }
+        )
+            .ensureTemplateSectionExists('someprocessor')
+            .getResults()
+
+        assert.strictEqual(results.isDirty, true, 'Expected results to be dirty')
+        assert.strictEqual(
+            JSON.stringify(results.json),
+            JSON.stringify(expectedJson)
+        )
+    })
+
+    it('ensureTemplateSectionExists handles clean data', async () => {
+        const inputJson: string = String.raw`{
+    "templates": {
+        "someprocessor": {}
+    }
+}`
+
+        const results = new TemplatesConfigPopulator(inputJson, testModificationOptions)
+            .ensureTemplateSectionExists('someprocessor')
+            .getResults()
+
+        assert.strictEqual(results.isDirty, false, 'Expected results to be clean')
+        assert.strictEqual(
+            JSON.stringify(results.json),
+            JSON.stringify(inputJson)
+        )
+    })
+
+    it('ensureTemplateSectionExists handles missing templates section', async () => {
+        const inputJson: string = '{}'
+
+        const expectedJson: string = String.raw`{
+    "templates": {
+        "someprocessor": {}
+    }
+}`
+
+        const results = new TemplatesConfigPopulator(inputJson, testModificationOptions)
+            .ensureTemplateSectionExists('someprocessor')
+            .getResults()
+
+        assert.strictEqual(results.isDirty, true, 'Expected results to be dirty')
+        assert.strictEqual(
+            JSON.stringify(results.json),
+            JSON.stringify(expectedJson)
+        )
+    })
+
+    it('ensureTemplateSectionExists handles missing template section', async () => {
+        const inputJson: string = String.raw`{
+    "templates": {}
+}`
+
+        const expectedJson: string = String.raw`{
+    "templates": {
+        "someprocessor": {}
+    }
+}`
+
+        const results = new TemplatesConfigPopulator(inputJson, testModificationOptions)
+            .ensureTemplateSectionExists('someprocessor')
+            .getResults()
+
+        assert.strictEqual(results.isDirty, true, 'Expected results to be dirty')
+        assert.strictEqual(
+            JSON.stringify(results.json),
+            JSON.stringify(expectedJson)
+        )
+    })
+
+    it('ensureTemplateSectionExists errs with invalid templates type', async () => {
+        const inputJson: string = `{
+            "templates": 1234
+        }`
+
+        assert.throws(
+            () => new TemplatesConfigPopulator(inputJson, testModificationOptions)
+                .ensureTemplateSectionExists('someprocessor'),
+            {
+                message: 'Invalid configuration',
+                jsonPath: ['templates'],
+                expectedType: 'object',
+                actualType: 'number',
+            }
+        )
+    })
+
+    it('ensureTemplateHandlerSectionExists handles clean data', async () => {
+        const inputJson: string = String.raw`{
+    "templates": {
+        "someprocessor": {
+            "handlers": {
+                "processor": {
+                    "event": {},
+                    "environmentVariables": {},
+                }
+            }
+        }
+    }
+}`
+
+        const results = new TemplatesConfigPopulator(inputJson, testModificationOptions)
+            .ensureTemplateHandlerSectionExists('someprocessor', 'processor')
+            .getResults()
+
+        assert.strictEqual(results.isDirty, false, 'Expected results to be clean')
+        assert.strictEqual(
+            JSON.stringify(results.json),
+            JSON.stringify(inputJson)
+        )
+    })
+
+    it('ensureTemplateHandlerSectionExists errs with invalid template type', async () => {
+        const inputJson: string = String.raw`{
+            "templates": {
+                "someprocessor": true
+            }
+        }`
+
+        assert.throws(
+            () => new TemplatesConfigPopulator(inputJson, testModificationOptions)
+                .ensureTemplateHandlerSectionExists('someprocessor', 'processor'),
+            {
+                message: 'Invalid configuration',
+                jsonPath: ['templates', 'someprocessor'],
+                expectedType: 'object',
+                actualType: 'boolean',
+            }
+        )
+    })
+
+    it('ensureTemplateHandlerSectionExists errs with invalid handlers type', async () => {
+        const inputJson: string = String.raw`{
+            "templates": {
+                "someprocessor": {
+                    "handlers": [1, 2, 3]
+                }
+        }`
+
+        assert.throws(
+            () => new TemplatesConfigPopulator(inputJson, testModificationOptions)
+                .ensureTemplateHandlerSectionExists('someprocessor', 'processor'),
+            {
+                message: 'Invalid configuration',
+                jsonPath: ['templates', 'someprocessor', 'handlers'],
+                expectedType: 'object',
+                actualType: 'array',
+            }
+        )
+    })
+
+    it('ensureTemplateHandlerSectionExists errs with invalid handler type', async () => {
+        const inputJson: string = String.raw`{
+            "templates": {
+                "someprocessor": {
+                    "handlers": {
+                        "processor": "hello"
+                    }
+                }
+        }`
+
+        assert.throws(
+            () => new TemplatesConfigPopulator(inputJson, testModificationOptions)
+                .ensureTemplateHandlerSectionExists('someprocessor', 'processor'),
+            {
+                message: 'Invalid configuration',
+                jsonPath: ['templates', 'someprocessor', 'handlers', 'processor'],
+                expectedType: 'object',
+                actualType: 'string',
+            }
+        )
+    })
+
+    it('ensureTemplateHandlerSectionExists handles missing handlers section', async () => {
+        const inputJson: string = String.raw`{
+    "templates": {
+        "someprocessor": {
+        }
+    }
+}`
+
+        const expectedJson: string = String.raw`{
+    "templates": {
+        "someprocessor": {
+            "handlers": {
+                "processor": {
+                    "event": {},
+                    "environmentVariables": {}
+                }
+            }
+        }
+    }
+}`
+
+        const results = new TemplatesConfigPopulator(inputJson, testModificationOptions)
+            .ensureTemplateHandlerSectionExists('someprocessor', 'processor')
+            .getResults()
+
+        assert.strictEqual(results.isDirty, true, 'Expected results to be dirty')
+        assert.strictEqual(
+            JSON.stringify(results.json),
+            JSON.stringify(expectedJson)
+        )
+    })
+
+    it('ensureTemplateHandlerSectionExists handles missing handler section', async () => {
+        const inputJson: string = String.raw`{
+    "templates": {
+        "someprocessor": {
+            "handlers": {}
+        }
+    }
+}`
+
+        const expectedJson: string = String.raw`{
+    "templates": {
+        "someprocessor": {
+            "handlers": {
+                "processor": {
+                    "event": {},
+                    "environmentVariables": {}
+                }
+            }
+        }
+    }
+}`
+
+        const results = new TemplatesConfigPopulator(inputJson, testModificationOptions)
+            .ensureTemplateHandlerSectionExists('someprocessor', 'processor')
+            .getResults()
+
+        assert.strictEqual(results.isDirty, true, 'Expected results to be dirty')
+        assert.strictEqual(
+            JSON.stringify(results.json),
+            JSON.stringify(expectedJson)
+        )
+    })
+
+    it('ensureTemplateHandlerPropertiesExist handles clean data', async () => {
+        const inputJson: string = `{
+    "templates": {
+        "someprocessor": {
+            "handlers": {
+                "processor": {
+                    "event": {},
+                    "environmentVariables": {}
+                }
+            }
+        }
+    }
+}`
+
+        const results = new TemplatesConfigPopulator(inputJson, testModificationOptions)
+            .ensureTemplateHandlerPropertiesExist('someprocessor', 'processor')
+            .getResults()
+
+        assert.strictEqual(results.isDirty, false, 'Expected results to be clean')
+        assert.strictEqual(
+            JSON.stringify(results.json),
+            JSON.stringify(inputJson)
+        )
+    })
+
+    it('ensureTemplateHandlerPropertiesExist errs with invalid handler type', async () => {
+        const inputJson: string = String.raw`{
+            "templates": {
+                "someprocessor": {
+                    "handlers": {
+                        "processor": "hello"
+                    }
+                }
+        }`
+
+        assert.throws(
+            () => new TemplatesConfigPopulator(inputJson, testModificationOptions)
+                .ensureTemplateHandlerPropertiesExist('someprocessor', 'processor'),
+            {
+                message: 'Invalid configuration',
+                jsonPath: ['templates', 'someprocessor', 'handlers', 'processor'],
+                expectedType: 'object',
+                actualType: 'string',
+            }
+        )
+    })
+
+    it('ensureTemplateHandlerPropertiesExist errs with invalid event type', async () => {
+        const inputJson: string = String.raw`{
+            "templates": {
+                "someprocessor": {
+                    "handlers": {
+                        "processor": {
+                            "event": 1
+                        }
+                    }
+                }
+        }`
+
+        assert.throws(
+            () => new TemplatesConfigPopulator(inputJson, testModificationOptions)
+                .ensureTemplateHandlerPropertiesExist('someprocessor', 'processor'),
+            {
+                message: 'Invalid configuration',
+                jsonPath: ['templates', 'someprocessor', 'handlers', 'processor', 'event'],
+                expectedType: 'object',
+                actualType: 'number',
+            }
+        )
+    })
+
+    it('ensureTemplateHandlerPropertiesExist handles missing everything', async () => {
+        const inputJson: string = String.raw`{
+    "templates": {
+        "someprocessor": {
+            "handlers": {
+                "processor": {
+                }
+            }
+        }
+    }
+}`
+
+        const expectedJson: string = String.raw`{
+    "templates": {
+        "someprocessor": {
+            "handlers": {
+                "processor": {
+                    "event": {},
+                    "environmentVariables": {}
+                }
+            }
+        }
+    }
+}`
+
+        const results = new TemplatesConfigPopulator(inputJson, testModificationOptions)
+            .ensureTemplateHandlerPropertiesExist('someprocessor', 'processor')
+            .getResults()
+
+        assert.strictEqual(results.isDirty, true, 'Expected results to be dirty')
+        assert.strictEqual(
+            JSON.stringify(results.json),
+            JSON.stringify(expectedJson)
+        )
+    })
+
+    it('ensureTemplateHandlerPropertiesExist handles missing event', async () => {
+        const inputJson: string = String.raw`{
+    "templates": {
+        "someprocessor": {
+            "handlers": {
+                "processor": {
+                    "environmentVariables": {}
+                }
+            }
+        }
+    }
+}`
+
+        const expectedJson: string = String.raw`{
+    "templates": {
+        "someprocessor": {
+            "handlers": {
+                "processor": {
+                    "environmentVariables": {},
+                    "event": {}
+                }
+            }
+        }
+    }
+}`
+
+        const results = new TemplatesConfigPopulator(inputJson, testModificationOptions)
+            .ensureTemplateHandlerPropertiesExist('someprocessor', 'processor')
+            .getResults()
+
+        assert.strictEqual(results.isDirty, true, 'Expected results to be dirty')
+        assert.strictEqual(
+            JSON.stringify(results.json),
+            JSON.stringify(expectedJson)
+        )
+    })
+
+    it('ensureTemplateHandlerPropertiesExist handles missing envvars', async () => {
+        const inputJson: string = String.raw`{
+    "templates": {
+        "someprocessor": {
+            "handlers": {
+                "processor": {
+                    "event": {}
+                }
+            }
+        }
+    }
+}`
+
+        const expectedJson: string = String.raw`{
+    "templates": {
+        "someprocessor": {
+            "handlers": {
+                "processor": {
+                    "event": {},
+                    "environmentVariables": {}
+                }
+            }
+        }
+    }
+}`
+
+        const results = new TemplatesConfigPopulator(inputJson, testModificationOptions)
+            .ensureTemplateHandlerPropertiesExist('someprocessor', 'processor')
+            .getResults()
+
+        assert.strictEqual(results.isDirty, true, 'Expected results to be dirty')
+        assert.strictEqual(
+            JSON.stringify(results.json),
+            JSON.stringify(expectedJson)
+        )
     })
 })

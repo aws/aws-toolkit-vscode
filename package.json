@@ -12,9 +12,24 @@
     "engines": {
         "vscode": "^1.31.1"
     },
+    "bugs": {
+        "url": "https://github.com/aws/aws-toolkit-vscode/issues"
+    },
+    "galleryBanner": {
+        "color": "#FF9900",
+        "theme": "light"
+    },
     "categories": [
+        "Debuggers",
         "Other"
     ],
+    "keywords": [
+        "AWS",
+        "Lambda",
+        "Serverless"
+    ],
+    "preview": true,
+    "qna": "https://github.com/aws/aws-toolkit-vscode/issues",
     "activationEvents": [
         "onCommand:aws.login",
         "onCommand:aws.credential.profile.create",
@@ -316,7 +331,8 @@
     "scripts": {
         "vscode:prepublish": "npm run recompile",
         "bundleDeps": "node ./build-scripts/bundleDeps.js",
-        "clean": "node ./build-scripts/clean.js",
+        "clean": "node ./build-scripts/clean.js out",
+        "reset": "node ./build-scripts/clean.js out node_modules && npm install",
         "copyNonCodeFiles": "node ./build-scripts/copyNonCodeFiles.js",
         "compile": "tsc -p ./ && npm run lint && npm run bundleDeps && npm run copyNonCodeFiles",
         "recompile": "npm run clean && npm run compile",
