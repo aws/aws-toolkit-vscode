@@ -13,8 +13,7 @@ import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
 import {
     DefaultSamCliProcessInvoker,
-    DefaultSamCliTaskInvoker,
-    makeSamCliProcessInvokerContext
+    DefaultSamCliTaskInvoker
 } from '../sam/cli/samCliInvoker'
 import { Datum } from '../telemetry/telemetryEvent'
 import { registerCommand } from '../telemetry/telemetryUtils'
@@ -66,7 +65,7 @@ const getLambdaHandlerCandidates = async ({ uri }: { uri: vscode.Uri }): Promise
 export function initialize({
     configuration,
     toolkitOutputChannel,
-    processInvoker = new DefaultSamCliProcessInvoker(makeSamCliProcessInvokerContext()),
+    processInvoker = new DefaultSamCliProcessInvoker(),
     taskInvoker = new DefaultSamCliTaskInvoker()
 }: CodeLensProviderParams): void {
     const logger = getLogger()

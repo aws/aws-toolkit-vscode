@@ -10,6 +10,7 @@ import { Stats } from 'fs'
 import * as vscode from 'vscode'
 import { stat } from '../../filesystem'
 import { ChildProcessResult } from '../../utilities/childProcess'
+import { SamCliVersionValidatorResult } from './samCliVersionValidator'
 
 /**
  * Maps out the response text from the sam cli command `sam --info`
@@ -39,5 +40,11 @@ export interface SamCliUtils {
 export class DefaultSamCliUtils {
     public async stat(samCliLocation: string): Promise<Stats> {
         return await stat(samCliLocation)
+    }
+}
+
+export class InvalidSamError extends Error {
+    public constructor (public versionValidation: SamCliVersionValidatorResult) {
+        super()
     }
 }

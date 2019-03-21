@@ -7,7 +7,7 @@
 
 import { getLogger, Logger } from '../../logger'
 import { ChildProcessResult } from '../../utilities/childProcess'
-import { DefaultSamCliProcessInvoker, makeSamCliProcessInvokerContext } from './samCliInvoker'
+import { DefaultSamCliProcessInvoker } from './samCliInvoker'
 import { SamCliProcessInvoker } from './samCliInvokerUtils'
 
 export class SamCliDeployInvocation {
@@ -15,7 +15,7 @@ export class SamCliDeployInvocation {
         private readonly templateFile: string,
         private readonly stackName: string,
         private readonly invoker: SamCliProcessInvoker =
-            new DefaultSamCliProcessInvoker(makeSamCliProcessInvokerContext()),
+            new DefaultSamCliProcessInvoker(),
         private readonly region: string
     ) {
     }

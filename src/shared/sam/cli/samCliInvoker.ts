@@ -14,6 +14,7 @@ import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliConfiguration, SamCliConfiguration } from './samCliConfiguration'
 import {
     DefaultSamCliUtils,
+    InvalidSamError,
     SamCliInfoResponse,
     SamCliProcessInfo,
     SamCliProcessInvoker,
@@ -31,79 +32,65 @@ interface SamCliProcessInvokerContext {
     cliConfig: SamCliConfiguration
     cliInfo: SamCliProcessInfo
     cliUtils: SamCliUtils
+    logger: Logger
     validator: SamCliVersionValidator
 }
 
-export function makeSamCliProcessInvokerContext(
-    params?: Partial<SamCliProcessInvokerContext>
+export class DefaultSamCliProcessInvokerContext implements SamCliProcessInvokerContext {
+    public cliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(
+        new DefaultSettingsConfiguration(extensionSettingsPrefix),
+        new DefaultSamCliLocationProvider()
+    )
+    public cliInfo: SamCliProcessInfo = { info: undefined, lastModified: undefined }
+    public cliUtils: SamCliUtils = new DefaultSamCliUtils()
+    public logger: Logger = getLogger()
+    public validator: SamCliVersionValidator = new DefaultSamCliVersionValidator()
+}
+
+export function resolveSamCliProcessInvokerContext(
+    params: Partial<SamCliProcessInvokerContext> = {}
 ): SamCliProcessInvokerContext {
-    if (!params) {
-        params = {}
-    }
+    const defaults = new DefaultSamCliProcessInvokerContext()
 
     return {
-        cliConfig: params.cliConfig || new DefaultSamCliConfiguration(
-            new DefaultSettingsConfiguration(extensionSettingsPrefix),
-            new DefaultSamCliLocationProvider()
-        ),
-        cliInfo: params.cliInfo ||  { info: undefined, lastModified: undefined },
-        cliUtils: params.cliUtils || new DefaultSamCliUtils(),
-        validator: params.validator || new DefaultSamCliVersionValidator(),
+        cliConfig: params.cliConfig || defaults.cliConfig,
+        cliInfo: params.cliInfo || defaults.cliInfo,
+        cliUtils: params.cliUtils || defaults.cliUtils,
+        logger: params.logger || defaults.logger,
+        validator: params.validator || defaults.validator,
     }
 }
 
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
 
-    public constructor(private readonly _context: SamCliProcessInvokerContext) {}
+    public constructor(private readonly _context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()) {}
 
     public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
     public invoke(...args: string[]): Promise<ChildProcessResult>
     public async invoke(first: SpawnOptions | string, ...rest: string[]): Promise<ChildProcessResult> {
-        const logger: Logger = getLogger()
 
         const samCliLocation = this._context.cliConfig.getSamCliLocation()
         if (!samCliLocation) {
             const err = new Error('SAM CLI location not configured')
-            logger.error(err)
+            this._context.logger.error(err)
             throw err
         }
         const validationResult = await this.getCliValidation(samCliLocation)
 
-        if (validationResult.validation === SamCliVersionValidation.Valid) {
-            const args = typeof first === 'string' ? [ first, ...rest ] : rest
-            const options: SpawnOptions | undefined = typeof first === 'string' ? undefined : first
-
-            return await this.runCliCommand(samCliLocation, options, ...args)
+        if (validationResult.validation !== SamCliVersionValidation.Valid) {
+            // prompt will redirect to external URL for updating. We do not need to wait on this.
+            // tslint:disable-next-line: no-floating-promises
+            this._context.validator.notifyVersionIsNotValid(validationResult)
+            const versionErr = new InvalidSamError(validationResult)
+            this._context.logger.error(
+                versionErr,
+                `${validationResult.validation}: version ${validationResult.version}`
+            )
         }
+        const args = typeof first === 'string' ? [ first, ...rest ] : rest
+        const options: SpawnOptions | undefined = typeof first === 'string' ? undefined : first
 
-        const errorResult: ChildProcessResult = {
-            exitCode: 1,
-            stdout: '',
-            stderr: '',
-            error: undefined
-        }
-        switch (validationResult.validation) {
-            case SamCliVersionValidation.VersionTooHigh:
-                const samVersionTooHighMessage = 'AWS Toolkit is out of date'
-                errorResult.error = new Error(samVersionTooHighMessage)
-                errorResult.stdout = samVersionTooHighMessage
-                errorResult.stderr = samVersionTooHighMessage
-                break
-            case SamCliVersionValidation.VersionTooLow:
-            case SamCliVersionValidation.VersionNotParseable:
-            default:
-                const samVersionTooLowMessage = 'SAM CLI is out of date'
-                errorResult.error = new Error(samVersionTooLowMessage)
-                errorResult.stdout = samVersionTooLowMessage
-                errorResult.stderr = samVersionTooLowMessage
-                break
-        }
-        // prompt will redirect to external URL for updating. We do not need to wait on this.
-        // tslint:disable-next-line: no-floating-promises
-        this._context.validator.notifyVersionIsNotValid(validationResult)
-        logger.error(errorResult.error)
-
-        return errorResult
+        return await this.runCliCommand(samCliLocation, options, ...args)
     }
 
     private async runCliCommand(
@@ -118,11 +105,9 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
 
     private async getCliValidation(samCliLocation: string): Promise<SamCliVersionValidatorResult> {
         const cliStat = await this._context.cliUtils.stat(samCliLocation)
-        if (!this._context.cliInfo.lastModified || cliStat.mtime !== this._context.cliInfo.lastModified) {
+        if ((!this._context.cliInfo.lastModified || cliStat.mtime !== this._context.cliInfo.lastModified)
+            || !this._context.cliInfo.info) {
             this._context.cliInfo.lastModified = cliStat.mtime
-            this._context.cliInfo.info = await this.getInfo(samCliLocation)
-        }
-        if (!this._context.cliInfo.info) {
             this._context.cliInfo.info = await this.getInfo(samCliLocation)
         }
 
@@ -143,15 +128,12 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
 
             throw new Error('SAM CLI did not return expected data')
         }
-
-        console.error('SAM CLI error')
-        console.error(`Exit code: ${exitCode}`)
-        console.error(`Error: ${error}`)
-        console.error(`stderr: ${stderr}`)
-        console.error(`stdout: ${stdout}`)
-
-        const err =
-            new Error(`sam --info encountered an error: ${error && error.message ? error.message : stderr || stdout}`)
+        const err = new Error(
+`sam --info encountered an error: ${error}
+    ${error && error.message ? 'message: ' + error.message : ''}
+    stderr : ${stderr}
+    stdout : ${stdout}`
+        )
         logger.error(err)
         throw err
     }

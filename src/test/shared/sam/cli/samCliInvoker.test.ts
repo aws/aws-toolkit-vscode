@@ -11,7 +11,7 @@ import { TestLogger } from '../../../../shared/loggerUtils'
 import { SamCliConfiguration } from '../../../../shared/sam/cli/samCliConfiguration'
 import {
     DefaultSamCliProcessInvoker,
-    makeSamCliProcessInvokerContext
+    resolveSamCliProcessInvokerContext
 } from '../../../../shared/sam/cli/samCliInvoker'
 import { assertRejects } from '../../utilities/assertUtils'
 
@@ -28,7 +28,7 @@ describe('DefaultSamCliInvoker', async () => {
     })
 
     it('throws if sam cli location is not known', async () => {
-        const context = makeSamCliProcessInvokerContext({
+        const context = resolveSamCliProcessInvokerContext({
             cliConfig: {
                 getSamCliLocation: () => undefined
             } as any as SamCliConfiguration
@@ -45,7 +45,7 @@ describe('DefaultSamCliInvoker', async () => {
         const testStat = new Stats()
         testStat.mtime = testDate
 
-        const context = makeSamCliProcessInvokerContext({
+        const context = resolveSamCliProcessInvokerContext({
             cliConfig: {
                 getSamCliLocation: () => 'filler'
             } as any as SamCliConfiguration,
@@ -57,9 +57,7 @@ describe('DefaultSamCliInvoker', async () => {
 
         const invoker = new DefaultSamCliProcessInvoker(context)
 
-        const result = await invoker.invoke()
-        assert.strictEqual(result.exitCode, 1)
-        assert.strictEqual(result.stderr, 'AWS Toolkit is out of date')
+        assertRejects(async () => invoker.invoke())
     })
 
     it('returns an error if the SAM CLI is out of date', async () => {
@@ -68,7 +66,7 @@ describe('DefaultSamCliInvoker', async () => {
         const testStat = new Stats()
         testStat.mtime = testDate
 
-        const context = makeSamCliProcessInvokerContext({
+        const context = resolveSamCliProcessInvokerContext({
             cliConfig: {
                 getSamCliLocation: () => 'filler'
             } as any as SamCliConfiguration,
@@ -80,8 +78,6 @@ describe('DefaultSamCliInvoker', async () => {
 
         const invoker = new DefaultSamCliProcessInvoker(context)
 
-        const result = await invoker.invoke()
-        assert.strictEqual(result.exitCode, 1)
-        assert.strictEqual(result.stderr, 'SAM CLI is out of date')
+        assertRejects(async () => invoker.invoke())
     })
 })

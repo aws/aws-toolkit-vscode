@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import { SamLambdaRuntime } from '../../../lambda/models/samLambdaRuntime'
 import { getLogger, Logger } from '../../logger'
 import { ChildProcessResult } from '../../utilities/childProcess'
-import { DefaultSamCliProcessInvoker, makeSamCliProcessInvokerContext } from './samCliInvoker'
+import { DefaultSamCliProcessInvoker } from './samCliInvoker'
 import { SamCliProcessInvoker } from './samCliInvokerUtils'
 
 export interface SamCliInitArgs {
@@ -25,7 +25,7 @@ export class SamCliInitInvocation {
     public constructor(
         { name, runtime, location }: SamCliInitArgs,
         private readonly invoker: SamCliProcessInvoker =
-            new DefaultSamCliProcessInvoker(makeSamCliProcessInvokerContext())
+            new DefaultSamCliProcessInvoker()
     ) {
         this.name = name
         this.runtime = runtime
