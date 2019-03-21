@@ -111,7 +111,6 @@ from ${handlerFilePrefix} import ${handlerFunctionName} as _handler
 
 def ${debugHandlerFunctionName}(event, context):
     print('waiting for debugger to attach...')
-    # Enable ptvsd on 0.0.0.0 address and on port 5890 that we'll connect later with our IDE
     ptvsd.enable_attach(address=('0.0.0.0', ${params.debugPort}), redirect_output=True)
     ptvsd.wait_for_attach()
     print('debugger attached')
@@ -133,7 +132,10 @@ def ${debugHandlerFunctionName}(event, context):
     }
 }
 
-const makeDebugConfig = ({debugPort}: {debugPort?: number}): PythonDebugConfiguration => {
+const makeDebugConfig = ({debugPort, samProjectCodeRoot}: {
+    debugPort?: number,
+    samProjectCodeRoot: string,
+}): PythonDebugConfiguration => {
     return {
         type: PYTHON_LANGUAGE,
         request: 'attach',
@@ -143,7 +145,7 @@ const makeDebugConfig = ({debugPort}: {debugPort?: number}): PythonDebugConfigur
         pathMappings: [
             {
                 // tslint:disable-next-line:no-invalid-template-strings
-                localRoot: '${workspaceFolder}/hello_world',
+                localRoot: samProjectCodeRoot,
                 remoteRoot: '/var/task'
             }
         ],
@@ -166,8 +168,7 @@ export async function initialize({
 
         const baseBuildDir = await makeBuildDir()
 
-        let debugPort = args.isDebug ? await getDebugPort() : undefined
-        const debugConfig: PythonDebugConfiguration = makeDebugConfig({debugPort})
+        let debugPort: number | undefined
 
         let handlerName: string
         let manifestPath: string | undefined
@@ -175,7 +176,7 @@ export async function initialize({
             debugPort = await getDebugPort()
             const {debugHandlerName} = await makeLambdaDebugFile({
                 handlerName: args.handlerName,
-                debugPort: debugConfig.port,
+                debugPort: debugPort,
                 outputDir: samProjectCodeRoot,
             })
             handlerName = debugHandlerName
@@ -209,7 +210,8 @@ export async function initialize({
             samProcessInvoker: processInvoker,
 
         })
-
+    
+        const debugConfig: PythonDebugConfiguration = makeDebugConfig({debugPort, samProjectCodeRoot})
         await invokeLambdaFunction({
             baseBuildDir,
             channelLogger,
