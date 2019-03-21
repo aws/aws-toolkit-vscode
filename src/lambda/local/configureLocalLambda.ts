@@ -14,6 +14,7 @@ import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'
 import { getChildrenRange } from '../../shared/utilities/symbolUtilities'
 import { saveDocumentIfDirty } from '../../shared/utilities/textDocumentUtilities'
 import {
+    ensureTemplatesConfigFileExists,
     getTemplatesConfigPath,
     HandlerConfig,
     loadTemplatesConfigFromJson,
@@ -46,6 +47,9 @@ export async function configureLocalLambda(
     const templateRelativePath = getNormalizedRelativePath(workspaceFolder.uri.fsPath, samTemplate.fsPath)
 
     const configPath: string = getTemplatesConfigPath(workspaceFolder.uri.fsPath)
+
+    await ensureTemplatesConfigFileExists(configPath)
+
     const configPathUri = vscode.Uri.file(configPath)
     const editor: vscode.TextEditor = await context.showTextDocument(configPathUri)
 
