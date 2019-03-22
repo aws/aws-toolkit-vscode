@@ -33,7 +33,7 @@ export async function deploySamApplication({
         return
     }
 
-    const { region, template, s3Bucket, stackName } = args
+    const { region, template, s3Bucket, stackName, parameterOverrides } = args
     const deployApplicationPromise = (async () => {
         const tempFolder = await makeTemporaryToolkitFolder('samDeploy')
         const buildDestination = path.join(tempFolder, 'build')
@@ -71,7 +71,7 @@ export async function deploySamApplication({
                 outputTemplatePath,
                 stackName,
                 region,
-                new Map<string, string>(), // TODO: Read from templates.json
+                parameterOverrides,
                 invoker
             )
             // Deploying can take a very long time for Python Lambda's with native dependencies so user needs feedback
