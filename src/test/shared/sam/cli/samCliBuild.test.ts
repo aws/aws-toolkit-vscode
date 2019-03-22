@@ -13,7 +13,7 @@ import { writeFile } from '../../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import { TestLogger } from '../../../../shared/loggerUtils'
 import { SamCliBuildInvocation } from '../../../../shared/sam/cli/samCliBuild'
-import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvoker'
+import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 
 describe('SamCliBuildInvocation', async () => {

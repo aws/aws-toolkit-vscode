@@ -11,10 +11,7 @@ import { dirname } from 'path'
 import { detectLocalTemplates } from '../../lambda/local/detectLocalTemplates'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
-import {
-    SamCliProcessInvoker,
-    SamCliTaskInvoker
-} from '../sam/cli/samCliInvoker'
+import { SamCliProcessInvoker, SamCliTaskInvoker } from '../sam/cli/samCliInvokerUtils'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { Datum } from '../telemetry/telemetryEvent'
 import { defaultMetricDatum } from '../telemetry/telemetryUtils'

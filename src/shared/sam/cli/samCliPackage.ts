@@ -7,14 +7,16 @@
 
 import { getLogger, Logger } from '../../logger'
 import { ChildProcessResult } from '../../utilities/childProcess'
-import { DefaultSamCliProcessInvoker, SamCliProcessInvoker } from './samCliInvoker'
+import { DefaultSamCliProcessInvoker } from './samCliInvoker'
+import { SamCliProcessInvoker } from './samCliInvokerUtils'
 
 export class SamCliPackageInvocation {
     public constructor(
         private readonly templateFile: string,
         private readonly outputTemplateFile: string,
         private readonly s3Bucket: string,
-        private readonly invoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker(),
+        private readonly invoker: SamCliProcessInvoker =
+        new DefaultSamCliProcessInvoker(),
         private readonly region: string
     ) {
     }
