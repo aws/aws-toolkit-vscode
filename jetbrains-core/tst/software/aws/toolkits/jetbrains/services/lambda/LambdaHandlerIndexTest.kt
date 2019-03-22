@@ -3,10 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda
 
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.command.WriteCommandAction
-import com.intellij.openapi.extensions.ExtensionPointName
-import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -22,7 +19,6 @@ class LambdaHandlerIndexTest {
 
     @Before
     fun setUp() {
-
         projectRule.fixture.addClass(
             """
             package com.amazonaws.services.lambda.runtime;
@@ -259,25 +255,5 @@ class LambdaHandlerIndexTest {
         runInEdtAndWait {
             assertThat(LambdaHandlerIndex.listHandlers(projectRule.project)).isEmpty()
         }
-    }
-
-    @Test
-    @Suppress("DEPRECATION")
-    fun testVersionChangesIfExtensionsChange() {
-        val initialVersion = LambdaHandlerIndex().version
-
-        val extensionPointName = ExtensionPointName.create<RuntimeGroupExtensionPoint<LambdaHandlerResolver>>("aws.toolkit.lambda.handlerResolver")
-        val extensionPoint = extensionPointName.getPoint(null)
-        val extensions = extensionPoint.extensions
-
-        Disposer.register(projectRule.fixture.testRootDisposable, Disposable {
-            extensions.forEach { extensionPoint.registerExtension(it) }
-        })
-
-        extensions.forEach { extensionPoint.unregisterExtension(it) }
-
-        val newVersion = LambdaHandlerIndex().version
-
-        assertThat(initialVersion).isNotEqualTo(newVersion)
     }
 }
