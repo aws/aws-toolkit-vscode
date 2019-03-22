@@ -521,7 +521,7 @@ export async function invokeLambdaFunction(params: {
     )
     params.channelLogger.logger.info(`localLambdaRunner.invokeLambdaFunction: ${JSON.stringify(
         {
-            baseBuildDir: params.onWillAttachDebugger,
+            baseBuildDir: params.baseBuildDir,
             // configuration: SettingsConfiguration, // Can we pretty print this?
             debugConfig: params.debugConfig,
             documentUri: vscode.Uri,

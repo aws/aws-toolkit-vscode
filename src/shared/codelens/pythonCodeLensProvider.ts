@@ -5,7 +5,6 @@
 
 'use strict'
 
-import { platform } from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 
@@ -136,6 +135,17 @@ def ${debugHandlerFunctionName}(event, context):
     }
 }
 
+const fixFilePathCapitalization = (filePath: string): string => {
+    if (process.platform === 'win32') {
+        const startsWithLowercase = new RegExp(/^[a-z].*/)
+        if (startsWithLowercase.test(filePath)) {
+            return  filePath.slice(0, 1).toUpperCase() + filePath.slice(1)
+        }
+    }
+
+    return filePath
+}
+
 const makeDebugConfig = ({debugPort, samProjectCodeRoot}: {
     debugPort?: number,
     samProjectCodeRoot: string,
@@ -149,7 +159,7 @@ const makeDebugConfig = ({debugPort, samProjectCodeRoot}: {
         pathMappings: [
             {
                 // tslint:disable-next-line:no-invalid-template-strings
-                localRoot: samProjectCodeRoot,
+                localRoot: fixFilePathCapitalization(samProjectCodeRoot),
                 remoteRoot: '/var/task'
             }
         ],
@@ -225,10 +235,10 @@ export async function initialize({
             handlerName,
             isDebug: args.isDebug,
             onWillAttachDebugger: async () => {
-                // TODO: Find out why debugger can't detach without delay
-                if (platform() === 'darwin') {
-                    await new Promise(resolve => {
-                        logger.info(`pythonCodeLensProvider.initialize ${platform()} hack: sleeping......`)
+                // TODO: Find out why debugger can't detach without introducing delay
+                if (process.platform === 'darwin') {
+                    await new Promise(resolve => { // delay to avoid racing condition
+                        logger.info(`pythonCodeLensProvider.initialize ${process.platform} hack: sleeping......`)
                         setTimeout(resolve, 3000)
                     })
                 }
