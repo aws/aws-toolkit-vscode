@@ -57,7 +57,7 @@
     "AWS.explorerNode.signIn": "Connect to AWS...",
     "AWS.explorerNode.signIn.tooltip": "Connect to AWS using a credential profile",
     "AWS.lambda.explorerTitle": "Explorer",
-    "AWS.lambda.configure.error.fieldtype": "Your templates.json file has an issue. {0} was detected as {1} instead of {2}. Please change or remove this field, and try again.",
+    "AWS.lambda.configure.error.fieldtype": "Your templates.json file has an issue. {0} was detected as {1} instead of one of the following: [{2}]. Please change or remove this field, and try again.",
     "AWS.lambda.debug.node.launchConfig.name": "Lambda: Debug {0} locally",
     "AWS.lambda.debug.node.attachConfig.name": "Lambda: Attach to {0} locally",
     "AWS.lambda.debug.node.invokeTask.label": "Lambda: Invoke {0} locally",
