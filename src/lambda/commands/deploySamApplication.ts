@@ -67,7 +67,13 @@ export async function deploySamApplication({
             await packageInvocation.execute()
 
             stage = 'deploying'
-            const deployInvocation = new SamCliDeployInvocation(outputTemplatePath, stackName, invoker, region)
+            const deployInvocation = new SamCliDeployInvocation(
+                outputTemplatePath,
+                stackName,
+                region,
+                new Map<string, string>(), // TODO: Read from templates.json
+                invoker
+            )
             // Deploying can take a very long time for Python Lambda's with native dependencies so user needs feedback
             restParams.outputChannel.appendLine(localize(
                 'AWS.samcli.deploy.stackName.initiated',

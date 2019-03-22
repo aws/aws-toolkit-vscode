@@ -110,6 +110,12 @@ export function updateInPlace<TKey, TValue>(
     }
 }
 
+export function* map<TIn, TOut>(sequence: Iterable<TIn>, selector: (item: TIn) => TOut): IterableIterator<TOut> {
+    for (const item of sequence) {
+        yield selector(item)
+    }
+}
+
 export function filter<T>(sequence: Iterable<T>, condition: (item: T) => boolean): T[] {
     const result: T[] = []
 
