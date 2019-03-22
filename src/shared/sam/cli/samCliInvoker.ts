@@ -109,8 +109,8 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
         const cliStat = await this._context.cliUtils.stat(samCliLocation)
         if ((!this._context.cliInfo.lastModified || cliStat.mtime !== this._context.cliInfo.lastModified)
             || !this._context.cliInfo.info) {
-            this._context.cliInfo.lastModified = cliStat.mtime
             this._context.cliInfo.info = await this.getInfo(samCliLocation)
+            this._context.cliInfo.lastModified = cliStat.mtime
         }
 
         return await this._context.validator.getCliValidationStatus(this._context.cliInfo.info.version)
