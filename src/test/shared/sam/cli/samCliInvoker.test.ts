@@ -56,7 +56,7 @@ describe('DefaultSamCliInvoker', async () => {
 
         const invoker = new DefaultSamCliProcessInvoker(context)
 
-        assertRejects(async () => invoker.invoke())
+        await assertRejects(async () => await invoker.invoke())
     })
 
     it('returns an error if the SAM CLI is out of date', async () => {
@@ -77,6 +77,6 @@ describe('DefaultSamCliInvoker', async () => {
 
         const invoker = new DefaultSamCliProcessInvoker(context)
 
-        assertRejects(async () => invoker.invoke())
+        await assertRejects(async () => await invoker.invoke())
     })
 })
