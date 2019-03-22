@@ -11,8 +11,9 @@ import * as vscode from 'vscode'
 import { detectLocalTemplates } from '../../../lambda/local/detectLocalTemplates'
 import * as paramUtils from '../../../lambda/utilities/parameterUtils'
 import {
+    ParameterPromptResult,
     SamDeployWizard,
-    SamDeployWizardContext
+    SamDeployWizardContext,
 } from '../../../lambda/wizards/samDeployWizard'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { RegionProvider } from '../../../shared/regions/regionProvider'
@@ -80,12 +81,12 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
 
     public readonly getParameters: typeof paramUtils.getParameters = async () => new Map()
 
-    public readonly configureParameterOverrides: (
+    public readonly promptUserForParametersIfApplicable: (
         options: {
             templateUri: vscode.Uri
             missingParameters?: Set<string>
         }
-    ) => Promise<boolean> = async () => true
+    ) => Promise<ParameterPromptResult> = async () => ParameterPromptResult.Continue
 
     public async promptUserForSamTemplate(): Promise<vscode.Uri | undefined> {
         if (this.promptForSamTemplateResponses.length <= 0) {
@@ -219,12 +220,14 @@ describe('SamDeployWizard', async () => {
         function makeFakeContext({
             getParameters,
             getOverriddenParameters,
-            configureParameterOverrides,
+            promptUserForParametersIfApplicable,
             templatePath = path.join('my', 'template'),
             region = 'us-east-1',
             s3Bucket = 'mys3bucket',
             stackName = 'mystackname'
-        }: Pick<SamDeployWizardContext, 'getParameters' | 'getOverriddenParameters' | 'configureParameterOverrides'> & {
+        }: Pick<SamDeployWizardContext,
+            'getParameters' | 'getOverriddenParameters' | 'promptUserForParametersIfApplicable'
+        > & {
             templatePath?: string
             region?: string
             s3Bucket?: string
@@ -238,7 +241,7 @@ describe('SamDeployWizard', async () => {
 
                 getParameters,
                 getOverriddenParameters,
-                configureParameterOverrides,
+                promptUserForParametersIfApplicable,
                 promptUserForSamTemplate: async () => vscode.Uri.file(templatePath),
                 promptUserForRegion: async () => region,
                 promptUserForS3Bucket: async () => s3Bucket,
@@ -251,7 +254,9 @@ describe('SamDeployWizard', async () => {
                 const context = makeFakeContext({
                     getParameters: async () => new Map<string, { required: boolean }>([]),
                     getOverriddenParameters: async () => { throw new Error('Should skip loading overrides') },
-                    configureParameterOverrides: async () => { throw new Error('Should skip configuring overrides') },
+                    promptUserForParametersIfApplicable: async () => {
+                        throw new Error('Should skip configuring overrides')
+                    },
                 })
 
                 const wizard = new SamDeployWizard(makeFakeRegionProvider(), context)
@@ -269,7 +274,9 @@ describe('SamDeployWizard', async () => {
                         ['myParam', { required: false }]
                     ]),
                     getOverriddenParameters: async () => new Map<string, string>(),
-                    configureParameterOverrides: async () => { throw new Error('Should skip configuring overrides') },
+                    promptUserForParametersIfApplicable: async () => {
+                        throw new Error('Should skip configuring overrides')
+                    },
                 })
 
                 const wizard = new SamDeployWizard(makeFakeRegionProvider(), context)
@@ -286,7 +293,7 @@ describe('SamDeployWizard', async () => {
                         ['myParam', { required: false }]
                     ]),
                     getOverriddenParameters: async () => undefined,
-                    configureParameterOverrides: async () => true,
+                    promptUserForParametersIfApplicable: async () => ParameterPromptResult.Continue,
                 })
 
                 const wizard = new SamDeployWizard(makeFakeRegionProvider(), context)
@@ -308,10 +315,10 @@ describe('SamDeployWizard', async () => {
                         ['myParam', { required: false }]
                     ]),
                     getOverriddenParameters: async () => undefined,
-                    async configureParameterOverrides(options): Promise<boolean> {
+                    async promptUserForParametersIfApplicable(options): Promise<ParameterPromptResult> {
                         configureParameterOverridesArgs.push(options)
 
-                        return false
+                        return ParameterPromptResult.Cancel
                     },
                 })
 
@@ -337,10 +344,10 @@ describe('SamDeployWizard', async () => {
                         ['myParam', { required: true }]
                     ]),
                     getOverriddenParameters: async () => undefined,
-                    async configureParameterOverrides(options): Promise<boolean> {
+                    async promptUserForParametersIfApplicable(options): Promise<ParameterPromptResult> {
                         configureParameterOverridesArgs.push(options)
 
-                        return false
+                        return ParameterPromptResult.Cancel
                     },
                 })
 
@@ -365,10 +372,10 @@ describe('SamDeployWizard', async () => {
                         ['myParam', { required: true }]
                     ]),
                     getOverriddenParameters: async () => new Map<string, string>(),
-                    async configureParameterOverrides(options): Promise<boolean> {
+                    async promptUserForParametersIfApplicable(options): Promise<ParameterPromptResult> {
                         configureParameterOverridesArgs.push(options)
 
-                        return false
+                        return ParameterPromptResult.Cancel
                     },
                 })
 
@@ -395,10 +402,10 @@ describe('SamDeployWizard', async () => {
                     getOverriddenParameters: async () => new Map<string, string>([
                         ['myParam', 'myValue']
                     ]),
-                    async configureParameterOverrides(options): Promise<boolean> {
+                    async promptUserForParametersIfApplicable(options): Promise<ParameterPromptResult> {
                         configureParameterOverridesArgs.push(options)
 
-                        return false
+                        return ParameterPromptResult.Cancel
                     },
                 })
 

@@ -28,6 +28,11 @@ export interface SamDeployWizardResponse {
     stackName: string
 }
 
+export const enum ParameterPromptResult {
+    Cancel,
+    Continue
+}
+
 export interface SamDeployWizardContext {
     readonly onDetectLocalTemplates: typeof detectLocalTemplates
 
@@ -64,15 +69,15 @@ export interface SamDeployWizardContext {
      *
      * @param options.templateUri The URL of the SAM template to inspect.
      * @param options.missingParameters The names of required parameters that are not yet overridden.
-     * @returns A value indicating whether the wizard should procede. `false` if `missingParameters` was
+     * @returns A value indicating whether the wizard should proceed. `false` if `missingParameters` was
      *          non-empty, or if it was empty and the user opted to configure overrides instead of continuing.
      */
-    configureParameterOverrides(
+    promptUserForParametersIfApplicable(
         options: {
             templateUri: vscode.Uri
             missingParameters?: Set<string>
         }
-    ): Promise<boolean>
+    ): Promise<ParameterPromptResult>
 
     promptUserForRegion(regionProvider: RegionProvider, initialValue?: string): Promise<string | undefined>
 
@@ -151,7 +156,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         return val ? val.uri : undefined
     }
 
-    public async configureParameterOverrides(
+    public async promptUserForParametersIfApplicable(
         {
             templateUri,
             missingParameters = new Set<string>()
@@ -159,7 +164,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             templateUri: vscode.Uri
             missingParameters?: Set<string>
         }
-    ): Promise<boolean> {
+    ): Promise<ParameterPromptResult> {
         if (missingParameters.size < 1) {
             const prompt = localize(
                 'AWS.samcli.deploy.parameters.optionalPrompt.message',
@@ -186,8 +191,8 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 ]
             })
             const response = getSingleResponse(await picker.promptUser({ picker: quickPick }))
-            if (response === responseYes) {
-                return true
+            if (response !== responseYes) {
+                return ParameterPromptResult.Continue
             }
 
             await configureParameterOverrides({
@@ -195,7 +200,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 requiredParameterNames: missingParameters.keys()
             })
 
-            return false
+            return ParameterPromptResult.Cancel
         } else {
             const prompt = localize(
                 'AWS.samcli.deploy.parameters.mandatoryPrompt.message',
@@ -230,7 +235,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 })
             }
 
-            return false
+            return ParameterPromptResult.Cancel
         }
     }
 
@@ -409,6 +414,15 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     }
 
     private readonly PARAMETER_OVERRIDES: WizardStep = async () => {
+        const getNextStep = (result: ParameterPromptResult) => {
+            switch (result) {
+                case ParameterPromptResult.Cancel:
+                    return undefined
+                case ParameterPromptResult.Continue:
+                    return this.REGION
+            }
+        }
+
         if (!this.response.template) {
             throw new Error('Unexpected state: TEMPLATE step is complete, but no template was selected')
         }
@@ -435,19 +449,15 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
 
             this.response.parameterOverrides = new Map<string, string>()
 
-            return await this.context.configureParameterOverrides(options) ?
-                this.REGION :
-                undefined
+            return getNextStep(await this.context.promptUserForParametersIfApplicable(options))
         }
 
         const missingParameters = difference(requiredParameterNames, overriddenParameters.keys())
         if (missingParameters.size > 0) {
-            await this.context.configureParameterOverrides({
+            return getNextStep(await this.context.promptUserForParametersIfApplicable({
                 templateUri: this.response.template,
                 missingParameters
-            })
-
-            return undefined
+            }))
         }
 
         this.response.parameterOverrides = overriddenParameters
