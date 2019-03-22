@@ -168,23 +168,23 @@
                 },
                 {
                     "command": "aws.login",
-                    "group": "1_account"
+                    "group": "1_account@1"
                 },
                 {
                     "command": "aws.showRegion",
-                    "group": "2_region"
+                    "group": "2_region@1"
                 },
                 {
                     "command": "aws.hideRegion",
-                    "group": "2_region"
+                    "group": "2_region@2"
                 },
                 {
                     "command": "aws.help",
-                    "group": "z_help"
+                    "group": "z_help@1"
                 },
                 {
                     "command": "aws.github",
-                    "group": "z_help"
+                    "group": "z_help@2"
                 }
             ],
             "view/item/context": [
