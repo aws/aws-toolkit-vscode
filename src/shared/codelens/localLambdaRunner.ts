@@ -268,7 +268,7 @@ export class LocalLambdaRunner {
             const timeoutMillis = this.configuration.readSetting<number>(
                 'samcli.debug.attach.timeout.millis',
                 LocalLambdaRunner.SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
-            ) || SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
+            )
 
             await tcpPortUsed.waitUntilUsed(
                 this.debugPort,
