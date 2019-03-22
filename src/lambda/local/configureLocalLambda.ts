@@ -6,24 +6,21 @@
 'use strict'
 
 import * as vscode from 'vscode'
-import * as nls from 'vscode-nls'
 import * as fsUtils from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
-import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'
 import { getChildrenRange } from '../../shared/utilities/symbolUtilities'
-import { saveDocumentIfDirty } from '../../shared/utilities/textDocumentUtilities'
+import { getTabSize, saveDocumentIfDirty } from '../../shared/utilities/textDocumentUtilities'
 import {
     ensureTemplatesConfigFileExists,
     getTemplatesConfigPath,
     HandlerConfig,
     loadTemplatesConfigFromJson,
+    showTemplatesConfigurationError,
     TemplatesConfig,
     TemplatesConfigFieldTypeError,
-    TemplatesConfigPopulator
+    TemplatesConfigPopulator,
 } from '../config/templates'
-
-const localize = nls.loadMessageBundle()
 
 export interface ConfigureLocalLambdaContext {
     showTextDocument: typeof vscode.window.showTextDocument
@@ -122,41 +119,6 @@ export async function getLocalLambdaConfiguration(
         }
 
         throw e
-    }
-}
-
-function showTemplatesConfigurationError(
-    error: TemplatesConfigFieldTypeError,
-    showErrorMessage: typeof vscode.window.showErrorMessage = vscode.window.showErrorMessage
-) {
-    const logger: Logger = getLogger()
-
-    showErrorMessage(
-        localize(
-            'AWS.lambda.configure.error.fieldtype',
-            // tslint:disable-next-line:max-line-length
-            'Your templates.json file has an issue. {0} was detected as {1} instead of {2}. Please change or remove this field, and try again.',
-            error.jsonPath.join('.'),
-            error.actualType,
-            error.expectedType,
-        )
-    )
-
-    // tslint:disable-next-line:max-line-length
-    logger.error(`Error detected in templates.json: ${error.message}. Field: ${error.jsonPath.join('.')}, expected: ${error.expectedType}, was: ${error.actualType}`)
-}
-
-function getTabSize(editor?: vscode.TextEditor): number {
-    const tabSize = !editor ? undefined : editor.options.tabSize
-
-    switch (typeof tabSize) {
-        case 'number':
-            return tabSize
-        case 'string':
-            return Number.parseInt(tabSize, 10)
-        default:
-            // If we couldn't determine the tabSize at the document, workspace, or user level, default to 4.
-            return new DefaultSettingsConfiguration('editor').readSetting<number>('tabSize') || 4
     }
 }
 
