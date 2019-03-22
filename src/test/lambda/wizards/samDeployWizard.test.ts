@@ -209,14 +209,6 @@ describe('SamDeployWizard', async () => {
     })
 
     describe('PARAMETER_OVERRIDES', async () => {
-        function makeFakeRegionProvider(): RegionProvider {
-            return {
-                // It's fine to return an empty list if context.promptUserForRegion is overridden.
-                getRegionData: async () => []
-            }
-
-        }
-
         function makeFakeContext({
             getParameters,
             getOverriddenParameters,
@@ -259,7 +251,7 @@ describe('SamDeployWizard', async () => {
                     },
                 })
 
-                const wizard = new SamDeployWizard(makeFakeRegionProvider(), context)
+                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
                 const result = await wizard.run()
 
                 assert.ok(result)
@@ -279,7 +271,7 @@ describe('SamDeployWizard', async () => {
                     },
                 })
 
-                const wizard = new SamDeployWizard(makeFakeRegionProvider(), context)
+                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
                 const result = await wizard.run()
 
                 assert.ok(result)
@@ -296,7 +288,7 @@ describe('SamDeployWizard', async () => {
                     promptUserForParametersIfApplicable: async () => ParameterPromptResult.Continue,
                 })
 
-                const wizard = new SamDeployWizard(makeFakeRegionProvider(), context)
+                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
                 const result = await wizard.run()
 
                 assert.ok(result)
@@ -322,7 +314,7 @@ describe('SamDeployWizard', async () => {
                     },
                 })
 
-                const wizard = new SamDeployWizard(makeFakeRegionProvider(), context)
+                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
                 const result = await wizard.run()
 
                 assert.strictEqual(result, undefined)
@@ -351,7 +343,7 @@ describe('SamDeployWizard', async () => {
                     },
                 })
 
-                const wizard = new SamDeployWizard(makeFakeRegionProvider(), context)
+                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
                 const result = await wizard.run()
 
                 assert.strictEqual(result, undefined)
@@ -379,7 +371,7 @@ describe('SamDeployWizard', async () => {
                     },
                 })
 
-                const wizard = new SamDeployWizard(makeFakeRegionProvider(), context)
+                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
                 const result = await wizard.run()
 
                 assert.strictEqual(result, undefined)
@@ -409,7 +401,7 @@ describe('SamDeployWizard', async () => {
                     },
                 })
 
-                const wizard = new SamDeployWizard(makeFakeRegionProvider(), context)
+                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
                 const result = await wizard.run()
 
                 assert.ok(result)
