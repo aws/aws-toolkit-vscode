@@ -86,6 +86,8 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
                 versionErr,
                 `${validationResult.validation}: version ${validationResult.version}`
             )
+
+            throw versionErr
         }
         const args = typeof first === 'string' ? [ first, ...rest ] : rest
         const options: SpawnOptions | undefined = typeof first === 'string' ? undefined : first
