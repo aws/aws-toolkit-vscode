@@ -5,7 +5,6 @@
 
 'use strict'
 
-import * as assert from 'assert'
 import { Stats } from 'fs'
 import { TestLogger } from '../../../../shared/loggerUtils'
 import { SamCliConfiguration } from '../../../../shared/sam/cli/samCliConfiguration'
