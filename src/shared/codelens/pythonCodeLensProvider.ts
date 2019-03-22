@@ -46,8 +46,6 @@ const getSamProjectDirPathForFile = async (filepath: string): Promise<string> =>
 const getLambdaHandlerCandidates = async ({ uri }: { uri: vscode.Uri }): Promise<LambdaHandlerCandidate[]> => {
     const logger = getLogger()
     const filename = uri.fsPath
-
-    logger.info(`Getting symbols for '${uri.fsPath}'`)
     const symbols: vscode.DocumentSymbol[] = ( // SymbolInformation has less detail (no children)
         (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
             'vscode.executeDocumentSymbolProvider',
@@ -58,7 +56,12 @@ const getLambdaHandlerCandidates = async ({ uri }: { uri: vscode.Uri }): Promise
     return symbols
         .filter(sym => sym.kind === vscode.SymbolKind.Function)
         .map(symbol => {
-            logger.debug(`Found potential handler: '${path.parse(filename).name}.${symbol.name}'`)
+            logger.debug(`pythonCodeLensProviderFound.getLambdaHandlerCandidates: ${
+                JSON.stringify({
+                    filePath: uri.fsPath,
+                    handlerName: `${path.parse(filename).name}.${symbol.name}`
+                })
+            }`)
 
             return {
                 filename,
@@ -78,7 +81,7 @@ const makePythonDebugManifest = async (params: {
     if (fileExists(manfestPath)) {
         manifestText = await readFileAsString(manfestPath)
     }
-    getLogger().debug(`makePythonDebugManifest - params: ${JSON.stringify(params, undefined, 2)}`)
+    getLogger().debug(`pythonCodeLensProvider.makePythonDebugManifest params: ${JSON.stringify(params, undefined, 2)}`)
     if (manifestText.indexOf('ptvsd') < 0 ) { // TODO: Make this logic more robust
         manifestText += '\nptvsd'
         const debugManifestPath = path.join(params.outputDir, 'debug-requirements.txt')
@@ -104,7 +107,7 @@ const makeLambdaDebugFile = async (params: {
     const debugHandlerFileName = `${handlerFilePrefix}_debug`
     const debugHandlerFunctionName = 'lambda_handler'
     try {
-        logger.info('makeLambdaDebugFile - params:', JSON.stringify(params, undefined, 2))
+        logger.info('pythonCodeLensProvider.makeLambdaDebugFile params:', JSON.stringify(params, undefined, 2))
         const template = `
 import ptvsd
 from ${handlerFilePrefix} import ${handlerFunctionName} as _handler
@@ -120,7 +123,7 @@ def ${debugHandlerFunctionName}(event, context):
 `
 
         const outFilePath = path.join(params.outputDir, `${debugHandlerFileName}.py`)
-        logger.info('makeLambdaDebugFile - outFilePath:', outFilePath)
+        logger.info('pythonCodeLensProvider.makeLambdaDebugFile outFilePath:', outFilePath)
         await writeFile(outFilePath, template)
 
         return {
@@ -165,8 +168,6 @@ export async function initialize({
 
     const invokeLambda = async (args: LambdaLocalInvokeParams) => {
         const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
-        logger.info(`Project root: '${samProjectCodeRoot}'`)
-
         const baseBuildDir = await makeBuildDir()
 
         let debugPort: number | undefined
@@ -196,8 +197,8 @@ export async function initialize({
             runtime,
             workspaceUri: args.workspaceFolder.uri
         })
-        logger.info(`+++ debug stuff: ${
-            JSON.stringify({inputTemplatePath, handlerName, manifestPath}, undefined, 2)
+        logger.info(`pythonCodeLensProvider.initialize: ${
+            JSON.stringify({samProjectCodeRoot, inputTemplatePath, handlerName, manifestPath}, undefined, 2)
         }`)
 
         const channelLogger = getChannelLogger(toolkitOutputChannel)
@@ -224,10 +225,11 @@ export async function initialize({
             handlerName,
             isDebug: args.isDebug,
             onWillAttachDebugger: async () => {
+                // TODO: Find out why debugger can't detach without delay
                 if (platform() === 'darwin') {
                     await new Promise(resolve => {
-                        logger.info(`${platform()} hack: sleeeping......`)
-                        setTimeout(resolve, 1500)
+                        logger.info(`pythonCodeLensProvider.initialize ${platform()} hack: sleeping......`)
+                        setTimeout(resolve, 3000)
                     })
                 }
             }
@@ -258,7 +260,10 @@ export async function makePythonCodeLensProvider(): Promise<vscode.CodeLensProvi
             token: vscode.CancellationToken
         ): Promise<vscode.CodeLens[]> => {
             const handlers: LambdaHandlerCandidate[] = await getLambdaHandlerCandidates({ uri: document.uri })
-            logger.info('makePythonCodeLensProvider - handlers:', JSON.stringify(handlers, undefined, 2))
+            logger.info(
+                'pythonCodeLensProvider.makePythonCodeLensProvider handlers:',
+                JSON.stringify(handlers, undefined, 2)
+            )
 
             return makeCodeLenses({
                 document,

@@ -21,7 +21,6 @@ import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
-import { getLogger } from '../logger'
 import { ChannelLogger, getChannelLogger, localize } from '../utilities/vsCodeUtils'
 
 export interface LambdaLocalInvokeParams {
@@ -49,6 +48,7 @@ const TEMPLATE_RESOURCE_NAME: string = 'awsToolkitSamLocalResource'
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
 const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
 
+// TODO: Consider replacing LocalLambdaRunner use with associated duplicative functions
 export class LocalLambdaRunner {
 
     private static readonly TEMPLATE_RESOURCE_NAME: string = 'awsToolkitSamLocalResource'
@@ -313,7 +313,6 @@ export class LocalLambdaRunner {
             'AWS.output.sam.local.attaching',
             'Attaching to SAM Application...'
         )
-        getLogger().info(`startDebugging with debugConfig - ${JSON.stringify(this.debugConfig, undefined, 2)}`)
         const attachSuccess: boolean = await vscode.debug.startDebugging(undefined, this.debugConfig)
 
         if (attachSuccess) {
@@ -520,7 +519,7 @@ export async function invokeLambdaFunction(params: {
         'AWS.output.starting.sam.app.locally',
         'Starting the SAM Application locally (see Terminal for output)'
     )
-    params.channelLogger.logger.info(`invokeLambdaFunction: ${JSON.stringify(
+    params.channelLogger.logger.info(`localLambdaRunner.invokeLambdaFunction: ${JSON.stringify(
         {
             baseBuildDir: params.onWillAttachDebugger,
             // configuration: SettingsConfiguration, // Can we pretty print this?
@@ -627,7 +626,11 @@ export async function attachDebugger(params: {
         'AWS.output.sam.local.attaching',
         'Attaching to SAM Application...'
     )
-    logger.info(`startDebugging with debugConfig - ${JSON.stringify(params.debugConfig, undefined, 2)}`)
+    logger.info(`localLambdaRunner.attachDebugger: startDebugging with debugConfig: ${JSON.stringify(
+        params.debugConfig,
+        undefined,
+        2
+    )}`)
     const attachSuccess: boolean = await vscode.debug.startDebugging(undefined, params.debugConfig)
 
     if (attachSuccess) {
