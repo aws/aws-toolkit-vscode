@@ -11,7 +11,10 @@ import * as vscode from 'vscode'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
-import { DefaultSamCliProcessInvoker, DefaultSamCliTaskInvoker, } from '../sam/cli/samCliInvoker'
+import {
+    DefaultSamCliProcessInvoker,
+    DefaultSamCliTaskInvoker
+} from '../sam/cli/samCliInvoker'
 import { Datum } from '../telemetry/telemetryEvent'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { getDebugPort } from '../utilities/vsCodeUtils'

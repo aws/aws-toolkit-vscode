@@ -63,7 +63,6 @@ Available commands include:
 * **AWS: Hide region from the Explorer** - Hides the list of available AWS resources for the specified AWS Region from the **AWS: Explorer** Side Bar.
 * **AWS: Show region in the Explorer** - Displays the list of available AWS resources for the specified AWS Region in the **AWS: Explorer** Side Bar.
 * **AWS: Sign out** - Disconnects the Toolkit from the currently connected AWS account.
-* **AWS: Validate SAM CLI Version** - Checks whether the version of the AWS SAM CLI that is installed is compatible with the Toolkit.
 * **AWS: View AWS Toolkit Logs** - Displays log files that contain general Toolkit diagnosis information.
 
 [Return to Top](#top)
