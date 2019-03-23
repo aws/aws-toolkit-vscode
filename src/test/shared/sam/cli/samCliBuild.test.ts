@@ -190,6 +190,41 @@ describe('SamCliBuildInvocation', async () => {
         }).execute()
     })
 
+    it('passes --manifest to sam cli if manifestPath is set', async () => {
+        const expectedArg = 'mypath'
+
+        const processInvoker: SamCliProcessInvoker = new TestProcessInvoker((args: any[]) => {
+            assert(
+                args.indexOf('--manifest') !== -1,
+                'Expected --manifest arg'
+            )
+            assert(
+                args.indexOf(expectedArg) !== -1,
+                `Expected '${expectedArg}'`
+            )
+        })
+
+        await new SamCliBuildInvocation({
+                                            buildDir: 'arg is not of interest to this test',
+                                            templatePath: placeholderTemplateFile,
+                                            invoker: processInvoker,
+                                            manifestPath: expectedArg,
+                                        }).execute()
+    })
+
+    it('does not pass --manifest to sam cli if manifestPath is not set', async () => {
+
+        const processInvoker: SamCliProcessInvoker = new TestProcessInvoker((args: any[]) => {
+            assertArgNotPresent(args, '--manifest')
+        })
+
+        await new SamCliBuildInvocation({
+                                            buildDir: 'arg is not of interest to this test',
+                                            templatePath: placeholderTemplateFile,
+                                            invoker: processInvoker
+                                        }).execute()
+    })
+
     it('Passes docker network to sam cli', async () => {
         const expectedDockerNetwork = 'hello-world'
         const nonRelevantArg = 'arg is not of interest to this test'
