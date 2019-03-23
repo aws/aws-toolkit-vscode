@@ -395,10 +395,8 @@ export async function executeSamBuild(params: {
         buildDir: samBuildOutputFolder,
         baseDir: params.codeDir,
         templatePath: params.inputTemplatePath,
-        invoker: params.samProcessInvoker
-    }
-    if (params.manifestPath) {
-        samCliArgs.manifestPath = params.manifestPath
+        invoker: params.samProcessInvoker,
+        manifestPath: params.manifestPath
     }
     await new SamCliBuildInvocation(samCliArgs).execute()
 
