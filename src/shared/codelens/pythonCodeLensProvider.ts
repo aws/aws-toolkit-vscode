@@ -5,6 +5,7 @@
 
 'use strict'
 
+import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 
@@ -83,7 +84,7 @@ const makePythonDebugManifest = async (params: {
     }
     getLogger().debug(`pythonCodeLensProvider.makePythonDebugManifest params: ${JSON.stringify(params, undefined, 2)}`)
     if (manifestText.indexOf('ptvsd') < 0 ) { // TODO: Make this logic more robust
-        manifestText += '\nptvsd>4.2,<5'
+        manifestText += `${os.EOL}ptvsd>4.2,<5`
         const debugManifestPath = path.join(params.outputDir, 'debug-requirements.txt')
         await writeFile(debugManifestPath, manifestText)
 
