@@ -24,19 +24,19 @@ export function union<T>(a: Iterable<T>, b: Iterable<T>): Set<T> {
 export function intersection<T>(sequence1: Iterable<T>, sequence2: Iterable<T>): Set<T> {
     const set2 = new Set(sequence2)
 
-    return filter(sequence1, item => set2.has(item))
+    return new Set(filter(sequence1, item => set2.has(item)))
 }
 
 export function difference<T>(sequence1: Iterable<T>, sequence2: Iterable<T>): Set<T> {
     const set2 = new Set(sequence2)
 
-    return filter(sequence1, item => !set2.has(item))
+    return new Set(filter(sequence1, item => !set2.has(item)))
 }
 
 export function complement<T>(sequence1: Iterable<T>, sequence2: Iterable<T>): Set<T> {
     const set1 = new Set(sequence1)
 
-    return filter(sequence2, item => !set1.has(item))
+    return new Set(filter(sequence2, item => !set1.has(item)))
 }
 
 export async function toArrayAsync<T>(items: AsyncIterable<T>): Promise<T[]> {
@@ -110,12 +110,12 @@ export function updateInPlace<TKey, TValue>(
     }
 }
 
-function filter<T>(sequence: Iterable<T>, condition: (item: T) => boolean): Set<T> {
-    const result = new Set<T>()
+export function filter<T>(sequence: Iterable<T>, condition: (item: T) => boolean): T[] {
+    const result: T[] = []
 
     for (const item of sequence) {
         if (condition(item)) {
-            result.add(item)
+            result.push(item)
         }
     }
 
