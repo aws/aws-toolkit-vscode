@@ -36,6 +36,7 @@ export const PYTHON_LANGUAGE = 'python'
 export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
     { language: PYTHON_LANGUAGE }
 ]
+// TODO: Change logger.info to logger.debug or potentially reformat/remove these logger statements before release.
 
 // TODO: Fix this! Implement a more robust/flexible solution. This is just a basic minimal proof of concept.
 const getSamProjectDirPathForFile = async (filepath: string): Promise<string> => {
@@ -82,7 +83,7 @@ const makePythonDebugManifest = async (params: {
     }
     getLogger().debug(`pythonCodeLensProvider.makePythonDebugManifest params: ${JSON.stringify(params, undefined, 2)}`)
     if (manifestText.indexOf('ptvsd') < 0 ) { // TODO: Make this logic more robust
-        manifestText += '\nptvsd'
+        manifestText += '\nptvsd>4.2,<5'
         const debugManifestPath = path.join(params.outputDir, 'debug-requirements.txt')
         await writeFile(debugManifestPath, manifestText)
 
@@ -105,6 +106,7 @@ const makeLambdaDebugFile = async (params: {
     const [handlerFilePrefix, handlerFunctionName] = params.handlerName.split('.')
     const debugHandlerFileName = `${handlerFilePrefix}_debug`
     const debugHandlerFunctionName = 'lambda_handler'
+    // TODO: Sanitize handlerFilePrefix, handlerFunctionName, debugHandlerFunctionName
     try {
         logger.info('pythonCodeLensProvider.makeLambdaDebugFile params:', JSON.stringify(params, undefined, 2))
         const template = `
@@ -168,7 +170,7 @@ const makeDebugConfig = ({debugPort, samProjectCodeRoot}: {
 
 export async function initialize({
     configuration,
-    toolkitOutputChannel,
+    outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultSamCliProcessInvoker(),
     taskInvoker = new DefaultSamCliTaskInvoker()
 }: CodeLensProviderParams): Promise<void> {

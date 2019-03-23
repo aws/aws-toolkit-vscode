@@ -48,7 +48,7 @@ async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
 
 export function initialize({
     configuration,
-    toolkitOutputChannel,
+    outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultSamCliProcessInvoker(),
     taskInvoker = new DefaultSamCliTaskInvoker()
 }: CodeLensProviderParams): void {

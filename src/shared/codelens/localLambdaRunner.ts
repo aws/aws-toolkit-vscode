@@ -99,9 +99,9 @@ export class LocalLambdaRunner {
         } catch (err) {
             const error = err as Error
             this.channelLogger.error(
-                'AWS.output.sam.local.error',
-                'Error: {0}',
-                error.message
+                'AWS.error.during.sam.local',
+                'An error occurred trying to run SAM Application locally: {0}',
+                error
             )
 
             vscode.window.showErrorMessage(
@@ -322,90 +322,6 @@ export class LocalLambdaRunner {
     }
 }
 
-// tslint:disable-next-line:max-line-length
-export async function run({baseBuildDir, channelLogger, codeDir, configuration, debugConfig, documentUri, handlerName, isDebug, localInvokeParams, manifestPath, runtime, samProcessInvoker, samTaskInvoker, workspaceUri}: {
-    baseBuildDir: string,
-    channelLogger: ChannelLogger,
-    codeDir: string,
-    configuration: SettingsConfiguration,
-    debugConfig: DebugConfiguration,
-    documentUri: vscode.Uri,
-    handlerName: string,
-    isDebug?: boolean,
-    localInvokeParams: LambdaLocalInvokeParams,
-    manifestPath?: string,
-    runtime: string,
-    samProcessInvoker: SamCliProcessInvoker,
-    samTaskInvoker: SamCliTaskInvoker,
-    workspaceUri: vscode.Uri,
-}): Promise<void> {
-    try {
-        // Switch over to the output channel so the user has feedback that we're getting things ready
-        channelLogger.channel.show(true)
-
-        channelLogger.info(
-            'AWS.output.sam.local.start',
-            'Preparing to run {0} locally...',
-            localInvokeParams.handlerName
-        )
-
-        const inputTemplatePath: string = await makeInputTemplate({
-            baseBuildDir,
-            codeDir,
-            documentUri,
-            handlerName,
-            runtime,
-            workspaceUri,
-        })
-        const samTemplatePath: string = await executeSamBuild({
-            baseBuildDir,
-            channelLogger,
-            codeDir,
-            inputTemplatePath,
-            manifestPath,
-            samProcessInvoker,
-
-        })
-
-        await invokeLambdaFunction({
-            baseBuildDir,
-            channelLogger,
-            configuration,
-            debugConfig,
-            samTaskInvoker,
-            samTemplatePath,
-            documentUri,
-            handlerName,
-            isDebug,
-        })
-
-    } catch (err) {
-        // TODO: logger.error?
-        console.log(err)
-        const error = err as Error
-
-        // TODO: Define standard/strategy. Sometimes err.message is/isn't part of msg "Error: {0}". Discuss.
-        channelLogger.channel.appendLine(
-            localize(
-                'AWS.output.sam.local.error',
-                'Error: {0}',
-                error.message
-            )
-        )
-
-        vscode.window.showErrorMessage(
-            localize(
-                'AWS.error.during.sam.local',
-                'An error occurred trying to run SAM Application locally: {0}',
-                error.message
-            )
-        )
-
-        return
-    }
-
-}
-
 export const makeBuildDir = async (): Promise<string> => {
     const buildDir = await makeTemporaryToolkitFolder()
     ExtensionDisposableFiles.getInstance().addFolder(buildDir)
@@ -422,6 +338,7 @@ export async function makeInputTemplate(params: {
     workspaceUri: vscode.Uri,
 }): Promise<string> {
     const inputTemplatePath: string = path.join(params.baseBuildDir, 'input', 'input-template.yaml')
+    ExtensionDisposableFiles.getInstance().addFolder(inputTemplatePath)
 
     // Make function handler relative to baseDir
     const handlerFileRelativePath = path.relative(

@@ -22,7 +22,7 @@ export type Language = 'python' | 'javascript'
 
 export interface CodeLensProviderParams {
     configuration: SettingsConfiguration,
-    toolkitOutputChannel: vscode.OutputChannel, // TODO: Rename this lambdaOutputChannel? outputChannel? Provide both?
+    outputChannel: vscode.OutputChannel,
     processInvoker?: SamCliProcessInvoker,
     taskInvoker?: SamCliTaskInvoker
 }

@@ -15,6 +15,7 @@ import { LambdaTreeDataProvider } from './lambda/lambdaTreeDataProvider'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
+import { CodeLensProviderParams } from './shared/codelens/codeLensUtils'
 import * as pyLensProvider from './shared/codelens/pythonCodeLensProvider'
 import * as tsLensProvider from './shared/codelens/typescriptCodeLensProvider'
 import { documentationUrl, extensionSettingsPrefix, githubUrl } from './shared/constants'
@@ -168,9 +169,9 @@ async function activateCodeLensProviders(
     toolkitOutputChannel: vscode.OutputChannel
 ): Promise<vscode.Disposable[]> {
     const disposables: vscode.Disposable[] = []
-    const providerParams = {
+    const providerParams: CodeLensProviderParams = {
         configuration,
-        toolkitOutputChannel
+        outputChannel: toolkitOutputChannel
     }
 
     tsLensProvider.initialize(providerParams)
