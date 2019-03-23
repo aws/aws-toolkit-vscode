@@ -185,7 +185,7 @@ export async function initialize({
 
         let debugPort: number | undefined
 
-        let handlerName: string
+        let handlerName: string = args.handlerName
         let manifestPath: string | undefined
         if (args.isDebug) {
             debugPort = await getDebugPort()
@@ -199,8 +199,6 @@ export async function initialize({
                 samProjectCodeRoot,
                 outputDir: baseBuildDir
             })
-        } else {
-            handlerName = args.handlerName
         }
         const inputTemplatePath = await makeInputTemplate({
             baseBuildDir,

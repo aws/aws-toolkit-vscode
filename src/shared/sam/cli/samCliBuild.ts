@@ -44,7 +44,7 @@ export interface SamCliBuildInvocationArguments {
      */
     skipPullImage?: boolean
     /**
-     * -m or --manifest for SAM CLI
+     * The path to a custom dependency manifest (ex: package.json) to use instead of the default one.
      */
     manifestPath?: string
 }
