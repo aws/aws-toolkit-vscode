@@ -130,7 +130,7 @@ def ${debugHandlerFunctionName}(event, context):
             debugHandlerName: `${debugHandlerFileName}.${debugHandlerFunctionName}`
         }
     } catch (err) {
-        logger.error('makeLambdaDebugFile failed:', err)
+        logger.error('makeLambdaDebugFile failed:', err as Error)
         throw err
     }
 }
@@ -237,7 +237,7 @@ export async function initialize({
             onWillAttachDebugger: async () => {
                 // TODO: Find out why debugger can't detach without introducing delay
                 if (process.platform === 'darwin') {
-                    await new Promise(resolve => { // delay to avoid racing condition
+                    await new Promise<void>(resolve => { // delay to avoid racing condition
                         logger.info(`pythonCodeLensProvider.initialize ${process.platform} hack: sleeping......`)
                         setTimeout(resolve, 3000)
                     })
