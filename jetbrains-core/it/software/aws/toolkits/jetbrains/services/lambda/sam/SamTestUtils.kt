@@ -8,6 +8,8 @@ import com.intellij.execution.Output
 import com.intellij.execution.OutputListener
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.process.ProcessEvent
+import com.intellij.execution.process.ProcessOutputType
+import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
@@ -32,8 +34,13 @@ fun executeLambda(
         executionEnvironment.runner.execute(executionEnvironment) {
             it.processHandler?.addProcessListener(object : OutputListener() {
                 override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
-                    super.onTextAvailable(event, outputType)
-                    println("SAM CLI: ${event.text}")
+                    // Ansi codes throw off the default logic, so remap it to check the base type
+                    val processOutputType = outputType as? ProcessOutputType
+                    val baseType = processOutputType?.baseOutputType ?: outputType
+
+                    super.onTextAvailable(event, baseType)
+
+                    println("SAM CLI [${if (baseType == ProcessOutputTypes.STDOUT) "stdout" else "stderr"}]: ${event.text}")
                 }
 
                 override fun processTerminated(event: ProcessEvent) {

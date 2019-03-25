@@ -16,7 +16,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TestName
 import software.amazon.awssdk.http.apache.ApacheHttpClient
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
@@ -28,6 +27,7 @@ import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettin
 import software.aws.toolkits.jetbrains.core.credentials.runUnderRealCredentials
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 class SamDeployTest {
@@ -49,10 +49,6 @@ class SamDeployTest {
     @JvmField
     val bucketRule = S3TemporaryBucketRule(s3Client)
 
-    @Rule
-    @JvmField
-    val testName = TestName()
-
     @Before
     fun setUp() {
         SamSettings.getInstance().savedExecutablePath = System.getenv().getOrDefault("SAM_CLI_EXEC", "sam")
@@ -62,7 +58,7 @@ class SamDeployTest {
 
     @Test
     fun deployAppUsingSam() {
-        val stackName = "SamDeployTest-${testName.methodName}"
+        val stackName = "SamDeployTest-${UUID.randomUUID()}"
         val templateFile = setUpProject()
         val changeSetArn = createChangeSet(templateFile, stackName)
 
@@ -85,7 +81,7 @@ class SamDeployTest {
 
     @Test
     fun deployAppUsingSamWithParameters() {
-        val stackName = "SamDeployTest-${testName.methodName}"
+        val stackName = "SamDeployTest-${UUID.randomUUID()}"
         val templateFile = setUpProject()
         val changeSetArn = createChangeSet(templateFile, stackName, mapOf("TestParameter" to "FooBar"))
 
