@@ -74,11 +74,11 @@ export class UserCredentialsUtils {
 
     /**
      * @description Determines if credentials directory exists
-     * If it doesn't, creates credentials directory at:
-     * path.join(SystemUtilities.getHomeDirectory(), '.aws')
+     * If it doesn't, creates credentials directory
+     * at directory from this.getCredentialsFilename()
      */
     public static async generateCredentialDirectoryIfNonexistent(): Promise<void> {
-        const filepath = path.join(SystemUtilities.getHomeDirectory(), '.aws')
+        const filepath = path.dirname(this.getCredentialsFilename())
         if (!await fileExists(filepath)) {
             await mkdir(filepath)
         }
