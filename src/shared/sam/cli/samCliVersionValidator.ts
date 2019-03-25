@@ -19,7 +19,7 @@ export enum SamCliVersionValidation {
     VersionNotParseable = 'VersionNotParseable',
 }
 
-export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE = '0.7.0'
+export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE = '0.11.0'
 export const MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE = '0.16.0'
 
 export interface SamCliVersionValidatorResult {
