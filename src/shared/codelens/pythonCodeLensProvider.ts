@@ -10,7 +10,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 
 import { PythonDebugConfiguration } from '../../lambda/local/debugConfiguration'
-import { writeFile } from '../filesystem'
+import { unlink, writeFile } from '../filesystem'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
@@ -104,12 +104,15 @@ const makeLambdaDebugFile = async (params: {
     const logger = getLogger()
 
     const [handlerFilePrefix, handlerFunctionName] = params.handlerName.split('.')
-    const debugHandlerFileName = `${handlerFilePrefix}_debug`
+    const debugHandlerFileName = `${handlerFilePrefix}___vsctk___debug`
     const debugHandlerFunctionName = 'lambda_handler'
     // TODO: Sanitize handlerFilePrefix, handlerFunctionName, debugHandlerFunctionName
     try {
         logger.debug('pythonCodeLensProvider.makeLambdaDebugFile params:', JSON.stringify(params, undefined, 2))
         const template = `
+# Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 import ptvsd
 from ${handlerFilePrefix} import ${handlerFunctionName} as _handler
 
@@ -186,13 +189,15 @@ export async function initialize({
 
         let handlerName: string = args.handlerName
         let manifestPath: string | undefined
+        let lambdaDubugFilePath: string
         if (args.isDebug) {
             debugPort = await getDebugPort()
-            const {debugHandlerName} = await makeLambdaDebugFile({
+            const {debugHandlerName, outFilePath} = await makeLambdaDebugFile({
                 handlerName: args.handlerName,
                 debugPort: debugPort,
                 outputDir: samProjectCodeRoot,
             })
+            lambdaDubugFilePath = outFilePath
             handlerName = debugHandlerName
             manifestPath = await makePythonDebugManifest({
                 samProjectCodeRoot,
@@ -234,7 +239,20 @@ export async function initialize({
             documentUri: args.document.uri,
             handlerName,
             isDebug: args.isDebug,
+            onWillAttachDebugger: async () => {
+                if (process.platform === 'darwin') {
+                    await new Promise<void>(resolve => { // delay to avoid consistent early failures
+                        // tslint:disable-next-line:max-line-length
+                        logger.debug(`pythonCodeLensProvider.initialize on ${process.platform}. Allowing time for ptvsd startup......`)
+                        setTimeout(resolve, 4000)
+                    })
+                }
+            }
         })
+        if (args.isDebug) {
+            // @ts-ignore 2454
+            unlink(lambdaDubugFilePath)
+        }
     }
 
     const command = getInvokeCmdKey('python')
