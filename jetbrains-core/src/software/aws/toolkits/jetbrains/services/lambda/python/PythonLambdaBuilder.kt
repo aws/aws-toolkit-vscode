@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.lambda.python
 
 import com.intellij.execution.process.ProcessHandler
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
@@ -27,8 +28,10 @@ class PythonLambdaBuilder : LambdaBuilder() {
         samOptions: SamOptions,
         onStart: (ProcessHandler) -> Unit
     ): CompletionStage<BuiltLambda> {
-        val handlerVirtualFile = handlerElement.containingFile?.virtualFile
-            ?: throw IllegalArgumentException("Handler file must be backed by a VirtualFile")
+        val handlerVirtualFile = ReadAction.compute<VirtualFile, Throwable> {
+            handlerElement.containingFile?.virtualFile
+                ?: throw IllegalArgumentException("Handler file must be backed by a VirtualFile")
+        }
 
         val baseDir = getBaseDirectory(module.project, handlerVirtualFile).path
         val customTemplate = FileUtil.createTempFile("template", ".yaml", true)
