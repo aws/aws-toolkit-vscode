@@ -27,11 +27,14 @@ These instructions outline how you can debug a lambda handler locally using the 
     ```
 
 3. Select a port to use for debugging. In this example, we will use port `5678`.
-4. Add the following code to the beginning of your lambda handler in `app.py`:
+4. Add the following code to the beginning of `app.py`:
 
     ```python
-    print("waiting for debugger to attach...")
+    import ptvsd
+    import sys
     ptvsd.enable_attach(address=('0.0.0.0', 5678), redirect_output=True)
+    print("waiting for debugger to attach...")
+    sys.stdout.flush()
     ptvsd.wait_for_attach()
     ```
 
@@ -51,7 +54,7 @@ These instructions outline how you can debug a lambda handler locally using the 
                 "host": "localhost",
                 "pathMappings": [
                     {
-                        "localRoot": "${workspaceFolder}/hello_world",
+                        "localRoot": "${workspaceFolder}/my-sam-app/hello_world",
                         "remoteRoot": "/var/task"
                     }
                 ]
@@ -77,12 +80,14 @@ These instructions outline how you can debug a lambda handler locally using the 
     ```bash
     # Bash
     . ./.venv/Scripts/activate
+    sam build --use-container
     echo '{}' | sam local invoke HelloWorldFunction -d 5678
     ```
 
     ```powershell
     # PowerShell
     .\.venv\Scripts\Activate.ps1
+    sam build --use-container
     echo '{}' | sam local invoke HelloWorldFunction -d 5678
     ```
 
@@ -97,42 +102,53 @@ With the above steps, you need to manually invoke SAM CLI from the command line,
 
     ```jsonc
     {
-        "label": "Debug Python Lambda Function",
-        "type": "shell",
-        "command": "sam",
-        "args": [
-            "local",
-            "invoke",
-            "HelloWorldFunction", // Replace this with the resource name of your lambda function from your Serverless Application template.yaml file
-            "--template",
-            "${workspaceFolder}/template.yaml", // Replace this with the appropriate workspace-relative path to your Serverless Application template.yaml file
-            "--event",
-            "${workspaceFolder}/event.json", // Replace this with the appropriate workspace-relative path to your event.json file
-            "-d",
-            "5678"
-        ],
-        "isBackground": true,
-        "problemMatcher": {
-            "pattern": [
-                {
-                    // Use regex that never matches anything.
-                    "regexp": "^(x)(\\b)(x)$",
-                    "file": 1,
-                    "location": 2,
-                    "message": 3
+        // See https://go.microsoft.com/fwlink/?LinkId=733558
+        // for the documentation about the tasks.json format
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "Debug Python Lambda Function",
+                "type": "shell",
+                "command": "sam",
+                "args": [
+                    "local",
+                    "invoke",
+                    "HelloWorldFunction", // Replace this with the resource name of your lambda function from your Serverless Application template.yaml file
+                    "--template",
+                    "${workspaceFolder}/my-sam-app/.aws-sam/build/template.yaml", // Replace this with the appropriate workspace-relative path to your Serverless Application template.yaml file
+                    "--no-event",
+                    "-d",
+                    "5678"
+                ],
+                "options": {
+                    "env": {
+                        "VIRTUAL_ENV": "${workspaceFolder}/my-sam-app/.venv"
+                    }
+                },
+                "isBackground": true,
+                "problemMatcher": {
+                    "pattern": [
+                        {
+                            // Use regex that never matches anything.
+                            "regexp": "^(x)(\\b)(x)$",
+                            "file": 1,
+                            "location": 2,
+                            "message": 3
+                        }
+                    ],
+                    "background": {
+                        // This is how the debugger knows when it can attach
+                        "activeOnStart": true,
+                        "beginsPattern": "^Fetching lambci\\.\\w+ Docker container image",
+                        "endsPattern": "^waiting for debugger to attach\\.\\.\\.$"
+                    }
                 }
-            ],
-            "background": {
-                // This is how the debugger knows when it can attach
-                "activeOnStart": true,
-                "beginsPattern": "^Fetching lambci.* Docker container image......$",
-                "endsPattern": "^waiting for debugger to attach...$"
             }
-        }
+        ]
     }
     ```
 
-3. Open `<app root>/.vscode/launch.json`, and add the following property to the `Python: Remote Attach` configuration that you created earlier:
+3. Open `<app root>/.vscode/launch.json`, and add the following property to the `Python: Remote Attach` configuration that you created earlier, after `"request": "attach",`:
 
     ```jsonc
     "preLaunchTask": "Debug Python Lambda Function"
