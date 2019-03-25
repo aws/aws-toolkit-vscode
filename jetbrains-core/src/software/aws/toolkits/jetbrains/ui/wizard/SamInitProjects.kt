@@ -9,7 +9,7 @@ import software.aws.toolkits.resources.message
 val SAM_TEMPLATES = listOf(
     SamHelloWorld(),
     SamHelloWorldMaven(),
-//    SamHelloWorldGradle(), Broken in SAM 0.13.0 https://github.com/awslabs/aws-sam-cli/pull/1060
+//    SamHelloWorldGradle(), Broken in SAM 0.14.0 https://github.com/awslabs/aws-sam-cli/issues/1080
     SamDynamoDBCookieCutter()
 )
 
