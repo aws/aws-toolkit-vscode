@@ -16,8 +16,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.utils.rules.PyTestSdk2x
-import software.aws.toolkits.jetbrains.utils.rules.PyTestSdk3x
+import software.aws.toolkits.jetbrains.utils.rules.PyTestSdk
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 
 class RuntimeGroupTest {
@@ -28,7 +27,7 @@ class RuntimeGroupTest {
 
     @Test
     fun canDetermineRuntimeFromAnActionEventUsingModule() {
-        ModuleRootModificationUtil.setModuleSdk(projectRule.module, PyTestSdk2x())
+        ModuleRootModificationUtil.setModuleSdk(projectRule.module, PyTestSdk("2.7.0"))
         val event: AnActionEvent = mock {
             on { getData(LangDataKeys.LANGUAGE) }.thenReturn(PythonLanguage.INSTANCE)
             on { getData(LangDataKeys.MODULE) }.thenReturn(projectRule.module)
@@ -39,14 +38,14 @@ class RuntimeGroupTest {
 
     @Test
     fun canDetermineRuntimeFromAnActionEventUsingProject() {
-        val sdk = PyTestSdk3x()
+        val sdk = PyTestSdk("3.6.0")
 
         val project = projectRule.project
 
         runInEdtAndWait {
             runWriteAction {
                 ProjectJdkTable.getInstance().addJdk(sdk, projectRule.fixture.projectDisposable)
-                ProjectRootManager.getInstance(project).projectSdk = sdk
+                ProjectRootManager.getInstance(project).projectSdk = PyTestSdk("3.6.0")
             }
 
             val event: AnActionEvent = mock {

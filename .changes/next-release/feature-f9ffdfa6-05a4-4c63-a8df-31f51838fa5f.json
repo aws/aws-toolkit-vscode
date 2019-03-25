@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Enable support for running, debugging, and deploying Python 3.7 lambdas"
+}

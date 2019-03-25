@@ -17,6 +17,15 @@ phases:
       - make -j8
       - make altinstall
       - ldconfig
+      - PYTHON_VERSION=3.7.2
+      - cd /tmp
+      - wget https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz
+      - tar -xvf Python-$PYTHON_VERSION.tgz
+      - cd Python-$PYTHON_VERSION
+      - ./configure --enable-loadable-sqlite-extensions --enable-shared
+      - make -j8
+      - make altinstall
+      - ldconfig
       - cd $CODEBUILD_SRC_DIR
       - export KEY_ID=`jq -r '.Credentials.AccessKeyId' creds.json`
       - export SECRET=`jq -r '.Credentials.SecretAccessKey' creds.json`

@@ -22,9 +22,9 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.checkBreakPointHit
 import software.aws.toolkits.jetbrains.services.lambda.sam.executeLambda
-import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 
@@ -35,7 +35,8 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
         @Parameterized.Parameters(name = "{0}")
         fun data(): Collection<Array<Runtime>> = listOf(
             arrayOf(Runtime.PYTHON2_7),
-            arrayOf(Runtime.PYTHON3_6)
+            arrayOf(Runtime.PYTHON3_6),
+            arrayOf(Runtime.PYTHON3_7)
         )
     }
 
