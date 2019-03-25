@@ -64,11 +64,10 @@ export async function makeCodeLenses({ document, token, handlers, language }: {
             language
         }
         lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: false }))
-        // if (language !== 'python' || process.platform === 'win32') {
-        //     // TODO: Run this unconditionally once we figure out remaining python debugging oddities
-        //     lenses.push(makeLocalInvokeCodeLens({...baseParams, isDebug: true}))
-        // }
-        lenses.push(makeLocalInvokeCodeLens({...baseParams, isDebug: true}))
+        if (language !== 'python' || process.platform === 'win32') {
+            // TODO: Run this unconditionally once we figure out remaining python debugging oddities
+            lenses.push(makeLocalInvokeCodeLens({...baseParams, isDebug: true}))
+        }
 
         try {
             lenses.push(makeConfigureCodeLens(baseParams))

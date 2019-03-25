@@ -339,16 +339,16 @@ export async function makeInputTemplate(params: {
     // Make function handler relative to baseDir
     const handlerFileRelativePath = path.relative(
         params.codeDir,
-        path.dirname(params.documentUri.fsPath) // localInvokeParams.document.uri.fsPath
+        path.dirname(params.documentUri.fsPath)
     )
 
     const relativeFunctionHandler = path.join(
         handlerFileRelativePath,
-        params.handlerName, // localInvokeParams.handlerName
+        params.handlerName,
     ).replace('\\', '/')
 
     // tslint:disable-next-line:max-line-length
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(params.workspaceUri) // localInvokeParams.workspaceFolder.uri
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(params.workspaceUri)
     let existingTemplateResource: CloudFormation.Resource | undefined
     if (workspaceFolder) {
         const lambdas = await detectLocalLambdas([workspaceFolder])
@@ -512,6 +512,7 @@ export async function attachDebugger(params: {
     let numAttempts = 0
     let retryDelay = 1000
     let shouldRetry = false
+    const retryEnabled = false // Change this to enable retry
     do {
         channelLogger.info(
             'AWS.output.sam.local.attaching',
@@ -521,12 +522,12 @@ export async function attachDebugger(params: {
         isDebuggerAttached = await vscode.debug.startDebugging(undefined, params.debugConfig)
         numAttempts += 1
         // Wait <retryDelay> seconds and try again
-        await new Promise<void>(resolve => { // delay to avoid racing condition
+        await new Promise<void>(resolve => {
             setTimeout(resolve, retryDelay)
         })
         retryDelay *= 2
         if (!isDebuggerAttached) {
-            shouldRetry = retryDelay < 10000 ? true : false
+            shouldRetry = retryEnabled && retryDelay < 10000 ? true : false
             if (shouldRetry) {
                 channelLogger.info(
                     'AWS.output.sam.local.attach.retry',

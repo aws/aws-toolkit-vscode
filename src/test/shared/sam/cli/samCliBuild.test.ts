@@ -205,11 +205,11 @@ describe('SamCliBuildInvocation', async () => {
         })
 
         await new SamCliBuildInvocation({
-                                            buildDir: 'arg is not of interest to this test',
-                                            templatePath: placeholderTemplateFile,
-                                            invoker: processInvoker,
-                                            manifestPath: expectedArg,
-                                        }).execute()
+            buildDir: 'arg is not of interest to this test',
+            templatePath: placeholderTemplateFile,
+            invoker: processInvoker,
+            manifestPath: expectedArg,
+        }).execute()
     })
 
     it('does not pass --manifest to sam cli if manifestPath is not set', async () => {
@@ -219,10 +219,10 @@ describe('SamCliBuildInvocation', async () => {
         })
 
         await new SamCliBuildInvocation({
-                                            buildDir: 'arg is not of interest to this test',
-                                            templatePath: placeholderTemplateFile,
-                                            invoker: processInvoker
-                                        }).execute()
+            buildDir: 'arg is not of interest to this test',
+            templatePath: placeholderTemplateFile,
+            invoker: processInvoker
+        }).execute()
     })
 
     it('Passes docker network to sam cli', async () => {

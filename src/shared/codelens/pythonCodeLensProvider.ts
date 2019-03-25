@@ -46,7 +46,7 @@ const getSamProjectDirPathForFile = async (filepath: string): Promise<string> =>
 const getLambdaHandlerCandidates = async ({ uri }: { uri: vscode.Uri }): Promise<LambdaHandlerCandidate[]> => {
     const logger = getLogger()
     const filename = uri.fsPath
-    const symbols: vscode.DocumentSymbol[] = ( // SymbolInformation has less detail (no children)
+    const symbols: vscode.DocumentSymbol[] = (
         (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
             'vscode.executeDocumentSymbolProvider',
             uri
@@ -234,15 +234,6 @@ export async function initialize({
             documentUri: args.document.uri,
             handlerName,
             isDebug: args.isDebug,
-            onWillAttachDebugger: async () => {
-                if (process.platform === 'darwin') {
-                    await new Promise<void>(resolve => { // delay to avaid consisten early failures
-                        // tslint:disable-next-line:max-line-length
-                        logger.debug(`pythonCodeLensProvider.initialize on ${process.platform}. Allowing time for ptvsd startup......`)
-                        setTimeout(resolve, 4000)
-                    })
-                }
-            }
         })
     }
 
