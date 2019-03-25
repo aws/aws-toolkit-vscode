@@ -37,7 +37,6 @@ export const PYTHON_LANGUAGE = 'python'
 export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
     { language: PYTHON_LANGUAGE }
 ]
-// TODO: Change logger.info to logger.debug or potentially reformat/remove these logger statements before release.
 
 // TODO: Fix this! Implement a more robust/flexible solution. This is just a basic minimal proof of concept.
 const getSamProjectDirPathForFile = async (filepath: string): Promise<string> => {
@@ -109,7 +108,7 @@ const makeLambdaDebugFile = async (params: {
     const debugHandlerFunctionName = 'lambda_handler'
     // TODO: Sanitize handlerFilePrefix, handlerFunctionName, debugHandlerFunctionName
     try {
-        logger.info('pythonCodeLensProvider.makeLambdaDebugFile params:', JSON.stringify(params, undefined, 2))
+        logger.debug('pythonCodeLensProvider.makeLambdaDebugFile params:', JSON.stringify(params, undefined, 2))
         const template = `
 import ptvsd
 from ${handlerFilePrefix} import ${handlerFunctionName} as _handler
@@ -125,7 +124,7 @@ def ${debugHandlerFunctionName}(event, context):
 `
 
         const outFilePath = path.join(params.outputDir, `${debugHandlerFileName}.py`)
-        logger.info('pythonCodeLensProvider.makeLambdaDebugFile outFilePath:', outFilePath)
+        logger.debug('pythonCodeLensProvider.makeLambdaDebugFile outFilePath:', outFilePath)
         await writeFile(outFilePath, template)
 
         return {
@@ -208,7 +207,7 @@ export async function initialize({
             runtime,
             workspaceUri: args.workspaceFolder.uri
         })
-        logger.info(`pythonCodeLensProvider.initialize: ${
+        logger.debug(`pythonCodeLensProvider.initialize: ${
             JSON.stringify({samProjectCodeRoot, inputTemplatePath, handlerName, manifestPath}, undefined, 2)
         }`)
 
@@ -236,11 +235,11 @@ export async function initialize({
             handlerName,
             isDebug: args.isDebug,
             onWillAttachDebugger: async () => {
-                // TODO: Find out why debugger can't detach without introducing delay
                 if (process.platform === 'darwin') {
-                    await new Promise<void>(resolve => { // delay to avoid racing condition
-                        logger.info(`pythonCodeLensProvider.initialize ${process.platform} hack: sleeping......`)
-                        setTimeout(resolve, 3000)
+                    await new Promise<void>(resolve => { // delay to avaid consisten early failures
+                        // tslint:disable-next-line:max-line-length
+                        logger.debug(`pythonCodeLensProvider.initialize on ${process.platform}. Allowing time for ptvsd startup......`)
+                        setTimeout(resolve, 4000)
                     })
                 }
             }
@@ -271,7 +270,7 @@ export async function makePythonCodeLensProvider(): Promise<vscode.CodeLensProvi
             token: vscode.CancellationToken
         ): Promise<vscode.CodeLens[]> => {
             const handlers: LambdaHandlerCandidate[] = await getLambdaHandlerCandidates({ uri: document.uri })
-            logger.info(
+            logger.debug(
                 'pythonCodeLensProvider.makePythonCodeLensProvider handlers:',
                 JSON.stringify(handlers, undefined, 2)
             )

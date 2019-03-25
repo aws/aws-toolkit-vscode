@@ -51,10 +51,6 @@ const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
 // TODO: Consider replacing LocalLambdaRunner use with associated duplicative functions
 export class LocalLambdaRunner {
 
-    private static readonly TEMPLATE_RESOURCE_NAME: string = 'awsToolkitSamLocalResource'
-    private static readonly SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
-    private static readonly SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
-
     private _baseBuildFolder?: string
     private readonly _debugPort?: number
 
@@ -167,7 +163,7 @@ export class LocalLambdaRunner {
         let newTemplate = new SamTemplateGenerator()
             .withCodeUri(rootCodeFolder)
             .withFunctionHandler(relativeFunctionHandler)
-            .withResourceName(LocalLambdaRunner.TEMPLATE_RESOURCE_NAME)
+            .withResourceName(TEMPLATE_RESOURCE_NAME)
             .withRuntime(this.runtime)
 
         if (existingTemplateResource && existingTemplateResource.Properties &&
@@ -211,7 +207,7 @@ export class LocalLambdaRunner {
                 debugPort: this._debugPort!, // onDidSamBuild will only be called for debug, _debugPort will be defined
                 handlerName: this.localInvokeParams.handlerName,
                 isDebug: this.localInvokeParams.isDebug
-             })
+            })
         }
 
         return path.join(samBuildOutputFolder, 'template.yaml')
@@ -240,7 +236,7 @@ export class LocalLambdaRunner {
         )
 
         const command = new SamCliLocalInvokeInvocation({
-            templateResourceName: LocalLambdaRunner.TEMPLATE_RESOURCE_NAME,
+            templateResourceName: TEMPLATE_RESOURCE_NAME,
             templatePath: samTemplatePath,
             eventPath,
             environmentVariablePath,
@@ -258,12 +254,12 @@ export class LocalLambdaRunner {
 
             const timeoutMillis = this.configuration.readSetting<number>(
                 'samcli.debug.attach.timeout.millis',
-                LocalLambdaRunner.SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
+                SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
             )
 
             await tcpPortUsed.waitUntilUsed(
                 this.debugPort,
-                LocalLambdaRunner.SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS,
+                SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS,
                 timeoutMillis
             )
 
@@ -288,7 +284,7 @@ export class LocalLambdaRunner {
     private getEnvironmentVariables(config: HandlerConfig): SAMTemplateEnvironmentVariables {
         if (!!config.environmentVariables) {
             return {
-                [LocalLambdaRunner.TEMPLATE_RESOURCE_NAME]: config.environmentVariables
+                [TEMPLATE_RESOURCE_NAME]: config.environmentVariables
             }
         } else {
             return {}
@@ -424,7 +420,7 @@ export const invokeLambdaFunction = async (params: {
         'AWS.output.starting.sam.app.locally',
         'Starting the SAM Application locally (see Terminal for output)'
     )
-    params.channelLogger.logger.info(`localLambdaRunner.invokeLambdaFunction: ${JSON.stringify(
+    params.channelLogger.logger.debug(`localLambdaRunner.invokeLambdaFunction: ${JSON.stringify(
         {
             baseBuildDir: params.baseBuildDir,
             configuration: params.configuration,
@@ -463,93 +459,98 @@ export const invokeLambdaFunction = async (params: {
     await command.execute()
 
     if (params.isDebug) {
-        params.channelLogger.info(
-            'AWS.output.sam.local.waiting',
-            'Waiting for SAM Application to start before attaching debugger...'
-        )
-
-        const timeoutMillis = params.configuration.readSetting<number>(
-            'samcli.debug.attach.timeout.millis',
-            SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
-        )
-
-        await tcpPortUsed.waitUntilUsed(
-            params.debugConfig.port,
-            SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS,
-            timeoutMillis
-        )
-
+        if (params.onWillAttachDebugger) {
+            await params.onWillAttachDebugger()
+        }
         await attachDebugger({
             channeLogger: params.channelLogger,
-            debugConfig: params.debugConfig,
-            outputChannel: params.channelLogger.channel,
-            /* tslint:disable:no-unbound-method */ // It's a fat arrow. No this. No binding.
-            onWillAttachDebugger: params.onWillAttachDebugger,
-})
-}
+            debugConfig: params.debugConfig
+        })
+    }
 }
 
 const getConfig = async (params: {
-handlerName: string
-documentUri: vscode.Uri
+    handlerName: string
+    documentUri: vscode.Uri
 }): Promise<HandlerConfig> => {
-const workspaceFolder = vscode.workspace.getWorkspaceFolder(params.documentUri)
-if (!workspaceFolder) {
-return buildHandlerConfig()
-}
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(params.documentUri)
+    if (!workspaceFolder) {
+        return buildHandlerConfig()
+    }
 
-const config: HandlerConfig = await getLocalLambdaConfiguration(
-workspaceFolder,
-params.handlerName
-)
+    const config: HandlerConfig = await getLocalLambdaConfiguration(
+        workspaceFolder,
+        params.handlerName
+    )
 
-return config
+    return config
 }
 
 const getEnvironmentVariables = (config: HandlerConfig): SAMTemplateEnvironmentVariables => {
-if (!!config.environmentVariables) {
-return {
-[TEMPLATE_RESOURCE_NAME]: config.environmentVariables
-}
-} else {
-return {}
-}
+    if (!!config.environmentVariables) {
+        return {
+            [TEMPLATE_RESOURCE_NAME]: config.environmentVariables
+        }
+    } else {
+        return {}
+    }
 }
 
 export async function attachDebugger(params: {
-channeLogger: ChannelLogger,
-debugConfig: DebugConfiguration,
-outputChannel: vscode.OutputChannel,
-onWillAttachDebugger?(): Promise<void>
-}) {
-const channelLogger = params.channeLogger || getChannelLogger(params.outputChannel)
-const logger = params.channeLogger.logger
-if (params.onWillAttachDebugger) {
-// Enable caller to do last minute preparation before attaching debugger
-await params.onWillAttachDebugger()
-}
-channelLogger.info(
-'AWS.output.sam.local.attaching',
-'Attaching to SAM Application...'
-)
-logger.info(`localLambdaRunner.attachDebugger: startDebugging with debugConfig: ${JSON.stringify(
-params.debugConfig,
-undefined,
-2
-)}`)
-const attachSuccess: boolean = await vscode.debug.startDebugging(undefined, params.debugConfig)
+    channeLogger: ChannelLogger,
+    debugConfig: DebugConfiguration
+}): Promise<{success: boolean}> {
+    const channelLogger = params.channeLogger
+    const logger = params.channeLogger.logger
+    logger.debug(`localLambdaRunner.attachDebugger: startDebugging with debugConfig: ${JSON.stringify(
+        params.debugConfig,
+        undefined,
+        2
+    )}`)
 
-if (attachSuccess) {
-channelLogger.info(
-'AWS.output.sam.local.attach.success',
-'Debugger attached'
-)
-} else {
-// sam local either failed, or took too long to start up
-channelLogger.error(
-'AWS.output.sam.local.attach.failure',
-// tslint:disable-next-line:max-line-length
-'Unable to attach Debugger. Check the Terminal tab for output. If it took longer than expected to successfully start, you may still attach to it.'
-)
-}
+    let isDebuggerAttached
+    let numAttempts = 0
+    let retryDelay = 1000
+    let shouldRetry = false
+    do {
+        channelLogger.info(
+            'AWS.output.sam.local.attaching',
+            'Attempt number {0} to attach debugger to SAM Application...',
+            String(numAttempts + 1)
+        )
+        isDebuggerAttached = await vscode.debug.startDebugging(undefined, params.debugConfig)
+        numAttempts += 1
+        // Wait <retryDelay> seconds and try again
+        await new Promise<void>(resolve => { // delay to avoid racing condition
+            setTimeout(resolve, retryDelay)
+        })
+        retryDelay *= 2
+        if (!isDebuggerAttached) {
+            shouldRetry = retryDelay < 10000 ? true : false
+            if (shouldRetry) {
+                channelLogger.info(
+                    'AWS.output.sam.local.attach.retry',
+                    'Will try to attach debugger again in {0} seconds...',
+                    String(retryDelay / 1000)
+                )
+            }
+        }
+    } while (!isDebuggerAttached && shouldRetry)
+
+    if (isDebuggerAttached) {
+        channelLogger.info(
+            'AWS.output.sam.local.attach.success',
+            'Debugger attached'
+        )
+    } else {
+        channelLogger.error(
+            'AWS.output.sam.local.attach.failure',
+            // tslint:disable-next-line:max-line-length
+            'Unable to attach Debugger. Check the Terminal tab for output. If it took longer than expected to successfully start, you may still attach to it.'
+        )
+    }
+
+    return {
+        success: isDebuggerAttached
+    }
 }
