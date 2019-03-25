@@ -15,14 +15,14 @@ The AWS Toolkit for Visual Studio Code is an extension that enables you to inter
 
 You can use the AWS Toolkit for Visual Studio Code to:
 
-![AWS Explorer](./aws-explorer.png)
-
 * [Manage supported AWS resources in an AWS account](#managing-aws-resources). For example, you can:
   
   * List available AWS CloudFormation stacks that contain AWS serverless applications.
   * List available AWS Lambda functions.
   * Invoke available Lambda functions.
-  
+
+  ![AWS Explorer](./aws-explorer.png)
+
 * [Develop serverless applications locally, and then deploy them to an AWS account](#developing-serverless-applications).
 
 [Return to Top](#top)
