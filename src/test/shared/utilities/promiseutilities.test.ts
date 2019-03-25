@@ -6,7 +6,7 @@
 'use strict'
 
 import * as assert from 'assert'
-import { PromiseSharer } from '../../shared/utilities/promiseUtilities'
+import { PromiseSharer } from '../../../shared/utilities/promiseUtilities'
 
 // TODO : Sleeps are unstable and slow down test execution. We should manually resolve the promises, and phase sleep out
 async function sleep(ms: number): Promise<void> {
