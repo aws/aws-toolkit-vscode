@@ -80,7 +80,7 @@ export class UserCredentialsUtils {
     public static async generateCredentialDirectoryIfNonexistent(): Promise<void> {
         const filepath = path.dirname(this.getCredentialsFilename())
         if (!await fileExists(filepath)) {
-            await mkdir(filepath)
+            await mkdir(filepath, { recursive: true })
         }
     }
 
