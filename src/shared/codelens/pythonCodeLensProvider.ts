@@ -180,10 +180,20 @@ export async function initialize({
     telemetryService: telemetryService,
 }: CodeLensProviderParams): Promise<void> {
     const logger = getLogger()
+    const channelLogger = getChannelLogger(toolkitOutputChannel)
 
     const runtime = 'python3.6' // TODO: Remove hard coded value
 
     const invokeLambda = async (args: LambdaLocalInvokeParams) => {
+        // Switch over to the output channel so the user has feedback that we're getting things ready
+        channelLogger.channel.show(true)
+
+        channelLogger.info(
+            'AWS.output.sam.local.start',
+            'Preparing to run {0} locally...',
+            args.handlerName
+        )
+
         const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
         const baseBuildDir = await makeBuildDir()
 
@@ -218,7 +228,6 @@ export async function initialize({
             JSON.stringify({ samProjectCodeRoot, inputTemplatePath, handlerName, manifestPath }, undefined, 2)
             }`)
 
-        const channelLogger = getChannelLogger(toolkitOutputChannel)
         const codeDir = samProjectCodeRoot
         const samTemplatePath: string = await executeSamBuild({
             baseBuildDir,
