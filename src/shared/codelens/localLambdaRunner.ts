@@ -459,6 +459,21 @@ export const invokeLambdaFunction = async (params: {
     await command.execute()
 
     if (params.isDebug) {
+        params.channelLogger.info(
+            'AWS.output.sam.local.waiting',
+            'Waiting for SAM Application to start before attaching debugger...'
+        )
+
+        const timeoutMillis = params.configuration.readSetting<number>(
+            'samcli.debug.attach.timeout.millis',
+            SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
+        )
+
+        await tcpPortUsed.waitUntilUsed(
+            params.debugConfig.port,
+            SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS,
+            timeoutMillis
+        )
         if (params.onWillAttachDebugger) {
             await params.onWillAttachDebugger()
         }
@@ -510,9 +525,8 @@ export async function attachDebugger(params: {
 
     let isDebuggerAttached
     let numAttempts = 0
-    let retryDelay = 1000
+    const retryDelay = 3000
     let shouldRetry = false
-    const retryEnabled = false // Change this to enable retry
     do {
         channelLogger.info(
             'AWS.output.sam.local.attaching',
@@ -525,9 +539,8 @@ export async function attachDebugger(params: {
         await new Promise<void>(resolve => {
             setTimeout(resolve, retryDelay)
         })
-        retryDelay *= 2
         if (!isDebuggerAttached) {
-            shouldRetry = retryEnabled && retryDelay < 10000 ? true : false
+            shouldRetry = numAttempts < 5
             if (shouldRetry) {
                 channelLogger.info(
                     'AWS.output.sam.local.attach.retry',
