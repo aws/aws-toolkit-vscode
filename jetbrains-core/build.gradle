@@ -4,11 +4,16 @@
 apply plugin: 'org.jetbrains.intellij'
 
 intellij {
-    version "IC-" + ideaVersion
-    pluginName 'aws-intellij-toolkit'
-    updateSinceUntilBuild false
-    downloadSources = System.getenv("CI") == null
-    plugins = ["PythonCore:2018.3.183.4284.148", "yaml"]
+    def rootIntelliJTask = rootProject.intellij
+    version ideVersion("IC")
+    pluginName rootIntelliJTask.pluginName
+    updateSinceUntilBuild rootIntelliJTask.updateSinceUntilBuild
+    downloadSources = rootIntelliJTask.downloadSources
+    plugins = idePlugins("IC")
+}
+
+runIde {
+    systemProperty("aws.toolkits.enableTelemetry", false)
 }
 
 configurations {
@@ -53,6 +58,12 @@ dependencies {
         exclude group: 'org.slf4j'
     }
     compile("software.amazon.awssdk:cloudformation:$awsSdkVersion") {
+        exclude group: 'org.slf4j'
+    }
+    compile("software.amazon.awssdk:apache-client:$awsSdkVersion") {
+        exclude group: 'org.slf4j'
+    }
+    compile("software.amazon.awssdk:url-connection-client:$awsSdkVersion") {
         exclude group: 'org.slf4j'
     }
     testCompile project(path: ":core", configuration: 'testArtifacts')

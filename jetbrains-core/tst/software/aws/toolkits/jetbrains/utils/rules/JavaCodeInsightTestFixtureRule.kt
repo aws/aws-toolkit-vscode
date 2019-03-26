@@ -11,6 +11,7 @@ import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiFileFactory
@@ -81,17 +82,28 @@ fun JavaCodeInsightTestFixture.addModule(moduleName: String): Module {
     val module = PsiTestUtil.addModule(project, JavaModuleType.getModuleType(), moduleName, root)
     PsiTestUtil.removeAllRoots(module, IdeaTestUtil.getMockJdk18())
     runInEdtAndWait {
-        WriteAction.run<RuntimeException> {
-            PsiTestUtil.addSourceRoot(module, root.createChildDirectory(null, "src"), false)
+        WriteAction.run<Exception> {
+            PsiTestUtil.addContentRoot(module, root)
+            PsiTestUtil.addSourceRoot(module, createChildDirectories(root, "src/main/java"), false)
             PsiTestUtil.addSourceRoot(
                 module,
-                root.createChildDirectory(null, "src-resources"),
+                createChildDirectories(root, "src/main/resources"),
                 JavaResourceRootType.RESOURCE
             )
-            PsiTestUtil.addSourceRoot(module, root.createChildDirectory(null, "tst"), true)
+            PsiTestUtil.addSourceRoot(module, createChildDirectories(root, "tst/main/java"), true)
         }
     }
     return module
+}
+
+private fun createChildDirectories(root: VirtualFile, path: String): VirtualFile {
+    var parent = root
+    path.split("/").forEach {
+        val childDirectory = parent.findChild(it) ?: parent.createChildDirectory(null, it)
+        parent = childDirectory
+    }
+
+    return parent
 }
 
 fun JavaCodeInsightTestFixture.openClass(@Language("JAVA") javaClass: String): PsiClass {

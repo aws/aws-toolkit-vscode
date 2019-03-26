@@ -11,6 +11,7 @@ class CustomRuleSetProvider : RuleSetProvider {
         "custom-ktlint-rules",
         CopyrightHeaderRule(),
         BannedPatternRule(BannedPatternRule.DEFAULT_PATTERNS),
-        ExpressionBodyRule()
+        ExpressionBodyRule(),
+        LazyLogRule()
     )
 }

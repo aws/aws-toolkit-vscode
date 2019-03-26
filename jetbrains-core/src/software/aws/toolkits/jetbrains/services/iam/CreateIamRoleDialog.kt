@@ -6,12 +6,13 @@ package software.aws.toolkits.jetbrains.services.iam
 import com.intellij.json.JsonLanguage
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
-import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ValidationInfo
 import org.intellij.lang.annotations.Language
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.iam.IamClient
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.components.telemetry.LoggingDialogWrapper
 import software.aws.toolkits.jetbrains.utils.ui.formatAndSet
 import software.aws.toolkits.resources.message
@@ -65,6 +66,7 @@ class CreateIamRoleDialog(
                         close(OK_EXIT_CODE)
                     }, ModalityState.stateForComponent(view.component))
                 } catch (e: Exception) {
+                    LOG.warn(e) { "Failed to create IAM role '${roleName()}'" }
                     setErrorText(e.message)
                     setOKButtonText(message("iam.create.role.create"))
                     isOKActionEnabled = true
@@ -97,7 +99,7 @@ class CreateIamRoleDialog(
                     it.roleName(role.roleName())
                 }
             } catch (deleteException: Exception) {
-                LOGGER.warn("Failed to delete IAM role $roleName", deleteException)
+                LOG.warn(deleteException) { "Failed to delete IAM role $roleName" }
             }
             throw exception
         }
@@ -114,6 +116,6 @@ class CreateIamRoleDialog(
     fun getViewForTesting(): CreateRolePanel = view
 
     private companion object {
-        val LOGGER = Logger.getInstance(CreateIamRoleDialog::class.java)
+        val LOG = getLogger<CreateIamRoleDialog>()
     }
 }

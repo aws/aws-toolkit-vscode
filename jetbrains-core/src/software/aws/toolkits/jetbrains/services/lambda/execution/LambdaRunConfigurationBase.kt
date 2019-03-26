@@ -5,19 +5,21 @@ package software.aws.toolkits.jetbrains.services.lambda.execution
 
 import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.execution.configurations.LocatableConfigurationBase
-import com.intellij.execution.configurations.RunConfiguration
+import com.intellij.execution.configurations.LocatableRunConfigurationOptions
 import com.intellij.execution.configurations.RunConfigurationWithSuppressedDefaultDebugAction
 import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.execution.runners.RunConfigurationWithSuppressedDefaultRunAction
+import com.intellij.openapi.components.BaseState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
-import com.intellij.util.xmlb.XmlSerializer
-import com.intellij.util.xmlb.XmlSerializerUtil
-import org.jdom.Element
+import com.intellij.util.xmlb.annotations.Property
+import software.aws.toolkits.core.credentials.CredentialProviderNotFound
+import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
+import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.resources.message
 import java.nio.charset.StandardCharsets
 
-abstract class LambdaRunConfigurationBase<T : LambdaRunConfigurationBase.MutableLambdaRunSettings>(
+abstract class LambdaRunConfigurationBase<T : BaseLambdaOptions>(
     project: Project,
     factory: ConfigurationFactory,
     id: String
@@ -25,46 +27,89 @@ abstract class LambdaRunConfigurationBase<T : LambdaRunConfigurationBase.Mutable
     RunConfigurationWithSuppressedDefaultRunAction,
     RunConfigurationWithSuppressedDefaultDebugAction {
 
-    internal abstract var settings: T
+    override fun getOptions() = super.getOptions() as BaseLambdaOptions
 
-    final override fun writeExternal(element: Element) {
-        super.writeExternal(element)
-        XmlSerializer.serializeInto(settings, element)
+    fun useInputFile(inputFile: String?) {
+        val inputOptions = options.inputOptions
+        inputOptions.inputIsFile = true
+        inputOptions.input = inputFile
     }
 
-    final override fun readExternal(element: Element) {
-        super.readExternal(element)
-        XmlSerializer.deserializeInto(settings, element)
+    fun useInputText(input: String?) {
+        val inputOptions = options.inputOptions
+        inputOptions.inputIsFile = false
+        inputOptions.input = input
     }
 
-    @Suppress("UNCHECKED_CAST")
-    final override fun clone(): RunConfiguration {
-        val copy = super.clone() as LambdaRunConfigurationBase<T>
-        copy.settings = XmlSerializerUtil.createCopy(settings)
-        return copy
-    }
+    fun isUsingInputFile() = options.inputOptions.inputIsFile
 
-    abstract class MutableLambdaRunSettings(
-        var input: String?,
-        var inputIsFile: Boolean
-    ) {
-        protected fun resolveInputText(input: String?, inputIsFile: Boolean): String = if (inputIsFile && input?.isNotEmpty() == true) {
+    fun inputSource() = options.inputOptions.input
+
+    protected fun resolveInput() = inputSource()?.let {
+        if (isUsingInputFile() && inputSource()?.isNotEmpty() == true) {
             try {
-                LocalFileSystem.getInstance()
-                    .refreshAndFindFileByPath(input)
+                LocalFileSystem.getInstance().refreshAndFindFileByPath(it)
                     ?.contentsToByteArray(false)
                     ?.toString(StandardCharsets.UTF_8)
-                        ?: throw RuntimeConfigurationError(
-                            message(
-                                "lambda.run_configuration.input_file_error",
-                                input
-                            )
+                    ?: throw RuntimeConfigurationError(
+                        message(
+                            "lambda.run_configuration.input_file_error",
+                            it
                         )
+                    )
             } catch (e: Exception) {
-                throw RuntimeConfigurationError(message("lambda.run_configuration.input_file_error", input))
+                throw RuntimeConfigurationError(message("lambda.run_configuration.input_file_error", it))
             }
         } else {
-            input ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_input_specified"))
+            it
         }
+    } ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_input_specified"))
+
+    fun credentialProviderId() = options.accountOptions.credentialProviderId
+
+    fun credentialProviderId(credentialsProviderId: String?) {
+        options.accountOptions.credentialProviderId = credentialsProviderId
     }
+
+    protected fun resolveCredentials() = credentialProviderId()?.let {
+        try {
+            CredentialManager.getInstance().getCredentialProvider(it)
+        } catch (e: CredentialProviderNotFound) {
+            throw RuntimeConfigurationError(message("lambda.run_configuration.credential_not_found_error", it))
+        } catch (e: Exception) {
+            throw RuntimeConfigurationError(
+                message(
+                    "lambda.run_configuration.credential_error",
+                    e.message ?: "Unknown"
+                )
+            )
+        }
+    } ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_credentials_specified"))
+
+    fun regionId() = options.accountOptions.regionId
+
+    fun regionId(regionId: String?) {
+        options.accountOptions.regionId = regionId
+    }
+
+    protected fun resolveRegion() = regionId()?.let {
+        AwsRegionProvider.getInstance().regions()[it]
+    } ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
+}
+
+open class BaseLambdaOptions : LocatableRunConfigurationOptions() {
+    @get:Property(flat = true) // flat for backwards compat
+    var accountOptions by property(AccountOptions())
+    @get:Property(flat = true) // flat for backwards compat
+    var inputOptions by property(InputOptions())
+}
+
+class AccountOptions : BaseState() {
+    var credentialProviderId by property("")
+    var regionId by property("")
+}
+
+class InputOptions : BaseState() {
+    var inputIsFile by property(false)
+    var input by string()
 }

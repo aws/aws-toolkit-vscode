@@ -17,7 +17,8 @@ class SystemPropertyToolkitCredentialsProvider() : ToolkitCredentialsProvider() 
     override fun resolveCredentials(): AwsCredentials = awsCredentialsProvider.resolveCredentials()
 }
 
-class SystemPropertyToolkitCredentialsProviderFactory() : ToolkitCredentialsProviderFactory(TYPE) {
+class SystemPropertyToolkitCredentialsProviderFactory(credentialsProviderManager: ToolkitCredentialsProviderManager) :
+    ToolkitCredentialsProviderFactory<SystemPropertyToolkitCredentialsProvider>(TYPE, credentialsProviderManager) {
     init {
         val credentialsProvider = SystemPropertyToolkitCredentialsProvider()
         try {

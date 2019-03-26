@@ -4,8 +4,6 @@
 package software.aws.toolkits.jetbrains.services.lambda
 
 import com.intellij.openapi.command.WriteCommandAction
-import com.intellij.openapi.extensions.ExtensionPointName
-import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -21,7 +19,6 @@ class LambdaHandlerIndexTest {
 
     @Before
     fun setUp() {
-
         projectRule.fixture.addClass(
             """
             package com.amazonaws.services.lambda.runtime;
@@ -258,19 +255,5 @@ class LambdaHandlerIndexTest {
         runInEdtAndWait {
             assertThat(LambdaHandlerIndex.listHandlers(projectRule.project)).isEmpty()
         }
-    }
-
-    @Test
-    fun testVersionChangesIfExtensionsChange() {
-        val initialVersion = LambdaHandlerIndex().version
-
-        val extensionPointName =
-            ExtensionPointName.create<RuntimeGroupExtensionPoint<LambdaHandlerResolver>>("aws.toolkit.lambda.handlerResolver")
-
-        PlatformTestUtil.unregisterAllExtensions(extensionPointName, projectRule.fixture.testRootDisposable)
-
-        val newVersion = LambdaHandlerIndex().version
-
-        assertThat(initialVersion).isNotEqualTo(newVersion)
     }
 }

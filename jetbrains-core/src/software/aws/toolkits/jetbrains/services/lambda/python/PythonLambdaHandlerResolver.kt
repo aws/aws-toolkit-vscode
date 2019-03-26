@@ -103,7 +103,7 @@ class PythonLambdaHandlerResolver : LambdaHandlerResolver {
             return null
         }
         val function = element.parent as? PyFunction ?: return null
-        if (function.parent is PyFile && function.parameterList.parameters?.size == 2) {
+        if (function.parent is PyFile && function.parameterList.parameters.size == 2) {
             return function.qualifiedName
         }
         return null

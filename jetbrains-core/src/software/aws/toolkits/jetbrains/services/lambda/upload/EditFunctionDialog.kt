@@ -27,8 +27,8 @@ import software.aws.toolkits.jetbrains.services.iam.CreateIamRoleDialog
 import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.services.iam.listRolesFilter
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
-import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode.NEW
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode.UPDATE_CODE
@@ -250,16 +250,16 @@ class EditFunctionDialog(
 
             val s3Bucket = view.sourceBucket.selectedItem as String
 
-            val packager = psiFile.language.runtimeGroup?.let { LambdaPackager.getInstance(it) } ?: return
-            val lambdaCreator = LambdaCreatorFactory.create(AwsClientManager.getInstance(project), packager)
+            val lambdaBuilder = psiFile.language.runtimeGroup?.let { LambdaBuilder.getInstance(it) } ?: return
+            val lambdaCreator = LambdaCreatorFactory.create(AwsClientManager.getInstance(project), lambdaBuilder)
 
             FileDocumentManager.getInstance().saveAllDocuments()
 
             val (future, message) = if (mode == UPDATE_CODE) {
-                lambdaCreator.updateLambda(module, psiFile, functionDetails, s3Bucket, configurationChanged()) to
+                lambdaCreator.updateLambda(module, element, functionDetails, s3Bucket, configurationChanged()) to
                     message("lambda.function.code_updated.notification", functionDetails.name)
             } else {
-                lambdaCreator.createLambda(module, psiFile, functionDetails, s3Bucket) to
+                lambdaCreator.createLambda(module, element, functionDetails, s3Bucket) to
                     message("lambda.function.created.notification", functionDetails.name)
             }
 
@@ -381,7 +381,7 @@ class UploadToLambdaValidator {
         val runtime = view.runtime.selected()
                 ?: return ValidationInfo(message("lambda.upload_validation.runtime"), view.runtime)
 
-        runtime.runtimeGroup?.let { LambdaPackager.getInstance(it) } ?: return ValidationInfo(
+        runtime.runtimeGroup?.let { LambdaBuilder.getInstance(it) } ?: return ValidationInfo(
             message("lambda.upload_validation.unsupported_runtime", runtime),
             view.runtime
         )

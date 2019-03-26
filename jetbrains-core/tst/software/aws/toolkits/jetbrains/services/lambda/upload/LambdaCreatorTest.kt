@@ -26,10 +26,9 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.iam.IamRole
-import software.aws.toolkits.jetbrains.services.lambda.LambdaPackage
-import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
-import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.utils.delegateMock
+import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import java.nio.file.Path
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -81,8 +80,8 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
 
         val tempFile = FileUtil.createTempFile("lambda", ".zip")
 
-        val packager = mock<LambdaPackager> {
-            on { createPackage(any(), any()) } doReturn CompletableFuture.completedFuture(LambdaPackage(tempFile.toPath()))
+        val lambdaBuilder = mock<LambdaBuilder> {
+            on { packageLambda(any(), any(), any(), any(), any(), any()) } doReturn CompletableFuture.completedFuture(tempFile.toPath())
         }
 
         val psiFile = projectRule.fixture.addClass(
@@ -97,7 +96,7 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
             """
         ).containingFile
 
-        val lambdaCreator = LambdaCreatorFactory.create(mockClientManager.manager(), packager)
+        val lambdaCreator = LambdaCreatorFactory.create(mockClientManager.manager(), lambdaBuilder)
         lambdaCreator.createLambda(projectRule.module, psiFile, functionDetails, s3Bucket).toCompletableFuture()
             .get(5, TimeUnit.SECONDS)
 
@@ -158,8 +157,8 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
 
         val tempFile = FileUtil.createTempFile("lambda", ".zip")
 
-        val packager = mock<LambdaPackager> {
-            on { createPackage(any(), any()) } doReturn CompletableFuture.completedFuture(LambdaPackage(tempFile.toPath()))
+        val lambdaBuilder = mock<LambdaBuilder> {
+            on { packageLambda(any(), any(), any(), any(), any(), any()) } doReturn CompletableFuture.completedFuture(tempFile.toPath())
         }
 
         val psiFile = projectRule.fixture.addClass(
@@ -174,7 +173,7 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
             """
         ).containingFile
 
-        val lambdaCreator = LambdaCreatorFactory.create(mockClientManager.manager(), packager)
+        val lambdaCreator = LambdaCreatorFactory.create(mockClientManager.manager(), lambdaBuilder)
         lambdaCreator.updateLambda(projectRule.module, psiFile, functionDetails, s3Bucket).toCompletableFuture()
             .get(5, TimeUnit.SECONDS)
 

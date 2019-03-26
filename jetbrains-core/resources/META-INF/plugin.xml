@@ -12,12 +12,14 @@
 
 <p><h2><strong>Features</strong></h2></p>
 
+<p><strong>SAM features are currently limited to Java and Python only</strong></p>
+
 <ul>
     <li><strong>New Project Wizard</strong> - Get started quickly by using one of the quickstart serverless application templates</li>
     <li><strong>Run/Debug Local Lambda Functions</strong> - Locally test and step-through debug functions in a Lambda-like execution environment provided by the <a href="https://github.com/awslabs/aws-sam-cli">AWS SAM CLI</a></li>
     <li><strong>Resource Explorer</strong> - View your AWS Lambda remote functions & related CloudFormation stacks</li>
     <li><strong>Invoke Remote Lambda Functions</strong> - Invoke remote functions using a sharable run-configuration</li>
-    <li><strong>Deploy SAM-based Applications</strong> - (<strong>Python only</strong>) Package, deploy & track SAM-based applications</li>
+    <li><strong>Deploy SAM-based Applications</strong> - Package, deploy & track SAM-based applications</li>
 </ul>
 </p>
 
@@ -25,7 +27,7 @@ If you come across bugs with the toolkit or have feature requests, please raise 
     ]]></description>
 
     <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://aws.amazon.com/">Amazon Web Services</vendor>
-    <idea-version since-build="183" until-build="183.*"/>
+    <idea-version since-build="183" until-build="191.*"/>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
@@ -56,13 +58,13 @@ If you come across bugs with the toolkit or have feature requests, please raise 
             <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
         </extensionPoint>
 
-        <extensionPoint qualifiedName="aws.toolkit.lambda.packager" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
-            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.LambdaPackager"/>
+        <extensionPoint qualifiedName="aws.toolkit.lambda.builder" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
+            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder"/>
             <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
         </extensionPoint>
 
         <extensionPoint qualifiedName="aws.toolkit.lambda.sam.debugSupport" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
-            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport"/>
+            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.execution.local.SamDebugSupport"/>
             <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
         </extensionPoint>
 
@@ -116,7 +118,7 @@ If you come across bugs with the toolkit or have feature requests, please raise 
                              key="aws.settings.title"
                              instance="software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable"/>
 
-        <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamInvokeRunner"/>
+        <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.local.SamInvokeRunner"/>
         <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaRunner"/>
         <fileBasedIndex implementation="software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerIndex"/>
         <fileBasedIndex implementation="software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplateIndex"/>
@@ -124,12 +126,22 @@ If you come across bugs with the toolkit or have feature requests, please raise 
         <codeInsight.lineMarkerProvider language="" implementationClass="software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker"/>
         <runLineMarkerContributor language="yaml" implementationClass="software.aws.toolkits.jetbrains.services.lambda.execution.template.YamlLambdaRunLineMarkerContributor"/>
         <configurationType implementation="software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration"/>
-        <runConfigurationProducer implementation="software.aws.toolkits.jetbrains.services.lambda.execution.sam.LambdaSamRunConfigurationProducer"/>
+        <runConfigurationProducer implementation="software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfigurationProducer"/>
         <runConfigurationProducer implementation="software.aws.toolkits.jetbrains.services.lambda.execution.remote.LambdaRemoteRunConfigurationProducer"/>
+
+        <registryKey key="aws.toolkit.useUrlConnection"
+                     description="Uses HttpURLConnection instead of Apache allowing for Proxy support"
+                     restartRequired="true"
+                     defaultValue="false"/>
+
+        <!-- Project Wizard components -->
+        <moduleType id="AWS" implementationClass="software.aws.toolkits.jetbrains.ui.wizard.AwsModuleType" />
+        <directoryProjectGenerator implementation="software.aws.toolkits.jetbrains.ui.wizard.SamProjectGenerator" />
+        <projectTemplatesFactory implementation="software.aws.toolkits.jetbrains.ui.wizard.SamProjectGeneratorIntelliJAdapter" />
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit">
-        <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.ProfileCredentialProviderFactory"/>
+        <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialProviderFactory"/>
     </extensions>
 
     <actions>

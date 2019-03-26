@@ -31,6 +31,11 @@ class MockProjectAccountSettingsManager : ProjectAccountSettingsManager {
 
     override fun recentlyUsedCredentials(): List<ToolkitCredentialsProvider> = mutableListOf()
 
+    fun reset() {
+        internalProvider = DUMMY_PROVIDER
+        internalRecentlyUsedRegions.clear()
+    }
+
     companion object {
         private val DUMMY_PROVIDER = createDummyProvider(
             "MockCredentials",

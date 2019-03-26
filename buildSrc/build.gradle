@@ -7,12 +7,7 @@ buildscript {
     file("${project.projectDir.parent}/gradle.properties").withInputStream {
         props.load(it)
     }
-
-    ext.kotlinVersion = props.get("kotlinVersion")
-    ext.jacksonVersion = props.get("jacksonVersion")
-    ext.assertjVersion = props.get("assertjVersion")
-    ext.junitVersion = props.get("junitVersion")
-    ext.awsSdkVersion = props.get("awsSdkVersion")
+    props.each { key, value -> extensions."$key" = value }
 
     repositories {
         mavenCentral()
@@ -49,4 +44,11 @@ dependencies {
     testCompile "org.assertj:assertj-core:$assertjVersion"
     testCompile "junit:junit:$junitVersion"
     testCompile "com.nhaarman.mockitokotlin2:mockito-kotlin:2.0.0"
+}
+
+test {
+    testLogging {
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
 }

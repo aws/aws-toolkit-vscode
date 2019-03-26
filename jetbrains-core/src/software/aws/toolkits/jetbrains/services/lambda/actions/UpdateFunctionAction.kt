@@ -7,7 +7,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import software.aws.toolkits.jetbrains.core.explorer.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
-import software.aws.toolkits.jetbrains.services.lambda.LambdaPackager
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionDialog
@@ -34,7 +34,7 @@ class UpdateFunctionConfigurationAction : UpdateFunctionAction(EditFunctionMode.
 
 class UpdateFunctionCodeAction : UpdateFunctionAction(EditFunctionMode.UPDATE_CODE, message("lambda.function.updateCode.action")) {
     override fun update(selected: LambdaFunctionNode, e: AnActionEvent) {
-        if (selected.function.runtime.runtimeGroup?.let { LambdaPackager.getInstance(it) } != null) {
+        if (selected.function.runtime.runtimeGroup?.let { LambdaBuilder.getInstance(it) } != null) {
             return
         }
         e.presentation.isVisible = false

@@ -1,0 +1,197 @@
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+package software.aws.toolkits.jetbrains.services.lambda
+
+import com.intellij.execution.configurations.RuntimeConfigurationError
+import com.intellij.execution.process.ProcessAdapter
+import com.intellij.execution.process.ProcessEvent
+import com.intellij.execution.process.ProcessHandler
+import com.intellij.execution.process.ProcessHandlerFactory
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.extensions.ExtensionPointName
+import com.intellij.openapi.module.Module
+import com.intellij.openapi.util.Key
+import com.intellij.openapi.util.io.FileUtil
+import com.intellij.psi.PsiElement
+import com.intellij.util.io.Compressor
+import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.utils.exists
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.info
+import software.aws.toolkits.jetbrains.services.lambda.execution.PathMapping
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
+import software.aws.toolkits.resources.message
+import java.nio.file.Path
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
+
+abstract class LambdaBuilder {
+    /**
+     * Creates a package for the given lambda including source files archived in the correct format.
+     */
+    abstract fun buildLambda(
+        module: Module,
+        handlerElement: PsiElement,
+        handler: String,
+        runtime: Runtime,
+        envVars: Map<String, String>,
+        samOptions: SamOptions,
+        onStart: (ProcessHandler) -> Unit = {}
+    ): CompletionStage<BuiltLambda>
+
+    open fun buildLambdaFromTemplate(
+        module: Module,
+        templateLocation: Path,
+        logicalId: String,
+        samOptions: SamOptions,
+        onStart: (ProcessHandler) -> Unit = {}
+    ): CompletionStage<BuiltLambda> {
+        val future = CompletableFuture<BuiltLambda>()
+        val codeLocation = ReadAction.compute<String, Throwable> {
+            SamTemplateUtils.findFunctionsFromTemplate(
+                module.project,
+                templateLocation.toFile()
+            ).find { it.logicalName == logicalId }
+                ?.codeLocation()
+                ?: throw RuntimeConfigurationError(
+                    message(
+                        "lambda.run_configuration.sam.no_such_function",
+                        logicalId,
+                        templateLocation
+                    )
+                )
+        }
+
+        ApplicationManager.getApplication().executeOnPooledThread {
+            val buildDir = FileUtil.createTempDirectory("lambdaBuild", null, true).toPath()
+
+            val commandLine = SamCommon.getSamCommandLine()
+                .withParameters("build")
+                .withParameters("--template")
+                .withParameters(templateLocation.toString())
+                .withParameters("--build-dir")
+                .withParameters(buildDir.toString())
+
+            if (samOptions.buildInContainer) {
+                commandLine.withParameters("--use-container")
+            }
+
+            if (samOptions.skipImagePull) {
+                commandLine.withParameters("--skip-pull-image")
+            }
+
+            samOptions.dockerNetwork?.let {
+                if (it.isNotBlank()) {
+                    commandLine.withParameters("--docker-network")
+                        .withParameters(it.trim())
+                }
+            }
+
+            val pathMappings = listOf(
+                PathMapping(templateLocation.parent.resolve(codeLocation).toString(), "/"),
+                PathMapping(buildDir.resolve(logicalId).toString(), "/")
+            )
+
+            val processHandler = ProcessHandlerFactory.getInstance().createColoredProcessHandler(commandLine)
+            processHandler.addProcessListener(object : ProcessAdapter() {
+                override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
+                    // TODO: We should find a way to show the output of this in the UI
+                    LOG.info { event.text }
+
+                    if (ApplicationManager.getApplication().isUnitTestMode) {
+                        println("SAM CLI: ${event.text}")
+                    }
+                }
+
+                override fun processTerminated(event: ProcessEvent) {
+                    if (event.exitCode == 0) {
+                        val builtTemplate = buildDir.resolve("template.yaml")
+
+                        if (!builtTemplate.exists()) {
+                            future.completeExceptionally(IllegalStateException("Failed to locate built template, $builtTemplate does not exist"))
+                        }
+
+                        future.complete(
+                            BuiltLambda(
+                                builtTemplate,
+                                buildDir.resolve(logicalId),
+                                pathMappings
+                            )
+                        )
+                    } else {
+                        future.completeExceptionally(IllegalStateException(message("sam.build.failed")))
+                    }
+                }
+            })
+
+            onStart.invoke(processHandler)
+
+            processHandler.startNotify()
+        }
+
+        return future
+    }
+
+    open fun packageLambda(
+        module: Module,
+        handlerElement: PsiElement,
+        handler: String,
+        runtime: Runtime,
+        samOptions: SamOptions,
+        onStart: (ProcessHandler) -> Unit = {}
+    ): CompletionStage<Path> = buildLambda(module, handlerElement, handler, runtime, emptyMap(), samOptions, onStart)
+        .thenApply { lambdaLocation ->
+            val zipLocation = FileUtil.createTempFile("builtLambda", "zip", true)
+            Compressor.Zip(zipLocation).use {
+                it.addDirectory(lambdaLocation.codeLocation.toFile())
+            }
+            zipLocation.toPath()
+        }
+
+    companion object : RuntimeGroupExtensionPointObject<LambdaBuilder>(
+        ExtensionPointName("aws.toolkit.lambda.builder")
+    ) {
+        private val LOG = getLogger<LambdaBuilder>()
+    }
+}
+
+/**
+ * Represents the result of building a Lambda
+ *
+ * @param templateLocation The path to the build generated template
+ * @param codeLocation The path to the built lambda directory
+ * @param mappings Source mappings from original codeLocation to the path inside of the archive
+ */
+data class BuiltLambda(
+    val templateLocation: Path,
+    val codeLocation: Path,
+    val mappings: List<PathMapping> = emptyList()
+)
+
+// TODO Use these in this class
+sealed class BuildLambdaRequest
+
+data class BuildLambdaFromTemplate(
+    val templateLocation: Path,
+    val logicalId: String,
+    val samOptions: SamOptions
+) : BuildLambdaRequest()
+
+data class BuildLambdaFromHandler(
+    val handlerElement: PsiElement,
+    val handler: String,
+    val runtime: Runtime,
+    val envVars: Map<String, String>,
+    val samOptions: SamOptions
+) : BuildLambdaRequest()
+
+data class PackageLambdaFromHandler(
+    val handlerElement: PsiElement,
+    val handler: String,
+    val runtime: Runtime,
+    val samOptions: SamOptions
+)

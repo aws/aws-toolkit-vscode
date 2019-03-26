@@ -4,12 +4,11 @@
 package software.aws.toolkits.jetbrains.services.lambda.deploy
 
 import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.process.CapturingProcessAdapter
+import com.intellij.execution.process.CapturingProcessRunner
 import com.intellij.execution.process.OSProcessHandler
-import com.intellij.execution.process.ProcessAdapter
-import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.process.ProcessOutput
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.progress.ProcessCanceledException
@@ -20,9 +19,10 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.ExceptionUtil
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.resources.message
 import java.nio.file.Files
@@ -40,7 +40,7 @@ open class SamDeployDialog(
     private val parameters: Map<String, String>,
     private val s3Bucket: String,
     private val autoExecute: Boolean,
-    execute: Boolean = true
+    private val useContainer: Boolean
 ) : DialogWrapper(project) {
     private val progressIndicator = ProgressIndicatorBase()
     private val view = SamDeployView(project, progressIndicator)
@@ -48,6 +48,7 @@ open class SamDeployDialog(
     private val credentialsProvider = ProjectAccountSettingsManager.getInstance(project).activeCredentialProvider
     private val region = ProjectAccountSettingsManager.getInstance(project).activeRegion
     private val changeSetRegex = "(arn:aws:cloudformation:.*changeSet/[^\\s]*)".toRegex()
+    val deployFuture: CompletableFuture<String>
     lateinit var changeSetName: String
         private set
 
@@ -61,10 +62,7 @@ open class SamDeployDialog(
 
         super.init()
 
-        // For unit tests we don't want to execute it immediately
-        if (execute) {
-            executeDeployment()
-        }
+        deployFuture = executeDeployment().toCompletableFuture()
     }
 
     override fun createActions(): Array<Action> = if (autoExecute) {
@@ -75,7 +73,7 @@ open class SamDeployDialog(
 
     override fun createCenterPanel(): JComponent? = view.content
 
-    fun executeDeployment(): CompletionStage<String?> {
+    private fun executeDeployment(): CompletionStage<String> {
         okAction.isEnabled = false
         cancelAction.isEnabled = false
 
@@ -97,6 +95,11 @@ open class SamDeployDialog(
             .withParameters(template.path)
             .withParameters("--build-dir")
             .withParameters(buildDir.toString())
+            .apply {
+                if (useContainer) {
+                    withParameters("--use-container")
+                }
+            }
 
         val builtTemplate = buildDir.resolve("template.yaml")
         return runCommand(message("serverless.application.deploy.step_name.build"), command) { builtTemplate }
@@ -156,8 +159,8 @@ open class SamDeployDialog(
         }
     }
 
-    private fun handleError(error: Throwable): String? {
-        LOGGER.warn("SAM deploy failed", error)
+    private fun handleError(error: Throwable): String {
+        LOG.warn(error) { "SAM deploy failed" }
 
         val message = if (error.cause is ProcessCanceledException) {
             message("serverless.application.deploy.abort")
@@ -197,30 +200,26 @@ open class SamDeployDialog(
 
         consoleView.attachToProcess(processHandler)
 
-        val output = CapturingProcessAdapter()
-        processHandler.addProcessListener(output)
-        processHandler.addProcessListener(object : ProcessAdapter() {
-            override fun processTerminated(event: ProcessEvent) {
-                if (event.exitCode == 0) {
-                    try {
-                        future.complete(result.invoke(output.output))
-                    } catch (e: Exception) {
-                        future.completeExceptionally(e)
-                    }
-                } else {
-                    future.completeExceptionally(RuntimeException(message("serverless.application.deploy.execution_failed")))
+        ApplicationManager.getApplication().executeOnPooledThread {
+            val output = CapturingProcessRunner(processHandler).runProcess(progressIndicator)
+            if (output.exitCode == 0) {
+                try {
+                    future.complete(result.invoke(output))
+                } catch (e: Exception) {
+                    future.completeExceptionally(e)
                 }
+            } else {
+                future.completeExceptionally(RuntimeException(message("serverless.application.deploy.execution_failed")))
             }
-        })
-
-        processHandler.startNotify()
+        }
 
         return future.whenComplete { _, exception ->
-            telemetry.record("SamDeploy") {
+            TelemetryService.getInstance().record("SamDeploy") {
                 datum(title) {
                     count()
                     // exception can be null but is not annotated as nullable
                     metadata("hasException", exception != null)
+                    metadata("samVersion", SamCommon.getVersionString())
                 }
             }
         }
@@ -231,7 +230,6 @@ open class SamDeployDialog(
 
     private companion object {
         const val NUMBER_OF_STEPS = 3.0
-        val LOGGER = getLogger<SamDeployDialog>()
-        val telemetry = TelemetryService.getInstance()
+        val LOG = getLogger<SamDeployDialog>()
     }
 }

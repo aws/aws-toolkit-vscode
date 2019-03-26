@@ -4,12 +4,8 @@
 <idea-plugin>
     <extensions defaultExtensionNs="aws.toolkit.lambda">
         <runtimeGroup runtimeGroup="PYTHON" implementation="software.aws.toolkits.jetbrains.services.lambda.python.PythonRuntimeGroup"/>
-        <packager runtimeGroup="PYTHON" implementation="software.aws.toolkits.jetbrains.services.lambda.python.PythonLambdaPackager"/>
+        <builder runtimeGroup="PYTHON" implementation="software.aws.toolkits.jetbrains.services.lambda.python.PythonLambdaBuilder"/>
         <handlerResolver runtimeGroup="PYTHON" implementation="software.aws.toolkits.jetbrains.services.lambda.python.PythonLambdaHandlerResolver"/>
         <sam.debugSupport runtimeGroup="PYTHON" implementation="software.aws.toolkits.jetbrains.services.lambda.python.PythonSamDebugSupport"/>
-    </extensions>
-
-    <extensions defaultExtensionNs="com.intellij">
-        <directoryProjectGenerator implementation="software.aws.toolkits.jetbrains.ui.wizard.python.SamInitProjectBuilderPyCharm" />
     </extensions>
 </idea-plugin>

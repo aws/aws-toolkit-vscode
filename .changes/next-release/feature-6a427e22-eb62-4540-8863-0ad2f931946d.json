@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "The AWS CLI config and credential files are now monitored for changes. Changes automatically take effect."
+}

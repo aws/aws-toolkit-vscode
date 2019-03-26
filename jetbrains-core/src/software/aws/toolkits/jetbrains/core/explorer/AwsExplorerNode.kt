@@ -13,6 +13,7 @@ import com.intellij.ui.SimpleTextAttributes
 import icons.AwsIcons
 import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
@@ -85,7 +86,7 @@ abstract class AwsExplorerPageableNode<T>(project: Project, value: T, icon: Icon
     internal fun loadData(paginationToken: String? = null): Collection<AwsExplorerNode<*>> = try {
         loadResources(paginationToken)
     } catch (e: Exception) {
-        LOG.warn("Failed to load AWS Explorer nodes", e)
+        LOG.warn(e) { "Failed to load AWS Explorer nodes" }
         // Return the ErrorNode as the single Node of the list
         listOf(AwsExplorerErrorNode(project!!, e))
     }

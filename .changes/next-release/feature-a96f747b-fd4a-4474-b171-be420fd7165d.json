@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Add Gradle based SAM project template"
+}

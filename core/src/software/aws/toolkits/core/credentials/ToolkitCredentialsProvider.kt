@@ -35,19 +35,19 @@ abstract class ToolkitCredentialsProvider : AwsCredentialsProvider {
 
     override fun toString(): String = "${this::class.simpleName}(id='$id')"
 
-    open fun isValid(sdkHttpClient: SdkHttpClient): Boolean {
+    /**
+     * Returns true or throws an Exception
+     */
+    @Throws(Exception::class)
+    open fun isValidOrThrow(sdkHttpClient: SdkHttpClient): Boolean {
         val client = StsClient.builder()
             .region(Region.US_EAST_1)
             .httpClient(sdkHttpClient)
             .credentialsProvider(this)
             .build()
 
-        return try {
-            client.callerIdentity
-            true
-        } catch (e: Exception) {
-            false
-        }
+        client.callerIdentity
+        return true
     }
 }
 
@@ -55,17 +55,20 @@ abstract class ToolkitCredentialsProvider : AwsCredentialsProvider {
  * The class for managing [ToolkitCredentialsProvider] of the same type.
  * @property type The internal ID for this type of [ToolkitCredentialsProvider], eg 'profile' for AWS account whose credentials is stored in the profile file.
  */
-abstract class ToolkitCredentialsProviderFactory(
-    val type: String
+abstract class ToolkitCredentialsProviderFactory<T : ToolkitCredentialsProvider>(
+    val type: String,
+    protected val credentialsProviderManager: ToolkitCredentialsProviderManager
 ) {
-    private val providers = mutableMapOf<String, ToolkitCredentialsProvider>()
+    private val providers = mutableMapOf<String, T>()
 
-    protected fun add(provider: ToolkitCredentialsProvider) {
+    protected fun add(provider: T) {
         providers[provider.id] = provider
+        credentialsProviderManager.providerAdded(provider)
     }
 
-    protected fun clear() {
-        providers.clear()
+    protected fun remove(provider: T) {
+        providers.remove(provider.id)
+        credentialsProviderManager.providerRemoved(provider.id)
     }
 
     fun listCredentialProviders() = providers.values

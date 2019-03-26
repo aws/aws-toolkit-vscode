@@ -14,7 +14,7 @@ import javax.swing.JList
 /**
  * Combo box used to select a credential provider
  */
-class CredentialProviderSelector() : ComboBox<Any>() {
+class CredentialProviderSelector : ComboBox<Any>() {
     private val comboBoxModel = Model()
 
     init {
@@ -54,11 +54,10 @@ class CredentialProviderSelector() : ComboBox<Any>() {
         selectedItem = providerId
     }
 
-    private inner class Model : CollectionComboBoxModel<Any>(OrderedSet<Any>(), NONE) {
+    private inner class Model : CollectionComboBoxModel<Any>(OrderedSet<Any>()) {
         fun setItems(newItems: List<Any>) {
             internalList.apply {
                 clear()
-                add(NONE)
                 addAll(newItems)
             }
         }
@@ -73,14 +72,9 @@ class CredentialProviderSelector() : ComboBox<Any>() {
             hasFocus: Boolean
         ) {
             when (value) {
-                NONE -> setText("")
                 is String -> setText("$value (Not valid)")
                 is ToolkitCredentialsProvider -> setText(value.displayName)
             }
         }
-    }
-
-    companion object {
-        private val NONE = Object()
     }
 }

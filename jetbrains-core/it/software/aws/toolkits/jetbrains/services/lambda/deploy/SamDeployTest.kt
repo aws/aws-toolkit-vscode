@@ -13,10 +13,10 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.util.ExceptionUtil
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Ignore
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import software.amazon.awssdk.http.apache.ApacheHttpClient
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.cloudformation.model.Parameter
@@ -25,14 +25,21 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.rules.S3TemporaryBucketRule
 import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.runUnderRealCredentials
+import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-@Ignore // Ignored due to using SAM build which isn't on CI/CD box
 class SamDeployTest {
-    private val stackName = "SamDeployTest"
-    private val s3Client = S3Client.builder().region(Region.US_WEST_2).build()
-    private val cfnClient = CloudFormationClient.builder().region(Region.US_WEST_2).build()
+    private val s3Client = S3Client.builder()
+            .httpClient(ApacheHttpClient.builder().build())
+            .region(Region.US_WEST_2)
+            .build()
+
+    private val cfnClient = CloudFormationClient.builder()
+            .httpClient(ApacheHttpClient.builder().build())
+            .region(Region.US_WEST_2)
+            .build()
 
     @Rule
     @JvmField
@@ -44,13 +51,16 @@ class SamDeployTest {
 
     @Before
     fun setUp() {
-        MockProjectAccountSettingsManager.getInstance(projectRule.project).activeRegion = AwsRegion(Region.US_WEST_2.id(), "us-west-2")
+        SamSettings.getInstance().savedExecutablePath = System.getenv().getOrDefault("SAM_CLI_EXEC", "sam")
+        MockProjectAccountSettingsManager.getInstance(projectRule.project).activeRegion =
+                AwsRegion(Region.US_WEST_2.id(), "us-west-2")
     }
 
     @Test
     fun deployAppUsingSam() {
+        val stackName = "SamDeployTest-${UUID.randomUUID()}"
         val templateFile = setUpProject()
-        val changeSetArn = createChangeSet(templateFile)
+        val changeSetArn = createChangeSet(templateFile, stackName)
 
         assertThat(changeSetArn).isNotNull()
         runAssertsAndClean(changeSetArn!!) {
@@ -60,17 +70,20 @@ class SamDeployTest {
             }
 
             assertThat(describeChangeSetResponse).isNotNull
-            assertThat(describeChangeSetResponse.parameters()).contains(Parameter.builder()
-                .parameterKey("TestParameter")
-                .parameterValue("HelloWorld")
-                .build())
+            assertThat(describeChangeSetResponse.parameters()).contains(
+                Parameter.builder()
+                    .parameterKey("TestParameter")
+                    .parameterValue("HelloWorld")
+                    .build()
+            )
         }
     }
 
     @Test
     fun deployAppUsingSamWithParameters() {
+        val stackName = "SamDeployTest-${UUID.randomUUID()}"
         val templateFile = setUpProject()
-        val changeSetArn = createChangeSet(templateFile, mapOf("TestParameter" to "FooBar"))
+        val changeSetArn = createChangeSet(templateFile, stackName, mapOf("TestParameter" to "FooBar"))
 
         assertThat(changeSetArn).isNotNull()
         runAssertsAndClean(changeSetArn!!) {
@@ -80,10 +93,12 @@ class SamDeployTest {
             }
 
             assertThat(describeChangeSetResponse).isNotNull
-            assertThat(describeChangeSetResponse.parameters()).contains(Parameter.builder()
-                .parameterKey("TestParameter")
-                .parameterValue("FooBar")
-                .build())
+            assertThat(describeChangeSetResponse.parameters()).contains(
+                Parameter.builder()
+                    .parameterKey("TestParameter")
+                    .parameterValue("FooBar")
+                    .build()
+            )
         }
     }
 
@@ -94,6 +109,11 @@ class SamDeployTest {
                 def lambda_handler(event, context):
                     return "Hello world"
                 """.trimIndent()
+        )
+
+        projectRule.fixture.addFileToProject(
+            "requirements.txt",
+            ""
         )
 
         return projectRule.fixture.addFileToProject(
@@ -114,13 +134,13 @@ class SamDeployTest {
                     Properties:
                       Handler: hello_world/app.lambda_handler
                       CodeUri: .
-                      Runtime: python3.6
+                      Runtime: python2.7
                       Timeout: 900
                 """.trimIndent()
         ).virtualFile
     }
 
-    private fun createChangeSet(templateFile: VirtualFile, parameters: Map<String, String> = emptyMap()): String? {
+    private fun createChangeSet(templateFile: VirtualFile, stackName: String, parameters: Map<String, String> = emptyMap()): String? {
         val deployDialog = runInEdtAndGet {
             runUnderRealCredentials(projectRule.project) {
                 object : SamDeployDialog(
@@ -129,7 +149,8 @@ class SamDeployTest {
                     templateFile,
                     parameters,
                     bucketRule.createBucket(stackName),
-                    false
+                    false,
+                    true
                 ) {
                     override fun createProcess(command: GeneralCommandLine): OSProcessHandler =
                         super.createProcess(command).also {
@@ -147,7 +168,7 @@ class SamDeployTest {
             }
         }
 
-        return deployDialog.executeDeployment().toCompletableFuture().get(5, TimeUnit.MINUTES)
+        return deployDialog.deployFuture.get(5, TimeUnit.MINUTES)
     }
 
     private fun runAssertsAndClean(changeSetArn: String, asserts: () -> Unit) {

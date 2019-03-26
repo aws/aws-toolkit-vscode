@@ -1,0 +1,4 @@
+ignore:
+  - "ktlint-rules/**/*"
+  - "resources/**/*"
+  - "telemetry-client/**/*"

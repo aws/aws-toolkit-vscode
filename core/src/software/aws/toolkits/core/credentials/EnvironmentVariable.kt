@@ -20,7 +20,8 @@ class EnvironmentVariableToolkitCredentialsProvider : ToolkitCredentialsProvider
     override fun resolveCredentials(): AwsCredentials = awsCredentialsProvider.resolveCredentials()
 }
 
-class EnvironmentVariableToolkitCredentialsProviderFactory : ToolkitCredentialsProviderFactory(TYPE) {
+class EnvironmentVariableToolkitCredentialsProviderFactory(credentialsProviderManager: ToolkitCredentialsProviderManager) :
+    ToolkitCredentialsProviderFactory<EnvironmentVariableToolkitCredentialsProvider>(TYPE, credentialsProviderManager) {
     init {
         val credentialsProvider = EnvironmentVariableToolkitCredentialsProvider()
         try {

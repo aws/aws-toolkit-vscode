@@ -4,6 +4,7 @@
 package software.aws.toolkits.core.telemetry
 
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -45,7 +46,7 @@ open class DefaultTelemetryBatcher(
         try {
             eventQueue.addAll(events)
         } catch (e: Exception) {
-            LOG.warn("Failed to add metric to queue", e)
+            LOG.warn(e) { "Failed to add metric to queue" }
         }
     }
 
@@ -56,7 +57,7 @@ open class DefaultTelemetryBatcher(
     // TODO: This should flush to disk instead of network on shutdown. User should not have to wait for network calls to exit. Also consider handling clock drift
     @Synchronized
     private fun flush(retry: Boolean, publish: Boolean) {
-        if (!publish) {
+        if (!publish || !TELEMETRY_ENABLED) {
             eventQueue.clear()
         }
 
@@ -70,12 +71,12 @@ open class DefaultTelemetryBatcher(
             val publishSucceeded = try {
                 publisher.publish(batch)
             } catch (e: Exception) {
-                LOG.warn("Failed to publish metrics", e)
+                LOG.warn(e) { "Failed to publish metrics" }
                 false
             }
 
             if (!publishSucceeded && retry) {
-                LOG.warn("Telemetry metrics failed to publish, retrying later...")
+                LOG.warn { "Telemetry metrics failed to publish, retrying later..." }
                 eventQueue.addAll(batch)
                 // don't want an infinite loop...
                 return
@@ -89,5 +90,8 @@ open class DefaultTelemetryBatcher(
         private val LOG = getLogger<DefaultTelemetryBatcher>()
         private const val DEFAULT_MAX_BATCH_SIZE = 20
         private const val DEFAULT_MAX_QUEUE_SIZE = 10000
+
+        private const val TELEMETRY_KEY = "aws.toolkits.enableTelemetry"
+        val TELEMETRY_ENABLED = System.getProperty(TELEMETRY_KEY)?.toBoolean() ?: true
     }
 }

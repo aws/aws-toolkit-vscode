@@ -8,7 +8,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
-import java.util.concurrent.locks.ReentrantLock
+import java.util.concurrent.CountDownLatch
 
 class ResourceSelectorTest {
     @Rule
@@ -64,14 +64,11 @@ class ResourceSelectorTest {
     fun comboBoxPopulation_updateStateToDesired() {
         val items = listOf("foo", "bar", "baz")
 
-        val lock = ReentrantLock()
-        lock.lock()
+        val latch = CountDownLatch(1)
 
         comboBox.isEnabled = false
         comboBox.populateValues(updateStatus = false) {
-            while (lock.isLocked) {
-                Thread.sleep(100L)
-            }
+            latch.await()
             items
         }
         // Wait for the ComboBox to be in loading status.
@@ -81,7 +78,7 @@ class ResourceSelectorTest {
         // In the loading status, even enabling the ComboBox, the status will not be changed until the loading finishes.
         comboBox.isEnabled = true
         assertThat(comboBox.isEnabled).isEqualTo(false)
-        lock.unlock()
+        latch.countDown()
         waitForPopulationComplete(comboBox, items.size)
         assertThat(comboBox.isEnabled).isEqualTo(true)
     }

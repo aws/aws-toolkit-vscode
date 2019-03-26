@@ -4,7 +4,6 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
-    ext.kotlinVersion = "$kotlinVersion"
 
     repositories {
         maven {
@@ -14,12 +13,12 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath "com.atlassian.commonmark:commonmark:0.11.0"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
-        classpath "org.jetbrains.dokka:dokka-gradle-plugin:$dokkaVersion"
         classpath "gradle.plugin.org.jetbrains.intellij.plugins:gradle-intellij-plugin:$ideaPluginVersion"
     }
 }
+
+apply from: 'intellijJVersions.gradle'
 
 group 'software.aws.toolkits'
 version toolkitVersion
@@ -33,14 +32,23 @@ allprojects {
     apply plugin: 'jacoco'
 }
 
+// Kotlin plugin seems to be bugging out when there are no kotlin sources
+configure(subprojects - project(":telemetry-client")) {
+    apply plugin: 'kotlin'
+
+    sourceSets {
+        integrationTest {
+            kotlin.srcDir 'it'
+        }
+    }
+}
+
 subprojects {
     group = parent.group
     version = parent.version
 
     apply plugin: 'java'
-    apply plugin: 'kotlin'
     apply plugin: 'idea'
-    apply plugin: 'org.jetbrains.dokka'
     apply plugin: 'signing'
 
     def isReleaseVersion = !version.endsWith("SNAPSHOT")
@@ -56,10 +64,16 @@ subprojects {
         test.java.srcDir 'tst'
         test.resources.srcDir 'tst-resources'
         integrationTest {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
             java.srcDir 'it'
-            kotlin.srcDir 'it'
             resources.srcDir 'it-resources'
         }
+    }
+
+    configurations {
+        integrationTestImplementation.extendsFrom testImplementation
+        integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
     }
 
     dependencies {
@@ -72,21 +86,17 @@ subprojects {
         testCompile "org.assertj:assertj-core:$assertjVersion"
         testCompile "junit:junit:$junitVersion"
         testCompile "org.hamcrest:hamcrest-all:1.3"
-
-        integrationTestCompile sourceSets.main.output
-        integrationTestCompile sourceSets.test.output
-
-        integrationTestCompile configurations.compile
-        integrationTestCompile configurations.testCompile
-
-        integrationTestRuntime configurations.runtime
-        integrationTestRuntime configurations.testRuntime
     }
 
     test {
         testLogging {
             showStandardStreams = true
             exceptionFormat = 'full'
+        }
+        jacoco {
+            // don't instrument sdk, icons, ktlint, etc.
+            includes = ["software.aws.toolkits.*"]
+            excludes = ["software.aws.toolkits.ktlint"]
         }
     }
 
@@ -95,8 +105,8 @@ subprojects {
             sourceDirs -= file("it")
             testSourceDirs += file("it")
 
-            sourceDirs -= file("it-resources")
-            testSourceDirs += file("it-resources")
+            resourceDirs -= file("it-resources")
+            testResourceDirs += file("it-resources")
         }
     }
 
@@ -134,6 +144,9 @@ subprojects {
         mustRunAfter tasks.test
     }
 
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+
     tasks.withType(KotlinCompile).all {
         kotlinOptions.jvmTarget = "1.8"
     }
@@ -159,20 +172,20 @@ def removeTask(tasks, taskName) {
     def task = tasks.findByName("$taskName")
 
     if (task != null) {
-        tasks.remove(task)
+        task.setEnabled(false)
     }
 }
 
 wrapper {
     distributionType = Wrapper.DistributionType.ALL
-    gradleVersion '4.6'
+    gradleVersion '5.2.1'
 }
 
 apply plugin: 'org.jetbrains.intellij'
 apply plugin: ChangeLogPlugin
 
 intellij {
-    version "IC-" + ideaVersion
+    version ideVersion("IC")
     pluginName 'aws-jetbrains-toolkit'
     updateSinceUntilBuild false
     downloadSources = System.getenv("CI") == null
@@ -180,6 +193,7 @@ intellij {
         alternativeIdePath = System.env.ALTERNATIVE_IDE
     }
 }
+
 publishPlugin {
     username publishUsername
     password publishPassword
@@ -195,7 +209,7 @@ task ktlint(type: JavaExec, group: "verification") {
     description = "Check Kotlin code style."
     classpath = configurations.ktlint
     main = "com.github.shyiko.ktlint.Main"
-    args project.rootDir.absolutePath + "/**/*.kt"
+    args "-v", project.rootDir.absolutePath + "/**/*.kt"
 }
 check.dependsOn ktlint
 check.dependsOn verifyPlugin
@@ -203,15 +217,15 @@ check.dependsOn verifyPlugin
 def publishedProjects = subprojects.findAll { !it.name.contains("test")}
 
 jacoco {
-    toolVersion = "0.8.2"
+    toolVersion = "0.8.3" // TODO: Remove with Gradle 5.3
 }
 
 task coverageReport(type: JacocoReport) {
     executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
 
-    additionalSourceDirs = files(publishedProjects.sourceSets.main.java.srcDirs)
-    sourceDirectories = files(publishedProjects.sourceSets.main.java.srcDirs)
-    classDirectories = files(publishedProjects.sourceSets.main.output.classesDirs)
+    getAdditionalSourceDirs().from(publishedProjects.sourceSets.main.java.srcDirs)
+    getSourceDirectories().from(publishedProjects.sourceSets.main.java.srcDirs)
+    getClassDirectories().from(publishedProjects.sourceSets.main.output.classesDirs)
 
     reports {
         html.enabled true
@@ -229,11 +243,21 @@ if (gradle.startParameter.taskNames.contains("runIde")) {
     println("Top level runIde selected, excluding sub-projects' runIde")
     gradle.taskGraph.whenReady { graph ->
         graph.allTasks.forEach {
-            if (it.name == "runIde" && it.project != project(':jetbrains-core')) {
-                it.enabled = false
+            if (gradle.startParameter.systemPropertiesArgs.getOrDefault("exec.args", "").contains("guitest")) {
+                if (it.name == "runIde" && it.project != project(':jetbrains-core-gui')) {
+                    it.enabled = false
+                }
+            } else {
+                if (it.name == "runIde" && it.project != project(':jetbrains-core')) {
+                    it.enabled = false
+                }
             }
         }
     }
+}
+
+task guiTest(type: Test) {
+    dependsOn ":jetbrains-core-gui:guiTest"
 }
 
 dependencies {

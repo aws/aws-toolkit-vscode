@@ -4,39 +4,23 @@
 
 package software.aws.toolkits.jetbrains.ui.wizard
 
-import com.intellij.ide.util.projectWizard.ModuleBuilder
-import com.intellij.openapi.module.ModuleType
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.DefaultProjectFactory
+import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.platform.ProjectTemplate
 import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamCommon
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamInitRunner
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
 import software.aws.toolkits.jetbrains.settings.SamSettings
-import software.aws.toolkits.jetbrains.ui.wizard.java.SamInitModuleBuilder
-import software.aws.toolkits.resources.message
 import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JTextField
 
-class SamProjectTemplateWrapper(
-    val samProjectTemplate: SamProjectTemplate,
-    val builder: ModuleBuilder
-) : ProjectTemplate {
-    override fun getIcon() = samProjectTemplate.getIcon()
-
-    override fun getName() = samProjectTemplate.getName()
-
-    override fun getDescription() = samProjectTemplate.getDescription()
-
-    override fun createModuleBuilder() = builder
-
-    override fun validateSettings() = null
+interface ValidatablePanel {
+    fun validate(): ValidationInfo? = null
 }
 
 abstract class SamProjectTemplate {
@@ -49,40 +33,41 @@ abstract class SamProjectTemplate {
     fun getIcon() = AwsIcons.Resources.SERVERLESS_APP
 
     fun build(runtime: Runtime, outputDir: VirtualFile) {
-        doBuild(runtime, outputDir)
-        telemetry.record("SamProjectInit") {
-            datum(getName()) {
-                metadata("runtime", runtime.name)
+        var hasException = false
+        try {
+            doBuild(runtime, outputDir)
+        } catch (e: Throwable) {
+            hasException = true
+            throw e
+        } finally {
+            TelemetryService.getInstance().record("SAM") {
+                datum("Init") {
+                    metadata("name", getName())
+                    metadata("runtime", runtime.name)
+                    metadata("samVersion", SamCommon.getVersionString())
+                    metadata("hasException", hasException)
+                }
             }
         }
     }
 
-    protected open fun doBuild(runtime: Runtime, outputDir: VirtualFile) {
-        SamInitRunner(SamModuleType.ID, outputDir, runtime).execute()
+    private fun doBuild(runtime: Runtime, outputDir: VirtualFile) {
+        SamInitRunner(
+            AwsModuleType.ID,
+            outputDir,
+            runtime,
+            location(),
+            dependencyManager()
+        ).execute()
     }
 
-    fun getModuleBuilderProjectTemplate(builder: ModuleBuilder) =
-            SamProjectTemplateWrapper(this, builder)
+    protected open fun location(): String? = null
 
-    companion object {
-        private val telemetry = TelemetryService.getInstance()
-    }
-}
+    protected open fun dependencyManager(): String? = null
 
-class SamModuleType : ModuleType<SamInitModuleBuilder>(ID) {
-    override fun getNodeIcon(isOpened: Boolean) = AwsIcons.Resources.SERVERLESS_APP
+    open fun supportedRuntimes(): Set<Runtime> = Runtime.knownValues().toSet()
 
-    override fun createModuleBuilder() = SamInitModuleBuilder()
-
-    override fun getName() = ID
-
-    override fun getDescription() = DESCRIPTION
-
-    companion object {
-        val ID = message("sam.init.name")
-        val DESCRIPTION = message("sam.init.description")
-        val instance = SamModuleType()
-    }
+    open fun unsupportedRuntimes(): Set<Runtime> = emptySet()
 }
 
 @JvmOverloads

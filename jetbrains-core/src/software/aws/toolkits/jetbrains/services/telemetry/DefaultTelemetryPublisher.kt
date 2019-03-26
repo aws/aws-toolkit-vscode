@@ -12,6 +12,7 @@ import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryPublisher
 import software.amazon.awssdk.services.toolkittelemetry.model.Unit as MetricUnit
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import kotlin.streams.toList
 
 class DefaultTelemetryPublisher(
@@ -38,7 +39,7 @@ class DefaultTelemetryPublisher(
             }
             true
         } catch (e: Exception) {
-            LOG.warn("Failed to publish metrics", e)
+            LOG.warn(e) { "Failed to publish metrics" }
             false
         }
     }.get()

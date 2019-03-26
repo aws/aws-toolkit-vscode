@@ -20,6 +20,7 @@ import software.aws.toolkits.core.telemetry.TelemetryBatcher
 import software.aws.toolkits.core.telemetry.DefaultTelemetryBatcher
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.AwsSdkClient
 import software.aws.toolkits.jetbrains.settings.AwsSettings
@@ -148,7 +149,7 @@ class DefaultTelemetryService(
             try {
                 batcher.flush(true)
             } catch (e: Exception) {
-                LOG.warn("Unexpected exception while publishing telemetry", e)
+                LOG.warn(e) { "Unexpected exception while publishing telemetry" }
             }
         }
     }

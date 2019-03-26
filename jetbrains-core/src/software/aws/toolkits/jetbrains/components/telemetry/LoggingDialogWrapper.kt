@@ -37,19 +37,22 @@ import java.awt.Component
 //  }
 
 abstract class LoggingDialogWrapper : DialogWrapper, TelemetryNamespace {
-    constructor(project: Project? = null, component: Component? = null, canBeParent: Boolean = true, ideModalityType: IdeModalityType = IdeModalityType.IDE):
-        super(project, component, canBeParent, ideModalityType)
+    constructor(
+        project: Project? = null,
+        component: Component? = null,
+        canBeParent: Boolean = true,
+        ideModalityType: IdeModalityType = IdeModalityType.IDE
+    ) : super(project, component, canBeParent, ideModalityType)
 
-    constructor(project: Project, canBeParent: Boolean = true, applicationModelIfPossible: Boolean):
-        super(project, canBeParent, applicationModelIfPossible)
+    constructor(project: Project, canBeParent: Boolean = true, applicationModelIfPossible: Boolean) : super(project, canBeParent, applicationModelIfPossible)
 
-    constructor(parent: Component, canBeParent: Boolean):
-        super(parent, canBeParent)
+    constructor(parent: Component, canBeParent: Boolean) :
+            super(parent, canBeParent)
 
     override fun doOKAction() {
         super.doOKAction()
 
-        telemetry.record(getNamespace()) {
+        TelemetryService.getInstance().record(getNamespace()) {
             datum("OKAction") {
                 count()
             }
@@ -59,14 +62,10 @@ abstract class LoggingDialogWrapper : DialogWrapper, TelemetryNamespace {
     override fun doCancelAction() {
         super.doCancelAction()
 
-        telemetry.record(getNamespace()) {
+        TelemetryService.getInstance().record(getNamespace()) {
             datum("CancelAction") {
                 count()
             }
         }
-    }
-
-    companion object {
-        protected val telemetry = TelemetryService.getInstance()
     }
 }

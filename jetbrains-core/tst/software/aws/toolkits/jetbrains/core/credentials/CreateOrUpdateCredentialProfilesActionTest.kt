@@ -42,42 +42,94 @@ class CreateOrUpdateCredentialProfilesActionTest {
     }
 
     @Test
-    fun confirmCalledIfFileDoesNotExist() {
-        val writer = mock<CredentialFileWriter> {
+    fun confirmConfigFileCreated_bothFilesDoNotExist() {
+        val writer = mock<ConfigFileWriter> {
             on { createFile(any()) }.doAnswer { it.getArgument<File>(0).writeText("hello") }
         }
 
-        val file = File(folderRule.newFolder(), "credentials")
+        val configFile = File(folderRule.newFolder(), "config")
+        val credFile = File(folderRule.newFolder(), "credentials")
 
-        val sut = CreateOrUpdateCredentialProfilesAction(writer, file)
+        val sut = CreateOrUpdateCredentialProfilesAction(writer, configFile, credFile)
         Messages.setTestDialog(TestDialog.OK)
 
         sut.actionPerformed(TestActionEvent(DataContext { projectRule.project }))
 
-        verify(writer).createFile(file)
+        verify(writer).createFile(configFile)
+
+        assertThat(fileEditorManager.openFiles).hasOnlyOneElementSatisfying { assertThat(it.name).isEqualTo("config") }
+    }
+
+    @Test
+    fun bothFilesOpened_bothFilesExists() {
+        val writer = mock<ConfigFileWriter>()
+
+        val configFile = folderRule.newFile("config")
+        val credFile = folderRule.newFile("credentials")
+        // IDE interprets blank files with no extension as binary
+        configFile.writeText("config")
+        credFile.writeText("cred")
+
+        val sut = CreateOrUpdateCredentialProfilesAction(writer, configFile, credFile)
+        Messages.setTestDialog(TestDialog.OK)
+
+        sut.actionPerformed(TestActionEvent(DataContext { projectRule.project }))
+
+        verifyZeroInteractions(writer)
+
+        assertThat(fileEditorManager.openFiles).hasSize(2)
+            .anySatisfy { assertThat(it.name).isEqualTo("config") }
+            .anySatisfy { assertThat(it.name).isEqualTo("credentials") }
+    }
+
+    @Test
+    fun configFileOpened_onlyConfigExists() {
+        val writer = mock<ConfigFileWriter>()
+
+        val configFile = folderRule.newFile("config")
+        val credFile = File(folderRule.newFolder(), "credentials")
+        configFile.writeText("config")
+
+        val sut = CreateOrUpdateCredentialProfilesAction(writer, configFile, credFile)
+        Messages.setTestDialog(TestDialog.OK)
+
+        sut.actionPerformed(TestActionEvent(DataContext { projectRule.project }))
+
+        verifyZeroInteractions(writer)
+
+        assertThat(fileEditorManager.openFiles).hasOnlyOneElementSatisfying { assertThat(it.name).isEqualTo("config") }
+    }
+
+    @Test
+    fun credentialFileOpened_onlyCredentialsExists() {
+        val writer = mock<ConfigFileWriter>()
+
+        val configFile = File(folderRule.newFolder(), "config")
+        val credFile = folderRule.newFile("credentials")
+        credFile.writeText("cred")
+
+        val sut = CreateOrUpdateCredentialProfilesAction(writer, configFile, credFile)
+        Messages.setTestDialog(TestDialog.OK)
+
+        sut.actionPerformed(TestActionEvent(DataContext { projectRule.project }))
+
+        verifyZeroInteractions(writer)
 
         assertThat(fileEditorManager.openFiles).hasOnlyOneElementSatisfying { assertThat(it.name).isEqualTo("credentials") }
     }
 
     @Test
     fun negativeConfirmationDoesNotCreateFile() {
-        val writer = mock<CredentialFileWriter>()
+        val writer = mock<ConfigFileWriter>()
 
-        val file = File(folderRule.newFolder(), "credentials")
-        val sut = CreateOrUpdateCredentialProfilesAction(writer, file)
+        val configFile = File(folderRule.newFolder(), "config")
+        val credFile = File(folderRule.newFolder(), "credentials")
+
+        val sut = CreateOrUpdateCredentialProfilesAction(writer, configFile, credFile)
         Messages.setTestDialog(TestDialog.NO)
 
         sut.actionPerformed(TestActionEvent(DataContext { projectRule.project }))
 
         verifyZeroInteractions(writer)
-    }
-
-    @Test(expected = RuntimeException::class)
-    fun exceptionThrownIfFileIsEmpty() {
-        val file = File(folderRule.newFolder(), "credentials")
-        file.createNewFile()
-        val sut = CreateOrUpdateCredentialProfilesAction(mock(), file)
-
-        sut.actionPerformed(TestActionEvent(DataContext { projectRule.project }))
     }
 }

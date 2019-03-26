@@ -21,9 +21,9 @@ import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsNodeAlwaysExpandable
 import software.aws.toolkits.jetbrains.core.explorer.AwsNodeChildCache
 import software.aws.toolkits.jetbrains.core.explorer.AwsTruncatedResultNode
+import software.aws.toolkits.jetbrains.core.stack.openStack
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
-import software.aws.toolkits.jetbrains.core.stack.openStack
 import software.aws.toolkits.jetbrains.utils.toHumanReadable
 import software.aws.toolkits.resources.message
 import javax.swing.tree.DefaultMutableTreeNode
@@ -41,7 +41,7 @@ class CloudFormationServiceNode(project: Project) : AwsExplorerServiceRootNode(p
 
         val nodes = response.stacks().filterNotNull().asSequence()
             .filter { it.stackStatus() !in DELETING_STACK_STATES }
-            .sortedBy { it.stackName() }
+            .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.stackName() })
             .map { it -> CloudFormationStackNode(nodeProject, it.stackName(), it.stackStatus()) }
             .toList()
 
@@ -59,7 +59,7 @@ class CloudFormationServiceNode(project: Project) : AwsExplorerServiceRootNode(p
 }
 
 class CloudFormationStackNode(project: Project, val stackName: String, private val stackStatus: StackStatus) :
-    AwsExplorerResourceNode<String>(project, CloudFormationClient.SERVICE_NAME, stackName, AwsIcons.Resources.SERVERLESS_APP),
+    AwsExplorerResourceNode<String>(project, CloudFormationClient.SERVICE_NAME, stackName, AwsIcons.Resources.CLOUDFORMATION_STACK),
     AwsNodeAlwaysExpandable,
     AwsNodeChildCache {
     override fun resourceType() = "stack"

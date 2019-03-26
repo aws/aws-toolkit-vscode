@@ -1,0 +1,77 @@
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+apply plugin: 'org.jetbrains.intellij'
+apply plugin: 'jacoco'
+
+dependencies {
+    compile project(":jetbrains-core")
+}
+
+intellij {
+    def rootIntelliJTask = project(':jetbrains-core').intellij
+    version rootIntelliJTask.version
+    pluginName rootIntelliJTask.pluginName
+    updateSinceUntilBuild rootIntelliJTask.updateSinceUntilBuild
+    downloadSources = rootIntelliJTask.downloadSources
+    plugins = rootIntelliJTask.plugins + ['com.intellij.testGuiFramework:183.6156.8']
+}
+
+jacoco.applyTo(runIde)
+runIde {
+    systemProperties System.properties.findAll {(it.key as String).startsWith("idea") || (it.key as String).startsWith("jb")}
+    systemProperty("aws.toolkits.enableTelemetry", false)
+    /* Need to split the space-delimited value in the exec.args */
+    args System.getProperty("exec.args", "").split(",")
+    jacoco {
+        includeNoLocationClasses = true
+        includes = ["software.aws.toolkits.*"]
+    }
+}
+
+// don't run gui tests as part of check
+test.enabled = false
+
+task guiTest(type: Test) {
+    workingDir = file("..")
+    def sysProps = System.properties.findAll { (it.key as String).startsWith("idea") || (it.key as String).startsWith("jb") }
+    sysProps.put("idea.gui.tests.gradle.runner", true) //Use Gradle Launcher to run GUI tests
+    systemProperties sysProps
+    include '**/*TestSuite*'
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task classesJar(type: Jar, dependsOn: classes) {
+    classifier = 'classes'
+    from sourceSets.main.output
+    from project(':jetbrains-core').sourceSets.main.output
+    exclude 'META-INF/plugin.xml'
+    exclude 'testData/*'
+}
+
+task testsJar(type: Jar, dependsOn: classes) {
+    classifier = 'tests'
+    from sourceSets.test.output
+    exclude 'testData/*'
+}
+
+prepareSandbox {
+    from(classesJar) {
+        into "testGuiFramework/lib"
+    }
+    from (sourceSets.main.resources) {
+        exclude 'META-INF'
+        into "testGuiFramework/lib"
+    }
+    from (sourceSets.test.resources) {
+        exclude 'META-INF'
+        into "testGuiFramework/lib"
+    }
+    from(testsJar) {
+        into "testGuiFramework/lib"
+    }
+}

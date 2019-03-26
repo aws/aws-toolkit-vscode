@@ -8,6 +8,7 @@ import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.util.LazyInstance
 import com.intellij.util.xmlb.annotations.Attribute
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProviderFactory
+import software.aws.toolkits.core.credentials.ToolkitCredentialsProviderManager
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProviderRegistry
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
@@ -19,7 +20,7 @@ interface CredentialProviderFactory {
     /**
      * Creates the [ToolkitCredentialsProviderFactory], this should return the same instance each time
      */
-    fun createToolkitCredentialProviderFactory(): ToolkitCredentialsProviderFactory
+    fun createToolkitCredentialProviderFactory(manager: ToolkitCredentialsProviderManager): ToolkitCredentialsProviderFactory<*>
 }
 
 class CredentialProviderFactoryEP : AbstractExtensionPointBean() {
@@ -34,21 +35,17 @@ class CredentialProviderFactoryEP : AbstractExtensionPointBean() {
 }
 
 class ExtensionPointCredentialsProviderRegistry : ToolkitCredentialsProviderRegistry {
-    override fun listFactories(): Collection<ToolkitCredentialsProviderFactory> = factories
+    override fun listFactories(manager: ToolkitCredentialsProviderManager) = EXTENSION_POINT.extensions
+        .mapNotNull {
+            LOG.tryOrNull("Failed td load CredentialProviderFactory") {
+                it.getHandler()
+            }
+        }
+        .map { it.createToolkitCredentialProviderFactory(manager) }
 
     companion object {
         private val LOG = getLogger<ExtensionPointCredentialsProviderRegistry>()
         private const val EP_NAME = "aws.toolkit.credentialProviderFactory"
         private val EXTENSION_POINT = ExtensionPointName.create<CredentialProviderFactoryEP>(EP_NAME)
-
-        private val factories by lazy {
-            EXTENSION_POINT.extensions
-                .mapNotNull {
-                    LOG.tryOrNull("Failed td load CredentialProviderFactory") {
-                        it.getHandler()
-                    }
-                }
-                .map { it.createToolkitCredentialProviderFactory() }
-        }
     }
 }

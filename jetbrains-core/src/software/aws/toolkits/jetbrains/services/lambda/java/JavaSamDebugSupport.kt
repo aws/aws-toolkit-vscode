@@ -13,8 +13,8 @@ import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugProcessStarter
 import com.intellij.xdebugger.XDebugSession
 import com.intellij.xdebugger.impl.XDebugSessionImpl
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
+import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamDebugSupport
+import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamRunningState
 
 class JavaSamDebugSupport : SamDebugSupport {
     override fun createDebugProcess(

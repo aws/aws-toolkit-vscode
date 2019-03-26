@@ -36,6 +36,6 @@ class MockCredentialsManager : CredentialManager {
         private val isValid: Boolean
     ) : ToolkitCredentialsProvider() {
         override fun resolveCredentials(): AwsCredentials = credentials
-        override fun isValid(sdkHttpClient: SdkHttpClient): Boolean = isValid
+        override fun isValidOrThrow(sdkHttpClient: SdkHttpClient): Boolean = isValid
     }
 }

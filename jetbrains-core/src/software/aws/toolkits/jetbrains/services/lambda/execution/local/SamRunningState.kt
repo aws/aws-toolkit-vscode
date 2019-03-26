@@ -1,0 +1,66 @@
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+package software.aws.toolkits.jetbrains.services.lambda.execution.local
+
+import com.intellij.execution.configurations.CommandLineState
+import com.intellij.execution.executors.DefaultDebugExecutor
+import com.intellij.execution.process.ProcessHandler
+import com.intellij.execution.process.ProcessHandlerFactory
+import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.openapi.util.io.FileUtil
+import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
+import software.aws.toolkits.jetbrains.services.lambda.BuiltLambda
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
+
+class SamRunningState(
+    environment: ExecutionEnvironment,
+    val settings: LocalLambdaSettings
+) : CommandLineState(environment) {
+    internal lateinit var builtLambda: BuiltLambda
+
+    internal val runner = if (environment.executor.id == DefaultDebugExecutor.EXECUTOR_ID) {
+        SamDebugger()
+    } else {
+        SamRunner()
+    }
+
+    override fun startProcess(): ProcessHandler {
+        val totalEnvVars = settings.environmentVariables.toMutableMap()
+        totalEnvVars += settings.credentials.resolveCredentials().toEnvironmentVariables()
+        totalEnvVars += settings.region.toEnvironmentVariables()
+
+        val commandLine = SamCommon.getSamCommandLine()
+            .withParameters("local")
+            .withParameters("invoke")
+            .withParameters("--template")
+            .withParameters(builtLambda.templateLocation.toString())
+            .withParameters("--event")
+            .withParameters(createEventFile())
+            .apply { settings.templateDetails?.run { withParameters(logicalName) } }
+            .withEnvironment(totalEnvVars)
+            .withEnvironment("PYTHONUNBUFFERED", "1") // Force SAM to not buffer stdout/stderr so it gets shown in IDE
+
+        val samOptions = settings.samOptions
+        if (samOptions.skipImagePull) {
+            commandLine.withParameters("--skip-pull-image")
+        }
+
+        samOptions.dockerNetwork?.let {
+            if (it.isNotBlank()) {
+                commandLine.withParameters("--docker-network")
+                    .withParameters(it.trim())
+            }
+        }
+
+        runner.patchCommandLine(this, commandLine)
+
+        return ProcessHandlerFactory.getInstance().createColoredProcessHandler(commandLine)
+    }
+
+    private fun createEventFile(): String {
+        val eventFile = FileUtil.createTempFile("${environment.runProfile.name}-event", ".json", true)
+        eventFile.writeText(settings.input)
+        return eventFile.absolutePath
+    }
+}

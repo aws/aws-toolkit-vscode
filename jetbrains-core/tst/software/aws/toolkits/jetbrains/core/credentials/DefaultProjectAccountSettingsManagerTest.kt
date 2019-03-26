@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.configurationStore.deserialize
 import com.intellij.configurationStore.serialize
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -111,7 +112,7 @@ class DefaultProjectAccountSettingsManagerTest {
     }
 
     @Test
-    fun testMakingCredentialsActiveFiresNotification() {
+    fun testMakingRegionActiveFiresNotification() {
         val project = projectRule.project
         val manager = DefaultProjectAccountSettingsManager(project)
 
@@ -131,7 +132,7 @@ class DefaultProjectAccountSettingsManagerTest {
     }
 
     @Test
-    fun testMakingRegionActiveFiresNotification() {
+    fun testMakingCredentialsActiveFiresNotification() {
         val project = projectRule.project
         val manager = DefaultProjectAccountSettingsManager(project)
 
@@ -140,7 +141,7 @@ class DefaultProjectAccountSettingsManagerTest {
         val busConnection = project.messageBus.connect()
         busConnection.subscribe(ProjectAccountSettingsManager.ACCOUNT_SETTINGS_CHANGED, object :
             ProjectAccountSettingsManager.AccountSettingsChangedNotifier {
-            override fun activeCredentialsChanged(credentialsProvider: ToolkitCredentialsProvider) {
+            override fun activeCredentialsChanged(credentialsProvider: ToolkitCredentialsProvider?) {
                 gotNotification = true
             }
         })
@@ -308,6 +309,39 @@ class DefaultProjectAccountSettingsManagerTest {
     fun testInvalidDefaultProfileCredentialNotSelected() {
         mockCredentialManager.addCredentials("profile:default", AwsBasicCredentials.create("Access", "Secret"), false)
         val manager = DefaultProjectAccountSettingsManager(projectRule.project)
+        assertThat(manager.hasActiveCredentials()).isFalse()
+    }
+
+    @Test
+    fun testRemovingActiveProfileFallsBackToDefaultIfExists() {
+        mockCredentialManager.addCredentials("profile:default", AwsBasicCredentials.create("Access", "Secret"), true)
+        val manager = DefaultProjectAccountSettingsManager(projectRule.project)
+        manager.activeCredentialProvider = mockCredentialManager.addCredentials(
+            "profile:admin",
+            AwsBasicCredentials.create("Access", "Secret"),
+            true
+        )
+
+        assertThat(manager.activeCredentialProvider.id).isEqualTo("profile:admin")
+
+        ApplicationManager.getApplication().messageBus.syncPublisher(CredentialManager.CREDENTIALS_CHANGED)
+            .providerRemoved("profile:admin")
+        assertThat(manager.activeCredentialProvider.id).isEqualTo("profile:default")
+    }
+
+    @Test
+    fun testRemovingActiveProfileFallsBackToNothingIfNoDefault() {
+        val manager = DefaultProjectAccountSettingsManager(projectRule.project)
+        manager.activeCredentialProvider = mockCredentialManager.addCredentials(
+            "profile:admin",
+            AwsBasicCredentials.create("Access", "Secret"),
+            true
+        )
+
+        assertThat(manager.activeCredentialProvider.id).isEqualTo("profile:admin")
+
+        ApplicationManager.getApplication().messageBus.syncPublisher(CredentialManager.CREDENTIALS_CHANGED)
+            .providerRemoved("profile:admin")
         assertThat(manager.hasActiveCredentials()).isFalse()
     }
 }

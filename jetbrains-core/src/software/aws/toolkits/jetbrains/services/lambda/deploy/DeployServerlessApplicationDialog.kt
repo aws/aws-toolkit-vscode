@@ -97,6 +97,8 @@ class DeployServerlessApplicationDialog(
         }
 
         view.requireReview.isSelected = !(settings?.samAutoExecute(samPath) ?: true)
+
+        view.useContainer.isSelected = (settings?.samUseContainer(samPath) ?: false)
     }
 
     override fun createCenterPanel(): JComponent? = view.content
@@ -122,6 +124,9 @@ class DeployServerlessApplicationDialog(
 
     val parameters: Map<String, String>
         get() = view.templateParameters
+
+    val useContainer: Boolean
+        get() = view.useContainer.isSelected
 
     private fun updateStackEnabledStates() {
         view.newStackName.isEnabled = view.createStack.isSelected
@@ -181,8 +186,10 @@ class DeploySamApplicationValidator {
 
         if (unsetParameters.any()) {
             return ValidationInfo(
-                    message("serverless.application.deploy.validation.template.values.missing", unsetParameters.joinToString(", ")),
-                    view.templateEditorComponent
+                message(
+                    "serverless.application.deploy.validation.template.values.missing",
+                    unsetParameters.joinToString(", ")
+                )
             )
         }
 

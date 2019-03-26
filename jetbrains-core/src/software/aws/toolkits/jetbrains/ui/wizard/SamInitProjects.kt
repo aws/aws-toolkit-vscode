@@ -3,17 +3,42 @@
 
 package software.aws.toolkits.jetbrains.ui.wizard
 
-import com.intellij.openapi.vfs.VirtualFile
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamInitRunner
 import software.aws.toolkits.resources.message
 
-val SAM_TEMPLATES = listOf(SamHelloWorld(), SamDynamoDBCookieCutter())
+val SAM_TEMPLATES = listOf(
+    SamHelloWorld(),
+    SamHelloWorldMaven(),
+    SamHelloWorldGradle(),
+    SamDynamoDBCookieCutter()
+)
 
 class SamHelloWorld : SamProjectTemplate() {
     override fun getName() = message("sam.init.template.hello_world.name")
 
     override fun getDescription() = message("sam.init.template.hello_world.description")
+
+    override fun unsupportedRuntimes() = setOf(Runtime.JAVA8)
+}
+
+class SamHelloWorldMaven : SamProjectTemplate() {
+    override fun getName() = message("sam.init.template.hello_world_maven.name")
+
+    override fun getDescription() = message("sam.init.template.hello_world.description")
+
+    override fun supportedRuntimes() = setOf(Runtime.JAVA8)
+
+    override fun dependencyManager(): String? = "maven"
+}
+
+class SamHelloWorldGradle : SamProjectTemplate() {
+    override fun getName() = message("sam.init.template.hello_world_gradle.name")
+
+    override fun getDescription() = message("sam.init.template.hello_world.description")
+
+    override fun supportedRuntimes() = setOf(Runtime.JAVA8)
+
+    override fun dependencyManager(): String? = "gradle"
 }
 
 class SamDynamoDBCookieCutter : SamProjectTemplate() {
@@ -21,7 +46,7 @@ class SamDynamoDBCookieCutter : SamProjectTemplate() {
 
     override fun getDescription() = message("sam.init.template.dynamodb_cookiecutter.description")
 
-    override fun doBuild(runtime: Runtime, outputDir: VirtualFile) {
-        SamInitRunner(SamModuleType.ID, outputDir, runtime, "gh:aws-samples/cookiecutter-aws-sam-dynamodb-python").execute()
-    }
+    override fun supportedRuntimes() = setOf(Runtime.PYTHON2_7, Runtime.PYTHON3_6, Runtime.PYTHON3_7)
+
+    override fun location(): String? = "gh:aws-samples/cookiecutter-aws-sam-dynamodb-python"
 }

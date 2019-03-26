@@ -12,6 +12,7 @@ import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiElement
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
 
+@Suppress("DEPRECATION") // LazyRunConfigurationProducer not added till 2019.1
 class LambdaRemoteRunConfigurationProducer : RunConfigurationProducer<LambdaRemoteRunConfiguration>(getFactory()) {
     // Filter all Lambda run configurations down to only ones that are Lambda remote for this run producer
     override fun getConfigurationSettingsList(runManager: RunManager): List<RunnerAndConfigurationSettings> =
@@ -25,8 +26,11 @@ class LambdaRemoteRunConfigurationProducer : RunConfigurationProducer<LambdaRemo
         val location = context.location as? RemoteLambdaLocation ?: return false
         val function = location.lambdaFunction
 
-        configuration.configure(function.credentialProviderId, function.region.id, function.name)
+        configuration.credentialProviderId(function.credentialProviderId)
+        configuration.regionId(function.region.id)
+        configuration.functionName(function.name)
         configuration.setGeneratedName()
+
         return true
     }
 
@@ -36,13 +40,14 @@ class LambdaRemoteRunConfigurationProducer : RunConfigurationProducer<LambdaRemo
     ): Boolean {
         val location = context.location as? RemoteLambdaLocation ?: return false
         val function = location.lambdaFunction
-        return configuration.settings.functionName == function.name &&
-                configuration.settings.credentialProviderId == function.credentialProviderId &&
-                configuration.settings.regionId == function.region.id
+        return configuration.functionName() == function.name &&
+                configuration.credentialProviderId() == function.credentialProviderId &&
+                configuration.regionId() == function.region.id
     }
 
     companion object {
-        private fun getFactory(): ConfigurationFactory =
-            LambdaRunConfiguration.getInstance().configurationFactories.first { it is LambdaRemoteRunConfigurationFactory }
+        private fun getFactory(): ConfigurationFactory = LambdaRunConfiguration.getInstance()
+            .configurationFactories
+            .first { it is LambdaRemoteRunConfigurationFactory }
     }
 }

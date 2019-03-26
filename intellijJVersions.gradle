@@ -1,0 +1,65 @@
+static def ideProfiles() {
+    return [
+            "2018.3": [
+                    "IC": [
+                            version: "IC-2018.3.5",
+                            plugins: [
+                                    "yaml",
+                                    "PythonCore:2018.3.183.4284.148"
+                            ]
+                    ]
+            ],
+            "2019.1": [
+                    "IC": [
+                            version: "IC-191.5849.21", // TODO: Update to stable
+                            plugins: [
+                                    "yaml",
+                                    "PythonCore:2019.1.191.5849.16"
+                            ]
+                    ]
+            ]
+    ]
+}
+
+def idePlugins(String productCode) {
+    def product = ideProfile().getAt(productCode)
+    if (product == null) {
+        throw IllegalArgumentException("Unknown IDE product `$productCode` for ${resolveIdeProfileName()}")
+    }
+    return product.plugins
+}
+
+def ideVersion(String productCode) {
+    def product = ideProfile()[productCode]
+    if (product == null) {
+        throw IllegalArgumentException("Unknown IDE product `$productCode` for ${resolveIdeProfileName()}")
+    }
+    return product.version
+}
+
+def ideProfile() {
+    def profileName = resolveIdeProfileName()
+    def profile = ideProfiles()[profileName]
+    if (profile == null) {
+        throw IllegalArgumentException("Unknown ideProfile `$profileName`")
+    }
+
+    return profile
+}
+
+def resolveIdeProfileName() {
+    if (System.env.ALTERNATIVE_IDE_PROFILE_NAME) {
+        return System.env.ALTERNATIVE_IDE_PROFILE_NAME
+    }
+
+    return project.ideProfileName
+}
+
+ext {
+    ideProfiles = this.&ideProfiles
+    idePlugins = this.&idePlugins
+    ideVersion = this.&ideVersion
+    ideProfile = this.&ideProfile
+    resolveIdeProfileName = this.&resolveIdeProfileName
+}
+

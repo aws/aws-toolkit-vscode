@@ -3,6 +3,10 @@
 
 package software.aws.toolkits.core.credentials
 
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
@@ -16,6 +20,8 @@ class EnvironmentVariableToolkitCredentialsProviderFactoryTest {
     @JvmField
     val envHelper = EnvironmentVariableHelper()
 
+    private val mockManager: ToolkitCredentialsProviderManager = mock()
+
     @Before
     fun setUp() {
         envHelper.remove(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN)
@@ -23,16 +29,18 @@ class EnvironmentVariableToolkitCredentialsProviderFactoryTest {
 
     @Test
     fun testLoadingWithNoneSet() {
-        val providerFactory = EnvironmentVariableToolkitCredentialsProviderFactory()
+        val providerFactory = EnvironmentVariableToolkitCredentialsProviderFactory(mockManager)
         assertThat(providerFactory.listCredentialProviders()).isEmpty()
+        verify(mockManager, times(0)).providerAdded(any())
     }
 
     @Test
     fun testLoadingPartiallySet() {
         envHelper[AWS_ACCESS_KEY_ID] = "foo"
 
-        val providerFactory = EnvironmentVariableToolkitCredentialsProviderFactory()
+        val providerFactory = EnvironmentVariableToolkitCredentialsProviderFactory(mockManager)
         assertThat(providerFactory.listCredentialProviders()).isEmpty()
+        verify(mockManager, times(0)).providerAdded(any())
     }
 
     @Test
@@ -40,13 +48,15 @@ class EnvironmentVariableToolkitCredentialsProviderFactoryTest {
         envHelper[AWS_ACCESS_KEY_ID] = "foo"
         envHelper[AWS_SECRET_ACCESS_KEY] = "bar"
 
-        val providerFactory = EnvironmentVariableToolkitCredentialsProviderFactory()
+        val providerFactory = EnvironmentVariableToolkitCredentialsProviderFactory(mockManager)
         assertThat(providerFactory.listCredentialProviders())
             .hasSize(1)
             .element(0)
             .satisfies {
                 assertThat(it.resolveCredentials()).isExactlyInstanceOf(AwsBasicCredentials::class.java)
             }
+
+        verify(mockManager).providerAdded(any())
     }
 
     @Test
@@ -55,13 +65,15 @@ class EnvironmentVariableToolkitCredentialsProviderFactoryTest {
         envHelper[AWS_SECRET_ACCESS_KEY] = "bar"
         envHelper[AWS_SESSION_TOKEN] = "baz"
 
-        val providerFactory = EnvironmentVariableToolkitCredentialsProviderFactory()
+        val providerFactory = EnvironmentVariableToolkitCredentialsProviderFactory(mockManager)
         assertThat(providerFactory.listCredentialProviders())
             .hasSize(1)
             .element(0)
             .satisfies {
                 assertThat(it.resolveCredentials()).isExactlyInstanceOf(AwsSessionCredentials::class.java)
             }
+
+        verify(mockManager).providerAdded(any())
     }
 
     companion object {
