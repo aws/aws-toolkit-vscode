@@ -12,12 +12,14 @@
 
 <p><h2><strong>Features</strong></h2></p>
 
+<p><strong>SAM features are currently limited to Java and Python only</strong></p>
+
 <ul>
     <li><strong>New Project Wizard</strong> - Get started quickly by using one of the quickstart serverless application templates</li>
     <li><strong>Run/Debug Local Lambda Functions</strong> - Locally test and step-through debug functions in a Lambda-like execution environment provided by the <a href="https://github.com/awslabs/aws-sam-cli">AWS SAM CLI</a></li>
     <li><strong>Resource Explorer</strong> - View your AWS Lambda remote functions & related CloudFormation stacks</li>
     <li><strong>Invoke Remote Lambda Functions</strong> - Invoke remote functions using a sharable run-configuration</li>
-    <li><strong>Deploy SAM-based Applications</strong> - (<strong>Python only</strong>) Package, deploy & track SAM-based applications</li>
+    <li><strong>Deploy SAM-based Applications</strong> - Package, deploy & track SAM-based applications</li>
 </ul>
 </p>
 

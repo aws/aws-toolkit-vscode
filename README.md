@@ -48,11 +48,13 @@ Features that don't relate to a specific AWS service.
 
 Many of these features require the [AWS SAM CLI](https://github.com/awslabs/aws-sam-cli) to be installed, see the Serverless Application Model ([SAM](https://aws.amazon.com/serverless/sam/)) website for more information on installation of the SAM CLI.
 
+**SAM features are currently limited to Java and Python only**
+
 * **New Project Wizard** - Get started quickly by using one of the quickstart serverless application templates.
 * **Run/Debug Local Lambda Functions** - Locally test and step-through debug functions in a Lambda-like execution environment provided by the [AWS SAM CLI](https://github.com/awslabs/aws-sam-cli)
 * **Invoke Remote Lambda Functions** - Invoke remote functions using a sharable run-configuration
 * **Package & Deploy Lambda Functions** - Ability to package a Lambda function zip and create a remote lambda
-* **Deploy SAM-based Applications** - (**Python only**) Package, deploy & track SAM-based applications
+* **Deploy SAM-based Applications** - Package, deploy & track SAM-based applications
 
 *NB: Python-only features are available in both PyCharm and IntelliJ with the [Python Plugin](https://www.jetbrains.com/help/idea/plugin-overview.html) installed.*
 
