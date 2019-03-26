@@ -34,6 +34,7 @@ import { DefaultSettingsConfiguration, SettingsConfiguration } from './shared/se
 import { AWSStatusBar } from './shared/statusBar'
 import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
 import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryService'
+import { TelemetryService } from './shared/telemetry/telemetryService'
 import { registerCommand } from './shared/telemetry/telemetryUtils'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { PromiseSharer } from './shared/utilities/promiseUtilities'
@@ -77,7 +78,10 @@ export async function activate(context: vscode.ExtensionContext) {
         await ext.telemetry.start()
 
         context.subscriptions.push(
-            ...await activateCodeLensProviders(awsContext.settingsConfiguration, toolkitOutputChannel)
+            ...await activateCodeLensProviders(
+                awsContext.settingsConfiguration,
+                toolkitOutputChannel,
+                ext.telemetry)
         )
 
         registerCommand({
@@ -166,12 +170,14 @@ export async function deactivate() {
 
 async function activateCodeLensProviders(
     configuration: SettingsConfiguration,
-    toolkitOutputChannel: vscode.OutputChannel
+    toolkitOutputChannel: vscode.OutputChannel,
+    telemetryService: TelemetryService,
 ): Promise<vscode.Disposable[]> {
     const disposables: vscode.Disposable[] = []
     const providerParams: CodeLensProviderParams = {
         configuration,
-        outputChannel: toolkitOutputChannel
+        outputChannel: toolkitOutputChannel,
+        telemetryService,
     }
 
     tsLensProvider.initialize(providerParams)

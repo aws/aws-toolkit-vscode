@@ -176,7 +176,8 @@ export async function initialize({
     configuration,
     outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultSamCliProcessInvoker(),
-    taskInvoker = new DefaultSamCliTaskInvoker()
+    taskInvoker = new DefaultSamCliTaskInvoker(),
+    telemetryService: telemetryService,
 }: CodeLensProviderParams): Promise<void> {
     const logger = getLogger()
 
@@ -248,7 +249,9 @@ export async function initialize({
                         setTimeout(resolve, 4000)
                     })
                 }
-            }
+            },
+            runtime,
+            telemetryService
         })
         if (args.isDebug && lambdaDebugFilePath) {
             await unlink(lambdaDebugFilePath)
