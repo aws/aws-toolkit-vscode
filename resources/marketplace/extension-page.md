@@ -2,6 +2,8 @@
 
 The AWS Toolkit for Visual Studio Code is an extension that enables you to interact with [Amazon Web Services (AWS)](https://aws.amazon.com/what-is-aws/) from within Visual Studio Code.
 
+![Overview](./overview.png)
+
 ## Contents
 
 * [Features](#features)
@@ -18,7 +20,9 @@ You can use the AWS Toolkit for Visual Studio Code to:
   * List available AWS CloudFormation stacks that contain AWS serverless applications.
   * List available AWS Lambda functions.
   * Invoke available Lambda functions.
-  
+
+  ![AWS Explorer](./aws-explorer.png)
+
 * [Develop serverless applications locally, and then deploy them to an AWS account](#developing-serverless-applications).
 
 [Return to Top](#top)
@@ -49,6 +53,8 @@ For complete setup instructions, see [Setting Up the AWS Toolkit for Visual Stud
 [Return to Top](#top)
 
 ### <a id="command-palette"></a>Command Palette
+
+![Debug Icon](./command-palette.png)
 
 You can access many of the AWS Toolkit for Visual Studio Code features through **Command Palette**. To access the available commands, choose **View, Command Palette** on the menu bar, and then begin typing `AWS:`.
 
@@ -111,6 +117,8 @@ You can use the AWS Toolkit for Visual Studio Code to create, run, debug, and de
 
 #### <a id="create-serverless-application"></a>Create a Serverless Application
 
+![Create SAM Application](./create-sam-app.gif)
+
 1. On the menu bar, choose **View, Command Palette**.
 1. Begin typing: `AWS: Create new SAM Application`. When you see the **AWS: Create new SAM Application** command, choose it.
 1. Follow the on-screen instructions to finish creating the SAM application.
@@ -122,6 +130,10 @@ For more information, see [Creating a Serverless Application](https://docs.aws.a
 [Return to Top](#top)
 
 #### <a id="run-debug-serverless-application"></a>Run or Debug a Serverless Application
+
+![Configure and Run](./sam-configure-and-run.gif)
+
+(_Clip is time lapsed_)
 
 After you choose the **AWS** icon in the Activity Bar, CodeLenses display within open serverless application code files above functions that use AWS Lambda function handler syntax. (A _handler_ is a function that Lambda calls to start execution of a Lambda function.) These CodeLenses enable you to run or debug the corresponding serverless application locally. CodeLens actions here include:
 
@@ -136,6 +148,10 @@ For information about how to work with remote versions of Lambda functions, see 
 [Return to Top](#top)
 
 #### <a id="deploy-serverless-application"></a>Deploy a Serverless Application
+
+![Deploy SAM Application](./sam-deploy.gif)
+
+(_Clip is time lapsed_)
 
 Before you start this procedure, you must have an Amazon S3 bucket in the AWS account. The AWS Toolkit for Visual Studio Code will use this bucket when packaging and deploying the application. (To create a bucket, see [How Do I Create an S3 Bucket](https://docs.aws.amazon.com/AmazonS3/latest/user-guide/create-bucket.html) in the _Amazon Simple Storage Service Console User Guide_.)  
 
