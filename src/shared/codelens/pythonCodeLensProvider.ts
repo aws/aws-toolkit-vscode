@@ -61,7 +61,7 @@ const getLambdaHandlerCandidates = async ({ uri }: { uri: vscode.Uri }): Promise
                     filePath: uri.fsPath,
                     handlerName: `${path.parse(filename).name}.${symbol.name}`
                 })
-            }`)
+                }`)
 
             return {
                 filename,
@@ -83,7 +83,7 @@ const makePythonDebugManifest = async (params: {
     }
     getLogger().debug(`pythonCodeLensProvider.makePythonDebugManifest params: ${JSON.stringify(params, undefined, 2)}`)
     // TODO: Make this logic more robust. What if other module names include ptvsd?
-    if (manifestText.indexOf('ptvsd') < 0 ) {
+    if (manifestText.indexOf('ptvsd') < 0) {
         manifestText += `${os.EOL}ptvsd>4.2,<5`
         const debugManifestPath = path.join(params.outputDir, 'debug-requirements.txt')
         await writeFile(debugManifestPath, manifestText)
@@ -98,7 +98,7 @@ const makeLambdaDebugFile = async (params: {
     handlerName: string,
     debugPort: number,
     outputDir: string
-}): Promise<{outFilePath: string, debugHandlerName: string}> => {
+}): Promise<{ outFilePath: string, debugHandlerName: string }> => {
     if (!params.outputDir) {
         throw new Error('Must specify outputDir')
     }
@@ -145,14 +145,14 @@ const fixFilePathCapitalization = (filePath: string): string => {
     if (process.platform === 'win32') {
         const startsWithLowercase = new RegExp(/^[a-z].*/)
         if (startsWithLowercase.test(filePath)) {
-            return  filePath.slice(0, 1).toUpperCase() + filePath.slice(1)
+            return filePath.slice(0, 1).toUpperCase() + filePath.slice(1)
         }
     }
 
     return filePath
 }
 
-const makeDebugConfig = ({debugPort, samProjectCodeRoot}: {
+const makeDebugConfig = ({ debugPort, samProjectCodeRoot }: {
     debugPort?: number,
     samProjectCodeRoot: string,
 }): PythonDebugConfiguration => {
@@ -190,15 +190,15 @@ export async function initialize({
 
         let handlerName: string = args.handlerName
         let manifestPath: string | undefined
-        let lambdaDubugFilePath: string
+        let lambdaDebugFilePath: string | undefined
         if (args.isDebug) {
             debugPort = await getDebugPort()
-            const {debugHandlerName, outFilePath} = await makeLambdaDebugFile({
+            const { debugHandlerName, outFilePath } = await makeLambdaDebugFile({
                 handlerName: args.handlerName,
                 debugPort: debugPort,
                 outputDir: samProjectCodeRoot,
             })
-            lambdaDubugFilePath = outFilePath
+            lambdaDebugFilePath = outFilePath
             handlerName = debugHandlerName
             manifestPath = await makePythonDebugManifest({
                 samProjectCodeRoot,
@@ -214,8 +214,8 @@ export async function initialize({
             workspaceUri: args.workspaceFolder.uri
         })
         logger.debug(`pythonCodeLensProvider.initialize: ${
-            JSON.stringify({samProjectCodeRoot, inputTemplatePath, handlerName, manifestPath}, undefined, 2)
-        }`)
+            JSON.stringify({ samProjectCodeRoot, inputTemplatePath, handlerName, manifestPath }, undefined, 2)
+            }`)
 
         const channelLogger = getChannelLogger(toolkitOutputChannel)
         const codeDir = samProjectCodeRoot
@@ -228,8 +228,8 @@ export async function initialize({
             samProcessInvoker: processInvoker,
 
         })
-    
-        const debugConfig: PythonDebugConfiguration = makeDebugConfig({debugPort, samProjectCodeRoot})
+
+        const debugConfig: PythonDebugConfiguration = makeDebugConfig({ debugPort, samProjectCodeRoot })
         await invokeLambdaFunction({
             baseBuildDir,
             channelLogger,
@@ -250,9 +250,8 @@ export async function initialize({
                 }
             }
         })
-        if (args.isDebug) {
-            // @ts-ignore 2454
-            unlink(lambdaDubugFilePath)
+        if (args.isDebug && lambdaDebugFilePath) {
+            await unlink(lambdaDebugFilePath)
         }
     }
 
