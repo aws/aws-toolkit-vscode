@@ -545,7 +545,7 @@ export async function attachDebugger(params: {
         } else if (!isDebuggerAttached) {
             retryDelay *= 2
 
-            shouldRetry = retryEnabled && retryDelay < 10000 ? true : false
+            shouldRetry = numAttempts < MAX_DEBUGGER_ATTEMPTS
             if (shouldRetry) {
                 const currTime = new Date()
                 recordDebugAttachResult({
