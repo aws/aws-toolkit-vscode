@@ -62,14 +62,20 @@ class SamCommonTest {
     }
 
     @Test
+    fun validateBothParametersAreEqualOnSemVer() {
+        assertThat(SamCommon.expectedSamMinVersion.rawVersion).isEqualTo(SamCommon.expectedSamMinVersion.parsedVersion)
+        assertThat(SamCommon.expectedSamMaxVersion.rawVersion).isEqualTo(SamCommon.expectedSamMaxVersion.parsedVersion)
+    }
+
+    @Test
     fun compatableSamVersion() {
         val versions = arrayOf(
-            "0.${SamCommon.expectedSamMinVersion.minor}.0",
+            "0.${SamCommon.expectedSamMinVersion.minor}.${SamCommon.expectedSamMinVersion.patch}",
             "0.${SamCommon.expectedSamMinVersion.minor}.123",
             "0.${SamCommon.expectedSamMinVersion.minor}.999999999",
-            "0.${SamCommon.expectedSamMinVersion.minor}.0-beta",
-            "0.${SamCommon.expectedSamMinVersion.minor}.0-beta+build",
-            "0.${SamCommon.expectedSamMaxVersion.minor - 1}.0"
+            "0.${SamCommon.expectedSamMinVersion.minor}.${SamCommon.expectedSamMinVersion.patch}-beta",
+            "0.${SamCommon.expectedSamMinVersion.minor}.${SamCommon.expectedSamMinVersion.patch}-beta+build",
+            "0.${SamCommon.expectedSamMaxVersion.minor - 1}.${SamCommon.expectedSamMinVersion.patch}"
         )
         for (version in versions) {
             assertNull(SamCommon.validate(makeATestSam(getVersionAsJson(version)).toString()))
