@@ -11,8 +11,8 @@ import * as path from 'path'
 import { STS } from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { EnvironmentVariables } from '../environmentVariables'
-import { writeFile } from '../filesystem'
-import { readFileAsString } from '../filesystemUtilities'
+import { mkdir, writeFile } from '../filesystem'
+import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { getLogger, Logger } from '../logger'
 import { SystemUtilities } from '../systemUtilities'
 
@@ -70,6 +70,18 @@ export class UserCredentialsUtils {
 
         return env.AWS_CONFIG_FILE
             || path.join(SystemUtilities.getHomeDirectory(), '.aws', 'config')
+    }
+
+    /**
+     * @description Determines if credentials directory exists
+     * If it doesn't, creates credentials directory
+     * at directory from this.getCredentialsFilename()
+     */
+    public static async generateCredentialDirectoryIfNonexistent(): Promise<void> {
+        const filepath = path.dirname(this.getCredentialsFilename())
+        if (!await fileExists(filepath)) {
+            await mkdir(filepath, { recursive: true })
+        }
     }
 
     /**
