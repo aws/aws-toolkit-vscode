@@ -157,6 +157,7 @@ export class DefaultAWSContextCommands {
             )
 
             if (validationResult.isValid) {
+                await UserCredentialsUtils.generateCredentialDirectoryIfNonexistent()
                 await UserCredentialsUtils.generateCredentialsFile(
                     ext.context.extensionPath,
                     {
