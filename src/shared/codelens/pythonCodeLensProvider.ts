@@ -149,10 +149,7 @@ def ${debugHandlerFunctionName}(event, context):
 
 const fixFilePathCapitalization = (filePath: string): string => {
     if (process.platform === 'win32') {
-        const startsWithLowercase = new RegExp(/^[a-z].*/)
-        if (startsWithLowercase.test(filePath)) {
-            return filePath.slice(0, 1).toUpperCase() + filePath.slice(1)
-        }
+        return filePath.replace(/^[a-z]/, match => match.toUpperCase())
     }
 
     return filePath
