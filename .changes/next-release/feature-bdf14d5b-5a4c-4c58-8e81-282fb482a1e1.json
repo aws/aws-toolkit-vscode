@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Add option to use a container-based build during serverless application deployment"
-}

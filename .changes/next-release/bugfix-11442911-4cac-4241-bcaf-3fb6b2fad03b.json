@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix issue where invalid AWS Credentials prevent plugin startup"
-}

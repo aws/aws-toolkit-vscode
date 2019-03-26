@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Building of Python based Lambda functions has been migrated to using `sam build`. This adds the option to use a container-based build during local run/debug of Lambda functions."
-}

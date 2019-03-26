@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Require SAM run configurations to have an associated credential profile (#526)"
-}
