@@ -47,7 +47,7 @@ export function registerCommand<T>({
                     datum.metadata = new Map()
                 }
                 datum.metadata.set('hasException', `${hasException}`)
-                datum.metadata.set('duration', `${endTime.getMilliseconds() - startTime.getMilliseconds()}`)
+                datum.metadata.set('duration', `${endTime.getTime() - startTime.getTime()}`)
 
                 ext.telemetry.record({
                     namespace: 'Command',
