@@ -15,6 +15,7 @@ import {
 } from '../sam/cli/samCliInvoker'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { Datum } from '../telemetry/telemetryEvent'
+import { TelemetryService } from '../telemetry/telemetryService'
 import { defaultMetricDatum } from '../telemetry/telemetryUtils'
 import { localize } from '../utilities/vsCodeUtils'
 
@@ -24,7 +25,8 @@ export interface CodeLensProviderParams {
     configuration: SettingsConfiguration,
     outputChannel: vscode.OutputChannel,
     processInvoker?: SamCliProcessInvoker,
-    taskInvoker?: SamCliTaskInvoker
+    taskInvoker?: SamCliTaskInvoker,
+    telemetryService: TelemetryService,
 }
 
 interface MakeConfigureCodeLensParams {
@@ -49,7 +51,7 @@ export async function makeCodeLenses({ document, token, handlers, language }: {
         const range = (handler.range instanceof vscode.Range) ? handler.range : new vscode.Range(
             document.positionAt(handler.range.positionStart),
             document.positionAt(handler.range.positionEnd),
-          )
+        )
         const workspaceFolder:
             vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(document.uri)
 
@@ -66,7 +68,7 @@ export async function makeCodeLenses({ document, token, handlers, language }: {
         lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: false }))
         if (language !== 'python' || process.platform === 'win32') {
             // TODO: Run this unconditionally once we figure out remaining python debugging oddities
-            lenses.push(makeLocalInvokeCodeLens({...baseParams, isDebug: true}))
+            lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: true }))
         }
 
         try {
@@ -103,10 +105,10 @@ function makeLocalInvokeCodeLens(
 }
 
 function makeConfigureCodeLens({
-   document,
-   handlerName,
-   range,
-   workspaceFolder
+    document,
+    handlerName,
+    range,
+    workspaceFolder
 }: MakeConfigureCodeLensParams): vscode.CodeLens {
     // Handler will be the fully-qualified name, so we also allow '.' despite it being forbidden in handler names.
     if (/[^\w\-\.]/.test(handlerName)) {
@@ -124,7 +126,7 @@ function makeConfigureCodeLens({
     return new vscode.CodeLens(range, command)
 }
 
-export function getMetricDatum({command, isDebug, runtime}: {
+export function getMetricDatum({ command, isDebug, runtime }: {
     command: string,
     isDebug: boolean,
     runtime: string,

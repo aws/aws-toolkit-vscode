@@ -50,7 +50,8 @@ export function initialize({
     configuration,
     outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultSamCliProcessInvoker(),
-    taskInvoker = new DefaultSamCliTaskInvoker()
+    taskInvoker = new DefaultSamCliTaskInvoker(),
+    telemetryService
 }: CodeLensProviderParams): void {
     const runtime = 'nodejs8.10' // TODO: Remove hard coded value
 
@@ -59,7 +60,7 @@ export function initialize({
         let debugPort: number | undefined
 
         if (params.isDebug) {
-            debugPort  = await getDebugPort()
+            debugPort = await getDebugPort()
         }
 
         const debugConfig: NodejsDebugConfiguration = {
@@ -87,7 +88,8 @@ export function initialize({
             processInvoker,
             taskInvoker,
             debugConfig,
-            samProjectCodeRoot
+            samProjectCodeRoot,
+            telemetryService
         )
 
         await localLambdaRunner.run()
