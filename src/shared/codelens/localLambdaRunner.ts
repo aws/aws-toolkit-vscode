@@ -249,21 +249,11 @@ export class LocalLambdaRunner {
         await command.execute()
 
         if (this.localInvokeParams.isDebug) {
-            this.channelLogger.info(
-                'AWS.output.sam.local.waiting',
-                'Waiting for SAM Application to start before attaching debugger...'
-            )
-
-            const timeoutMillis = this.configuration.readSetting<number>(
-                'samcli.debug.attach.timeout.millis',
-                SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
-            )
-
-            await tcpPortUsed.waitUntilUsed(
-                this.debugPort,
-                SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS,
-                timeoutMillis
-            )
+            await waitForDebugPort({
+                debugPort: this.debugPort,
+                configuration: this.configuration,
+                channelLogger: this.channelLogger
+            })
 
             await this.attachDebugger()
         }
@@ -462,6 +452,12 @@ export const invokeLambdaFunction = async (params: {
     await command.execute()
 
     if (params.isDebug) {
+        await waitForDebugPort({
+            debugPort: params.debugConfig.port,
+            configuration: params.configuration,
+            channelLogger: params.channelLogger
+        })
+
         if (params.onWillAttachDebugger) {
             await params.onWillAttachDebugger()
         }
@@ -502,7 +498,7 @@ const getEnvironmentVariables = (config: HandlerConfig): SAMTemplateEnvironmentV
 export async function attachDebugger(params: {
     channeLogger: ChannelLogger,
     debugConfig: DebugConfiguration
-}): Promise<{success: boolean}> {
+}): Promise<{ success: boolean }> {
     const channelLogger = params.channeLogger
     const logger = params.channeLogger.logger
     logger.debug(`localLambdaRunner.attachDebugger: startDebugging with debugConfig: ${JSON.stringify(
@@ -557,4 +553,30 @@ export async function attachDebugger(params: {
     return {
         success: isDebuggerAttached
     }
+}
+
+async function waitForDebugPort({
+    debugPort,
+    configuration,
+    channelLogger,
+}: {
+    debugPort: number
+    configuration: SettingsConfiguration
+    channelLogger: ChannelLogger
+}): Promise<void> {
+    channelLogger.info(
+        'AWS.output.sam.local.waiting',
+        'Waiting for SAM Application to start before attaching debugger...'
+    )
+
+    const timeoutMillis = configuration.readSetting<number>(
+        'samcli.debug.attach.timeout.millis',
+        SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
+    )
+
+    await tcpPortUsed.waitUntilUsed(
+        debugPort,
+        SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS,
+        timeoutMillis
+    )
 }
