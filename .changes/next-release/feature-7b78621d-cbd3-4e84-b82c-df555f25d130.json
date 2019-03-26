@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "You can now specify if SAM should skip checking for newer docker images when invoking local Lambda functions"
-}

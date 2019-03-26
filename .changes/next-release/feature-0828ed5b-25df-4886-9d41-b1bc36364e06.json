@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Building of Java 8 based Lambda functions has been migrated to using `sam build` (Maven and Gradle are supported)."
-}

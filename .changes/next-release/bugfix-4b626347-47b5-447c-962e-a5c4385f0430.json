@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix issue where the cancel button in the Serverless Deploy progress dialog did nothing"
-}

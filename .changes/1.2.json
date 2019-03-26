@@ -1,0 +1,62 @@
+{
+  "date" : "2019-03-26",
+  "version" : "1.2",
+  "entries" : [ {
+    "type" : "breaking",
+    "description" : "Minimum SAM CLI version has been increased to 0.14.1"
+  }, {
+    "type" : "feature",
+    "description" : "You can now specify a docker network when locally running a Lambda"
+  }, {
+    "type" : "feature",
+    "description" : "You can now specify if SAM should skip checking for newer docker images when invoking local Lambda functions"
+  }, {
+    "type" : "feature",
+    "description" : "Add Gradle based SAM project template"
+  }, {
+    "type" : "feature",
+    "description" : "Java8 functions using `sam build` can now be deployed"
+  }, {
+    "type" : "feature",
+    "description" : "Building of Python based Lambda functions has been migrated to using `sam build`. This adds the option to use a container-based build during local run/debug of Lambda functions."
+  }, {
+    "type" : "feature",
+    "description" : "The AWS CLI config and credential files are now monitored for changes. Changes automatically take effect."
+  }, {
+    "type" : "feature",
+    "description" : "Enable support for IntelliJ/Pycharm 2019.1"
+  }, {
+    "type" : "feature",
+    "description" : "Add option to use a container-based build during serverless application deployment"
+  }, {
+    "type" : "feature",
+    "description" : "Enable support for running, debugging, and deploying Python 3.7 lambdas"
+  }, {
+    "type" : "feature",
+    "description" : "Building of Java 8 based Lambda functions has been migrated to using `sam build` (Maven and Gradle are supported)."
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix sort order for CloudFormation nodes in the AWS Explorer"
+  }, {
+    "type" : "bugfix",
+    "description" : "Clarify validation error when SAM CLI is too old"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix issue where 'Edit Credentials' action didn't check for both 'config' and 'credentials'"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix issue where the cancel button in the Serverless Deploy progress dialog did nothing"
+  }, {
+    "type" : "bugfix",
+    "description" : "Improve 'Invalid AWS Credentials' messaging to include error details"
+  }, {
+    "type" : "bugfix",
+    "description" : "Unable to edit AWS credential file via pycharm (#759)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix issue where invalid AWS Credentials prevent plugin startup"
+  }, {
+    "type" : "bugfix",
+    "description" : "Require SAM run configurations to have an associated credential profile (#526)"
+  } ]
+}

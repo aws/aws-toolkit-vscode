@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Clarify validation error when SAM CLI is too old"
-}
