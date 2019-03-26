@@ -50,6 +50,7 @@ export interface OnDidSamBuildParams {
 const TEMPLATE_RESOURCE_NAME: string = 'awsToolkitSamLocalResource'
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
 const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
+const MAX_DEBUGGER_ATTEMPTS: number = 10
 
 // TODO: Consider replacing LocalLambdaRunner use with associated duplicative functions
 export class LocalLambdaRunner {
@@ -528,7 +529,7 @@ export async function attachDebugger(params: {
         2
     )}`)
 
-    let isDebuggerAttached: boolean = false
+    let isDebuggerAttached: boolean | undefined = false
     let numAttempts = 0
     let retryDelay = 1000
     let shouldRetry = false
@@ -541,10 +542,13 @@ export async function attachDebugger(params: {
         )
         isDebuggerAttached = await vscode.debug.startDebugging(undefined, params.debugConfig)
         numAttempts += 1
-        if (!isDebuggerAttached) {
+        if (isDebuggerAttached === undefined) {
+            isDebuggerAttached = false
+            shouldRetry = numAttempts < MAX_DEBUGGER_ATTEMPTS
+        } else if (!isDebuggerAttached) {
             retryDelay *= 2
 
-            shouldRetry = retryEnabled && retryDelay < 10000 ? true : false
+            shouldRetry = retryEnabled && (numAttempts < MAX_DEBUGGER_ATTEMPTS)
             if (shouldRetry) {
                 const currTime = new Date()
                 recordDebugAttachResult({
