@@ -22,6 +22,7 @@ import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 
 import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
+import { TelemetryService } from '../telemetry/telemetryService'
 import { ChannelLogger, getChannelLogger, localize } from '../utilities/vsCodeUtils'
 
 export interface LambdaLocalInvokeParams {
@@ -67,6 +68,7 @@ export class LocalLambdaRunner {
         private readonly taskInvoker: SamCliTaskInvoker,
         private readonly debugConfig: DebugConfiguration,
         private readonly codeRootDirectoryPath: string,
+        private readonly telemetryService: TelemetryService,
         private readonly onDidSamBuild?: (params: OnDidSamBuildParams) => Promise<void>,
         private readonly onWillAttachDebugger?: () => Promise<void>,
         private readonly channelLogger = getChannelLogger(outputChannel),
@@ -246,6 +248,7 @@ export class LocalLambdaRunner {
             invoker: this.taskInvoker
         })
 
+        const startInvokeTime = new Date()
         await command.execute()
 
         if (this.localInvokeParams.isDebug) {
@@ -255,7 +258,7 @@ export class LocalLambdaRunner {
                 channelLogger: this.channelLogger
             })
 
-            await this.attachDebugger()
+            await this.attachDebugger(startInvokeTime.getTime())
         }
     }
 
@@ -284,7 +287,7 @@ export class LocalLambdaRunner {
         }
     }
 
-    private async attachDebugger() {
+    private async attachDebugger(startInvokeMillis: number) {
         if (this.onWillAttachDebugger) {
             // Enable caller to do last minute preparation before attaching debugger
             await this.onWillAttachDebugger()
@@ -294,6 +297,15 @@ export class LocalLambdaRunner {
             'Attaching to SAM Application...'
         )
         const attachSuccess: boolean = await vscode.debug.startDebugging(undefined, this.debugConfig)
+
+        const currTime = new Date()
+        recordDebugAttachResult({
+            telemetryService: this.telemetryService,
+            attachResult: attachSuccess,
+            attempts: 1,
+            duration: currTime.getTime() - startInvokeMillis,
+            runtime: this.runtime,
+        })
 
         if (attachSuccess) {
             this.channelLogger.info(
@@ -407,6 +419,8 @@ export const invokeLambdaFunction = async (params: {
     isDebug?: boolean,
     samTemplatePath: string,
     samTaskInvoker: SamCliTaskInvoker,
+    telemetryService: TelemetryService,
+    runtime: string,
     onWillAttachDebugger?(): Promise<void>,
 }): Promise<void> => {
     params.channelLogger.info(
@@ -449,6 +463,7 @@ export const invokeLambdaFunction = async (params: {
         invoker: params.samTaskInvoker
     })
 
+    const startInvokeTime = new Date()
     await command.execute()
 
     if (params.isDebug) {
@@ -463,7 +478,10 @@ export const invokeLambdaFunction = async (params: {
         }
         await attachDebugger({
             channeLogger: params.channelLogger,
-            debugConfig: params.debugConfig
+            debugConfig: params.debugConfig,
+            telemetryService: params.telemetryService,
+            startInvokeMillis: startInvokeTime.getTime(),
+            runtime: params.runtime,
         })
     }
 }
@@ -497,7 +515,10 @@ const getEnvironmentVariables = (config: HandlerConfig): SAMTemplateEnvironmentV
 
 export async function attachDebugger(params: {
     channeLogger: ChannelLogger,
-    debugConfig: DebugConfiguration
+    debugConfig: DebugConfiguration,
+    telemetryService: TelemetryService,
+    startInvokeMillis: number,
+    runtime: string,
 }): Promise<{ success: boolean }> {
     const channelLogger = params.channeLogger
     const logger = params.channeLogger.logger
@@ -507,7 +528,7 @@ export async function attachDebugger(params: {
         2
     )}`)
 
-    let isDebuggerAttached
+    let isDebuggerAttached: boolean = false
     let numAttempts = 0
     let retryDelay = 1000
     let shouldRetry = false
@@ -520,22 +541,41 @@ export async function attachDebugger(params: {
         )
         isDebuggerAttached = await vscode.debug.startDebugging(undefined, params.debugConfig)
         numAttempts += 1
-        // Wait <retryDelay> seconds and try again
-        await new Promise<void>(resolve => {
-            setTimeout(resolve, retryDelay)
-        })
-        retryDelay *= 2
         if (!isDebuggerAttached) {
+            retryDelay *= 2
+
             shouldRetry = retryEnabled && retryDelay < 10000 ? true : false
             if (shouldRetry) {
+                const currTime = new Date()
+                recordDebugAttachResult({
+                    telemetryService: params.telemetryService,
+                    attachResult: isDebuggerAttached,
+                    attempts: numAttempts,
+                    duration: currTime.getTime() - params.startInvokeMillis,
+                    runtime: params.runtime,
+                })
+
                 channelLogger.info(
                     'AWS.output.sam.local.attach.retry',
                     'Will try to attach debugger again in {0} seconds...',
                     String(retryDelay / 1000)
                 )
+
+                // Wait <retryDelay> seconds and try again
+                await new Promise<void>(resolve => {
+                    setTimeout(resolve, retryDelay)
+                })
             }
         }
     } while (!isDebuggerAttached && shouldRetry)
+
+    recordDebugAttachResult({
+        telemetryService: params.telemetryService,
+        attachResult: isDebuggerAttached,
+        attempts: numAttempts,
+        duration: new Date().getTime() - params.startInvokeMillis,
+        runtime: params.runtime,
+    })
 
     if (isDebuggerAttached) {
         channelLogger.info(
@@ -579,4 +619,44 @@ async function waitForDebugPort({
         SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS,
         timeoutMillis
     )
+}
+
+function recordDebugAttachResult({
+    telemetryService,
+    attachResult,
+    attempts,
+    duration,
+    runtime,
+}: {
+    telemetryService: TelemetryService
+    attachResult: boolean
+    attempts: number
+    duration: number
+    runtime: string
+}): void {
+    const currTime = new Date()
+    const namespace = attachResult ? 'DebugAttachSuccess' : 'DebugAttachFailure'
+
+    const metadata = new Map([
+        ['runtime', runtime],
+    ])
+
+    telemetryService.record({
+        namespace: namespace,
+        createTime: currTime,
+        data: [
+            {
+                name: 'attempts',
+                value: attempts,
+                unit: 'Count',
+                metadata,
+            },
+            {
+                name: 'duration',
+                value: duration,
+                unit: 'Milliseconds',
+                metadata,
+            }
+        ]
+    })
 }

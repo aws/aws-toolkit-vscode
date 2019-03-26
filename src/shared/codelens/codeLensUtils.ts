@@ -14,6 +14,7 @@ import { getLogger } from '../logger'
 import { SamCliProcessInvoker, SamCliTaskInvoker } from '../sam/cli/samCliInvokerUtils'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { Datum } from '../telemetry/telemetryEvent'
+import { TelemetryService } from '../telemetry/telemetryService'
 import { defaultMetricDatum } from '../telemetry/telemetryUtils'
 import { toArrayAsync } from '../utilities/collectionUtils'
 import { localize } from '../utilities/vsCodeUtils'
@@ -24,7 +25,8 @@ export interface CodeLensProviderParams {
     configuration: SettingsConfiguration,
     outputChannel: vscode.OutputChannel,
     processInvoker?: SamCliProcessInvoker,
-    taskInvoker?: SamCliTaskInvoker
+    taskInvoker?: SamCliTaskInvoker,
+    telemetryService: TelemetryService,
 }
 
 interface MakeConfigureCodeLensParams {
@@ -70,7 +72,7 @@ export async function makeCodeLenses({ document, token, handlers, language }: {
         lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: false }))
         if (language !== 'python' || process.platform === 'win32') {
             // TODO: Run this unconditionally once we figure out remaining python debugging oddities
-            lenses.push(makeLocalInvokeCodeLens({...baseParams, isDebug: true}))
+            lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: true }))
         }
 
         try {
