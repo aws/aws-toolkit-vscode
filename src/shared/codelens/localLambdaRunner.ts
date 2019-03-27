@@ -416,8 +416,10 @@ export const invokeLambdaFunction = async (params: {
     configuration: SettingsConfiguration,
     debugConfig: DebugConfiguration,
     documentUri: vscode.Uri,
+    originalHandlerName: string,
     handlerName: string,
     isDebug?: boolean,
+    originalSamTemplatePath: string,
     samTemplatePath: string,
     samTaskInvoker: SamCliTaskInvoker,
     telemetryService: TelemetryService,
@@ -434,9 +436,11 @@ export const invokeLambdaFunction = async (params: {
             configuration: params.configuration,
             debugConfig: params.debugConfig,
             documentUri: vscode.Uri,
+            originalHandlerName: params.originalHandlerName,
             handlerName: params.handlerName,
             isDebug: params.isDebug,
             samTemplatePath: params.samTemplatePath,
+            originalSamTemplatePath: params.originalSamTemplatePath,
         },
         undefined,
         2)}`
@@ -445,8 +449,9 @@ export const invokeLambdaFunction = async (params: {
     const eventPath: string = path.join(params.baseBuildDir, 'event.json')
     const environmentVariablePath = path.join(params.baseBuildDir, 'env-vars.json')
     const config = await getConfig({
-        handlerName: params.handlerName,
+        handlerName: params.originalHandlerName,
         documentUri: params.documentUri,
+        samTemplate: vscode.Uri.file(params.originalSamTemplatePath),
     })
 
     await writeFile(eventPath, JSON.stringify(config.event || {}))
@@ -490,6 +495,7 @@ export const invokeLambdaFunction = async (params: {
 const getConfig = async (params: {
     handlerName: string
     documentUri: vscode.Uri
+    samTemplate: vscode.Uri
 }): Promise<HandlerConfig> => {
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(params.documentUri)
     if (!workspaceFolder) {
@@ -499,7 +505,7 @@ const getConfig = async (params: {
     const config: HandlerConfig = await getLocalLambdaConfiguration(
         workspaceFolder,
         params.handlerName,
-        vscode.Uri.file('') // TODO : Merge from develop, fix in followup commit
+        params.samTemplate,
     )
 
     return config

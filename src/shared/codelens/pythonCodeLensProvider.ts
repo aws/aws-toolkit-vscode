@@ -249,8 +249,10 @@ export async function initialize({
             configuration,
             debugConfig,
             samTaskInvoker: taskInvoker,
+            originalSamTemplatePath: args.samTemplate.fsPath,
             samTemplatePath,
             documentUri: args.document.uri,
+            originalHandlerName: args.handlerName,
             handlerName,
             isDebug: args.isDebug,
             onWillAttachDebugger: async () => {
