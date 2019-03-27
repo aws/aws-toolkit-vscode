@@ -8,6 +8,7 @@ import { ConfigurationTarget } from 'vscode'
 import { profileSettingKey, regionSettingKey } from '../../shared/constants'
 import { DefaultAwsContext } from '../../shared/defaultAwsContext'
 import { SettingsConfiguration } from '../../shared/settingsConfiguration'
+import { FakeExtensionContext, FakeMementoStorage } from '../fakeExtensionContext'
 
 describe('DefaultAwsContext', () => {
 
@@ -40,23 +41,20 @@ describe('DefaultAwsContext', () => {
 
         }
 
-        const testContext = new DefaultAwsContext(new TestConfiguration())
+        const testContext = new DefaultAwsContext(new TestConfiguration(), new FakeExtensionContext())
         assert.strictEqual(testContext.getCredentialProfileName(), testProfileValue)
     })
 
     it('gets single region from config on startup', async () => {
 
-        class TestConfiguration extends ContextTestsSettingsConfigurationBase {
-            public readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
-                if (settingKey === regionSettingKey) {
-                    return [testRegion1Value] as any as T
-                }
+        const fakeMementoStorage: FakeMementoStorage = {}
+        fakeMementoStorage[regionSettingKey] = [testRegion1Value]
 
-                return super.readSetting(settingKey, defaultValue)
-            }
-        }
+        const fakeExtensionContext = new FakeExtensionContext({
+            globalState: fakeMementoStorage
+        })
 
-        const testContext = new DefaultAwsContext(new TestConfiguration())
+        const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase(), fakeExtensionContext)
         const regions = await testContext.getExplorerRegions()
         assert.strictEqual(regions.length, 1)
         assert.strictEqual(regions[0], testRegion1Value)
@@ -64,17 +62,14 @@ describe('DefaultAwsContext', () => {
 
     it('gets multiple regions from config on startup', async () => {
 
-        class TestConfiguration extends ContextTestsSettingsConfigurationBase {
-            public readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
-                if (settingKey === regionSettingKey) {
-                    return [testRegion1Value, testRegion2Value] as any as T
-                }
+        const fakeMementoStorage: FakeMementoStorage = {}
+        fakeMementoStorage[regionSettingKey] = [testRegion1Value, testRegion2Value]
 
-                return super.readSetting(settingKey, defaultValue)
-            }
-        }
+        const fakeExtensionContext = new FakeExtensionContext({
+            globalState: fakeMementoStorage
+        })
 
-        const testContext = new DefaultAwsContext(new TestConfiguration())
+        const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase(), fakeExtensionContext)
         const regions = await testContext.getExplorerRegions()
         assert.strictEqual(regions.length, 2)
         assert.strictEqual(regions[0], testRegion1Value)
@@ -93,7 +88,7 @@ describe('DefaultAwsContext', () => {
             }
         }
 
-        const testContext = new DefaultAwsContext(new TestConfiguration())
+        const testContext = new DefaultAwsContext(new TestConfiguration(), new FakeExtensionContext())
         await testContext.addExplorerRegion(testRegion1Value)
     })
 
@@ -110,7 +105,7 @@ describe('DefaultAwsContext', () => {
             }
         }
 
-        const testContext = new DefaultAwsContext(new TestConfiguration())
+        const testContext = new DefaultAwsContext(new TestConfiguration(), new FakeExtensionContext())
         await testContext.addExplorerRegion(testRegion1Value, testRegion2Value)
     })
 
@@ -131,7 +126,7 @@ describe('DefaultAwsContext', () => {
             }
         }
 
-        const testContext = new DefaultAwsContext(new TestConfiguration())
+        const testContext = new DefaultAwsContext(new TestConfiguration(), new FakeExtensionContext())
         await testContext.removeExplorerRegion(testRegion2Value)
     })
 
@@ -145,13 +140,16 @@ describe('DefaultAwsContext', () => {
             }
         }
 
-        const testContext = new DefaultAwsContext(new TestConfiguration())
+        const testContext = new DefaultAwsContext(new TestConfiguration(), new FakeExtensionContext())
         await testContext.setCredentialProfileName(testProfileValue)
     })
 
     it('fires event on single region change', async () => {
 
-        const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase())
+        const testContext = new DefaultAwsContext(
+            new ContextTestsSettingsConfigurationBase(),
+            new FakeExtensionContext()
+        )
 
         let invocationCount = 0
         testContext.onDidChangeContext((c) => {
@@ -167,7 +165,10 @@ describe('DefaultAwsContext', () => {
 
     it('fires event on multi region change', async () => {
 
-        const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase())
+        const testContext = new DefaultAwsContext(
+            new ContextTestsSettingsConfigurationBase(),
+            new FakeExtensionContext()
+        )
 
         let invocationCount = 0
         testContext.onDidChangeContext((c) => {
@@ -184,7 +185,10 @@ describe('DefaultAwsContext', () => {
 
     it('fires event on profile change', async () => {
 
-        const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase())
+        const testContext = new DefaultAwsContext(
+            new ContextTestsSettingsConfigurationBase(),
+            new FakeExtensionContext()
+        )
 
         let invocationCount = 0
         testContext.onDidChangeContext((c) => {

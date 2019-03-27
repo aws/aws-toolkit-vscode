@@ -6,7 +6,6 @@
 'use strict'
 
 import * as vscode from 'vscode'
-import { SettingsConfiguration } from '../settingsConfiguration'
 
 /**
  * Tracks the credentials selected by the user, ordered by most recent.
@@ -15,19 +14,17 @@ export class CredentialsProfileMru {
     public static readonly MAX_CREDENTIAL_MRU_SIZE = 5
 
     private static readonly configurationSettingName: string = 'recentCredentials'
-    private readonly _configuration: SettingsConfiguration
+    private readonly _context: vscode.ExtensionContext
 
-    public constructor(configuration: SettingsConfiguration) {
-        this._configuration = configuration
+    public constructor(context: vscode.ExtensionContext) {
+        this._context = context
     }
 
     /**
      * @description Returns the most recently used credentials names
      */
     public getMruList(): string[] {
-        const mru = this._configuration.readSetting<string[]>(CredentialsProfileMru.configurationSettingName)
-
-        return mru || []
+        return this._context.globalState.get<string[]>(CredentialsProfileMru.configurationSettingName, [])
     }
 
     /**
@@ -46,10 +43,6 @@ export class CredentialsProfileMru {
 
         mru.splice(CredentialsProfileMru.MAX_CREDENTIAL_MRU_SIZE)
 
-        await this._configuration.writeSetting(
-            CredentialsProfileMru.configurationSettingName,
-            mru,
-            vscode.ConfigurationTarget.Global
-        )
+        await this._context.globalState.update(CredentialsProfileMru.configurationSettingName, mru)
     }
 }
