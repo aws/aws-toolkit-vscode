@@ -184,11 +184,14 @@ function activateCodeLensProviders(
         )
     )
 
-    pyLensProvider.initialize(providerParams)
-    disposables.push(vscode.languages.registerCodeLensProvider(
-        pyLensProvider.PYTHON_ALLFILES,
-        pyLensProvider.makePythonCodeLensProvider()
-    ))
+    // TODO : Python CodeLenses will be disabled until feature/python-debugging is complete
+    if (false) {
+        pyLensProvider.initialize(providerParams)
+        disposables.push(vscode.languages.registerCodeLensProvider(
+            pyLensProvider.PYTHON_ALLFILES,
+            pyLensProvider.makePythonCodeLensProvider()
+        ))
+    }
 
     return disposables
 }
