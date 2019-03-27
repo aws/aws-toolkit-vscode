@@ -7,6 +7,9 @@ These instructions outline how you can debug a lambda handler locally using the 
 1. Install the [AWS Toolkit for Visual Studio Code](https://github.com/aws/aws-toolkit-vscode#getting-started).
 2. Install the [Python extension for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-python.python). This extension gives VS Code the ability to debug Python applications.
 3. Launch Visual Studio Code and open a SAM application or create a new one. <!-- TODO: Link to separate doc with instructions. -->
+
+    Note: Open the folder that contains `template.yaml`.
+
 4. Open a terminal at the root of your application and configure `virtualenv` by running `python -m venv ./.venv`.
 
 ## Instrument your code
