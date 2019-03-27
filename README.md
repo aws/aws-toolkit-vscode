@@ -77,7 +77,7 @@ You can also configure the AWS CLI by hand.
 
 1. If you haven't already, sign up for AWS. You can create a free account [here](https://aws.amazon.com/free/).
 2. Manually configure your configuration and credentials files as described [here](https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html).
-3. Ensure that your `.config` file contains a `[default]` profile with an AWS region code set as its `region`
+3. Ensure that your `config` file contains a `[default]` profile with an AWS region code set as its `region`
 
 #### Select your profile in Visual Studio Code
 
