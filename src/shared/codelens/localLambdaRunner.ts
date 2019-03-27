@@ -23,6 +23,7 @@ import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
+import { normalizeSeparator } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger, localize } from '../utilities/vsCodeUtils'
 
 export interface LambdaLocalInvokeParams {
@@ -335,6 +336,7 @@ export async function makeInputTemplate(params: {
     baseBuildDir: string,
     codeDir: string,
     documentUri: vscode.Uri
+    originalHandlerName: string,
     handlerName: string,
     runtime: string,
     workspaceUri: vscode.Uri,
@@ -348,19 +350,28 @@ export async function makeInputTemplate(params: {
         path.dirname(params.documentUri.fsPath)
     )
 
-    const relativeFunctionHandler = path.join(
-        handlerFileRelativePath,
-        params.handlerName,
-    ).replace('\\', '/')
-
-    // tslint:disable-next-line:max-line-length
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(params.workspaceUri)
     let existingTemplateResource: CloudFormation.Resource | undefined
     if (workspaceFolder) {
+
+        const relativeOriginalFunctionHandler = normalizeSeparator(
+            path.join(
+                handlerFileRelativePath,
+                params.originalHandlerName,
+            )
+        )
+
         const lambdas = await detectLocalLambdas([workspaceFolder])
-        const existingLambda = lambdas.find(lambda => lambda.handler === relativeFunctionHandler)
+        const existingLambda = lambdas.find(lambda => lambda.handler === relativeOriginalFunctionHandler)
         existingTemplateResource = existingLambda ? existingLambda.resource : undefined
     }
+
+    const relativeFunctionHandler = normalizeSeparator(
+        path.join(
+            handlerFileRelativePath,
+            params.handlerName,
+        )
+    )
 
     let newTemplate = new SamTemplateGenerator()
         .withCodeUri(params.codeDir)
@@ -416,8 +427,10 @@ export const invokeLambdaFunction = async (params: {
     configuration: SettingsConfiguration,
     debugConfig: DebugConfiguration,
     documentUri: vscode.Uri,
+    originalHandlerName: string,
     handlerName: string,
     isDebug?: boolean,
+    originalSamTemplatePath: string,
     samTemplatePath: string,
     samTaskInvoker: SamCliTaskInvoker,
     telemetryService: TelemetryService,
@@ -435,8 +448,10 @@ export const invokeLambdaFunction = async (params: {
             debugConfig: params.debugConfig,
             documentUri: vscode.Uri,
             handlerName: params.handlerName,
+            originalHandlerName: params.originalHandlerName,
             isDebug: params.isDebug,
             samTemplatePath: params.samTemplatePath,
+            originalSamTemplatePath: params.originalSamTemplatePath,
         },
         undefined,
         2)}`
@@ -445,8 +460,9 @@ export const invokeLambdaFunction = async (params: {
     const eventPath: string = path.join(params.baseBuildDir, 'event.json')
     const environmentVariablePath = path.join(params.baseBuildDir, 'env-vars.json')
     const config = await getConfig({
-        handlerName: params.handlerName,
+        handlerName: params.originalHandlerName,
         documentUri: params.documentUri,
+        samTemplate: vscode.Uri.file(params.originalSamTemplatePath),
     })
 
     await writeFile(eventPath, JSON.stringify(config.event || {}))
@@ -490,15 +506,17 @@ export const invokeLambdaFunction = async (params: {
 const getConfig = async (params: {
     handlerName: string
     documentUri: vscode.Uri
+    samTemplate: vscode.Uri
 }): Promise<HandlerConfig> => {
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(params.documentUri)
     if (!workspaceFolder) {
-        return buildHandlerConfig()
+        return generateDefaultHandlerConfig()
     }
 
     const config: HandlerConfig = await getLocalLambdaConfiguration(
         workspaceFolder,
-        params.handlerName
+        params.handlerName,
+        params.samTemplate,
     )
 
     return config
