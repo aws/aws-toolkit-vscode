@@ -13,7 +13,7 @@ import * as vscode from 'vscode'
 export class CredentialsProfileMru {
     public static readonly MAX_CREDENTIAL_MRU_SIZE = 5
 
-    private static readonly configurationSettingName: string = 'recentCredentials'
+    private static readonly configurationStateName: string = 'recentCredentials'
 
     public constructor(private readonly _context: vscode.ExtensionContext) {}
 
@@ -21,7 +21,7 @@ export class CredentialsProfileMru {
      * @description Returns the most recently used credentials names
      */
     public getMruList(): string[] {
-        return this._context.globalState.get<string[]>(CredentialsProfileMru.configurationSettingName, [])
+        return this._context.globalState.get<string[]>(CredentialsProfileMru.configurationStateName, [])
     }
 
     /**
@@ -40,6 +40,6 @@ export class CredentialsProfileMru {
 
         mru.splice(CredentialsProfileMru.MAX_CREDENTIAL_MRU_SIZE)
 
-        await this._context.globalState.update(CredentialsProfileMru.configurationSettingName, mru)
+        await this._context.globalState.update(CredentialsProfileMru.configurationStateName, mru)
     }
 }
