@@ -11,23 +11,25 @@ These instructions outline how you can debug a lambda handler locally using the 
 
 ## Instrument your code
 
-1. Add the line `ptvsd==4.2.4` to `<app root>/requirements.txt`
-2. Open a terminal in `<app root>`, then run:
+In the instructions below, replace `<sam app root>` and `<python source root>` with the appropriate names for your project. For example, if you just created a new SAM application called `my-sam-app`, then replace `<sam app root>` with `my-sam-app` and `<python source root>` with `hello_world`.
+
+1. Add the line `ptvsd==4.2.4` to `<sam app root>/<python source root>/requirements.txt`
+2. Open a terminal in `<sam app root>`, then run:
 
     ```bash
     # Bash
     . ./.venv/Scripts/activate
-    python -m pip install -r requirements.txt
+    python -m pip install -r <python source root>/requirements.txt
     ```
 
     ```powershell
     # PowerShell
     .\.venv\Scripts\Activate.ps1
-    python -m pip install -r requirements.txt
+    python -m pip install -r <python source root>/requirements.txt
     ```
 
 3. Select a port to use for debugging. In this example, we will use port `5678`.
-4. Add the following code to the beginning of `app.py`:
+4. Add the following code to the beginning of `<python source root>/app.py`:
 
     ```python
     import ptvsd
@@ -54,7 +56,7 @@ These instructions outline how you can debug a lambda handler locally using the 
                 "host": "localhost",
                 "pathMappings": [
                     {
-                        "localRoot": "${workspaceFolder}/my-sam-app/hello_world",
+                        "localRoot": "${workspaceFolder}/<python source root>",
                         "remoteRoot": "/var/task"
                     }
                 ]
@@ -75,7 +77,7 @@ These instructions outline how you can debug a lambda handler locally using the 
 ## Start debugging
 
 1. Set a breakpoint in your lambda handler somewhere after the line `ptvsd.wait_for_attach()`.
-2. Open a terminal in `<app root>`, and run the following commands. The SAM CLI will invoke your lambda handler, and wait for a debugger to attach to it.
+2. Open a terminal in `<sam app root>`, and run the following commands. The SAM CLI will invoke your lambda handler, and wait for a debugger to attach to it. Replace `HelloWorldFunction` with the name of the function that you want to invoke.
 
     ```bash
     # Bash
@@ -97,7 +99,7 @@ These instructions outline how you can debug a lambda handler locally using the 
 
 With the above steps, you need to manually invoke SAM CLI from the command line, wait for it to be ready, then attach the debugger. We can automate the process of invoking SAM CLI and waiting for it to be ready by using a `preLaunchTask`.
 
-1. Open `<app root>/.vscode/tasks.json` (create a new file if it does not already exist).
+1. Open `<sam app root>/.vscode/tasks.json` (create a new file if it does not already exist).
 2. Add the following contents to `tasks.json`:
 
     ```jsonc
@@ -115,14 +117,14 @@ With the above steps, you need to manually invoke SAM CLI from the command line,
                     "invoke",
                     "HelloWorldFunction", // Replace this with the resource name of your lambda function from your Serverless Application template.yaml file
                     "--template",
-                    "${workspaceFolder}/my-sam-app/.aws-sam/build/template.yaml", // Replace this with the appropriate workspace-relative path to your Serverless Application template.yaml file
+                    "${workspaceFolder}/.aws-sam/build/template.yaml", // Replace this with the appropriate workspace-relative path to your Serverless Application template.yaml file
                     "--no-event",
                     "-d",
                     "5678"
                 ],
                 "options": {
                     "env": {
-                        "VIRTUAL_ENV": "${workspaceFolder}/my-sam-app/.venv"
+                        "VIRTUAL_ENV": "${workspaceFolder}/.venv"
                     }
                 },
                 "isBackground": true,
@@ -148,7 +150,7 @@ With the above steps, you need to manually invoke SAM CLI from the command line,
     }
     ```
 
-3. Open `<app root>/.vscode/launch.json`, and add the following property to the `Python: Remote Attach` configuration that you created earlier, after `"request": "attach",`:
+3. Open `<sam app root>/.vscode/launch.json`, and add the following property to the `Python: Remote Attach` configuration that you created earlier, after `"request": "attach",`:
 
     ```jsonc
     "preLaunchTask": "Debug Python Lambda Function",
