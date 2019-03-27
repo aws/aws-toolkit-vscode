@@ -17,9 +17,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { ExtensionContext, QuickPickItem } from 'vscode'
-import { extensionSettingsPrefix } from '../constants'
 import { MultiStepInputFlowController } from '../multiStepInputFlowController'
-import { DefaultSettingsConfiguration } from '../settingsConfiguration'
 import { CredentialSelectionDataProvider } from './credentialSelectionDataProvider'
 import { CredentialSelectionState } from './credentialSelectionState'
 import { CredentialsProfileMru } from './credentialsProfileMru'
@@ -32,10 +30,10 @@ interface ProfileEntry {
 export class DefaultCredentialSelectionDataProvider implements CredentialSelectionDataProvider {
 
     private static readonly defaultCredentialsProfileName: string = 'default'
-    private readonly _credentialsMru: CredentialsProfileMru =
-        new CredentialsProfileMru(new DefaultSettingsConfiguration(extensionSettingsPrefix))
+    private readonly _credentialsMru: CredentialsProfileMru
 
     public constructor(public readonly existingProfileNames: string[], protected context: ExtensionContext) {
+        this._credentialsMru = new CredentialsProfileMru(context)
     }
 
     public async pickCredentialProfile(

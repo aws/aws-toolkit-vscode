@@ -57,7 +57,7 @@ export async function activate(context: vscode.ExtensionContext) {
     try {
         await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
 
-        const awsContext = new DefaultAwsContext(new DefaultSettingsConfiguration(extensionSettingsPrefix))
+        const awsContext = new DefaultAwsContext(new DefaultSettingsConfiguration(extensionSettingsPrefix), context)
         const awsContextTrees = new AwsContextTreeCollection()
         const resourceFetcher = new DefaultResourceFetcher()
         const regionProvider = new DefaultRegionProvider(context, resourceFetcher)

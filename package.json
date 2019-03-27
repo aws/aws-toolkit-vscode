@@ -50,11 +50,6 @@
             "type": "object",
             "title": "%AWS.configuration.title%",
             "properties": {
-                "aws.region": {
-                    "type": "array",
-                    "default": [],
-                    "description": "%AWS.configuration.regionDescription%"
-                },
                 "aws.profile": {
                     "type": "string",
                     "default": "",
@@ -64,11 +59,6 @@
                     "type": "string",
                     "default": "prompt",
                     "markdownDescription": "%AWS.configuration.description.onDefaultRegionMissing%"
-                },
-                "aws.recentCredentials": {
-                    "type": "array",
-                    "default": [],
-                    "description": "%AWS.configuration.description.recentCredentials%"
                 },
                 "aws.samcli.location": {
                     "type": "string",
