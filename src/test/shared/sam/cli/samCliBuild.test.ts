@@ -194,14 +194,7 @@ describe('SamCliBuildInvocation', async () => {
         const expectedArg = 'mypath'
 
         const processInvoker: SamCliProcessInvoker = new TestProcessInvoker((args: any[]) => {
-            assert(
-                args.indexOf('--manifest') !== -1,
-                'Expected --manifest arg'
-            )
-            assert(
-                args.indexOf(expectedArg) !== -1,
-                `Expected '${expectedArg}'`
-            )
+            assertArgsContainArgument(args, '--manifest', expectedArg)
         })
 
         await new SamCliBuildInvocation({
