@@ -223,6 +223,7 @@ export async function initialize({
             baseBuildDir,
             codeDir: samProjectCodeRoot,
             documentUri: args.document.uri,
+            originalHandlerName: args.handlerName,
             handlerName,
             runtime,
             workspaceUri: args.workspaceFolder.uri

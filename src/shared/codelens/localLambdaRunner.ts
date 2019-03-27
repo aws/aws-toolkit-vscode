@@ -23,6 +23,7 @@ import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
+import { normalizeSeparator } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger, localize } from '../utilities/vsCodeUtils'
 
 export interface LambdaLocalInvokeParams {
@@ -335,6 +336,7 @@ export async function makeInputTemplate(params: {
     baseBuildDir: string,
     codeDir: string,
     documentUri: vscode.Uri
+    originalHandlerName: string,
     handlerName: string,
     runtime: string,
     workspaceUri: vscode.Uri,
@@ -348,19 +350,28 @@ export async function makeInputTemplate(params: {
         path.dirname(params.documentUri.fsPath)
     )
 
-    const relativeFunctionHandler = path.join(
-        handlerFileRelativePath,
-        params.handlerName,
-    ).replace('\\', '/')
-
-    // tslint:disable-next-line:max-line-length
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(params.workspaceUri)
     let existingTemplateResource: CloudFormation.Resource | undefined
     if (workspaceFolder) {
+
+        const relativeOriginalFunctionHandler = normalizeSeparator(
+            path.join(
+                handlerFileRelativePath,
+                params.originalHandlerName,
+            )
+        )
+
         const lambdas = await detectLocalLambdas([workspaceFolder])
-        const existingLambda = lambdas.find(lambda => lambda.handler === relativeFunctionHandler)
+        const existingLambda = lambdas.find(lambda => lambda.handler === relativeOriginalFunctionHandler)
         existingTemplateResource = existingLambda ? existingLambda.resource : undefined
     }
+
+    const relativeFunctionHandler = normalizeSeparator(
+        path.join(
+            handlerFileRelativePath,
+            params.handlerName,
+        )
+    )
 
     let newTemplate = new SamTemplateGenerator()
         .withCodeUri(params.codeDir)
@@ -436,8 +447,8 @@ export const invokeLambdaFunction = async (params: {
             configuration: params.configuration,
             debugConfig: params.debugConfig,
             documentUri: vscode.Uri,
-            originalHandlerName: params.originalHandlerName,
             handlerName: params.handlerName,
+            originalHandlerName: params.originalHandlerName,
             isDebug: params.isDebug,
             samTemplatePath: params.samTemplatePath,
             originalSamTemplatePath: params.originalSamTemplatePath,
