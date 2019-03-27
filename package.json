@@ -12,9 +12,24 @@
     "engines": {
         "vscode": "^1.31.1"
     },
+    "bugs": {
+        "url": "https://github.com/aws/aws-toolkit-vscode/issues"
+    },
+    "galleryBanner": {
+        "color": "#FF9900",
+        "theme": "light"
+    },
     "categories": [
+        "Debuggers",
         "Other"
     ],
+    "keywords": [
+        "AWS",
+        "Lambda",
+        "Serverless"
+    ],
+    "preview": true,
+    "qna": "https://github.com/aws/aws-toolkit-vscode/issues",
     "activationEvents": [
         "onCommand:aws.login",
         "onCommand:aws.credential.profile.create",
@@ -153,23 +168,23 @@
                 },
                 {
                     "command": "aws.login",
-                    "group": "1_account"
+                    "group": "1_account@1"
                 },
                 {
                     "command": "aws.showRegion",
-                    "group": "2_region"
+                    "group": "2_region@1"
                 },
                 {
                     "command": "aws.hideRegion",
-                    "group": "2_region"
+                    "group": "2_region@2"
                 },
                 {
                     "command": "aws.help",
-                    "group": "z_help"
+                    "group": "z_help@1"
                 },
                 {
                     "command": "aws.github",
-                    "group": "z_help"
+                    "group": "z_help@2"
                 }
             ],
             "view/item/context": [
@@ -281,11 +296,6 @@
                 "category": "AWS"
             },
             {
-                "command": "aws.samcli.validate.version",
-                "title": "%AWS.command.samcli.validate.version%",
-                "category": "AWS"
-            },
-            {
                 "command": "aws.deleteCloudFormation",
                 "title": "%AWS.command.deleteCloudFormation%",
                 "category": "AWS"
@@ -371,7 +381,7 @@
         "fs-extra": "^6.0.1",
         "handlebars": "^4.1.0",
         "immutable": "^4.0.0-rc.12",
-        "js-yaml": "^3.12.0",
+        "js-yaml": "^3.13.0",
         "jsonc-parser": "^2.0.2",
         "lodash": "^4.17.11",
         "npm": "^6.4.1",

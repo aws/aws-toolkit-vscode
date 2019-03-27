@@ -28,6 +28,11 @@
             "type": "npm",
             "script": "compile",
             "problemMatcher": "$tsc"
+        },
+        {
+            "type": "npm",
+            "script": "clean",
+            "problemMatcher": []
         }
     ]
 }

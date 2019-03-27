@@ -5,12 +5,13 @@
 
 'use strict'
 
-import '../../shared/utilities/asyncIteratorShim'
+import '../../../shared/utilities/asyncIteratorShim'
 
 import * as assert from 'assert'
 import {
     complement,
     difference,
+    filter,
     filterAsync,
     first,
     intersection,
@@ -20,7 +21,7 @@ import {
     toMapAsync,
     union,
     updateInPlace,
-} from '../../shared/utilities/collectionUtils'
+} from '../../../shared/utilities/collectionUtils'
 
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
@@ -364,8 +365,19 @@ describe('CollectionUtils', async () => {
         })
     })
 
+    describe('filter', async () => {
+        it('returns the original sequence filtered by the predicate', async () => {
+            const input: Iterable<number>  = [ 1, 2 ]
+            const result = filter(input, i => i % 2 === 0)
+
+            assert.ok(result)
+            assert.strictEqual(result.length, 1)
+            assert.strictEqual(result[0], 2)
+        })
+    })
+
     describe('filterAsync', async () => {
-        it('returns a the original sequence filtered by the predicate', async () => {
+        it('returns the original sequence filtered by the predicate', async () => {
             const result = await toArrayAsync(filterAsync(
                 [1, 2],
                 async i => i % 2 === 0

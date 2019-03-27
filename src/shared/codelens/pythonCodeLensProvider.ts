@@ -14,7 +14,10 @@ import { unlink, writeFile } from '../filesystem'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
-import { DefaultSamCliProcessInvoker, DefaultSamCliTaskInvoker, } from '../sam/cli/samCliInvoker'
+import {
+    DefaultSamCliProcessInvoker,
+    DefaultSamCliTaskInvoker
+} from '../sam/cli/samCliInvoker'
 import { Datum } from '../telemetry/telemetryEvent'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
@@ -35,7 +38,10 @@ import {
 
 export const PYTHON_LANGUAGE = 'python'
 export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
-    { language: PYTHON_LANGUAGE }
+    {
+        scheme: 'file',
+        language: PYTHON_LANGUAGE
+    }
 ]
 
 // TODO: Fix this! Implement a more robust/flexible solution. This is just a basic minimal proof of concept.
@@ -217,6 +223,7 @@ export async function initialize({
             baseBuildDir,
             codeDir: samProjectCodeRoot,
             documentUri: args.document.uri,
+            originalHandlerName: args.handlerName,
             handlerName,
             runtime,
             workspaceUri: args.workspaceFolder.uri
@@ -243,8 +250,10 @@ export async function initialize({
             configuration,
             debugConfig,
             samTaskInvoker: taskInvoker,
+            originalSamTemplatePath: args.samTemplate.fsPath,
             samTemplatePath,
             documentUri: args.document.uri,
+            originalHandlerName: args.handlerName,
             handlerName,
             isDebug: args.isDebug,
             onWillAttachDebugger: async () => {
