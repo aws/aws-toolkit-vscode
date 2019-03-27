@@ -7,13 +7,13 @@
 
 import * as assert from 'assert'
 import { CredentialsProfileMru } from '../../../shared/credentials/credentialsProfileMru'
-import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 describe('CredentialsProfileMru', () => {
 
     it('lists no profile when none exist', async () => {
 
-        const credentialsMru = new CredentialsProfileMru(new TestSettingsConfiguration())
+        const credentialsMru = new CredentialsProfileMru(new FakeExtensionContext())
 
         const mru = credentialsMru.getMruList()
 
@@ -23,7 +23,7 @@ describe('CredentialsProfileMru', () => {
 
     it('lists single profile when only one exists', async () => {
 
-        const credentialsMru = new CredentialsProfileMru(new TestSettingsConfiguration())
+        const credentialsMru = new CredentialsProfileMru(new FakeExtensionContext())
 
         await credentialsMru.setMostRecentlyUsedProfile('apples')
 
@@ -35,7 +35,7 @@ describe('CredentialsProfileMru', () => {
     })
 
     it('lists multiple profiles when multiple exist', async () => {
-        const credentialsMru = new CredentialsProfileMru(new TestSettingsConfiguration())
+        const credentialsMru = new CredentialsProfileMru(new FakeExtensionContext())
 
         await credentialsMru.setMostRecentlyUsedProfile('dogs')
         await credentialsMru.setMostRecentlyUsedProfile('cats')
@@ -49,7 +49,7 @@ describe('CredentialsProfileMru', () => {
     })
 
     it('does not list duplicate profiles', async () => {
-        const credentialsMru = new CredentialsProfileMru(new TestSettingsConfiguration())
+        const credentialsMru = new CredentialsProfileMru(new FakeExtensionContext())
 
         await credentialsMru.setMostRecentlyUsedProfile('bbq')
         await credentialsMru.setMostRecentlyUsedProfile('dill')
@@ -66,7 +66,7 @@ describe('CredentialsProfileMru', () => {
     })
 
     it('does not list more than MAX_CRENDTIAL_MRU_SIZE profiles', async () => {
-        const credentialsMru = new CredentialsProfileMru(new TestSettingsConfiguration())
+        const credentialsMru = new CredentialsProfileMru(new FakeExtensionContext())
 
         for (let i = 0; i < CredentialsProfileMru.MAX_CREDENTIAL_MRU_SIZE + 1; i++) {
             await credentialsMru.setMostRecentlyUsedProfile(`entry${i}`)
