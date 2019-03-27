@@ -13,7 +13,8 @@ import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { SamCliDeployInvocation } from '../../shared/sam/cli/samCliDeploy'
-import { DefaultSamCliProcessInvoker, SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvoker'
+import { DefaultSamCliProcessInvoker } from '../../shared/sam/cli/samCliInvoker'
+import { SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvokerUtils'
 import { SamCliPackageInvocation } from '../../shared/sam/cli/samCliPackage'
 import { SamDeployWizard, SamDeployWizardResponse } from '../wizards/samDeployWizard'
 
@@ -32,7 +33,7 @@ export async function deploySamApplication({
         return
     }
 
-    const { region, template, s3Bucket, stackName } = args
+    const { region, template, s3Bucket, stackName, parameterOverrides } = args
     const deployApplicationPromise = (async () => {
         const tempFolder = await makeTemporaryToolkitFolder('samDeploy')
         const buildDestination = path.join(tempFolder, 'build')
@@ -66,7 +67,13 @@ export async function deploySamApplication({
             await packageInvocation.execute()
 
             stage = 'deploying'
-            const deployInvocation = new SamCliDeployInvocation(outputTemplatePath, stackName, invoker, region)
+            const deployInvocation = new SamCliDeployInvocation(
+                outputTemplatePath,
+                stackName,
+                region,
+                parameterOverrides,
+                invoker
+            )
             // Deploying can take a very long time for Python Lambda's with native dependencies so user needs feedback
             restParams.outputChannel.appendLine(localize(
                 'AWS.samcli.deploy.stackName.initiated',

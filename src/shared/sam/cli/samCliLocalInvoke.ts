@@ -7,7 +7,8 @@
 
 import * as vscode from 'vscode'
 import { fileExists } from '../../filesystemUtilities'
-import { DefaultSamCliTaskInvoker, SamCliTaskInvoker } from './samCliInvoker'
+import { DefaultSamCliTaskInvoker } from './samCliInvoker'
+import { SamCliTaskInvoker } from './samCliInvokerUtils'
 
 export interface SamCliLocalInvokeInvocationArguments {
     /**

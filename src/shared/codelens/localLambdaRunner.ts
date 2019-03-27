@@ -8,18 +8,19 @@
 import * as path from 'path'
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
-import { buildHandlerConfig, getLocalLambdaConfiguration, HandlerConfig } from '../../lambda/local/configureLocalLambda'
+import { getLocalLambdaConfiguration } from '../../lambda/local/configureLocalLambda'
 import { detectLocalLambdas } from '../../lambda/local/detectLocalLambdas'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { writeFile } from '../filesystem'
 import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from '../sam/cli/samCliBuild'
-import { SamCliProcessInvoker, SamCliTaskInvoker } from '../sam/cli/samCliInvoker'
+import { SamCliProcessInvoker, SamCliTaskInvoker } from '../sam/cli/samCliInvokerUtils'
 import { SamCliLocalInvokeInvocation } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 
+import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { ChannelLogger, getChannelLogger, localize } from '../utilities/vsCodeUtils'
@@ -30,6 +31,7 @@ export interface LambdaLocalInvokeParams {
     handlerName: string,
     isDebug: boolean,
     workspaceFolder: vscode.WorkspaceFolder,
+    samTemplate: vscode.Uri,
 }
 
 export interface SAMTemplateEnvironmentVariables {
@@ -264,12 +266,13 @@ export class LocalLambdaRunner {
     private async getConfig(): Promise<HandlerConfig> {
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(this.localInvokeParams.document.uri)
         if (!workspaceFolder) {
-            return buildHandlerConfig()
+            return generateDefaultHandlerConfig()
         }
 
         const config: HandlerConfig = await getLocalLambdaConfiguration(
             workspaceFolder,
-            this.localInvokeParams.handlerName
+            this.localInvokeParams.handlerName,
+            this.localInvokeParams.samTemplate
         )
 
         return config
@@ -490,12 +493,13 @@ const getConfig = async (params: {
 }): Promise<HandlerConfig> => {
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(params.documentUri)
     if (!workspaceFolder) {
-        return buildHandlerConfig()
+        return generateDefaultHandlerConfig()
     }
 
     const config: HandlerConfig = await getLocalLambdaConfiguration(
         workspaceFolder,
-        params.handlerName
+        params.handlerName,
+        vscode.Uri.file('') // TODO : Merge from develop, fix in followup commit
     )
 
     return config

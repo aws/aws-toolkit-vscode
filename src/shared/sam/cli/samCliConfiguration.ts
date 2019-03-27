@@ -18,14 +18,14 @@ export interface SamCliConfiguration {
     initialize(): Promise<void>
 }
 
-export class DefaultSamCliConfiguration {
+export class DefaultSamCliConfiguration implements SamCliConfiguration {
     public static readonly CONFIGURATION_KEY_SAMCLI_LOCATION: string = 'samcli.location'
     private readonly _configuration: SettingsConfiguration
     private readonly _samCliLocationProvider: SamCliLocationProvider
 
     public constructor(
         configuration: SettingsConfiguration,
-        samCliLocationProvider: SamCliLocationProvider
+        samCliLocationProvider: SamCliLocationProvider,
     ) {
         this._configuration = configuration
         this._samCliLocationProvider = samCliLocationProvider

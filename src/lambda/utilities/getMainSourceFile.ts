@@ -62,7 +62,7 @@ async function getFirstLambdaResource(
     }
 
     const lambdaResources = Object.getOwnPropertyNames(template.Resources)
-        .map(property => template.Resources![property])
+        .map(property => template.Resources![property]!)
         .filter(resource => resource.Type === 'AWS::Serverless::Function')
 
     if (lambdaResources.length <= 0) {

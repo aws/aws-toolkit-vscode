@@ -9,12 +9,18 @@ import * as assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { detectLocalTemplates } from '../../../lambda/local/detectLocalTemplates'
+import * as paramUtils from '../../../lambda/utilities/parameterUtils'
 import {
+    ParameterPromptResult,
     SamDeployWizard,
-    SamDeployWizardContext
+    SamDeployWizardContext,
 } from '../../../lambda/wizards/samDeployWizard'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { RegionProvider } from '../../../shared/regions/regionProvider'
+
+async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
+    yield* items
+}
 
 interface QuickPickUriResponseItem extends vscode.QuickPickItem {
     uri: vscode.Uri
@@ -39,8 +45,12 @@ function createQuickPickRegionResponseItem(detail: string): QuickPickRegionRespo
 }
 
 class MockRegionProvider implements RegionProvider {
-    public async getRegionData(): Promise<RegionInfo[]> { return [{ regionCode: 'us-west-2',
-                                                                    regionName: 'TEST REGION'}] }
+    public async getRegionData(): Promise<RegionInfo[]> {
+        return [{
+            regionCode: 'us-west-2',
+            regionName: 'TEST REGION'
+        }]
+    }
 }
 
 class MockSamDeployWizardContext implements SamDeployWizardContext {
@@ -66,6 +76,17 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         this.promptForS3BucketResponses = promptForS3BucketResponses.reverse()
         this.promptForStackNameResponses = promptForStackNameResponses.reverse()
     }
+
+    public readonly getOverriddenParameters: typeof paramUtils.getOverriddenParameters = async () => undefined
+
+    public readonly getParameters: typeof paramUtils.getParameters = async () => new Map()
+
+    public readonly promptUserForParametersIfApplicable: (
+        options: {
+            templateUri: vscode.Uri
+            missingParameters?: Set<string>
+        }
+    ) => Promise<ParameterPromptResult> = async () => ParameterPromptResult.Continue
 
     public async promptUserForSamTemplate(): Promise<vscode.Uri | undefined> {
         if (this.promptForSamTemplateResponses.length <= 0) {
@@ -184,6 +205,211 @@ describe('SamDeployWizard', async () => {
 
             assert.ok(result)
             assert.strictEqual(result!.template.fsPath, templatePath)
+        })
+    })
+
+    describe('PARAMETER_OVERRIDES', async () => {
+        function makeFakeContext({
+            getParameters,
+            getOverriddenParameters,
+            promptUserForParametersIfApplicable,
+            templatePath = path.join('my', 'template'),
+            region = 'us-east-1',
+            s3Bucket = 'mys3bucket',
+            stackName = 'mystackname'
+        }: Pick<SamDeployWizardContext,
+            'getParameters' | 'getOverriddenParameters' | 'promptUserForParametersIfApplicable'
+        > & {
+            templatePath?: string
+            region?: string
+            s3Bucket?: string
+            stackName?: string
+        }): SamDeployWizardContext {
+            return {
+                // It's fine to return an empty list if promptUserForSamTemplate is overridden.
+                onDetectLocalTemplates: () => asyncGenerator([]),
+                // It's fine to return an empty list if promptUserForSamTemplate is overridden.
+                workspaceFolders: [],
+
+                getParameters,
+                getOverriddenParameters,
+                promptUserForParametersIfApplicable,
+                promptUserForSamTemplate: async () => vscode.Uri.file(templatePath),
+                promptUserForRegion: async () => region,
+                promptUserForS3Bucket: async () => s3Bucket,
+                promptUserForStackName: async () => stackName
+            }
+        }
+
+        describe('SAM template has no parameters', async () => {
+            it('skips configuring overrides and continues wizard', async () => {
+                const context = makeFakeContext({
+                    getParameters: async () => new Map<string, { required: boolean }>([]),
+                    getOverriddenParameters: async () => { throw new Error('Should skip loading overrides') },
+                    promptUserForParametersIfApplicable: async () => {
+                        throw new Error('Should skip configuring overrides')
+                    },
+                })
+
+                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
+                const result = await wizard.run()
+
+                assert.ok(result)
+                assert.strictEqual(result!.parameterOverrides.size, 0)
+            })
+        })
+
+        describe('SAM template has only optional parameters', async () => {
+            it('skips configuring overrides and continues wizard if parameterOverrides is defined', async () => {
+                const context = makeFakeContext({
+                    getParameters: async () => new Map<string, { required: boolean }>([
+                        ['myParam', { required: false }]
+                    ]),
+                    getOverriddenParameters: async () => new Map<string, string>(),
+                    promptUserForParametersIfApplicable: async () => {
+                        throw new Error('Should skip configuring overrides')
+                    },
+                })
+
+                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
+                const result = await wizard.run()
+
+                assert.ok(result)
+                assert.strictEqual(result!.parameterOverrides.size, 0)
+            })
+
+            // tslint:disable-next-line:max-line-length
+            it('skips configuring overrides and continues wizard if parameterOverrides is undefined and user declines prompt', async () => {
+                const context = makeFakeContext({
+                    getParameters: async () => new Map<string, { required: boolean }>([
+                        ['myParam', { required: false }]
+                    ]),
+                    getOverriddenParameters: async () => undefined,
+                    promptUserForParametersIfApplicable: async () => ParameterPromptResult.Continue,
+                })
+
+                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
+                const result = await wizard.run()
+
+                assert.ok(result)
+                assert.strictEqual(result!.parameterOverrides.size, 0)
+            })
+
+            // tslint:disable-next-line:max-line-length
+            it('configures overrides and cancels wizard if parameterOverrides is undefined and user accepts prompt', async () => {
+                const configureParameterOverridesArgs: {
+                    templateUri: vscode.Uri,
+                    missingParameters?: Set<string> | undefined
+                }[] = []
+
+                const context = makeFakeContext({
+                    getParameters: async () => new Map<string, { required: boolean }>([
+                        ['myParam', { required: false }]
+                    ]),
+                    getOverriddenParameters: async () => undefined,
+                    async promptUserForParametersIfApplicable(options): Promise<ParameterPromptResult> {
+                        configureParameterOverridesArgs.push(options)
+
+                        return ParameterPromptResult.Cancel
+                    },
+                })
+
+                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
+                const result = await wizard.run()
+
+                assert.strictEqual(result, undefined)
+                assert.strictEqual(configureParameterOverridesArgs.length, 1)
+                assert.strictEqual(configureParameterOverridesArgs[0].missingParameters, undefined)
+            })
+        })
+
+        describe('SAM template has required parameters', async () => {
+            // tslint:disable-next-line:max-line-length
+            it('configures overrides and cancels wizard if overrides are not defined', async () => {
+                const configureParameterOverridesArgs: {
+                    templateUri: vscode.Uri,
+                    missingParameters?: Set<string> | undefined
+                }[] = []
+
+                const context = makeFakeContext({
+                    getParameters: async () => new Map<string, { required: boolean }>([
+                        ['myParam', { required: true }]
+                    ]),
+                    getOverriddenParameters: async () => undefined,
+                    async promptUserForParametersIfApplicable(options): Promise<ParameterPromptResult> {
+                        configureParameterOverridesArgs.push(options)
+
+                        return ParameterPromptResult.Cancel
+                    },
+                })
+
+                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
+                const result = await wizard.run()
+
+                assert.strictEqual(result, undefined)
+                assert.strictEqual(configureParameterOverridesArgs.length, 1)
+                assert.ok(configureParameterOverridesArgs[0].missingParameters)
+                assert.strictEqual(configureParameterOverridesArgs[0].missingParameters!.has('myParam'), true)
+            })
+
+            // tslint:disable-next-line:max-line-length
+            it('configures overrides and cancels wizard if there are missing overrides', async () => {
+                const configureParameterOverridesArgs: {
+                    templateUri: vscode.Uri,
+                    missingParameters?: Set<string> | undefined
+                }[] = []
+
+                const context = makeFakeContext({
+                    getParameters: async () => new Map<string, { required: boolean }>([
+                        ['myParam', { required: true }]
+                    ]),
+                    getOverriddenParameters: async () => new Map<string, string>(),
+                    async promptUserForParametersIfApplicable(options): Promise<ParameterPromptResult> {
+                        configureParameterOverridesArgs.push(options)
+
+                        return ParameterPromptResult.Cancel
+                    },
+                })
+
+                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
+                const result = await wizard.run()
+
+                assert.strictEqual(result, undefined)
+                assert.strictEqual(configureParameterOverridesArgs.length, 1)
+                assert.ok(configureParameterOverridesArgs[0].missingParameters)
+                assert.strictEqual(configureParameterOverridesArgs[0].missingParameters!.has('myParam'), true)
+            })
+
+            // tslint:disable-next-line:max-line-length
+            it('stores existing overrides and continues without configuring overrides if there are no missing overrides', async () => {
+                const configureParameterOverridesArgs: {
+                    templateUri: vscode.Uri,
+                    missingParameters?: Set<string> | undefined
+                }[] = []
+
+                const context = makeFakeContext({
+                    getParameters: async () => new Map<string, { required: boolean }>([
+                        ['myParam', { required: true }]
+                    ]),
+                    getOverriddenParameters: async () => new Map<string, string>([
+                        ['myParam', 'myValue']
+                    ]),
+                    async promptUserForParametersIfApplicable(options): Promise<ParameterPromptResult> {
+                        configureParameterOverridesArgs.push(options)
+
+                        return ParameterPromptResult.Cancel
+                    },
+                })
+
+                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
+                const result = await wizard.run()
+
+                assert.ok(result)
+                assert.strictEqual(result!.parameterOverrides.size, 1)
+                assert.strictEqual(result!.parameterOverrides.has('myParam'), true)
+                assert.strictEqual(result!.parameterOverrides.get('myParam'), 'myValue')
+                assert.strictEqual(configureParameterOverridesArgs.length, 0)
+            })
         })
     })
 

@@ -10,8 +10,8 @@ import * as del from 'del'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { ChildProcess, ChildProcessResult } from '../../shared/utilities/childProcess'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { ChildProcess, ChildProcessResult } from '../../../shared/utilities/childProcess'
 
 describe('ChildProcess', async () => {
 

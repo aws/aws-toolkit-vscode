@@ -117,7 +117,7 @@ These steps are relevant for javascript lambda functions, and assume you have a 
 
 * You should be looking at a `tasks.json` file that looks similar to this:
 
-    ```json
+    ```jsonc
     {
         "version": "2.0.0",
         "tasks": [
@@ -125,12 +125,12 @@ These steps are relevant for javascript lambda functions, and assume you have a 
             <In here you may have 0 or more task entries>
 
         ]
-    }    
+    }
     ```
 
     Add the following task entry into the `tasks` array
 
-    ```json
+    ```jsonc
     {
         "label": "launchLambdaFunction",
         "type": "shell",
@@ -168,8 +168,8 @@ These steps are relevant for javascript lambda functions, and assume you have a 
     ```
 
     Your `tasks.json` file should now look similar to this:
-    
-    ```json
+
+    ```jsonc
     {
         "version": "2.0.0",
         "tasks": [
@@ -181,7 +181,7 @@ These steps are relevant for javascript lambda functions, and assume you have a 
                 ... remainder of launchLambdaFunction entry would be here, omitted for brevity ...
             }
         ]
-    }    
+    }
     ```
 
   * Save the `tasks.json` file
