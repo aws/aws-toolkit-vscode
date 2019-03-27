@@ -14,11 +14,8 @@ export class CredentialsProfileMru {
     public static readonly MAX_CREDENTIAL_MRU_SIZE = 5
 
     private static readonly configurationSettingName: string = 'recentCredentials'
-    private readonly _context: vscode.ExtensionContext
 
-    public constructor(context: vscode.ExtensionContext) {
-        this._context = context
-    }
+    public constructor(private readonly _context: vscode.ExtensionContext) {}
 
     /**
      * @description Returns the most recently used credentials names

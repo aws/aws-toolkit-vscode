@@ -42,7 +42,7 @@ export class FakeExtensionContext implements ExtensionContext {
 class FakeMemento implements Memento {
     public constructor(private readonly _storage: FakeMementoStorage = {}) {}
     public get<T>(key: string): T | undefined
-    public  get<T>(key: string, defaultValue: T): T
+    public get<T>(key: string, defaultValue: T): T
     public get(key: any, defaultValue?: any) {
         if (this._storage.hasOwnProperty(String(key))) {
             return this._storage[key]
