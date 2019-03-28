@@ -1,5 +1,10 @@
+/*!
+ * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 export class LambdaTemplates {
-    static readonly InvokeTemplate = `
+    public static readonly INVOKE_TEMPLATE = `
     <h1>
         Invoke function <%= FunctionName %>
     </h1>
@@ -28,45 +33,15 @@ export class LambdaTemplates {
         <br />
         <input type="submit" v-on:click="sendInput" value="Invoke">
         <br />
-        <h3 v-if="isLoading">Loading response...</h3>
-        <div v-if="showResponse">
-            <h1>
-            Function output
-            </h1>
-            <div v-if="error">
-            <p>Something went wrong.</p>
-            <pre>{{ error }}</pre>
-            </div>
-            <div v-else>
-                <div>
-                    <p>Status Code: {{statusCode}}</p>
-                    <p>Payload:
-                        <pre>{{ payload }}</pre>
-                    </p>
-                </div>
-                <div>
-                    <h2>Logs</h2>
-                    <pre>{{ logs }}</pre>
-                </div>
-            </div>
-        </div>
     </div>
     <% Libraries.forEach(function(lib) { %>
-        <script nonce="<%= lib.Nonce %>" src="<%= lib.Uri %>"></script>
+        <script nonce="<%= lib.nonce %>" src="<%= lib.uri %>"></script>
     <% }); %>
     <% Scripts.forEach(function(scr) { %>
-        <script nonce="<%= scr.Nonce %>" src="<%= scr.Uri %>"></script>
+        <script nonce="<%= scr.nonce %>" src="<%= scr.uri %>"></script>
     <% }); %>
-    `;
-    static readonly GetPolicyTemplate = `
-    <h1>
-        Policy for <%= FunctionName %>...
-    </h1>
-    <p>Policy:
-        <pre><%- JSON.stringify(JSON.parse(Policy), null, 4) %></pre>
-    </p>
-    `;
-    static readonly GetConfigTemplate = `
+    `
+    public static readonly GET_CONFIG_TEMPLATE = `
     <h1>
         Configuration for <%= FunctionName %>...
     </h1>
@@ -79,5 +54,33 @@ export class LambdaTemplates {
     <p>Role: <%= Role %>
     <p>Timeout: <%= Timeout %>
     <p>Version: <%= Version %>
-    `;
+    `
+}
+
+export class LambdaPolicyTemplates {
+    // This is the constant view frame, regardless of view state
+    public static readonly OUTER_TEMPLATE = String.raw`
+    <h1>
+        Lambda Function Policy: <%= FunctionName %>
+    </h1>
+    <%= innerContent %>
+    `
+    public static readonly INNER_TEMPLATE_LOADING = String.raw`
+    <h2>
+        Loading...
+    </h2>
+    `
+    public static readonly INNER_TEMPLATE_POLICY = String.raw`
+    <p>Policy:
+        <pre><%- Policy %></pre>
+    </p>
+    `
+    public static readonly INNER_TEMPLATE_ERROR = String.raw`
+    <p>Error getting Lambda Function Policy:
+        <ul>
+            <li>Code: <pre><%= ErrorCode %></pre></li>
+            <li>Message: <pre><%= ErrorMessage %></pre></li>
+        </ul>
+    </p>
+    `
 }

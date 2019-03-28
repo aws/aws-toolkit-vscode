@@ -1,0 +1,53 @@
+version: 0.2
+
+# Publishes the specified branch to the Visual Studio Marketplace, and archives the vsix package to S3
+env:
+  variables:
+    GIT_REPO: "https://github.com/aws/aws-toolkit-vscode.git"
+    GIT_BRANCH: "master"
+    STAGE: "BETA"
+  parameter-store:
+    MARKETPLACE_PERSONAL_ACCESS_TOKEN: "/marketplace/personal-access-token/toolkit-vscode"
+
+phases:
+  install:
+    commands:
+      - New-Item -Path . -Name "artifacts" -ItemType Directory
+      - git clone $Env:GIT_REPO aws-toolkit-vscode
+  pre_build:
+    commands:
+      - cd aws-toolkit-vscode
+      - git checkout $Env:GIT_BRANCH
+      # TODO : See if we can cache the node dependencies with CodeBuild to keep npm install times lean
+      - npm install
+  build:
+    commands:
+      # Replace the README.md file with contents that we want to package as the extension's Marketplace page.
+      # See https://code.visualstudio.com/api/working-with-extensions/publishing-extension#publishing-extensions
+      # and https://code.visualstudio.com/api/working-with-extensions/publishing-extension#marketplace-integration
+      - cp resources/marketplace/extension-page.md ./README.md
+      - ./node_modules/.bin/vsce package
+      # Restore README.md
+      - git checkout -- README.md
+      # The generated file is dynamically named.
+      # We could package to a static filename, but it is better to archive a file that contains the version in it.
+      - $vsixFiles = Get-ChildItem -Filter aws-toolkit-vscode*.vsix
+      # Assumption: $vsixFiles is always one file
+      - Get-Item $vsixFiles
+      # TODO : Sign the vsix file in the future
+      # Publish the file (PROD stage only)
+      - |
+        If ($Env:STAGE -eq "PROD") {
+          echo 'Publishing to marketplace'
+          ./node_modules/.bin/vsce publish --pat $Env:MARKETPLACE_PERSONAL_ACCESS_TOKEN --packagePath $vsixFiles.Name
+        } Else {
+          echo 'Skipping publish to marketplace'
+        }
+      # Copy vsix file to artifact location
+      - $vsixFiles | Copy-Item -Destination ..\artifacts
+  #post_build:
+  #commands:
+  # - command
+artifacts:
+  files:
+    - artifacts/*.vsix

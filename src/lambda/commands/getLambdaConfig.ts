@@ -1,32 +1,47 @@
-'use strict';
+/*!
+ * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import { FunctionNode } from "../explorer/functionNode";
-import { getSelectedLambdaNode } from '../utils';
-import * as vscode from 'vscode';
-import _ = require("lodash");
-import { BaseTemplates } from "../../shared/templates/baseTemplates";
-import { LambdaTemplates } from "../templates/lambdaTemplates";
-import { AWSError } from "aws-sdk";
+'use strict'
 
-export async function getLambdaConfig(element: FunctionNode) {
+import _ = require('lodash')
+import * as vscode from 'vscode'
+import { AwsContext } from '../../shared/awsContext'
+import { LambdaClient } from '../../shared/clients/lambdaClient'
+import { ext } from '../../shared/extensionGlobals'
+import { getLogger, Logger } from '../../shared/logger'
+import { BaseTemplates } from '../../shared/templates/baseTemplates'
+import { FunctionNodeBase } from '../explorer/functionNode'
+import { LambdaTemplates } from '../templates/lambdaTemplates'
+import { selectLambdaNode } from '../utils'
+
+export async function getLambdaConfig(
+    awsContext: AwsContext,
+    element?: FunctionNodeBase
+) {
+    const logger: Logger = getLogger()
     try {
-        const fn: FunctionNode = await getSelectedLambdaNode(element);
+        const fn: FunctionNodeBase = await selectLambdaNode(awsContext, element)
 
-        const view = vscode.window.createWebviewPanel('html', `Getting config for ${fn.functionConfiguration.FunctionName}`, -1);
+        const view = vscode.window.createWebviewPanel(
+            'html',
+            `Getting config for ${fn.configuration.FunctionName}`,
+            -1
+        )
 
-        const baseTemplateFn = _.template(BaseTemplates.SimpleHTML);
-        view.webview.html = baseTemplateFn({ content: `<h1>Loading...</h1>` });
-        const funcResponse = await fn.lambda.getFunctionConfiguration({
-            FunctionName: fn.functionConfiguration.FunctionName!
-        }).promise();
+        const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
+        view.webview.html = baseTemplateFn({ content: '<h1>Loading...</h1>' })
 
-        const getConfigTemplateFn = _.template(LambdaTemplates.GetConfigTemplate);
+        const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(fn.regionCode)
+        const funcResponse = await client.getFunctionConfiguration(fn.configuration.FunctionName!)
+
+        const getConfigTemplateFn = _.template(LambdaTemplates.GET_CONFIG_TEMPLATE)
         view.webview.html = baseTemplateFn({
             content: getConfigTemplateFn(funcResponse)
-        });
-    }
-    catch (err) {
-        const ex: AWSError = err;
-        console.log(ex.message);
+        })
+    } catch (err) {
+        const error = err as Error
+        logger.error(error)
     }
 }

@@ -1,42 +1,46 @@
-'use strict';
+/*!
+ * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import { ExtensionContext, window, StatusBarItem, StatusBarAlignment } from 'vscode';
-import { ext } from './extensionGlobals';
-import { ContextChangeEventsArgs } from './awsContext';
+'use strict'
+
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
+import { ExtensionContext, StatusBarAlignment, StatusBarItem, window } from 'vscode'
+import { AwsContext, ContextChangeEventsArgs } from './awsContext'
 
 // may want to have multiple elements of data on the status bar,
 // so wrapping in a class to allow for per-element update capability
 export class AWSStatusBar {
 
-    public readonly credentialAndRegionContext: StatusBarItem;
+    public readonly credentialContext: StatusBarItem
+    private readonly _awsContext: AwsContext
 
-    constructor(context: ExtensionContext) {
-        this.credentialAndRegionContext = window.createStatusBarItem(StatusBarAlignment.Right, 100);
-        context.subscriptions.push(this.credentialAndRegionContext);
+    public constructor(awsContext: AwsContext, context: ExtensionContext) {
+        this._awsContext = awsContext
 
-        ext.awsContext.onDidChangeContext((context) => {
-            this.updateContext(context);
-        });
+        this.credentialContext = window.createStatusBarItem(StatusBarAlignment.Right, 100)
+        context.subscriptions.push(this.credentialContext)
+
+        this._awsContext.onDidChangeContext(async (changedContext) => await this.updateContext(changedContext))
     }
 
     public async updateContext(eventContext: ContextChangeEventsArgs | undefined) {
-        let profileName: string | undefined;
-        let region: string | undefined;
+        let profileName: string | undefined
 
         if (eventContext) {
-            profileName = eventContext.profileName;
-            region = eventContext.region;
-        }
-        else {
-            profileName = ext.awsContext.getCredentialProfileName();
-            region = await ext.awsContext.getRegion();
+            profileName = eventContext.profileName
+        } else {
+            profileName = this._awsContext.getCredentialProfileName()
         }
 
-        if (profileName && region) {
-            this.credentialAndRegionContext.text = 'AWS: ' + profileName + '/' + region;
-            this.credentialAndRegionContext.show();
+        if (profileName) {
+            this.credentialContext.text = `${localize('AWS.title', 'AWS')}:${profileName}`
+            this.credentialContext.show()
         } else {
-            this.credentialAndRegionContext.hide();
+            this.credentialContext.hide()
         }
     }
 }

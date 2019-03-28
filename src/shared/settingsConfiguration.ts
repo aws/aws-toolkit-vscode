@@ -1,40 +1,43 @@
-'use strict';
+/*!
+ * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import * as vscode from 'vscode';
+'use strict'
+
+import * as vscode from 'vscode'
 
 // defines helper methods for interacting with VSCode's configuration
 // persistence mechanisms, allowing us to test with mocks.
-export interface ISettingsConfiguration {
-    readSetting(settingKey: string, defaultValue?:string) : string | undefined;
+export interface SettingsConfiguration {
+    readSetting<T>(settingKey: string, defaultValue?: T): T | undefined
 
-    writeSetting(settingKey: string, value: string, target: vscode.ConfigurationTarget) : void;
+    // array values are serialized as a comma-delimited string
+    writeSetting<T>(settingKey: string, value: T | undefined, target: vscode.ConfigurationTarget): Promise<void>
 }
 
 // default configuration settings handler for production release
-export class SettingsConfiguration implements ISettingsConfiguration {
-    readSetting(settingKey: string, defaultValue?: string): string | undefined {
-        const settings = vscode.workspace.getConfiguration(this.extensionSettingsPrefix);
+export class DefaultSettingsConfiguration implements SettingsConfiguration {
+    public constructor(public readonly extensionSettingsPrefix: string) {
+    }
+
+    public readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
+        // tslint:disable-next-line:no-null-keyword
+        const settings = vscode.workspace.getConfiguration(this.extensionSettingsPrefix, null)
         if (settings) {
-            const val = settings.get<string>(settingKey);
+            const val = settings.get<T>(settingKey)
             if (val) {
-                return val;
+                return val
             }
         }
 
-        if (defaultValue) {
-            return defaultValue;
-        }
-
-        return undefined;
-    }
-    async writeSetting(settingKey: string, value: string, target: vscode.ConfigurationTarget): Promise<void> {
-        const settings = vscode.workspace.getConfiguration(this.extensionSettingsPrefix);
-        await settings.update(settingKey, value, target);
+        return defaultValue || undefined
     }
 
-    constructor(public extensionSettingsPrefix: string) {
-    }
+    public async writeSetting<T>(settingKey: string, value: T, target: vscode.ConfigurationTarget): Promise<void> {
+        // tslint:disable-next-line:no-null-keyword
+        const settings = vscode.workspace.getConfiguration(this.extensionSettingsPrefix, null)
 
+        await settings.update(settingKey, value, target)
+    }
 }
-
-

@@ -1,36 +1,37 @@
-'use strict';
+/*!
+ * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import * as path from 'path';
-import Lambda = require('aws-sdk/clients/lambda');
-import { ExplorerNodeBase } from '../../shared/nodes';
-import { TreeItem, Uri, ThemeIcon } from 'vscode';
+'use strict'
 
-export class FunctionNode extends ExplorerNodeBase implements TreeItem {
-    public static contextValue: string = 'awsLambdaFn';
-    public contextValue: string = FunctionNode.contextValue;
+import { Lambda } from 'aws-sdk'
+import * as os from 'os'
+import { Uri } from 'vscode'
+import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 
-    public label?: string;
-    public tooltip?: string;
-    public iconPath?: string | Uri | { light: string | Uri; dark: string | Uri } | ThemeIcon;
+export abstract class FunctionNodeBase extends AWSTreeNodeBase {
+    public abstract readonly regionCode: string
 
-    constructor(
-        public readonly functionConfiguration: Lambda.FunctionConfiguration,
-        public readonly lambda: Lambda
+    protected constructor(
+        public configuration: Lambda.FunctionConfiguration,
+        public readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
     ) {
-        super();
-        this.label = `${this.functionConfiguration.FunctionName!}`;
-        this.tooltip = `${this.functionConfiguration.FunctionName}-${this.functionConfiguration.FunctionArn}`;
+        super('')
+        this.update(configuration)
         this.iconPath = {
-            light: path.join(__filename, '..', '..', '..', 'resources', 'light', 'lambda_function.svg'),
-            dark: path.join(__filename, '..', '..', '..', 'resources', 'dark', 'lambda_function.svg')
-        };
+            dark: Uri.file(this.getExtensionAbsolutePath('resources/dark/lambda.svg')),
+            light: Uri.file(this.getExtensionAbsolutePath('resources/light/lambda.svg')),
+        }
     }
 
-    public getChildren(): FunctionNode[] {
-        return [];
+    public update(configuration: Lambda.FunctionConfiguration): void {
+        this.configuration = configuration
+        this.label = this.configuration.FunctionName || ''
+        this.tooltip = `${this.configuration.FunctionName}${os.EOL}${this.configuration.FunctionArn}`
     }
 
-    public getTreeItem(): FunctionNode | Promise<FunctionNode> {
-        return this;
+    public get functionName(): string {
+        return this.configuration.FunctionName || ''
     }
 }

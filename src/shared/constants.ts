@@ -1,29 +1,22 @@
-'use strict';
+/*!
+ * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-export const REGIONS = [
-    "us-east-1",
-    "us-east-2",
-    "us-west-1",
-    "us-west-2",
-    "eu-west-1",
-    "eu-west-2",
-    "eu-west-3",
-    "eu-central-1",
-    "ca-central-1",
-    "ap-northeast-1",
-    "ap-northeast-2",
-    "ap-northeast-3",
-    "ap-south-1",
-    "ap-southeast-1",
-    "ap-southeast-2",
-    "cn-north-1",
-    "cn-northwest-1",
-    "sa-east-1"
-];
+'use strict'
 
-export const extensionSettingsPrefix: string = 'aws';
-export const regionSettingKey: string = 'region';
-export const profileSettingKey: string = 'profile';
+import { NpmPackage } from './npmPackage'
 
-export const hostedFilesBaseUrl: string = 'https://d3rrggjwfhwld2.cloudfront.net/';
+export const extensionSettingsPrefix: string = 'aws'
+export const regionSettingKey: string = 'region'
+export const profileSettingKey: string = 'profile'
 
+export const hostedFilesBaseUrl: string = 'https://d3rrggjwfhwld2.cloudfront.net/'
+export const endpointsFileUrl: string = 'https://aws-toolkit-endpoints.s3.amazonaws.com/endpoints.json'
+export const aboutCredentialsFileUrl: string = 'https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html'
+export const samAboutInstallUrl: string = 'https://aws.amazon.com/serverless/sam/'
+export const githubUrl: string = 'https://github.com/aws/aws-toolkit-vscode'
+export const documentationUrl: string = 'https://aws.amazon.com/visualstudiocode/'
+
+const npmPackage = () => require('../../../package.json') as NpmPackage
+export const pluginVersion = npmPackage().version

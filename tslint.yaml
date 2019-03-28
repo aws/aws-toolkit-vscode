@@ -1,0 +1,213 @@
+---
+extends:
+  - tslint-eslint-rules
+  - tslint-no-circular-imports
+linterOptions:
+  exclude:
+    - node_modules/**
+    - '**/*.json'
+rules:
+  # TypeScript-specific
+  # These rules find errors related to TypeScript features:
+  adjacent-overload-signatures: true
+  member-access:
+    options:
+      - check-constructor
+  member-ordering:
+    options:
+      -
+        order: instance-sandwich
+  no-reference: true
+  no-var-requires: true
+  prefer-for-of: true
+  promise-function-async: true
+  typedef-whitespace:
+    options:
+      -
+        call-signature: nospace
+        index-signature: nospace
+        parameter: nospace
+        property-declaration: nospace
+        variable-declaration: nospace
+      -
+        call-signature: onespace
+        index-signature: onespace
+        parameter: onespace
+        property-declaration: onespace
+        variable-declaration: onespace
+
+  # Functionality
+  # These rules catch common errors in JS programming or otherwise confusing constructs that are prone to producing bugs:
+  await-promise:
+    options:
+      - Thenable
+  ban-comma-operator: true
+  curly: true
+  forin: true
+  label-position: true
+  no-arg: true
+  no-bitwise: true
+  no-conditional-assignment: true
+  # TODO: Enable no-console once we have a logging framework in place.
+  # no-console: true
+  no-construct: true
+  no-debugger: true
+  no-duplicate-super: true
+  no-duplicate-switch-case: true
+  no-duplicate-variable: true
+  no-dynamic-delete: true
+  no-eval: true
+  no-floating-promises: true
+  no-for-in-array: true
+  no-implicit-dependencies:
+    options:
+      -
+        - vscode
+        - semver-regex
+        - del
+  no-inferred-empty-object-type: true
+  no-invalid-template-strings: true
+  no-invalid-this:
+    options:
+      - check-function-in-method
+  no-misused-new: true
+  no-null-keyword: true
+  no-object-literal-type-assertion: true
+  no-shadowed-variable: true
+  no-sparse-arrays: true
+  no-string-literal: true
+  no-string-throw: true
+  no-switch-case-fall-through: true
+  no-this-assignment:
+    options:
+      - allow-destructuring
+  no-unbound-method:
+    options:
+      - ignore-static
+  no-unsafe-any: true
+  no-unsafe-finally: true
+  no-unused-expression: true
+  no-var-keyword: true
+  no-void-expression:
+    options:
+      - ignore-arrow-function-shorthand
+  prefer-object-spread: true
+  radix: true
+  restrict-plus-operands: true
+  triple-equals: true
+  use-isnan: true
+
+  # Maintainability
+  # These rules make code maintenance easier:
+  cyclomatic-complexity: true
+  deprecation: true
+  eofline: true
+  indent:
+    options:
+      - spaces
+      - 4
+  max-line-length:
+    options:
+      - 120
+  no-duplicate-imports: true
+  prefer-const: true
+  prefer-readonly: true
+  trailing-comma: true
+
+  # Style
+  # These rules enforce consistent style across your codebase:
+  align:
+    options:
+      - parameters
+      - arguments
+      - statements
+      - members
+      - elements
+  array-type:
+    options:
+      - array
+  arrow-return-shorthand: true
+  class-name: true
+  comment-format:
+    options:
+      - check-space
+  encoding: true
+  file-header:
+    options:
+      - "Copyright \\d{4} Amazon.com, Inc. or its affiliates. All Rights Reserved.\\r?\\n \\* SPDX-License-Identifier: Apache-2.0"
+      - "Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.\nSPDX-License-Identifier: Apache-2.0"
+  file-name-casing:
+    options:
+      - camel-case
+  interface-name:
+    options:
+      - never-prefix
+  interface-over-type-literal: true
+  jsdoc-format: true
+  newline-before-return: true
+  new-parens: true
+  no-boolean-literal-compare: true
+  no-consecutive-blank-lines: true
+  no-trailing-whitespace: true
+  no-unnecessary-callback-wrapper: true
+  no-unnecessary-initializer: true
+  no-unnecessary-qualifier: true
+  number-literal-format: true
+  object-literal-key-quotes:
+    options:
+      - as-needed
+  one-line:
+    options:
+      - check-catch
+      - check-finally
+      - check-else
+      - check-open-brace
+      - check-whitespace
+  one-variable-per-declaration: true
+  ordered-imports: true
+  prefer-method-signature: true
+  prefer-switch: true
+  prefer-template:
+    options:
+      - allow-single-concat
+  prefer-while: true
+  quotemark:
+    options:
+      - single
+      - avoid-template
+      - avoid-escape
+  semicolon:
+    options:
+      - never
+  space-before-function-paren:
+    options:
+      -
+        anonymous: never
+        named: never
+        method: never
+        contructor: never
+  switch-final-break:
+    options:
+      - always
+  variable-name:
+    options:
+      - check-format
+      - allow-leading-underscore
+      - ban-keywords
+  whitespace:
+    options:
+      - check-branch
+      - check-decl
+      - check-operator
+      - check-module
+      - check-separator
+      - check-rest-spread
+      - check-type
+      - check-typecast
+      - check-type-operator
+      - check-preblock
+
+  # ESLint
+  # The following rules are provided by ESLint via the tslint-eslint-rules package.
+  no-unexpected-multiline: true
+defaultSeverity: error

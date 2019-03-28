@@ -14,7 +14,25 @@
             "group": {
                 "kind": "build",
                 "isDefault": true
+            },
+            "runOptions": {
+                "runOn": "folderOpen"
             }
+        },
+        {
+            "type": "npm",
+            "script": "lint",
+            "problemMatcher": "$tslint5"
+        },
+        {
+            "type": "npm",
+            "script": "compile",
+            "problemMatcher": "$tsc"
+        },
+        {
+            "type": "npm",
+            "script": "clean",
+            "problemMatcher": []
         }
     ]
 }

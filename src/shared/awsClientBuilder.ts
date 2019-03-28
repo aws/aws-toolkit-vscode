@@ -1,66 +1,57 @@
-'use strict';
+/*!
+ * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import * as vscode from 'vscode';
-import { REGIONS } from './constants';
-import { ext } from './extensionGlobals';
-import { AWSContext } from './awsContext';
+'use strict'
 
-export class AWSClientBuilder {
+import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import { env, version } from 'vscode'
+import { AwsContext } from './awsContext'
+import * as constants from './constants'
 
-    private awsContext: AWSContext;
+export interface AWSClientBuilder {
+    createAndConfigureServiceClient<T>(
+        awsServiceFactory: (options: ServiceConfigurationOptions) => T,
+        awsServiceOpts?: ServiceConfigurationOptions,
+        region?: string
+    ): Promise<T>
+}
 
-    constructor(awsContext: AWSContext) {
-        this.awsContext = awsContext;
+export class DefaultAWSClientBuilder implements AWSClientBuilder {
+
+    private readonly _awsContext: AwsContext
+
+    public constructor(awsContext: AwsContext) {
+        this._awsContext = awsContext
 
     }
 
     // centralized construction of transient AWS service clients, allowing us
     // to customize requests and/or user agent
-    public async createAndConfigureSdkClient(awsService: any, awsServiceOpts: any) : Promise<any> {
-        if (awsServiceOpts) {
-            if (!awsServiceOpts.credentials) {
-                awsServiceOpts.credentials = await this.awsContext.getCredentials();
-            }
-            if (!awsServiceOpts.region) {
-                awsServiceOpts.region = await this.awsContext.getRegion();
-            }
-
-            return new awsService(awsServiceOpts);
+    public async createAndConfigureServiceClient<T>(
+        awsServiceFactory: (options: ServiceConfigurationOptions) => T,
+        awsServiceOpts?: ServiceConfigurationOptions,
+        region?: string
+    ): Promise<T> {
+        if (!awsServiceOpts) {
+            awsServiceOpts = {}
         }
 
-        return new awsService({
-            credentials: await this.awsContext.getCredentials(),
-            region: await this.awsContext.getRegion()
-        });
-    }
-
-    async onCommandConfigureProfile() {
-        var newProfile = await this.promptForProfileName();
-        if (newProfile) {
-            this.awsContext.setCredentialProfileName(newProfile);
-            ext.treesToRefreshOnContextChange.forEach(t => {
-                t.refresh(this.awsContext);
-           });
+        if (!awsServiceOpts.credentials) {
+            awsServiceOpts.credentials = await this._awsContext.getCredentials()
         }
-    }
 
-    async onCommandConfigureRegion() {
-        var newRegion = await this.promptForRegion();
-        if (newRegion) {
-            this.awsContext.setRegion(newRegion);
-            ext.treesToRefreshOnContextChange.forEach(t => {
-                t.refresh(this.awsContext);
-           });
+        if (!awsServiceOpts.region && region) {
+            awsServiceOpts.region = region
         }
-    }
 
-    private async promptForProfileName(): Promise<string> {
-        const input = await vscode.window.showInputBox({ placeHolder: 'Enter the name of the credential profile to use' });
-        return input ? input : "";
-    }
+        if (!awsServiceOpts.customUserAgent) {
+            const platformName = env.appName.replace(/\s/g, '-')
+            const pluginVersion = constants.pluginVersion
+            awsServiceOpts.customUserAgent = `AWS-Toolkit-For-VSCode/${pluginVersion} ${platformName}/${version}`
+        }
 
-    private async promptForRegion(): Promise<string> {
-        const input = await vscode.window.showQuickPick(REGIONS, { placeHolder: 'Select an AWS region' });
-        return input ? input : "";
+        return awsServiceFactory(awsServiceOpts)
     }
 }

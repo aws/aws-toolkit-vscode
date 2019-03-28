@@ -1,5 +1,11 @@
+/*!
+ * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 export class BaseTemplates {
-    static readonly SimpleHTML = `
+    /* tslint:disable max-line-length */
+    public static readonly SIMPLE_HTML = `
         <html>
         <head>
             <meta charset="UTF-8">
@@ -9,5 +15,6 @@ export class BaseTemplates {
             <body>
                 <%= content %>
             </body>
-        </html>`;
+        </html>`
+    /* tslint:enable max-line-length */
 }
