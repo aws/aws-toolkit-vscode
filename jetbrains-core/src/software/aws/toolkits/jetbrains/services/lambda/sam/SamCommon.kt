@@ -21,6 +21,7 @@ import software.aws.toolkits.jetbrains.services.cloudformation.SERVERLESS_FUNCTI
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.utils.FileInfoCache
 import software.aws.toolkits.resources.message
+import java.io.FileFilter
 import java.nio.file.Paths
 
 class SamCommon {
@@ -139,9 +140,13 @@ class SamCommon {
         }
 
         fun getTemplateFromDirectory(projectRoot: VirtualFile): VirtualFile? {
-            val yamlFiles = VfsUtil.getChildren(projectRoot).filter { it.name.endsWith("yaml") || it.name.endsWith("yml") }
+            // Use Java File so we don't need to do a full VFS refresh
+            val projectRootFile = VfsUtil.virtualToIoFile(projectRoot)
+            val yamlFiles = projectRootFile.listFiles(FileFilter {
+                it.isFile && it.name.endsWith("yaml") || it.name.endsWith("yml")
+            })
             assert(yamlFiles.size == 1) { message("cloudformation.yaml.too_many_files", yamlFiles.size) }
-            return yamlFiles.first()
+            return LocalFileSystem.getInstance().refreshAndFindFileByIoFile(yamlFiles.first())
         }
 
         fun getCodeUrisFromTemplate(project: Project, template: VirtualFile?): List<VirtualFile> {
@@ -165,15 +170,8 @@ class SamCommon {
         }
 
         fun setSourceRoots(projectRoot: VirtualFile, project: Project, modifiableModel: ModifiableRootModel) {
-            val template =
-                getTemplateFromDirectory(
-                    projectRoot
-                )
-            val codeUris =
-                getCodeUrisFromTemplate(
-                    project,
-                    template
-                )
+            val template = getTemplateFromDirectory(projectRoot)
+            val codeUris = getCodeUrisFromTemplate(project, template)
             modifiableModel.contentEntries.forEach { contentEntry ->
                 if (contentEntry.file == projectRoot) {
                     codeUris.forEach { contentEntry.addSourceFolder(it, false) }
