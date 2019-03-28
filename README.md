@@ -58,30 +58,26 @@ The toolkit has not been released to the marketplace, so in order to try it you 
 
 #### Create a profile
 
-##### Method One: Create a profile using the AWS CLI
+In order to make the most out of the AWS Toolkit, you will need to make an AWS CLI profile with the following:
+* AWS Access and Secret Keys, required to view, deploy, and run existing AWS resources
+* A default region, required to run and debug code locally
+
+##### Method One: Create a profile using the AWS CLI (recommended)
+
+The SAM CLI requires an installation of the AWS CLI (in case you haven't installed this, you can find instructions [here](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html)).
 
 1. If you haven't already, sign up for AWS. You can create a free account [here](https://aws.amazon.com/free/).
-2. Install the AWS CLI by following the instructions [here](https://aws.amazon.com/cli/).
-3. Run the command `aws configure`, and follow the instructions in the command prompt.
+2. Run the command `aws configure` from your shell of choice and follow the instructions in the command prompt to set a default configuration set.
 
-##### Method Two: Create a profile using the AWS Tools for PowerShell
+You can find more information about the configuration script [here](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html)
 
-1. If you haven't already, sign up for AWS. You can create a free account [here](https://aws.amazon.com/free/).
-2. Install the AWS Tools for PowerShell by following the instructions [here](https://aws.amazon.com/powershell/).
-3. Run the command Set-AWSCredential to define an AWS credential:
+##### Method Two: Manually create a profile
 
-    * On Mac or Linux:
-
-    `Set-AWSCredential -AccessKey [access-key-value] -SecretKey [secret-key-value] -StoreAs [profile-name]`
-
-    * On Windows:
-
-    `Set-AWSCredential -AccessKey [access-key-value] -SecretKey [secret-key-value] -StoreAs [profile-name] -ProfileLocation $env:USERPROFILE\.aws\credentials`
-
-##### Method Three: Manually create a profile
+You can also configure the AWS CLI by hand.
 
 1. If you haven't already, sign up for AWS. You can create a free account [here](https://aws.amazon.com/free/).
 2. Manually configure your configuration and credentials files as described [here](https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html).
+3. Ensure that your `config` file contains a `[default]` profile with an AWS region code set as its `region`
 
 #### Select your profile in Visual Studio Code
 
