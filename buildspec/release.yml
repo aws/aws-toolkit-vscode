@@ -25,7 +25,7 @@ phases:
       # Replace the README.md file with contents that we want to package as the extension's Marketplace page.
       # See https://code.visualstudio.com/api/working-with-extensions/publishing-extension#publishing-extensions
       # and https://code.visualstudio.com/api/working-with-extensions/publishing-extension#marketplace-integration
-      - cp resources/marketplace/extension-page.md ./README.md
+      - cp ./extension-readme.md ./README.md
       - ./node_modules/.bin/vsce package
       # Restore README.md
       - git checkout -- README.md

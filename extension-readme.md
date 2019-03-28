@@ -2,7 +2,7 @@
 
 The AWS Toolkit for Visual Studio Code is an extension that enables you to interact with [Amazon Web Services (AWS)](https://aws.amazon.com/what-is-aws/) from within Visual Studio Code.
 
-![Overview](./overview.png)
+![Overview](./resources/marketplace/overview.png)
 
 ## Contents
 
@@ -21,7 +21,7 @@ You can use the AWS Toolkit for Visual Studio Code to:
   * List available AWS Lambda functions.
   * Invoke available Lambda functions.
 
-  ![AWS Explorer](./aws-explorer.png)
+  ![AWS Explorer](./resources/marketplace/aws-explorer.png)
 
 * [Develop serverless applications locally, and then deploy them to an AWS account](#developing-serverless-applications).
 
@@ -54,7 +54,7 @@ For complete setup instructions, see [Setting Up the AWS Toolkit for Visual Stud
 
 ### <a id="command-palette"></a>Command Palette
 
-![Debug Icon](./command-palette.png)
+![Debug Icon](./resources/marketplace/command-palette.png)
 
 You can access many of the AWS Toolkit for Visual Studio Code features through **Command Palette**. To access the available commands, choose **View, Command Palette** on the menu bar, and then begin typing `AWS:`.
 
@@ -117,7 +117,7 @@ You can use the AWS Toolkit for Visual Studio Code to create, run, debug, and de
 
 #### <a id="create-serverless-application"></a>Create a Serverless Application
 
-![Create SAM Application](./create-sam-app.gif)
+![Create SAM Application](./resources/marketplace/create-sam-app.gif)
 
 1. On the menu bar, choose **View, Command Palette**.
 1. Begin typing: `AWS: Create new SAM Application`. When you see the **AWS: Create new SAM Application** command, choose it.
@@ -131,7 +131,7 @@ For more information, see [Creating a Serverless Application](https://docs.aws.a
 
 #### <a id="run-debug-serverless-application"></a>Run or Debug a Serverless Application
 
-![Configure and Run](./sam-configure-and-run.gif)
+![Configure and Run](./resources/marketplace/sam-configure-and-run.gif)
 
 (_Clip is time lapsed_)
 
@@ -149,7 +149,7 @@ For information about how to work with remote versions of Lambda functions, see 
 
 #### <a id="deploy-serverless-application"></a>Deploy a Serverless Application
 
-![Deploy SAM Application](./sam-deploy.gif)
+![Deploy SAM Application](./resources/marketplace/sam-deploy.gif)
 
 (_Clip is time lapsed_)
 
