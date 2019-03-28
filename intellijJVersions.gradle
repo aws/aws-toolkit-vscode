@@ -11,10 +11,10 @@ static def ideProfiles() {
             ],
             "2019.1": [
                     "IC": [
-                            version: "IC-191.5849.21", // TODO: Update to stable
+                            version: "IC-2019.1",
                             plugins: [
                                     "yaml",
-                                    "PythonCore:2019.1.191.5849.16"
+                                    "PythonCore:2019.1.191.6183.53"
                             ]
                     ]
             ]
