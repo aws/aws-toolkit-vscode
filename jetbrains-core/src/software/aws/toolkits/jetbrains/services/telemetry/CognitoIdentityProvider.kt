@@ -4,11 +4,9 @@
 package software.aws.toolkits.jetbrains.services.telemetry
 
 import com.intellij.openapi.application.ApplicationManager
-import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
-import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cognitoidentity.CognitoIdentityClient
 import software.amazon.awssdk.services.cognitoidentity.model.Credentials
 import software.amazon.awssdk.services.cognitoidentity.model.GetCredentialsForIdentityRequest
@@ -16,9 +14,6 @@ import software.amazon.awssdk.services.cognitoidentity.model.GetIdRequest
 import software.amazon.awssdk.utils.cache.CachedSupplier
 import software.amazon.awssdk.utils.cache.NonBlocking
 import software.amazon.awssdk.utils.cache.RefreshResult
-import software.aws.toolkits.core.ToolkitClientManager
-import software.aws.toolkits.core.credentials.StaticCredentialsToolkitCredentialsProvider
-import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.telemetry.CachedIdentityStorage
 import java.time.temporal.ChronoUnit
 
@@ -28,23 +23,14 @@ import java.time.temporal.ChronoUnit
  *
  * @constructor Creates a new AwsCredentialsProvider that uses credentials from a Cognito Identity pool.
  * @property identityPool The name of the pool to create users from
- * @param clientManager The Toolkit wide client manager for sharing of clients
- * @param regionProvider The Toolkit region info provider
  * @param region The region associated with this Cognito pool
  * @param cacheStorage A storage solution to cache an identity ID, disabled if null
  */
 class AWSCognitoCredentialsProvider(
     private val identityPool: String,
-    clientManager: ToolkitClientManager,
-    regionProvider: ToolkitRegionProvider,
-    region: Region = Region.US_EAST_1,
+    private val cognitoClient: CognitoIdentityClient,
     cacheStorage: CachedIdentityStorage? = null
 ) : AwsCredentialsProvider {
-    private val cognitoClient = clientManager.getClient<CognitoIdentityClient>(
-        credentialsProviderOverride = StaticCredentialsToolkitCredentialsProvider(AnonymousCredentialsProvider.create().resolveCredentials()),
-        regionOverride = regionProvider.regions()[region.id()]
-            ?: throw IllegalStateException("${region.id()} is missing from endpoints data")
-    )
     private val identityIdProvider = AwsCognitoIdentityProvider(cognitoClient, identityPool, cacheStorage)
     private val cacheSupplier = CachedSupplier.builder(this::updateCognitoCredentials)
         .prefetchStrategy(NonBlocking("Cognito Identity Credential Refresh"))
