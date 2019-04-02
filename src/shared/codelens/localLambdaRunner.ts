@@ -323,6 +323,47 @@ export class LocalLambdaRunner {
             )
         }
     }
+} // end class LocalLambdaRunner
+
+export async function getRuntimeForLambda(params: {
+    handlerName: string,
+    templatePath: string,
+}): Promise<string> {
+    const samTemplateData: CloudFormation.Template = await CloudFormation.load(params.templatePath)
+    if (!samTemplateData.Resources) {
+        throw new Error(
+            `Please specify Resource for '${params.handlerName}' Lambda in SAM template: '${params.templatePath}'`
+        )
+    }
+    const runtimes = new Set<string>()
+    for (const resourceKey in samTemplateData.Resources) {
+        if (samTemplateData.Resources.hasOwnProperty(resourceKey)) {
+            const resource: CloudFormation.Resource | undefined = samTemplateData.Resources[resourceKey]
+            if (! resource) {
+                continue
+            }
+            if (resource.Type === 'AWS::Serverless::Function') {
+                if (!resource.Properties) {
+                    continue
+                }
+                if ( resource.Properties.Runtime) {
+                    if (resource.Properties.Handler === params.handlerName) {
+                        return resource.Properties.Runtime
+                    } else {
+                        runtimes.add(resource.Properties.Runtime)
+                    }
+                }
+
+            }
+        }
+    }
+    if (runtimes.size === 1) {
+        // If all lambdas have the same runtime... assume that will continue to be the case
+        return Array.from(runtimes)[0]
+    }
+    throw new Error(
+        `Please specify runtime for '${params.handlerName}' Lambda in SAM template: '${params.templatePath}'`
+    )
 }
 
 export const makeBuildDir = async (): Promise<string> => {
@@ -549,9 +590,8 @@ export async function attachDebugger(params: {
 
     let isDebuggerAttached: boolean | undefined = false
     let numAttempts = 0
-    let retryDelay = 1000
+    const retryDelay = 200
     let shouldRetry = false
-    const retryEnabled = false // Change this to enable retry
     do {
         channelLogger.info(
             'AWS.output.sam.local.attaching',
@@ -564,9 +604,8 @@ export async function attachDebugger(params: {
             isDebuggerAttached = false
             shouldRetry = numAttempts < MAX_DEBUGGER_ATTEMPTS
         } else if (!isDebuggerAttached) {
-            retryDelay *= 2
 
-            shouldRetry = retryEnabled && (numAttempts < MAX_DEBUGGER_ATTEMPTS)
+            shouldRetry = numAttempts < MAX_DEBUGGER_ATTEMPTS
             if (shouldRetry) {
                 const currTime = new Date()
                 recordDebugAttachResult({
