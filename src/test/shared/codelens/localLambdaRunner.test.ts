@@ -6,11 +6,13 @@
 'use strict'
 
 import * as assert from 'assert'
+import * as path from 'path'
 import * as vscode from 'vscode'
 import { DebugConfiguration } from '../../../lambda/local/debugConfiguration'
 import * as localLambdaRunner from '../../../shared/codelens/localLambdaRunner'
 import { BasicLogger, ErrorOrString } from '../../../shared/logger'
 import { ChannelLogger } from '../../../shared/utilities/vsCodeUtils'
+import { assertRejects } from '../utilities/assertUtils'
 
 class FakeChannelLogger implements Pick<ChannelLogger, 'info' | 'error' | 'logger'> {
     public readonly loggedInfoKeys: Set<string> = new Set<string>()
@@ -358,13 +360,13 @@ describe('localLambdaRunner', async () => {
                 const expectedRuntime = data.expectedRuntime
                 if (data.expectedRuntime === undefined) {
                     await assertRejects(async () => {
-                        await getRuntimeForLambda({
+                        await localLambdaRunner.getRuntimeForLambda({
                             templatePath,
                             handlerName: data.handlerName
                         })
                     })
                 } else {
-                    const runtime = await getRuntimeForLambda({
+                    const runtime = await localLambdaRunner.getRuntimeForLambda({
                         templatePath,
                         handlerName: data.handlerName
                     })
