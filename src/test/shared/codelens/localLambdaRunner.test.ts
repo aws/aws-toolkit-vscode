@@ -91,7 +91,7 @@ describe('LocalLambdaRunner', async () => {
             await localLambdaRunner.attachDebugger({
                 debugConfig: {} as any as DebugConfiguration,
                 channelLogger,
-                maxAttempts: 0,
+                maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
                 onWillRetry,
             })
@@ -103,7 +103,7 @@ describe('LocalLambdaRunner', async () => {
             await localLambdaRunner.attachDebugger({
                 debugConfig: {} as any as DebugConfiguration,
                 channelLogger,
-                maxAttempts: 0,
+                maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
                 onWillRetry,
             })
@@ -118,7 +118,7 @@ describe('LocalLambdaRunner', async () => {
             await localLambdaRunner.attachDebugger({
                 debugConfig: {} as any as DebugConfiguration,
                 channelLogger,
-                maxAttempts: 0,
+                maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
                 onWillRetry,
                 onRecordAttachDebuggerMetric: (
@@ -136,7 +136,7 @@ describe('LocalLambdaRunner', async () => {
             const results = await localLambdaRunner.attachDebugger({
                 debugConfig: {} as any as DebugConfiguration,
                 channelLogger,
-                maxAttempts: 0,
+                maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
                 onWillRetry,
             })
@@ -151,7 +151,7 @@ describe('LocalLambdaRunner', async () => {
             await localLambdaRunner.attachDebugger({
                 debugConfig: {} as any as DebugConfiguration,
                 channelLogger,
-                maxAttempts: 0,
+                maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
                 onWillRetry,
             })
@@ -163,7 +163,7 @@ describe('LocalLambdaRunner', async () => {
             await localLambdaRunner.attachDebugger({
                 debugConfig: {} as any as DebugConfiguration,
                 channelLogger,
-                maxAttempts: 0,
+                maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
                 onWillRetry,
             })
@@ -178,7 +178,7 @@ describe('LocalLambdaRunner', async () => {
             await localLambdaRunner.attachDebugger({
                 debugConfig: {} as any as DebugConfiguration,
                 channelLogger,
-                maxAttempts: 0,
+                maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
                 onWillRetry,
                 onRecordAttachDebuggerMetric: (
@@ -195,7 +195,7 @@ describe('LocalLambdaRunner', async () => {
             const results = await localLambdaRunner.attachDebugger({
                 debugConfig: {} as any as DebugConfiguration,
                 channelLogger,
-                maxAttempts: 0,
+                maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
                 onWillRetry,
             })
@@ -208,26 +208,26 @@ describe('LocalLambdaRunner', async () => {
         })
 
         it('Attempts to retry when startDebugging returns undefined', async () => {
-            const maxAttempts: number = 3
+            const maxRetries: number = 3
 
             await localLambdaRunner.attachDebugger({
                 debugConfig: {} as any as DebugConfiguration,
                 channelLogger,
-                maxAttempts,
+                maxRetries: maxRetries,
                 onStartDebugging: startDebuggingReturnsUndefined,
                 onWillRetry,
             })
 
-            assert.strictEqual(actualRetries, maxAttempts - 1, 'Unexpected Retry count')
+            assert.strictEqual(actualRetries, maxRetries, 'Unexpected Retry count')
         })
 
-        it('Logs about exceeding the attempt limit', async () => {
-            const maxAttempts: number = 3
+        it('Logs about exceeding the retry limit', async () => {
+            const maxRetries: number = 3
 
             await localLambdaRunner.attachDebugger({
                 debugConfig: {} as any as DebugConfiguration,
                 channelLogger,
-                maxAttempts,
+                maxRetries,
                 onStartDebugging: startDebuggingReturnsUndefined,
                 onWillRetry,
             })
@@ -242,12 +242,12 @@ describe('LocalLambdaRunner', async () => {
             await localLambdaRunner.attachDebugger({
                 debugConfig: {} as any as DebugConfiguration,
                 channelLogger,
-                maxAttempts: 2,
+                maxRetries: 2,
                 onStartDebugging: startDebuggingReturnsUndefined,
                 onRecordAttachDebuggerMetric: (
                     attachResult: boolean | undefined, attempts: number
                 ): void => {
-                    assert.strictEqual(actualRetries, 1, 'Metrics should only be recorded once')
+                    assert.strictEqual(actualRetries, 2, 'Metrics should only be recorded once')
                     assert.notStrictEqual(attachResult, undefined, 'attachResult should not be undefined')
                 },
                 onWillRetry,
@@ -255,16 +255,16 @@ describe('LocalLambdaRunner', async () => {
         })
 
         it('Returns true if attach succeeds during retries', async () => {
-            const maxAttempts: number = 5
+            const maxRetries: number = 5
             const results = await localLambdaRunner.attachDebugger({
                 debugConfig: {} as any as DebugConfiguration,
                 channelLogger,
-                maxAttempts,
+                maxRetries,
                 onStartDebugging: async (
                     folder: vscode.WorkspaceFolder | undefined,
                     nameOrConfiguration: string | vscode.DebugConfiguration
                 ): Promise<boolean> => {
-                    const retVal = actualRetries === maxAttempts - 2 ? true : undefined
+                    const retVal = actualRetries === maxRetries - 2 ? true : undefined
 
                     return retVal!
                 },
@@ -278,16 +278,16 @@ describe('LocalLambdaRunner', async () => {
         })
 
         it('Returns false if attach fails during retries', async () => {
-            const maxAttempts: number = 5
+            const maxRetries: number = 5
             const results = await localLambdaRunner.attachDebugger({
                 debugConfig: {} as any as DebugConfiguration,
                 channelLogger,
-                maxAttempts,
+                maxRetries,
                 onStartDebugging: async (
                     folder: vscode.WorkspaceFolder | undefined,
                     nameOrConfiguration: string | vscode.DebugConfiguration
                 ): Promise<boolean> => {
-                    const retVal = actualRetries === maxAttempts - 2 ? false : undefined
+                    const retVal = actualRetries === maxRetries - 2 ? false : undefined
 
                     return retVal!
                 },
@@ -301,12 +301,12 @@ describe('LocalLambdaRunner', async () => {
             )
         })
 
-        it('Returns false if attempt count exceeded', async () => {
-            const maxAttempts: number = 3
+        it('Returns false if retry count exceeded', async () => {
+            const maxRetries: number = 3
             const results = await localLambdaRunner.attachDebugger({
                 debugConfig: {} as any as DebugConfiguration,
                 channelLogger,
-                maxAttempts,
+                maxRetries,
                 onStartDebugging: startDebuggingReturnsUndefined,
                 onWillRetry,
             })

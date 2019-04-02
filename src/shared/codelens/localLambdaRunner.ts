@@ -51,7 +51,7 @@ export interface OnDidSamBuildParams {
 const TEMPLATE_RESOURCE_NAME: string = 'awsToolkitSamLocalResource'
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
 const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
-const MAX_DEBUGGER_ATTEMPTS: number = 30
+const MAX_DEBUGGER_RETRIES_DEFAULT: number = 30
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 200
 
 // TODO: Consider replacing LocalLambdaRunner use with associated duplicative functions
@@ -235,6 +235,7 @@ export class LocalLambdaRunner {
         const eventPath: string = path.join(await this.getBaseBuildFolder(), 'event.json')
         const environmentVariablePath = path.join(await this.getBaseBuildFolder(), 'env-vars.json')
         const config = await this.getConfig()
+        const maxRetries: number = getAttachDebuggerMaxRetryLimit(this.configuration, MAX_DEBUGGER_RETRIES_DEFAULT)
 
         await writeFile(eventPath, JSON.stringify(config.event || {}))
         await writeFile(
@@ -267,7 +268,8 @@ export class LocalLambdaRunner {
 
             await attachDebugger({
                 debugConfig: this.debugConfig,
-                maxAttempts: MAX_DEBUGGER_ATTEMPTS,
+                maxRetries,
+                retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
                 channelLogger: this.channelLogger,
                 onRecordAttachDebuggerMetric: (
                     attachResult: boolean | undefined, attempts: number, attachResultDate: Date
@@ -449,6 +451,7 @@ export const invokeLambdaFunction = async (params: {
         documentUri: params.documentUri,
         samTemplate: vscode.Uri.file(params.originalSamTemplatePath),
     })
+    const maxRetries: number = getAttachDebuggerMaxRetryLimit(params.configuration, MAX_DEBUGGER_RETRIES_DEFAULT)
 
     await writeFile(eventPath, JSON.stringify(config.event || {}))
     await writeFile(
@@ -481,7 +484,8 @@ export const invokeLambdaFunction = async (params: {
 
         await attachDebugger({
             debugConfig: params.debugConfig,
-            maxAttempts: MAX_DEBUGGER_ATTEMPTS,
+            maxRetries,
+            retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
             channelLogger: params.channelLogger,
             onRecordAttachDebuggerMetric: (
                 attachResult: boolean | undefined, attempts: number, attachResultDate: Date
@@ -529,7 +533,7 @@ const getEnvironmentVariables = (config: HandlerConfig): SAMTemplateEnvironmentV
 
 export interface AttachDebuggerContext {
     debugConfig: DebugConfiguration
-    maxAttempts: number
+    maxRetries: number
     retryDelayMillis?: number
     channelLogger: Pick<ChannelLogger, 'info' | 'error' | 'logger'>
     onStartDebugging?: typeof vscode.debug.startDebugging
@@ -558,7 +562,7 @@ export async function attachDebugger(
     )}`)
 
     let isDebuggerAttached: boolean | undefined
-    let numAttempts = 0
+    let retries = 0
 
     channelLogger.info(
         'AWS.output.sam.local.attaching',
@@ -566,14 +570,14 @@ export async function attachDebugger(
     )
 
     do {
-        numAttempts += 1
         isDebuggerAttached = await onStartDebugging(undefined, params.debugConfig)
 
         if (isDebuggerAttached === undefined) {
-            if (numAttempts < params.maxAttempts) {
+            if (retries < params.maxRetries) {
                 if (onWillRetry) {
                     await onWillRetry()
                 }
+                retries += 1
             } else {
                 channelLogger.error(
                     'AWS.output.sam.local.attach.retry.limit.exceeded',
@@ -586,7 +590,7 @@ export async function attachDebugger(
     } while (isDebuggerAttached === undefined)
 
     if (params.onRecordAttachDebuggerMetric) {
-        params.onRecordAttachDebuggerMetric(isDebuggerAttached, numAttempts, new Date())
+        params.onRecordAttachDebuggerMetric(isDebuggerAttached, retries + 1, new Date())
     }
 
     if (isDebuggerAttached) {
@@ -667,4 +671,14 @@ function recordAttachDebuggerMetric(params: RecordAttachDebuggerMetricContext) {
             }
         ]
     })
+}
+
+function getAttachDebuggerMaxRetryLimit(
+    configuration: SettingsConfiguration,
+    defaultValue: number,
+): number {
+    return configuration.readSetting<number>(
+        'samcli.debug.attach.retry.maximum',
+        defaultValue
+    )!
 }
