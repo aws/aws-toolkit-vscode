@@ -80,10 +80,12 @@ class AwsClientManagerTest {
     fun oldClientsAreRemovedWhenProfilesAreRemoved() {
         val sut = getClientManager()
         val testSettings = MockProjectAccountSettingsManager.getInstance(projectRule.project)
-        testSettings.activeCredentialProvider = mockCredentialManager.addCredentials(
-            "profile:admin",
-            AwsBasicCredentials.create("Access", "Secret"),
-            true
+        testSettings.changeCredentialProvider(
+            mockCredentialManager.addCredentials(
+                "profile:admin",
+                AwsBasicCredentials.create("Access", "Secret"),
+                true
+            )
         )
 
         sut.getClient<DummyServiceClient>()
@@ -138,8 +140,7 @@ class AwsClientManagerTest {
         val first = sut.getClient<DummyServiceClient>()
 
         val testSettings = ProjectAccountSettingsManager.getInstance(projectRule.project)
-
-        testSettings.activeRegion = AwsRegion("us-east-1", "US-east-1")
+        testSettings.changeRegion(AwsRegion("us-west-2", "us-west-2"))
 
         val afterRegionUpdate = sut.getClient<DummyServiceClient>()
 

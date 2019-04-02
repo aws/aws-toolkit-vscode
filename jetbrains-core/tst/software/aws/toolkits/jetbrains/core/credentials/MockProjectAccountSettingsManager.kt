@@ -16,24 +16,34 @@ import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 
 class MockProjectAccountSettingsManager : ProjectAccountSettingsManager {
     private var internalProvider: ToolkitCredentialsProvider? = DUMMY_PROVIDER
-
-    val internalRecentlyUsedRegions = mutableListOf<AwsRegion>()
+    private val recentlyUsedRegions = mutableListOf<AwsRegion>()
+    private val recentlyUsedCredentials = mutableListOf<ToolkitCredentialsProvider>()
 
     override var activeRegion = AwsRegionProvider.getInstance().defaultRegion()
 
-    override var activeCredentialProvider: ToolkitCredentialsProvider
+    override val activeCredentialProvider: ToolkitCredentialsProvider
         get() = internalProvider ?: throw CredentialProviderNotFound("boom")
-        set(value) {
-            internalProvider = value
+
+    override fun recentlyUsedRegions(): List<AwsRegion> = recentlyUsedRegions
+
+    override fun recentlyUsedCredentials(): List<ToolkitCredentialsProvider> = recentlyUsedCredentials
+
+    override fun changeCredentialProvider(credentialsProvider: ToolkitCredentialsProvider?) {
+        internalProvider = credentialsProvider
+        credentialsProvider?.let {
+            recentlyUsedCredentials.add(credentialsProvider)
         }
+    }
 
-    override fun recentlyUsedRegions(): List<AwsRegion> = internalRecentlyUsedRegions
-
-    override fun recentlyUsedCredentials(): List<ToolkitCredentialsProvider> = mutableListOf()
+    override fun changeRegion(region: AwsRegion) {
+        activeRegion = region
+        recentlyUsedRegions.add(region)
+    }
 
     fun reset() {
         internalProvider = DUMMY_PROVIDER
-        internalRecentlyUsedRegions.clear()
+        recentlyUsedRegions.clear()
+        recentlyUsedCredentials.clear()
     }
 
     companion object {
@@ -62,10 +72,10 @@ fun <T> runUnderRealCredentials(project: Project, block: () -> T): T {
     val manager = MockProjectAccountSettingsManager.getInstance(project)
     val oldActive = manager.activeCredentialProvider
     try {
-        println("Running using real credentials: $credentials")
-        manager.activeCredentialProvider = createDummyProvider("RealCreds", credentials)
+        println("Running using real credentials")
+        manager.changeCredentialProvider(createDummyProvider("RealCreds", credentials))
         return block.invoke()
     } finally {
-        manager.activeCredentialProvider = oldActive
+        manager.changeCredentialProvider(oldActive)
     }
 }

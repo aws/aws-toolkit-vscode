@@ -21,12 +21,11 @@ import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBSwingUtilities
 import com.intellij.util.ui.UIUtil
-import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
-import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.components.telemetry.ToolkitActionPlaces
 import software.aws.toolkits.jetbrains.core.SettingsSelector
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier
+import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier.AccountSettingsEvent
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_SERVICE_NODE
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
@@ -42,8 +41,9 @@ import javax.swing.event.TreeWillExpandListener
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
-class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, true), AccountSettingsChangedNotifier {
+class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(true, true), AccountSettingsChangedNotifier {
     private val actionManager = ActionManagerEx.getInstanceEx()
+    private val projectAccountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
 
     private val treePanelWrapper: Wrapper = Wrapper()
     private val errorPanel: JPanel
@@ -66,16 +66,12 @@ class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, tru
         updateModel()
     }
 
-    override fun activeCredentialsChanged(credentialsProvider: ToolkitCredentialsProvider?) {
-        updateModel()
-    }
-
-    override fun activeRegionChanged(value: AwsRegion) {
+    override fun settingsChanged(event: AccountSettingsEvent) {
         updateModel()
     }
 
     internal fun updateModel() {
-        if (!ProjectAccountSettingsManager.getInstance(project).hasActiveCredentials()) {
+        if (!projectAccountSettingsManager.hasActiveCredentials()) {
             treePanelWrapper.setContent(errorPanel)
             return
         }
