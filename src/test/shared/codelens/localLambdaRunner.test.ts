@@ -46,11 +46,11 @@ describe('localLambdaRunner', () => {
         ]
         for (const data of testData) {
             it(`should ${data.expectedRuntime ? 'resolve runtime' : 'throw'} for ${data.title}`, async () => {
-                const templatePath = path.join(path.dirname(__filename), data.templateFileName)
+                const templatePath = path.join(path.dirname(__filename), 'yaml', data.templateFileName)
                 const expectedRuntime = data.expectedRuntime
                 if (data.expectedRuntime === undefined) {
-                    assertRejects(async () => {
-                        getRuntimeForLambda({
+                    await assertRejects(async () => {
+                        await getRuntimeForLambda({
                             templatePath,
                             handlerName: data.handlerName
                         })
