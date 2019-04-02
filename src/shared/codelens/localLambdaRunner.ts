@@ -261,7 +261,31 @@ export class LocalLambdaRunner {
                 channelLogger: this.channelLogger
             })
 
-            await this.attachDebugger(startInvokeTime.getTime())
+            if (this.onWillAttachDebugger) {
+                await this.onWillAttachDebugger()
+            }
+
+            await attachDebugger({
+                debugConfig: this.debugConfig,
+                maxAttempts: MAX_DEBUGGER_ATTEMPTS,
+                channelLogger: this.channelLogger,
+                onRecordAttachDebuggerMetric: (
+                    attachResult: boolean | undefined, attempts: number, attachResultDate: Date
+                ): void => {
+                    recordAttachDebuggerMetric({
+                        telemetryService: this.telemetryService,
+                        result: attachResult,
+                        attempts,
+                        durationMillis: attachResultDate.getTime() - startInvokeTime.getTime(),
+                        runtime: this.runtime,
+                    })
+                },
+                onWillRetry: async (): Promise<void> => {
+                    await new Promise<void>(resolve => {
+                        setTimeout(resolve, ATTACH_DEBUGGER_RETRY_DELAY_MILLIS)
+                    })
+                }
+            })
         }
     }
 
@@ -287,41 +311,6 @@ export class LocalLambdaRunner {
             }
         } else {
             return {}
-        }
-    }
-
-    private async attachDebugger(startInvokeMillis: number) {
-        if (this.onWillAttachDebugger) {
-            // Enable caller to do last minute preparation before attaching debugger
-            await this.onWillAttachDebugger()
-        }
-        this.channelLogger.info(
-            'AWS.output.sam.local.attaching',
-            'Attaching to SAM Application...'
-        )
-        const attachSuccess: boolean = await vscode.debug.startDebugging(undefined, this.debugConfig)
-
-        const currTime = new Date()
-        recordDebugAttachResult({
-            telemetryService: this.telemetryService,
-            attachResult: attachSuccess,
-            attempts: 1,
-            duration: currTime.getTime() - startInvokeMillis,
-            runtime: this.runtime,
-        })
-
-        if (attachSuccess) {
-            this.channelLogger.info(
-                'AWS.output.sam.local.attach.success',
-                'Debugger attached'
-            )
-        } else {
-            // sam local either failed, or took too long to start up
-            this.channelLogger.error(
-                'AWS.output.sam.local.attach.failure',
-                // tslint:disable-next-line:max-line-length
-                'Unable to attach Debugger. Check the Terminal tab for output. If it took longer than expected to successfully start, you may still attach to it.'
-            )
         }
     }
 }
@@ -678,27 +667,5 @@ function recordAttachDebuggerMetric(params: RecordAttachDebuggerMetricContext) {
                 metadata,
             }
         ]
-    })
-}
-
-function recordDebugAttachResult({
-    telemetryService,
-    attachResult,
-    attempts,
-    duration,
-    runtime,
-}: {
-    telemetryService: Pick<TelemetryService, 'record'>
-    attachResult: boolean
-    attempts: number
-    duration: number
-    runtime: string
-}): void {
-    recordAttachDebuggerMetric({
-        attempts,
-        durationMillis: duration,
-        result: attachResult,
-        runtime,
-        telemetryService,
     })
 }
