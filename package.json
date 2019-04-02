@@ -75,6 +75,11 @@
                     "default": "",
                     "markdownDescription": "%AWS.configuration.description.samcli.location%"
                 },
+                "aws.samcli.debug.attach.retry.maximum": {
+                    "type": "number",
+                    "default": 30,
+                    "description": "%AWS.configuration.description.samcli.debug.attach.retry.maximum%"
+                },
                 "aws.samcli.debug.attach.timeout.millis": {
                     "type": "number",
                     "default": 30000,
