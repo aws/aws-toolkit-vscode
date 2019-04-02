@@ -30,6 +30,7 @@ import {
 } from './codeLensUtils'
 import {
     executeSamBuild,
+    getRuntimeForLambda,
     invokeLambdaFunction,
     LambdaLocalInvokeParams,
     makeBuildDir,
@@ -185,9 +186,7 @@ export async function initialize({
     const logger = getLogger()
     const channelLogger = getChannelLogger(toolkitOutputChannel)
 
-    const runtime = 'python3.6' // TODO: Remove hard coded value
-
-    const invokeLambda = async (args: LambdaLocalInvokeParams) => {
+    const invokeLambda = async (args: LambdaLocalInvokeParams & { runtime: string }) => {
         // Switch over to the output channel so the user has feedback that we're getting things ready
         channelLogger.channel.show(true)
 
@@ -225,7 +224,7 @@ export async function initialize({
             documentUri: args.document.uri,
             originalHandlerName: args.handlerName,
             handlerName,
-            runtime,
+            runtime: args.runtime,
             workspaceUri: args.workspaceFolder.uri
         })
         logger.debug(`pythonCodeLensProvider.initialize: ${
@@ -256,16 +255,7 @@ export async function initialize({
             originalHandlerName: args.handlerName,
             handlerName,
             isDebug: args.isDebug,
-            onWillAttachDebugger: async () => {
-                if (process.platform === 'darwin') {
-                    await new Promise<void>(resolve => { // delay to avoid consistent early failures
-                        // tslint:disable-next-line:max-line-length
-                        logger.debug(`pythonCodeLensProvider.initialize on ${process.platform}. Allowing time for ptvsd startup......`)
-                        setTimeout(resolve, 4000)
-                    })
-                }
-            },
-            runtime,
+            runtime: args.runtime,
             telemetryService
         })
         if (args.isDebug && lambdaDebugFilePath) {
@@ -277,7 +267,16 @@ export async function initialize({
     registerCommand({
         command: command,
         callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
-            await invokeLambda(params)
+    
+            const runtime = await getRuntimeForLambda({
+              handlerName: params.handlerName,
+              templatePath: params.samTemplate.fsPath
+            })
+
+            await invokeLambda({
+                runtime,
+                ...params
+            })
 
             return getMetricDatum({
                 isDebug: params.isDebug,
