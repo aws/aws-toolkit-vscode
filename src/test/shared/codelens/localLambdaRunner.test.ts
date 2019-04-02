@@ -238,8 +238,7 @@ describe('LocalLambdaRunner', async () => {
             )
         })
 
-        it('Logs metrics when startDebugging returns undefined', async () => {
-            let currentAttempt = 0
+        it('Does not log metrics when startDebugging returns undefined', async () => {
             await localLambdaRunner.attachDebugger({
                 debugConfig: {} as any as DebugConfiguration,
                 channelLogger,
@@ -248,9 +247,8 @@ describe('LocalLambdaRunner', async () => {
                 onRecordAttachDebuggerMetric: (
                     attachResult: boolean | undefined, attempts: number
                 ): void => {
-                    currentAttempt++
-                    assert.strictEqual(attachResult, undefined, 'Expected attachResult to be undefined')
-                    assert.strictEqual(attempts, currentAttempt, 'Unexpected attempt count')
+                    assert.strictEqual(actualRetries, 1, 'Metrics should only be recorded once')
+                    assert.notStrictEqual(attachResult, undefined, 'attachResult should not be undefined')
                 },
                 onWillRetry,
             })

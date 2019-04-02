@@ -572,10 +572,6 @@ export async function attachDebugger(
         numAttempts += 1
         isDebuggerAttached = await onStartDebugging(undefined, params.debugConfig)
 
-        if (params.onRecordAttachDebuggerMetric) {
-            params.onRecordAttachDebuggerMetric(isDebuggerAttached, numAttempts, new Date())
-        }
-
         if (isDebuggerAttached === undefined) {
             if (numAttempts < params.maxAttempts) {
                 await params.onWillRetry()
@@ -589,6 +585,10 @@ export async function attachDebugger(
             }
         }
     } while (isDebuggerAttached === undefined)
+
+    if (params.onRecordAttachDebuggerMetric) {
+        params.onRecordAttachDebuggerMetric(isDebuggerAttached, numAttempts, new Date())
+    }
 
     if (isDebuggerAttached) {
         channelLogger.info(
