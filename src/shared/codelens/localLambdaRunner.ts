@@ -51,7 +51,8 @@ export interface OnDidSamBuildParams {
 const TEMPLATE_RESOURCE_NAME: string = 'awsToolkitSamLocalResource'
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
 const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
-const MAX_DEBUGGER_ATTEMPTS: number = 10
+const MAX_DEBUGGER_ATTEMPTS: number = 30
+const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 200
 
 // TODO: Consider replacing LocalLambdaRunner use with associated duplicative functions
 export class LocalLambdaRunner {
@@ -493,12 +494,27 @@ export const invokeLambdaFunction = async (params: {
         if (params.onWillAttachDebugger) {
             await params.onWillAttachDebugger()
         }
+
         await attachDebugger({
-            channeLogger: params.channelLogger,
             debugConfig: params.debugConfig,
-            telemetryService: params.telemetryService,
-            startInvokeMillis: startInvokeTime.getTime(),
-            runtime: params.runtime,
+            maxAttempts: MAX_DEBUGGER_ATTEMPTS,
+            channelLogger: params.channelLogger,
+            onRecordAttachDebuggerMetric: (
+                attachResult: boolean | undefined, attempts: number, attachResultDate: Date
+            ): void => {
+                recordAttachDebuggerMetric({
+                    telemetryService: params.telemetryService,
+                    result: attachResult,
+                    attempts,
+                    durationMillis: attachResultDate.getTime() - startInvokeTime.getTime(),
+                    runtime: params.runtime,
+                })
+            },
+            onWillRetry: async (): Promise<void> => {
+                await new Promise<void>(resolve => {
+                    setTimeout(resolve, ATTACH_DEBUGGER_RETRY_DELAY_MILLIS)
+                })
+            }
         })
     }
 }
@@ -532,72 +548,58 @@ const getEnvironmentVariables = (config: HandlerConfig): SAMTemplateEnvironmentV
     }
 }
 
-export async function attachDebugger(params: {
-    channeLogger: ChannelLogger,
-    debugConfig: DebugConfiguration,
-    telemetryService: TelemetryService,
-    startInvokeMillis: number,
-    runtime: string,
-}): Promise<{ success: boolean }> {
-    const channelLogger = params.channeLogger
-    const logger = params.channeLogger.logger
+export interface AttachDebuggerContext {
+    debugConfig: DebugConfiguration
+    maxAttempts: number
+    channelLogger: Pick<ChannelLogger, 'info' | 'error' | 'logger'>
+    onStartDebugging?: typeof vscode.debug.startDebugging
+    onRecordAttachDebuggerMetric?(attachResult: boolean | undefined, attempts: number, attachResultDate: Date): void
+    onWillRetry(): Promise<void>
+}
+
+export async function attachDebugger(
+    {
+        onStartDebugging = vscode.debug.startDebugging,
+        ...params
+    }: AttachDebuggerContext
+): Promise<{ success: boolean }> {
+    const channelLogger = params.channelLogger
+    const logger = params.channelLogger.logger
     logger.debug(`localLambdaRunner.attachDebugger: startDebugging with debugConfig: ${JSON.stringify(
         params.debugConfig,
         undefined,
         2
     )}`)
 
-    let isDebuggerAttached: boolean | undefined = false
+    let isDebuggerAttached: boolean | undefined
     let numAttempts = 0
-    let retryDelay = 1000
-    let shouldRetry = false
-    const retryEnabled = false // Change this to enable retry
+
+    channelLogger.info(
+        'AWS.output.sam.local.attaching',
+        'Attaching debugger to SAM Application...',
+    )
+
     do {
-        channelLogger.info(
-            'AWS.output.sam.local.attaching',
-            'Attempt number {0} to attach debugger to SAM Application...',
-            String(numAttempts + 1)
-        )
-        isDebuggerAttached = await vscode.debug.startDebugging(undefined, params.debugConfig)
         numAttempts += 1
+        isDebuggerAttached = await onStartDebugging(undefined, params.debugConfig)
+
+        if (params.onRecordAttachDebuggerMetric) {
+            params.onRecordAttachDebuggerMetric(isDebuggerAttached, numAttempts, new Date())
+        }
+
         if (isDebuggerAttached === undefined) {
-            isDebuggerAttached = false
-            shouldRetry = numAttempts < MAX_DEBUGGER_ATTEMPTS
-        } else if (!isDebuggerAttached) {
-            retryDelay *= 2
-
-            shouldRetry = retryEnabled && (numAttempts < MAX_DEBUGGER_ATTEMPTS)
-            if (shouldRetry) {
-                const currTime = new Date()
-                recordDebugAttachResult({
-                    telemetryService: params.telemetryService,
-                    attachResult: isDebuggerAttached,
-                    attempts: numAttempts,
-                    duration: currTime.getTime() - params.startInvokeMillis,
-                    runtime: params.runtime,
-                })
-
-                channelLogger.info(
-                    'AWS.output.sam.local.attach.retry',
-                    'Will try to attach debugger again in {0} seconds...',
-                    String(retryDelay / 1000)
+            if (numAttempts <= params.maxAttempts) {
+                await params.onWillRetry()
+            } else {
+                channelLogger.error(
+                    'AWS.output.sam.local.attach.retry.limit.exceeded',
+                    'Retry limit reached while trying to attach the debugger.'
                 )
 
-                // Wait <retryDelay> seconds and try again
-                await new Promise<void>(resolve => {
-                    setTimeout(resolve, retryDelay)
-                })
+                isDebuggerAttached = false
             }
         }
-    } while (!isDebuggerAttached && shouldRetry)
-
-    recordDebugAttachResult({
-        telemetryService: params.telemetryService,
-        attachResult: isDebuggerAttached,
-        attempts: numAttempts,
-        duration: new Date().getTime() - params.startInvokeMillis,
-        runtime: params.runtime,
-    })
+    } while (isDebuggerAttached === undefined)
 
     if (isDebuggerAttached) {
         channelLogger.info(
@@ -643,6 +645,42 @@ async function waitForDebugPort({
     )
 }
 
+export interface RecordAttachDebuggerMetricContext {
+    telemetryService: Pick<TelemetryService, 'record'>
+    runtime: string
+    result: boolean | undefined
+    attempts: number
+    durationMillis: number
+}
+
+function recordAttachDebuggerMetric(params: RecordAttachDebuggerMetricContext) {
+    const currTime = new Date()
+    const namespace = params.result ? 'DebugAttachSuccess' : 'DebugAttachFailure'
+
+    const metadata = new Map([
+        ['runtime', params.runtime],
+    ])
+
+    params.telemetryService.record({
+        namespace: namespace,
+        createTime: currTime,
+        data: [
+            {
+                name: 'attempts',
+                value: params.attempts,
+                unit: 'Count',
+                metadata,
+            },
+            {
+                name: 'duration',
+                value: params.durationMillis,
+                unit: 'Milliseconds',
+                metadata,
+            }
+        ]
+    })
+}
+
 function recordDebugAttachResult({
     telemetryService,
     attachResult,
@@ -650,35 +688,17 @@ function recordDebugAttachResult({
     duration,
     runtime,
 }: {
-    telemetryService: TelemetryService
+    telemetryService: Pick<TelemetryService, 'record'>
     attachResult: boolean
     attempts: number
     duration: number
     runtime: string
 }): void {
-    const currTime = new Date()
-    const namespace = attachResult ? 'DebugAttachSuccess' : 'DebugAttachFailure'
-
-    const metadata = new Map([
-        ['runtime', runtime],
-    ])
-
-    telemetryService.record({
-        namespace: namespace,
-        createTime: currTime,
-        data: [
-            {
-                name: 'attempts',
-                value: attempts,
-                unit: 'Count',
-                metadata,
-            },
-            {
-                name: 'duration',
-                value: duration,
-                unit: 'Milliseconds',
-                metadata,
-            }
-        ]
+    recordAttachDebuggerMetric({
+        attempts,
+        durationMillis: duration,
+        result: attachResult,
+        runtime,
+        telemetryService,
     })
 }
