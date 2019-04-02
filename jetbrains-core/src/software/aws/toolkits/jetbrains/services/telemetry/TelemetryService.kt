@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.cognitoidentity.CognitoIdentityClient
 import software.amazon.awssdk.services.toolkittelemetry.ToolkitTelemetryClient
 import software.amazon.awssdk.services.toolkittelemetry.model.AWSProduct
 import software.amazon.awssdk.services.toolkittelemetry.model.Unit
+import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent
 import software.aws.toolkits.core.telemetry.DefaultTelemetryBatcher
 import software.aws.toolkits.core.telemetry.MetricEvent
@@ -21,9 +22,9 @@ import software.aws.toolkits.core.telemetry.TelemetryBatcher
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.AwsToolkit
+import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsSdkClient
 import software.aws.toolkits.jetbrains.settings.AwsSettings
-import java.net.URI
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.Executors
@@ -68,22 +69,21 @@ class DefaultTelemetryService(
             settings.clientId.toString(),
             ApplicationNamesInfo.getInstance().fullProductNameWithEdition,
             ApplicationInfo.getInstance().fullVersion,
-            ToolkitTelemetryClient
-                .builder()
-                .httpClient(sdkClient.sdkHttpClient)
-                .region(Region.US_EAST_1)
-                .endpointOverride(URI.create("https://client-telemetry.us-east-1.amazonaws.com"))
-                .credentialsProvider(
-                    AWSCognitoCredentialsProvider(
-                        "us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842",
-                        CognitoIdentityClient.builder()
-                            .credentialsProvider(AnonymousCredentialsProvider.create())
-                            .region(Region.US_EAST_1)
-                            .httpClient(sdkClient.sdkHttpClient)
-                            .build()
-                    )
-                )
-                .build(),
+            ToolkitClientManager.createNewClient(
+                ToolkitTelemetryClient::class,
+                sdkClient.sdkHttpClient,
+                Region.US_EAST_1,
+                AWSCognitoCredentialsProvider(
+                    "us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842",
+                    CognitoIdentityClient.builder()
+                        .credentialsProvider(AnonymousCredentialsProvider.create())
+                        .region(Region.US_EAST_1)
+                        .httpClient(sdkClient.sdkHttpClient)
+                        .build()
+                ),
+                AwsClientManager.userAgent,
+                "https://client-telemetry.us-east-1.amazonaws.com"
+            ),
             SystemInfo.OS_NAME,
             SystemInfo.OS_VERSION
         ))

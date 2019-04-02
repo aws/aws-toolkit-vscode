@@ -4,6 +4,7 @@
 package software.aws.toolkits.core
 
 import org.jetbrains.annotations.TestOnly
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.awscore.client.builder.AwsDefaultClientBuilder
 import software.amazon.awssdk.core.SdkClient
 import software.amazon.awssdk.core.client.config.SdkAdvancedClientOption
@@ -19,6 +20,7 @@ import software.amazon.awssdk.services.s3.internal.handlers.PutObjectInterceptor
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import java.lang.reflect.Modifier
+import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
@@ -97,37 +99,55 @@ abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
      * Creates a new client for the requested [AwsClientKey]
      */
     @Suppress("UNCHECKED_CAST")
-    protected open fun <T : SdkClient> createNewClient(key: AwsClientKey, region: AwsRegion = key.region, credProvider: ToolkitCredentialsProvider = getCredentialsProvider()): T {
-        val builderMethod = key.serviceClass.java.methods.find {
-            it.name == "builder" && Modifier.isStatic(it.modifiers) && Modifier.isPublic(it.modifiers)
-        } ?: throw IllegalArgumentException("Expected service interface to have a public static `builder()` method.")
-        val builder = builderMethod.invoke(null) as AwsDefaultClientBuilder<*, *>
-
-        return builder
-            .httpClient(sdkHttpClient)
-            .credentialsProvider(credProvider)
-            .region(Region.of(region.id))
-            .overrideConfiguration {
-                it.putAdvancedOption(SdkAdvancedClientOption.USER_AGENT_PREFIX, userAgent)
-                if (builder is S3ClientBuilder) {
-                    // TODO: Remove after SDK code-gens these instead of uses class loader
-                    it.addExecutionInterceptor(EndpointAddressInterceptor())
-                    it.addExecutionInterceptor(CreateBucketInterceptor())
-                    it.addExecutionInterceptor(PutObjectInterceptor())
-                    it.addExecutionInterceptor(EnableChunkedEncodingInterceptor())
-                    it.addExecutionInterceptor(DisableDoubleUrlEncodingInterceptor())
-                    it.addExecutionInterceptor(DecodeUrlEncodedResponseInterceptor())
-                }
-            }
-            .also { _ ->
-                if (builder is S3ClientBuilder) {
-                    builder.serviceConfiguration { it.pathStyleAccessEnabled(true) }
-                }
-            }
-            .build() as T
-    }
+    protected open fun <T : SdkClient> createNewClient(
+        key: AwsClientKey,
+        region: AwsRegion = key.region,
+        credProvider: ToolkitCredentialsProvider = getCredentialsProvider()
+    ): T = createNewClient(key.serviceClass as KClass<T>, sdkHttpClient, Region.of(region.id), credProvider, userAgent)
 
     companion object {
         private val GLOBAL_SERVICES = setOf("IamClient")
+
+        fun <T : SdkClient> createNewClient(
+            sdkClass: KClass<T>,
+            httpClient: SdkHttpClient,
+            region: Region,
+            credProvider: AwsCredentialsProvider,
+            userAgent: String,
+            endpointOverride: String? = null
+        ): T {
+            val builderMethod = sdkClass.java.methods.find {
+                it.name == "builder" && Modifier.isStatic(it.modifiers) && Modifier.isPublic(it.modifiers)
+            } ?: throw IllegalArgumentException("Expected service interface to have a public static `builder()` method.")
+
+            val builder = builderMethod.invoke(null) as AwsDefaultClientBuilder<*, *>
+
+            @Suppress("UNCHECKED_CAST")
+            return builder
+                .httpClient(httpClient)
+                .credentialsProvider(credProvider)
+                .region(region)
+                .overrideConfiguration {
+                    it.putAdvancedOption(SdkAdvancedClientOption.USER_AGENT_PREFIX, userAgent)
+                    if (builder is S3ClientBuilder) {
+                        // TODO: Remove after SDK code-gens these instead of uses class loader
+                        it.addExecutionInterceptor(EndpointAddressInterceptor())
+                        it.addExecutionInterceptor(CreateBucketInterceptor())
+                        it.addExecutionInterceptor(PutObjectInterceptor())
+                        it.addExecutionInterceptor(EnableChunkedEncodingInterceptor())
+                        it.addExecutionInterceptor(DisableDoubleUrlEncodingInterceptor())
+                        it.addExecutionInterceptor(DecodeUrlEncodedResponseInterceptor())
+                    }
+                }
+                .also { _ ->
+                    endpointOverride?.let {
+                        builder.endpointOverride(URI.create(it))
+                    }
+                    if (builder is S3ClientBuilder) {
+                        builder.serviceConfiguration { it.pathStyleAccessEnabled(true) }
+                    }
+                }
+                .build() as T
+        }
     }
 }

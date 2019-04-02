@@ -17,11 +17,13 @@ import com.intellij.util.messages.Topic
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sts.StsClient
+import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsSdkClient
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier.AccountSettingsEvent
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.Companion.ACCOUNT_SETTINGS_CHANGED
@@ -120,11 +122,13 @@ class DefaultProjectAccountSettingsManager(private val project: Project, private
     ProjectAccountSettingsManager, PersistentStateComponent<AccountState>, Disposable {
     constructor(project: Project, sdkClient: AwsSdkClient) : this(
         project,
-        StsClient.builder()
-            .region(Region.US_EAST_1)
-            .httpClient(sdkClient.sdkHttpClient)
-            .credentialsProvider(AnonymousCredentialsProvider.create()) // Will be overridden per request
-            .build()
+        ToolkitClientManager.createNewClient(
+            StsClient::class,
+            sdkClient.sdkHttpClient,
+            Region.US_EAST_1,
+            AnonymousCredentialsProvider.create(),
+            AwsClientManager.userAgent
+        )
     )
 
     private val credentialManager = CredentialManager.getInstance()
