@@ -8,7 +8,7 @@
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { DebugConfiguration } from '../../../lambda/local/debugConfiguration'
-import * as localLambdaRunner from '../../../shared/codelens/LocalLambdaRunner'
+import * as localLambdaRunner from '../../../shared/codelens/localLambdaRunner'
 import { BasicLogger, ErrorOrString } from '../../../shared/logger'
 import { ChannelLogger } from '../../../shared/utilities/vsCodeUtils'
 
