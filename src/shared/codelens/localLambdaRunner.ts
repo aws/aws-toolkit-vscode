@@ -280,11 +280,6 @@ export class LocalLambdaRunner {
                         runtime: this.runtime,
                     })
                 },
-                onWillRetry: async (): Promise<void> => {
-                    await new Promise<void>(resolve => {
-                        setTimeout(resolve, ATTACH_DEBUGGER_RETRY_DELAY_MILLIS)
-                    })
-                }
             })
         }
     }
@@ -499,11 +494,6 @@ export const invokeLambdaFunction = async (params: {
                     runtime: params.runtime,
                 })
             },
-            onWillRetry: async (): Promise<void> => {
-                await new Promise<void>(resolve => {
-                    setTimeout(resolve, ATTACH_DEBUGGER_RETRY_DELAY_MILLIS)
-                })
-            }
         })
     }
 }
@@ -540,15 +530,22 @@ const getEnvironmentVariables = (config: HandlerConfig): SAMTemplateEnvironmentV
 export interface AttachDebuggerContext {
     debugConfig: DebugConfiguration
     maxAttempts: number
+    retryDelayMillis?: number
     channelLogger: Pick<ChannelLogger, 'info' | 'error' | 'logger'>
     onStartDebugging?: typeof vscode.debug.startDebugging
     onRecordAttachDebuggerMetric?(attachResult: boolean | undefined, attempts: number, attachResultDate: Date): void
-    onWillRetry(): Promise<void>
+    onWillRetry?(): Promise<void>
 }
 
 export async function attachDebugger(
     {
+        retryDelayMillis = ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
         onStartDebugging = vscode.debug.startDebugging,
+        onWillRetry = async (): Promise<void> => {
+            await new Promise<void>(resolve => {
+                setTimeout(resolve, retryDelayMillis)
+            })
+        },
         ...params
     }: AttachDebuggerContext
 ): Promise<{ success: boolean }> {
@@ -574,7 +571,9 @@ export async function attachDebugger(
 
         if (isDebuggerAttached === undefined) {
             if (numAttempts < params.maxAttempts) {
-                await params.onWillRetry()
+                if (onWillRetry) {
+                    await onWillRetry()
+                }
             } else {
                 channelLogger.error(
                     'AWS.output.sam.local.attach.retry.limit.exceeded',
