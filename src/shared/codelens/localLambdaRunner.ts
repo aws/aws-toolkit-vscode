@@ -73,7 +73,6 @@ export class LocalLambdaRunner {
         private readonly codeRootDirectoryPath: string,
         private readonly telemetryService: TelemetryService,
         private readonly onDidSamBuild?: (params: OnDidSamBuildParams) => Promise<void>,
-        private readonly onWillAttachDebugger?: () => Promise<void>,
         private readonly channelLogger = getChannelLogger(outputChannel),
     ) {
         if (localInvokeParams.isDebug && !debugPort) {
@@ -261,10 +260,6 @@ export class LocalLambdaRunner {
                 configuration: this.configuration,
                 channelLogger: this.channelLogger
             })
-
-            if (this.onWillAttachDebugger) {
-                await this.onWillAttachDebugger()
-            }
 
             await attachDebugger({
                 debugConfig: this.debugConfig,
@@ -463,7 +458,6 @@ export const invokeLambdaFunction = async (params: {
     samTaskInvoker: SamCliTaskInvoker,
     telemetryService: TelemetryService,
     runtime: string,
-    onWillAttachDebugger?(): Promise<void>,
 }): Promise<void> => {
     params.channelLogger.info(
         'AWS.output.starting.sam.app.locally',
@@ -518,10 +512,6 @@ export const invokeLambdaFunction = async (params: {
             configuration: params.configuration,
             channelLogger: params.channelLogger
         })
-
-        if (params.onWillAttachDebugger) {
-            await params.onWillAttachDebugger()
-        }
 
         await attachDebugger({
             debugConfig: params.debugConfig,
