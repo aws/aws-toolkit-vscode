@@ -218,7 +218,7 @@ describe('LocalLambdaRunner', async () => {
                 onWillRetry,
             })
 
-            assert.strictEqual(actualRetries, maxAttempts, 'Unexpected Retry count')
+            assert.strictEqual(actualRetries, maxAttempts - 1, 'Unexpected Retry count')
         })
 
         it('Logs about exceeding the attempt limit', async () => {

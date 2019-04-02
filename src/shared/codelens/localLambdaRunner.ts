@@ -577,7 +577,7 @@ export async function attachDebugger(
         }
 
         if (isDebuggerAttached === undefined) {
-            if (numAttempts <= params.maxAttempts) {
+            if (numAttempts < params.maxAttempts) {
                 await params.onWillRetry()
             } else {
                 channelLogger.error(
