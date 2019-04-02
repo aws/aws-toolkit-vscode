@@ -26,7 +26,11 @@ import {
     getMetricDatum,
     makeCodeLenses,
 } from './codeLensUtils'
-import { LambdaLocalInvokeParams, LocalLambdaRunner } from './localLambdaRunner'
+import {
+    getRuntimeForLambda,
+    LambdaLocalInvokeParams,
+    LocalLambdaRunner,
+ } from './localLambdaRunner'
 
 async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
     const packageJsonPath: string | undefined = await findFileInParentPaths(
@@ -53,9 +57,8 @@ export function initialize({
     taskInvoker = new DefaultSamCliTaskInvoker(),
     telemetryService
 }: CodeLensProviderParams): void {
-    const runtime = 'nodejs8.10' // TODO: Remove hard coded value
 
-    const invokeLambda = async (params: LambdaLocalInvokeParams) => {
+    const invokeLambda = async (params: LambdaLocalInvokeParams & { runtime: string }) => {
         const samProjectCodeRoot = await getSamProjectDirPathForFile(params.document.uri.fsPath)
         let debugPort: number | undefined
 
@@ -83,7 +86,7 @@ export function initialize({
             configuration,
             params,
             debugPort,
-            runtime,
+            params.runtime,
             toolkitOutputChannel,
             processInvoker,
             taskInvoker,
@@ -99,7 +102,15 @@ export function initialize({
     registerCommand({
         command: command,
         callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
-            await invokeLambda(params)
+
+            const runtime = await getRuntimeForLambda({
+                handlerName: params.handlerName,
+                templatePath: params.samTemplate.fsPath
+            })
+            await invokeLambda({
+                runtime,
+                ...params,
+            })
 
             return getMetricDatum({
                 isDebug: params.isDebug,
