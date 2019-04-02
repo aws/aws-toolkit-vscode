@@ -8,6 +8,7 @@
 import * as assert from 'assert'
 import * as path from 'path'
 import { getRuntimeForLambda } from '../../../shared/codelens/localLambdaRunner'
+import { assertRejects } from '../utilities/assertUtils'
 
 describe('localLambdaRunner', () => {
     describe('getRuntimeForLambda', () => {
@@ -44,17 +45,26 @@ describe('localLambdaRunner', () => {
             },
         ]
         for (const data of testData) {
-            it(`should work for ${data.title}`, async () => {
+            it(`should ${data.expectedRuntime ? 'resolve runtime' : 'throw'} for ${data.title}`, async () => {
                 const templatePath = path.join(path.dirname(__filename), data.templateFileName)
                 const expectedRuntime = data.expectedRuntime
-                const runtime = await getRuntimeForLambda({
-                    templatePath,
-                    handlerName: data.handlerName
-                })
-                assert(
-                    expectedRuntime === runtime,
-                    JSON.stringify({expectedRuntime, runtime})
-                )
+                if (data.expectedRuntime === undefined) {
+                    assertRejects(async () => {
+                        getRuntimeForLambda({
+                            templatePath,
+                            handlerName: data.handlerName
+                        })
+                    })
+                } else {
+                    const runtime = await getRuntimeForLambda({
+                        templatePath,
+                        handlerName: data.handlerName
+                    })
+                    assert(
+                        expectedRuntime === runtime,
+                        JSON.stringify({expectedRuntime, runtime})
+                    )
+                }
             })
         }
     })
