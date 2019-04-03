@@ -30,7 +30,12 @@ import {
     getRuntimeForLambda,
     LambdaLocalInvokeParams,
     LocalLambdaRunner,
- } from './localLambdaRunner'
+} from './localLambdaRunner'
+
+const unsupportedNodeJsRuntimes: Set<string> = new Set<string>([
+    'nodejs4.3',
+    'nodejs6.10',
+])
 
 async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
     const packageJsonPath: string | undefined = await findFileInParentPaths(
@@ -107,10 +112,21 @@ export function initialize({
                 handlerName: params.handlerName,
                 templatePath: params.samTemplate.fsPath
             })
-            await invokeLambda({
-                runtime,
-                ...params,
-            })
+
+            if (params.isDebug && unsupportedNodeJsRuntimes.has(runtime)) {
+                vscode.window.showErrorMessage(
+                    localize(
+                        'AWS.lambda.debug.runtime.unsupported',
+                        'Debug support for {0} is currently not supported',
+                        runtime
+                    )
+                )
+            } else {
+                await invokeLambda({
+                    runtime,
+                    ...params,
+                })
+            }
 
             return getMetricDatum({
                 isDebug: params.isDebug,
