@@ -129,10 +129,9 @@ If you come across bugs with the toolkit or have feature requests, please raise 
         <runConfigurationProducer implementation="software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfigurationProducer"/>
         <runConfigurationProducer implementation="software.aws.toolkits.jetbrains.services.lambda.execution.remote.LambdaRemoteRunConfigurationProducer"/>
 
-        <registryKey key="aws.toolkit.useUrlConnection"
-                     description="Uses HttpURLConnection instead of Apache allowing for Proxy support"
-                     restartRequired="true"
-                     defaultValue="false"/>
+        <experimentalFeature id="aws.toolkit.useProxy" requireRestart="true">
+            <description>Uses the IDE's proxy settings to connect to AWS. IDE restart is required to take effect.</description>
+        </experimentalFeature>
 
         <!-- Project Wizard components -->
         <moduleType id="AWS" implementationClass="software.aws.toolkits.jetbrains.ui.wizard.AwsModuleType" />

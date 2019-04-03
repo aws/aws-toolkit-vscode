@@ -84,3 +84,12 @@ fun Logger.trace(exception: Throwable? = null, block: () -> String) {
         trace(block(), exception)
     }
 }
+
+fun Logger.assertTrue(value: Boolean, block: () -> String): Boolean {
+    if (!value) {
+        val resultMessage = "Assertion failed: ${block.invoke()}"
+        error(resultMessage, Throwable(resultMessage))
+    }
+
+    return value
+}

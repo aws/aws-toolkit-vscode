@@ -25,6 +25,7 @@ version toolkitVersion
 
 allprojects {
     repositories {
+        mavenLocal()
         mavenCentral()
         jcenter()
     }
