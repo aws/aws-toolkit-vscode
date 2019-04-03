@@ -9,10 +9,10 @@ import * as AWS from 'aws-sdk'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { AwsContext, ContextChangeEventsArgs } from './awsContext'
-import { extensionSettingsPrefix, profileSettingKey, regionSettingKey } from './constants'
+import { profileSettingKey, regionSettingKey } from './constants'
 import { CredentialsProfileMru } from './credentials/credentialsProfileMru'
 import { CredentialsManager } from './credentialsManager'
-import { DefaultSettingsConfiguration, SettingsConfiguration } from './settingsConfiguration'
+import { SettingsConfiguration } from './settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
 
@@ -21,8 +21,7 @@ const localize = nls.loadMessageBundle()
 export class DefaultAwsContext implements AwsContext {
 
     public readonly onDidChangeContext: vscode.Event<ContextChangeEventsArgs>
-    private readonly _credentialsMru: CredentialsProfileMru =
-        new CredentialsProfileMru(new DefaultSettingsConfiguration(extensionSettingsPrefix))
+    private readonly _credentialsMru: CredentialsProfileMru
     private readonly _onDidChangeContext: vscode.EventEmitter<ContextChangeEventsArgs>
 
     // the collection of regions the user has expressed an interest in working with in
@@ -34,16 +33,17 @@ export class DefaultAwsContext implements AwsContext {
 
     private readonly _credentialsManager: CredentialsManager
 
-    public constructor(public settingsConfiguration: SettingsConfiguration) {
+    public constructor(public settingsConfiguration: SettingsConfiguration, public context: vscode.ExtensionContext) {
 
         this._onDidChangeContext = new vscode.EventEmitter<ContextChangeEventsArgs>()
         this.onDidChangeContext = this._onDidChangeContext.event
 
         this.profileName = settingsConfiguration.readSetting(profileSettingKey, '')
-        const persistedRegions = settingsConfiguration.readSetting<string[]>(regionSettingKey)
+        const persistedRegions = context.globalState.get<string[]>(regionSettingKey)
         this.explorerRegions = persistedRegions || []
 
         this._credentialsManager = new CredentialsManager()
+        this._credentialsMru = new CredentialsProfileMru(context)
     }
 
     /**
@@ -108,11 +108,7 @@ export class DefaultAwsContext implements AwsContext {
                 this.explorerRegions.push(r)
             }
         })
-        await this.settingsConfiguration.writeSetting(
-            regionSettingKey,
-            this.explorerRegions,
-            vscode.ConfigurationTarget.Global
-        )
+        await this.context.globalState.update(regionSettingKey, this.explorerRegions)
         this._onDidChangeContext.fire(new ContextChangeEventsArgs(this.profileName, this.explorerRegions))
     }
 
@@ -125,11 +121,8 @@ export class DefaultAwsContext implements AwsContext {
                 this.explorerRegions.splice(index, 1)
             }
         })
-        await this.settingsConfiguration.writeSetting(
-            regionSettingKey,
-            this.explorerRegions,
-            vscode.ConfigurationTarget.Global
-        )
+
+        await this.context.globalState.update(regionSettingKey, this.explorerRegions)
         this._onDidChangeContext.fire(new ContextChangeEventsArgs(this.profileName, this.explorerRegions))
     }
 }

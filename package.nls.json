@@ -8,7 +8,6 @@
     "AWS.codelens.lambda.invoke": "Run Locally",
     "AWS.codelens.lambda.invoke.debug": "Debug Locally",
     "AWS.configuration.title": "AWS Configuration",
-    "AWS.configuration.regionDescription": "The regions to query for resources to display in the Explorer.",
     "AWS.configuration.profileDescription": "The name of the credential profile to obtain credentials from.",
     "AWS.configuration.description.logLevel": "The AWS Toolkit's log level (changes reflected on restart)",
     "AWS.configuration.description.onDefaultRegionMissing": "Action to take when a Profile's default region is hidden in the Explorer. Possible values:\n* `add` - shows region in the explorer\n* `ignore` - does nothing with the region\n* `prompt` - (default) asks the user what they would like to do.",
