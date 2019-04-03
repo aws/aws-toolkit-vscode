@@ -22,7 +22,6 @@ import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 
 import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
-import { getLogger } from '../logger'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger, localize } from '../utilities/vsCodeUtils'
@@ -585,7 +584,6 @@ export async function attachDebugger(
         onStartDebugging = vscode.debug.startDebugging,
         onWillRetry = async (): Promise<void> => {
             await new Promise<void>(resolve => {
-                getLogger().info('delaying for retry............')
                 setTimeout(resolve, retryDelayMillis)
             })
         },
