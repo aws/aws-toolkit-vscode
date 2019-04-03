@@ -15,6 +15,7 @@ import { LambdaTreeDataProvider } from './lambda/lambdaTreeDataProvider'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
+import { CodeLensProviderParams } from './shared/codelens/codeLensUtils'
 import * as pyLensProvider from './shared/codelens/pythonCodeLensProvider'
 import * as tsLensProvider from './shared/codelens/typescriptCodeLensProvider'
 import { documentationUrl, extensionSettingsPrefix, githubUrl } from './shared/constants'
@@ -32,6 +33,7 @@ import { DefaultSettingsConfiguration, SettingsConfiguration } from './shared/se
 import { AWSStatusBar } from './shared/statusBar'
 import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
 import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryService'
+import { TelemetryService } from './shared/telemetry/telemetryService'
 import { registerCommand } from './shared/telemetry/telemetryUtils'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { PromiseSharer } from './shared/utilities/promiseUtilities'
@@ -74,7 +76,12 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         await ext.telemetry.start()
 
-        context.subscriptions.push(...activateCodeLensProviders(awsContext.settingsConfiguration, toolkitOutputChannel))
+        context.subscriptions.push(
+            ...await activateCodeLensProviders(
+                awsContext.settingsConfiguration,
+                toolkitOutputChannel,
+                ext.telemetry)
+        )
 
         registerCommand({
             command: 'aws.login',
@@ -160,14 +167,16 @@ export async function deactivate() {
     await ext.telemetry.shutdown()
 }
 
-function activateCodeLensProviders(
+async function activateCodeLensProviders(
     configuration: SettingsConfiguration,
-    toolkitOutputChannel: vscode.OutputChannel
-): vscode.Disposable[] {
+    toolkitOutputChannel: vscode.OutputChannel,
+    telemetryService: TelemetryService,
+): Promise<vscode.Disposable[]> {
     const disposables: vscode.Disposable[] = []
-    const providerParams = {
+    const providerParams: CodeLensProviderParams = {
         configuration,
-        toolkitOutputChannel
+        outputChannel: toolkitOutputChannel,
+        telemetryService,
     }
 
     tsLensProvider.initialize(providerParams)
@@ -184,14 +193,11 @@ function activateCodeLensProviders(
         )
     )
 
-    // TODO : Python CodeLenses will be disabled until feature/python-debugging is complete
-    if (false) {
-        pyLensProvider.initialize(providerParams)
-        disposables.push(vscode.languages.registerCodeLensProvider(
-            pyLensProvider.PYTHON_ALLFILES,
-            pyLensProvider.makePythonCodeLensProvider()
-        ))
-    }
+    await pyLensProvider.initialize(providerParams)
+    disposables.push(vscode.languages.registerCodeLensProvider(
+        pyLensProvider.PYTHON_ALLFILES,
+        await pyLensProvider.makePythonCodeLensProvider()
+    ))
 
     return disposables
 }
