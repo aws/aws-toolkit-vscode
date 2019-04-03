@@ -5,10 +5,13 @@
 
 'use strict'
 
+import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 
-import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
+import { PythonDebugConfiguration } from '../../lambda/local/debugConfiguration'
+import { unlink, writeFile } from '../filesystem'
+import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
 import {
@@ -17,7 +20,7 @@ import {
 } from '../sam/cli/samCliInvoker'
 import { Datum } from '../telemetry/telemetryEvent'
 import { registerCommand } from '../telemetry/telemetryUtils'
-import { getDebugPort } from '../utilities/vsCodeUtils'
+import { getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
 
 import {
     CodeLensProviderParams,
@@ -25,7 +28,14 @@ import {
     getMetricDatum,
     makeCodeLenses,
 } from './codeLensUtils'
-import { LambdaLocalInvokeArguments, LocalLambdaRunner } from './localLambdaRunner'
+import {
+    executeSamBuild,
+    getRuntimeForLambda,
+    invokeLambdaFunction,
+    LambdaLocalInvokeParams,
+    makeBuildDir,
+    makeInputTemplate,
+} from './localLambdaRunner'
 
 export const PYTHON_LANGUAGE = 'python'
 export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
@@ -43,9 +53,7 @@ const getSamProjectDirPathForFile = async (filepath: string): Promise<string> =>
 const getLambdaHandlerCandidates = async ({ uri }: { uri: vscode.Uri }): Promise<LambdaHandlerCandidate[]> => {
     const logger = getLogger()
     const filename = uri.fsPath
-
-    logger.info(`Getting symbols for '${uri.fsPath}'`)
-    const symbols: vscode.DocumentSymbol[] = ( // SymbolInformation has less detail (no children)
+    const symbols: vscode.DocumentSymbol[] = (
         (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
             'vscode.executeDocumentSymbolProvider',
             uri
@@ -55,7 +63,12 @@ const getLambdaHandlerCandidates = async ({ uri }: { uri: vscode.Uri }): Promise
     return symbols
         .filter(sym => sym.kind === vscode.SymbolKind.Function)
         .map(symbol => {
-            logger.debug(`Found potential handler: '${path.parse(filename).name}.${symbol.name}'`)
+            logger.debug(`pythonCodeLensProviderFound.getLambdaHandlerCandidates: ${
+                JSON.stringify({
+                    filePath: uri.fsPath,
+                    handlerName: `${path.parse(filename).name}.${symbol.name}`
+                })
+                }`)
 
             return {
                 filename,
@@ -65,61 +78,211 @@ const getLambdaHandlerCandidates = async ({ uri }: { uri: vscode.Uri }): Promise
         })
 }
 
-export function initialize({
-    configuration,
-    toolkitOutputChannel,
-    processInvoker = new DefaultSamCliProcessInvoker(),
-    taskInvoker = new DefaultSamCliTaskInvoker()
-}: CodeLensProviderParams): void {
+// Add create debugging manifest/requirements.txt containing ptvsd
+const makePythonDebugManifest = async (params: {
+    samProjectCodeRoot: string,
+    outputDir: string
+}): Promise<string | undefined> => {
+    let manifestText = ''
+    const manfestPath = path.join(params.samProjectCodeRoot, 'requirements.txt')
+    if (fileExists(manfestPath)) {
+        manifestText = await readFileAsString(manfestPath)
+    }
+    getLogger().debug(`pythonCodeLensProvider.makePythonDebugManifest params: ${JSON.stringify(params, undefined, 2)}`)
+    // TODO: Make this logic more robust. What if other module names include ptvsd?
+    if (manifestText.indexOf('ptvsd') < 0) {
+        manifestText += `${os.EOL}ptvsd>4.2,<5`
+        const debugManifestPath = path.join(params.outputDir, 'debug-requirements.txt')
+        await writeFile(debugManifestPath, manifestText)
+
+        return debugManifestPath
+    }
+    // else we don't need to override the manifest. nothing to return
+}
+
+// tslint:disable:no-trailing-whitespace
+const makeLambdaDebugFile = async (params: {
+    handlerName: string,
+    debugPort: number,
+    outputDir: string
+}): Promise<{ outFilePath: string, debugHandlerName: string }> => {
+    if (!params.outputDir) {
+        throw new Error('Must specify outputDir')
+    }
     const logger = getLogger()
 
-    const runtime = 'python3.7' // TODO: Remove hard coded value
+    const [handlerFilePrefix, handlerFunctionName] = params.handlerName.split('.')
+    const debugHandlerFileName = `${handlerFilePrefix}___vsctk___debug`
+    const debugHandlerFunctionName = 'lambda_handler'
+    // TODO: Sanitize handlerFilePrefix, handlerFunctionName, debugHandlerFunctionName
+    try {
+        logger.debug('pythonCodeLensProvider.makeLambdaDebugFile params:', JSON.stringify(params, undefined, 2))
+        const template = `
+# Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
-    const invokeLambda = async (args: LambdaLocalInvokeArguments) => {
-        const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
-        logger.debug(`Project root: '${samProjectCodeRoot}'`)
-        let debugPort: number | undefined
+import ptvsd
+import sys
+from ${handlerFilePrefix} import ${handlerFunctionName} as _handler
 
-        if (args.isDebug) {
-            debugPort = await getDebugPort()
+
+def ${debugHandlerFunctionName}(event, context):
+    ptvsd.enable_attach(address=('0.0.0.0', ${params.debugPort}), redirect_output=True)
+    print('Waiting for debugger to attach...')
+    sys.stdout.flush()
+    ptvsd.wait_for_attach()
+    print('...debugger attached')
+    sys.stdout.flush()
+    return _handler(event, context)
+
+`
+
+        const outFilePath = path.join(params.outputDir, `${debugHandlerFileName}.py`)
+        logger.debug('pythonCodeLensProvider.makeLambdaDebugFile outFilePath:', outFilePath)
+        await writeFile(outFilePath, template)
+
+        return {
+            outFilePath,
+            debugHandlerName: `${debugHandlerFileName}.${debugHandlerFunctionName}`
         }
-        // TODO: Figure out Python specific params and create PythonDebugConfiguration if needed
-        const debugConfig: DebugConfiguration = {
-            type: PYTHON_LANGUAGE,
-            request: 'attach',
-            name: 'SamLocalDebug',
-            preLaunchTask: undefined,
-            address: 'localhost',
-            port: debugPort!,
-            localRoot: samProjectCodeRoot,
-            remoteRoot: '/var/task',
-            skipFiles: []
-        }
+    } catch (err) {
+        logger.error('makeLambdaDebugFile failed:', err as Error)
+        throw err
+    }
+}
 
-        const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
-            configuration,
-            args,
-            debugPort,
-            runtime,
-            toolkitOutputChannel,
-            processInvoker,
-            taskInvoker,
-            debugConfig,
-            samProjectCodeRoot,
-            // TODO: Use onWillAttachDebugger &/or onDidSamBuild to enable debugging support
+const fixFilePathCapitalization = (filePath: string): string => {
+    if (process.platform === 'win32') {
+        return filePath.replace(/^[a-z]/, match => match.toUpperCase())
+    }
+
+    return filePath
+}
+
+const makeDebugConfig = ({ debugPort, samProjectCodeRoot }: {
+    debugPort?: number,
+    samProjectCodeRoot: string,
+}): PythonDebugConfiguration => {
+    return {
+        type: PYTHON_LANGUAGE,
+        request: 'attach',
+        name: 'SamLocalDebug',
+        host: 'localhost',
+        port: debugPort!,
+        pathMappings: [
+            {
+                // tslint:disable-next-line:no-invalid-template-strings
+                localRoot: fixFilePathCapitalization(samProjectCodeRoot),
+                remoteRoot: '/var/task'
+            }
+        ],
+    }
+}
+
+export async function initialize({
+    configuration,
+    outputChannel: toolkitOutputChannel,
+    processInvoker = new DefaultSamCliProcessInvoker(),
+    taskInvoker = new DefaultSamCliTaskInvoker(),
+    telemetryService: telemetryService,
+}: CodeLensProviderParams): Promise<void> {
+    const logger = getLogger()
+    const channelLogger = getChannelLogger(toolkitOutputChannel)
+
+    const invokeLambda = async (args: LambdaLocalInvokeParams & { runtime: string }) => {
+        // Switch over to the output channel so the user has feedback that we're getting things ready
+        channelLogger.channel.show(true)
+
+        channelLogger.info(
+            'AWS.output.sam.local.start',
+            'Preparing to run {0} locally...',
+            args.handlerName
         )
 
-        await localLambdaRunner.run()
+        const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
+        const baseBuildDir = await makeBuildDir()
+
+        let debugPort: number | undefined
+
+        let handlerName: string = args.handlerName
+        let manifestPath: string | undefined
+        let lambdaDebugFilePath: string | undefined
+        if (args.isDebug) {
+            debugPort = await getDebugPort()
+            const { debugHandlerName, outFilePath } = await makeLambdaDebugFile({
+                handlerName: args.handlerName,
+                debugPort: debugPort,
+                outputDir: samProjectCodeRoot,
+            })
+            lambdaDebugFilePath = outFilePath
+            handlerName = debugHandlerName
+            manifestPath = await makePythonDebugManifest({
+                samProjectCodeRoot,
+                outputDir: baseBuildDir
+            })
+        }
+        const inputTemplatePath = await makeInputTemplate({
+            baseBuildDir,
+            codeDir: samProjectCodeRoot,
+            documentUri: args.document.uri,
+            originalHandlerName: args.handlerName,
+            handlerName,
+            runtime: args.runtime,
+            workspaceUri: args.workspaceFolder.uri
+        })
+        logger.debug(`pythonCodeLensProvider.initialize: ${
+            JSON.stringify({ samProjectCodeRoot, inputTemplatePath, handlerName, manifestPath }, undefined, 2)
+            }`)
+
+        const codeDir = samProjectCodeRoot
+        const samTemplatePath: string = await executeSamBuild({
+            baseBuildDir,
+            channelLogger,
+            codeDir,
+            inputTemplatePath,
+            manifestPath,
+            samProcessInvoker: processInvoker,
+
+        })
+
+        const debugConfig: PythonDebugConfiguration = makeDebugConfig({ debugPort, samProjectCodeRoot })
+        await invokeLambdaFunction({
+            baseBuildDir,
+            channelLogger,
+            configuration,
+            debugConfig,
+            samTaskInvoker: taskInvoker,
+            originalSamTemplatePath: args.samTemplate.fsPath,
+            samTemplatePath,
+            documentUri: args.document.uri,
+            originalHandlerName: args.handlerName,
+            handlerName,
+            isDebug: args.isDebug,
+            runtime: args.runtime,
+            telemetryService
+        })
+        if (args.isDebug && lambdaDebugFilePath) {
+            await unlink(lambdaDebugFilePath)
+        }
     }
 
     const command = getInvokeCmdKey('python')
     registerCommand({
         command: command,
-        callback: async (args: LambdaLocalInvokeArguments): Promise<{ datum: Datum }> => {
-            await invokeLambda(args)
+        callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
+    
+            const runtime = await getRuntimeForLambda({
+              handlerName: params.handlerName,
+              templatePath: params.samTemplate.fsPath
+            })
+
+            await invokeLambda({
+                runtime,
+                ...params
+            })
 
             return getMetricDatum({
-                isDebug: args.isDebug,
+                isDebug: params.isDebug,
                 command,
                 runtime,
             })
@@ -127,13 +290,19 @@ export function initialize({
     })
 }
 
-export function makePythonCodeLensProvider(): vscode.CodeLensProvider {
+export async function makePythonCodeLensProvider(): Promise<vscode.CodeLensProvider> {
+    const logger = getLogger()
+
     return { // CodeLensProvider
         provideCodeLenses: async (
             document: vscode.TextDocument,
             token: vscode.CancellationToken
         ): Promise<vscode.CodeLens[]> => {
             const handlers: LambdaHandlerCandidate[] = await getLambdaHandlerCandidates({ uri: document.uri })
+            logger.debug(
+                'pythonCodeLensProvider.makePythonCodeLensProvider handlers:',
+                JSON.stringify(handlers, undefined, 2)
+            )
 
             return makeCodeLenses({
                 document,

@@ -15,35 +15,39 @@ export interface SamCliBuildInvocationArguments {
     /**
      * The path to a folder where the built artifacts are stored.
      */
-    buildDir: string,
+    buildDir: string
     /**
      * Resolves relative paths to the function's source code with respect to this folder.
      * If omitted, relative paths are resolved with respect to the template's location.
      */
-    baseDir?: string,
+    baseDir?: string
     /**
      * Location of the SAM Template to build
      */
-    templatePath: string,
+    templatePath: string
     /**
      * Manages the sam cli execution.
      */
-    invoker: SamCliProcessInvoker,
+    invoker: SamCliProcessInvoker
     /**
      * If your functions depend on packages that have natively compiled dependencies,
      * use this flag to build your function inside an AWS Lambda-like Docker container.
      */
-    useContainer?: boolean,
+    useContainer?: boolean
     /**
      * Specifies the name or id of an existing Docker network to Lambda Docker containers should connect to,
      * along with the default bridge network.
      * If not specified, the Lambda containers will only connect to the default bridge Docker network.
      */
-    dockerNetwork?: string,
+    dockerNetwork?: string
     /**
      * Specifies whether the command should skip pulling down the latest Docker image for Lambda runtime.
      */
-    skipPullImage?: boolean,
+    skipPullImage?: boolean
+    /**
+     * The path to a custom dependency manifest (ex: package.json) to use instead of the default one.
+     */
+    manifestPath?: string
 }
 
 export class SamCliBuildInvocation {
@@ -54,6 +58,7 @@ export class SamCliBuildInvocation {
     private readonly useContainer: boolean
     private readonly dockerNetwork?: string
     private readonly skipPullImage: boolean
+    private readonly manifestPath?: string
 
     /**
      * @see SamCliBuildInvocationArguments for parameter info
@@ -76,6 +81,7 @@ export class SamCliBuildInvocation {
         this.useContainer = useContainer
         this.dockerNetwork = params.dockerNetwork
         this.skipPullImage = skipPullImage
+        this.manifestPath = params.manifestPath
     }
 
     public async execute(): Promise<void> {
@@ -92,6 +98,7 @@ export class SamCliBuildInvocation {
         this.addArgumentIf(invokeArgs, !!this.dockerNetwork, '--docker-network', this.dockerNetwork!)
         this.addArgumentIf(invokeArgs, !!this.useContainer, '--use-container')
         this.addArgumentIf(invokeArgs, !!this.skipPullImage, '--skip-pull-image')
+        this.addArgumentIf(invokeArgs, !!this.manifestPath, '--manifest', this.manifestPath!)
 
         const { exitCode, error, stderr, stdout }: ChildProcessResult = await this.invoker.invoke(
             ...invokeArgs
