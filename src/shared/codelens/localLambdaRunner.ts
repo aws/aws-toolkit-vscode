@@ -260,12 +260,6 @@ export class LocalLambdaRunner {
                 configuration: this.configuration,
                 channelLogger: this.channelLogger
             })
-            if (this.runtime === 'nodejs6.10') {
-                this.channelLogger.logger.info('delaying for nodejs6............')
-                await new Promise<void>(resolve => {
-                    setTimeout(resolve, 3000)
-                })
-            }
 
             await attachDebugger({
                 debugConfig: this.debugConfig,
@@ -608,8 +602,9 @@ export async function attachDebugger(
 
     do {
         isDebuggerAttached = await onStartDebugging(undefined, params.debugConfig)
+        logger.info(`###### isDebuggerAttached: ${isDebuggerAttached}`)
 
-        if (isDebuggerAttached === undefined) {
+        if (!isDebuggerAttached) {
             if (retries < params.maxRetries) {
                 if (onWillRetry) {
                     await onWillRetry()
@@ -624,7 +619,7 @@ export async function attachDebugger(
                 isDebuggerAttached = false
             }
         }
-    } while (isDebuggerAttached === undefined)
+    } while (!isDebuggerAttached)
 
     if (params.onRecordAttachDebuggerMetric) {
         params.onRecordAttachDebuggerMetric(isDebuggerAttached, retries + 1, new Date())
