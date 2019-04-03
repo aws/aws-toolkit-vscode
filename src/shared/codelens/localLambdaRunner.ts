@@ -22,6 +22,7 @@ import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 
 import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
+import { getLogger } from '../logger'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger, localize } from '../utilities/vsCodeUtils'
@@ -260,6 +261,12 @@ export class LocalLambdaRunner {
                 configuration: this.configuration,
                 channelLogger: this.channelLogger
             })
+            if (this.runtime === 'nodejs6.10') {
+                this.channelLogger.logger.info('delaying for nodejs6............')
+                await new Promise<void>(resolve => {
+                    setTimeout(resolve, 3000)
+                })
+            }
 
             await attachDebugger({
                 debugConfig: this.debugConfig,
@@ -578,6 +585,7 @@ export async function attachDebugger(
         onStartDebugging = vscode.debug.startDebugging,
         onWillRetry = async (): Promise<void> => {
             await new Promise<void>(resolve => {
+                getLogger().info('delaying for retry............')
                 setTimeout(resolve, retryDelayMillis)
             })
         },

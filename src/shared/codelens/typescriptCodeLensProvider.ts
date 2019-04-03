@@ -75,7 +75,7 @@ export function initialize({
             port: debugPort!,
             localRoot: samProjectCodeRoot,
             remoteRoot: '/var/task',
-            protocol: 'inspector',
+            protocol: params.runtime === 'nodejs6.10' ? 'legacy' : 'inspector',
             skipFiles: [
                 '/var/runtime/node_modules/**/*.js',
                 '<node_internals>/**/*.js'
