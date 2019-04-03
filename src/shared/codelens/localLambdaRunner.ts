@@ -602,7 +602,6 @@ export async function attachDebugger(
 
     do {
         isDebuggerAttached = await onStartDebugging(undefined, params.debugConfig)
-        logger.info(`###### isDebuggerAttached: ${isDebuggerAttached}`)
 
         if (!isDebuggerAttached) {
             if (retries < params.maxRetries) {
