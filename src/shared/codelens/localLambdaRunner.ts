@@ -255,11 +255,13 @@ export class LocalLambdaRunner {
         await command.execute()
 
         if (this.localInvokeParams.isDebug) {
-            await waitForDebugPort({
-                debugPort: this.debugPort,
-                configuration: this.configuration,
-                channelLogger: this.channelLogger
-            })
+            if (this.runtime !== 'nodejs6.10') {
+                await waitForDebugPort({
+                   debugPort: this.debugPort,
+                   configuration: this.configuration,
+                   channelLogger: this.channelLogger
+                })
+            }
 
             await attachDebugger({
                 debugConfig: this.debugConfig,
