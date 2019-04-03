@@ -8,7 +8,7 @@
 import * as semver from 'semver'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { samAboutInstallUrl } from '../../constants'
+import { samAboutInstallUrl, vscodeMarketplaceUrl } from '../../constants'
 
 const localize = nls.loadMessageBundle()
 
@@ -119,8 +119,7 @@ export class DefaultSamCliVersionValidator implements SamCliVersionValidator {
 
         switch (validation) {
             case SamCliVersionValidation.VersionTooHigh:
-                // TODO : When an AWS Toolkit Page exists, uncomment next line:
-                // actions.push(SamCliVersionValidator.ACTION_GO_TO_AWS_TOOLKIT_PAGE)
+                actions.push(DefaultSamCliVersionValidator.ACTION_GO_TO_AWS_TOOLKIT_PAGE)
                 break
             case SamCliVersionValidation.VersionTooLow:
             case SamCliVersionValidation.VersionNotParseable:
@@ -136,7 +135,7 @@ export class DefaultSamCliVersionValidator implements SamCliVersionValidator {
         if (userResponse === DefaultSamCliVersionValidator.ACTION_GO_TO_SAM_CLI_PAGE) {
             await vscode.env.openExternal(vscode.Uri.parse(samAboutInstallUrl))
         } else if (userResponse === DefaultSamCliVersionValidator.ACTION_GO_TO_AWS_TOOLKIT_PAGE) {
-            // TODO : direct to AWS Toolkit page when there is one
+            await vscode.env.openExternal(vscode.Uri.parse(vscodeMarketplaceUrl))
         }
     }
 }
