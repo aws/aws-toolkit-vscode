@@ -54,7 +54,7 @@ const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
 const MAX_DEBUGGER_RETRIES_DEFAULT: number = 30
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 200
 
-export function isLegacyNodeRuntime(runtime: string) {
+export function isLegacyNodejsRuntime(runtime: string) {
     return runtime.startsWith('nodejs') && (+runtime.charAt(6)) < 8
 }
 
@@ -259,7 +259,7 @@ export class LocalLambdaRunner {
         await command.execute()
 
         if (this.localInvokeParams.isDebug) {
-            if (isLegacyNodeRuntime(this.runtime)) {
+            if (isLegacyNodejsRuntime(this.runtime)) {
                 this.channelLogger.logger.info('Legacy Nodejs runtime detected.')
                 // TODO: Consider delay to avoid disconnected error if it's an issue
                 // await new Promise<void>(resolve => {

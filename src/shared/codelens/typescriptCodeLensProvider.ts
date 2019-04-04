@@ -28,7 +28,7 @@ import {
 } from './codeLensUtils'
 import {
     getRuntimeForLambda,
-    isLegacyNodeRuntime,
+    isLegacyNodejsRuntime,
     LambdaLocalInvokeParams,
     LocalLambdaRunner,
  } from './localLambdaRunner'
@@ -76,7 +76,7 @@ export function initialize({
             port: debugPort!,
             localRoot: samProjectCodeRoot,
             remoteRoot: '/var/task',
-            protocol: isLegacyNodeRuntime(params.runtime) ? 'legacy' : 'inspector',
+            protocol: isLegacyNodejsRuntime(params.runtime) ? 'legacy' : 'inspector',
             skipFiles: [
                 '/var/runtime/node_modules/**/*.js',
                 '<node_internals>/**/*.js'
