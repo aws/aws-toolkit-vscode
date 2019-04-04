@@ -54,7 +54,7 @@ For complete setup instructions, see [Setting Up the AWS Toolkit for Visual Stud
 
 ### <a id="command-palette"></a>Command Palette
 
-![Debug Icon](./resources/marketplace/command-palette.png)
+![Command Palette](./resources/marketplace/command-palette.png)
 
 You can access many of the AWS Toolkit for Visual Studio Code features through **Command Palette**. To access the available commands, choose **View, Command Palette** on the menu bar, and then begin typing `AWS:`.
 
@@ -140,6 +140,8 @@ After you choose the **AWS** icon in the Activity Bar, CodeLenses display within
 * **Configure**, for specifying function configurations such as an event payload and environment variables.
 * **Run Locally**, for running the function without debugging.
 * **Debug Locally**, for running the function with debugging.
+
+Before CodeLenses will appear in Python code, you will need to install a VS Code extension that provides both Language support and Debugger support for Python. We recommend the [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python) Extension.
 
 (For general information about running and debugging in VS Code, see [Debugging](https://code.visualstudio.com/docs/editor/debugging) on the VS Code website.)
 
