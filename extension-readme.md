@@ -141,7 +141,7 @@ After you choose the **AWS** icon in the Activity Bar, CodeLenses display within
 * **Run Locally**, for running the function without debugging.
 * **Debug Locally**, for running the function with debugging.
 
-Before CodeLenses will appear in Python code, you will need to install a VS Code extension that provides both Language support and Debugger support for Python. We recommend the [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python) Extension.
+Before CodeLenses appear in Python code, you must install a Visual Studio Code extension that provides both language and debugger support for Python. We have tested this with the [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python) extension.
 
 (For general information about running and debugging in VS Code, see [Debugging](https://code.visualstudio.com/docs/editor/debugging) on the VS Code website.)
 
