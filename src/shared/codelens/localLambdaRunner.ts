@@ -259,17 +259,18 @@ export class LocalLambdaRunner {
         await command.execute()
 
         if (this.localInvokeParams.isDebug) {
-            if (!isLegacyNodeRuntime(this.runtime)) {
+            if (isLegacyNodeRuntime(this.runtime)) {
                 this.channelLogger.logger.info('Legacy Nodejs runtime detected.')
+                // TODO: Consider delay to avoid disconnected error if it's an issue
+                // await new Promise<void>(resolve => {
+                //     setTimeout(resolve, <delayMillis>)
+                // })
+            } else {
                 await waitForDebugPort({
                     debugPort: this.debugPort,
                     configuration: this.configuration,
                     channelLogger: this.channelLogger
                 })
-                // TODO: Consider delay to avoid disconnected error
-                // await new Promise<void>(resolve => {
-                //     setTimeout(resolve, <delayMillis>)
-                // })
             }
 
             await attachDebugger({
