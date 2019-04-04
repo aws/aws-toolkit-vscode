@@ -44,8 +44,11 @@ class AwsSdkClient : Disposable {
     private class ValidateCorrectThreadClient(private val base: SdkHttpClient) : SdkHttpClient by base {
         override fun prepareRequest(request: HttpExecuteRequest?): ExecutableHttpRequest {
             val application = ApplicationManager.getApplication()
-            LOG.assertTrue(!application.isDispatchThread || !application.isWriteAccessAllowed) {
-                "Network calls shouldn't be made on EDT or inside write action"
+
+            val isValidThread = !application.isWriteAccessAllowed && !application.isReadAccessAllowed
+            LOG.assertTrue(isValidThread) { WRONG_THREAD }
+            if (!isValidThread && application.isUnitTestMode) {
+                throw AssertionError(WRONG_THREAD)
             }
 
             return base.prepareRequest(request)
@@ -54,6 +57,7 @@ class AwsSdkClient : Disposable {
 
     companion object {
         private val LOG = getLogger<AwsSdkClient>()
+        private const val WRONG_THREAD = "Network calls can't be made inside read/write action"
         private const val EXPERIMENT_ID = "aws.toolkit.useProxy"
 
         fun getInstance(): AwsSdkClient = ServiceManager.getService(AwsSdkClient::class.java)

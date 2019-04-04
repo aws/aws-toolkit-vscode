@@ -4,7 +4,10 @@
 package software.aws.toolkits.jetbrains.core
 
 import com.intellij.openapi.application.Experiments
+import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.application.WriteAction
 import com.intellij.testFramework.ApplicationRule
+import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.util.net.HttpConfigurable
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.spy
@@ -21,7 +24,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.lambda.LambdaClient
+import software.amazon.awssdk.services.s3.S3Client
 
 class AwsSdkClientTest {
     @Rule
@@ -77,12 +80,35 @@ class AwsSdkClientTest {
         verify(proxyServletSpy).handle(any(), any(), any(), any())
     }
 
+    @Test(expected = AssertionError::class)
+    fun callCantBeMadeOnEdt() {
+        runInEdtAndWait {
+            makeAwsCall()
+        }
+    }
+
+    @Test(expected = AssertionError::class)
+    fun callCantBeMadeInReadAction() {
+        ReadAction.run<Nothing> {
+            makeAwsCall()
+        }
+    }
+
+    @Test(expected = AssertionError::class)
+    fun callCantBeMadeInWriteAction() {
+        runInEdtAndWait {
+            WriteAction.run<Nothing> {
+                makeAwsCall()
+            }
+        }
+    }
+
     private fun makeAwsCall() {
-        LambdaClient.builder()
+        S3Client.builder()
             .region(Region.US_WEST_2)
             .httpClient(AwsSdkClient.getInstance().sdkHttpClient)
             .build().use {
-                it.listFunctions()
+                it.listBuckets()
             }
     }
 }
