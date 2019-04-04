@@ -54,6 +54,10 @@ const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
 const MAX_DEBUGGER_RETRIES_DEFAULT: number = 30
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 200
 
+export function isLegacyNodeRuntime(runtime: string) {
+    return runtime.startsWith('nodejs') && (+runtime.charAt(6)) < 8
+}
+
 // TODO: Consider replacing LocalLambdaRunner use with associated duplicative functions
 export class LocalLambdaRunner {
 
@@ -255,12 +259,17 @@ export class LocalLambdaRunner {
         await command.execute()
 
         if (this.localInvokeParams.isDebug) {
-            if (this.runtime !== 'nodejs6.10') {
+            if (!isLegacyNodeRuntime(this.runtime)) {
+                this.channelLogger.logger.info('Legacy Nodejs runtime detected.')
                 await waitForDebugPort({
-                   debugPort: this.debugPort,
-                   configuration: this.configuration,
-                   channelLogger: this.channelLogger
+                    debugPort: this.debugPort,
+                    configuration: this.configuration,
+                    channelLogger: this.channelLogger
                 })
+                // TODO: Consider delay to avoid disconnected error
+                // await new Promise<void>(resolve => {
+                //     setTimeout(resolve, <delayMillis>)
+                // })
             }
 
             await attachDebugger({
@@ -606,6 +615,8 @@ export async function attachDebugger(
         isDebuggerAttached = await onStartDebugging(undefined, params.debugConfig)
 
         if (!isDebuggerAttached) {
+            // tslint:disable-next-line:max-line-length
+            channelLogger.logger.info(`Attempt #${retries + 1} to attach debugger failed. Retrying in ${ATTACH_DEBUGGER_RETRY_DELAY_MILLIS / 1000} seconds`)
             if (retries < params.maxRetries) {
                 if (onWillRetry) {
                     await onWillRetry()
