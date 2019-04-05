@@ -14,6 +14,7 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.openapi.wm.ex.ToolWindowEx
 import software.aws.toolkits.jetbrains.core.ChangeAccountSettingsAction
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.utils.actions.OpenBrowserAction
 import software.aws.toolkits.resources.message
 
 @Suppress("unused")
@@ -28,7 +29,24 @@ class AwsExplorerFactory : ToolWindowFactory, DumbAware {
                         explorer.updateModel()
                     }
                 })
-            toolWindow.setAdditionalGearActions(AwsSettingsMenu(project))
+            toolWindow.setAdditionalGearActions(
+                DefaultActionGroup().apply {
+                    add(AwsSettingsMenu(project))
+                    add(
+                        OpenBrowserAction(
+                            title = message("explorer.view_documentation"),
+                            url = "https://docs.aws.amazon.com/console/toolkit-for-jetbrains"
+                        )
+                    )
+                    add(
+                        OpenBrowserAction(
+                            title = message("explorer.view_source"),
+                            icon = AllIcons.Vcs.Vendors.Github,
+                            url = "https://github.com/aws/aws-toolkit-jetbrains"
+                        )
+                    )
+                }
+            )
         }
     }
 
