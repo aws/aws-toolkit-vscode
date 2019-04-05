@@ -14,3 +14,12 @@ export function getNormalizedRelativePath(from: string, to: string): string {
 export function normalizeSeparator(path: string) {
     return path.split(_path.sep).join(_path.posix.sep)
 }
+
+export function dirnameWithTrailingSlash(path: string): string {
+    let dirname = _path.dirname(path)
+    if (!dirname.endsWith(_path.sep)) {
+        dirname += _path.sep
+    }
+
+    return dirname
+}
