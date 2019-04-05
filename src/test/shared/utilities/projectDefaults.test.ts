@@ -17,7 +17,7 @@ import {
 import { readFile, writeFile } from '../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
-describe.only('ProjectDefaultsManager', () => {
+describe('ProjectDefaultsManager', () => {
     let samProjectDir: string
     let samTemplatePath: string
     let expectedSamDeployDefaults: SamDeployDefaults
