@@ -15,7 +15,7 @@ import { getMainSourceFileUri } from '../../../lambda/utilities/getMainSourceFil
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 
 async function* toAsyncIterable<T>(array: T[]): AsyncIterable<T> {
-    yield *array
+    yield* array
 }
 
 describe('getMainSourceFile', async () => {
@@ -65,7 +65,7 @@ describe('getMainSourceFile', async () => {
             await getMainSourceFileUri({
                 root: vscode.Uri.file('/dir'),
                 getLocalTemplates: (...workspaceUris: vscode.Uri[]) => toAsyncIterable([templateUri]),
-                loadSamTemplate: async uri =>  ({
+                loadSamTemplate: async uri => ({
                     Resources: {
                         HelloWorld: {
                             Type: 'AWS::Serverless:NotAFunction'
@@ -317,7 +317,8 @@ describe('getMainSourceFile', async () => {
             await test('python')
             await test('python2.7')
             await test('python3.6')
-       })
+            await test('python3.7')
+        })
 
         it('fails when no source file is found at the expected location', async () => {
             try {
@@ -334,6 +335,83 @@ describe('getMainSourceFile', async () => {
                 assert.strictEqual(
                     String(err),
                     `Error: Python file expected at ${expectedBasePath}.py, but no file was found`
+                )
+
+                return
+            }
+
+            assert.fail('Expected an exception, but none was thrown.')
+        })
+    })
+
+    describe('dotnet', async () => {
+        function createTestTemplate(): CloudFormation.Template {
+            return {
+                Resources: {
+                    HelloWorld: {
+                        Type: 'AWS::Serverless::Function',
+                        Properties: {
+                            Handler: 'HelloWorld::HelloWorld.Function::FunctionHandler',
+                            CodeUri: './artifacts/HelloWorld.zip',
+                            Runtime: 'dotnet'
+                        }
+                    }
+                }
+            }
+        }
+        const expectedHandlerPath = path.join(path.sep, 'dir', 'src', 'HelloWorld', 'Program.cs')
+        it('returns the URI of the main source file for a valid template', async () => {
+            const actual: vscode.Uri = await getMainSourceFileUri({
+                root: vscode.Uri.file('/dir'),
+                getLocalTemplates: (...workspaceUris: vscode.Uri[]) => toAsyncIterable([
+                    vscode.Uri.file('/dir/template.yaml')
+                ]),
+                loadSamTemplate: async uri => createTestTemplate(),
+                fileExists: async p => path.extname(p) === '.cs'
+            })
+
+            assert.strictEqual(actual.fsPath, expectedHandlerPath)
+        })
+
+        it('recognizes all Dotnet runtimes', async () => {
+            async function test(runtime?: string): Promise<void> {
+                const templateUri = vscode.Uri.file(path.join('/dir', 'template.yaml'))
+                const actual: vscode.Uri = await getMainSourceFileUri({
+                    root: vscode.Uri.file('/dir'),
+                    getLocalTemplates: (...workspaceUris: vscode.Uri[]) => toAsyncIterable([templateUri]),
+                    loadSamTemplate: async uri => {
+                        const template = createTestTemplate()
+                        template.Resources!.HelloWorld!.Properties!.Runtime = runtime
+
+                        return template
+                    },
+                    fileExists: async p => path.extname(p) === '.cs'
+                })
+
+                assert.strictEqual(actual.fsPath, expectedHandlerPath)
+            }
+
+            await test('dotnet')
+            await test('dotnetcore1.0')
+            await test('dotnetcore2.0')
+            await test('dotnetcore2.1')
+        })
+
+        it('fails when no source file is found at the expected location', async () => {
+            try {
+                await getMainSourceFileUri({
+                    root: vscode.Uri.file('/dir'),
+                    getLocalTemplates: (...workspaceUris: vscode.Uri[]) => toAsyncIterable([
+                        vscode.Uri.file('/dir/template.yaml')
+                    ]),
+                    loadSamTemplate: async uri => createTestTemplate(),
+                    fileExists: async p => false
+                })
+            } catch (err) {
+                // const expectedBasePath = path.join('/dir', 'my_app', 'app')
+                assert.strictEqual(
+                    String(err),
+                    `Error: C# file expected at ${expectedHandlerPath}, but no file was found`
                 )
 
                 return

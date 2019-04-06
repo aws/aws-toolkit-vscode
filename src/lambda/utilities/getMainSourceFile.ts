@@ -93,6 +93,8 @@ async function getSourceFileUri({
             return await getNodeSourceFileUri({ root, resource, fileExists })
         case SamLambdaRuntimeFamily.Python:
             return await getPythonSourceFileUri({ root, resource, fileExists })
+        case SamLambdaRuntimeFamily.DotNet:
+            return await getDotnetSourceFileUri({ root, resource, fileExists })
         default:
             throw new Error(`Lambda resource '${Handler}' has unknown runtime '${Runtime}'`)
 
@@ -145,4 +147,22 @@ async function getPythonSourceFileUri({
     }
 
     throw new Error(`Python file expected at ${basePath}.py, but no file was found`)
+}
+
+async function getDotnetSourceFileUri({
+    fileExists,
+    root,
+    resource,
+}: Pick<OpenMainSourceFileUriContext, 'fileExists'> & {
+    root: vscode.Uri,
+    resource: CloudFormation.Resource
+}): Promise<vscode.Uri> {
+    const handler = resource.Properties!.Handler
+    const [packageName] = handler.split('::')
+    const handlerFilePath = path.join(root.fsPath, 'src', packageName, 'Program.cs')
+    if (await fileExists(handlerFilePath)) {
+        return vscode.Uri.file(handlerFilePath)
+    }
+
+    throw new Error(`C# file expected at ${handlerFilePath}, but no file was found`)
 }
