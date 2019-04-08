@@ -19,7 +19,7 @@ import { defaultMetricDatum } from '../telemetry/telemetryUtils'
 import { toArrayAsync } from '../utilities/collectionUtils'
 import { localize } from '../utilities/vsCodeUtils'
 
-export type Language = 'python' | 'javascript'
+export type Language = 'python' | 'javascript' | 'csharp'
 
 export interface CodeLensProviderParams {
     configuration: SettingsConfiguration,
@@ -113,10 +113,10 @@ function makeConfigureCodeLens({
     samTemplate
 }: MakeConfigureCodeLensParams): vscode.CodeLens {
     // Handler will be the fully-qualified name, so we also allow '.' despite it being forbidden in handler names.
-    if (/[^\w\-\.]/.test(handlerName)) {
+    if (/[^\w\-\.\:]/.test(handlerName)) {
         throw new Error(
             `Invalid handler name: '${handlerName}'. ` +
-            'Handler names can contain only letters, numbers, hyphens, and underscores.'
+            'Handler names can contain only letters, numbers, hyphens, underscores, and colons.'
         )
     }
     const command = {
