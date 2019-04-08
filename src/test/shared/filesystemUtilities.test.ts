@@ -12,8 +12,8 @@ import { mkdir, writeFile } from '../../shared/filesystem'
 import {
     fileExists,
     findFileInParentPaths,
+    getTemporaryToolkitFolderRoot,
     makeTemporaryToolkitFolder,
-    tempDirPath
 } from '../../shared/filesystemUtilities'
 
 describe('filesystemUtilities', () => {
@@ -34,7 +34,8 @@ describe('filesystemUtilities', () => {
         await del([tempFolder], { force: true })
     })
 
-    describe('makeTemporaryToolkitFolder', () => {
+    describe('makeTemporaryToolkitFolder', async () => {
+        const tempDirPath = await getTemporaryToolkitFolderRoot()
         it(`makes temp dirs under filesystemUtilities.tempDirPath ('${tempDirPath}')`, async () => {
             assert(
                 tempFolder.indexOf(tempDirPath) === 0,
