@@ -12,9 +12,9 @@ import * as vscode from 'vscode'
 import * as sampleDotNetSamProgram from './sampleDotNetSamProgram'
 
 import {
-    DotNetHandlerSymbolsTuplet,
+    DotNetHandlerSymbolsTuple,
     findParentProjectFile,
-    getLambdaHandlerSymbolsTuplets,
+    getLambdaHandlerSymbolsTuples,
     isPublicClassSymbol,
     isPublicMethodSymbol,
     produceHandlerName,
@@ -75,7 +75,7 @@ describe('findParentProjectFile', async () => {
     })
 })
 
-describe('getLambdaHandlerSymbolsTuplets', async () => {
+describe('getLambdaHandlerSymbolsTuples', async () => {
     it('Detects a public function symbol', async () => {
         const folder = await makeTemporaryToolkitFolder()
         const programFile = path.join(folder, 'program.cs')
@@ -84,18 +84,18 @@ describe('getLambdaHandlerSymbolsTuplets', async () => {
         const textDoc = await vscode.workspace.openTextDocument(programFile)
         const documentSymbols = sampleDotNetSamProgram.getDocumentSymbols()
 
-        const tuplets = getLambdaHandlerSymbolsTuplets(
+        const tuples = getLambdaHandlerSymbolsTuples(
             textDoc,
             documentSymbols,
         )
 
-        assert.ok(tuplets)
-        assert.strictEqual(tuplets.length, 1, 'Expected only one Symbols Tuplet')
-        const tuplet = tuplets[0]
-        assert.strictEqual(tuplet.namespace, documentSymbols[0])
-        assert.strictEqual(tuplet.class, documentSymbols[0].children[0])
+        assert.ok(tuples)
+        assert.strictEqual(tuples.length, 1, 'Expected only one Symbols Tuple')
+        const tuple = tuples[0]
+        assert.strictEqual(tuple.namespace, documentSymbols[0])
+        assert.strictEqual(tuple.class, documentSymbols[0].children[0])
         assert.strictEqual(
-            tuplet.method,
+            tuple.method,
             documentSymbols[0].children[0].children.filter(c => c.name.indexOf('FunctionHandler') === 0)[0]
         )
     })
@@ -271,7 +271,7 @@ describe('produceHandlerName', async () => {
     const assemblyName: string = 'myAssembly'
 
     it('produces a handler name', async () => {
-        const tuplet: DotNetHandlerSymbolsTuplet = {
+        const tuple: DotNetHandlerSymbolsTuple = {
             namespace: new vscode.DocumentSymbol('namespace', '', vscode.SymbolKind.Namespace, fakeRange, fakeRange),
             class: new vscode.DocumentSymbol('myClass', '', vscode.SymbolKind.Class, fakeRange, fakeRange),
             className: 'myClass',
@@ -279,7 +279,7 @@ describe('produceHandlerName', async () => {
             methodName: 'foo'
         }
 
-        const handlerName = produceHandlerName(assemblyName, tuplet)
+        const handlerName = produceHandlerName(assemblyName, tuple)
         assert.strictEqual(handlerName, 'myAssembly::myClass::foo', 'Handler name mismatch')
     })
 })

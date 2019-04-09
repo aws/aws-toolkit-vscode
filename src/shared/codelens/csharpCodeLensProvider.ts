@@ -34,7 +34,7 @@ export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
 
 const REGEXP_RESERVED_WORD_PUBLIC = new RegExp(/\bpublic\b/)
 
-export interface DotNetHandlerSymbolsTuplet {
+export interface DotNetHandlerSymbolsTuple {
     namespace: vscode.DocumentSymbol,
     class: vscode.DocumentSymbol,
     className: string,
@@ -125,14 +125,14 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
         )) || []
     )
 
-    return getLambdaHandlerSymbolsTuplets(document, symbols)
-        .map<LambdaHandlerCandidate>(tuplet => {
-            const handlerName = produceHandlerName(assemblyName, tuplet)
+    return getLambdaHandlerSymbolsTuples(document, symbols)
+        .map<LambdaHandlerCandidate>(tuple => {
+            const handlerName = produceHandlerName(assemblyName, tuple)
 
             return {
                 filename: document.uri.fsPath,
                 handlerName,
-                range: tuplet.method.range,
+                range: tuple.method.range,
             }
         })
 }
@@ -150,10 +150,10 @@ async function getAssemblyName(sourceCodeUri: vscode.Uri): Promise<string | unde
     return path.parse(projectFile.fsPath).name
 }
 
-export function getLambdaHandlerSymbolsTuplets(
+export function getLambdaHandlerSymbolsTuples(
     document: vscode.TextDocument,
     symbols: vscode.DocumentSymbol[],
-): DotNetHandlerSymbolsTuplet[] {
+): DotNetHandlerSymbolsTuple[] {
     return symbols
         .filter(symbol => symbol.kind === vscode.SymbolKind.Namespace)
         // Find relevant classes within the namespace
@@ -178,16 +178,16 @@ export function getLambdaHandlerSymbolsTuplets(
             []
         )
         // Find relevant methods within each class
-        .reduce<DotNetHandlerSymbolsTuplet[]>(
-            (accumulator, tuplet) => {
-                accumulator.push(...tuplet.class.children
+        .reduce<DotNetHandlerSymbolsTuple[]>(
+            (accumulator, tuple) => {
+                accumulator.push(...tuple.class.children
                     .filter(classChildSymbol => classChildSymbol.kind === vscode.SymbolKind.Method)
                     .filter(methodSymbol => isPublicMethodSymbol(document, methodSymbol))
                     .map(methodSymbol => {
                         return {
-                            namespace: tuplet.namespace,
-                            class: tuplet.class,
-                            className: document.getText(tuplet.class.selectionRange),
+                            namespace: tuple.namespace,
+                            class: tuple.class,
+                            className: document.getText(tuple.class.selectionRange),
                             method: methodSymbol,
                             methodName: document.getText(methodSymbol.selectionRange),
                         }
@@ -252,6 +252,6 @@ export function isPublicMethodSymbol(
     return false
 }
 
-export function produceHandlerName(assemblyName: string, tuplet: DotNetHandlerSymbolsTuplet): string {
-    return `${assemblyName}::${tuplet.className}::${tuplet.methodName}`
+export function produceHandlerName(assemblyName: string, tuple: DotNetHandlerSymbolsTuple): string {
+    return `${assemblyName}::${tuple.className}::${tuple.methodName}`
 }
