@@ -35,6 +35,7 @@ import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
 import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryService'
 import { TelemetryService } from './shared/telemetry/telemetryService'
 import { registerCommand } from './shared/telemetry/telemetryUtils'
+import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { PromiseSharer } from './shared/utilities/promiseUtilities'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
 
@@ -137,6 +138,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await ext.statusBar.updateContext(undefined)
 
         await initializeSamCli()
+
+        await ExtensionDisposableFiles.initialize(context)
 
         vscode.languages.registerCompletionItemProvider(
             {

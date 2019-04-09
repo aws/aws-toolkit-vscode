@@ -18,6 +18,7 @@ import { SamCliProcessInvoker, SamCliTaskInvoker } from '../sam/cli/samCliInvoke
 import { SamCliLocalInvokeInvocation } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
+import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 
 import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
@@ -130,6 +131,7 @@ export class LocalLambdaRunner {
         // TODO: Clean up folder structure
         if (!this._baseBuildFolder) {
             this._baseBuildFolder = await makeTemporaryToolkitFolder()
+            ExtensionDisposableFiles.getInstance().addFolder(this._baseBuildFolder)
         }
 
         return this._baseBuildFolder
@@ -348,6 +350,7 @@ export async function getRuntimeForLambda(params: {
 
 export const makeBuildDir = async (): Promise<string> => {
     const buildDir = await makeTemporaryToolkitFolder()
+    ExtensionDisposableFiles.getInstance().addFolder(buildDir)
 
     return buildDir
 }
@@ -362,6 +365,7 @@ export async function makeInputTemplate(params: {
     workspaceUri: vscode.Uri,
 }): Promise<string> {
     const inputTemplatePath: string = path.join(params.baseBuildDir, 'input', 'input-template.yaml')
+    ExtensionDisposableFiles.getInstance().addFolder(inputTemplatePath)
 
     // Make function handler relative to baseDir
     const handlerFileRelativePath = path.relative(
