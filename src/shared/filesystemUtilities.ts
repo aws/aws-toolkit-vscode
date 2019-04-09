@@ -5,19 +5,14 @@
 
 'use strict'
 
-import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { promisify } from 'util'
+import * as tmp from 'tmp' // 'tmp-promise' failed due to types being out of sync with 'tmp'
 import { access, mkdir, PathLike, readdir, readFile } from './filesystem'
 
-const DEFAULT_ENCODING: BufferEncoding = 'utf8'
+tmp.setGracefulCleanup()
 
-export const tempDirPath = path.join(
-    // https://github.com/aws/aws-toolkit-vscode/issues/240
-    os.type() === 'Darwin' ? '/tmp' : os.tmpdir(),
-    'aws-toolkit-vscode'
-)
+const DEFAULT_ENCODING: BufferEncoding = 'utf8'
 
 export async function fileExists(filePath: string): Promise<boolean> {
     try {
@@ -71,16 +66,41 @@ export async function findFileInParentPaths(searchFolder: string, fileToFind: st
     return findFileInParentPaths(parentPath, fileToFind)
 }
 
-const mkdtemp = promisify(fs.mkdtemp)
-export const  makeTemporaryToolkitFolder = async (...relativePathParts: string[]) => {
-    const _relativePathParts = relativePathParts || ['vsctk']
-    const tmpPath = path.join(tempDirPath, ..._relativePathParts)
-    const tmpPathParent = path.dirname(tmpPath)
-    // fs.makeTemporaryToolkitFolder fails on OSX if prefix contains path separator
-    // so we must create intermediate dirs if needed
-    if (!await fileExists(tmpPathParent)) {
-        await mkdir(tmpPathParent, { recursive: true })
+let tmpDirRoot: string // lazily initialized
+export async function getTemporaryToolkitFolderRoot() {
+    if (!tmpDirRoot /* never initialized */ || !await fileExists(tmpDirRoot) /* has been deleted */) {
+        const _tempDirPath = path.join(
+            // https://github.com/aws/aws-toolkit-vscode/issues/240
+            os.type() === 'Darwin' ? '/tmp' : os.tmpdir(),
+            'aws-toolkit-vscode'
+        )
+        tmpDirRoot = await new Promise<string>(async (resolve, reject) => {
+            if (!await fileExists(_tempDirPath)) {
+                await mkdir(_tempDirPath, { recursive: true })
+            }
+            tmp.dir(
+                {
+                     dir: _tempDirPath,
+                 },
+                (err: Error, _path: string) => {
+                    if (err) {
+                        reject(err)
+                    }
+                    resolve(_path)
+                }
+            )
+        })
     }
 
-    return mkdtemp(tmpPath)
+    return tmpDirRoot
+}
+
+export const  makeTemporaryToolkitFolder = async (...relativePathParts: string[]) => {
+    const _relativePathParts = relativePathParts || ['vsctk']
+    const tmpPath = path.join(await getTemporaryToolkitFolderRoot(), ..._relativePathParts)
+    if (!await fileExists(tmpPath)) {
+        await mkdir(tmpPath, { recursive: true })
+    }
+
+    return tmpPath
 }
