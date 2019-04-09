@@ -14,10 +14,10 @@ import * as sampleDotNetSamProgram from './sampleDotNetSamProgram'
 import {
     DotNetHandlerSymbolsTuple,
     findParentProjectFile,
+    generateDotNetLambdaHandler,
     getLambdaHandlerSymbolsTuples,
     isPublicClassSymbol,
     isPublicMethodSymbol,
-    produceHandlerName,
 } from '../../../shared/codelens/csharpCodeLensProvider'
 import { writeFile } from '../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
@@ -267,7 +267,7 @@ describe('isPublicMethodSymbol', async () => {
     }
 })
 
-describe('produceHandlerName', async () => {
+describe('generateDotNetLambdaHandler', async () => {
     const assemblyName: string = 'myAssembly'
 
     it('produces a handler name', async () => {
@@ -279,7 +279,7 @@ describe('produceHandlerName', async () => {
             methodName: 'foo'
         }
 
-        const handlerName = produceHandlerName(assemblyName, tuple)
+        const handlerName = generateDotNetLambdaHandler(assemblyName, tuple)
         assert.strictEqual(handlerName, 'myAssembly::myClass::foo', 'Handler name mismatch')
     })
 })

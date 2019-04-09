@@ -127,7 +127,7 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
 
     return getLambdaHandlerSymbolsTuples(document, symbols)
         .map<LambdaHandlerCandidate>(tuple => {
-            const handlerName = produceHandlerName(assemblyName, tuple)
+            const handlerName = generateDotNetLambdaHandler(assemblyName, tuple)
 
             return {
                 filename: document.uri.fsPath,
@@ -252,6 +252,6 @@ export function isPublicMethodSymbol(
     return false
 }
 
-export function produceHandlerName(assemblyName: string, tuple: DotNetHandlerSymbolsTuple): string {
+export function generateDotNetLambdaHandler(assemblyName: string, tuple: DotNetHandlerSymbolsTuple): string {
     return `${assemblyName}::${tuple.className}::${tuple.methodName}`
 }
