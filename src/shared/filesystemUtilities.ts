@@ -96,7 +96,7 @@ export const  makeTemporaryToolkitFolder = async (...relativePathParts: string[]
     const _relativePathParts = relativePathParts || ['vsctk']
     const tmpPath = path.join(await getTemporaryToolkitFolderRoot(), ..._relativePathParts)
     if (!await fileExists(tmpPath)) {
-        await mkdir(tmpPath)
+        await mkdir(tmpPath, { recursive: true })
     }
 
     return tmpPath
