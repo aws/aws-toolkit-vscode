@@ -15,12 +15,6 @@ import { RegionProvider } from '../../shared/regions/regionProvider'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { difference, filter, toArrayAsync } from '../../shared/utilities/collectionUtils'
-import {
-    makeProjectDefaultsManager,
-    ProjectDefaultsManager,
-    SamDeployDefaults
-} from '../../shared/utilities/projectDefaults'
-import { getPropAs } from '../../shared/utilities/tsUtils'
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
 import { detectLocalTemplates } from '../local/detectLocalTemplates'
 import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
@@ -131,7 +125,6 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public readonly onDetectLocalTemplates = detectLocalTemplates
     public readonly getParameters = getParameters
     public readonly getOverriddenParameters = getOverriddenParameters
-    private projectDefaultsManager: ProjectDefaultsManager | undefined
 
     public get workspaceFolders(): vscode.Uri[] | undefined {
         return (vscode.workspace.workspaceFolders || []).map(f => f.uri)
@@ -160,13 +153,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         })
         const val = picker.verifySinglePickerOutput<SamTemplateQuickPickItem>(choices)
 
-        if (val) {
-            this.projectDefaultsManager = makeProjectDefaultsManager({
-                samTemplatePath: val.uri.fsPath
-            })
-
-            return val.uri
-        }
+        return val ? val.uri : undefined
     }
 
     public async promptUserForParametersIfApplicable(
@@ -254,7 +241,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
     public async promptUserForRegion(
         regionProvider: RegionProvider,
-        initialRegionCode = this.getDefault('region')
+        initialRegionCode: string
     ): Promise<string | undefined> {
         const regionData = await regionProvider.getRegionData()
 
@@ -294,14 +281,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         })
         const val = picker.verifySinglePickerOutput(choices)
 
-        if (val && val.detail) {
-            await this.saveDefault({
-                key: 'region',
-                value: val.detail
-            })
-
-            return val.detail
-        }
+        return val ? val.detail : undefined
     }
 
     /**
@@ -311,10 +291,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
      *
      * @returns S3 Bucket name. Undefined represents cancel.
      */
-    public async promptUserForS3Bucket(
-        selectedRegion: string,
-        initialValue: string = this.getDefault('s3BucketName')
-    ): Promise<string | undefined> {
+    public async promptUserForS3Bucket(selectedRegion: string, initialValue?: string): Promise<string | undefined> {
         const inputBox = input.createInputBox({
             buttons: [
                 vscode.QuickInputButtons.Back
@@ -338,7 +315,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             inputBox.value = initialValue
         }
 
-        const value = await input.promptUser({
+        return await input.promptUser({
             inputBox: inputBox,
             onValidateInput: validateS3Bucket,
             onDidTriggerButton: (button, resolve, reject) => {
@@ -347,12 +324,6 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 }
             }
         })
-        await this.saveDefault({
-            key: 's3BucketName',
-            value,
-        })
-
-        return value
     }
 
     /**
@@ -365,7 +336,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
      */
     public async promptUserForStackName(
         {
-            initialValue = this.getDefault('stackName'),
+            initialValue,
             validateInput,
         }: {
             initialValue?: string
@@ -390,7 +361,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             inputBox.value = initialValue
         }
 
-        const value = await input.promptUser({
+        return await input.promptUser({
             inputBox: inputBox,
             onValidateInput: validateInput,
             onDidTriggerButton: (button, resolve, reject) => {
@@ -399,35 +370,6 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 }
             }
         })
-        await this.saveDefault({
-            key: 'stackName',
-            value,
-        })
-
-        return value
-    }
-
-    private getDefault(key: string): string {
-        let samDeployDefaults: SamDeployDefaults | undefined
-        if (this.projectDefaultsManager) {
-            samDeployDefaults = this.projectDefaultsManager.getSamDeployDefaults()
-            if (samDeployDefaults) {
-                return getPropAs(samDeployDefaults, key) || ''
-            }
-        }
-
-        return ''
-    }
-
-    private async saveDefault(params: {
-        key: keyof SamDeployDefaults,
-        value: string | undefined,
-    }) {
-        if (this.projectDefaultsManager && params.value) {
-            await this.projectDefaultsManager.setSamDeployDefaults({
-                [params.key]: params.value
-            })
-        }
     }
 }
 
