@@ -32,7 +32,7 @@ export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
     }
 ]
 
-const REGEXP_RESERVED_WORD_PUBLIC = new RegExp(/\bpublic\b/)
+const REGEXP_RESERVED_WORD_PUBLIC = /\bpublic\b/
 
 export interface DotNetLambdaHandlerComponents {
     assembly: string,
@@ -166,7 +166,7 @@ export function getLambdaHandlerComponents(
             (accumulator, namespaceSymbol: vscode.DocumentSymbol) => {
                 accumulator.push(...namespaceSymbol.children
                     .filter(namespaceChildSymbol => namespaceChildSymbol.kind === vscode.SymbolKind.Class)
-                    .filter(methodSymbol => isPublicClassSymbol(document, methodSymbol))
+                    .filter(classSymbol => isPublicClassSymbol(document, classSymbol))
                     .map(classSymbol => {
                         return {
                             namespace: namespaceSymbol,
