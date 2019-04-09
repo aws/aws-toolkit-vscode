@@ -74,7 +74,10 @@ export async function getTemporaryToolkitFolderRoot() {
             os.type() === 'Darwin' ? '/tmp' : os.tmpdir(),
             'aws-toolkit-vscode'
         )
-        tmpDirRoot = await new Promise<string>((resolve, reject) => {
+        tmpDirRoot = await new Promise<string>(async (resolve, reject) => {
+            if (!await fileExists(_tempDirPath)) {
+                mkdir(_tempDirPath, { recursive: true })
+            }
             tmp.dir(
                 {
                      dir: _tempDirPath,
