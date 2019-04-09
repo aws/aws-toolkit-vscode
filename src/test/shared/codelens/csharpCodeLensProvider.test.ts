@@ -83,21 +83,21 @@ describe('getLambdaHandlerSymbolsTuples', async () => {
 
         const textDoc = await vscode.workspace.openTextDocument(programFile)
         const documentSymbols = sampleDotNetSamProgram.getDocumentSymbols()
+        const assembly = 'myAssembly'
 
         const tuples = getLambdaHandlerSymbolsTuples(
             textDoc,
             documentSymbols,
+            assembly,
         )
 
         assert.ok(tuples)
         assert.strictEqual(tuples.length, 1, 'Expected only one Symbols Tuple')
         const tuple = tuples[0]
-        assert.strictEqual(tuple.namespace, documentSymbols[0])
-        assert.strictEqual(tuple.class, documentSymbols[0].children[0])
-        assert.strictEqual(
-            tuple.method,
-            documentSymbols[0].children[0].children.filter(c => c.name.indexOf('FunctionHandler') === 0)[0]
-        )
+        assert.strictEqual(tuple.assembly, 'myAssembly')
+        assert.strictEqual(tuple.namespace, 'HelloWorld')
+        assert.strictEqual(tuple.class, 'Function')
+        assert.strictEqual(tuple.method, 'FunctionHandler')
     })
 })
 
@@ -268,18 +268,16 @@ describe('isPublicMethodSymbol', async () => {
 })
 
 describe('generateDotNetLambdaHandler', async () => {
-    const assemblyName: string = 'myAssembly'
-
     it('produces a handler name', async () => {
         const tuple: DotNetHandlerSymbolsTuple = {
-            namespace: new vscode.DocumentSymbol('namespace', '', vscode.SymbolKind.Namespace, fakeRange, fakeRange),
-            class: new vscode.DocumentSymbol('myClass', '', vscode.SymbolKind.Class, fakeRange, fakeRange),
-            className: 'myClass',
-            method: new vscode.DocumentSymbol('foo()', '', vscode.SymbolKind.Method, fakeRange, fakeRange),
-            methodName: 'foo'
+            assembly: 'myAssembly',
+            namespace: 'myNamespace',
+            class: 'myClass',
+            method: 'foo',
+            handlerRange: undefined!,
         }
 
-        const handlerName = generateDotNetLambdaHandler(assemblyName, tuple)
-        assert.strictEqual(handlerName, 'myAssembly::myClass::foo', 'Handler name mismatch')
+        const handlerName = generateDotNetLambdaHandler(tuple)
+        assert.strictEqual(handlerName, 'myAssembly::myNamespace.myClass::foo', 'Handler name mismatch')
     })
 })

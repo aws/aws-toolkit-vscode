@@ -35,11 +35,12 @@ export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
 const REGEXP_RESERVED_WORD_PUBLIC = new RegExp(/\bpublic\b/)
 
 export interface DotNetHandlerSymbolsTuple {
-    namespace: vscode.DocumentSymbol,
-    class: vscode.DocumentSymbol,
-    className: string,
-    method: vscode.DocumentSymbol,
-    methodName: string,
+    assembly: string,
+    namespace: string,
+    class: string,
+    method: string,
+    // Range of the function representing the Lambda Handler
+    handlerRange: vscode.Range,
 }
 
 export async function initialize({
@@ -125,14 +126,14 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
         )) || []
     )
 
-    return getLambdaHandlerSymbolsTuples(document, symbols)
+    return getLambdaHandlerSymbolsTuples(document, symbols, assemblyName)
         .map<LambdaHandlerCandidate>(tuple => {
-            const handlerName = generateDotNetLambdaHandler(assemblyName, tuple)
+            const handlerName = generateDotNetLambdaHandler(tuple)
 
             return {
                 filename: document.uri.fsPath,
                 handlerName,
-                range: tuple.method.range,
+                range: tuple.handlerRange,
             }
         })
 }
@@ -153,6 +154,7 @@ async function getAssemblyName(sourceCodeUri: vscode.Uri): Promise<string | unde
 export function getLambdaHandlerSymbolsTuples(
     document: vscode.TextDocument,
     symbols: vscode.DocumentSymbol[],
+    assembly: string,
 ): DotNetHandlerSymbolsTuple[] {
     return symbols
         .filter(symbol => symbol.kind === vscode.SymbolKind.Namespace)
@@ -185,11 +187,11 @@ export function getLambdaHandlerSymbolsTuples(
                     .filter(methodSymbol => isPublicMethodSymbol(document, methodSymbol))
                     .map(methodSymbol => {
                         return {
-                            namespace: tuple.namespace,
-                            class: tuple.class,
-                            className: document.getText(tuple.class.selectionRange),
-                            method: methodSymbol,
-                            methodName: document.getText(methodSymbol.selectionRange),
+                            assembly,
+                            namespace: tuple.namespace.name,
+                            class: document.getText(tuple.class.selectionRange),
+                            method: document.getText(methodSymbol.selectionRange),
+                            handlerRange: methodSymbol.range,
                         }
                     })
                 )
@@ -252,6 +254,6 @@ export function isPublicMethodSymbol(
     return false
 }
 
-export function generateDotNetLambdaHandler(assemblyName: string, tuple: DotNetHandlerSymbolsTuple): string {
-    return `${assemblyName}::${tuple.className}::${tuple.methodName}`
+export function generateDotNetLambdaHandler(tuple: DotNetHandlerSymbolsTuple): string {
+    return `${tuple.assembly}::${tuple.namespace}.${tuple.class}::${tuple.method}`
 }
