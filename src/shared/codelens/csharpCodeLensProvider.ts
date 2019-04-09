@@ -34,7 +34,7 @@ export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
 
 const REGEXP_RESERVED_WORD_PUBLIC = new RegExp(/\bpublic\b/)
 
-export interface DotNetHandlerSymbolsTuple {
+export interface DotNetLambdaHandlerComponents {
     assembly: string,
     namespace: string,
     class: string,
@@ -126,14 +126,14 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
         )) || []
     )
 
-    return getLambdaHandlerSymbolsTuples(document, symbols, assemblyName)
-        .map<LambdaHandlerCandidate>(tuple => {
-            const handlerName = generateDotNetLambdaHandler(tuple)
+    return getLambdaHandlerComponents(document, symbols, assemblyName)
+        .map<LambdaHandlerCandidate>(lambdaHandlerComponents => {
+            const handlerName = generateDotNetLambdaHandler(lambdaHandlerComponents)
 
             return {
                 filename: document.uri.fsPath,
                 handlerName,
-                range: tuple.handlerRange,
+                range: lambdaHandlerComponents.handlerRange,
             }
         })
 }
@@ -151,11 +151,11 @@ async function getAssemblyName(sourceCodeUri: vscode.Uri): Promise<string | unde
     return path.parse(projectFile.fsPath).name
 }
 
-export function getLambdaHandlerSymbolsTuples(
+export function getLambdaHandlerComponents(
     document: vscode.TextDocument,
     symbols: vscode.DocumentSymbol[],
     assembly: string,
-): DotNetHandlerSymbolsTuple[] {
+): DotNetLambdaHandlerComponents[] {
     return symbols
         .filter(symbol => symbol.kind === vscode.SymbolKind.Namespace)
         // Find relevant classes within the namespace
@@ -180,16 +180,16 @@ export function getLambdaHandlerSymbolsTuples(
             []
         )
         // Find relevant methods within each class
-        .reduce<DotNetHandlerSymbolsTuple[]>(
-            (accumulator, tuple) => {
-                accumulator.push(...tuple.class.children
+        .reduce<DotNetLambdaHandlerComponents[]>(
+            (accumulator, lambdaHandlerComponents) => {
+                accumulator.push(...lambdaHandlerComponents.class.children
                     .filter(classChildSymbol => classChildSymbol.kind === vscode.SymbolKind.Method)
                     .filter(methodSymbol => isPublicMethodSymbol(document, methodSymbol))
                     .map(methodSymbol => {
                         return {
                             assembly,
-                            namespace: tuple.namespace.name,
-                            class: document.getText(tuple.class.selectionRange),
+                            namespace: lambdaHandlerComponents.namespace.name,
+                            class: document.getText(lambdaHandlerComponents.class.selectionRange),
                             method: document.getText(methodSymbol.selectionRange),
                             handlerRange: methodSymbol.range,
                         }
@@ -254,6 +254,6 @@ export function isPublicMethodSymbol(
     return false
 }
 
-export function generateDotNetLambdaHandler(tuple: DotNetHandlerSymbolsTuple): string {
-    return `${tuple.assembly}::${tuple.namespace}.${tuple.class}::${tuple.method}`
+export function generateDotNetLambdaHandler(components: DotNetLambdaHandlerComponents): string {
+    return `${components.assembly}::${components.namespace}.${components.class}::${components.method}`
 }

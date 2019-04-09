@@ -12,10 +12,10 @@ import * as vscode from 'vscode'
 import * as sampleDotNetSamProgram from './sampleDotNetSamProgram'
 
 import {
-    DotNetHandlerSymbolsTuple,
+    DotNetLambdaHandlerComponents,
     findParentProjectFile,
     generateDotNetLambdaHandler,
-    getLambdaHandlerSymbolsTuples,
+    getLambdaHandlerComponents,
     isPublicClassSymbol,
     isPublicMethodSymbol,
 } from '../../../shared/codelens/csharpCodeLensProvider'
@@ -75,7 +75,7 @@ describe('findParentProjectFile', async () => {
     })
 })
 
-describe('getLambdaHandlerSymbolsTuples', async () => {
+describe('getLambdaHandlerComponents', async () => {
     it('Detects a public function symbol', async () => {
         const folder = await makeTemporaryToolkitFolder()
         const programFile = path.join(folder, 'program.cs')
@@ -85,19 +85,19 @@ describe('getLambdaHandlerSymbolsTuples', async () => {
         const documentSymbols = sampleDotNetSamProgram.getDocumentSymbols()
         const assembly = 'myAssembly'
 
-        const tuples = getLambdaHandlerSymbolsTuples(
+        const componentsArray = getLambdaHandlerComponents(
             textDoc,
             documentSymbols,
             assembly,
         )
 
-        assert.ok(tuples)
-        assert.strictEqual(tuples.length, 1, 'Expected only one Symbols Tuple')
-        const tuple = tuples[0]
-        assert.strictEqual(tuple.assembly, 'myAssembly')
-        assert.strictEqual(tuple.namespace, 'HelloWorld')
-        assert.strictEqual(tuple.class, 'Function')
-        assert.strictEqual(tuple.method, 'FunctionHandler')
+        assert.ok(componentsArray)
+        assert.strictEqual(componentsArray.length, 1, 'Expected only one set of Lambda Handler components')
+        const components = componentsArray[0]
+        assert.strictEqual(components.assembly, 'myAssembly', 'Unexpected Lambda Handler assembly')
+        assert.strictEqual(components.namespace, 'HelloWorld', 'Unexpected Lambda Handler Namespace')
+        assert.strictEqual(components.class, 'Function', 'Unexpected Lambda Handler Class')
+        assert.strictEqual(components.method, 'FunctionHandler', 'Unexpected Lambda Handler Function')
     })
 })
 
@@ -269,7 +269,7 @@ describe('isPublicMethodSymbol', async () => {
 
 describe('generateDotNetLambdaHandler', async () => {
     it('produces a handler name', async () => {
-        const tuple: DotNetHandlerSymbolsTuple = {
+        const components: DotNetLambdaHandlerComponents = {
             assembly: 'myAssembly',
             namespace: 'myNamespace',
             class: 'myClass',
@@ -277,7 +277,7 @@ describe('generateDotNetLambdaHandler', async () => {
             handlerRange: undefined!,
         }
 
-        const handlerName = generateDotNetLambdaHandler(tuple)
+        const handlerName = generateDotNetLambdaHandler(components)
         assert.strictEqual(handlerName, 'myAssembly::myNamespace.myClass::foo', 'Handler name mismatch')
     })
 })
