@@ -32,13 +32,14 @@ export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
     }
 ]
 
-const METHOD_SYMBOL_NAME_REGEXP = new RegExp(/\w*/)
 const REGEXP_RESERVED_WORD_PUBLIC = new RegExp(/\bpublic\b/)
 
 export interface DotNetHandlerSymbolsTuplet {
     namespace: vscode.DocumentSymbol,
     class: vscode.DocumentSymbol,
+    className: string,
     method: vscode.DocumentSymbol,
+    methodName: string,
 }
 
 export async function initialize({
@@ -181,13 +182,14 @@ export function getLambdaHandlerSymbolsTuplets(
             (accumulator, tuplet) => {
                 accumulator.push(...tuplet.class.children
                     .filter(classChildSymbol => classChildSymbol.kind === vscode.SymbolKind.Method)
-                    .filter(methodSymbol => getMethodNameFromSymbol(methodSymbol) !== undefined)
                     .filter(methodSymbol => isPublicMethodSymbol(document, methodSymbol))
                     .map(methodSymbol => {
                         return {
                             namespace: tuplet.namespace,
                             class: tuplet.class,
+                            className: document.getText(tuplet.class.selectionRange),
                             method: methodSymbol,
+                            methodName: document.getText(methodSymbol.selectionRange),
                         }
                     })
                 )
@@ -250,28 +252,6 @@ export function isPublicMethodSymbol(
     return false
 }
 
-export function getMethodNameFromSymbol(symbol: vscode.DocumentSymbol): string | undefined {
-    if (symbol.kind === vscode.SymbolKind.Method) {
-        const matches = symbol.name.match(METHOD_SYMBOL_NAME_REGEXP)
-
-        if (matches && matches.length > 0) {
-            return matches[0]
-        }
-    }
-
-    return undefined
-}
-
 export function produceHandlerName(assemblyName: string, tuplet: DotNetHandlerSymbolsTuplet): string {
-    if (tuplet.class && tuplet.method) {
-        const methodName: string | undefined = getMethodNameFromSymbol(tuplet.method)
-
-        if (!methodName) {
-            throw new Error('Method name missing from symbol')
-        }
-
-        return `${assemblyName}::${tuplet.class.name}::${methodName}`
-    }
-
-    throw new Error('Missing symbol data')
+    return `${assemblyName}::${tuplet.className}::${tuplet.methodName}`
 }

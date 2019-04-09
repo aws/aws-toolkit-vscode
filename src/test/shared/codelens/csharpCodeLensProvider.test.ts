@@ -15,14 +15,12 @@ import {
     DotNetHandlerSymbolsTuplet,
     findParentProjectFile,
     getLambdaHandlerSymbolsTuplets,
-    getMethodNameFromSymbol,
     isPublicClassSymbol,
     isPublicMethodSymbol,
     produceHandlerName,
 } from '../../../shared/codelens/csharpCodeLensProvider'
 import { writeFile } from '../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { assertRejects } from '../utilities/assertUtils'
 
 const fakeRange = new vscode.Range(0, 0, 0, 0)
 
@@ -100,35 +98,6 @@ describe('getLambdaHandlerSymbolsTuplets', async () => {
             tuplet.method,
             documentSymbols[0].children[0].children.filter(c => c.name.indexOf('FunctionHandler') === 0)[0]
         )
-    })
-})
-
-describe('getMethodNameFromSymbol', async () => {
-    it('Gets method name', async () => {
-        const symbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
-            'foo()', '', vscode.SymbolKind.Method, fakeRange, fakeRange
-        )
-
-        const methodName = getMethodNameFromSymbol(symbol)
-        assert.strictEqual(methodName, 'foo', 'Unexpected Symbol method name')
-    })
-
-    it('returns undefined on unexpected symbol kind', async () => {
-        const symbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
-            'foo()', '', vscode.SymbolKind.Class, fakeRange, fakeRange
-        )
-
-        const methodName = getMethodNameFromSymbol(symbol)
-        assert.strictEqual(methodName, undefined, 'Expected methodName to be undefined')
-    })
-
-    it('returns undefined on non-word input', async () => {
-        const symbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
-            '!@#$%^&*()', '', vscode.SymbolKind.Class, fakeRange, fakeRange
-        )
-
-        const methodName = getMethodNameFromSymbol(symbol)
-        assert.strictEqual(methodName, undefined, 'Expected methodName to be undefined')
     })
 })
 
@@ -304,23 +273,13 @@ describe('produceHandlerName', async () => {
     it('produces a handler name', async () => {
         const tuplet: DotNetHandlerSymbolsTuplet = {
             namespace: new vscode.DocumentSymbol('namespace', '', vscode.SymbolKind.Namespace, fakeRange, fakeRange),
-            class: new vscode.DocumentSymbol('class', '', vscode.SymbolKind.Class, fakeRange, fakeRange),
+            class: new vscode.DocumentSymbol('myClass', '', vscode.SymbolKind.Class, fakeRange, fakeRange),
+            className: 'myClass',
             method: new vscode.DocumentSymbol('foo()', '', vscode.SymbolKind.Method, fakeRange, fakeRange),
+            methodName: 'foo'
         }
 
         const handlerName = produceHandlerName(assemblyName, tuplet)
-        assert.strictEqual(handlerName, 'myAssembly::class::foo', 'Handler name mismatch')
-    })
-
-    it('throws when method name is undefined', async () => {
-        const tuplet: DotNetHandlerSymbolsTuplet = {
-            namespace: new vscode.DocumentSymbol('namespace', '', vscode.SymbolKind.Namespace, fakeRange, fakeRange),
-            class: new vscode.DocumentSymbol('class', '', vscode.SymbolKind.Class, fakeRange, fakeRange),
-            method: new vscode.DocumentSymbol('{[]}', '', vscode.SymbolKind.Method, fakeRange, fakeRange),
-        }
-
-        await assertRejects(async () => {
-            produceHandlerName(assemblyName, tuplet)
-        })
+        assert.strictEqual(handlerName, 'myAssembly::myClass::foo', 'Handler name mismatch')
     })
 })
