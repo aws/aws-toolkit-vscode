@@ -166,26 +166,13 @@ describe('isPublicClassSymbol', async () => {
         assert.strictEqual(isPublic, false, 'Expected symbol not to be a public class')
     })
 
-    const notPublicClassTests = [
-        {
-            scenario: 'class is not found',
-            symbolText: 'public struct Function {}',
-        },
-        {
-            scenario: 'class is not public',
-            symbolText: 'private class Function {}',
-        },
-    ]
+    it('returns false when class is not public', async () => {
+        const doc = {
+            getText: (range?: vscode.Range): string => 'private class '
+        }
 
-    notPublicClassTests.forEach((test) => {
-        it(`returns false when class ${test.scenario}`, async () => {
-            const doc = {
-                getText: (range?: vscode.Range): string => test.symbolText
-            }
-
-            const isPublic = isPublicClassSymbol(doc, sampleClassSymbol)
-            assert.strictEqual(isPublic, false, 'Expected symbol not to be a public class')
-        })
+        const isPublic = isPublicClassSymbol(doc, sampleClassSymbol)
+        assert.strictEqual(isPublic, false, 'Expected symbol not to be a public class')
     })
 })
 
@@ -241,17 +228,6 @@ describe('isPublicMethodSymbol', async () => {
 
         const isPublic = isPublicMethodSymbol(doc, symbol)
         assert.strictEqual(isPublic, false, 'Expected symbol not to be a public method')
-    })
-
-    it('throws when a function signature cannot be found in the method symbol range', async () => {
-        const doc = {
-            getText: (range?: vscode.Range): string =>
-                generateFunctionDeclaration(generateFunctionSignature('public', 'NotFunctionHandler'))
-        }
-
-        await assertRejects(async () => {
-            isPublicMethodSymbol(doc, sampleMethodSymbol)
-        })
     })
 
     it('returns false when the method is not public', async () => {

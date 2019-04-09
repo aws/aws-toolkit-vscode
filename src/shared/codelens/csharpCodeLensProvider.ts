@@ -33,7 +33,7 @@ export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
 ]
 
 const METHOD_SYMBOL_NAME_REGEXP = new RegExp(/\w*/)
-const METHOD_SYMBOL_PUBLIC_REGEXP = new RegExp(/\bpublic\b/)
+const REGEXP_RESERVED_WORD_PUBLIC = new RegExp(/\bpublic\b/)
 
 export interface DotNetHandlerSymbolsTuplet {
     namespace: vscode.DocumentSymbol,
@@ -225,16 +225,11 @@ export function isPublicClassSymbol(
     symbol: vscode.DocumentSymbol,
 ): boolean {
     if (symbol.kind === vscode.SymbolKind.Class) {
-        const methodText: string = document.getText(symbol.range)
+        // from "public class Processor" pull "public class "
+        const classDeclarationBeforeNameRange = new vscode.Range(symbol.range.start, symbol.selectionRange.start)
+        const classDeclarationBeforeName: string = document.getText(classDeclarationBeforeNameRange)
 
-        // Find the position of the 'class' keyword
-        const classPosition = methodText.indexOf('class')
-
-        if (classPosition !== -1) {
-            const classDecorationPrefix = methodText.substr(0, classPosition)
-
-            return METHOD_SYMBOL_PUBLIC_REGEXP.test(classDecorationPrefix)
-        }
+        return REGEXP_RESERVED_WORD_PUBLIC.test(classDeclarationBeforeName)
     }
 
     return false
@@ -245,34 +240,11 @@ export function isPublicMethodSymbol(
     symbol: vscode.DocumentSymbol,
 ): boolean {
     if (symbol.kind === vscode.SymbolKind.Method) {
-        const methodText: string = document.getText(symbol.range)
+        // from "public async Task<Response> foo()" pull "public async Task<Response> "
+        const signatureBeforeMethodNameRange = new vscode.Range(symbol.range.start, symbol.selectionRange.start)
+        const signatureBeforeMethodName: string = document.getText(signatureBeforeMethodNameRange)
 
-        const methodName = getMethodNameFromSymbol(symbol)
-
-        if (!methodName) {
-            return false
-        }
-
-        // Look for the method name
-        const methodNameRegex = new RegExp(`\\b${methodName}\\b`)
-
-        // public async foo() -> "public async "
-        const signaturePosition = methodText.search(methodNameRegex)
-
-        if (signaturePosition === -1) {
-            const logger = getLogger()
-
-            const err = new Error(
-                `Unable to find function signature: ${methodName}`
-            )
-
-            logger.error(err)
-            throw err
-        }
-
-        const signatureBeforeMethodName = methodText.substr(0, signaturePosition)
-
-        return METHOD_SYMBOL_PUBLIC_REGEXP.test(signatureBeforeMethodName)
+        return REGEXP_RESERVED_WORD_PUBLIC.test(signatureBeforeMethodName)
     }
 
     return false
