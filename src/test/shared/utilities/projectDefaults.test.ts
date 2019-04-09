@@ -8,7 +8,7 @@
 import * as assert from 'assert'
 import * as path from 'path'
 import {
-    AllDafaults,
+    AllDefaults,
     makeProjectDefaultsManager,
     ProjectDefaultsManager,
     SamDeployDefaults,
@@ -37,7 +37,7 @@ describe('ProjectDefaultsManager', () => {
     it('should have proper initial defaults', () => {
         const defaultsMgr: ProjectDefaultsManager = makeProjectDefaultsManager({samTemplatePath})
         const allDefaults = defaultsMgr.getAllDefaults()
-        const expectedVal: AllDafaults = {
+        const expectedVal: AllDefaults = {
             samDeploy: {}
         }
         assert.deepStrictEqual(

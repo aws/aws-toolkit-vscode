@@ -15,7 +15,7 @@ export interface SamDeployDefaults {
     stackName?: string
 }
 
-export interface AllDafaults {
+export interface AllDefaults {
     samDeploy: {
         [samTemplatePath: string]: SamDeployDefaults
     }
@@ -24,7 +24,7 @@ export interface AllDafaults {
 export interface ProjectDefaultsManager {
     readonly filePath: string
     refresh(): void
-    getAllDefaults(): AllDafaults
+    getAllDefaults(): AllDefaults
     save(): Promise<void>
     setSamDeployDefaults(params: SamDeployDefaults): Promise<void>
     getSamDeployDefaults(): SamDeployDefaults | undefined
@@ -33,7 +33,7 @@ export interface ProjectDefaultsManager {
 export function makeProjectDefaultsManager({samTemplatePath}: {
     samTemplatePath: string
 }): ProjectDefaultsManager {
-    let allDefaults: AllDafaults
+    let allDefaults: AllDefaults
     const samProjectDir = path.dirname(samTemplatePath)
     const filePath = path.resolve(samProjectDir, '.aws-toolkit-vscode/user-prefs.json')
     const prefsDir = path.dirname(filePath)
@@ -44,7 +44,7 @@ export function makeProjectDefaultsManager({samTemplatePath}: {
         await writeFile(filePath, JSON.stringify(allDefaults, undefined, 2) )
     }
 
-    const getAllDefaults = (): AllDafaults => { // Mostly for testing
+    const getAllDefaults = (): AllDefaults => { // Mostly for testing
         return Object.freeze(allDefaults)
     }
 
@@ -66,7 +66,7 @@ export function makeProjectDefaultsManager({samTemplatePath}: {
 
     const refresh = () => {
         try {
-            allDefaults = require(filePath)
+            allDefaults = require(filePath) as AllDefaults
         } catch (err) {
             allDefaults = {
                 samDeploy: {}
