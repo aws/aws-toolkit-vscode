@@ -96,7 +96,7 @@ export async function makeCSharpCodeLensProvider(): Promise<vscode.CodeLensProvi
         ): Promise<vscode.CodeLens[]> => {
             const handlers: LambdaHandlerCandidate[] = await getLambdaHandlerCandidates(document)
             logger.debug(
-                'csharpCodeLensProvider.makePythonCodeLensProvider handlers:',
+                'csharpCodeLensProvider.makeCSharpCodeLensProvider handlers:',
                 JSON.stringify(handlers, undefined, 2)
             )
 
