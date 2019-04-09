@@ -76,7 +76,7 @@ export async function getTemporaryToolkitFolderRoot() {
         )
         tmpDirRoot = await new Promise<string>(async (resolve, reject) => {
             if (!await fileExists(_tempDirPath)) {
-                mkdir(_tempDirPath, { recursive: true })
+                await mkdir(_tempDirPath, { recursive: true })
             }
             tmp.dir(
                 {
