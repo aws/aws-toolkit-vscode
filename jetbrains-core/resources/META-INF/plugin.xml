@@ -31,8 +31,13 @@ If you come across bugs with the toolkit or have feature requests, please raise 
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
+    <!-- All dependencies have to be defined here, you can't define more in an optional config-file,
+        See PluginManagerCore#mergeOptionalConfigs -->
     <depends>com.intellij.modules.lang</depends>
     <depends>org.jetbrains.plugins.yaml</depends>
+
+    <depends optional="true">org.jetbrains.idea.maven</depends>
+    <depends optional="true">com.intellij.modules.externalSystem</depends>>
     <depends optional="true" config-file="ext-java.xml">com.intellij.modules.java</depends>
     <depends optional="true" config-file="ext-python.xml">com.intellij.modules.python</depends>
 

@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix building of a Java Lambda handler failing due to unable to locate build.gradle/pom.xml Fixes #868, #857"
+}
