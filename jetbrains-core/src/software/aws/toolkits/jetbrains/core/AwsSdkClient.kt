@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.core
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.Experiments
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.util.Disposer
 import com.intellij.util.proxy.CommonProxy
@@ -27,12 +26,8 @@ class AwsSdkClient : Disposable {
     val sdkHttpClient: SdkHttpClient by lazy {
         LOG.info { "Create new Apache client" }
         val httpClientBuilder = ApacheHttpClient.builder()
-
-        if (Experiments.isFeatureEnabled(EXPERIMENT_ID)) {
-            LOG.info { "Proxy support is enabled" }
-            httpClientBuilder.httpRoutePlanner(SystemDefaultRoutePlanner(CommonProxy.getInstance()))
+                .httpRoutePlanner(SystemDefaultRoutePlanner(CommonProxy.getInstance()))
                 .credentialsProvider(SystemDefaultCredentialsProvider())
-        }
 
         ValidateCorrectThreadClient(httpClientBuilder.build())
     }

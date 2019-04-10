@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.core
 
-import com.intellij.openapi.application.Experiments
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.application.WriteAction
 import com.intellij.testFramework.ApplicationRule
@@ -31,8 +30,6 @@ class AwsSdkClientTest {
     @JvmField
     val application = ApplicationRule()
 
-    private val experimentId = "aws.toolkit.useProxy"
-
     private val proxyServletSpy = spy(ConnectHandler())
 
     private val proxyServer = Server().also {
@@ -47,8 +44,6 @@ class AwsSdkClientTest {
 
     @Before
     fun setUp() {
-        Experiments.setFeatureEnabled(experimentId, true)
-
         val httpConfigurable = HttpConfigurable.getInstance()
         httpConfigurable.USE_HTTP_PROXY = true
         httpConfigurable.PROXY_HOST = "localhost"
@@ -58,7 +53,6 @@ class AwsSdkClientTest {
     @After
     fun tearDown() {
         HttpConfigurable.getInstance().USE_HTTP_PROXY = false
-        Experiments.setFeatureEnabled(experimentId, false)
 
         proxyServer.stop()
         proxyServer.join()
