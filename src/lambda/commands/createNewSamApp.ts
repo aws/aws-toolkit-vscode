@@ -10,8 +10,8 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { fileExists } from '../../shared/filesystemUtilities'
 import { SamCliInitArgs, SamCliInitInvocation } from '../../shared/sam/cli/samCliInit'
-import { getMainSourceFileUri } from '../utilities/getMainSourceFile'
 import { CreateNewSamAppWizard } from '../wizards/samInitWizard'
 
 export const URI_TO_OPEN_ON_INIT_KEY = 'URI_TO_OPEN_ON_INIT_KEY'
@@ -50,7 +50,7 @@ interface NewSamAppMetadata {
 export async function createNewSamApp(
     context: Pick<vscode.ExtensionContext, 'globalState'>
 ): Promise<NewSamAppMetadata | undefined> {
-    const config = await new CreateNewSamAppWizard().run()
+    const config: SamCliInitArgs | undefined = await new CreateNewSamAppWizard().run()
     if (!config) {
         return undefined
     }
@@ -58,7 +58,10 @@ export async function createNewSamApp(
     const invocation = new SamCliInitInvocation(config)
     await invocation.execute()
 
-    const uri = await getMainUri(config)
+    const uri = await getMainUri({
+        name: config.name,
+        location: config.location
+    })
     if (!uri) {
         return undefined
     }
@@ -81,15 +84,14 @@ export async function createNewSamApp(
 }
 
 async function getMainUri(config: Pick<SamCliInitArgs, 'location' | 'name'>): Promise<vscode.Uri | undefined> {
-    try {
-        return await getMainSourceFileUri({
-            root: vscode.Uri.file(path.join(config.location.fsPath, config.name))
-        })
-    } catch (err) {
+    const samTemplatePath = path.resolve(config.location.fsPath, config.name, 'template.yaml')
+    if (await fileExists(samTemplatePath)) {
+        return vscode.Uri.file(samTemplatePath)
+    } else {
         vscode.window.showWarningMessage(localize(
             'AWS.samcli.initWizard.source.error.notFound',
             'Project created successfully, but main source code file not found: {0}',
-            err
+            samTemplatePath
         ))
     }
 }
