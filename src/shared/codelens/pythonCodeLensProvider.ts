@@ -19,7 +19,7 @@ import { Datum } from '../telemetry/telemetryEvent'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
 
-import { DefaultSamLocalInvokeCommand } from '../sam/cli/samCliLocalInvoke'
+import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import {
     CodeLensProviderParams,
     getInvokeCmdKey,
@@ -126,7 +126,7 @@ from ${handlerFilePrefix} import ${handlerFunctionName} as _handler
 
 def ${debugHandlerFunctionName}(event, context):
     ptvsd.enable_attach(address=('0.0.0.0', ${params.debugPort}), redirect_output=True)
-    print('Waiting for debugger to attach...')
+    print('${WAIT_FOR_DEBUGGER_MESSAGES.PYTHON}')
     sys.stdout.flush()
     ptvsd.wait_for_attach()
     print('...debugger attached')

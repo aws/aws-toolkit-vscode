@@ -11,6 +11,11 @@ import { fileExists } from '../../filesystemUtilities'
 import { ChildProcess } from '../../utilities/childProcess'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
 
+export const WAIT_FOR_DEBUGGER_MESSAGES = {
+    PYTHON: 'Waiting for debugger to attach...',
+    NODEJS810: 'Debugger listening on',
+}
+
 export interface SamLocalInvokeCommandArgs {
     command: string,
     args: string[],
@@ -46,8 +51,8 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
 
             // todo : identify the debugger messages to listen for in each runtime
             const debuggerAttachCues: string[] = [
-                'Waiting for debugger to attach...', // python
-                'Debugger listening on', // nodejs8.10
+                WAIT_FOR_DEBUGGER_MESSAGES.PYTHON,
+                WAIT_FOR_DEBUGGER_MESSAGES.NODEJS810,
             ]
 
             await childProcess.start(
