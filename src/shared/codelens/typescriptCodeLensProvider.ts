@@ -11,15 +11,13 @@ import * as vscode from 'vscode'
 import { NodejsDebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { findFileInParentPaths } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
-import {
-    DefaultSamCliProcessInvoker,
-    DefaultSamCliTaskInvoker,
-} from '../sam/cli/samCliInvoker'
+import { DefaultSamCliProcessInvoker } from '../sam/cli/samCliInvoker'
 import { Datum } from '../telemetry/telemetryEvent'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
-import { getDebugPort, localize } from '../utilities/vsCodeUtils'
+import { getChannelLogger, getDebugPort, localize } from '../utilities/vsCodeUtils'
 
+import { DefaultSamLocalInvokeCommand } from '../sam/cli/samCliLocalInvoke'
 import {
     CodeLensProviderParams,
     getInvokeCmdKey,
@@ -59,8 +57,8 @@ export function initialize({
     configuration,
     outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultSamCliProcessInvoker(),
-    taskInvoker = new DefaultSamCliTaskInvoker(),
-    telemetryService
+    localInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(toolkitOutputChannel)),
+    telemetryService,
 }: CodeLensProviderParams): void {
 
     const invokeLambda = async (params: LambdaLocalInvokeParams & { runtime: string }) => {
@@ -94,7 +92,7 @@ export function initialize({
             params.runtime,
             toolkitOutputChannel,
             processInvoker,
-            taskInvoker,
+            localInvokeCommand,
             debugConfig,
             samProjectCodeRoot,
             telemetryService

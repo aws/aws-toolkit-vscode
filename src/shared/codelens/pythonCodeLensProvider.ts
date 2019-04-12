@@ -14,14 +14,12 @@ import { unlink, writeFile } from '../filesystem'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
-import {
-    DefaultSamCliProcessInvoker,
-    DefaultSamCliTaskInvoker
-} from '../sam/cli/samCliInvoker'
+import { DefaultSamCliProcessInvoker } from '../sam/cli/samCliInvoker'
 import { Datum } from '../telemetry/telemetryEvent'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
 
+import { DefaultSamLocalInvokeCommand } from '../sam/cli/samCliLocalInvoke'
 import {
     CodeLensProviderParams,
     getInvokeCmdKey,
@@ -153,7 +151,8 @@ def ${debugHandlerFunctionName}(event, context):
 
 const fixFilePathCapitalization = (filePath: string): string => {
     if (process.platform === 'win32') {
-        return filePath.replace(/^[a-z]/, match => match.toUpperCase())
+        // TODO : TEMP : https://github.com/aws/aws-toolkit-vscode/issues/484
+        return filePath.replace(/^[a-z]/, match => match.toLowerCase())
     }
 
     return filePath
@@ -183,11 +182,15 @@ export async function initialize({
     configuration,
     outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultSamCliProcessInvoker(),
-    taskInvoker = new DefaultSamCliTaskInvoker(),
     telemetryService: telemetryService,
+    ...initializeParams
 }: CodeLensProviderParams): Promise<void> {
     const logger = getLogger()
     const channelLogger = getChannelLogger(toolkitOutputChannel)
+
+    if (!initializeParams.localInvokeCommand) {
+        initializeParams.localInvokeCommand = new DefaultSamLocalInvokeCommand(channelLogger)
+    }
 
     const invokeLambda = async (args: LambdaLocalInvokeParams & { runtime: string }) => {
         // Switch over to the output channel so the user has feedback that we're getting things ready
@@ -251,7 +254,7 @@ export async function initialize({
             channelLogger,
             configuration,
             debugConfig,
-            samTaskInvoker: taskInvoker,
+            samLocalInvokeCommand: initializeParams.localInvokeCommand!,
             originalSamTemplatePath: args.samTemplate.fsPath,
             samTemplatePath,
             documentUri: args.document.uri,
@@ -270,10 +273,10 @@ export async function initialize({
     registerCommand({
         command: command,
         callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
-    
+
             const runtime = await getRuntimeForLambda({
-              handlerName: params.handlerName,
-              templatePath: params.samTemplate.fsPath
+                handlerName: params.handlerName,
+                templatePath: params.samTemplate.fsPath
             })
 
             await invokeLambda({

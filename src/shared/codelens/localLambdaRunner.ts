@@ -14,8 +14,8 @@ import { CloudFormation } from '../cloudformation/cloudformation'
 import { writeFile } from '../filesystem'
 import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from '../sam/cli/samCliBuild'
-import { SamCliProcessInvoker, SamCliTaskInvoker } from '../sam/cli/samCliInvokerUtils'
-import { SamCliLocalInvokeInvocation } from '../sam/cli/samCliLocalInvoke'
+import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
+import { SamCliLocalInvokeInvocation, SamLocalInvokeCommand } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
@@ -68,7 +68,7 @@ export class LocalLambdaRunner {
         // @ts-ignore noUnusedLocals
         private readonly outputChannel: vscode.OutputChannel,
         private readonly processInvoker: SamCliProcessInvoker,
-        private readonly taskInvoker: SamCliTaskInvoker,
+        private readonly localInvokeCommand: SamLocalInvokeCommand,
         private readonly debugConfig: DebugConfiguration,
         private readonly codeRootDirectoryPath: string,
         private readonly telemetryService: TelemetryService,
@@ -248,7 +248,7 @@ export class LocalLambdaRunner {
             eventPath,
             environmentVariablePath,
             debugPort: (!!this._debugPort) ? this._debugPort.toString() : undefined,
-            invoker: this.taskInvoker
+            invoker: this.localInvokeCommand
         })
 
         const startInvokeTime = new Date()
@@ -455,7 +455,7 @@ export const invokeLambdaFunction = async (params: {
     isDebug?: boolean,
     originalSamTemplatePath: string,
     samTemplatePath: string,
-    samTaskInvoker: SamCliTaskInvoker,
+    samLocalInvokeCommand: SamLocalInvokeCommand,
     telemetryService: TelemetryService,
     runtime: string,
 }): Promise<void> => {
@@ -500,7 +500,7 @@ export const invokeLambdaFunction = async (params: {
         eventPath,
         environmentVariablePath,
         debugPort: (params.isDebug) ? params.debugConfig.port.toString() : undefined,
-        invoker: params.samTaskInvoker
+        invoker: params.samLocalInvokeCommand,
     })
 
     const startInvokeTime = new Date()
