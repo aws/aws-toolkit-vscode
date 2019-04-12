@@ -195,19 +195,28 @@ describe('ChildProcess', async () => {
     })
 
     describe('start', async () => {
+        async function assertRegularRun(childProcess: ChildProcess): Promise<void> {
+            await new Promise<void>(async (resolve, reject) => {
+                await childProcess.start({
+                    onStdout: text => {
+                        assert.strictEqual(text, 'hi' + os.EOL, 'Unexpected stdout')
+                    },
+                    onClose: (code, signal) => {
+                        assert.strictEqual(code, 0, 'Unexpected close code')
+                        resolve()
+                    },
+                })
+            })
+        }
+
         if (process.platform === 'win32') {
             it('starts and captures stdout - windows', async () => {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFile(batchFile)
 
-                const childProcess = new ChildProcess(
-                    batchFile
-                )
+                const childProcess = new ChildProcess(batchFile)
 
-                await childProcess.start({
-                    onStdout: text => assert.strictEqual(text, 'hi', 'Unexpected stdout'),
-                    onClose: (code, signal) => assert.strictEqual(code, 0, 'Unexpected close code'),
-                })
+                await assertRegularRun(childProcess)
             })
 
             it('runs cmd files containing a space in the filename and folder', async () => {
@@ -218,23 +227,16 @@ describe('ChildProcess', async () => {
 
                 writeWindowsCommandFile(command)
 
-                const childProcess = new ChildProcess(
-                    command
-                )
+                const childProcess = new ChildProcess(command)
 
-                await childProcess.start({
-                    onStdout: text => assert.strictEqual(text, 'hi', 'Unexpected stdout'),
-                    onClose: (code, signal) => assert.strictEqual(code, 0, 'Unexpected close code'),
-                })
+                await assertRegularRun(childProcess)
             })
 
             it('errs when starting twice - windows', async () => {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFile(batchFile)
 
-                const childProcess = new ChildProcess(
-                    batchFile
-                )
+                const childProcess = new ChildProcess(batchFile)
 
                 // We want to verify that the error is thrown even if the first
                 // invocation is still in progress, so we don't await the promise.
@@ -256,23 +258,16 @@ describe('ChildProcess', async () => {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFile(scriptFile)
 
-                const childProcess = new ChildProcess(
-                    scriptFile
-                )
+                const childProcess = new ChildProcess(scriptFile)
 
-                await childProcess.start({
-                    onStdout: text => assert.strictEqual(text, 'hi', 'Unexpected stdout'),
-                    onClose: (code, signal) => assert.strictEqual(code, 0, 'Unexpected close code'),
-                })
+                await assertRegularRun(childProcess)
             })
 
             it('errs when starting twice - unix', async () => {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFile(scriptFile)
 
-                const childProcess = new ChildProcess(
-                    scriptFile
-                )
+                const childProcess = new ChildProcess(scriptFile)
 
                 // We want to verify that the error is thrown even if the first
                 // invocation is still in progress, so we don't await the promise.
@@ -303,26 +298,23 @@ describe('ChildProcess', async () => {
                 writeShellFile(command)
             }
 
-            const childProcess = new ChildProcess(
-                command
-            )
+            const childProcess = new ChildProcess(command)
 
-            await childProcess.start({
-                onStdout: text => assert.strictEqual(text, 'hi', 'Unexpected stdout'),
-                onClose: (code, signal) => assert.strictEqual(code, 0, 'Unexpected close code'),
-            })
+            await assertRegularRun(childProcess)
         })
 
         it('reports error for missing executable', async () => {
             const batchFile = path.join(tempFolder, 'nonExistentScript')
 
-            const childProcess = new ChildProcess(
-                batchFile
-            )
+            const childProcess = new ChildProcess(batchFile)
 
-            await childProcess.start({
-                onStdout: text => assert.strictEqual(text, 'hi', 'Unexpected stdout'),
-                onClose: (code, signal) => assert.notStrictEqual(code, 0, 'Expected an error close code'),
+            await new Promise<void>(async (resolve, reject) => {
+                await childProcess.start({
+                    onClose: (code, signal) => {
+                        assert.notStrictEqual(code, 0, 'Expected an error close code')
+                        resolve()
+                    },
+                })
             })
         })
     })
