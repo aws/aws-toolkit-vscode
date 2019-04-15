@@ -60,7 +60,7 @@ export async function initialize({
     outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultSamCliProcessInvoker(),
     taskInvoker = new DefaultSamCliTaskInvoker(),
-    telemetryService: telemetryService,
+    telemetryService
 }: CodeLensProviderParams): Promise<void> {
     const command = getInvokeCmdKey(CSHARP_LANGUAGE)
     registerCommand({
@@ -110,53 +110,50 @@ async function onLocalInvokeCommand({
         templatePath: lambdaLocalInvokeParams.samTemplate.fsPath
     })
 
-    const baseBuildDir = await makeBuildDir()
-    const codeDir = path.dirname(lambdaLocalInvokeParams.document.uri.fsPath)
-    const documentUri = lambdaLocalInvokeParams.document.uri
-    const originalHandlerName = lambdaLocalInvokeParams.handlerName
+    if (!lambdaLocalInvokeParams.isDebug) {
+        const baseBuildDir = await makeBuildDir()
+        const codeDir = path.dirname(lambdaLocalInvokeParams.document.uri.fsPath)
+        const documentUri = lambdaLocalInvokeParams.document.uri
+        const originalHandlerName = lambdaLocalInvokeParams.handlerName
 
-    const inputTemplatePath = await makeInputTemplate({
-        baseBuildDir,
-        codeDir,
-        documentUri,
-        originalHandlerName,
-        handlerName: originalHandlerName,
-        runtime: runtime,
-        workspaceUri: lambdaLocalInvokeParams.workspaceFolder.uri
-    })
+        const inputTemplatePath = await makeInputTemplate({
+            baseBuildDir,
+            codeDir,
+            documentUri,
+            originalHandlerName,
+            handlerName: originalHandlerName,
+            runtime,
+            workspaceUri: lambdaLocalInvokeParams.workspaceFolder.uri
+        })
 
-    const samTemplatePath: string = await executeSamBuild({
-        baseBuildDir,
-        channelLogger,
-        codeDir,
-        inputTemplatePath,
-        // TODO: add manifest path for debugger
-        manifestPath: undefined,
-        samProcessInvoker: processInvoker,
-    })
+        const samTemplatePath: string = await executeSamBuild({
+            baseBuildDir,
+            channelLogger,
+            codeDir,
+            inputTemplatePath,
+            samProcessInvoker: processInvoker,
+        })
 
-    await invokeLambdaFunction({
-        baseBuildDir,
-        channelLogger,
-        configuration,
-        // TODO: Delete this
-        debugConfig: {
-            type: 'node',
-            request: 'attach',
-            name: 'asdf',
-            port: 9999
-        },
-        documentUri,
-        originalHandlerName,
-        handlerName: originalHandlerName,
-        // TODO: set this appropriately
-        isDebug: false,
-        originalSamTemplatePath: inputTemplatePath,
-        samTemplatePath,
-        samTaskInvoker: taskInvoker,
-        telemetryService,
-        runtime: CSHARP_LANGUAGE,
-    })
+        await invokeLambdaFunction({
+            baseBuildDir,
+            channelLogger,
+            configuration,
+            documentUri,
+            originalHandlerName,
+            handlerName: originalHandlerName,
+            originalSamTemplatePath: inputTemplatePath,
+            samTemplatePath,
+            samTaskInvoker: taskInvoker,
+            telemetryService,
+            runtime,
+
+            // TODO: Set on debug
+            isDebug: lambdaLocalInvokeParams.isDebug,
+            debugConfig: undefined,
+        })
+    } else {
+        vscode.window.showInformationMessage(`Local debug for ${runtime} is currently not implemented.`)
+    }
 
     return getMetricDatum({
         isDebug: lambdaLocalInvokeParams.isDebug,

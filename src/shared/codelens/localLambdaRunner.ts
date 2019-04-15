@@ -448,7 +448,7 @@ export const invokeLambdaFunction = async (params: {
     baseBuildDir: string,
     channelLogger: ChannelLogger,
     configuration: SettingsConfiguration,
-    debugConfig: DebugConfiguration,
+    debugConfig?: DebugConfiguration,
     documentUri: vscode.Uri,
     originalHandlerName: string,
     handlerName: string,
@@ -499,7 +499,8 @@ export const invokeLambdaFunction = async (params: {
         templatePath: params.samTemplatePath,
         eventPath,
         environmentVariablePath,
-        debugPort: (params.isDebug) ? params.debugConfig.port.toString() : undefined,
+        debugPort: (params.isDebug) ?
+            (params.debugConfig ? params.debugConfig.port.toString() : undefined) : undefined,
         invoker: params.samTaskInvoker
     })
 
@@ -507,6 +508,11 @@ export const invokeLambdaFunction = async (params: {
     await command.execute()
 
     if (params.isDebug) {
+        if (!params.debugConfig) {
+            const err = new Error('Started debug run without a debugConfig')
+            params.channelLogger.logger.error(err)
+            throw err
+        }
         await waitForDebugPort({
             debugPort: params.debugConfig.port,
             configuration: params.configuration,
