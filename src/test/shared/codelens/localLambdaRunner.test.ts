@@ -429,7 +429,7 @@ describe('localLambdaRunner', async () => {
 
         it ('succeeds when the child process returns with an exit code of 0', async () => {
             const samBuildResult = await localLambdaRunner.executeSamBuild(generateSamBuildParams(true))
-            assert.strictEqual(samBuildResult === path.join(tempDir, 'output', 'template.yaml'),  true)
+            assert.strictEqual(samBuildResult, path.join(tempDir, 'output', 'template.yaml'))
         })
     })
 })
