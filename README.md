@@ -8,17 +8,17 @@ Build ([master](https://github.com/aws/aws-toolkit-vscode/tree/master) branch)|[
 
 The AWS Toolkit for Visual Studio Code is an extension for working with AWS services such as AWS Lambda.
 
-The toolkit is in developer preview and is available from the [Visual Studio marketplace](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.aws-toolkit-vscode). This is pre-release software and we recommend against using it in a production environment.
+The toolkit is in developer preview and is available from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.aws-toolkit-vscode). This is pre-release software and we recommend against using it in a production environment.
 
 This is an open source project because we want you to be involved. We love issues, feature requests, code reviews, pull requests or any positive contribution.
 
 ## User Guide
 
-The [User Guide](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html) contains instructions for **installing**, **configuring**, and **using** the toolkit.
+The [User Guide](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html) contains instructions for getting up and running with the toolkit.
 
 ## Debugging from the Debug panel
 
-You can debug your Serverless Application's Lambda Function locally using the CodeLens links above the lambda handler. If you would like to use the Debug Panel to launch the debugger instead, use one of the following links to configure your project's Debug Configuration.
+CodeLenses appear above Serverless Application Lambda Functions, allowing you to locally debug the Function. If you would like [more control](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations) over the debugging experience, the following links can help you set up debug configurations for your project.
 
 * [Debugging NodeJS Lambda Functions](docs/debugging-nodejs-lambda-functions.md)
 * [Debugging Python Lambda Functions](docs/debugging-python-lambda-functions.md)
