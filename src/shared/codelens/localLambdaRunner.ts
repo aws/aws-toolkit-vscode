@@ -414,7 +414,7 @@ export async function makeInputTemplate(params: {
 
 export async function executeSamBuild(params: {
     baseBuildDir: string,
-    channelLogger: ChannelLogger,
+    channelLogger: Pick<ChannelLogger, 'info'>,
     codeDir: string,
     inputTemplatePath: string,
     manifestPath?: string,
@@ -499,8 +499,7 @@ export const invokeLambdaFunction = async (params: {
         templatePath: params.samTemplatePath,
         eventPath,
         environmentVariablePath,
-        debugPort: (params.isDebug) ?
-            (params.debugConfig ? params.debugConfig.port.toString() : undefined) : undefined,
+        debugPort: (params.isDebug && params.debugConfig) ? params.debugConfig.port.toString() : undefined,
         invoker: params.samTaskInvoker
     })
 
@@ -558,7 +557,9 @@ const getConfig = async (params: {
     return config
 }
 
-const getEnvironmentVariables = (config: HandlerConfig): SAMTemplateEnvironmentVariables => {
+const getEnvironmentVariables = (
+    config: Pick<HandlerConfig, 'environmentVariables'>
+): SAMTemplateEnvironmentVariables => {
     if (!!config.environmentVariables) {
         return {
             [TEMPLATE_RESOURCE_NAME]: config.environmentVariables

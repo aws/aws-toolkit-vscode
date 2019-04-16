@@ -81,10 +81,14 @@ export async function initialize({
 
 /**
  * The command that is run when user clicks on Run Local or Debug Local CodeLens
+ * Accepts object containing the following params:
+ * @param configuration - SettingsConfiguration (for invokeLambdaFunction)
+ * @param toolkitOutputChannel - "AWS Toolkit" output channel
  * @param commandName - Name of the VS Code Command currently running
  * @param lambdaLocalInvokeParams - Information about the Lambda Handler to invoke locally
  * @param processInvoker - SAM CLI Process invoker
  * @param taskInvoker - SAM CLI Task invoker
+ * @param telemetryService - Telemetry service for metrics
  */
 async function onLocalInvokeCommand({
     configuration,
@@ -146,9 +150,9 @@ async function onLocalInvokeCommand({
             samTaskInvoker: taskInvoker,
             telemetryService,
             runtime,
+            isDebug: lambdaLocalInvokeParams.isDebug,
 
             // TODO: Set on debug
-            isDebug: lambdaLocalInvokeParams.isDebug,
             debugConfig: undefined,
         })
     } else {
