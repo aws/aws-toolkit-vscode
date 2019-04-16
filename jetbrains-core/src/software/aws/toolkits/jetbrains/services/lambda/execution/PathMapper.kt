@@ -3,9 +3,11 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution
 
+import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.util.io.FileUtil
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.services.lambda.execution.PathMapper.Companion.normalizeLocal
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.Objects
@@ -30,23 +32,33 @@ class PathMapper(private val mappings: List<PathMapping>) {
     }
 
     fun convertToRemote(localPath: String): String? {
-        val normalizedLocal = FileUtil.normalize(localPath)
+        val normalizedLocal = normalizeLocal(localPath)
         for (mapping in mappings) {
             if (normalizedLocal.startsWith(mapping.localRoot)) {
-                return normalizedLocal.replaceFirst(mapping.localRoot, mapping.remoteRoot)
+                return FileUtil.normalize(normalizedLocal.replaceFirst(mapping.localRoot, mapping.remoteRoot))
             }
         }
         LOG.debug { "Failed to map $localPath to remote file system: $mappings" }
         return null
     }
 
-    private companion object {
-        val LOG = getLogger<PathMapper>()
+    companion object {
+        private val LOG = getLogger<PathMapper>()
+
+        fun normalizeLocal(localPath: String): String {
+            val updatedPath = if (SystemInfo.isWindows) {
+                localPath.toLowerCase()
+            } else {
+                localPath
+            }
+
+            return FileUtil.normalize(updatedPath)
+        }
     }
 }
 
 class PathMapping(localPath: String, remotePath: String) {
-    internal val localRoot = FileUtil.normalize("$localPath/")
+    internal val localRoot = normalizeLocal("$localPath/")
     internal val remoteRoot = FileUtil.normalize("$remotePath/")
 
     override fun toString() = "PathMapping(localRoot='$localRoot', remoteRoot='$remoteRoot')"

@@ -3,8 +3,10 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution
 
-import com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.util.SystemInfo
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Assume.assumeFalse
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -18,7 +20,7 @@ class PathMapperTest {
     private lateinit var mapper: PathMapper
 
     @Test
-    fun firstMatchWinsLocally() {
+    fun firstMatchWinsL() {
         initMapper {
             addMapping("local", "remote")
             addMapping("local2", "remote2")
@@ -27,18 +29,7 @@ class PathMapperTest {
 
         createLocalFile("local2/foo")
 
-        assertThat(convertToLocal("remote2/foo")).isEqualTo("local2/foo")
-    }
-
-    @Test
-    fun firstMatchWinsRemotely() {
-        initMapper {
-            addMapping("local", "remote")
-            addMapping("local2", "remote2")
-            addMapping("local2", "remote2/sub/")
-        }
-
-        assertThat(mapper.convertToRemote(createLocalFile("local2/foo"))).isEqualTo("remote2/foo")
+        assertBidirectionalMapping("local2/foo", "remote2/foo")
     }
 
     @Test
@@ -47,17 +38,17 @@ class PathMapperTest {
             addMapping("local/sub", "remote/sub/sub")
         }
 
-        assertThat(mapper.convertToRemote(createLocalFile("local/sub/foo"))).isEqualTo("remote/sub/sub/foo")
+        assertBidirectionalMapping("local/sub/foo", "remote/sub/sub/foo")
     }
 
     @Test
     fun matchesAtFolderBoundary() {
         initMapper {
             addMapping("local", "remote")
-            addMapping("localFolder", "remote2")
+            addMapping("local-folder", "remote2")
         }
 
-        assertThat(mapper.convertToRemote(createLocalFile("localFolder/foo"))).isEqualTo("remote2/foo")
+        assertBidirectionalMapping("local-folder/foo", "remote2/foo")
     }
 
     @Test
@@ -79,11 +70,32 @@ class PathMapperTest {
             addMapping("local2", "remote2")
         }
 
-        assertThat(mapper.convertToRemote(createLocalFile("local/foo"))).isEqualTo("remote/foo")
-        assertThat(convertToLocal("remote/foo")).isEqualTo("local/foo")
+        assertBidirectionalMapping("local/foo", "remote/foo")
+        assertBidirectionalMapping("local2/foo", "remote2/foo")
+    }
 
-        assertThat(mapper.convertToRemote(createLocalFile("local2/foo"))).isEqualTo("remote2/foo")
-        assertThat(convertToLocal("remote2/foo")).isEqualTo("local2/foo")
+    @Test
+    fun pathsAreCaseInsensitiveOnWindows() {
+        assumeTrue(SystemInfo.isWindows)
+
+        initMapper {
+            addMapping("LOCAL/", "remote/")
+        }
+
+        assertBidirectionalMapping("local/foo", "remote/foo")
+        assertThat(mapper.convertToRemote(createLocalFile("LOCAL/foo"))).isEqualTo("remote/foo")
+    }
+
+    @Test
+    fun pathsAreCaseSensitiveWhenNotOnWindows() {
+        assumeFalse(SystemInfo.isWindows)
+
+        initMapper {
+            addMapping("LOCAL/", "remote/")
+        }
+
+        assertBidirectionalMapping("LOCAL/foo", "remote/foo")
+        assertThat(mapper.convertToRemote(createLocalFile("local/foo"))).isNull()
     }
 
     @Test
@@ -95,8 +107,13 @@ class PathMapperTest {
         assertThat(convertToLocal("foo")).isNull()
     }
 
+    private fun assertBidirectionalMapping(local: String, remote: String) {
+        assertThat(mapper.convertToRemote(createLocalFile(local))).isEqualTo(remote)
+        assertThat(convertToLocal(remote)).isEqualTo(local)
+    }
+
     private fun convertToLocal(remote: String) = mapper.convertToLocal(remote)
-        ?.removePrefix(FileUtil.normalize(tempFolder.root.absolutePath))
+        ?.removePrefix(PathMapper.normalizeLocal(tempFolder.root.absolutePath))
         ?.removePrefix("/")
 
     private fun createLocalFile(path: String): String {
