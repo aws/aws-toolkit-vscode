@@ -9,7 +9,7 @@ import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 
-import { PythonDebugConfiguration } from '../../lambda/local/debugConfiguration'
+import { DebugConfigurationPathMapping, PythonDebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { unlink, writeFile } from '../filesystem'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
@@ -34,6 +34,8 @@ import {
     makeBuildDir,
     makeInputTemplate,
 } from './localLambdaRunner'
+
+const PATH_STARTS_WITH_DRIVE_LETTER_REGEX: RegExp = new RegExp(/^[a-zA-Z]\:/)
 
 export const PYTHON_LANGUAGE = 'python'
 export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
@@ -149,32 +151,43 @@ def ${debugHandlerFunctionName}(event, context):
     }
 }
 
-const fixFilePathCapitalization = (filePath: string): string => {
+export function getLocalRootVariants(filePath: string): string[] {
     if (process.platform === 'win32') {
-        // TODO : TEMP : https://github.com/aws/aws-toolkit-vscode/issues/484
-        return filePath.replace(/^[a-z]/, match => match.toLowerCase())
+        if (PATH_STARTS_WITH_DRIVE_LETTER_REGEX.test(filePath)) {
+            return [
+                filePath.replace(PATH_STARTS_WITH_DRIVE_LETTER_REGEX, match => match.toLowerCase()),
+                filePath.replace(PATH_STARTS_WITH_DRIVE_LETTER_REGEX, match => match.toUpperCase())
+            ]
+        }
     }
 
-    return filePath
+    return [filePath]
 }
 
-const makeDebugConfig = ({ debugPort, samProjectCodeRoot }: {
-    debugPort?: number,
-    samProjectCodeRoot: string,
-}): PythonDebugConfiguration => {
+function makeDebugConfig(
+    {
+        debugPort,
+        samProjectCodeRoot
+    }: {
+        debugPort?: number,
+        samProjectCodeRoot: string,
+    }): PythonDebugConfiguration {
+
+    const pathMappings: DebugConfigurationPathMapping[] = getLocalRootVariants(samProjectCodeRoot)
+        .map<DebugConfigurationPathMapping>(variant => {
+            return {
+                localRoot: variant,
+                remoteRoot: '/var/task',
+            }
+        })
+
     return {
         type: PYTHON_LANGUAGE,
         request: 'attach',
         name: 'SamLocalDebug',
         host: 'localhost',
         port: debugPort!,
-        pathMappings: [
-            {
-                // tslint:disable-next-line:no-invalid-template-strings
-                localRoot: fixFilePathCapitalization(samProjectCodeRoot),
-                remoteRoot: '/var/task'
-            }
-        ],
+        pathMappings,
         // Disable redirectOutput to prevent the Python Debugger from automatically writing stdout/stderr text
         // to the Debug Console. We're taking the child process stdout/stderr and explicitly writing that to
         // the Debug Console.
