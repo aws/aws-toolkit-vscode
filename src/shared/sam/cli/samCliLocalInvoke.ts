@@ -68,11 +68,11 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                         if (checkForDebuggerAttachCue) {
                             // Look for messages like "Waiting for debugger to attach" before returning back to caller
                             if (debuggerAttachCues.some(cue => text.includes(cue))) {
+                                checkForDebuggerAttachCue = false
                                 this.channelLogger.logger.verbose(
                                     'Local SAM App should be ready for a debugger to attach now.'
                                 )
                                 resolve()
-                                checkForDebuggerAttachCue = false
                             }
                         }
                     },
