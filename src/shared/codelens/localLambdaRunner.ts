@@ -247,11 +247,19 @@ export class LocalLambdaRunner {
         await command.execute()
 
         if (this.localInvokeParams.isDebug) {
-            await waitForDebugPort({
+            const isPortOpen: boolean = await waitForDebugPort({
                 debugPort: this.debugPort,
                 configuration: this.configuration,
                 channelLogger: this.channelLogger
             })
+
+            if (!isPortOpen) {
+                this.channelLogger.warn(
+                    'AWS.samcli.local.invoke.port.not.open',
+                    // tslint:disable-next-line:max-line-length
+                    'Unable to detect the debug port. The debugger might not succeed in attaching to your SAM Application.'
+                )
+            }
 
             await attachDebugger({
                 debugConfig: this.debugConfig,
@@ -499,11 +507,18 @@ export const invokeLambdaFunction = async (params: {
     await command.execute()
 
     if (params.isDebug) {
-        await waitForDebugPort({
+        const isPortOpen: boolean = await waitForDebugPort({
             debugPort: params.debugConfig.port,
             configuration: params.configuration,
             channelLogger: params.channelLogger
         })
+
+        if (!isPortOpen) {
+            params.channelLogger.warn(
+                'AWS.samcli.local.invoke.port.not.open',
+                'Unable to detect the debug port. The debugger might not succeed in attaching to your SAM Application.'
+            )
+        }
 
         await attachDebugger({
             debugConfig: params.debugConfig,
@@ -642,7 +657,7 @@ async function waitForDebugPort({
     debugPort: number
     configuration: SettingsConfiguration
     channelLogger: ChannelLogger
-}): Promise<void> {
+}): Promise<boolean> {
     channelLogger.info(
         'AWS.output.sam.local.waiting',
         'Waiting for SAM Application to start before attaching debugger...'
@@ -653,11 +668,19 @@ async function waitForDebugPort({
         SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
     )
 
-    await tcpPortUsed.waitUntilUsed(
-        debugPort,
-        SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS,
-        timeoutMillis
-    )
+    try {
+        await tcpPortUsed.waitUntilUsed(
+            debugPort,
+            SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS,
+            timeoutMillis
+        )
+
+        return true
+    } catch (err) {
+        channelLogger.logger.verbose(`Failed to wait for port ${debugPort} to open: ${err}`)
+
+        return false
+    }
 }
 
 export interface RecordAttachDebuggerMetricContext {
