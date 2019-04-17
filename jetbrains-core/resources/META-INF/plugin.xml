@@ -138,6 +138,8 @@ If you come across bugs with the toolkit or have feature requests, please raise 
         <moduleType id="AWS" implementationClass="software.aws.toolkits.jetbrains.ui.wizard.AwsModuleType" />
         <directoryProjectGenerator implementation="software.aws.toolkits.jetbrains.ui.wizard.SamProjectGenerator" />
         <projectTemplatesFactory implementation="software.aws.toolkits.jetbrains.ui.wizard.SamProjectGeneratorIntelliJAdapter" />
+
+        <webHelpProvider implementation="software.aws.toolkits.jetbrains.core.help.HelpIdTranslator"/>
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit">
