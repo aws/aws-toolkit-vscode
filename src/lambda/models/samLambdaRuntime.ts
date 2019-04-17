@@ -16,7 +16,6 @@ export type SamLambdaRuntime =
     'python' |
     'nodejs6.10' |
     'nodejs8.10' |
-    'nodejs4.3' |
     'nodejs' |
     'dotnetcore2.1' |
     'dotnetcore2.0' |
@@ -27,6 +26,7 @@ export type SamLambdaRuntime =
     'go' |
     'java8' |
     'java' |
+    'ruby' |
     'ruby2.5'
 
 export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set([
@@ -36,7 +36,6 @@ export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set(
     'python',
     'nodejs6.10',
     'nodejs8.10',
-    'nodejs4.3',
     'nodejs',
     'dotnetcore2.1',
     'dotnetcore2.0',
@@ -47,6 +46,7 @@ export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set(
     'go',
     'java8',
     'java',
+    'ruby',
     'ruby2.5'
 ] as SamLambdaRuntime[])
 
