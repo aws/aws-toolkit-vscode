@@ -7,9 +7,12 @@
 
 import * as child_process from 'child_process'
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import { fileExists } from '../../filesystemUtilities'
 import { ChildProcess } from '../../utilities/childProcess'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
+
+const localize = nls.loadMessageBundle()
 
 export const WAIT_FOR_DEBUGGER_MESSAGES = {
     PYTHON: 'Waiting for debugger to attach...',
@@ -74,7 +77,15 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                         }
                     },
                     onClose: (code: number, signal: string): void => {
-                        this.channelLogger.logger.verbose(`SAM CLI closed local SAM Application with code ${code}`)
+                        this.channelLogger.logger.verbose(
+                            `The child process for sam local invoke closed with code ${code}`
+                        )
+                        this.channelLogger.channel.appendLine(
+                            localize(
+                                'AWS.samcli.local.invoke.ended',
+                                'Local invoke of SAM Application has ended.'
+                            )
+                        )
                     },
                     onError: (error: Error): void => {
                         this.channelLogger.error(
@@ -87,7 +98,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
             )
 
             if (!params.waitForDebuggerAttachMessage) {
-                this.channelLogger.logger.verbose('Local SAM App should not expect a debugger to attach.')
+                this.channelLogger.logger.verbose('Local SAM App does not expect a debugger to attach.')
                 resolve()
             }
         })
