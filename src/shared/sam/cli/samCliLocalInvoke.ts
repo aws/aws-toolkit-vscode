@@ -63,9 +63,9 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                     onStderr: (text: string): void => {
                         this.emitMessage(text)
                         if (checkForDebuggerAttachCue) {
-                            // eg: waiting for debugger to attach
+                            // Look for messages like "Waiting for debugger to attach" before returning back to caller
                             if (debuggerAttachCues.some(cue => text.includes(cue))) {
-                                this.channelLogger.logger.debug(
+                                this.channelLogger.logger.verbose(
                                     'Local SAM App should be ready for a debugger to attach now.'
                                 )
                                 resolve()
@@ -74,7 +74,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                         }
                     },
                     onClose: (code: number, signal: string): void => {
-                        this.channelLogger.logger.debug(`SAM CLI closed local SAM Application with code ${code}`)
+                        this.channelLogger.logger.verbose(`SAM CLI closed local SAM Application with code ${code}`)
                     },
                     onError: (error: Error): void => {
                         this.channelLogger.error(
@@ -86,8 +86,8 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                 }
             )
 
-            if (!checkForDebuggerAttachCue) {
-                this.channelLogger.logger.debug('Local SAM App should not expect a debugger to attach.')
+            if (!params.waitForDebuggerAttachMessage) {
+                this.channelLogger.logger.verbose('Local SAM App should not expect a debugger to attach.')
                 resolve()
             }
         })
@@ -95,6 +95,8 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
     }
 
     private emitMessage(text: string): void {
+        // From VS Code API: If no debug session is active, output sent to the debug console is not shown.
+        // We send text to output channel and debug console to ensure no text is lost.
         this.channelLogger.channel.append(text)
         vscode.debug.activeDebugConsole.append(text)
     }
