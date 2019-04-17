@@ -68,7 +68,6 @@ export function getFamily(runtime: string | undefined): SamLambdaRuntimeFamily {
             return SamLambdaRuntimeFamily.Python
         case 'nodejs6.10':
         case 'nodejs8.10':
-        case 'nodejs4.3':
         case 'nodejs':
             return SamLambdaRuntimeFamily.NodeJS
         case 'dotnetcore2.1':
@@ -84,6 +83,7 @@ export function getFamily(runtime: string | undefined): SamLambdaRuntimeFamily {
         case 'java':
             return SamLambdaRuntimeFamily.Java
         case 'ruby2.5':
+        case 'ruby':
             return SamLambdaRuntimeFamily.Ruby
         default:
             throw new Error(`Unrecognized runtime: '${runtime}'`)
