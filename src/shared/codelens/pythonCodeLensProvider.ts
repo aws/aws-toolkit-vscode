@@ -125,7 +125,7 @@ from ${handlerFilePrefix} import ${handlerFunctionName} as _handler
 
 
 def ${debugHandlerFunctionName}(event, context):
-    ptvsd.enable_attach(address=('0.0.0.0', ${params.debugPort}), redirect_output=True)
+    ptvsd.enable_attach(address=('0.0.0.0', ${params.debugPort}), redirect_output=False)
     print('${WAIT_FOR_DEBUGGER_MESSAGES.PYTHON}')
     sys.stdout.flush()
     ptvsd.wait_for_attach()
@@ -175,6 +175,10 @@ const makeDebugConfig = ({ debugPort, samProjectCodeRoot }: {
                 remoteRoot: '/var/task'
             }
         ],
+        // Disable redirectOutput to prevent the Python Debugger from automatically writing stdout/stderr text
+        // to the Debug Console. We're taking the child process stdout/stderr and explicitly writing that to
+        // the Debug Console.
+        redirectOutput: false,
     }
 }
 
