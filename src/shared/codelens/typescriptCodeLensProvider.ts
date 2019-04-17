@@ -32,7 +32,6 @@ import {
 
 const unsupportedNodeJsRuntimes: Set<string> = new Set<string>([
     'nodejs4.3',
-    'nodejs6.10',
 ])
 
 async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
@@ -69,6 +68,8 @@ export function initialize({
             debugPort = await getDebugPort()
         }
 
+        const protocol = params.runtime === 'nodejs6.10' ? 'legacy' : 'inspector'
+
         const debugConfig: NodejsDebugConfiguration = {
             type: 'node',
             request: 'attach',
@@ -78,7 +79,7 @@ export function initialize({
             port: debugPort!,
             localRoot: samProjectCodeRoot,
             remoteRoot: '/var/task',
-            protocol: 'inspector',
+            protocol,
             skipFiles: [
                 '/var/runtime/node_modules/**/*.js',
                 '<node_internals>/**/*.js'
