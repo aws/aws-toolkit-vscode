@@ -43,20 +43,20 @@ export class ChildProcess {
     public async run(): Promise<ChildProcessResult> {
 
         return await new Promise<ChildProcessResult>(async (resolve, reject) => {
-            let zerror: Error | undefined
+            let childProcessError: Error | undefined
             const stdoutChunks: string[] = []
             const stderrChunks: string[] = []
 
             await this.start({
                 onStdout: text => stdoutChunks.push(text),
                 onStderr: text => stderrChunks.push(text),
-                onError: error => zerror = error,
+                onError: error => childProcessError = error,
                 onClose: (code, signal) => {
                     const processResult: ChildProcessResult = {
                         exitCode: code,
                         stdout: stdoutChunks.join().trim(),
                         stderr: stderrChunks.join().trim(),
-                        error: zerror
+                        error: childProcessError
                     }
 
                     resolve(processResult)
