@@ -17,7 +17,7 @@ import { registerCommand } from '../telemetry/telemetryUtils'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { getChannelLogger, getDebugPort, localize } from '../utilities/vsCodeUtils'
 
-import { DefaultSamLocalInvokeCommand } from '../sam/cli/samCliLocalInvoke'
+import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import {
     CodeLensProviderParams,
     getInvokeCmdKey,
@@ -56,7 +56,10 @@ export function initialize({
     configuration,
     outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultSamCliProcessInvoker(),
-    localInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(toolkitOutputChannel)),
+    localInvokeCommand = new DefaultSamLocalInvokeCommand(
+        getChannelLogger(toolkitOutputChannel),
+        [WAIT_FOR_DEBUGGER_MESSAGES.NODEJS]
+    ),
     telemetryService,
 }: CodeLensProviderParams): void {
 

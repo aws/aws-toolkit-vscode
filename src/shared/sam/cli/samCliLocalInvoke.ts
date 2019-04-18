@@ -16,7 +16,7 @@ const localize = nls.loadMessageBundle()
 
 export const WAIT_FOR_DEBUGGER_MESSAGES = {
     PYTHON: 'Waiting for debugger to attach...',
-    NODEJS810: 'Debugger listening on',
+    NODEJS: 'Debugger listening on',
 }
 
 export interface SamLocalInvokeCommandArgs {
@@ -34,7 +34,13 @@ export interface SamLocalInvokeCommand {
 }
 
 export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
-    public constructor(private readonly channelLogger: ChannelLogger) {
+    public constructor(
+        private readonly channelLogger: ChannelLogger,
+        private readonly debuggerAttachCues: string[] = [
+            WAIT_FOR_DEBUGGER_MESSAGES.PYTHON,
+            WAIT_FOR_DEBUGGER_MESSAGES.NODEJS,
+        ],
+    ) {
     }
 
     public async invoke({
@@ -53,12 +59,6 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
             let checkForDebuggerAttachCue: boolean = params.isDebug
             let promiseResolved: boolean = false
 
-            // todo : identify the debugger messages to listen for in each runtime
-            const debuggerAttachCues: string[] = [
-                WAIT_FOR_DEBUGGER_MESSAGES.PYTHON,
-                WAIT_FOR_DEBUGGER_MESSAGES.NODEJS810,
-            ]
-
             await childProcess.start(
                 {
                     onStdout: (text: string): void => {
@@ -68,7 +68,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                         this.emitMessage(text)
                         if (checkForDebuggerAttachCue) {
                             // Look for messages like "Waiting for debugger to attach" before returning back to caller
-                            if (debuggerAttachCues.some(cue => text.includes(cue))) {
+                            if (this.debuggerAttachCues.some(cue => text.includes(cue))) {
                                 checkForDebuggerAttachCue = false
                                 this.channelLogger.logger.verbose(
                                     'Local SAM App should be ready for a debugger to attach now.'
