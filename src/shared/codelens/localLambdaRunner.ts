@@ -677,7 +677,9 @@ async function waitForDebugPort({
 
         return true
     } catch (err) {
-        channelLogger.logger.verbose(`Failed to wait for port ${debugPort} to open: ${err}`)
+        channelLogger.logger.verbose(
+            `Timed out after ${timeoutMillis} ms waiting for port ${debugPort} to open: ${err}`
+        )
 
         return false
     }
