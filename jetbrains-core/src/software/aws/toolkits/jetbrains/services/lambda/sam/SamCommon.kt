@@ -35,7 +35,7 @@ class SamCommon {
         val expectedSamMinVersion = SemVer("0.14.1", 0, 14, 1)
 
         // Exclusive
-        val expectedSamMaxVersion = SemVer("0.16.0", 0, 16, 0)
+        val expectedSamMaxVersion = SemVer("0.23.0", 0, 23, 0)
 
         private val versionCache = object : FileInfoCache<SemVer>() {
             override fun getFileInfo(path: String): SemVer {
