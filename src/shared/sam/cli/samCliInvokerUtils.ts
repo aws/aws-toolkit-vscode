@@ -7,7 +7,6 @@
 
 import { SpawnOptions } from 'child_process'
 import { Stats } from 'fs'
-import * as vscode from 'vscode'
 import { stat } from '../../filesystem'
 import { ChildProcessResult } from '../../utilities/childProcess'
 import { SamCliVersionValidatorResult } from './samCliVersionValidator'
@@ -22,10 +21,6 @@ export interface SamCliInfoResponse {
 export interface SamCliProcessInvoker {
     invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
     invoke(...args: string[]): Promise<ChildProcessResult>
-}
-
-export interface SamCliTaskInvoker {
-    invoke(task: vscode.Task): Promise<vscode.TaskExecution>
 }
 
 export interface SamCliProcessInfo {
@@ -44,7 +39,7 @@ export class DefaultSamCliUtils {
 }
 
 export class InvalidSamError extends Error {
-    public constructor (public versionValidation: SamCliVersionValidatorResult) {
+    public constructor(public versionValidation: SamCliVersionValidatorResult) {
         super()
     }
 }

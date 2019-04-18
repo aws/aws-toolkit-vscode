@@ -14,14 +14,12 @@ import { unlink, writeFile } from '../filesystem'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
-import {
-    DefaultSamCliProcessInvoker,
-    DefaultSamCliTaskInvoker
-} from '../sam/cli/samCliInvoker'
+import { DefaultSamCliProcessInvoker } from '../sam/cli/samCliInvoker'
 import { Datum } from '../telemetry/telemetryEvent'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
 
+import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import {
     CodeLensProviderParams,
     getInvokeCmdKey,
@@ -127,8 +125,8 @@ from ${handlerFilePrefix} import ${handlerFunctionName} as _handler
 
 
 def ${debugHandlerFunctionName}(event, context):
-    ptvsd.enable_attach(address=('0.0.0.0', ${params.debugPort}), redirect_output=True)
-    print('Waiting for debugger to attach...')
+    ptvsd.enable_attach(address=('0.0.0.0', ${params.debugPort}), redirect_output=False)
+    print('${WAIT_FOR_DEBUGGER_MESSAGES.PYTHON}')
     sys.stdout.flush()
     ptvsd.wait_for_attach()
     print('...debugger attached')
@@ -153,7 +151,8 @@ def ${debugHandlerFunctionName}(event, context):
 
 const fixFilePathCapitalization = (filePath: string): string => {
     if (process.platform === 'win32') {
-        return filePath.replace(/^[a-z]/, match => match.toUpperCase())
+        // TODO : TEMP : https://github.com/aws/aws-toolkit-vscode/issues/484
+        return filePath.replace(/^[a-z]/, match => match.toLowerCase())
     }
 
     return filePath
@@ -176,6 +175,10 @@ const makeDebugConfig = ({ debugPort, samProjectCodeRoot }: {
                 remoteRoot: '/var/task'
             }
         ],
+        // Disable redirectOutput to prevent the Python Debugger from automatically writing stdout/stderr text
+        // to the Debug Console. We're taking the child process stdout/stderr and explicitly writing that to
+        // the Debug Console.
+        redirectOutput: false,
     }
 }
 
@@ -183,11 +186,18 @@ export async function initialize({
     configuration,
     outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultSamCliProcessInvoker(),
-    taskInvoker = new DefaultSamCliTaskInvoker(),
     telemetryService: telemetryService,
+    localInvokeCommand,
 }: CodeLensProviderParams): Promise<void> {
     const logger = getLogger()
     const channelLogger = getChannelLogger(toolkitOutputChannel)
+
+    if (!localInvokeCommand) {
+        localInvokeCommand = new DefaultSamLocalInvokeCommand(
+            channelLogger,
+            [WAIT_FOR_DEBUGGER_MESSAGES.PYTHON]
+        )
+    }
 
     const invokeLambda = async (args: LambdaLocalInvokeParams & { runtime: string }) => {
         // Switch over to the output channel so the user has feedback that we're getting things ready
@@ -251,7 +261,7 @@ export async function initialize({
             channelLogger,
             configuration,
             debugConfig,
-            samTaskInvoker: taskInvoker,
+            samLocalInvokeCommand: localInvokeCommand!,
             originalSamTemplatePath: args.samTemplate.fsPath,
             samTemplatePath,
             documentUri: args.document.uri,
@@ -270,10 +280,10 @@ export async function initialize({
     registerCommand({
         command: command,
         callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
-    
+
             const runtime = await getRuntimeForLambda({
-              handlerName: params.handlerName,
-              templatePath: params.samTemplate.fsPath
+                handlerName: params.handlerName,
+                templatePath: params.samTemplate.fsPath
             })
 
             await invokeLambda({

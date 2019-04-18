@@ -14,8 +14,8 @@ import { CloudFormation } from '../cloudformation/cloudformation'
 import { writeFile } from '../filesystem'
 import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from '../sam/cli/samCliBuild'
-import { SamCliProcessInvoker, SamCliTaskInvoker } from '../sam/cli/samCliInvokerUtils'
-import { SamCliLocalInvokeInvocation } from '../sam/cli/samCliLocalInvoke'
+import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
+import { SamCliLocalInvokeInvocation, SamLocalInvokeCommand } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
@@ -24,7 +24,7 @@ import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
-import { ChannelLogger, getChannelLogger, localize } from '../utilities/vsCodeUtils'
+import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 
 export interface LambdaLocalInvokeParams {
     document: vscode.TextDocument,
@@ -68,7 +68,7 @@ export class LocalLambdaRunner {
         // @ts-ignore noUnusedLocals
         private readonly outputChannel: vscode.OutputChannel,
         private readonly processInvoker: SamCliProcessInvoker,
-        private readonly taskInvoker: SamCliTaskInvoker,
+        private readonly localInvokeCommand: SamLocalInvokeCommand,
         private readonly debugConfig: DebugConfiguration,
         private readonly codeRootDirectoryPath: string,
         private readonly telemetryService: TelemetryService,
@@ -104,14 +104,6 @@ export class LocalLambdaRunner {
                 'AWS.error.during.sam.local',
                 'An error occurred trying to run SAM Application locally: {0}',
                 error
-            )
-
-            vscode.window.showErrorMessage(
-                localize(
-                    'AWS.error.during.sam.local',
-                    'An error occurred trying to run SAM Application locally: {0}',
-                    error.message
-                )
             )
 
             return
@@ -248,7 +240,7 @@ export class LocalLambdaRunner {
             eventPath,
             environmentVariablePath,
             debugPort: (!!this._debugPort) ? this._debugPort.toString() : undefined,
-            invoker: this.taskInvoker
+            invoker: this.localInvokeCommand
         })
 
         const startInvokeTime = new Date()
@@ -455,7 +447,7 @@ export const invokeLambdaFunction = async (params: {
     isDebug?: boolean,
     originalSamTemplatePath: string,
     samTemplatePath: string,
-    samTaskInvoker: SamCliTaskInvoker,
+    samLocalInvokeCommand: SamLocalInvokeCommand,
     telemetryService: TelemetryService,
     runtime: string,
 }): Promise<void> => {
@@ -500,7 +492,7 @@ export const invokeLambdaFunction = async (params: {
         eventPath,
         environmentVariablePath,
         debugPort: (params.isDebug) ? params.debugConfig.port.toString() : undefined,
-        invoker: params.samTaskInvoker
+        invoker: params.samLocalInvokeCommand,
     })
 
     const startInvokeTime = new Date()

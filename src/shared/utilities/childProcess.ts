@@ -8,6 +8,13 @@
 import * as child_process from 'child_process'
 import * as crossSpawn from 'cross-spawn'
 
+export interface ChildProcessStartArguments {
+    onStdout?(text: string): void,
+    onStderr?(text: string): void,
+    onError?(error: Error): void,
+    onClose?(code: number, signal: string): void,
+}
+
 export interface ChildProcessResult {
     exitCode: number,
     error: Error | undefined,
@@ -24,9 +31,6 @@ export interface ChildProcessResult {
 export class ChildProcess {
     private readonly args: string[]
     private childProcess: child_process.ChildProcess | undefined
-    private readonly stdoutChunks: string[] = []
-    private readonly stderrChunks: string[] = []
-    private error: Error | undefined
 
     public constructor(
         private readonly process: string,
@@ -37,6 +41,35 @@ export class ChildProcess {
     }
 
     public async run(): Promise<ChildProcessResult> {
+
+        return await new Promise<ChildProcessResult>(async (resolve, reject) => {
+            let childProcessError: Error | undefined
+            const stdoutChunks: string[] = []
+            const stderrChunks: string[] = []
+
+            await this.start({
+                onStdout: text => stdoutChunks.push(text),
+                onStderr: text => stderrChunks.push(text),
+                onError: error => childProcessError = error,
+                onClose: (code, signal) => {
+                    const processResult: ChildProcessResult = {
+                        exitCode: code,
+                        stdout: stdoutChunks.join().trim(),
+                        stderr: stderrChunks.join().trim(),
+                        error: childProcessError
+                    }
+
+                    resolve(processResult)
+                }
+            }).catch(reject)
+
+            if (!this.childProcess) {
+                reject('child process not started')
+            }
+        })
+    }
+
+    public async start(params: ChildProcessStartArguments): Promise<void> {
         if (this.childProcess) {
             throw new Error('process already started')
         }
@@ -48,40 +81,31 @@ export class ChildProcess {
         )
 
         this.childProcess.stdout.on('data', (data: { toString(): string }) => {
-            this.stdoutChunks.push(data.toString())
+            if (params.onStdout) {
+                params.onStdout(data.toString())
+            }
         })
 
         this.childProcess.stderr.on('data', (data: { toString(): string }) => {
-            this.stderrChunks.push(data.toString())
+            if (params.onStderr) {
+                params.onStderr(data.toString())
+            }
         })
 
         this.childProcess.on('error', (error) => {
-            this.error = error
+            if (params.onError) {
+                params.onError(error)
+            }
         })
 
-        return await new Promise<ChildProcessResult>((resolve, reject) => {
-            if (!this.childProcess) {
-                reject('child process not started')
-
-                return
+        this.childProcess.once('close', (code, signal) => {
+            if (params.onClose) {
+                params.onClose(code, signal)
             }
 
-            this.childProcess.once('close', (code, signal) => {
-                const processResult: ChildProcessResult = {
-                    exitCode: code,
-                    stdout: this.stdoutChunks.join().trim(),
-                    stderr: this.stderrChunks.join().trim(),
-                    error: this.error
-                }
-
-                if (this.childProcess) {
-                    this.childProcess.stdout.removeAllListeners()
-                    this.childProcess.stderr.removeAllListeners()
-                    this.childProcess.removeAllListeners()
-                }
-
-                resolve(processResult)
-            })
+            this.childProcess!.stdout.removeAllListeners()
+            this.childProcess!.stderr.removeAllListeners()
+            this.childProcess!.removeAllListeners()
         })
     }
 }
