@@ -187,13 +187,13 @@ export async function initialize({
     outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultSamCliProcessInvoker(),
     telemetryService: telemetryService,
-    ...initializeParams
+    localInvokeCommand,
 }: CodeLensProviderParams): Promise<void> {
     const logger = getLogger()
     const channelLogger = getChannelLogger(toolkitOutputChannel)
 
-    if (!initializeParams.localInvokeCommand) {
-        initializeParams.localInvokeCommand = new DefaultSamLocalInvokeCommand(channelLogger)
+    if (!localInvokeCommand) {
+        localInvokeCommand = new DefaultSamLocalInvokeCommand(channelLogger)
     }
 
     const invokeLambda = async (args: LambdaLocalInvokeParams & { runtime: string }) => {
@@ -258,7 +258,7 @@ export async function initialize({
             channelLogger,
             configuration,
             debugConfig,
-            samLocalInvokeCommand: initializeParams.localInvokeCommand!,
+            samLocalInvokeCommand: localInvokeCommand!,
             originalSamTemplatePath: args.samTemplate.fsPath,
             samTemplatePath,
             documentUri: args.document.uri,
