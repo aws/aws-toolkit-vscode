@@ -24,7 +24,7 @@ import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
-import { ChannelLogger, getChannelLogger, localize } from '../utilities/vsCodeUtils'
+import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 
 export interface LambdaLocalInvokeParams {
     document: vscode.TextDocument,
@@ -104,14 +104,6 @@ export class LocalLambdaRunner {
                 'AWS.error.during.sam.local',
                 'An error occurred trying to run SAM Application locally: {0}',
                 error
-            )
-
-            vscode.window.showErrorMessage(
-                localize(
-                    'AWS.error.during.sam.local',
-                    'An error occurred trying to run SAM Application locally: {0}',
-                    error.message
-                )
             )
 
             return
