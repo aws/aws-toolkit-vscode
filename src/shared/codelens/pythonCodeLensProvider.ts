@@ -26,6 +26,8 @@ import {
     CodeLensProviderParams,
     getInvokeCmdKey,
     getMetricDatum,
+    getResourceFromTemplate,
+    getRuntime,
     makeCodeLenses,
 } from './codeLensUtils'
 import {
@@ -33,7 +35,6 @@ import {
     getHandlerRelativePath,
     getLambdaInfoFromExistingTemplate,
     getRelativeFunctionHandler,
-    getRuntimeForLambda,
     invokeLambdaFunction,
     LambdaLocalInvokeParams,
     makeBuildDir,
@@ -276,6 +277,7 @@ export async function initialize({
             channelLogger,
             configuration,
             debugConfig,
+            debugPort: debugConfig.port,
             samTaskInvoker: taskInvoker,
             originalSamTemplatePath: args.samTemplate.fsPath,
             samTemplatePath,
@@ -295,11 +297,11 @@ export async function initialize({
     registerCommand({
         command: command,
         callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
-    
-            const runtime = await getRuntimeForLambda({
-              handlerName: params.handlerName,
-              templatePath: params.samTemplate.fsPath
+            const resource = await getResourceFromTemplate({
+                handlerName: params.handlerName,
+                templatePath: params.samTemplate.fsPath
             })
+            const runtime = getRuntime(resource)
 
             await invokeLambda({
                 runtime,

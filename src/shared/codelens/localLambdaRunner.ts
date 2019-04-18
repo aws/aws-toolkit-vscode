@@ -308,47 +308,6 @@ export class LocalLambdaRunner {
     }
 } // end class LocalLambdaRunner
 
-export async function getRuntimeForLambda(params: {
-    handlerName: string,
-    templatePath: string,
-}): Promise<string> {
-    const samTemplateData: CloudFormation.Template = await CloudFormation.load(params.templatePath)
-    if (!samTemplateData.Resources) {
-        throw new Error(
-            `Please specify Resource for '${params.handlerName}' Lambda in SAM template: '${params.templatePath}'`
-        )
-    }
-    const runtimes = new Set<string>()
-    for (const resourceKey in samTemplateData.Resources) {
-        if (samTemplateData.Resources.hasOwnProperty(resourceKey)) {
-            const resource: CloudFormation.Resource | undefined = samTemplateData.Resources[resourceKey]
-            if (!resource) {
-                continue
-            }
-            if (resource.Type === 'AWS::Serverless::Function') {
-                if (!resource.Properties) {
-                    continue
-                }
-                if (resource.Properties.Runtime) {
-                    if (resource.Properties.Handler === params.handlerName) {
-                        return resource.Properties.Runtime
-                    } else {
-                        runtimes.add(resource.Properties.Runtime)
-                    }
-                }
-
-            }
-        }
-    }
-    if (runtimes.size === 1) {
-        // If all lambdas have the same runtime... assume that will continue to be the case
-        return Array.from(runtimes)[0]
-    }
-    throw new Error(
-        `Please specify runtime for '${params.handlerName}' Lambda in SAM template: '${params.templatePath}'`
-    )
-}
-
 export const makeBuildDir = async (): Promise<string> => {
     const buildDir = await makeTemporaryToolkitFolder()
     ExtensionDisposableFiles.getInstance().addFolder(buildDir)
@@ -423,31 +382,42 @@ export async function makeInputTemplate(params: {
     return inputTemplatePath
 }
 
-export async function executeSamBuild(params: {
-    baseBuildDir: string,
+export interface ExecuteSamBuildArguments {
+    baseBuildDir: string
     channelLogger: Pick<ChannelLogger, 'info'>,
     codeDir: string,
     inputTemplatePath: string,
     manifestPath?: string,
+    environmentVariables?: NodeJS.ProcessEnv,
     samProcessInvoker: SamCliProcessInvoker,
-}): Promise<string> {
-    params.channelLogger.info(
+}
+
+export async function executeSamBuild({
+    baseBuildDir,
+    channelLogger,
+    codeDir,
+    inputTemplatePath,
+    manifestPath,
+    environmentVariables,
+    samProcessInvoker
+}: ExecuteSamBuildArguments): Promise<string> {
+    channelLogger.info(
         'AWS.output.building.sam.application',
         'Building SAM Application...'
     )
 
-    const samBuildOutputFolder = path.join(params.baseBuildDir, 'output')
+    const samBuildOutputFolder = path.join(baseBuildDir, 'output')
 
     const samCliArgs: SamCliBuildInvocationArguments = {
         buildDir: samBuildOutputFolder,
-        baseDir: params.codeDir,
-        templatePath: params.inputTemplatePath,
-        invoker: params.samProcessInvoker,
-        manifestPath: params.manifestPath
+        baseDir: codeDir,
+        templatePath: inputTemplatePath,
+        invoker: samProcessInvoker,
+        manifestPath
     }
     await new SamCliBuildInvocation(samCliArgs).execute()
 
-    params.channelLogger.info(
+    channelLogger.info(
         'AWS.output.building.sam.application.complete',
         'Build complete.'
     )
@@ -455,11 +425,12 @@ export async function executeSamBuild(params: {
     return path.join(samBuildOutputFolder, 'template.yaml')
 }
 
-export const invokeLambdaFunction = async (params: {
+export interface InvokeLambdaFunctionArguments {
     baseBuildDir: string,
     channelLogger: ChannelLogger,
     configuration: SettingsConfiguration,
     debugConfig?: DebugConfiguration,
+    debugPort?: number,
     documentUri: vscode.Uri,
     originalHandlerName: string,
     handlerName: string,
@@ -469,12 +440,10 @@ export const invokeLambdaFunction = async (params: {
     samTaskInvoker: SamCliTaskInvoker,
     telemetryService: TelemetryService,
     runtime: string,
-}): Promise<void> => {
-    if (params.isDebug && !params.debugConfig) {
-        const err = new Error('Started debug run without a debugConfig')
-        params.channelLogger.logger.error(err)
-        throw err
-    }
+    debuggerPath?: string
+}
+
+export async function invokeLambdaFunction(params: InvokeLambdaFunctionArguments): Promise<void> {
     params.channelLogger.info(
         'AWS.output.starting.sam.app.locally',
         'Starting the SAM Application locally (see Terminal for output)'
@@ -515,16 +484,27 @@ export const invokeLambdaFunction = async (params: {
         templatePath: params.samTemplatePath,
         eventPath,
         environmentVariablePath,
-        debugPort: (params.isDebug && params.debugConfig) ? params.debugConfig.port.toString() : undefined,
-        invoker: params.samTaskInvoker
+        invoker: params.samTaskInvoker,
+        debugPort: (params.isDebug && params.debugPort) ? params.debugPort.toString() : undefined,
+        debuggerPath: params.debuggerPath
     })
 
     const startInvokeTime = new Date()
     await command.execute()
 
-    if (params.isDebug && params.debugConfig) {
+    if (params.isDebug) {
+        if (!params.debugConfig) {
+            const err = new Error('Started debug run without a debugConfig')
+            params.channelLogger.logger.error(err)
+            throw err
+        }
+        if (!params.debugPort) {
+            const err = new Error('Started debug run without a debugPort')
+            params.channelLogger.logger.error(err)
+            throw err
+        }
         await waitForDebugPort({
-            debugPort: params.debugConfig.port,
+            debugPort: params.debugPort,
             configuration: params.configuration,
             channelLogger: params.channelLogger
         })
@@ -739,7 +719,7 @@ export function shouldAppendRelativePathToFunctionHandler(runtime: string): bool
         case SamLambdaRuntimeFamily.Python:
         case SamLambdaRuntimeFamily.Ruby:
             return true
-        case SamLambdaRuntimeFamily.DotNet:
+        case SamLambdaRuntimeFamily.DotNetCore:
         case SamLambdaRuntimeFamily.Java:
         case SamLambdaRuntimeFamily.Go:
             return false

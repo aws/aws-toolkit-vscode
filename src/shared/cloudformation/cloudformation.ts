@@ -213,5 +213,4 @@ export namespace CloudFormation {
             }
         }
     }
-
 }

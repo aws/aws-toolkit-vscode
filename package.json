@@ -331,7 +331,7 @@
         "copyNonCodeFiles": "node ./build-scripts/copyNonCodeFiles.js",
         "compile": "tsc -p ./ && npm run lint && npm run bundleDeps && npm run copyNonCodeFiles",
         "recompile": "npm run clean && npm run compile",
-        "watch": "tsc -watch -p ./",
+        "watch": "npm run copyNonCodeFiles && tsc -watch -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
         "test": "npm run compile && node ./test-scripts/test.js",
         "lint": "tslint --project .",

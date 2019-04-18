@@ -24,10 +24,11 @@ import {
     CodeLensProviderParams,
     getInvokeCmdKey,
     getMetricDatum,
+    getResourceFromTemplate,
+    getRuntime,
     makeCodeLenses,
 } from './codeLensUtils'
 import {
-    getRuntimeForLambda,
     LambdaLocalInvokeParams,
     LocalLambdaRunner,
 } from './localLambdaRunner'
@@ -107,11 +108,11 @@ export function initialize({
     registerCommand({
         command: command,
         callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
-
-            const runtime = await getRuntimeForLambda({
+            const resource = await getResourceFromTemplate({
                 handlerName: params.handlerName,
                 templatePath: params.samTemplate.fsPath
             })
+            const runtime = getRuntime(resource)
 
             if (params.isDebug && unsupportedNodeJsRuntimes.has(runtime)) {
                 vscode.window.showErrorMessage(
@@ -138,7 +139,7 @@ export function initialize({
 }
 
 export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
-    return { // CodeLensProvider
+    return {
         provideCodeLenses: async (
             document: vscode.TextDocument,
             token: vscode.CancellationToken

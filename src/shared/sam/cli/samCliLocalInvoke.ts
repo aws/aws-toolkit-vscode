@@ -45,6 +45,10 @@ export interface SamCliLocalInvokeInvocationArguments {
      * Specifies whether the command should skip pulling down the latest Docker image for Lambda runtime.
      */
     skipPullImage?: boolean,
+    /**
+     * Host path to a debugger that will be mounted into the Lambda container.
+     */
+    debuggerPath?: string,
 }
 
 export class SamCliLocalInvokeInvocation {
@@ -56,6 +60,7 @@ export class SamCliLocalInvokeInvocation {
     private readonly invoker: SamCliTaskInvoker
     private readonly dockerNetwork?: string
     private readonly skipPullImage: boolean
+    private readonly debuggerPath?: string
 
     /**
      * @see SamCliLocalInvokeInvocationArguments for parameter info
@@ -76,6 +81,7 @@ export class SamCliLocalInvokeInvocation {
         this.invoker = invoker
         this.dockerNetwork = params.dockerNetwork
         this.skipPullImage = skipPullImage
+        this.debuggerPath = params.debuggerPath
     }
 
     public async execute(): Promise<void> {
@@ -96,6 +102,7 @@ export class SamCliLocalInvokeInvocation {
         this.addArgumentIf(args, !!this.debugPort, '-d', this.debugPort!)
         this.addArgumentIf(args, !!this.dockerNetwork, '--docker-network', this.dockerNetwork!)
         this.addArgumentIf(args, !!this.skipPullImage, '--skip-pull-image')
+        this.addArgumentIf(args, !!this.debuggerPath, '--debugger-path', this.debuggerPath!)
 
         const execution = new vscode.ShellExecution('sam', args)
 

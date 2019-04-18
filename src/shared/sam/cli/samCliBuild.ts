@@ -26,6 +26,10 @@ export interface SamCliBuildInvocationArguments {
      */
     templatePath: string
     /**
+     * Environment variables to set on the child process.
+     */
+    environmentVariables?: NodeJS.ProcessEnv
+    /**
      * Manages the sam cli execution.
      */
     invoker: SamCliProcessInvoker
@@ -53,6 +57,7 @@ export interface SamCliBuildInvocationArguments {
 export class SamCliBuildInvocation {
     private readonly buildDir: string
     private readonly baseDir?: string
+    private readonly environmentVariables?: NodeJS.ProcessEnv
     private readonly templatePath: string
     private readonly invoker: SamCliProcessInvoker
     private readonly useContainer: boolean
@@ -77,6 +82,7 @@ export class SamCliBuildInvocation {
         this.buildDir = params.buildDir
         this.baseDir = params.baseDir
         this.templatePath = params.templatePath
+        this.environmentVariables = params.environmentVariables
         this.invoker = invoker
         this.useContainer = useContainer
         this.dockerNetwork = params.dockerNetwork
@@ -100,7 +106,13 @@ export class SamCliBuildInvocation {
         this.addArgumentIf(invokeArgs, !!this.skipPullImage, '--skip-pull-image')
         this.addArgumentIf(invokeArgs, !!this.manifestPath, '--manifest', this.manifestPath!)
 
+        const env: NodeJS.ProcessEnv = {
+            ...process.env,
+            ...this.environmentVariables
+        }
+
         const { exitCode, error, stderr, stdout }: ChildProcessResult = await this.invoker.invoke(
+            { env },
             ...invokeArgs
         )
 

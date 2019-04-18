@@ -8,6 +8,7 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 
+import { CloudFormation } from '../cloudformation/cloudformation'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
 import {
@@ -25,6 +26,8 @@ import {
     CodeLensProviderParams,
     getInvokeCmdKey,
     getMetricDatum,
+    getResourceFromTemplate,
+    getRuntime,
     makeCodeLenses,
 } from './codeLensUtils'
 import {
@@ -32,7 +35,6 @@ import {
     getHandlerRelativePath,
     getLambdaInfoFromExistingTemplate,
     getRelativeFunctionHandler,
-    getRuntimeForLambda,
     invokeLambdaFunction,
     LambdaLocalInvokeParams,
     makeBuildDir,
@@ -100,7 +102,8 @@ async function onLocalInvokeCommand({
     lambdaLocalInvokeParams,
     processInvoker,
     taskInvoker,
-    telemetryService
+    telemetryService,
+    getResource = async _args => await getResourceFromTemplate(_args),
 }: {
     configuration: SettingsConfiguration
     toolkitOutputChannel: vscode.OutputChannel,
@@ -108,14 +111,19 @@ async function onLocalInvokeCommand({
     lambdaLocalInvokeParams: LambdaLocalInvokeParams,
     processInvoker: SamCliProcessInvoker,
     taskInvoker: SamCliTaskInvoker,
-    telemetryService: TelemetryService
+    telemetryService: TelemetryService,
+    getResource?(args: {
+        templatePath: string,
+        handlerName: string
+    }): Promise<CloudFormation.Resource>,
 }): Promise<{ datum: Datum }> {
 
     const channelLogger = getChannelLogger(toolkitOutputChannel)
-    const runtime = await getRuntimeForLambda({
+    const resource = await getResource({
+        templatePath: lambdaLocalInvokeParams.samTemplate.fsPath,
         handlerName: lambdaLocalInvokeParams.handlerName,
-        templatePath: lambdaLocalInvokeParams.samTemplate.fsPath
     })
+    const runtime = getRuntime(resource)
 
     // Switch over to the output channel so the user has feedback that we're getting things ready
     channelLogger.channel.show(true)

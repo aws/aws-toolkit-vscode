@@ -5,10 +5,11 @@
 
 'use strict'
 
+import * as path from 'path'
 import * as vscode from 'vscode'
 
-import { dirname } from 'path'
 import { detectLocalTemplates } from '../../lambda/local/detectLocalTemplates'
+import { CloudFormation } from '../cloudformation/cloudformation'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
 import { SamCliProcessInvoker, SamCliTaskInvoker } from '../sam/cli/samCliInvokerUtils'
@@ -143,6 +144,60 @@ export function getMetricDatum({ command, isDebug, runtime }: {
     }
 }
 
+export function getRuntime(resource: Pick<CloudFormation.Resource, 'Properties'>): string {
+    if (!resource.Properties || !resource.Properties.Runtime) {
+        throw new Error('Resource does not specify a Runtime')
+    }
+
+    return resource.Properties!.Runtime!
+}
+
+export function getCodeUri({
+    templatePath,
+    resource
+}: {
+    templatePath: string
+    resource: Pick<CloudFormation.Resource, 'Properties'>
+}): string {
+    if (!resource.Properties || !resource.Properties.CodeUri) {
+        throw new Error('Resource does not specify a CodeUri')
+    }
+
+    return path.join(path.dirname(templatePath), resource.Properties!.CodeUri)
+}
+
+export async function getResourceFromTemplate(
+    { templatePath, handlerName }: {
+        templatePath: string,
+        handlerName: string
+    },
+    context: { loadTemplate: typeof CloudFormation.load } = { loadTemplate: CloudFormation.load }
+): Promise<CloudFormation.Resource> {
+    const template = await context.loadTemplate(templatePath)
+
+    if (!template.Resources) {
+        throw new Error(`Could not find a SAM resource for handler ${handlerName}`)
+    }
+
+    const resources = template.Resources
+    const matches = Object.keys(resources)
+        .filter(key =>
+            !!resources[key] && resources[key]!.Type === 'AWS::Serverless::Function' &&
+            !!resources[key]!.Properties && resources[key]!.Properties!.Handler === handlerName
+        ).map(key => resources[key]!)
+
+    if (matches.length < 1) {
+        throw new Error(`Could not find a SAM resource for handler ${handlerName}`)
+    }
+
+    if (matches.length > 1) {
+        // TODO: Is this a valid scenario?
+        throw new Error(`Found more than one SAM resource for handler ${handlerName}`)
+    }
+
+    return matches[0]
+}
+
 async function getAssociatedSamTemplate(
     documentUri: vscode.Uri,
     workspaceFolderUri: vscode.Uri
@@ -157,7 +212,7 @@ async function getAssociatedSamTemplate(
     const templates = await toArrayAsync(templatesAsync)
     const candidateTemplates = templates
         .filter(template => {
-            const folder = dirname(template.fsPath)
+            const folder = path.dirname(template.fsPath)
 
             return documentUri.fsPath.indexOf(folder) === 0
         })
