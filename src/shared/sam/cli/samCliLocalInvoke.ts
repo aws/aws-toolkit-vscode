@@ -51,6 +51,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
 
         await new Promise<void>(async (resolve, reject) => {
             let checkForDebuggerAttachCue: boolean = params.isDebug
+            let promiseResolved: boolean = false
 
             // todo : identify the debugger messages to listen for in each runtime
             const debuggerAttachCues: string[] = [
@@ -72,6 +73,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                                 this.channelLogger.logger.verbose(
                                     'Local SAM App should be ready for a debugger to attach now.'
                                 )
+                                promiseResolved = true
                                 resolve()
                             }
                         }
@@ -86,6 +88,13 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                                 'Local invoke of SAM Application has ended.'
                             )
                         )
+
+                        // Handles scenarios where the process exited before we anticipated.
+                        // Example: We didn't see an expected debugger attach cue, and the process or docker container
+                        // was terminated by the user, or the user manually attached to the sam app.
+                        if (!promiseResolved) {
+                            reject(new Error('The SAM Application closed unexpectedly'))
+                        }
                     },
                     onError: (error: Error): void => {
                         this.channelLogger.error(
@@ -99,6 +108,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
 
             if (!params.isDebug) {
                 this.channelLogger.logger.verbose('Local SAM App does not expect a debugger to attach.')
+                promiseResolved = true
                 resolve()
             }
         })
