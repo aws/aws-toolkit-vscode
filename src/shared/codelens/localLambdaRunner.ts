@@ -253,7 +253,7 @@ export class LocalLambdaRunner {
                 channelLogger: this.channelLogger
             })
 
-            await attachDebugger({
+            const attachResults = await attachDebugger({
                 debugConfig: this.debugConfig,
                 maxRetries,
                 retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
@@ -270,6 +270,10 @@ export class LocalLambdaRunner {
                     })
                 },
             })
+
+            if (attachResults.success) {
+                await showDebugConsole({})
+            }
         }
     }
 
@@ -505,7 +509,7 @@ export const invokeLambdaFunction = async (params: {
             channelLogger: params.channelLogger
         })
 
-        await attachDebugger({
+        const attachResults = await attachDebugger({
             debugConfig: params.debugConfig,
             maxRetries,
             retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
@@ -522,6 +526,10 @@ export const invokeLambdaFunction = async (params: {
                 })
             },
         })
+
+        if (attachResults.success) {
+            await showDebugConsole({})
+        }
     }
 }
 
@@ -704,4 +712,21 @@ function getAttachDebuggerMaxRetryLimit(
         'samcli.debug.attach.retry.maximum',
         defaultValue
     )!
+}
+
+/**
+ * Brings the Debug Console in focus.
+ * If the OutputChannel is showing, focus does not consistently switch over to the debug console, so we're
+ * helping make this happen.
+ */
+async function showDebugConsole({
+    executeVsCodeCommand = vscode.commands.executeCommand
+}: {
+    executeVsCodeCommand?: typeof vscode.commands.executeCommand
+}): Promise<void> {
+    try {
+        await executeVsCodeCommand('workbench.debug.action.toggleRepl')
+    } catch (err) {
+        // in case the vs code command changes or misbehaves, swallow error
+    }
 }
