@@ -282,7 +282,7 @@ export async function initialize({
             )
         } finally {
             if (lambdaDebugFilePath) {
-                await unlink(lambdaDebugFilePath)
+                await deleteFile(lambdaDebugFilePath)
             }
         }
     }
@@ -309,6 +309,15 @@ export async function initialize({
             })
         }
     })
+}
+
+// Convenience method to swallow any errors
+async function deleteFile(filePath: string): Promise<void> {
+    try {
+        await unlink(filePath)
+    } catch (err) {
+        getLogger().warn(err as Error)
+    }
 }
 
 export async function makePythonCodeLensProvider(): Promise<vscode.CodeLensProvider> {
