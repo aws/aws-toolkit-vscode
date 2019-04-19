@@ -134,7 +134,7 @@
     "AWS.samcli.error.notFound.brief": "Could not get SAM CLI location",
     "AWS.samcli.local.invoke.ended": "Local invoke of SAM Application has ended.",
     "AWS.samcli.local.invoke.error": "Error encountered running local SAM Application",
-    "AWS.samcli.local.invoke.port.not.open": "Unable to detect the debug port. The debugger might not succeed in attaching to your SAM Application.",
+    "AWS.samcli.local.invoke.port.not.open": "The debug port doesn't appear to be open. The debugger might not succeed when attaching to your SAM Application.",
     "AWS.samcli.notification.version.invalid": "Your SAM CLI version {0} does not meet requirements ({1}\u00a0\u2264\u00a0version\u00a0<\u00a0{2}). {3}",
     "AWS.samcli.notification.version.valid": "Your SAM CLI version {0} is valid.",
     "AWS.samcli.recommend.update.toolkit": "Please update your AWS Toolkit.",

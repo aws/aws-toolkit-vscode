@@ -257,7 +257,7 @@ export class LocalLambdaRunner {
                 this.channelLogger.warn(
                     'AWS.samcli.local.invoke.port.not.open',
                     // tslint:disable-next-line:max-line-length
-                    'Unable to detect the debug port. The debugger might not succeed in attaching to your SAM Application.'
+                    "The debug port doesn't appear to be open. The debugger might not succeed when attaching to your SAM Application."
                 )
             }
 
@@ -516,7 +516,8 @@ export const invokeLambdaFunction = async (params: {
         if (!isPortOpen) {
             params.channelLogger.warn(
                 'AWS.samcli.local.invoke.port.not.open',
-                'Unable to detect the debug port. The debugger might not succeed in attaching to your SAM Application.'
+                // tslint:disable-next-line:max-line-length
+                "The debug port doesn't appear to be open. The debugger might not succeed when attaching to your SAM Application."
             )
         }
 
