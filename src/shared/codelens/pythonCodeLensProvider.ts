@@ -209,70 +209,81 @@ export async function initialize({
             args.handlerName
         )
 
-        const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
-        const baseBuildDir = await makeBuildDir()
-
-        let debugPort: number | undefined
-
-        let handlerName: string = args.handlerName
-        let manifestPath: string | undefined
         let lambdaDebugFilePath: string | undefined
-        if (args.isDebug) {
-            debugPort = await getDebugPort()
-            const { debugHandlerName, outFilePath } = await makeLambdaDebugFile({
-                handlerName: args.handlerName,
-                debugPort: debugPort,
-                outputDir: samProjectCodeRoot,
+
+        try {
+            const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
+            const baseBuildDir = await makeBuildDir()
+
+            let debugPort: number | undefined
+
+            let handlerName: string = args.handlerName
+            let manifestPath: string | undefined
+            if (args.isDebug) {
+                debugPort = await getDebugPort()
+                const { debugHandlerName, outFilePath } = await makeLambdaDebugFile({
+                    handlerName: args.handlerName,
+                    debugPort: debugPort,
+                    outputDir: samProjectCodeRoot,
+                })
+                lambdaDebugFilePath = outFilePath
+                handlerName = debugHandlerName
+                manifestPath = await makePythonDebugManifest({
+                    samProjectCodeRoot,
+                    outputDir: baseBuildDir
+                })
+            }
+            const inputTemplatePath = await makeInputTemplate({
+                baseBuildDir,
+                codeDir: samProjectCodeRoot,
+                documentUri: args.document.uri,
+                originalHandlerName: args.handlerName,
+                handlerName,
+                runtime: args.runtime,
+                workspaceUri: args.workspaceFolder.uri
             })
-            lambdaDebugFilePath = outFilePath
-            handlerName = debugHandlerName
-            manifestPath = await makePythonDebugManifest({
-                samProjectCodeRoot,
-                outputDir: baseBuildDir
+            logger.debug(`pythonCodeLensProvider.invokeLambda: ${
+                JSON.stringify({ samProjectCodeRoot, inputTemplatePath, handlerName, manifestPath }, undefined, 2)
+                }`)
+
+            const codeDir = samProjectCodeRoot
+            const samTemplatePath: string = await executeSamBuild({
+                baseBuildDir,
+                channelLogger,
+                codeDir,
+                inputTemplatePath,
+                manifestPath,
+                samProcessInvoker: processInvoker,
+
             })
-        }
-        const inputTemplatePath = await makeInputTemplate({
-            baseBuildDir,
-            codeDir: samProjectCodeRoot,
-            documentUri: args.document.uri,
-            originalHandlerName: args.handlerName,
-            handlerName,
-            runtime: args.runtime,
-            workspaceUri: args.workspaceFolder.uri
-        })
-        logger.debug(`pythonCodeLensProvider.initialize: ${
-            JSON.stringify({ samProjectCodeRoot, inputTemplatePath, handlerName, manifestPath }, undefined, 2)
-            }`)
 
-        const codeDir = samProjectCodeRoot
-        const samTemplatePath: string = await executeSamBuild({
-            baseBuildDir,
-            channelLogger,
-            codeDir,
-            inputTemplatePath,
-            manifestPath,
-            samProcessInvoker: processInvoker,
-
-        })
-
-        const debugConfig: PythonDebugConfiguration = makeDebugConfig({ debugPort, samProjectCodeRoot })
-        await invokeLambdaFunction({
-            baseBuildDir,
-            channelLogger,
-            configuration,
-            debugConfig,
-            samLocalInvokeCommand: localInvokeCommand!,
-            originalSamTemplatePath: args.samTemplate.fsPath,
-            samTemplatePath,
-            documentUri: args.document.uri,
-            originalHandlerName: args.handlerName,
-            handlerName,
-            isDebug: args.isDebug,
-            runtime: args.runtime,
-            telemetryService
-        })
-        if (args.isDebug && lambdaDebugFilePath) {
-            await unlink(lambdaDebugFilePath)
+            const debugConfig: PythonDebugConfiguration = makeDebugConfig({ debugPort, samProjectCodeRoot })
+            await invokeLambdaFunction({
+                baseBuildDir,
+                channelLogger,
+                configuration,
+                debugConfig,
+                samLocalInvokeCommand: localInvokeCommand!,
+                originalSamTemplatePath: args.samTemplate.fsPath,
+                samTemplatePath,
+                documentUri: args.document.uri,
+                originalHandlerName: args.handlerName,
+                handlerName,
+                isDebug: args.isDebug,
+                runtime: args.runtime,
+                telemetryService
+            })
+        } catch (err) {
+            const error = err as Error
+            channelLogger.error(
+                'AWS.error.during.sam.local',
+                'An error occurred trying to run SAM Application locally: {0}',
+                error
+            )
+        } finally {
+            if (lambdaDebugFilePath) {
+                await deleteFile(lambdaDebugFilePath)
+            }
         }
     }
 
@@ -298,6 +309,15 @@ export async function initialize({
             })
         }
     })
+}
+
+// Convenience method to swallow any errors
+async function deleteFile(filePath: string): Promise<void> {
+    try {
+        await unlink(filePath)
+    } catch (err) {
+        getLogger().warn(err as Error)
+    }
 }
 
 export async function makePythonCodeLensProvider(): Promise<vscode.CodeLensProvider> {
