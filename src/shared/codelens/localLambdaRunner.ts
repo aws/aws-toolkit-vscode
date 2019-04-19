@@ -22,6 +22,7 @@ import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 
 import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
+import { BasicLogger } from '../logger'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
@@ -272,7 +273,9 @@ export class LocalLambdaRunner {
             })
 
             if (attachResults.success) {
-                await showDebugConsole({})
+                await showDebugConsole({
+                    logger: this.channelLogger.logger,
+                })
             }
         }
     }
@@ -528,7 +531,9 @@ export const invokeLambdaFunction = async (params: {
         })
 
         if (attachResults.success) {
-            await showDebugConsole({})
+            await showDebugConsole({
+                logger: params.channelLogger.logger,
+            })
         }
     }
 }
@@ -720,13 +725,19 @@ function getAttachDebuggerMaxRetryLimit(
  * helping make this happen.
  */
 async function showDebugConsole({
-    executeVsCodeCommand = vscode.commands.executeCommand
+    executeVsCodeCommand = vscode.commands.executeCommand,
+    ...params
 }: {
     executeVsCodeCommand?: typeof vscode.commands.executeCommand
+    logger: BasicLogger
 }): Promise<void> {
     try {
         await executeVsCodeCommand('workbench.debug.action.toggleRepl')
     } catch (err) {
         // in case the vs code command changes or misbehaves, swallow error
+        params.logger.verbose(
+            'Unable to switch to the Debug Console',
+            err as Error
+        )
     }
 }
