@@ -6,6 +6,7 @@
 'use strict'
 
 import * as assert from 'assert'
+import * as del from 'del'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { DebugConfiguration } from '../../../lambda/local/debugConfiguration'
@@ -63,7 +64,10 @@ describe('localLambdaRunner', async () => {
     before(async () => {
         tempDir = await fsUtils.makeTemporaryToolkitFolder()
         await ExtensionDisposableFiles.initialize(new FakeExtensionContext())
-        ExtensionDisposableFiles.getInstance().addFolder(tempDir)
+    })
+
+    after(async () => {
+        await del(tempDir, { force: true })
     })
 
     describe('attachDebugger', async () => {
@@ -398,6 +402,7 @@ describe('localLambdaRunner', async () => {
             assert.strictEqual(await fsUtils.fileExists(dir), true)
             const fsDir = await fs.readdir(dir)
             assert.strictEqual(fsDir.length, 0)
+            await del(dir, { force: true })
         })
     })
 

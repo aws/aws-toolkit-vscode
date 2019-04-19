@@ -22,6 +22,7 @@ import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 
 import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
+import { getFamily, SamLambdaRuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger, localize } from '../utilities/vsCodeUtils'
@@ -395,7 +396,7 @@ export async function makeInputTemplate(params: {
     if (workspaceFolder) {
 
         let relativeOriginalFunctionHandler = params.originalHandlerName
-        if (!params.runtime.includes('dotnet')) {
+        if (getFamily(params.runtime) !== SamLambdaRuntimeFamily.DotNet) {
             relativeOriginalFunctionHandler = normalizeSeparator(
                 path.join(
                     handlerFileRelativePath,
@@ -410,21 +411,21 @@ export async function makeInputTemplate(params: {
     }
 
     let relativeFunctionHandler = params.handlerName
-    if (!params.runtime.includes('dotnet')) {
+    if (getFamily(params.runtime) !== SamLambdaRuntimeFamily.DotNet) {
         relativeFunctionHandler = normalizeSeparator(
             path.join(
                 handlerFileRelativePath,
                 params.handlerName,
             )
         )
-            }
+    }
 
     let newTemplate = new SamTemplateGenerator()
         .withFunctionHandler(relativeFunctionHandler)
         .withResourceName(TEMPLATE_RESOURCE_NAME)
         .withRuntime(params.runtime)
 
-    if (params.runtime.includes('dotnet')) {
+    if (getFamily(params.runtime) === SamLambdaRuntimeFamily.DotNet) {
         newTemplate.withCodeUri(existingLambda && existingLambda.codeUri ?
             path.join(params.templateDir, existingLambda.codeUri) : params.templateDir
         )
