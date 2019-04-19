@@ -15,6 +15,7 @@
     "bugs": {
         "url": "https://github.com/aws/aws-toolkit-vscode/issues"
     },
+    "icon": "resources/aws-icon-256x256.png",
     "galleryBanner": {
         "color": "#FF9900",
         "theme": "light"
