@@ -9,7 +9,7 @@ import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 
-import { PythonDebugConfiguration } from '../../lambda/local/debugConfiguration'
+import { PythonDebugConfiguration, PythonPathMapping } from '../../lambda/local/debugConfiguration'
 import { unlink, writeFile } from '../filesystem'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
@@ -34,6 +34,8 @@ import {
     makeBuildDir,
     makeInputTemplate,
 } from './localLambdaRunner'
+
+const PATH_STARTS_WITH_DRIVE_LETTER_REGEX: RegExp = new RegExp(/^[a-zA-Z]\:/)
 
 export const PYTHON_LANGUAGE = 'python'
 export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
@@ -149,32 +151,43 @@ def ${debugHandlerFunctionName}(event, context):
     }
 }
 
-const fixFilePathCapitalization = (filePath: string): string => {
+export function getLocalRootVariants(filePath: string): string[] {
     if (process.platform === 'win32') {
-        // TODO : TEMP : https://github.com/aws/aws-toolkit-vscode/issues/484
-        return filePath.replace(/^[a-z]/, match => match.toLowerCase())
+        if (PATH_STARTS_WITH_DRIVE_LETTER_REGEX.test(filePath)) {
+            return [
+                filePath.replace(PATH_STARTS_WITH_DRIVE_LETTER_REGEX, match => match.toLowerCase()),
+                filePath.replace(PATH_STARTS_WITH_DRIVE_LETTER_REGEX, match => match.toUpperCase())
+            ]
+        }
     }
 
-    return filePath
+    return [filePath]
 }
 
-const makeDebugConfig = ({ debugPort, samProjectCodeRoot }: {
-    debugPort?: number,
-    samProjectCodeRoot: string,
-}): PythonDebugConfiguration => {
+function makeDebugConfig(
+    {
+        debugPort,
+        samProjectCodeRoot
+    }: {
+        debugPort?: number,
+        samProjectCodeRoot: string,
+    }): PythonDebugConfiguration {
+
+    const pathMappings: PythonPathMapping[] = getLocalRootVariants(samProjectCodeRoot)
+        .map<PythonPathMapping>(variant => {
+            return {
+                localRoot: variant,
+                remoteRoot: '/var/task',
+            }
+        })
+
     return {
         type: PYTHON_LANGUAGE,
         request: 'attach',
         name: 'SamLocalDebug',
         host: 'localhost',
         port: debugPort!,
-        pathMappings: [
-            {
-                // tslint:disable-next-line:no-invalid-template-strings
-                localRoot: fixFilePathCapitalization(samProjectCodeRoot),
-                remoteRoot: '/var/task'
-            }
-        ],
+        pathMappings,
         // Disable redirectOutput to prevent the Python Debugger from automatically writing stdout/stderr text
         // to the Debug Console. We're taking the child process stdout/stderr and explicitly writing that to
         // the Debug Console.
@@ -209,70 +222,81 @@ export async function initialize({
             args.handlerName
         )
 
-        const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
-        const baseBuildDir = await makeBuildDir()
-
-        let debugPort: number | undefined
-
-        let handlerName: string = args.handlerName
-        let manifestPath: string | undefined
         let lambdaDebugFilePath: string | undefined
-        if (args.isDebug) {
-            debugPort = await getDebugPort()
-            const { debugHandlerName, outFilePath } = await makeLambdaDebugFile({
-                handlerName: args.handlerName,
-                debugPort: debugPort,
-                outputDir: samProjectCodeRoot,
+
+        try {
+            const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
+            const baseBuildDir = await makeBuildDir()
+
+            let debugPort: number | undefined
+
+            let handlerName: string = args.handlerName
+            let manifestPath: string | undefined
+            if (args.isDebug) {
+                debugPort = await getDebugPort()
+                const { debugHandlerName, outFilePath } = await makeLambdaDebugFile({
+                    handlerName: args.handlerName,
+                    debugPort: debugPort,
+                    outputDir: samProjectCodeRoot,
+                })
+                lambdaDebugFilePath = outFilePath
+                handlerName = debugHandlerName
+                manifestPath = await makePythonDebugManifest({
+                    samProjectCodeRoot,
+                    outputDir: baseBuildDir
+                })
+            }
+            const inputTemplatePath = await makeInputTemplate({
+                baseBuildDir,
+                codeDir: samProjectCodeRoot,
+                documentUri: args.document.uri,
+                originalHandlerName: args.handlerName,
+                handlerName,
+                runtime: args.runtime,
+                workspaceUri: args.workspaceFolder.uri
             })
-            lambdaDebugFilePath = outFilePath
-            handlerName = debugHandlerName
-            manifestPath = await makePythonDebugManifest({
-                samProjectCodeRoot,
-                outputDir: baseBuildDir
+            logger.debug(`pythonCodeLensProvider.invokeLambda: ${
+                JSON.stringify({ samProjectCodeRoot, inputTemplatePath, handlerName, manifestPath }, undefined, 2)
+                }`)
+
+            const codeDir = samProjectCodeRoot
+            const samTemplatePath: string = await executeSamBuild({
+                baseBuildDir,
+                channelLogger,
+                codeDir,
+                inputTemplatePath,
+                manifestPath,
+                samProcessInvoker: processInvoker,
+
             })
-        }
-        const inputTemplatePath = await makeInputTemplate({
-            baseBuildDir,
-            codeDir: samProjectCodeRoot,
-            documentUri: args.document.uri,
-            originalHandlerName: args.handlerName,
-            handlerName,
-            runtime: args.runtime,
-            workspaceUri: args.workspaceFolder.uri
-        })
-        logger.debug(`pythonCodeLensProvider.initialize: ${
-            JSON.stringify({ samProjectCodeRoot, inputTemplatePath, handlerName, manifestPath }, undefined, 2)
-            }`)
 
-        const codeDir = samProjectCodeRoot
-        const samTemplatePath: string = await executeSamBuild({
-            baseBuildDir,
-            channelLogger,
-            codeDir,
-            inputTemplatePath,
-            manifestPath,
-            samProcessInvoker: processInvoker,
-
-        })
-
-        const debugConfig: PythonDebugConfiguration = makeDebugConfig({ debugPort, samProjectCodeRoot })
-        await invokeLambdaFunction({
-            baseBuildDir,
-            channelLogger,
-            configuration,
-            debugConfig,
-            samLocalInvokeCommand: localInvokeCommand!,
-            originalSamTemplatePath: args.samTemplate.fsPath,
-            samTemplatePath,
-            documentUri: args.document.uri,
-            originalHandlerName: args.handlerName,
-            handlerName,
-            isDebug: args.isDebug,
-            runtime: args.runtime,
-            telemetryService
-        })
-        if (args.isDebug && lambdaDebugFilePath) {
-            await unlink(lambdaDebugFilePath)
+            const debugConfig: PythonDebugConfiguration = makeDebugConfig({ debugPort, samProjectCodeRoot })
+            await invokeLambdaFunction({
+                baseBuildDir,
+                channelLogger,
+                configuration,
+                debugConfig,
+                samLocalInvokeCommand: localInvokeCommand!,
+                originalSamTemplatePath: args.samTemplate.fsPath,
+                samTemplatePath,
+                documentUri: args.document.uri,
+                originalHandlerName: args.handlerName,
+                handlerName,
+                isDebug: args.isDebug,
+                runtime: args.runtime,
+                telemetryService
+            })
+        } catch (err) {
+            const error = err as Error
+            channelLogger.error(
+                'AWS.error.during.sam.local',
+                'An error occurred trying to run SAM Application locally: {0}',
+                error
+            )
+        } finally {
+            if (lambdaDebugFilePath) {
+                await deleteFile(lambdaDebugFilePath)
+            }
         }
     }
 
@@ -298,6 +322,15 @@ export async function initialize({
             })
         }
     })
+}
+
+// Convenience method to swallow any errors
+async function deleteFile(filePath: string): Promise<void> {
+    try {
+        await unlink(filePath)
+    } catch (err) {
+        getLogger().warn(err as Error)
+    }
 }
 
 export async function makePythonCodeLensProvider(): Promise<vscode.CodeLensProvider> {
