@@ -17,6 +17,7 @@ export interface LocalLambda {
     resource: CloudFormation.Resource
     templatePath: string
     handler?: string
+    codeUri?: string
 }
 
 export async function detectLocalLambdas(
@@ -71,7 +72,8 @@ async function detectLambdasFromTemplate(
             templatePath,
             protocol: getDebugProtocol(resources[key]!),
             handler: getHandler(resources[key]!),
-            resource: resources[key]!
+            resource: resources[key]!,
+            codeUri: getCodeUri(resources[key]!)
         }))
 }
 
@@ -96,6 +98,14 @@ function getDebugProtocol(resource: CloudFormation.Resource): 'inspector' | 'leg
 function getHandler(resource: CloudFormation.Resource): string | undefined {
     if (resource.Properties && resource.Properties.Handler) {
         return resource.Properties.Handler
+    }
+
+    return undefined
+}
+
+function getCodeUri(resource: CloudFormation.Resource): string | undefined {
+    if (resource.Properties && resource.Properties.CodeUri) {
+        return resource.Properties.CodeUri
     }
 
     return undefined

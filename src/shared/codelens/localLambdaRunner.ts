@@ -9,7 +9,7 @@ import * as path from 'path'
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
 import { getLocalLambdaConfiguration } from '../../lambda/local/configureLocalLambda'
-import { detectLocalLambdas } from '../../lambda/local/detectLocalLambdas'
+import { detectLocalLambdas, LocalLambda } from '../../lambda/local/detectLocalLambdas'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { writeFile } from '../filesystem'
 import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
@@ -46,6 +46,11 @@ export interface OnDidSamBuildParams {
     debugPort: number,
     handlerName: string,
     isDebug: boolean
+}
+
+export interface InputTemplateInfo {
+    inputTemplatePath: string
+    codeDir: string | undefined
 }
 
 const TEMPLATE_RESOURCE_NAME: string = 'awsToolkitSamLocalResource'
@@ -357,50 +362,75 @@ export const makeBuildDir = async (): Promise<string> => {
 
 export async function makeInputTemplate(params: {
     baseBuildDir: string,
-    codeDir: string,
+    templateDir: string,
     documentUri: vscode.Uri
     originalHandlerName: string,
     handlerName: string,
     runtime: string,
     workspaceUri: vscode.Uri,
-}): Promise<string> {
+    channelLogger: ChannelLogger
+}): Promise<InputTemplateInfo> {
+
+    // Switch over to the output channel so the user has feedback that we're getting things ready
+    params.channelLogger.channel.show(true)
+
+    params.channelLogger.info(
+        'AWS.output.sam.local.start',
+        'Preparing to run {0} locally...',
+        params.handlerName
+    )
+
     const inputTemplatePath: string = path.join(params.baseBuildDir, 'input', 'input-template.yaml')
     ExtensionDisposableFiles.getInstance().addFolder(inputTemplatePath)
 
     // Make function handler relative to baseDir
     const handlerFileRelativePath = path.relative(
-        params.codeDir,
+        params.templateDir,
         path.dirname(params.documentUri.fsPath)
     )
 
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(params.workspaceUri)
+    let existingLambda: LocalLambda | undefined
     let existingTemplateResource: CloudFormation.Resource | undefined
     if (workspaceFolder) {
 
-        const relativeOriginalFunctionHandler = normalizeSeparator(
-            path.join(
-                handlerFileRelativePath,
-                params.originalHandlerName,
+        let relativeOriginalFunctionHandler = params.originalHandlerName
+        if (!params.runtime.includes('dotnet')) {
+            relativeOriginalFunctionHandler = normalizeSeparator(
+                path.join(
+                    handlerFileRelativePath,
+                    params.originalHandlerName,
+                )
             )
-        )
+        }
 
         const lambdas = await detectLocalLambdas([workspaceFolder])
-        const existingLambda = lambdas.find(lambda => lambda.handler === relativeOriginalFunctionHandler)
+        existingLambda = lambdas.find(lambda => lambda.handler === relativeOriginalFunctionHandler)
         existingTemplateResource = existingLambda ? existingLambda.resource : undefined
     }
 
-    const relativeFunctionHandler = normalizeSeparator(
-        path.join(
-            handlerFileRelativePath,
-            params.handlerName,
+    let relativeFunctionHandler = params.handlerName
+    if (!params.runtime.includes('dotnet')) {
+        relativeFunctionHandler = normalizeSeparator(
+            path.join(
+                handlerFileRelativePath,
+                params.handlerName,
+            )
         )
-    )
+            }
 
     let newTemplate = new SamTemplateGenerator()
-        .withCodeUri(params.codeDir)
         .withFunctionHandler(relativeFunctionHandler)
         .withResourceName(TEMPLATE_RESOURCE_NAME)
         .withRuntime(params.runtime)
+
+    if (params.runtime.includes('dotnet')) {
+        newTemplate.withCodeUri(existingLambda && existingLambda.codeUri ?
+            path.join(params.templateDir, existingLambda.codeUri) : params.templateDir
+        )
+    } else {
+        newTemplate.withCodeUri(params.templateDir)
+    }
 
     if (existingTemplateResource && existingTemplateResource.Properties &&
         existingTemplateResource.Properties.Environment) {
@@ -409,7 +439,10 @@ export async function makeInputTemplate(params: {
 
     await newTemplate.generate(inputTemplatePath)
 
-    return inputTemplatePath
+    return {
+        inputTemplatePath,
+        codeDir: ( existingLambda ? existingLambda.codeUri : undefined )
+    }
 }
 
 export async function executeSamBuild(params: {
@@ -459,6 +492,11 @@ export const invokeLambdaFunction = async (params: {
     telemetryService: TelemetryService,
     runtime: string,
 }): Promise<void> => {
+    if (params.isDebug && !params.debugConfig) {
+        const err = new Error('Started debug run without a debugConfig')
+        params.channelLogger.logger.error(err)
+        throw err
+    }
     params.channelLogger.info(
         'AWS.output.starting.sam.app.locally',
         'Starting the SAM Application locally (see Terminal for output)'
@@ -506,12 +544,7 @@ export const invokeLambdaFunction = async (params: {
     const startInvokeTime = new Date()
     await command.execute()
 
-    if (params.isDebug) {
-        if (!params.debugConfig) {
-            const err = new Error('Started debug run without a debugConfig')
-            params.channelLogger.logger.error(err)
-            throw err
-        }
+    if (params.isDebug && params.debugConfig) {
         await waitForDebugPort({
             debugPort: params.debugConfig.port,
             configuration: params.configuration,

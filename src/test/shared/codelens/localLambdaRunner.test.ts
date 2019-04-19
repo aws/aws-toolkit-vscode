@@ -10,11 +10,13 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { DebugConfiguration } from '../../../lambda/local/debugConfiguration'
 import * as localLambdaRunner from '../../../shared/codelens/localLambdaRunner'
+import * as fs from '../../../shared/filesystem'
 import * as fsUtils from '../../../shared/filesystemUtilities'
 import { BasicLogger, ErrorOrString } from '../../../shared/logger'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { ExtensionDisposableFiles } from '../../../shared/utilities/disposableFiles'
 import { ChannelLogger } from '../../../shared/utilities/vsCodeUtils'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { assertRejects } from '../utilities/assertUtils'
 
 class FakeChannelLogger implements Pick<ChannelLogger, 'info' | 'error' | 'logger'> {
@@ -57,8 +59,12 @@ class FakeBasicLogger implements BasicLogger {
 
 describe('localLambdaRunner', async () => {
 
-    const tempDir: string = await fsUtils.makeTemporaryToolkitFolder()
-    ExtensionDisposableFiles.getInstance().addFolder(tempDir)
+    let tempDir: string
+    before(async () => {
+        tempDir = await fsUtils.makeTemporaryToolkitFolder()
+        await ExtensionDisposableFiles.initialize(new FakeExtensionContext())
+        ExtensionDisposableFiles.getInstance().addFolder(tempDir)
+    })
 
     describe('attachDebugger', async () => {
         let actualRetries: number = 0
@@ -389,7 +395,9 @@ describe('localLambdaRunner', async () => {
     describe('makeBuildDir', () => {
         it ('creates a temp directory', async () => {
             const dir = await localLambdaRunner.makeBuildDir()
-            assert.strictEqual(fsUtils.fileExists(dir), true)
+            assert.strictEqual(await fsUtils.fileExists(dir), true)
+            const fsDir = await fs.readdir(dir)
+            assert.strictEqual(fsDir.length, 0)
         })
     })
 

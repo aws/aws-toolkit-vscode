@@ -114,49 +114,59 @@ async function onLocalInvokeCommand({
         templatePath: lambdaLocalInvokeParams.samTemplate.fsPath
     })
 
-    if (!lambdaLocalInvokeParams.isDebug) {
-        const baseBuildDir = await makeBuildDir()
-        const codeDir = path.dirname(lambdaLocalInvokeParams.document.uri.fsPath)
-        const documentUri = lambdaLocalInvokeParams.document.uri
-        const originalHandlerName = lambdaLocalInvokeParams.handlerName
+    try {
+        if (!lambdaLocalInvokeParams.isDebug) {
+            const baseBuildDir = await makeBuildDir()
+            const templateDir = path.dirname(lambdaLocalInvokeParams.samTemplate.fsPath)
+            const documentUri = lambdaLocalInvokeParams.document.uri
+            const originalHandlerName = lambdaLocalInvokeParams.handlerName
 
-        const inputTemplatePath = await makeInputTemplate({
-            baseBuildDir,
-            codeDir,
-            documentUri,
-            originalHandlerName,
-            handlerName: originalHandlerName,
-            runtime,
-            workspaceUri: lambdaLocalInvokeParams.workspaceFolder.uri
-        })
+            const inputTemplate = await makeInputTemplate({
+                baseBuildDir,
+                templateDir,
+                documentUri,
+                originalHandlerName,
+                handlerName: originalHandlerName,
+                runtime,
+                workspaceUri: lambdaLocalInvokeParams.workspaceFolder.uri,
+                channelLogger
+            })
 
-        const samTemplatePath: string = await executeSamBuild({
-            baseBuildDir,
-            channelLogger,
-            codeDir,
-            inputTemplatePath,
-            samProcessInvoker: processInvoker,
-        })
+            const samTemplatePath: string = await executeSamBuild({
+                baseBuildDir,
+                channelLogger,
+                codeDir: (inputTemplate.codeDir ? path.join(templateDir, inputTemplate.codeDir) : templateDir),
+                inputTemplatePath: inputTemplate.inputTemplatePath,
+                samProcessInvoker: processInvoker,
+            })
 
-        await invokeLambdaFunction({
-            baseBuildDir,
-            channelLogger,
-            configuration,
-            documentUri,
-            originalHandlerName,
-            handlerName: originalHandlerName,
-            originalSamTemplatePath: inputTemplatePath,
-            samTemplatePath,
-            samTaskInvoker: taskInvoker,
-            telemetryService,
-            runtime,
-            isDebug: lambdaLocalInvokeParams.isDebug,
+            await invokeLambdaFunction({
+                baseBuildDir,
+                channelLogger,
+                configuration,
+                documentUri,
+                originalHandlerName,
+                handlerName: originalHandlerName,
+                originalSamTemplatePath: inputTemplate.inputTemplatePath,
+                samTemplatePath,
+                samTaskInvoker: taskInvoker,
+                telemetryService,
+                runtime,
+                isDebug: lambdaLocalInvokeParams.isDebug,
 
-            // TODO: Set on debug
-            debugConfig: undefined,
-        })
-    } else {
-        vscode.window.showInformationMessage(`Local debug for ${runtime} is currently not implemented.`)
+                // TODO: Set on debug
+                debugConfig: undefined,
+            })
+        } else {
+            vscode.window.showInformationMessage(`Local debug for ${runtime} is currently not implemented.`)
+        }
+    } catch (err) {
+        const error = err as Error
+        channelLogger.error(
+            'AWS.error.during.sam.local',
+            'An error occurred trying to run SAM Application locally: {0}',
+            error
+        )
     }
 
     return getMetricDatum({
