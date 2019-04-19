@@ -23,7 +23,7 @@ export interface NodejsDebugConfiguration extends DebugConfiguration {
     readonly skipFiles?: string[]
 }
 
-export interface DebugConfigurationPathMapping {
+export interface PythonPathMapping {
     localRoot: string
     remoteRoot: string
 }
@@ -31,5 +31,5 @@ export interface DebugConfigurationPathMapping {
 export interface PythonDebugConfiguration extends DebugConfiguration {
     type: 'python'
     host: string
-    pathMappings: DebugConfigurationPathMapping[]
+    pathMappings: PythonPathMapping[]
 }

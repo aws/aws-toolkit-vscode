@@ -9,7 +9,7 @@ import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 
-import { DebugConfigurationPathMapping, PythonDebugConfiguration } from '../../lambda/local/debugConfiguration'
+import { PythonDebugConfiguration, PythonPathMapping } from '../../lambda/local/debugConfiguration'
 import { unlink, writeFile } from '../filesystem'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
@@ -173,8 +173,8 @@ function makeDebugConfig(
         samProjectCodeRoot: string,
     }): PythonDebugConfiguration {
 
-    const pathMappings: DebugConfigurationPathMapping[] = getLocalRootVariants(samProjectCodeRoot)
-        .map<DebugConfigurationPathMapping>(variant => {
+    const pathMappings: PythonPathMapping[] = getLocalRootVariants(samProjectCodeRoot)
+        .map<PythonPathMapping>(variant => {
             return {
                 localRoot: variant,
                 remoteRoot: '/var/task',
