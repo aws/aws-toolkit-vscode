@@ -402,7 +402,7 @@ describe('localLambdaRunner', async () => {
             assert.ok(dir)
             assert.strictEqual(await fsUtils.fileExists(dir), true)
             const fsDir = await fs.readdir(dir)
-            assert.ok(!fsDir.length)
+            assert.strictEqual(fsDir.length, 0)
             await del(dir, { force: true })
         })
     })
