@@ -399,9 +399,10 @@ describe('localLambdaRunner', async () => {
     describe('makeBuildDir', () => {
         it ('creates a temp directory', async () => {
             const dir = await localLambdaRunner.makeBuildDir()
+            assert.ok(dir)
             assert.strictEqual(await fsUtils.fileExists(dir), true)
             const fsDir = await fs.readdir(dir)
-            assert.strictEqual(fsDir.length, 0)
+            assert.ok(!fsDir.length)
             await del(dir, { force: true })
         })
     })
