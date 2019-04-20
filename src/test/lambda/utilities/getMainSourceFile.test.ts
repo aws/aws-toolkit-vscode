@@ -199,7 +199,6 @@ describe('getMainSourceFile', async () => {
             }
 
             await test('nodejs')
-            await test('nodejs4.3')
             await test('nodejs6.10')
             await test('nodejs8.10')
         })
