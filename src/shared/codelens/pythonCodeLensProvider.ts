@@ -30,6 +30,9 @@ import {
 } from './codeLensUtils'
 import {
     executeSamBuild,
+    getHandlerRelativePath,
+    getLambdaInfoFromExistingTemplate,
+    getRelativeFunctionHandler,
     getRuntimeForLambda,
     invokeLambdaFunction,
     LambdaLocalInvokeParams,
@@ -190,6 +193,14 @@ export async function initialize({
     const channelLogger = getChannelLogger(toolkitOutputChannel)
 
     const invokeLambda = async (args: LambdaLocalInvokeParams & { runtime: string }) => {
+        // Switch over to the output channel so the user has feedback that we're getting things ready
+        channelLogger.channel.show(true)
+
+        channelLogger.info(
+            'AWS.output.sam.local.start',
+            'Preparing to run {0} locally...',
+            args.handlerName
+        )
 
         const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
         const baseBuildDir = await makeBuildDir()
@@ -213,17 +224,33 @@ export async function initialize({
                 outputDir: baseBuildDir
             })
         }
-        const inputTemplate = await makeInputTemplate({
-            baseBuildDir,
-            templateDir: samProjectCodeRoot,
-            documentUri: args.document.uri,
-            originalHandlerName: args.handlerName,
-            handlerName,
-            runtime: args.runtime,
-            workspaceUri: args.workspaceFolder.uri,
-            channelLogger
+        
+        const handlerFileRelativePath = getHandlerRelativePath({
+            codeRoot: samProjectCodeRoot,
+            filePath: args.document.uri.fsPath
         })
-        const inputTemplatePath = inputTemplate.inputTemplatePath
+
+        const lambdaInfo = await getLambdaInfoFromExistingTemplate({
+            workspaceUri: args.workspaceFolder.uri,
+            originalHandlerName: args.handlerName,
+            runtime: args.runtime,
+            handlerFileRelativePath
+        })
+
+        const relativeFunctionHandler = getRelativeFunctionHandler({
+            handlerName: handlerName,
+            runtime: args.runtime,
+            handlerFileRelativePath
+        })
+
+        const inputTemplatePath = await makeInputTemplate({
+            baseBuildDir,
+            codeDir: samProjectCodeRoot,
+            relativeFunctionHandler,
+            properties: lambdaInfo && lambdaInfo.resource.Properties ? lambdaInfo.resource.Properties : undefined,
+            runtime: args.runtime
+        })
+
         logger.debug(`pythonCodeLensProvider.initialize: ${
             JSON.stringify({ samProjectCodeRoot, inputTemplatePath, handlerName, manifestPath }, undefined, 2)
             }`)

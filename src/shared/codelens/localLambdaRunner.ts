@@ -22,7 +22,7 @@ import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 
 import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
-import { getFamily, SamLambdaRuntimeFamily } from '../../lambda/models/samLambdaRuntime'
+import { isInterpretedRuntime } from '../../lambda/models/samLambdaRuntime'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger, localize } from '../utilities/vsCodeUtils'
@@ -47,11 +47,6 @@ export interface OnDidSamBuildParams {
     debugPort: number,
     handlerName: string,
     isDebug: boolean
-}
-
-export interface InputTemplateInfo {
-    inputTemplatePath: string
-    codeDir: string | undefined
 }
 
 const TEMPLATE_RESOURCE_NAME: string = 'awsToolkitSamLocalResource'
@@ -361,89 +356,80 @@ export const makeBuildDir = async (): Promise<string> => {
     return buildDir
 }
 
-export async function makeInputTemplate(params: {
-    baseBuildDir: string,
-    templateDir: string,
-    documentUri: vscode.Uri
-    originalHandlerName: string,
+export function getHandlerRelativePath(params: {
+    codeRoot: string,
+    filePath: string
+}): string {
+    return path.relative(params.codeRoot, path.dirname(params.filePath))
+}
+
+export function getRelativeFunctionHandler(params: {
     handlerName: string,
     runtime: string,
+    handlerFileRelativePath: string
+}): string {
+    // Make function handler relative to baseDir
+    let relativeFunctionHandler: string
+    if (isInterpretedRuntime(params.runtime)) {
+        relativeFunctionHandler = normalizeSeparator(
+            path.join(
+                params.handlerFileRelativePath,
+                params.handlerName,
+            )
+        )
+    } else {
+        relativeFunctionHandler = params.handlerName
+    }
+
+    return relativeFunctionHandler
+}
+
+export async function getLambdaInfoFromExistingTemplate(params: {
     workspaceUri: vscode.Uri,
-    channelLogger: ChannelLogger
-}): Promise<InputTemplateInfo> {
+    originalHandlerName: string,
+    runtime: string,
+    handlerFileRelativePath: string
+}): Promise <LocalLambda | undefined> {
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(params.workspaceUri)
+    let existingLambda: LocalLambda | undefined
+    if (workspaceFolder) {
 
-    // Switch over to the output channel so the user has feedback that we're getting things ready
-    params.channelLogger.channel.show(true)
+        const relativeOriginalFunctionHandler = getRelativeFunctionHandler({
+            handlerName: params.originalHandlerName,
+            runtime: params.runtime,
+            handlerFileRelativePath: params.handlerFileRelativePath
+        })
 
-    params.channelLogger.info(
-        'AWS.output.sam.local.start',
-        'Preparing to run {0} locally...',
-        params.handlerName
-    )
+        const lambdas = await detectLocalLambdas([workspaceFolder])
+        existingLambda = lambdas.find(lambda => lambda.handler === relativeOriginalFunctionHandler)
+    }
+
+    return existingLambda
+}
+
+export async function makeInputTemplate(params: {
+    baseBuildDir: string,
+    codeDir: string,
+    relativeFunctionHandler: string,
+    properties?: CloudFormation.ResourceProperties,
+    runtime: string
+}): Promise<string> {
+
+    const newTemplate = new SamTemplateGenerator()
+        .withFunctionHandler(params.relativeFunctionHandler)
+        .withResourceName(TEMPLATE_RESOURCE_NAME)
+        .withRuntime(params.runtime)
+        .withCodeUri(params.codeDir)
+    if (params.properties && params.properties.Environment) {
+        newTemplate.withEnvironment(params.properties.Environment)
+    }
 
     const inputTemplatePath: string = path.join(params.baseBuildDir, 'input', 'input-template.yaml')
     ExtensionDisposableFiles.getInstance().addFolder(inputTemplatePath)
 
-    // Make function handler relative to baseDir
-    const handlerFileRelativePath = path.relative(
-        params.templateDir,
-        path.dirname(params.documentUri.fsPath)
-    )
-
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(params.workspaceUri)
-    let existingLambda: LocalLambda | undefined
-    let existingTemplateResource: CloudFormation.Resource | undefined
-    if (workspaceFolder) {
-
-        let relativeOriginalFunctionHandler = params.originalHandlerName
-        if (getFamily(params.runtime) !== SamLambdaRuntimeFamily.DotNet) {
-            relativeOriginalFunctionHandler = normalizeSeparator(
-                path.join(
-                    handlerFileRelativePath,
-                    params.originalHandlerName,
-                )
-            )
-        }
-
-        const lambdas = await detectLocalLambdas([workspaceFolder])
-        existingLambda = lambdas.find(lambda => lambda.handler === relativeOriginalFunctionHandler)
-        existingTemplateResource = existingLambda ? existingLambda.resource : undefined
-    }
-
-    let relativeFunctionHandler = params.handlerName
-    if (getFamily(params.runtime) !== SamLambdaRuntimeFamily.DotNet) {
-        relativeFunctionHandler = normalizeSeparator(
-            path.join(
-                handlerFileRelativePath,
-                params.handlerName,
-            )
-        )
-    }
-
-    let newTemplate = new SamTemplateGenerator()
-        .withFunctionHandler(relativeFunctionHandler)
-        .withResourceName(TEMPLATE_RESOURCE_NAME)
-        .withRuntime(params.runtime)
-
-    if (getFamily(params.runtime) === SamLambdaRuntimeFamily.DotNet) {
-        newTemplate.withCodeUri(existingLambda && existingLambda.codeUri ?
-            path.join(params.templateDir, existingLambda.codeUri) : params.templateDir
-        )
-    } else {
-        newTemplate.withCodeUri(params.templateDir)
-    }
-
-    if (existingTemplateResource && existingTemplateResource.Properties &&
-        existingTemplateResource.Properties.Environment) {
-        newTemplate = newTemplate.withEnvironment(existingTemplateResource.Properties.Environment)
-    }
-
     await newTemplate.generate(inputTemplatePath)
 
-    return {
-        inputTemplatePath,
-        codeDir: ( existingLambda ? existingLambda.codeUri : undefined )
-    }
+    return inputTemplatePath
 }
 
 export async function executeSamBuild(params: {

@@ -29,6 +29,9 @@ import {
 } from './codeLensUtils'
 import {
     executeSamBuild,
+    getHandlerRelativePath,
+    getLambdaInfoFromExistingTemplate,
+    getRelativeFunctionHandler,
     getRuntimeForLambda,
     invokeLambdaFunction,
     LambdaLocalInvokeParams,
@@ -114,29 +117,54 @@ async function onLocalInvokeCommand({
         templatePath: lambdaLocalInvokeParams.samTemplate.fsPath
     })
 
+    // Switch over to the output channel so the user has feedback that we're getting things ready
+    channelLogger.channel.show(true)
+
+    channelLogger.info(
+        'AWS.output.sam.local.start',
+        'Preparing to run {0} locally...',
+        lambdaLocalInvokeParams.handlerName
+    )
+
     try {
         if (!lambdaLocalInvokeParams.isDebug) {
             const baseBuildDir = await makeBuildDir()
             const templateDir = path.dirname(lambdaLocalInvokeParams.samTemplate.fsPath)
             const documentUri = lambdaLocalInvokeParams.document.uri
-            const originalHandlerName = lambdaLocalInvokeParams.handlerName
+            const handlerName = lambdaLocalInvokeParams.handlerName
 
-            const inputTemplate = await makeInputTemplate({
-                baseBuildDir,
-                templateDir,
-                documentUri,
-                originalHandlerName,
-                handlerName: originalHandlerName,
-                runtime,
+            const handlerFileRelativePath = getHandlerRelativePath({
+                codeRoot: templateDir,
+                filePath: documentUri.fsPath
+            })
+
+            const lambdaInfo = await getLambdaInfoFromExistingTemplate({
                 workspaceUri: lambdaLocalInvokeParams.workspaceFolder.uri,
-                channelLogger
+                originalHandlerName: handlerName,
+                runtime,
+                handlerFileRelativePath
+            })
+
+            const relativeFunctionHandler = getRelativeFunctionHandler({
+                handlerName,
+                runtime,
+                handlerFileRelativePath
+            })
+
+            const inputTemplatePath = await makeInputTemplate({
+                baseBuildDir,
+                codeDir: lambdaInfo && lambdaInfo.codeUri ?
+                    path.join(templateDir, lambdaInfo.codeUri) : templateDir,
+                relativeFunctionHandler,
+                properties: lambdaInfo && lambdaInfo.resource.Properties ? lambdaInfo.resource.Properties : undefined,
+                runtime
             })
 
             const samTemplatePath: string = await executeSamBuild({
                 baseBuildDir,
                 channelLogger,
-                codeDir: (inputTemplate.codeDir ? path.join(templateDir, inputTemplate.codeDir) : templateDir),
-                inputTemplatePath: inputTemplate.inputTemplatePath,
+                codeDir: (lambdaInfo && lambdaInfo.codeUri ? path.join(templateDir, lambdaInfo.codeUri) : templateDir),
+                inputTemplatePath,
                 samProcessInvoker: processInvoker,
             })
 
@@ -145,9 +173,9 @@ async function onLocalInvokeCommand({
                 channelLogger,
                 configuration,
                 documentUri,
-                originalHandlerName,
-                handlerName: originalHandlerName,
-                originalSamTemplatePath: inputTemplate.inputTemplatePath,
+                originalHandlerName: handlerName,
+                handlerName,
+                originalSamTemplatePath: inputTemplatePath,
                 samTemplatePath,
                 samTaskInvoker: taskInvoker,
                 telemetryService,
