@@ -92,13 +92,15 @@ The confirmation prompt contains the following messaging. See [Success criteria]
 
 ---
 
-{ AWS Lambda Function | AWS CloudFormation Stack } '`arn_here`' is part of an AWS CodePipeline pipeline (`pipeline_arn_here`).
+{ AWS Lambda Function | AWS CloudFormation Stack } '`friendly_name_here`' is part of an AWS CodePipeline pipeline (`associated_pipeline`).
 
 Manual modification of resources outside of an AWS CodePipeline will skip any verification steps defined in the pipeline.
 
 Do you want to continue with this manual { deployment | deletion }?
 
 ---
+
+`associated_pipeline` will be the value of the [tag that indicates there is an associated pipeline](#associated-resources)
 
 The user will have the following actions/responses available:
 * `Yes` - proceeds with the manual operation
@@ -111,7 +113,7 @@ Implementation
 Design
 ------
 
-### Resources associated with a pipeline
+### <a id="associated-resources"></a>Resources associated with a pipeline
 
 Resources that have a tag `aws:codepipeline:pipelineArn` are considered to have an association with a pipeline.
 
