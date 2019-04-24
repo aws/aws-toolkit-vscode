@@ -138,32 +138,32 @@ async function onLocalInvokeCommand({
                 filePath: documentUri.fsPath
             })
 
-            const lambdaInfo = await getLambdaInfoFromExistingTemplate({
-                workspaceUri: lambdaLocalInvokeParams.workspaceFolder.uri,
-                originalHandlerName: handlerName,
-                runtime,
-                handlerFileRelativePath
-            })
-
             const relativeFunctionHandler = getRelativeFunctionHandler({
                 handlerName,
                 runtime,
                 handlerFileRelativePath
             })
 
+            const lambdaInfo = await getLambdaInfoFromExistingTemplate({
+                workspaceUri: lambdaLocalInvokeParams.workspaceFolder.uri,
+                relativeOriginalFunctionHandler: relativeFunctionHandler
+            })
+
+            const properties = lambdaInfo ? lambdaInfo.resource.Properties : undefined
+            const codeDir = properties ? path.join(templateDir, properties.CodeUri) : templateDir
+
             const inputTemplatePath = await makeInputTemplate({
                 baseBuildDir,
-                codeDir: lambdaInfo && lambdaInfo.codeUri ?
-                    path.join(templateDir, lambdaInfo.codeUri) : templateDir,
+                codeDir,
                 relativeFunctionHandler,
-                properties: lambdaInfo && lambdaInfo.resource.Properties ? lambdaInfo.resource.Properties : undefined,
+                properties,
                 runtime
             })
 
             const samTemplatePath: string = await executeSamBuild({
                 baseBuildDir,
                 channelLogger,
-                codeDir: (lambdaInfo && lambdaInfo.codeUri ? path.join(templateDir, lambdaInfo.codeUri) : templateDir),
+                codeDir,
                 inputTemplatePath,
                 samProcessInvoker: processInvoker,
             })

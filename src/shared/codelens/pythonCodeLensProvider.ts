@@ -230,9 +230,8 @@ export async function initialize({
             filePath: args.document.uri.fsPath
         })
 
-        const lambdaInfo = await getLambdaInfoFromExistingTemplate({
-            workspaceUri: args.workspaceFolder.uri,
-            originalHandlerName: args.handlerName,
+        const relativeOriginalFunctionHandler = getRelativeFunctionHandler({
+            handlerName: args.handlerName,
             runtime: args.runtime,
             handlerFileRelativePath
         })
@@ -241,6 +240,11 @@ export async function initialize({
             handlerName: handlerName,
             runtime: args.runtime,
             handlerFileRelativePath
+        })
+
+        const lambdaInfo = await getLambdaInfoFromExistingTemplate({
+            workspaceUri: args.workspaceFolder.uri,
+            relativeOriginalFunctionHandler
         })
 
         const inputTemplatePath = await makeInputTemplate({

@@ -90,16 +90,3 @@ export function getFamily(runtime: string | undefined): SamLambdaRuntimeFamily {
 
     }
 }
-
-export function isInterpretedRuntime(runtime: string): boolean {
-    switch (getFamily(runtime)) {
-        case SamLambdaRuntimeFamily.DotNet:
-        case SamLambdaRuntimeFamily.Java:
-        case SamLambdaRuntimeFamily.Go:
-            return false
-        case SamLambdaRuntimeFamily.NodeJS:
-        case SamLambdaRuntimeFamily.Python:
-        case SamLambdaRuntimeFamily.Ruby:
-            return true
-    }
-}

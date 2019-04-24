@@ -22,7 +22,7 @@ import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 
 import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
-import { isInterpretedRuntime } from '../../lambda/models/samLambdaRuntime'
+import { getFamily, SamLambdaRuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger, localize } from '../utilities/vsCodeUtils'
@@ -370,7 +370,7 @@ export function getRelativeFunctionHandler(params: {
 }): string {
     // Make function handler relative to baseDir
     let relativeFunctionHandler: string
-    if (isInterpretedRuntime(params.runtime)) {
+    if (shouldAppendRelativePathToFunctionHandler(params.runtime)) {
         relativeFunctionHandler = normalizeSeparator(
             path.join(
                 params.handlerFileRelativePath,
@@ -386,22 +386,13 @@ export function getRelativeFunctionHandler(params: {
 
 export async function getLambdaInfoFromExistingTemplate(params: {
     workspaceUri: vscode.Uri,
-    originalHandlerName: string,
-    runtime: string,
-    handlerFileRelativePath: string
+    relativeOriginalFunctionHandler: string
 }): Promise <LocalLambda | undefined> {
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(params.workspaceUri)
     let existingLambda: LocalLambda | undefined
     if (workspaceFolder) {
-
-        const relativeOriginalFunctionHandler = getRelativeFunctionHandler({
-            handlerName: params.originalHandlerName,
-            runtime: params.runtime,
-            handlerFileRelativePath: params.handlerFileRelativePath
-        })
-
         const lambdas = await detectLocalLambdas([workspaceFolder])
-        existingLambda = lambdas.find(lambda => lambda.handler === relativeOriginalFunctionHandler)
+        existingLambda = lambdas.find(lambda => lambda.handler === params.relativeOriginalFunctionHandler)
     }
 
     return existingLambda
@@ -739,4 +730,20 @@ function getAttachDebuggerMaxRetryLimit(
         'samcli.debug.attach.retry.maximum',
         defaultValue
     )!
+}
+
+export function shouldAppendRelativePathToFunctionHandler(runtime: string): boolean {
+    // getFamily will throw an error if the runtime doesn't exist
+    switch (getFamily(runtime)) {
+        case SamLambdaRuntimeFamily.NodeJS:
+        case SamLambdaRuntimeFamily.Python:
+        case SamLambdaRuntimeFamily.Ruby:
+            return true
+        case SamLambdaRuntimeFamily.DotNet:
+        case SamLambdaRuntimeFamily.Java:
+        case SamLambdaRuntimeFamily.Go:
+        // if the runtime exists but for some reason we forgot to cover it here
+        default:
+            return false
+    }
 }
