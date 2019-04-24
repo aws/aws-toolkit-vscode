@@ -22,6 +22,7 @@ import software.aws.toolkits.jetbrains.components.telemetry.LoggingDialogWrapper
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.services.iam.CreateIamRoleDialog
 import software.aws.toolkits.jetbrains.services.iam.IamRole
@@ -240,6 +241,13 @@ class EditFunctionDialog(
     override fun doOKAction() {
         // Do nothing, close logic is handled separately
     }
+
+    override fun getHelpId(): String? =
+        when (mode) {
+            NEW -> HelpIds.CREATE_FUNCTION_DIALOG.id
+            UPDATE_CONFIGURATION -> HelpIds.UPDATE_FUNCTION_CONFIGURATION_DIALOG.id
+            UPDATE_CODE -> HelpIds.UPDATE_FUNCTION_CODE_DIALOG.id
+        }
 
     private fun upsertLambdaCode() {
         if (okAction.isEnabled) {

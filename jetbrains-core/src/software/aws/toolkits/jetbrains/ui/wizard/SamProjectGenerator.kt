@@ -26,6 +26,7 @@ import com.intellij.platform.ProjectGeneratorPeer
 import com.intellij.platform.ProjectTemplate
 import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.resources.message
 import javax.swing.Icon
 import javax.swing.JComponent
@@ -87,6 +88,8 @@ class SamProjectGenerator : ProjectTemplate,
 
     // validation is done in the peer
     override fun validateSettings(): ValidationInfo? = null
+
+    override fun getHelpId(): String? = HelpIds.NEW_SERVERLESS_PROJECT_DIALOG.id
 }
 
 // non-IntelliJ step UI

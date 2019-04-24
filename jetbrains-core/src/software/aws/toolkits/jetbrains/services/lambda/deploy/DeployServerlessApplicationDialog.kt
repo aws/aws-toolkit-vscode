@@ -17,6 +17,7 @@ import software.aws.toolkits.core.utils.listBucketsByRegion
 import software.aws.toolkits.jetbrains.components.telemetry.LoggingDialogWrapper
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.cloudformation.describeStack
 import software.aws.toolkits.jetbrains.services.cloudformation.listStackSummariesFilter
@@ -110,6 +111,8 @@ class DeployServerlessApplicationDialog(
             if (settings?.samStackName(samPath) == null) view.newStackName else view.updateStack
 
     override fun doValidate(): ValidationInfo? = validator.validateSettings()
+
+    override fun getHelpId(): String? = HelpIds.DEPLOY_SERVERLESS_APPLICATION_DIALOG.id
 
     val stackName: String
         get() = if (view.createStack.isSelected) {
