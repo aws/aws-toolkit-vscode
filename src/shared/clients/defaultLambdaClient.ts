@@ -27,16 +27,6 @@ export class DefaultLambdaClient implements LambdaClient {
         }
     }
 
-    public async getFunctionConfiguration(name: string): Promise<Lambda.FunctionConfiguration> {
-        const sdkClient = await this.createSdkClient()
-
-        const response = await sdkClient.getFunctionConfiguration({
-            FunctionName: name
-        }).promise()
-
-        return response
-    }
-
     public async invoke(name: string, payload?: _Blob): Promise<Lambda.InvocationResponse> {
         const sdkClient = await this.createSdkClient()
 

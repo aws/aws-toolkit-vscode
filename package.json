@@ -136,10 +136,6 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.getLambdaConfig",
-                    "when": "false"
-                },
-                {
                     "command": "aws.invokeLambda",
                     "when": "false"
                 },
@@ -186,14 +182,9 @@
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.getLambdaConfig",
-                    "when": "view == lambda && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
-                    "group": "1@1"
-                },
-                {
                     "command": "aws.deleteLambda",
                     "when": "view == lambda && viewItem == awsRegionFunctionNode",
-                    "group": "2@1"
+                    "group": "1@1"
                 },
                 {
                     "command": "aws.deleteCloudFormation",
@@ -266,11 +257,6 @@
                     "dark": "third-party/resources/from-vscode/dark/refresh.svg",
                     "light": "third-party/resources/from-vscode/light/refresh.svg"
                 }
-            },
-            {
-                "command": "aws.getLambdaConfig",
-                "title": "%AWS.command.getLambdaConfig%",
-                "category": "AWS"
             },
             {
                 "command": "aws.samcli.detect",

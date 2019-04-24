@@ -41,18 +41,4 @@ export class LambdaTemplates {
         <script nonce="<%= scr.nonce %>" src="<%= scr.uri %>"></script>
     <% }); %>
     `
-    public static readonly GET_CONFIG_TEMPLATE = `
-    <h1>
-        Configuration for <%= FunctionName %>...
-    </h1>
-    <p>Function Name: <%= FunctionName %></p>
-    <p>Function Arn: <%= FunctionArn %>
-    <p>Description: <%= Description %>
-    <p>Handler: <%= Handler %>
-    <p>Last Modified: <%= LastModified %>
-    <p>Memory Size: <%= MemorySize %>
-    <p>Role: <%= Role %>
-    <p>Timeout: <%= Timeout %>
-    <p>Version: <%= Version %>
-    `
 }

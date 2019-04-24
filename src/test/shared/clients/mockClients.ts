@@ -54,27 +54,23 @@ export class MockCloudFormationClient implements CloudFormationClient {
 export class MockLambdaClient implements LambdaClient {
     public readonly regionCode: string
     public readonly deleteFunction: (name: string) => Promise<void>
-    public readonly getFunctionConfiguration: (name: string) => Promise<Lambda.FunctionConfiguration>
     public readonly invoke: (name: string, payload?: Lambda._Blob) => Promise<Lambda.InvocationResponse>
     public readonly listFunctions: () => AsyncIterableIterator<Lambda.FunctionConfiguration>
 
     public constructor({
         regionCode = '',
         deleteFunction = async (name: string) => { },
-        getFunctionConfiguration = async (name: string) => ({}),
         invoke = async (name: string, payload?: Lambda._Blob) => ({}),
         listFunctions = () => asyncGenerator([])
 
     }: {
         regionCode?: string
         deleteFunction?(name: string): Promise<void>
-        getFunctionConfiguration?(name: string): Promise<Lambda.FunctionConfiguration>
         invoke?(name: string, payload?: Lambda._Blob): Promise<Lambda.InvocationResponse>
         listFunctions?(): AsyncIterableIterator<Lambda.FunctionConfiguration>
     }) {
         this.regionCode = regionCode
         this.deleteFunction = deleteFunction
-        this.getFunctionConfiguration = getFunctionConfiguration
         this.invoke = invoke
         this.listFunctions = listFunctions
     }

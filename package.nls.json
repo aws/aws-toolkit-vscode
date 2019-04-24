@@ -33,7 +33,6 @@
     "AWS.command.invokeLambda": "Invoke on AWS",
     "AWS.command.configureLambda": "Configure",
     "AWS.command.refreshAwsExplorer": "Refresh",
-    "AWS.command.getLambdaConfig": "Get Configuration",
     "AWS.command.samcli.detect": "Detect SAM CLI",
     "AWS.command.deleteCloudFormation": "Delete CloudFormation Stack",
     "AWS.command.viewLogs": "View AWS Toolkit Logs",

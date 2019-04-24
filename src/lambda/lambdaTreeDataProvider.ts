@@ -22,7 +22,6 @@ import { createNewSamApp } from './commands/createNewSamApp'
 import { deleteCloudFormation } from './commands/deleteCloudFormation'
 import { deleteLambda } from './commands/deleteLambda'
 import { deploySamApplication } from './commands/deploySamApplication'
-import { getLambdaConfig } from './commands/getLambdaConfig'
 import { invokeLambda } from './commands/invokeLambda'
 import { showErrorDetails } from './commands/showErrorDetails'
 import { CloudFormationStackNode } from './explorer/cloudFormationNodes'
@@ -118,14 +117,6 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         registerCommand({
             command: 'aws.configureLambda',
             callback: configureLocalLambda
-        })
-
-        registerCommand({
-            command: 'aws.getLambdaConfig',
-            callback: async (node: FunctionNodeBase) => await getLambdaConfig(
-                this.awsContext,
-                node
-            )
         })
 
         registerCommand({

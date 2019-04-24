@@ -138,10 +138,6 @@ describe('DefaultCloudFormationStackNode', () => {
 
             }
 
-            public async getFunctionConfiguration(name: string): Promise<Lambda.FunctionConfiguration> {
-                return this.lambdas.find(l => l.FunctionName === name) || {} as any as Lambda.FunctionConfiguration
-            }
-
             public async invoke(name: string, payload?: Lambda._Blob): Promise<Lambda.InvocationResponse> {
                 return {} as any as Lambda.InvocationResponse
             }
