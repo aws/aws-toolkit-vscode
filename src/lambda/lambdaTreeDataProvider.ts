@@ -31,9 +31,7 @@ import { ErrorNode } from './explorer/errorNode'
 import { FunctionNodeBase } from './explorer/functionNode'
 import { RegionNode } from './explorer/regionNode'
 import { StandaloneFunctionNode } from './explorer/standaloneNodes'
-import { DefaultLambdaPolicyProvider, LambdaPolicyView } from './lambdaPolicy'
 import { configureLocalLambda } from './local/configureLocalLambda'
-import * as utils from './utils'
 
 export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
     public viewProviderId: string = 'lambda'
@@ -128,21 +126,6 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
                 this.awsContext,
                 node
             )
-        })
-
-        registerCommand({
-            command: 'aws.getLambdaPolicy',
-            callback: async (node: FunctionNodeBase) => {
-                const functionNode: FunctionNodeBase = await utils.selectLambdaNode(this.awsContext, node)
-
-                const policyProvider = new DefaultLambdaPolicyProvider(
-                    functionNode.configuration.FunctionName!,
-                    functionNode.regionCode
-                )
-
-                const view = new LambdaPolicyView(policyProvider)
-                await view.load()
-            }
         })
 
         registerCommand({

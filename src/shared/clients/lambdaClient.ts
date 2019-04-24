@@ -17,7 +17,5 @@ export interface LambdaClient {
 
     invoke(name: string, payload?: _Blob): Promise<Lambda.InvocationResponse>
 
-    getPolicy(name: string): Promise<Lambda.GetPolicyResponse>
-
     listFunctions(): AsyncIterableIterator<Lambda.FunctionConfiguration>
 }

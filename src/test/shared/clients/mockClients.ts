@@ -56,7 +56,6 @@ export class MockLambdaClient implements LambdaClient {
     public readonly deleteFunction: (name: string) => Promise<void>
     public readonly getFunctionConfiguration: (name: string) => Promise<Lambda.FunctionConfiguration>
     public readonly invoke: (name: string, payload?: Lambda._Blob) => Promise<Lambda.InvocationResponse>
-    public readonly getPolicy: (name: string) => Promise<Lambda.GetPolicyResponse>
     public readonly listFunctions: () => AsyncIterableIterator<Lambda.FunctionConfiguration>
 
     public constructor({
@@ -64,7 +63,6 @@ export class MockLambdaClient implements LambdaClient {
         deleteFunction = async (name: string) => { },
         getFunctionConfiguration = async (name: string) => ({}),
         invoke = async (name: string, payload?: Lambda._Blob) => ({}),
-        getPolicy = async (name: string) => ({}),
         listFunctions = () => asyncGenerator([])
 
     }: {
@@ -72,14 +70,12 @@ export class MockLambdaClient implements LambdaClient {
         deleteFunction?(name: string): Promise<void>
         getFunctionConfiguration?(name: string): Promise<Lambda.FunctionConfiguration>
         invoke?(name: string, payload?: Lambda._Blob): Promise<Lambda.InvocationResponse>
-        getPolicy?(name: string): Promise<Lambda.GetPolicyResponse>
         listFunctions?(): AsyncIterableIterator<Lambda.FunctionConfiguration>
     }) {
         this.regionCode = regionCode
         this.deleteFunction = deleteFunction
         this.getFunctionConfiguration = getFunctionConfiguration
         this.invoke = invoke
-        this.getPolicy = getPolicy
         this.listFunctions = listFunctions
     }
 }

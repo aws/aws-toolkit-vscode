@@ -49,14 +49,6 @@ export class DefaultLambdaClient implements LambdaClient {
         return response
     }
 
-    public async getPolicy(name: string): Promise<Lambda.GetPolicyResponse> {
-        const sdkClient = await this.createSdkClient()
-
-        return await sdkClient.getPolicy({
-            FunctionName: name
-        }).promise()
-    }
-
     public async *listFunctions(): AsyncIterableIterator<Lambda.FunctionConfiguration> {
         const client = await this.createSdkClient()
 

@@ -140,10 +140,6 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.getLambdaPolicy",
-                    "when": "false"
-                },
-                {
                     "command": "aws.invokeLambda",
                     "when": "false"
                 },
@@ -193,11 +189,6 @@
                     "command": "aws.getLambdaConfig",
                     "when": "view == lambda && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
                     "group": "1@1"
-                },
-                {
-                    "command": "aws.getLambdaPolicy",
-                    "when": "view == lambda && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
-                    "group": "1@2"
                 },
                 {
                     "command": "aws.deleteLambda",
@@ -279,11 +270,6 @@
             {
                 "command": "aws.getLambdaConfig",
                 "title": "%AWS.command.getLambdaConfig%",
-                "category": "AWS"
-            },
-            {
-                "command": "aws.getLambdaPolicy",
-                "title": "%AWS.command.getLambdaPolicy%",
                 "category": "AWS"
             },
             {
