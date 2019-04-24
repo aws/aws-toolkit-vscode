@@ -5,6 +5,8 @@ All notable changes to the "aws-vscode-tools" extension will be documented in th
 ## NEXT (Developer Preview)
 
 * Local Run/Debug of SAM Lambda Functions now outputs to the Output and Debug Console, and reduces timing issues for attaching the debugger
+* Removed Lambda view that showed the Lambda Policy
+* Removed Lambda view that showed the Lambda Configuration
 
 ## 0.1.1 (Developer Preview)
 
