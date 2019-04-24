@@ -73,10 +73,18 @@ Proposed:
 Users deploy a SAM Application using a Command Palette action. Through a Wizard, they are asked for details about what to deploy, and where to deploy it, including specifying a CloudFormation Stack. The stack specified can be new or may already exist. At this time, users must type the stack name in manually. There is a backlog task to replace this with a list that the user can choose a stack from.
 
 Proposed:
-After the wizard has collected all information from the user, we can check to see if the Stack belongs to a CodePipeline. If it does not, the deploy proceeds. If it does, the user is given a confirmation prompt (see [Confirmation Prompt](#confirmation-prompt) below). If the user agrees to proceed with the deploy, it proceeds normally. Otherwise, nothing happens - the wizard has already ended, and the user is back in the editor.
+* After the wizard collects all information from the user, we check to see if the Stack belongs to a CodePipeline.
+  * If it does not, the deploy proceeds.
+  * If it does, the user is given a confirmation prompt (see [Confirmation Prompt](#confirmation-prompt) below).
+    * If the user agrees to proceed with the deploy, it proceeds normally.
+    * If the user elects to back out, nothing happens - the wizard has already ended, and the user is back in the editor.
 
 Alternate:
-After the user enters a CloudFormation Stack, but before the wizard closes, we can check to see if the Stack belongs to a CodePipeline. If it does not, the wizard continues. If it does, the user is given a confirmation prompt, however this confirmation prompt is integrated with the wizard. If the user agrees to proceed with the deploy, the wizard moves on to the next step. Otherwise, the wizard moves back to the step where the user can specify a different CloudFormation Stack.
+* After the user enters a CloudFormation Stack, but before the wizard closes, we check to see if the Stack belongs to a CodePipeline.
+  * If it does not, the wizard continues.
+  * If it does, the user is given a confirmation prompt, however this confirmation prompt is integrated with the wizard.
+    * If the user agrees to proceed with the deploy, the wizard moves on to the next step.
+    * If the user elects to back out, the wizard moves back to the step where the user can specify a different CloudFormation Stack.
 
 ### <a id="confirmation-prompt"></a>Confirmation Prompt
 
@@ -133,6 +141,7 @@ The `ResourceGroupsTaggingAPI` service client will be used. The client will be s
 * Deploying a SAM Application
   * it does not prompt the user with the pipeline-related confirmation when attempting to deploy a SAM Application to a CloudFormation Stack that is not associated with a pipeline
   * it prompts the user with the pipeline-related confirmation when attempting to deploy a SAM Application to a CloudFormation Stack that is associated with a pipeline
+  * it continues to prompt the user if they attempt to select the same stack again
 
 ### System Tests
 
