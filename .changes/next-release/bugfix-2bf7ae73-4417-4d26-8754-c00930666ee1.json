@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix being unable to add breakpoints to Python Lambdas on Windows, Fixes #908"
-}

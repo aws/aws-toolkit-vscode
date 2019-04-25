@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Respect IDE HTTP proxy settings when making calls to AWS services. Fixes #685."
-}

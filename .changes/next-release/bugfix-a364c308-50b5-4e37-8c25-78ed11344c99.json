@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix gutter icon not shown in Project whoses runtime is not supported by Lambda but runtime group is supported"
-}
