@@ -22,7 +22,9 @@
             <preferred-size width="150" height="-1"/>
           </grid>
         </constraints>
-        <properties/>
+        <properties>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.handler.tooltip"/>
+        </properties>
       </component>
       <component id="45df9" class="javax.swing.JLabel">
         <constraints>
@@ -44,13 +46,17 @@
         <constraints>
           <grid row="4" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
         </constraints>
-        <properties/>
+        <properties>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.env_vars.tooltip"/>
+        </properties>
       </component>
       <component id="dc226" class="software.aws.toolkits.jetbrains.ui.RegionSelector" binding="regionSelector">
         <constraints>
           <grid row="7" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
         </constraints>
-        <properties/>
+        <properties>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.region.tooltip"/>
+        </properties>
       </component>
       <component id="9e917" class="javax.swing.JLabel">
         <constraints>
@@ -64,7 +70,9 @@
         <constraints>
           <grid row="6" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
         </constraints>
-        <properties/>
+        <properties>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.credentials.tooltip"/>
+        </properties>
       </component>
       <component id="125e9" class="javax.swing.JLabel">
         <constraints>
@@ -81,6 +89,7 @@
         <properties>
           <selected value="false"/>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.source.from_template"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.fromTemplate.tooltip"/>
         </properties>
       </component>
       <grid id="ceab0" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
@@ -99,6 +108,7 @@
             </constraints>
             <properties>
               <enabled value="false"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.fromTemplate.tooltip"/>
             </properties>
           </component>
           <component id="bb446" class="javax.swing.JComboBox" binding="function" custom-create="true">
@@ -153,7 +163,9 @@
         <constraints>
           <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
         </constraints>
-        <properties/>
+        <properties>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.runtime.tooltip"/>
+        </properties>
       </component>
       <vspacer id="b960a">
         <constraints>

@@ -22,7 +22,9 @@
             <minimum-size width="0" height="-1"/>
           </grid>
         </constraints>
-        <properties/>
+        <properties>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.runtime.tooltip"/>
+        </properties>
       </component>
       <component id="88c8f" class="com.intellij.ui.components.JBLabel" binding="samLabel">
         <constraints>
@@ -44,6 +46,7 @@
         </constraints>
         <properties>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="sam.init.select_sam_template"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="sam.init.sam_template.tooltip"/>
         </properties>
       </component>
       <component id="543f9" class="com.intellij.openapi.ui.ComboBox" binding="templateComboBox">
@@ -54,6 +57,7 @@
         </constraints>
         <properties>
           <model/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="sam.init.sam_template.tooltip"/>
         </properties>
       </component>
       <grid id="ff518" layout-manager="BorderLayout" hgap="0" vgap="0">
@@ -70,6 +74,7 @@
             <properties>
               <editable value="false"/>
               <enabled value="false"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws.settings.sam.find.description"/>
             </properties>
           </component>
           <component id="88ecb" class="com.intellij.openapi.ui.FixedSizeButton" binding="editSamExecutableButton">

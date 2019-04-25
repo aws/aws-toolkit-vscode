@@ -14,6 +14,7 @@
         </constraints>
         <properties>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="serverless.application.deploy.use_container"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.sam.buildInContainer.tooltip"/>
         </properties>
       </component>
       <component id="31eed" class="javax.swing.JCheckBox" binding="skipPullImage">
@@ -22,6 +23,7 @@
         </constraints>
         <properties>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.sam.skip_image_pull"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.sam.skipCheckingNewerContainerImage.tooltip"/>
         </properties>
       </component>
       <component id="ff810" class="javax.swing.JTextField" binding="dockerNetwork">
@@ -30,7 +32,9 @@
             <preferred-size width="150" height="-1"/>
           </grid>
         </constraints>
-        <properties/>
+        <properties>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.sam.dockerNetwork.tooltip"/>
+        </properties>
       </component>
       <vspacer id="737a3">
         <constraints>
