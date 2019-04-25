@@ -115,6 +115,8 @@ Design
 
 Resources that have a tag `aws:codepipeline:pipelineArn` are considered to have an association with a pipeline.
 
+Metrics are logged indicating whether or not the Toolkit was successful in determining if there was an associated pipeline - see [Fallback Handling](#fallback-handling).
+
 ### Utility Methods
 * a method that determines if an AWS resource is associated with AWS CodePipeline
 * a method that generates confirmation prompt text (if confirmation prompt will exist within a Wizard and as a standalone prompt)
@@ -147,18 +149,33 @@ The confirmation prompt can be implemented using one of two UI facilities:
 
 The `ResourceGroupsTaggingAPI` service client will be used. The client will be set up in a manner consistent with the Lambda and CloudFormation clients, allowing the clients to be stubbed out in unit tests. See the Toolkit's Lambda Client [Interface](/src/shared/clients/lambdaClient.ts) and [Implementation](/src/shared/clients/defaultLambdaClient.ts) as an example. A new client factory will be added to [ToolkitClientBuilder](/src/shared/clients/toolkitClientBuilder.ts) and [DefaultToolkitClientBuilder](/src/shared/clients/defaultToolkitClientBuilder.ts).
 
+### <a id="fallback-handling"></a>Fallback Handling
+
+If the Toolkit is unable to determine whether or not a resource is associated with a pipeline, the following actions take place:
+* the issue is logged as a warning
+* the user is not notified
+* the Toolkit behaves as if the resource is not associated with a pipeline
+
+Rationale:
+* users have declared their intention to deploy an application, at this point we do not want to impede them
+* logged metrics will help inform how often the Toolkit fails to determine an association
+* messaging the user could be overly spammy if they cannot affect their environment (example: an account with Lambda permissions but not ResourceGroupsTaggingAPI permissions)
+
 ### Unit Tests
 
 * Deleting a Lambda Function
   * it does not prompt the user with the pipeline-related confirmation when attempting to delete a Lambda Function that is not associated with a pipeline
   * it prompts the user with the pipeline-related confirmation when attempting to delete a Lambda Function that is associated with a pipeline
+  * it does not prompt the user with the pipeline-related confirmation when attempting to delete a Lambda Function and pipeline associations cannot be determined
 * Deleting a CloudFormation Stack
   * it does not prompt the user with the pipeline-related confirmation when attempting to delete a CloudFormation Stack that is not associated with a pipeline
   * it prompts the user with the pipeline-related confirmation when attempting to delete a CloudFormation Stack that is associated with a pipeline
+  * it does not prompt the user with the pipeline-related confirmation when attempting to delete a CloudFormation Stack and pipeline associations cannot be determined
 * Deploying a SAM Application
   * it does not prompt the user with the pipeline-related confirmation when attempting to deploy a SAM Application to a CloudFormation Stack that is not associated with a pipeline
   * it prompts the user with the pipeline-related confirmation when attempting to deploy a SAM Application to a CloudFormation Stack that is associated with a pipeline
   * it continues to prompt the user if they attempt to select the same stack again
+  * it does not prompt the user with the pipeline-related confirmation when attempting to deploy a SAM Application to a CloudFormation Stack and pipeline associations cannot be determined
 
 ### System Tests
 
@@ -168,6 +185,9 @@ The Toolkit does not have System Tests at this time. System Tests task(s) will b
 * it prompts the user for confirmation when attempting to delete a CloudFormation Stack that is associated with a pipeline
 * it prompts the user for confirmation when attempting to deploy a SAM Application to an existing CloudFormation Stack that is associated with a pipeline
 
+### Other Design Decisions
+
+* Caching information on the Explorer (like pipeline associations) exposes the Toolkit to edge case scenarios (timing issues, data volume, state freshness). The Toolkit will query on an as-needed basis at this time.
 
 Documentation Changes
 ---------------------
