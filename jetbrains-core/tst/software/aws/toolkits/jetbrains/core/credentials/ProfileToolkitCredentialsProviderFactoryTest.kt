@@ -35,6 +35,7 @@ import software.amazon.awssdk.profiles.ProfileFile
 import software.amazon.awssdk.profiles.ProfileProperty.AWS_ACCESS_KEY_ID
 import software.amazon.awssdk.profiles.ProfileProperty.AWS_SECRET_ACCESS_KEY
 import software.amazon.awssdk.profiles.ProfileProperty.AWS_SESSION_TOKEN
+import software.amazon.awssdk.profiles.ProfileProperty.CREDENTIAL_PROCESS
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProviderManager
 import software.aws.toolkits.core.region.ToolkitRegionProvider
@@ -104,9 +105,10 @@ class ProfileToolkitCredentialsProviderFactoryTest {
         val providerFactory = createProviderFactory()
 
         assertThat(providerFactory.listCredentialProviders())
-            .hasSize(2)
+            .hasSize(3)
             .has(correctProfile(FOO_PROFILE))
             .has(correctProfile(BAR_PROFILE))
+            .has(correctProfile(BAZ_PROFILE))
     }
 
     @Test
@@ -571,6 +573,9 @@ class ProfileToolkitCredentialsProviderFactoryTest {
             aws_access_key_id=FooAccessKey
             aws_secret_access_key=FooSecretKey
             aws_session_token=FooSessionToken
+
+            [profile baz]
+            credential_process = /path/to/credential/process
         """.trimIndent()
 
         private const val FOO_PROFILE_NAME = "foo"
@@ -581,6 +586,9 @@ class ProfileToolkitCredentialsProviderFactoryTest {
         private const val BAR_PROFILE_NAME = "bar"
         private const val BAR_ACCESS_KEY = "BarAccessKey"
         private const val BAR_SECRET_KEY = "BarSecretKey"
+
+        private const val BAZ_PROFILE_NAME = "baz"
+        private const val BAZ_CREDENTIAL_PROCESS = "/path/to/credential/process"
 
         private const val MFA_TOKEN = "MfaToken"
 
@@ -601,6 +609,15 @@ class ProfileToolkitCredentialsProviderFactoryTest {
                 mapOf(
                     AWS_ACCESS_KEY_ID to BAR_ACCESS_KEY,
                     AWS_SECRET_ACCESS_KEY to BAR_SECRET_KEY
+                )
+            )
+            .build()
+
+        private val BAZ_PROFILE: Profile = Profile.builder()
+            .name(BAZ_PROFILE_NAME)
+            .properties(
+                mapOf(
+                    CREDENTIAL_PROCESS to BAZ_CREDENTIAL_PROCESS
                 )
             )
             .build()

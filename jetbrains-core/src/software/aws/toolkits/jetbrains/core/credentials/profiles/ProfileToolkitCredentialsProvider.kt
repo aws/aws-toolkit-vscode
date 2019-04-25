@@ -13,6 +13,7 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
+import software.amazon.awssdk.auth.credentials.ProcessCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.profiles.Profile
@@ -132,6 +133,12 @@ class ProfileToolkitCredentialsProvider(
                         requiredProperty(ProfileProperty.AWS_SECRET_ACCESS_KEY)
                     )
                 )
+            }
+
+            propertyExists(ProfileProperty.CREDENTIAL_PROCESS) -> {
+                ProcessCredentialsProvider.builder()
+                    .command(requiredProperty(ProfileProperty.CREDENTIAL_PROCESS))
+                    .build()
             }
 
             else -> {
