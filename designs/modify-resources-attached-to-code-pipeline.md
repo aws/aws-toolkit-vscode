@@ -73,18 +73,16 @@ Proposed:
 Users deploy a SAM Application using a Command Palette action. Through a Wizard, they are asked for details about what to deploy, and where to deploy it, including specifying a CloudFormation Stack. The stack specified can be new or may already exist. At this time, users must type the stack name in manually. There is a backlog task to replace this with a list that the user can choose a stack from.
 
 Proposed:
-* After the wizard collects all information from the user, we check to see if the Stack belongs to a CodePipeline.
-  * If it does not, the deploy proceeds.
+* After the wizard collects all information from the user, we add a final step in the wizard that confirms all of the wizard settings before proceeding.
+* Prior to the wizard settings confirmation we put a busy indicator on the UI (and inform the user that we are performing some validations), and check to see if the Stack belongs to a CodePipeline.
+  * If it does not, the wizard settings confirmation comes up
   * If it does, the user is given a confirmation prompt (see [Confirmation Prompt](#confirmation-prompt) below).
     * If the user agrees to proceed with the deploy, it proceeds normally.
-    * If the user elects to back out, nothing happens - the wizard has already ended, and the user is back in the editor.
-
-Alternate:
-* After the user enters a CloudFormation Stack, but before the wizard closes, we check to see if the Stack belongs to a CodePipeline.
-  * If it does not, the wizard continues.
-  * If it does, the user is given a confirmation prompt, however this confirmation prompt is integrated with the wizard.
-    * If the user agrees to proceed with the deploy, the wizard moves on to the next step.
     * If the user elects to back out, the wizard moves back to the step where the user can specify a different CloudFormation Stack.
+
+This approach was chosen for the following reasons:
+* it provides a place to put additional deploy wizard validations
+* performing validations in between each wizard step could introduce latency, causing an unsatisfactory experience
 
 ### <a id="confirmation-prompt"></a>Confirmation Prompt
 
