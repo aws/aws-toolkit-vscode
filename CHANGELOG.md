@@ -1,3 +1,17 @@
+# _1.3_ (2019-04-25)
+- **(Feature)** Respect IDE HTTP proxy settings when making calls to AWS services. Fixes [#685](https://github.com/aws/aws-toolkit-jetbrains/issues/685).
+- **(Feature)** Add Tooltips to the UI components
+- **(Feature)** Java 8 Maven projects created through the Project Wizard templates will auto-import
+- **(Feature)** Optimize plugin start up and responsiveness by making sure AWS calls happen on background threads
+- **(Feature)** Added plugin icon
+- **(Feature)** Documentation link added to AWS Explorer's gear menu
+- **(Feature)** Add more help links from Toolkit's UI components into tech docs
+- **(Feature)** Support credential_process in profile file.
+- **(Bug Fix)** Fix being unable to add breakpoints to Python Lambdas on Windows, Fixes [#908](https://github.com/aws/aws-toolkit-jetbrains/issues/908)
+- **(Bug Fix)** Fix gutter icon not shown in Project whoses runtime is not supported by Lambda but runtime group is supported
+- **(Bug Fix)** Fix building of a Java Lambda handler failing due to unable to locate build.gradle/pom.xml Fixes [#868](https://github.com/aws/aws-toolkit-jetbrains/issues/868), [#857](https://github.com/aws/aws-toolkit-jetbrains/issues/857)
+- **(Bug Fix)** Fix template not found after creating a project, fixes [#856](https://github.com/aws/aws-toolkit-jetbrains/issues/856)
+
 # _1.2_ (2019-03-26)
 - **(Breaking Change)** Minimum SAM CLI version has been increased to 0.14.1
 - **(Feature)** You can now specify a docker network when locally running a Lambda

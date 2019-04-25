@@ -1,0 +1,41 @@
+{
+  "date" : "2019-04-25",
+  "version" : "1.3",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Respect IDE HTTP proxy settings when making calls to AWS services. Fixes #685."
+  }, {
+    "type" : "feature",
+    "description" : "Add Tooltips to the UI components"
+  }, {
+    "type" : "feature",
+    "description" : "Java 8 Maven projects created through the Project Wizard templates will auto-import"
+  }, {
+    "type" : "feature",
+    "description" : "Optimize plugin start up and responsiveness by making sure AWS calls happen on background threads"
+  }, {
+    "type" : "feature",
+    "description" : "Added plugin icon"
+  }, {
+    "type" : "feature",
+    "description" : "Documentation link added to AWS Explorer's gear menu"
+  }, {
+    "type" : "feature",
+    "description" : "Add more help links from Toolkit's UI components into tech docs"
+  }, {
+    "type" : "feature",
+    "description" : "Support credential_process in profile file."
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix being unable to add breakpoints to Python Lambdas on Windows, Fixes #908"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix gutter icon not shown in Project whoses runtime is not supported by Lambda but runtime group is supported"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix building of a Java Lambda handler failing due to unable to locate build.gradle/pom.xml Fixes #868, #857"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix template not found after creating a project, fixes #856"
+  } ]
+}
