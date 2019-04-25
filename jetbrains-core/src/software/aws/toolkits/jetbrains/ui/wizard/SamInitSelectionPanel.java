@@ -68,7 +68,6 @@ public class SamInitSelectionPanel implements ValidatablePanel {
         Runtime selectedRuntime = (Runtime) runtime.getSelectedItem();
         SamInitProjectsKt.getSAM_TEMPLATES().stream()
                 .filter(template -> template.supportedRuntimes().contains(selectedRuntime))
-                .filter(template -> !template.unsupportedRuntimes().contains(selectedRuntime))
                 .forEach(template -> templateComboBox.addItem(template));
 
         templateComboBox.setRenderer(new ColoredListCellRenderer<SamProjectTemplate>() {

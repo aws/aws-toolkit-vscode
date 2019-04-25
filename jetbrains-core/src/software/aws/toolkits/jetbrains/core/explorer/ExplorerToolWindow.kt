@@ -21,12 +21,11 @@ import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBSwingUtilities
 import com.intellij.util.ui.UIUtil
-import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
-import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.components.telemetry.ToolkitActionPlaces
 import software.aws.toolkits.jetbrains.core.SettingsSelector
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier
+import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier.AccountSettingsEvent
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_SERVICE_NODE
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
@@ -37,13 +36,12 @@ import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.JPanel
 import javax.swing.JTree
-import javax.swing.event.TreeExpansionEvent
-import javax.swing.event.TreeWillExpandListener
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
-class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, true), AccountSettingsChangedNotifier {
+class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(true, true), AccountSettingsChangedNotifier {
     private val actionManager = ActionManagerEx.getInstanceEx()
+    private val projectAccountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
 
     private val treePanelWrapper: Wrapper = Wrapper()
     private val errorPanel: JPanel
@@ -66,16 +64,12 @@ class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, tru
         updateModel()
     }
 
-    override fun activeCredentialsChanged(credentialsProvider: ToolkitCredentialsProvider?) {
-        updateModel()
-    }
-
-    override fun activeRegionChanged(value: AwsRegion) {
+    override fun settingsChanged(event: AccountSettingsEvent) {
         updateModel()
     }
 
     internal fun updateModel() {
-        if (!ProjectAccountSettingsManager.getInstance(project).hasActiveCredentials()) {
+        if (!projectAccountSettingsManager.hasActiveCredentials()) {
             treePanelWrapper.setContent(errorPanel)
             return
         }
@@ -110,33 +104,6 @@ class ExplorerToolWindow(val project: Project) : SimpleToolWindowPanel(true, tru
                     awsExplorerNode.onDoubleClick(model, selectedElement)
                 }
             }
-        })
-
-        // If it is the first time a CloudFormationStackNode node is expanded, take a moment to load and cache
-        // the Stack Resources. This prevents potential DescribeStackResources spamming on tree construction.
-        awsTree.addTreeWillExpandListener(object : TreeWillExpandListener {
-            override fun treeWillExpand(e: TreeExpansionEvent?) {
-                if (e == null) {
-                    return
-                }
-
-                val selectedElement = e.path.lastPathComponent as? DefaultMutableTreeNode ?: return
-                val node = selectedElement.userObject as? AwsNodeChildCache ?: return
-
-                if (node.isInitialChildState()) {
-                    // Node currently has a placeholder node
-                    // Load the Resources for this Stack and swap the placeholder for this data before the node expands
-                    val children = node.getChildren(true)
-
-                    selectedElement.removeAllChildren()
-                    children.forEach {
-                        it.update()
-                        model.insertNodeInto(DefaultMutableTreeNode(it), selectedElement, selectedElement.childCount)
-                    }
-                }
-            }
-
-            override fun treeWillCollapse(event: TreeExpansionEvent?) {}
         })
 
         awsTree.addMouseListener(object : PopupHandler() {

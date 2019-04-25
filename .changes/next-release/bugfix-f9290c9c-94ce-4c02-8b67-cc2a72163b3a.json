@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix template not found after creating a project, fixes #856"
+}

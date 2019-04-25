@@ -41,7 +41,7 @@ open class AwsClientManager(project: Project, sdkClient: AwsSdkClient) :
         shutdown()
     }
 
-    override val userAgent by lazy { userAgent() }
+    override val userAgent = AwsClientManager.userAgent
 
     override fun getCredentialsProvider(): ToolkitCredentialsProvider {
         try {
@@ -59,13 +59,13 @@ open class AwsClientManager(project: Project, sdkClient: AwsSdkClient) :
     companion object {
         @JvmStatic
         fun getInstance(project: Project): ToolkitClientManager = ServiceManager.getService(project, ToolkitClientManager::class.java)
-    }
-}
 
-fun userAgent(): String {
-    val platformName = ApplicationNamesInfo.getInstance().fullProductNameWithEdition.replace(' ', '-')
-    val platformVersion = ApplicationInfoEx.getInstanceEx().fullVersion.replace(' ', '-')
-    return "AWS-Toolkit-For-JetBrains/${AwsToolkit.PLUGIN_VERSION} $platformName/$platformVersion"
+        val userAgent: String by lazy {
+            val platformName = ApplicationNamesInfo.getInstance().fullProductNameWithEdition.replace(' ', '-')
+            val platformVersion = ApplicationInfoEx.getInstanceEx().fullVersion.replace(' ', '-')
+            "AWS-Toolkit-For-JetBrains/${AwsToolkit.PLUGIN_VERSION} $platformName/$platformVersion"
+        }
+    }
 }
 
 inline fun <reified T : SdkClient> Project.awsClient(

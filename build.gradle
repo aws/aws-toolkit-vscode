@@ -25,6 +25,7 @@ version toolkitVersion
 
 allprojects {
     repositories {
+        mavenLocal()
         mavenCentral()
         jcenter()
     }
@@ -178,7 +179,7 @@ def removeTask(tasks, taskName) {
 
 wrapper {
     distributionType = Wrapper.DistributionType.ALL
-    gradleVersion '5.2.1'
+    gradleVersion '5.3'
 }
 
 apply plugin: 'org.jetbrains.intellij'
@@ -215,10 +216,6 @@ check.dependsOn ktlint
 check.dependsOn verifyPlugin
 
 def publishedProjects = subprojects.findAll { !it.name.contains("test")}
-
-jacoco {
-    toolVersion = "0.8.3" // TODO: Remove with Gradle 5.3
-}
 
 task coverageReport(type: JacocoReport) {
     executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")

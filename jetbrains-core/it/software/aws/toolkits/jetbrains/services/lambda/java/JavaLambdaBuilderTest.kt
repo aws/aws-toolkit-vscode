@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.java
 
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -11,6 +12,7 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
 import software.aws.toolkits.jetbrains.utils.rules.addModule
+import software.aws.toolkits.resources.message
 import java.nio.file.Paths
 
 class JavaLambdaBuilderTest : BaseLambdaBuilderTest() {
@@ -129,5 +131,25 @@ class JavaLambdaBuilderTest : BaseLambdaBuilderTest() {
             "com/example/SomeClass.class",
             "lib/aws-lambda-java-core-1.2.0.jar"
         )
+    }
+
+    @Test
+    fun unsupportedSystem() {
+        val handlerPsi = projectRule.fixture.addClass(
+            """
+            package com.example;
+
+            public class SomeClass {
+                public static String upperCase(String input) {
+                    return input.toUpperCase();
+                }
+            }
+            """.trimIndent()
+        )
+
+        assertThatThrownBy {
+            buildLambda(projectRule.module, handlerPsi, Runtime.JAVA8, "com.example.SomeClass")
+        }.isInstanceOf(IllegalStateException::class.java)
+            .hasMessageEndingWith(message("lambda.build.java.unsupported_build_system", projectRule.module))
     }
 }

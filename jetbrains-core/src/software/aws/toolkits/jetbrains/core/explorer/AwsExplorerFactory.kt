@@ -12,10 +12,10 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.openapi.wm.ex.ToolWindowEx
-import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
-import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.ChangeAccountSettingsAction
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.help.HelpIds
+import software.aws.toolkits.jetbrains.utils.actions.OpenBrowserAction
 import software.aws.toolkits.resources.message
 
 @Suppress("unused")
@@ -23,6 +23,7 @@ class AwsExplorerFactory : ToolWindowFactory, DumbAware {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val explorer = ExplorerToolWindow(project)
         toolWindow.component.parent.add(explorer)
+        toolWindow.helpId = HelpIds.EXPLORER_WINDOW.id
         if (toolWindow is ToolWindowEx) {
             toolWindow.setTitleActions(
                 object : DumbAwareAction(message("explorer.refresh.title"), message("explorer.refresh.description"), AllIcons.Actions.Refresh) {
@@ -30,7 +31,24 @@ class AwsExplorerFactory : ToolWindowFactory, DumbAware {
                         explorer.updateModel()
                     }
                 })
-            toolWindow.setAdditionalGearActions(AwsSettingsMenu(project))
+            toolWindow.setAdditionalGearActions(
+                DefaultActionGroup().apply {
+                    add(AwsSettingsMenu(project))
+                    add(
+                        OpenBrowserAction(
+                            title = message("explorer.view_documentation"),
+                            url = "https://docs.aws.amazon.com/console/toolkit-for-jetbrains"
+                        )
+                    )
+                    add(
+                        OpenBrowserAction(
+                            title = message("explorer.view_source"),
+                            icon = AllIcons.Vcs.Vendors.Github,
+                            url = "https://github.com/aws/aws-toolkit-jetbrains"
+                        )
+                    )
+                }
+            )
         }
     }
 
@@ -46,15 +64,7 @@ class AwsSettingsMenu(private val project: Project) : DefaultActionGroup(message
         add(ChangeAccountSettingsAction(project).createPopupActionGroup())
     }
 
-    override fun activeCredentialsChanged(credentialsProvider: ToolkitCredentialsProvider?) {
-        clearAndReAddActions()
-    }
-
-    override fun activeRegionChanged(value: AwsRegion) {
-        clearAndReAddActions()
-    }
-
-    private fun clearAndReAddActions() {
+    override fun settingsChanged(event: ProjectAccountSettingsManager.AccountSettingsChangedNotifier.AccountSettingsEvent) {
         removeAll()
         add(ChangeAccountSettingsAction(project).createPopupActionGroup())
     }

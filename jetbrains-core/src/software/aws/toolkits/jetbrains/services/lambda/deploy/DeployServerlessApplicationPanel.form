@@ -30,6 +30,7 @@
           <horizontalTextPosition value="4"/>
           <selected value="false"/>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="serverless.application.deploy.label.stack.select"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="serverless.application.deploy.tooltip.updateStack"/>
         </properties>
       </component>
       <component id="bb05c" class="javax.swing.JLabel">
@@ -60,6 +61,7 @@
         </constraints>
         <properties>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="serverless.application.deploy.review_required"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="serverless.application.deploy.tooltip.deploymentConfirmation"/>
         </properties>
       </component>
       <vspacer id="fb0ec">
@@ -95,6 +97,7 @@
           <horizontalTextPosition value="4"/>
           <selected value="true"/>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="serverless.application.deploy.label.stack.new"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="serverless.application.deploy.tooltip.createStack"/>
         </properties>
       </component>
       <component id="1f754" class="javax.swing.JTextField" binding="newStackName">
@@ -105,13 +108,16 @@
         </constraints>
         <properties>
           <enabled value="true"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="serverless.application.deploy.tooltip.createStack"/>
         </properties>
       </component>
       <component id="92862" class="software.aws.toolkits.jetbrains.ui.ResourceSelector" binding="s3Bucket">
         <constraints>
           <grid row="5" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="7" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
         </constraints>
-        <properties/>
+        <properties>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="serverless.application.deploy.tooltip.s3Bucket"/>
+        </properties>
       </component>
       <component id="ece13" class="software.aws.toolkits.jetbrains.ui.ResourceSelector" binding="stacks">
         <constraints>
@@ -119,6 +125,7 @@
         </constraints>
         <properties>
           <enabled value="false"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="serverless.application.deploy.tooltip.updateStack"/>
         </properties>
       </component>
       <component id="37c38" class="javax.swing.JCheckBox" binding="useContainer">
@@ -127,6 +134,7 @@
         </constraints>
         <properties>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="serverless.application.deploy.use_container"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.sam.buildInContainer.tooltip"/>
         </properties>
       </component>
     </children>

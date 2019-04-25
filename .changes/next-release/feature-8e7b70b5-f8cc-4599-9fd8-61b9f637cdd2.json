@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Optimize plugin start up and responsiveness by making sure AWS calls happen on background threads"
+}

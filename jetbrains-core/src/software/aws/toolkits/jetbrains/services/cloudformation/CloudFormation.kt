@@ -3,9 +3,11 @@
 
 package software.aws.toolkits.jetbrains.services.cloudformation
 
+import com.intellij.openapi.application.ApplicationManager
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.cloudformation.model.CloudFormationException
 import software.amazon.awssdk.services.cloudformation.model.DescribeStacksRequest
+import software.amazon.awssdk.services.cloudformation.model.Stack
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
 import software.amazon.awssdk.services.cloudformation.model.StackSummary
 import software.aws.toolkits.core.utils.wait
@@ -34,6 +36,13 @@ fun CloudFormationClient.executeChangeSetAndWait(stackName: String, changeSet: S
         this.waitForStackCreateComplete(stackName)
     } else {
         this.waitForStackUpdateComplete(stackName)
+    }
+}
+
+fun CloudFormationClient.describeStack(stackName: String, callback: (Stack?) -> Unit) {
+    ApplicationManager.getApplication().executeOnPooledThread {
+        val stack = this.describeStacks { it.stackName(stackName) }.stacks().firstOrNull()
+        callback(stack)
     }
 }
 

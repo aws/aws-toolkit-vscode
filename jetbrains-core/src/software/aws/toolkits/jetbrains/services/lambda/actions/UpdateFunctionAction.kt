@@ -5,9 +5,11 @@ package software.aws.toolkits.jetbrains.services.lambda.actions
 
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.runInEdt
 import software.aws.toolkits.jetbrains.core.explorer.SingleResourceNodeAction
-import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
+import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionDialog
@@ -18,15 +20,21 @@ abstract class UpdateFunctionAction(private val mode: EditFunctionMode, title: S
     override fun actionPerformed(selected: LambdaFunctionNode, e: AnActionEvent) {
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
 
-        // Fetch latest version just in case
-        val functionConfiguration = selected.client.getFunction { it.functionName(selected.functionName()) }.configuration()
+        ApplicationManager.getApplication().executeOnPooledThread {
+            // Fetch latest version just in case
+            val functionConfiguration = selected.client.getFunction {
+                it.functionName(selected.functionName())
+            }.configuration()
 
-        val lambdaFunction = functionConfiguration.toDataClass(
-            selected.function.credentialProviderId,
-            selected.function.region
-        )
+            val lambdaFunction = functionConfiguration.toDataClass(
+                selected.function.credentialProviderId,
+                selected.function.region
+            )
 
-        EditFunctionDialog(project, lambdaFunction, mode = mode).show()
+            runInEdt {
+                EditFunctionDialog(project, lambdaFunction, mode = mode).show()
+            }
+        }
     }
 }
 

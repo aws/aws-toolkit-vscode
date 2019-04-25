@@ -24,7 +24,6 @@ import software.amazon.awssdk.services.lambda.model.TracingConfigResponse
 import software.amazon.awssdk.services.lambda.model.TracingMode
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerEmptyNode
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerLoadingNode
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 import software.aws.toolkits.jetbrains.utils.delegateMock
 
@@ -78,32 +77,14 @@ class CloudFormationStackNodeTest {
     }
 
     @Test
-    fun nodeStartsWithoutChildren() {
+    fun nodeRefreshesHitCache() {
         val node = CloudFormationStackNode(projectRule.project, "stack", StackStatus.CREATE_COMPLETE)
+        assertThat(node.isChildCacheInInitialState).isEqualTo(true)
+        val children = node.children
 
-        assertThat(node.isInitialChildState()).isEqualTo(true)
-        assertThat(node.children).isEmpty()
-    }
-
-    @Test
-    fun nodeRefreshes() {
-        val node = CloudFormationStackNode(projectRule.project, "stack", StackStatus.CREATE_COMPLETE)
-        val children = node.getChildren(true)
-
-        assertThat(node.isInitialChildState()).isEqualTo(false)
+        assertThat(node.isChildCacheInInitialState).isEqualTo(false)
         assertThat(children).hasSize(2)
-        assertThat(children).doesNotHaveAnyElementsOfTypes(AwsExplorerLoadingNode::class.java)
         assertThat(children).hasOnlyElementsOfType(LambdaFunctionNode::class.java)
-    }
-
-    @Test
-    fun nodeRefreshesAndCaches() {
-        val node = CloudFormationStackNode(projectRule.project, "stack", StackStatus.CREATE_COMPLETE)
-        node.getChildren(true)
-
-        assertThat(node.children).hasSize(2)
-        assertThat(node.children).doesNotHaveAnyElementsOfTypes(AwsExplorerLoadingNode::class.java)
-        assertThat(node.children).hasOnlyElementsOfType(LambdaFunctionNode::class.java)
     }
 
     @Test
@@ -116,8 +97,6 @@ class CloudFormationStackNodeTest {
     @Test
     fun failedStackHaveNoChildrenAfterRefresh() {
         val node = CloudFormationStackNode(projectRule.project, "stack", StackStatus.CREATE_FAILED)
-
-        node.getChildren(true)
 
         assertThat(node.children).isEmpty()
     }
@@ -132,8 +111,6 @@ class CloudFormationStackNodeTest {
     @Test
     fun inProgressStacksHaveNoChildrenAfterRefresh() {
         val node = CloudFormationStackNode(projectRule.project, "stack", StackStatus.CREATE_IN_PROGRESS)
-
-        node.getChildren(true)
 
         assertThat(node.children).isEmpty()
     }
@@ -150,7 +127,6 @@ class CloudFormationStackNodeTest {
         )
 
         val node = CloudFormationStackNode(projectRule.project, "stack", StackStatus.CREATE_COMPLETE)
-        node.getChildren(true)
 
         assertThat(node.children).hasSize(1)
         assertThat(node.children).hasOnlyElementsOfType(AwsExplorerEmptyNode::class.java)

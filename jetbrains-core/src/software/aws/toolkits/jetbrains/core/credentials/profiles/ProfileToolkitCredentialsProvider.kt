@@ -13,6 +13,7 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
+import software.amazon.awssdk.auth.credentials.ProcessCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.profiles.Profile
@@ -22,10 +23,12 @@ import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain
 import software.amazon.awssdk.services.sts.StsClient
 import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider
 import software.amazon.awssdk.services.sts.model.AssumeRoleRequest
+import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileToolkitCredentialsProviderFactory.Companion.TYPE
 import software.aws.toolkits.resources.message
 import java.util.function.Supplier
@@ -87,18 +90,18 @@ class ProfileToolkitCredentialsProvider(
 
                 // Override the default SPI for getting the active credentials since we are making an internal
                 // to this provider client
-                val stsClient = StsClient.builder()
-                    .httpClient(sdkHttpClient)
-                    .credentialsProvider(
-                        ProfileToolkitCredentialsProvider(
-                            profiles,
-                            sourceProfile,
-                            sdkHttpClient,
-                            regionProvider
-                        )
-                    )
-                    .region(stsRegion)
-                    .build()
+                val stsClient = ToolkitClientManager.createNewClient(
+                    StsClient::class,
+                    sdkHttpClient,
+                    stsRegion,
+                    ProfileToolkitCredentialsProvider(
+                        profiles,
+                        sourceProfile,
+                        sdkHttpClient,
+                        regionProvider
+                    ),
+                    AwsClientManager.userAgent
+                )
 
                 StsAssumeRoleCredentialsProvider.builder()
                     .stsClient(stsClient)
@@ -130,6 +133,12 @@ class ProfileToolkitCredentialsProvider(
                         requiredProperty(ProfileProperty.AWS_SECRET_ACCESS_KEY)
                     )
                 )
+            }
+
+            propertyExists(ProfileProperty.CREDENTIAL_PROCESS) -> {
+                ProcessCredentialsProvider.builder()
+                    .command(requiredProperty(ProfileProperty.CREDENTIAL_PROCESS))
+                    .build()
             }
 
             else -> {

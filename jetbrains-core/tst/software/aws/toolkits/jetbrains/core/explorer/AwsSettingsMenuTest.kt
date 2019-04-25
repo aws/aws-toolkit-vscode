@@ -12,6 +12,7 @@ import org.junit.Test
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier.AccountSettingsEvent
 
 class AwsSettingsMenuTest {
 
@@ -25,8 +26,9 @@ class AwsSettingsMenuTest {
     fun itemsAreRefreshedWhenSettingsChange() {
         val sut = AwsSettingsMenu(projectRule.project)
 
-        mockSettingsManager.internalRecentlyUsedRegions.add(AwsRegion.GLOBAL)
-        projectRule.project.messageBus.syncPublisher(ProjectAccountSettingsManager.ACCOUNT_SETTINGS_CHANGED).activeRegionChanged(AwsRegion.GLOBAL)
+        mockSettingsManager.changeRegion(AwsRegion.GLOBAL)
+        val accountSettingsEvent = AccountSettingsEvent(false, null, AwsRegion.GLOBAL)
+        projectRule.project.messageBus.syncPublisher(ProjectAccountSettingsManager.ACCOUNT_SETTINGS_CHANGED).settingsChanged(accountSettingsEvent)
 
         val actionGroup = sut.getChildren(null).first() as DefaultActionGroup
         val separators = actionGroup.getChildren(null).filterIsInstance<Separator>()

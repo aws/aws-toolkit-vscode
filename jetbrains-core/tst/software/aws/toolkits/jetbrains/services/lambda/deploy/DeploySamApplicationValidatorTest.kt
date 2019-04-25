@@ -29,8 +29,8 @@ class DeploySamApplicationValidatorTest {
     @JvmField
     val ruleChain = RuleChain(projectRule, EdtRule())
 
-    private val sut = DeploySamApplicationValidator()
     private lateinit var view: DeployServerlessApplicationPanel
+    private lateinit var sut: DeploySamApplicationValidator
 
     @Before
     fun wireMocksTogetherWithValidOptions() {
@@ -52,68 +52,78 @@ class DeploySamApplicationValidatorTest {
 
         view.s3Bucket.model = DefaultComboBoxModel(arrayOf("bucket123"))
         view.s3Bucket.selectedItem = "bucket123"
+
+        sut = DeploySamApplicationValidator(view)
     }
 
     @Test
     fun validInputsReturnsNull() {
-        assert(sut.validateSettings(view)).isNull()
+        assert(sut.validateSettings()).isNull()
     }
 
     @Test
     fun validInputsWithNewStackReturnsNull() {
         view.createStack.isSelected = true
         view.newStackName.text = "createStack"
-        assert(sut.validateSettings(view)).isNull()
+        assert(sut.validateSettings()).isNull()
 
         view.newStackName.text = "n"
-        assert(sut.validateSettings(view)).isNull()
+        assert(sut.validateSettings()).isNull()
 
         view.newStackName.text = "n1"
-        assert(sut.validateSettings(view)).isNull()
+        assert(sut.validateSettings()).isNull()
     }
 
     @Test
     fun stackMustBeSpecified() {
         view.stacks.selectedItem = null
-        assert(sut.validateSettings(view)).containsMessage(message("serverless.application.deploy.validation.stack.missing"))
+        assert(sut.validateSettings()).containsMessage(message("serverless.application.deploy.validation.stack.missing"))
     }
 
     @Test
     fun newStackNameMustBeSpecified() {
         view.createStack.isSelected = true
         view.newStackName.text = null
-        assert(sut.validateSettings(view)).containsMessage(message("serverless.application.deploy.validation.new.stack.name.missing"))
+        assert(sut.validateSettings()).containsMessage(message("serverless.application.deploy.validation.new.stack.name.missing"))
     }
 
     @Test
     fun invalidStackName_TooLong() {
         view.createStack.isSelected = true
         view.newStackName.text = "x".repeat(DeploySamApplicationValidator.MAX_STACK_NAME_LENGTH + 1)
-        assert(sut.validateSettings(view)).containsMessage(
+        assert(sut.validateSettings()).containsMessage(
                 message("serverless.application.deploy.validation.new.stack.name.too.long", DeploySamApplicationValidator.MAX_STACK_NAME_LENGTH)
         )
+    }
+
+    @Test
+    fun invalidStackName_Duplicate() {
+        view.createStack.isSelected = true
+        view.newStackName.text = "bar"
+        view.stacks.model = DefaultComboBoxModel(arrayOf("foo", "bar", "baz"))
+        assert(sut.validateSettings()).containsMessage(message("serverless.application.deploy.validation.new.stack.name.duplicate"))
     }
 
     @Test
     fun invalidStackName_InvalidChars() {
         view.createStack.isSelected = true
         view.newStackName.text = "stack_1"
-        assert(sut.validateSettings(view)).containsMessage(message("serverless.application.deploy.validation.new.stack.name.invalid"))
+        assert(sut.validateSettings()).containsMessage(message("serverless.application.deploy.validation.new.stack.name.invalid"))
 
         view.newStackName.text = "stack 1"
-        assert(sut.validateSettings(view)).containsMessage(message("serverless.application.deploy.validation.new.stack.name.invalid"))
+        assert(sut.validateSettings()).containsMessage(message("serverless.application.deploy.validation.new.stack.name.invalid"))
 
         view.newStackName.text = "stack#1"
-        assert(sut.validateSettings(view)).containsMessage(message("serverless.application.deploy.validation.new.stack.name.invalid"))
+        assert(sut.validateSettings()).containsMessage(message("serverless.application.deploy.validation.new.stack.name.invalid"))
 
         view.newStackName.text = "1stack"
-        assert(sut.validateSettings(view)).containsMessage(message("serverless.application.deploy.validation.new.stack.name.invalid"))
+        assert(sut.validateSettings()).containsMessage(message("serverless.application.deploy.validation.new.stack.name.invalid"))
 
         view.newStackName.text = " stack"
-        assert(sut.validateSettings(view)).containsMessage(message("serverless.application.deploy.validation.new.stack.name.invalid"))
+        assert(sut.validateSettings()).containsMessage(message("serverless.application.deploy.validation.new.stack.name.invalid"))
 
         view.newStackName.text = "stack!@#$%^&*()_+-="
-        assert(sut.validateSettings(view)).containsMessage(message("serverless.application.deploy.validation.new.stack.name.invalid"))
+        assert(sut.validateSettings()).containsMessage(message("serverless.application.deploy.validation.new.stack.name.invalid"))
     }
 
     @Test
@@ -123,8 +133,8 @@ class DeploySamApplicationValidatorTest {
                 TestParameter("param2", "")
         )
         view.withTemplateParameters(parameters)
-        assert(sut.validateSettings(view)).containsMessage("Template values are missing:")
-        assert(sut.validateSettings(view)).containsMessage("param2")
+        assert(sut.validateSettings()).containsMessage("Template values are missing:")
+        assert(sut.validateSettings()).containsMessage("param2")
     }
 
     @Test
@@ -134,15 +144,15 @@ class DeploySamApplicationValidatorTest {
                 TestParameter("param2", "")
         )
         view.withTemplateParameters(parameters)
-        assert(sut.validateSettings(view)).containsMessage("Template values are missing:")
-        assert(sut.validateSettings(view)).containsMessage("param1")
-        assert(sut.validateSettings(view)).containsMessage("param2")
+        assert(sut.validateSettings()).containsMessage("Template values are missing:")
+        assert(sut.validateSettings()).containsMessage("param1")
+        assert(sut.validateSettings()).containsMessage("param2")
     }
 
     @Test
     fun s3BucketMustBeSpecified() {
         view.s3Bucket.selectedItem = null
-        assert(sut.validateSettings(view)).containsMessage(message("serverless.application.deploy.validation.s3.bucket.empty"))
+        assert(sut.validateSettings()).containsMessage(message("serverless.application.deploy.validation.s3.bucket.empty"))
     }
 
     private fun Assert<ValidationInfo?>.containsMessage(expectedMessage: String) {

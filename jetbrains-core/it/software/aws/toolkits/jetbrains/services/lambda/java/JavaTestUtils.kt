@@ -3,11 +3,36 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.java
 
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.WriteAction
+import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.externalSystem.importing.ImportSpecBuilder
+import com.intellij.openapi.externalSystem.model.DataNode
+import com.intellij.openapi.externalSystem.model.project.ProjectData
+import com.intellij.openapi.externalSystem.service.execution.ProgressExecutionMode
+import com.intellij.openapi.externalSystem.service.project.ExternalProjectRefreshCallback
+import com.intellij.openapi.externalSystem.service.project.ProjectDataManager
+import com.intellij.openapi.externalSystem.settings.ExternalSystemSettingsListenerAdapter
+import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
+import com.intellij.openapi.externalSystem.util.ExternalSystemUtil
+import com.intellij.openapi.projectRoots.JavaSdk
+import com.intellij.openapi.projectRoots.ProjectJdkTable
+import com.intellij.openapi.projectRoots.impl.SdkConfigurationUtil
+import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.util.Ref
 import com.intellij.openapi.util.SystemInfo
+import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess
 import com.intellij.psi.PsiClass
+import com.intellij.testFramework.IdeaTestUtil
+import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.util.io.isDirectory
 import com.intellij.util.io.readBytes
 import com.intellij.util.io.write
+import org.jetbrains.idea.maven.project.MavenProjectsManager
+import org.jetbrains.plugins.gradle.settings.GradleProjectSettings
+import org.jetbrains.plugins.gradle.util.GradleConstants
+import org.junit.Assert.fail
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
@@ -17,7 +42,7 @@ import java.nio.file.Paths
 
 internal fun HeavyJavaCodeInsightTestFixtureRule.setUpGradleProject(): PsiClass {
     val fixture = this.fixture
-    fixture.addFileToModule(
+    val buildFile = fixture.addFileToModule(
         this.module,
         "build.gradle",
         """
@@ -34,12 +59,12 @@ internal fun HeavyJavaCodeInsightTestFixtureRule.setUpGradleProject(): PsiClass 
                 testCompile 'junit:junit:4.12'
             }
             """.trimIndent()
-    )
+    ).virtualFile
 
     // Use our project's own Gradle version
     copyGradleFiles(this)
 
-    return fixture.addClass(
+    val lambdaClass = fixture.addClass(
         """
             package com.example;
 
@@ -50,6 +75,68 @@ internal fun HeavyJavaCodeInsightTestFixtureRule.setUpGradleProject(): PsiClass 
             }
             """.trimIndent()
     )
+
+    val jdkHome = IdeaTestUtil.requireRealJdkHome()
+    VfsRootAccess.allowRootAccess(fixture.testRootDisposable, jdkHome)
+    val jdkHomeDir = LocalFileSystem.getInstance().refreshAndFindFileByPath(jdkHome)!!
+    val jdkName = "Gradle JDK"
+    val jdk = SdkConfigurationUtil.setupSdk(emptyArray(), jdkHomeDir, JavaSdk.getInstance(), false, null, jdkName)!!
+
+    WriteAction.runAndWait<Nothing> {
+        ProjectJdkTable.getInstance().addJdk(jdk)
+    }
+
+    Disposer.register(
+        fixture.testRootDisposable,
+        Disposable { WriteAction.runAndWait<Nothing> { ProjectJdkTable.getInstance().removeJdk(jdk) } })
+
+    ExternalSystemApiUtil.subscribe(
+        project,
+        GradleConstants.SYSTEM_ID,
+        object : ExternalSystemSettingsListenerAdapter<GradleProjectSettings>() {
+            override fun onProjectsLinked(settings: Collection<GradleProjectSettings>) {
+                super.onProjectsLinked(settings)
+                settings.first().gradleJvm = jdkName
+            }
+        })
+
+    val gradleProjectSettings = GradleProjectSettings().apply {
+        withQualifiedModuleNames()
+        externalProjectPath = buildFile.path
+    }
+
+    val externalSystemSettings = ExternalSystemApiUtil.getSettings(project, GradleConstants.SYSTEM_ID)
+    externalSystemSettings.setLinkedProjectsSettings(setOf(gradleProjectSettings))
+
+    val error = Ref.create<String>()
+
+    val refreshCallback = object : ExternalProjectRefreshCallback {
+        override fun onSuccess(externalProject: DataNode<ProjectData>?) {
+            if (externalProject == null) {
+                System.err.println("Got null External project after import")
+                return
+            }
+            ServiceManager.getService(ProjectDataManager::class.java).importData(externalProject, project, true)
+            println("External project was successfully imported")
+        }
+
+        override fun onFailure(errorMessage: String, errorDetails: String?) {
+            error.set(errorMessage)
+        }
+    }
+
+    val importSpecBuilder = ImportSpecBuilder(project, GradleConstants.SYSTEM_ID)
+        .callback(refreshCallback)
+        .forceWhenUptodate()
+        .use(ProgressExecutionMode.MODAL_SYNC)
+
+    ExternalSystemUtil.refreshProjects(importSpecBuilder)
+
+    if (!error.isNull) {
+        fail("Import failed: " + error.get())
+    }
+
+    return lambdaClass
 }
 
 private fun copyGradleFiles(fixtureRule: HeavyJavaCodeInsightTestFixtureRule) {
@@ -101,7 +188,7 @@ private fun findGradlew(): Path {
 
 internal fun HeavyJavaCodeInsightTestFixtureRule.setUpMavenProject(): PsiClass {
     val fixture = this.fixture
-    fixture.addFileToModule(
+    val pomFile = fixture.addFileToModule(
         this.module,
         "pom.xml",
         """
@@ -133,9 +220,9 @@ internal fun HeavyJavaCodeInsightTestFixtureRule.setUpMavenProject(): PsiClass {
                 </dependencies>
             </project>
             """.trimIndent()
-    )
+    ).virtualFile
 
-    return fixture.addClass(
+    val lambdaClass = fixture.addClass(
         """
             package com.example;
 
@@ -146,4 +233,15 @@ internal fun HeavyJavaCodeInsightTestFixtureRule.setUpMavenProject(): PsiClass {
             }
             """.trimIndent()
     )
+
+    val projectsManager = MavenProjectsManager.getInstance(project)
+    projectsManager.addManagedFilesOrUnignore(listOf(pomFile))
+
+    runInEdtAndWait {
+        projectsManager.waitForResolvingCompletion()
+        projectsManager.performScheduledImportInTests()
+        projectsManager.importProjects()
+    }
+
+    return lambdaClass
 }

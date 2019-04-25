@@ -19,7 +19,6 @@ import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsNodeAlwaysExpandable
-import software.aws.toolkits.jetbrains.core.explorer.AwsNodeChildCache
 import software.aws.toolkits.jetbrains.core.explorer.AwsTruncatedResultNode
 import software.aws.toolkits.jetbrains.core.stack.openStack
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
@@ -60,8 +59,7 @@ class CloudFormationServiceNode(project: Project) : AwsExplorerServiceRootNode(p
 
 class CloudFormationStackNode(project: Project, val stackName: String, private val stackStatus: StackStatus) :
     AwsExplorerResourceNode<String>(project, CloudFormationClient.SERVICE_NAME, stackName, AwsIcons.Resources.CLOUDFORMATION_STACK),
-    AwsNodeAlwaysExpandable,
-    AwsNodeChildCache {
+    AwsNodeAlwaysExpandable {
     override fun resourceType() = "stack"
 
     private val cfnClient: CloudFormationClient = project.awsClient()
@@ -73,20 +71,16 @@ class CloudFormationStackNode(project: Project, val stackName: String, private v
     private val noResourcesChildren: Collection<AbstractTreeNode<Any>> = listOf(AwsExplorerEmptyNode(project, message("explorer.stack.no.serverless.resources"))).filterIsInstance<AbstractTreeNode<Any>>()
     private var cachedChildren: Collection<AbstractTreeNode<Any>> = emptyList()
 
-    private var isChildCacheInInitialState: Boolean = true
+    var isChildCacheInInitialState: Boolean = true
+        private set
 
     override fun isAlwaysLeaf() = false
-
-    override fun isInitialChildState() = isChildCacheInInitialState
 
     /**
      * Children are cached by default to prevent describeStackResources from being called each time a stack node is expanded.
      */
-    @Suppress("UNCHECKED_CAST")
-    override fun getChildren(): Collection<AbstractTreeNode<Any>> = getChildren(false)
-
-    override fun getChildren(refresh: Boolean): Collection<AbstractTreeNode<Any>> {
-        if (refresh) {
+    override fun getChildren(): Collection<AbstractTreeNode<Any>> {
+        if (isChildCacheInInitialState) {
             updateCachedChildren()
         }
 

@@ -7,24 +7,24 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.application.ApplicationNamesInfo
 import com.intellij.openapi.components.ServiceManager
-import com.intellij.openapi.project.DefaultProjectFactory
 import com.intellij.openapi.util.SystemInfo
+import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
 import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.cognitoidentity.CognitoIdentityClient
 import software.amazon.awssdk.services.toolkittelemetry.ToolkitTelemetryClient
 import software.amazon.awssdk.services.toolkittelemetry.model.AWSProduct
 import software.amazon.awssdk.services.toolkittelemetry.model.Unit
 import software.aws.toolkits.core.ToolkitClientManager
-import software.aws.toolkits.core.region.ToolkitRegionProvider
+import software.aws.toolkits.core.telemetry.DefaultMetricEvent
+import software.aws.toolkits.core.telemetry.DefaultTelemetryBatcher
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
-import software.aws.toolkits.core.telemetry.DefaultTelemetryBatcher
-import software.aws.toolkits.core.telemetry.DefaultMetricEvent
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.AwsToolkit
+import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsSdkClient
 import software.aws.toolkits.jetbrains.settings.AwsSettings
-import java.net.URI
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.Executors
@@ -52,9 +52,9 @@ class DefaultTelemetryService(
     private val isDisposing: AtomicBoolean = AtomicBoolean(false)
     private val startTime: Instant
 
+    @Suppress("unused") // Used by ServiceManager
     constructor(
         sdkClient: AwsSdkClient,
-        regionProvider: ToolkitRegionProvider,
         messageBusService: MessageBusService,
         settings: AwsSettings
     ) : this(
@@ -69,22 +69,21 @@ class DefaultTelemetryService(
             settings.clientId.toString(),
             ApplicationNamesInfo.getInstance().fullProductNameWithEdition,
             ApplicationInfo.getInstance().fullVersion,
-            ToolkitTelemetryClient
-                .builder()
-                // TODO: Determine why this client is not picked up by default.
-                .httpClient(sdkClient.sdkHttpClient)
-                .region(Region.US_EAST_1)
-                .endpointOverride(URI.create("https://client-telemetry.us-east-1.amazonaws.com"))
-                .credentialsProvider(AWSCognitoCredentialsProvider(
+            ToolkitClientManager.createNewClient(
+                ToolkitTelemetryClient::class,
+                sdkClient.sdkHttpClient,
+                Region.US_EAST_1,
+                AWSCognitoCredentialsProvider(
                     "us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842",
-                    ServiceManager.getService(
-                        DefaultProjectFactory.getInstance().defaultProject,
-                        ToolkitClientManager::class.java
-                    ),
-                    regionProvider,
-                    region = Region.US_EAST_1
-                ))
-                .build(),
+                    CognitoIdentityClient.builder()
+                        .credentialsProvider(AnonymousCredentialsProvider.create())
+                        .region(Region.US_EAST_1)
+                        .httpClient(sdkClient.sdkHttpClient)
+                        .build()
+                ),
+                AwsClientManager.userAgent,
+                "https://client-telemetry.us-east-1.amazonaws.com"
+            ),
             SystemInfo.OS_NAME,
             SystemInfo.OS_VERSION
         ))

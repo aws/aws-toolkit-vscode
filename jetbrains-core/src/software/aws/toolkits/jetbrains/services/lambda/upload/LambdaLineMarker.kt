@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.lambda.upload
 
 import com.intellij.codeHighlighting.Pass
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.codeInsight.daemon.LineMarkerInfo
 import com.intellij.codeInsight.daemon.LineMarkerProviderDescriptor
 import com.intellij.execution.lineMarker.ExecutorAction
@@ -12,11 +13,11 @@ import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.editor.markup.GutterIconRenderer
-import com.intellij.openapi.module.ModuleUtilCore.findModuleForPsiElement
+import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiFile
 import com.intellij.psi.SmartPointerManager
 import icons.AwsIcons
-import software.amazon.awssdk.services.lambda.model.LambdaException
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplateIndex.Companion.listFunctions
@@ -41,14 +42,11 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
             return null
         }
 
-        val handlerResolver = element.language.runtimeGroup?.let {
-            LambdaHandlerResolver.getInstance(it)
-        } ?: return null
-
+        val runtimeGroup = element.language.runtimeGroup ?: return null
+        val handlerResolver = LambdaHandlerResolver.getInstance(runtimeGroup) ?: return null
         val handler = handlerResolver.determineHandler(element) ?: return null
-        val runtime = findModuleForPsiElement(element)?.let { RuntimeGroup.determineRuntime(it) } ?: return null
 
-        return if (handlerResolver.shouldShowLineMarker(handler) || shouldShowLineMarker(element, handler, runtime)) {
+        return if (handlerResolver.shouldShowLineMarker(handler) || shouldShowLineMarker(element.containingFile, handler, runtimeGroup)) {
             val actionGroup = DefaultActionGroup()
 
             val smartPsiElementPointer = SmartPointerManager.createPointer(element)
@@ -82,10 +80,36 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
     ) {
     }
 
-    private fun shouldShowLineMarker(element: PsiElement, handler: String, runtime: Runtime): Boolean =
-        LambdaSettings.getInstance(element.project).showAllHandlerGutterIcons ||
-        listFunctions(element.project).any { it.handler() == handler && it.runtime() == runtime.toString() } || // Handler defined in template is valid
-        try { AwsResourceCache.getInstance(element.project).lambdaFunctions().any { it.handler == handler && it.runtime == runtime } } catch (e: LambdaException) { false } // Handler in remote Lambda is valid
+    private fun shouldShowLineMarker(psiFile: PsiFile, handler: String, runtimeGroup: RuntimeGroup): Boolean {
+            val project = psiFile.project
+        return LambdaSettings.getInstance(project).showAllHandlerGutterIcons ||
+                handlerInTemplate(project, handler, runtimeGroup) ||
+                handlerInRemote(psiFile, handler, runtimeGroup)
+    }
+
+    // Handler defined in template with the same runtime group is valid
+    private fun handlerInTemplate(project: Project, handler: String, runtimeGroup: RuntimeGroup): Boolean =
+        listFunctions(project).any {
+            it.handler() == handler && Runtime.fromValue(it.runtime())?.runtimeGroup == runtimeGroup
+        }
+
+    // Handler defined in remote Lambda with the same runtime group is valid
+    private fun handlerInRemote(psiFile: PsiFile, handler: String, runtimeGroup: RuntimeGroup): Boolean =
+        try {
+            val result = AwsResourceCache.getInstance(psiFile.project).lambdaFunctions()
+            if (result.isDone) {
+                result.getNow(null)?.any {
+                    it.handler == handler && it.runtime.runtimeGroup == runtimeGroup
+                } ?: false
+            } else {
+                result.whenComplete { _, _ ->
+                    DaemonCodeAnalyzer.getInstance(psiFile.project).restart(psiFile)
+                }
+                false
+            }
+        } catch (e: Exception) {
+            false
+        }
 
     class LambdaGutterIcon(markerInfo: LineMarkerInfo<PsiElement>, private val actionGroup: ActionGroup) :
         LineMarkerInfo.LineMarkerGutterIconRenderer<PsiElement>(markerInfo) {

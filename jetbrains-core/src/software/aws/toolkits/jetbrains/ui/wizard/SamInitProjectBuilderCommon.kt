@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.ui.wizard
 
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.DefaultProjectFactory
+import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.VirtualFile
@@ -29,6 +30,10 @@ abstract class SamProjectTemplate {
     open fun getDescription(): String? = null
 
     override fun toString() = getName()
+
+    open fun postCreationAction(runtime: Runtime, contentRoot: VirtualFile, rootModel: ModifiableRootModel) {
+        SamCommon.excludeSamDirectory(contentRoot, rootModel)
+    }
 
     fun getIcon() = AwsIcons.Resources.SERVERLESS_APP
 
@@ -66,8 +71,6 @@ abstract class SamProjectTemplate {
     protected open fun dependencyManager(): String? = null
 
     open fun supportedRuntimes(): Set<Runtime> = Runtime.knownValues().toSet()
-
-    open fun unsupportedRuntimes(): Set<Runtime> = emptySet()
 }
 
 @JvmOverloads

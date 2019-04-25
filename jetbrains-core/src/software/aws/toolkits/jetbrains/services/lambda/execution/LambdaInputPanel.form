@@ -15,13 +15,16 @@
         <properties>
           <horizontalTextPosition value="4"/>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.input.file.label"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.input.file.tooltip"/>
         </properties>
       </component>
       <component id="15841" class="com.intellij.openapi.ui.TextFieldWithBrowseButton" binding="inputFile">
         <constraints>
           <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
         </constraints>
-        <properties/>
+        <properties>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.input.file.tooltip"/>
+        </properties>
       </component>
       <component id="33d2b" class="com.intellij.ui.EditorTextField" binding="inputText" custom-create="true">
         <constraints>
@@ -29,13 +32,17 @@
             <preferred-size width="-1" height="200"/>
           </grid>
         </constraints>
-        <properties/>
+        <properties>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.input.text.tooltip"/>
+        </properties>
       </component>
       <component id="879bd" class="com.intellij.ui.ComboboxWithBrowseButton" binding="inputTemplates" custom-create="true">
         <constraints>
           <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
         </constraints>
-        <properties/>
+        <properties>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.input.text.tooltip"/>
+        </properties>
       </component>
       <component id="2c5bf" class="javax.swing.JRadioButton" binding="useInputText">
         <constraints>
@@ -45,6 +52,7 @@
           <horizontalTextPosition value="4"/>
           <selected value="true"/>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.input.text.label"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.input.text.tooltip"/>
         </properties>
       </component>
     </children>

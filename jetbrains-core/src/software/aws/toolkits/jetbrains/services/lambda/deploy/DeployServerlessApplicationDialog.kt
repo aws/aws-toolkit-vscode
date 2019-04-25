@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.deploy
 
+import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.module.ModuleUtilCore.findModuleForFile
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ValidationInfo
@@ -15,7 +17,9 @@ import software.aws.toolkits.core.utils.listBucketsByRegion
 import software.aws.toolkits.jetbrains.components.telemetry.LoggingDialogWrapper
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
+import software.aws.toolkits.jetbrains.services.cloudformation.describeStack
 import software.aws.toolkits.jetbrains.services.cloudformation.listStackSummariesFilter
 import software.aws.toolkits.jetbrains.services.cloudformation.mergeRemoteParameters
 import software.aws.toolkits.jetbrains.services.s3.CreateS3BucketDialog
@@ -35,7 +39,7 @@ class DeployServerlessApplicationDialog(
     private val samPath: String = module?.let { relativeSamPath(it, templateFile) } ?: templateFile.name
 
     private val view = DeployServerlessApplicationPanel()
-    private val validator = DeploySamApplicationValidator()
+    private val validator = DeploySamApplicationValidator(view)
     private val s3Client: S3Client = project.awsClient()
     private val cloudFormationClient: CloudFormationClient = project.awsClient()
     private val templateParameters = CloudFormationTemplate.parse(project, templateFile).parameters().toList()
@@ -106,7 +110,9 @@ class DeployServerlessApplicationDialog(
     override fun getPreferredFocusedComponent(): JComponent? =
             if (settings?.samStackName(samPath) == null) view.newStackName else view.updateStack
 
-    override fun doValidate(): ValidationInfo? = validator.validateSettings(view)
+    override fun doValidate(): ValidationInfo? = validator.validateSettings()
+
+    override fun getHelpId(): String? = HelpIds.DEPLOY_SERVERLESS_APPLICATION_DIALOG.id
 
     val stackName: String
         get() = if (view.createStack.isSelected) {
@@ -141,16 +147,25 @@ class DeployServerlessApplicationDialog(
             if (stackName == null) {
                 view.withTemplateParameters(emptyList())
             } else {
-                val stack = cloudFormationClient.describeStacks { it.stackName(stackName) }.stacks()[0]
-                view.withTemplateParameters(templateParameters.mergeRemoteParameters(stack.parameters()))
+                cloudFormationClient.describeStack(stackName) {
+                    it?.let {
+                        runInEdt(ModalityState.any()) {
+                            // This check is here in-case createStack was selected before we got this update back
+                            // TODO: should really create a queuing pattern here so we can cancel on user-action
+                            if (view.updateStack.isSelected) {
+                                view.withTemplateParameters(templateParameters.mergeRemoteParameters(it.parameters()))
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 }
 
-class DeploySamApplicationValidator {
+class DeploySamApplicationValidator(private val view: DeployServerlessApplicationPanel) {
 
-    fun validateSettings(view: DeployServerlessApplicationPanel): ValidationInfo? {
+    fun validateSettings(): ValidationInfo? {
         if (view.createStack.isSelected) {
             validateStackName(view.newStackName.text)?.let {
                 return ValidationInfo(it, view.newStackName)
@@ -205,6 +220,10 @@ class DeploySamApplicationValidator {
         }
         if (name.length > MAX_STACK_NAME_LENGTH) {
             return message("serverless.application.deploy.validation.new.stack.name.too.long", MAX_STACK_NAME_LENGTH)
+        }
+        // Check if the new stack name is same as an existing stack name
+        if (name in view.stacks.values()) {
+            return message("serverless.application.deploy.validation.new.stack.name.duplicate")
         }
         return null
     }

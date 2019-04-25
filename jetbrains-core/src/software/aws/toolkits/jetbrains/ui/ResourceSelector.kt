@@ -138,6 +138,8 @@ class ResourceSelector<T> : ComboBox<T>() {
         }
     }
 
+    fun values(): Set<T> = (0 until itemCount).map { getItemAt(it) }.toSet()
+
     enum class ResourceLoadingStatus {
         LOADING,
         FAILED,

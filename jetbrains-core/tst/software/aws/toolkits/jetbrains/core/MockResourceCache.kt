@@ -4,7 +4,9 @@
 package software.aws.toolkits.jetbrains.core
 
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
+import java.util.concurrent.CompletableFuture
 
 class MockResourceCache : AwsResourceCache {
-    override fun lambdaFunctions(): List<LambdaFunction> = emptyList()
+    override fun lambdaFunctions(): CompletableFuture<List<LambdaFunction>> =
+        CompletableFuture.completedFuture(emptyList())
 }

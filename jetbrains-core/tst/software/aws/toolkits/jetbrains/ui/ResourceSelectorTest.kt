@@ -118,6 +118,15 @@ class ResourceSelectorTest {
         assertThat(comboBox.loadingException).isEqualTo(exception)
     }
 
+    @Test
+    fun comboBoxPopulation_values() {
+        val items = setOf("foo", "bar", "baz")
+        comboBox.populateValues() { items }
+
+        waitForPopulationComplete(comboBox, items.size)
+        assertThat(comboBox.values()).isEqualTo(items)
+    }
+
     // Wait for the combo box population complete by detecting the item count
     private fun <T> waitForPopulationComplete(comboBox: ComboBox<T>, count: Int) {
         while (comboBox.itemCount != count) {
