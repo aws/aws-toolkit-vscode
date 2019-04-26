@@ -742,8 +742,9 @@ export function shouldAppendRelativePathToFunctionHandler(runtime: string): bool
         case SamLambdaRuntimeFamily.DotNet:
         case SamLambdaRuntimeFamily.Java:
         case SamLambdaRuntimeFamily.Go:
-        // if the runtime exists but for some reason we forgot to cover it here
-        default:
             return false
+        // if the runtime exists but for some reason we forgot to cover it here, throw anyway so we remember to cover it
+        default:
+            throw new Error('localLambdaRunner can not determine if runtime requires a relative path.')
     }
 }
