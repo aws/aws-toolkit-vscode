@@ -134,7 +134,7 @@ The confirmation prompt can be implemented using one of two UI facilities:
       * it appears to the user that the flow has stopped ("I don't see the toast anymore") but the flow does not return to the calling code (calling code is actually waiting for a button to be pressed)
     * Putting a third button along the lines of `More Info...` beside `Yes` and `No` buttons is unconventional
     * a `More Info...` button dismisses the toast (and would have to be handled as a `No`), ideally the toast would stay open
-* one of a `QuickPick` (which presents a list to the user for selection) or `InputBox` (which prompts the user for text), and can be complemented with buttons
+* either a `QuickPick` (which presents a list to the user for selection) or `InputBox` (which prompts the user for text). Both are capable of being complemented with buttons that allow for additional actions.
   * Pros
     * if users press `Esc` on the QuickPick/InputBox, the QuickPick/InputBox is dismissed, and flow returns to the calling code, which in this case can handle it as an intent to cancel
     * More consistent UX if the prompt is used both as a standalone prompt, and in a wizard (CloudFormation Stack Deploy alternate proposal uses a wizard)
