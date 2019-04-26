@@ -6,12 +6,18 @@
 'use strict'
 
 import * as assert from 'assert'
+import * as del from 'del'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { DebugConfiguration } from '../../../lambda/local/debugConfiguration'
 import * as localLambdaRunner from '../../../shared/codelens/localLambdaRunner'
+import * as fs from '../../../shared/filesystem'
+import * as fsUtils from '../../../shared/filesystemUtilities'
 import { BasicLogger, ErrorOrString } from '../../../shared/logger'
+import { ChildProcessResult } from '../../../shared/utilities/childProcess'
+import { ExtensionDisposableFiles } from '../../../shared/utilities/disposableFiles'
 import { ChannelLogger } from '../../../shared/utilities/vsCodeUtils'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { assertRejects } from '../utilities/assertUtils'
 
 class FakeChannelLogger implements Pick<ChannelLogger, 'info' | 'error' | 'logger'> {
@@ -53,6 +59,17 @@ class FakeBasicLogger implements BasicLogger {
 }
 
 describe('localLambdaRunner', async () => {
+
+    let tempDir: string
+    before(async () => {
+        tempDir = await fsUtils.makeTemporaryToolkitFolder()
+        await ExtensionDisposableFiles.initialize(new FakeExtensionContext())
+    })
+
+    after(async () => {
+        await del(tempDir, { force: true })
+    })
+
     describe('attachDebugger', async () => {
         let actualRetries: number = 0
         let channelLogger: FakeChannelLogger
@@ -377,5 +394,56 @@ describe('localLambdaRunner', async () => {
                 }
             })
         }
+    })
+
+    describe('makeBuildDir', () => {
+        it ('creates a temp directory', async () => {
+            const dir = await localLambdaRunner.makeBuildDir()
+            assert.ok(dir)
+            assert.strictEqual(await fsUtils.fileExists(dir), true)
+            const fsDir = await fs.readdir(dir)
+            assert.strictEqual(fsDir.length, 0)
+            await del(dir, { force: true })
+        })
+    })
+
+    describe('executeSamBuild', () => {
+        const failedChildProcess: ChildProcessResult = {
+            exitCode: 1,
+            error: new Error('you are already dead'),
+            stdout: 'friendly failure message',
+            stderr: 'big ugly failure message'
+        }
+
+        const successfulChildProcess: ChildProcessResult = {
+            exitCode: 0,
+            error: undefined,
+            stdout: 'everything sunny all the time always',
+            stderr: 'nothing to report'
+        }
+
+        const generateSamBuildParams = (isSuccessfulBuild: boolean) => {
+            return {
+                baseBuildDir: tempDir,
+                codeDir: tempDir,
+                inputTemplatePath: tempDir,
+                channelLogger: new FakeChannelLogger(),
+                // not needed for testing
+                manifestPath: undefined,
+                samProcessInvoker: {
+                    invoke: async (): Promise<ChildProcessResult> =>
+                        isSuccessfulBuild ? successfulChildProcess : failedChildProcess
+                }
+            }
+        }
+
+        it ('fails when the child process returns a nonzero exit code', async () => {
+            await assertRejects(async () => localLambdaRunner.executeSamBuild(generateSamBuildParams(false)))
+        })
+
+        it ('succeeds when the child process returns with an exit code of 0', async () => {
+            const samBuildResult = await localLambdaRunner.executeSamBuild(generateSamBuildParams(true))
+            assert.strictEqual(samBuildResult, path.join(tempDir, 'output', 'template.yaml'))
+        })
     })
 })

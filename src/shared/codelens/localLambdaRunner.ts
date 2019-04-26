@@ -9,7 +9,7 @@ import * as path from 'path'
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
 import { getLocalLambdaConfiguration } from '../../lambda/local/configureLocalLambda'
-import { detectLocalLambdas } from '../../lambda/local/detectLocalLambdas'
+import { detectLocalLambdas, LocalLambda } from '../../lambda/local/detectLocalLambdas'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { writeFile } from '../filesystem'
 import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
@@ -22,6 +22,7 @@ import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 
 import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
+import { getFamily, SamLambdaRuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger, localize } from '../utilities/vsCodeUtils'
@@ -355,57 +356,67 @@ export const makeBuildDir = async (): Promise<string> => {
     return buildDir
 }
 
+export function getHandlerRelativePath(params: {
+    codeRoot: string,
+    filePath: string
+}): string {
+    return path.relative(params.codeRoot, path.dirname(params.filePath))
+}
+
+export function getRelativeFunctionHandler(params: {
+    handlerName: string,
+    runtime: string,
+    handlerFileRelativePath: string
+}): string {
+    // Make function handler relative to baseDir
+    let relativeFunctionHandler: string
+    if (shouldAppendRelativePathToFunctionHandler(params.runtime)) {
+        relativeFunctionHandler = normalizeSeparator(
+            path.join(
+                params.handlerFileRelativePath,
+                params.handlerName,
+            )
+        )
+    } else {
+        relativeFunctionHandler = params.handlerName
+    }
+
+    return relativeFunctionHandler
+}
+
+export async function getLambdaInfoFromExistingTemplate(params: {
+    workspaceUri: vscode.Uri,
+    relativeOriginalFunctionHandler: string
+}): Promise <LocalLambda | undefined> {
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(params.workspaceUri)
+    let existingLambda: LocalLambda | undefined
+    if (workspaceFolder) {
+        const lambdas = await detectLocalLambdas([workspaceFolder])
+        existingLambda = lambdas.find(lambda => lambda.handler === params.relativeOriginalFunctionHandler)
+    }
+
+    return existingLambda
+}
+
 export async function makeInputTemplate(params: {
     baseBuildDir: string,
     codeDir: string,
-    documentUri: vscode.Uri
-    originalHandlerName: string,
-    handlerName: string,
-    runtime: string,
-    workspaceUri: vscode.Uri,
+    relativeFunctionHandler: string,
+    properties?: CloudFormation.ResourceProperties,
+    runtime: string
 }): Promise<string> {
-    const inputTemplatePath: string = path.join(params.baseBuildDir, 'input', 'input-template.yaml')
-    ExtensionDisposableFiles.getInstance().addFolder(inputTemplatePath)
 
-    // Make function handler relative to baseDir
-    const handlerFileRelativePath = path.relative(
-        params.codeDir,
-        path.dirname(params.documentUri.fsPath)
-    )
-
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(params.workspaceUri)
-    let existingTemplateResource: CloudFormation.Resource | undefined
-    if (workspaceFolder) {
-
-        const relativeOriginalFunctionHandler = normalizeSeparator(
-            path.join(
-                handlerFileRelativePath,
-                params.originalHandlerName,
-            )
-        )
-
-        const lambdas = await detectLocalLambdas([workspaceFolder])
-        const existingLambda = lambdas.find(lambda => lambda.handler === relativeOriginalFunctionHandler)
-        existingTemplateResource = existingLambda ? existingLambda.resource : undefined
-    }
-
-    const relativeFunctionHandler = normalizeSeparator(
-        path.join(
-            handlerFileRelativePath,
-            params.handlerName,
-        )
-    )
-
-    let newTemplate = new SamTemplateGenerator()
-        .withCodeUri(params.codeDir)
-        .withFunctionHandler(relativeFunctionHandler)
+    const newTemplate = new SamTemplateGenerator()
+        .withFunctionHandler(params.relativeFunctionHandler)
         .withResourceName(TEMPLATE_RESOURCE_NAME)
         .withRuntime(params.runtime)
-
-    if (existingTemplateResource && existingTemplateResource.Properties &&
-        existingTemplateResource.Properties.Environment) {
-        newTemplate = newTemplate.withEnvironment(existingTemplateResource.Properties.Environment)
+        .withCodeUri(params.codeDir)
+    if (params.properties && params.properties.Environment) {
+        newTemplate.withEnvironment(params.properties.Environment)
     }
+
+    const inputTemplatePath: string = path.join(params.baseBuildDir, 'input', 'input-template.yaml')
+    ExtensionDisposableFiles.getInstance().addFolder(inputTemplatePath)
 
     await newTemplate.generate(inputTemplatePath)
 
@@ -414,7 +425,7 @@ export async function makeInputTemplate(params: {
 
 export async function executeSamBuild(params: {
     baseBuildDir: string,
-    channelLogger: ChannelLogger,
+    channelLogger: Pick<ChannelLogger, 'info'>,
     codeDir: string,
     inputTemplatePath: string,
     manifestPath?: string,
@@ -448,7 +459,7 @@ export const invokeLambdaFunction = async (params: {
     baseBuildDir: string,
     channelLogger: ChannelLogger,
     configuration: SettingsConfiguration,
-    debugConfig: DebugConfiguration,
+    debugConfig?: DebugConfiguration,
     documentUri: vscode.Uri,
     originalHandlerName: string,
     handlerName: string,
@@ -459,6 +470,11 @@ export const invokeLambdaFunction = async (params: {
     telemetryService: TelemetryService,
     runtime: string,
 }): Promise<void> => {
+    if (params.isDebug && !params.debugConfig) {
+        const err = new Error('Started debug run without a debugConfig')
+        params.channelLogger.logger.error(err)
+        throw err
+    }
     params.channelLogger.info(
         'AWS.output.starting.sam.app.locally',
         'Starting the SAM Application locally (see Terminal for output)'
@@ -499,14 +515,14 @@ export const invokeLambdaFunction = async (params: {
         templatePath: params.samTemplatePath,
         eventPath,
         environmentVariablePath,
-        debugPort: (params.isDebug) ? params.debugConfig.port.toString() : undefined,
+        debugPort: (params.isDebug && params.debugConfig) ? params.debugConfig.port.toString() : undefined,
         invoker: params.samTaskInvoker
     })
 
     const startInvokeTime = new Date()
     await command.execute()
 
-    if (params.isDebug) {
+    if (params.isDebug && params.debugConfig) {
         await waitForDebugPort({
             debugPort: params.debugConfig.port,
             configuration: params.configuration,
@@ -552,7 +568,9 @@ const getConfig = async (params: {
     return config
 }
 
-const getEnvironmentVariables = (config: HandlerConfig): SAMTemplateEnvironmentVariables => {
+const getEnvironmentVariables = (
+    config: Pick<HandlerConfig, 'environmentVariables'>
+): SAMTemplateEnvironmentVariables => {
     if (!!config.environmentVariables) {
         return {
             [TEMPLATE_RESOURCE_NAME]: config.environmentVariables
@@ -712,4 +730,21 @@ function getAttachDebuggerMaxRetryLimit(
         'samcli.debug.attach.retry.maximum',
         defaultValue
     )!
+}
+
+export function shouldAppendRelativePathToFunctionHandler(runtime: string): boolean {
+    // getFamily will throw an error if the runtime doesn't exist
+    switch (getFamily(runtime)) {
+        case SamLambdaRuntimeFamily.NodeJS:
+        case SamLambdaRuntimeFamily.Python:
+        case SamLambdaRuntimeFamily.Ruby:
+            return true
+        case SamLambdaRuntimeFamily.DotNet:
+        case SamLambdaRuntimeFamily.Java:
+        case SamLambdaRuntimeFamily.Go:
+            return false
+        // if the runtime exists but for some reason we forgot to cover it here, throw anyway so we remember to cover it
+        default:
+            throw new Error('localLambdaRunner can not determine if runtime requires a relative path.')
+    }
 }

@@ -10,9 +10,17 @@ import * as vscode from 'vscode'
 
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
+import {
+    DefaultSamCliProcessInvoker,
+    DefaultSamCliTaskInvoker
+} from '../sam/cli/samCliInvoker'
+import { SamCliProcessInvoker, SamCliTaskInvoker } from '../sam/cli/samCliInvokerUtils'
+import { SettingsConfiguration } from '../settingsConfiguration'
 import { Datum } from '../telemetry/telemetryEvent'
+import { TelemetryService } from '../telemetry/telemetryService'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
+import { getChannelLogger } from '../utilities/vsCodeUtils'
 import {
     CodeLensProviderParams,
     getInvokeCmdKey,
@@ -20,8 +28,15 @@ import {
     makeCodeLenses,
 } from './codeLensUtils'
 import {
+    executeSamBuild,
+    getHandlerRelativePath,
+    getLambdaInfoFromExistingTemplate,
+    getRelativeFunctionHandler,
     getRuntimeForLambda,
+    invokeLambdaFunction,
     LambdaLocalInvokeParams,
+    makeBuildDir,
+    makeInputTemplate
 } from './localLambdaRunner'
 
 export const CSHARP_LANGUAGE = 'csharp'
@@ -44,6 +59,11 @@ export interface DotNetLambdaHandlerComponents {
 }
 
 export async function initialize({
+    configuration,
+    outputChannel: toolkitOutputChannel,
+    processInvoker = new DefaultSamCliProcessInvoker(),
+    taskInvoker = new DefaultSamCliTaskInvoker(),
+    telemetryService
 }: CodeLensProviderParams): Promise<void> {
     const command = getInvokeCmdKey(CSHARP_LANGUAGE)
     registerCommand({
@@ -52,6 +72,11 @@ export async function initialize({
             return await onLocalInvokeCommand({
                 commandName: command,
                 lambdaLocalInvokeParams: params,
+                configuration,
+                toolkitOutputChannel,
+                processInvoker,
+                taskInvoker,
+                telemetryService
             })
         },
     })
@@ -59,26 +84,118 @@ export async function initialize({
 
 /**
  * The command that is run when user clicks on Run Local or Debug Local CodeLens
+ * Accepts object containing the following params:
+ * @param configuration - SettingsConfiguration (for invokeLambdaFunction)
+ * @param toolkitOutputChannel - "AWS Toolkit" output channel
  * @param commandName - Name of the VS Code Command currently running
  * @param lambdaLocalInvokeParams - Information about the Lambda Handler to invoke locally
+ * @param processInvoker - SAM CLI Process invoker
+ * @param taskInvoker - SAM CLI Task invoker
+ * @param telemetryService - Telemetry service for metrics
  */
 async function onLocalInvokeCommand({
+    configuration,
+    toolkitOutputChannel,
     commandName,
     lambdaLocalInvokeParams,
+    processInvoker,
+    taskInvoker,
+    telemetryService
 }: {
+    configuration: SettingsConfiguration
+    toolkitOutputChannel: vscode.OutputChannel,
     commandName: string,
     lambdaLocalInvokeParams: LambdaLocalInvokeParams,
+    processInvoker: SamCliProcessInvoker,
+    taskInvoker: SamCliTaskInvoker,
+    telemetryService: TelemetryService
 }): Promise<{ datum: Datum }> {
 
+    const channelLogger = getChannelLogger(toolkitOutputChannel)
     const runtime = await getRuntimeForLambda({
         handlerName: lambdaLocalInvokeParams.handlerName,
         templatePath: lambdaLocalInvokeParams.samTemplate.fsPath
     })
 
-    // TODO : Implement local run/debug in future backlog tasks
-    vscode.window.showInformationMessage(
-        `Local ${lambdaLocalInvokeParams.isDebug ? 'debug' : 'run'} support for csharp is currently not implemented.`
+    // Switch over to the output channel so the user has feedback that we're getting things ready
+    channelLogger.channel.show(true)
+
+    channelLogger.info(
+        'AWS.output.sam.local.start',
+        'Preparing to run {0} locally...',
+        lambdaLocalInvokeParams.handlerName
     )
+
+    try {
+        if (!lambdaLocalInvokeParams.isDebug) {
+            const baseBuildDir = await makeBuildDir()
+            const templateDir = path.dirname(lambdaLocalInvokeParams.samTemplate.fsPath)
+            const documentUri = lambdaLocalInvokeParams.document.uri
+            const handlerName = lambdaLocalInvokeParams.handlerName
+
+            const handlerFileRelativePath = getHandlerRelativePath({
+                codeRoot: templateDir,
+                filePath: documentUri.fsPath
+            })
+
+            const relativeFunctionHandler = getRelativeFunctionHandler({
+                handlerName,
+                runtime,
+                handlerFileRelativePath
+            })
+
+            const lambdaInfo = await getLambdaInfoFromExistingTemplate({
+                workspaceUri: lambdaLocalInvokeParams.workspaceFolder.uri,
+                relativeOriginalFunctionHandler: relativeFunctionHandler
+            })
+
+            const properties = lambdaInfo ? lambdaInfo.resource.Properties : undefined
+            const codeDir = properties ? path.join(templateDir, properties.CodeUri) : templateDir
+
+            const inputTemplatePath = await makeInputTemplate({
+                baseBuildDir,
+                codeDir,
+                relativeFunctionHandler,
+                properties,
+                runtime
+            })
+
+            const samTemplatePath: string = await executeSamBuild({
+                baseBuildDir,
+                channelLogger,
+                codeDir,
+                inputTemplatePath,
+                samProcessInvoker: processInvoker,
+            })
+
+            await invokeLambdaFunction({
+                baseBuildDir,
+                channelLogger,
+                configuration,
+                documentUri,
+                originalHandlerName: handlerName,
+                handlerName,
+                originalSamTemplatePath: inputTemplatePath,
+                samTemplatePath,
+                samTaskInvoker: taskInvoker,
+                telemetryService,
+                runtime,
+                isDebug: lambdaLocalInvokeParams.isDebug,
+
+                // TODO: Set on debug
+                debugConfig: undefined,
+            })
+        } else {
+            vscode.window.showInformationMessage(`Local debug for ${runtime} is currently not implemented.`)
+        }
+    } catch (err) {
+        const error = err as Error
+        channelLogger.error(
+            'AWS.error.during.sam.local',
+            'An error occurred trying to run SAM Application locally: {0}',
+            error
+        )
+    }
 
     return getMetricDatum({
         isDebug: lambdaLocalInvokeParams.isDebug,

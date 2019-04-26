@@ -30,6 +30,9 @@ import {
 } from './codeLensUtils'
 import {
     executeSamBuild,
+    getHandlerRelativePath,
+    getLambdaInfoFromExistingTemplate,
+    getRelativeFunctionHandler,
     getRuntimeForLambda,
     invokeLambdaFunction,
     LambdaLocalInvokeParams,
@@ -221,15 +224,37 @@ export async function initialize({
                 outputDir: baseBuildDir
             })
         }
+        
+        const handlerFileRelativePath = getHandlerRelativePath({
+            codeRoot: samProjectCodeRoot,
+            filePath: args.document.uri.fsPath
+        })
+
+        const relativeOriginalFunctionHandler = getRelativeFunctionHandler({
+            handlerName: args.handlerName,
+            runtime: args.runtime,
+            handlerFileRelativePath
+        })
+
+        const relativeFunctionHandler = getRelativeFunctionHandler({
+            handlerName: handlerName,
+            runtime: args.runtime,
+            handlerFileRelativePath
+        })
+
+        const lambdaInfo = await getLambdaInfoFromExistingTemplate({
+            workspaceUri: args.workspaceFolder.uri,
+            relativeOriginalFunctionHandler
+        })
+
         const inputTemplatePath = await makeInputTemplate({
             baseBuildDir,
             codeDir: samProjectCodeRoot,
-            documentUri: args.document.uri,
-            originalHandlerName: args.handlerName,
-            handlerName,
-            runtime: args.runtime,
-            workspaceUri: args.workspaceFolder.uri
+            relativeFunctionHandler,
+            properties: lambdaInfo && lambdaInfo.resource.Properties ? lambdaInfo.resource.Properties : undefined,
+            runtime: args.runtime
         })
+
         logger.debug(`pythonCodeLensProvider.initialize: ${
             JSON.stringify({ samProjectCodeRoot, inputTemplatePath, handlerName, manifestPath }, undefined, 2)
             }`)
