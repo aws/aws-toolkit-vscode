@@ -134,16 +134,16 @@ The confirmation prompt can be implemented using one of two UI facilities:
       * it appears to the user that the flow has stopped ("I don't see the toast anymore") but the flow does not return to the calling code (calling code is actually waiting for a button to be pressed)
     * Putting a third button along the lines of `More Info...` beside `Yes` and `No` buttons is unconventional
     * a `More Info...` button dismisses the toast (and would have to be handled as a `No`), ideally the toast would stay open
-* a `QuickPick`, which presents a list to the user for selection, and can be complemented with buttons
+* one of a `QuickPick` (which presents a list to the user for selection) or `InputBox` (which prompts the user for text), and can be complemented with buttons
   * Pros
-    * if users press `Esc` on the QuickPick, the QuickPick is dismissed, and flow returns to the calling code, which in this case can handle it as a `No`
+    * if users press `Esc` on the QuickPick/InputBox, the QuickPick/InputBox is dismissed, and flow returns to the calling code, which in this case can handle it as an intent to cancel
     * More consistent UX if the prompt is used both as a standalone prompt, and in a wizard (CloudFormation Stack Deploy alternate proposal uses a wizard)
     * Flexability to support actions (like bringing up a help page) while leaving the prompt open
-    * idiomatic to VS Code - the `Yes` and `No` choices appear in a selection list
+    * idiomatic to VS Code - using a QuickPick, the `Yes` and `No` choices appear in a selection list
   * Cons
     * None
 
-`QuickPick` is the appropriate facility to use for the confirmation prompt. The first con listed in the toast approach would cause misleading experiences while accumulating promises that wait for additional action.
+`QuickPick/InputBox` is the appropriate facility to use for the confirmation prompt. The first con listed in the toast approach would cause misleading experiences while accumulating promises that wait for additional action.
 
 ### API Client
 
