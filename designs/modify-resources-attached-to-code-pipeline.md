@@ -94,16 +94,16 @@ The confirmation prompt contains the following messaging. See [Success criteria]
 
 Manual modification of resources outside of an AWS CodePipeline will skip any verification steps defined in the pipeline.
 
-Do you want to continue with this manual { deployment | deletion }?
+If you would like to continue with this manual { deployment | deletion }, please enter the name of the { Lambda Function | CloudFormation Stack }
 
 ---
 
 `associated_pipeline` will be the value of the [tag that indicates there is an associated pipeline](#associated-resources)
 
 The user will have the following actions/responses available:
-* `Yes` - proceeds with the manual operation
-* `No` - The default - Cancels the current operation (or goes back a step in the case of a wizard)
+* a place to enter the name of the Resource as a means of confirming the action
 * `Learn More` - This will link to user documentation (https://docs.aws.amazon.com/codepipeline/latest/userguide) but will not close the confirmation prompt
+* Pressing `Esc` (or similar "Go back" gestures) will act as a cancel mechanic
 
 Implementation
 ==============
