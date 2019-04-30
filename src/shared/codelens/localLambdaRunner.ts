@@ -244,14 +244,19 @@ export class LocalLambdaRunner {
             invoker: this.localInvokeCommand
         })
 
-        const startInvokeTime = new Date()
-        await command.execute()
+        const timelimit = this.configuration.readSetting<number>(
+            'samcli.debug.attach.timeout.millis',
+            SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
+        )
+        const timer = new InvokeTimer(timelimit ? timelimit : SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT)
+        await command.execute(timer.timer)
 
         if (this.localInvokeParams.isDebug) {
             const isPortOpen: boolean = await waitForDebugPort({
                 debugPort: this.debugPort,
                 configuration: this.configuration,
-                channelLogger: this.channelLogger
+                channelLogger: this.channelLogger,
+                timeoutDuration: timer.remainingTime
             })
 
             if (!isPortOpen) {
@@ -268,13 +273,13 @@ export class LocalLambdaRunner {
                 retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
                 channelLogger: this.channelLogger,
                 onRecordAttachDebuggerMetric: (
-                    attachResult: boolean | undefined, attempts: number, attachResultDate: Date
+                    attachResult: boolean | undefined, attempts: number
                 ): void => {
                     recordAttachDebuggerMetric({
                         telemetryService: this.telemetryService,
                         result: attachResult,
                         attempts,
-                        durationMillis: attachResultDate.getTime() - startInvokeTime.getTime(),
+                        durationMillis: timer.elapsedTime,
                         runtime: this.runtime,
                     })
                 },
@@ -313,6 +318,40 @@ export class LocalLambdaRunner {
         }
     }
 } // end class LocalLambdaRunner
+
+// TimeoutObject contains an object that can handle both cancellation token- and time limit-style timeout situations.
+export class InvokeTimer {
+    private readonly _startTime: number
+    private readonly _endTime: number
+    private readonly _timer: Promise<boolean>
+    public constructor(timeoutLength: number) {
+        this._startTime = new Date().getTime()
+        this._endTime = this._startTime + timeoutLength
+        this._timer = new Promise<boolean>((resolve) => {
+            setTimeout(() => resolve(false), timeoutLength)
+        })
+    }
+
+    // time limit-style timer
+    // will provide the remaining time left in the timeout to send to other functions
+    public get remainingTime(): number {
+        const curr = new Date().getTime()
+
+        return (this._endTime - curr > 0 ? this._endTime - curr : 0)
+    }
+
+    // cancellation token-style timer
+    // truthy when timer is active, false when timer has ended.
+    public get timer(): Promise<boolean> {
+        return this._timer
+    }
+
+    // total time
+    // use this for metrics
+    public get elapsedTime(): number {
+        return new Date().getTime() - this._startTime
+    }
+}
 
 export async function getRuntimeForLambda(params: {
     handlerName: string,
@@ -510,14 +549,19 @@ export const invokeLambdaFunction = async (params: {
         invoker: params.samLocalInvokeCommand,
     })
 
-    const startInvokeTime = new Date()
-    await command.execute()
+    const timelimit = params.configuration.readSetting<number>(
+        'samcli.debug.attach.timeout.millis',
+        SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
+    )
+    const timer = new InvokeTimer(timelimit ? timelimit : SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT)
+    await command.execute(timer.timer)
 
     if (params.isDebug) {
         const isPortOpen: boolean = await waitForDebugPort({
             debugPort: params.debugConfig.port,
             configuration: params.configuration,
-            channelLogger: params.channelLogger
+            channelLogger: params.channelLogger,
+            timeoutDuration: timer.remainingTime
         })
 
         if (!isPortOpen) {
@@ -534,13 +578,13 @@ export const invokeLambdaFunction = async (params: {
             retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
             channelLogger: params.channelLogger,
             onRecordAttachDebuggerMetric: (
-                attachResult: boolean | undefined, attempts: number, attachResultDate: Date
+                attachResult: boolean | undefined, attempts: number
             ): void => {
                 recordAttachDebuggerMetric({
                     telemetryService: params.telemetryService,
                     result: attachResult,
                     attempts,
-                    durationMillis: attachResultDate.getTime() - startInvokeTime.getTime(),
+                    durationMillis: timer.elapsedTime,
                     runtime: params.runtime,
                 })
             },
@@ -589,7 +633,7 @@ export interface AttachDebuggerContext {
     retryDelayMillis?: number
     channelLogger: Pick<ChannelLogger, 'info' | 'error' | 'logger'>
     onStartDebugging?: typeof vscode.debug.startDebugging
-    onRecordAttachDebuggerMetric?(attachResult: boolean | undefined, attempts: number, attachResultDate: Date): void
+    onRecordAttachDebuggerMetric?(attachResult: boolean | undefined, attempts: number): void
     onWillRetry?(): Promise<void>
 }
 
@@ -642,7 +686,7 @@ export async function attachDebugger(
     } while (isDebuggerAttached === undefined)
 
     if (params.onRecordAttachDebuggerMetric) {
-        params.onRecordAttachDebuggerMetric(isDebuggerAttached, retries + 1, new Date())
+        params.onRecordAttachDebuggerMetric(isDebuggerAttached, retries + 1)
     }
 
     if (isDebuggerAttached) {
@@ -667,32 +711,31 @@ async function waitForDebugPort({
     debugPort,
     configuration,
     channelLogger,
+    timeoutDuration
 }: {
     debugPort: number
     configuration: SettingsConfiguration
     channelLogger: ChannelLogger
+    timeoutDuration: number
 }): Promise<boolean> {
     channelLogger.info(
         'AWS.output.sam.local.waiting',
         'Waiting for SAM Application to start before attaching debugger...'
     )
 
-    const timeoutMillis = configuration.readSetting<number>(
-        'samcli.debug.attach.timeout.millis',
-        SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
-    )
-
     try {
+        // this should not fail: if it hits this point, the port should be open
+        // this function always attempts once no matter the timeoutDuration
         await tcpPortUsed.waitUntilUsed(
             debugPort,
             SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS,
-            timeoutMillis
+            timeoutDuration
         )
 
         return true
     } catch (err) {
         channelLogger.logger.verbose(
-            `Timed out after ${timeoutMillis} ms waiting for port ${debugPort} to open: ${err}`
+            `Timed out after ${timeoutDuration} ms waiting for port ${debugPort} to open: ${err}`
         )
 
         return false

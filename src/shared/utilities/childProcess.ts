@@ -108,4 +108,10 @@ export class ChildProcess {
             this.childProcess!.removeAllListeners()
         })
     }
+
+    public async kill(signal?: string): Promise<void> {
+        if (this.childProcess) {
+            this.childProcess.kill(signal)
+        }
+    }
 }

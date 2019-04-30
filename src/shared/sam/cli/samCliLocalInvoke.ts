@@ -24,6 +24,7 @@ export interface SamLocalInvokeCommandArgs {
     args: string[],
     options?: child_process.SpawnOptions,
     isDebug: boolean,
+    timer?: boolean | Promise<boolean>
 }
 
 /**
@@ -55,7 +56,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
 
         const childProcess = new ChildProcess(params.command, options, ...params.args)
 
-        await new Promise<void>(async (resolve, reject) => {
+        const debuggerPromise = new Promise<void>(async (resolve, reject) => {
             let checkForDebuggerAttachCue: boolean = params.isDebug
             let promiseResolved: boolean = false
 
@@ -113,6 +114,22 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
             }
         })
 
+        if (params.timer) {
+            await Promise.race([debuggerPromise, params.timer]).then( async (value) => {
+                if (value === false) {
+                    const err = new Error('The SAM process did not make the debugger available within the timelimit')
+                    this.channelLogger.error(
+                        'AWS.samcli.local.invoke.debugger.timeout',
+                        'The SAM process did not make the debugger available within the timelimit',
+                        err
+                    )
+                    await childProcess.kill()
+                    throw err
+                }
+            })
+        } else {
+            await debuggerPromise
+        }
     }
 
     private emitMessage(text: string): void {
@@ -189,7 +206,7 @@ export class SamCliLocalInvokeInvocation {
         this.skipPullImage = skipPullImage
     }
 
-    public async execute(): Promise<void> {
+    public async execute(timer?: Promise<boolean> | boolean): Promise<void> {
         await this.validate()
 
         const args = [
@@ -212,6 +229,7 @@ export class SamCliLocalInvokeInvocation {
             command: 'sam',
             args,
             isDebug: !!this.debugPort,
+            timer
         })
     }
 
