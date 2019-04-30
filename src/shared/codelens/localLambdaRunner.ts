@@ -25,6 +25,7 @@ import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { BasicLogger } from '../logger'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
+import { Timeout } from '../utilities/timeoutUtils'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 
 export interface LambdaLocalInvokeParams {
@@ -248,8 +249,8 @@ export class LocalLambdaRunner {
             'samcli.debug.attach.timeout.millis',
             SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
         )
-        const timer = new InvokeTimer(timelimit ? timelimit : SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT)
-        await command.execute(timer.timer)
+        const timer = new Timeout(timelimit)
+        await command.execute(timer)
 
         if (this.localInvokeParams.isDebug) {
             const isPortOpen: boolean = await waitForDebugPort({
@@ -318,40 +319,6 @@ export class LocalLambdaRunner {
         }
     }
 } // end class LocalLambdaRunner
-
-// TimeoutObject contains an object that can handle both cancellation token- and time limit-style timeout situations.
-export class InvokeTimer {
-    private readonly _startTime: number
-    private readonly _endTime: number
-    private readonly _timer: Promise<boolean>
-    public constructor(timeoutLength: number) {
-        this._startTime = new Date().getTime()
-        this._endTime = this._startTime + timeoutLength
-        this._timer = new Promise<boolean>((resolve) => {
-            setTimeout(() => resolve(false), timeoutLength)
-        })
-    }
-
-    // time limit-style timer
-    // will provide the remaining time left in the timeout to send to other functions
-    public get remainingTime(): number {
-        const curr = new Date().getTime()
-
-        return (this._endTime - curr > 0 ? this._endTime - curr : 0)
-    }
-
-    // cancellation token-style timer
-    // truthy when timer is active, false when timer has ended.
-    public get timer(): Promise<boolean> {
-        return this._timer
-    }
-
-    // total time
-    // use this for metrics
-    public get elapsedTime(): number {
-        return new Date().getTime() - this._startTime
-    }
-}
 
 export async function getRuntimeForLambda(params: {
     handlerName: string,
@@ -553,8 +520,8 @@ export const invokeLambdaFunction = async (params: {
         'samcli.debug.attach.timeout.millis',
         SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
     )
-    const timer = new InvokeTimer(timelimit ? timelimit : SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT)
-    await command.execute(timer.timer)
+    const timer = new Timeout(timelimit)
+    await command.execute(timer)
 
     if (params.isDebug) {
         const isPortOpen: boolean = await waitForDebugPort({

@@ -10,6 +10,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { fileExists } from '../../filesystemUtilities'
 import { ChildProcess } from '../../utilities/childProcess'
+import { Timeout } from '../../utilities/timeoutUtils'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
 
 const localize = nls.loadMessageBundle()
@@ -24,7 +25,7 @@ export interface SamLocalInvokeCommandArgs {
     args: string[],
     options?: child_process.SpawnOptions,
     isDebug: boolean,
-    timer?: boolean | Promise<boolean>
+    timeout?: Timeout
 }
 
 /**
@@ -114,13 +115,13 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
             }
         })
 
-        if (params.timer) {
-            await Promise.race([debuggerPromise, params.timer]).then( async (value) => {
+        if (params.timeout) {
+            await Promise.race([debuggerPromise, params.timeout.timer]).then( async (value) => {
                 if (value === false) {
                     const err = new Error('The SAM process did not make the debugger available within the timelimit')
                     this.channelLogger.error(
                         'AWS.samcli.local.invoke.debugger.timeout',
-                        'The SAM process did not make the debugger available within the timelimit',
+                        'The SAM process did not make the debugger available within the time limit',
                         err
                     )
                     await childProcess.kill()
@@ -206,7 +207,7 @@ export class SamCliLocalInvokeInvocation {
         this.skipPullImage = skipPullImage
     }
 
-    public async execute(timer?: Promise<boolean> | boolean): Promise<void> {
+    public async execute(timeout?: Timeout): Promise<void> {
         await this.validate()
 
         const args = [
@@ -229,7 +230,7 @@ export class SamCliLocalInvokeInvocation {
             command: 'sam',
             args,
             isDebug: !!this.debugPort,
-            timer
+            timeout
         })
     }
 
