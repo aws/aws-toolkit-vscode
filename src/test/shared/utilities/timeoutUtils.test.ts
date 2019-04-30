@@ -16,40 +16,39 @@ describe ('timeoutUtils', async () => {
             const longTimer = new timeoutUtils.Timeout(300)
             assert.strictEqual(longTimer.remainingTime > 0, true)
             // bleed the timeout to not mess with other tests
-            await new Promise<boolean>((resolve) => {
-                setTimeout(() => resolve(true), 300)
-            })
+            await longTimer.timer
         })
 
-        it ('returns 0 if timer is expired', () => {
+        it ('returns 0 if timer is expired', async () => {
             const shortTimer = new timeoutUtils.Timeout(1)
-            setTimeout(() => assert.strictEqual(shortTimer.remainingTime, 0), 100)
+            await new Promise<boolean>((resolve) => {
+                setTimeout(() => resolve(true), 100)
+            })
+            assert.strictEqual(shortTimer.remainingTime, 0)
         })
 
         it ('returns a Promise if a timer is active', async () => {
             const longTimer = new timeoutUtils.Timeout(300)
             assert.strictEqual(longTimer.timer instanceof Promise, true)
             // bleed the timeout to not mess with other tests
-            await new Promise<boolean>((resolve) => {
-                setTimeout(() => resolve(true), 300)
-            })
+            await longTimer.timer
         })
 
         it ('returns false if a timer is expired', async () => {
             const shortTimer = new timeoutUtils.Timeout(1)
-            await new Promise<boolean>((resolve) => {
-                setTimeout(() => resolve(true), 100)
-            })
-            assert.strictEqual(await shortTimer.timer, false)
+            const result = await shortTimer.timer
+            assert.strictEqual(result, false)
         })
 
         it ('correctly reports an elapsed time with a 3ms margin of error', async () => {
             const longTimer = new timeoutUtils.Timeout(300)
-            setTimeout(() => assert.strictEqual(longTimer.elapsedTime > 97 && longTimer.elapsedTime < 103, true), 100)
-            // bleed the timeout to not mess with other tests
             await new Promise<boolean>((resolve) => {
-                setTimeout(() => resolve(true), 300)
+                setTimeout(() => resolve(true), 100)
             })
+            const elapsed = longTimer.elapsedTime
+            assert.strictEqual(elapsed > 97 && elapsed < 103, true)
+            // bleed the timeout to not mess with other tests
+            await longTimer.timer
         })
     })
 })
