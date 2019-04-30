@@ -10,6 +10,11 @@ static def ideProfiles() {
                                     "maven",
                                     "properties" // Used by Maven
                             ]
+                    ],
+                    "RD": [
+                            version: "RD-2018.3.4",
+                            plugins: [
+                            ]
                     ]
             ],
             "2019.1": [
@@ -21,6 +26,11 @@ static def ideProfiles() {
                                     "gradle",
                                     "maven",
                                     "properties" // Used by Maven
+                            ]
+                    ],
+                    "RD": [
+                            version: "RD-2019.1",
+                            plugins: [
                             ]
                     ]
             ]
