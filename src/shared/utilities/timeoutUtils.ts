@@ -19,7 +19,8 @@ export class Timeout {
         this._startTime = new Date().getTime()
         this._endTime = this._startTime + timeoutLength
         this._timer = new Promise<void>((resolve, reject) => {
-            this.makeTimeoutHandlers(resolve, reject, timeoutLength)
+            this._timerTimeout = setTimeout(reject, timeoutLength)
+            this._timerResolve = resolve
         })
     }
 
@@ -61,25 +62,5 @@ export class Timeout {
         if (this._timerResolve) {
             this._timerResolve()
         }
-    }
-
-    /**
-     * Helper function that makes the timeout (which rejects a promise) and reject values
-     * accessible outside the internal timer promise
-     *
-     * This allows us to manually kill the timer and resolve
-     * Helpful for tests!
-     *
-     * @param resolve resolve function from Promise
-     * @param reject reject function from Promise
-     * @param timeoutLength timer length
-     */
-    private makeTimeoutHandlers(
-        resolve: (value?: void | PromiseLike<void> | undefined) => void,
-        reject: (reason?: any) => void,
-        timeoutLength: number
-    ) {
-        this._timerTimeout = setTimeout(reject, timeoutLength)
-        this._timerResolve = resolve
     }
 }

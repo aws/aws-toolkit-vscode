@@ -334,12 +334,12 @@ describe('ChildProcess', async () => {
                 // worst case scenario, this script will take 2 seconds to run its course
                 // tslint:disable-next-line: no-floating-promises
                 childProcess.run()
-                assert.strictEqual(childProcess.killed(), false)
+                assert.strictEqual(childProcess.killed, false)
                 childProcess.kill()
                 await new Promise<void>((resolve) => {
                     setTimeout(
                         () => {
-                            assert.strictEqual(childProcess.killed(), true)
+                            assert.strictEqual(childProcess.killed, true)
                             resolve()
                         },
                         100
@@ -363,7 +363,7 @@ describe('ChildProcess', async () => {
                 await new Promise<void>( (resolve) => {
                     setTimeout(
                         () => {
-                            assert.strictEqual(childProcess.killed(), true)
+                            assert.strictEqual(childProcess.killed, true)
                             resolve()
                         },
                         100
@@ -395,12 +395,12 @@ describe('ChildProcess', async () => {
                 // worst case scenario, this script will take 2 seconds to run its course
                 // tslint:disable-next-line: no-floating-promises
                 childProcess.run()
-                assert.strictEqual(childProcess.killed(), false)
+                assert.strictEqual(childProcess.killed, false)
                 childProcess.kill()
                 await new Promise<void>((resolve) => {
                     setTimeout(
                         () => {
-                            assert.strictEqual(childProcess.killed(), true)
+                            assert.strictEqual(childProcess.killed, true)
                             resolve()
                         },
                         100
@@ -424,7 +424,7 @@ describe('ChildProcess', async () => {
                 await new Promise<void>( (resolve) => {
                     setTimeout(
                         () => {
-                            assert.strictEqual(childProcess.killed(), true)
+                            assert.strictEqual(childProcess.killed, true)
                             resolve()
                         },
                         100
