@@ -10,7 +10,8 @@ import * as vscode from 'vscode'
 // defines helper methods for interacting with VSCode's configuration
 // persistence mechanisms, allowing us to test with mocks.
 export interface SettingsConfiguration {
-    readSetting<T>(settingKey: string, defaultValue?: T): T | undefined
+    readSetting<T>(settingKey: string): T | undefined
+    readSetting<T>(settingKey: string, defaultValue: T): T
 
     // array values are serialized as a comma-delimited string
     writeSetting<T>(settingKey: string, value: T | undefined, target: vscode.ConfigurationTarget): Promise<void>

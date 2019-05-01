@@ -10,6 +10,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { fileExists } from '../../filesystemUtilities'
 import { ChildProcess } from '../../utilities/childProcess'
+import { Timeout } from '../../utilities/timeoutUtils'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
 
 const localize = nls.loadMessageBundle()
@@ -24,6 +25,7 @@ export interface SamLocalInvokeCommandArgs {
     args: string[],
     options?: child_process.SpawnOptions,
     isDebug: boolean,
+    timeout?: Timeout
 }
 
 /**
@@ -55,9 +57,9 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
 
         const childProcess = new ChildProcess(params.command, options, ...params.args)
 
-        await new Promise<void>(async (resolve, reject) => {
+        let debuggerPromiseClosed: boolean = false
+        const debuggerPromise = new Promise<void>(async (resolve, reject) => {
             let checkForDebuggerAttachCue: boolean = params.isDebug
-            let promiseResolved: boolean = false
 
             await childProcess.start(
                 {
@@ -73,7 +75,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                                 this.channelLogger.logger.verbose(
                                     'Local SAM App should be ready for a debugger to attach now.'
                                 )
-                                promiseResolved = true
+                                debuggerPromiseClosed = true
                                 resolve()
                             }
                         }
@@ -92,7 +94,8 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                         // Handles scenarios where the process exited before we anticipated.
                         // Example: We didn't see an expected debugger attach cue, and the process or docker container
                         // was terminated by the user, or the user manually attached to the sam app.
-                        if (!promiseResolved) {
+                        if (!debuggerPromiseClosed) {
+                            debuggerPromiseClosed = true
                             reject(new Error('The SAM Application closed unexpectedly'))
                         }
                     },
@@ -102,17 +105,37 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                             'Error encountered running local SAM Application',
                             error
                         )
+                        debuggerPromiseClosed = true
+                        reject(error)
                     },
                 }
             )
 
             if (!params.isDebug) {
                 this.channelLogger.logger.verbose('Local SAM App does not expect a debugger to attach.')
-                promiseResolved = true
+                debuggerPromiseClosed = true
                 resolve()
             }
         })
 
+        const awaitedPromises = params.timeout ? [debuggerPromise, params.timeout.timer] : [debuggerPromise]
+
+        await Promise.race(awaitedPromises).catch( async () => {
+            // did debugger promise resolve/reject? if not, this was a timeout: kill the process
+            // otherwise, process closed out on its own; no need to kill the process
+            if (!debuggerPromiseClosed) {
+                const err = new Error('The SAM process did not make the debugger available within the timelimit')
+                this.channelLogger.error(
+                    'AWS.samcli.local.invoke.debugger.timeout',
+                    'The SAM process did not make the debugger available within the time limit',
+                    err
+                )
+                if (!childProcess.killed) {
+                    childProcess.kill()
+                }
+                throw err
+            }
+        })
     }
 
     private emitMessage(text: string): void {
@@ -189,7 +212,7 @@ export class SamCliLocalInvokeInvocation {
         this.skipPullImage = skipPullImage
     }
 
-    public async execute(): Promise<void> {
+    public async execute(timeout?: Timeout): Promise<void> {
         await this.validate()
 
         const args = [
@@ -212,6 +235,7 @@ export class SamCliLocalInvokeInvocation {
             command: 'sam',
             args,
             isDebug: !!this.debugPort,
+            timeout
         })
     }
 
