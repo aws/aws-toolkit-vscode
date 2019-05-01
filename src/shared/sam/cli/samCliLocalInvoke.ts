@@ -57,9 +57,9 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
 
         const childProcess = new ChildProcess(params.command, options, ...params.args)
 
+        let debuggerPromiseClosed: boolean = false
         const debuggerPromise = new Promise<void>(async (resolve, reject) => {
             let checkForDebuggerAttachCue: boolean = params.isDebug
-            let promiseResolved: boolean = false
 
             await childProcess.start(
                 {
@@ -75,7 +75,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                                 this.channelLogger.logger.verbose(
                                     'Local SAM App should be ready for a debugger to attach now.'
                                 )
-                                promiseResolved = true
+                                debuggerPromiseClosed = true
                                 resolve()
                             }
                         }
@@ -94,7 +94,8 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                         // Handles scenarios where the process exited before we anticipated.
                         // Example: We didn't see an expected debugger attach cue, and the process or docker container
                         // was terminated by the user, or the user manually attached to the sam app.
-                        if (!promiseResolved) {
+                        if (!debuggerPromiseClosed) {
+                            debuggerPromiseClosed = true
                             reject(new Error('The SAM Application closed unexpectedly'))
                         }
                     },
@@ -104,33 +105,37 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                             'Error encountered running local SAM Application',
                             error
                         )
+                        debuggerPromiseClosed = true
+                        reject(error)
                     },
                 }
             )
 
             if (!params.isDebug) {
                 this.channelLogger.logger.verbose('Local SAM App does not expect a debugger to attach.')
-                promiseResolved = true
+                debuggerPromiseClosed = true
                 resolve()
             }
         })
 
-        if (params.timeout) {
-            await Promise.race([debuggerPromise, params.timeout.timer]).then( async (value) => {
-                if (value === false) {
-                    const err = new Error('The SAM process did not make the debugger available within the timelimit')
-                    this.channelLogger.error(
-                        'AWS.samcli.local.invoke.debugger.timeout',
-                        'The SAM process did not make the debugger available within the time limit',
-                        err
-                    )
-                    await childProcess.kill()
-                    throw err
+        const awaitedPromises = params.timeout ? [debuggerPromise, params.timeout.timer] : [debuggerPromise]
+
+        await Promise.race(awaitedPromises).catch( async () => {
+            // did debugger promise resolve/reject? if not, this was a timeout: kill the process
+            // otherwise, process closed out on its own; no need to kill the process
+            if (!debuggerPromiseClosed) {
+                const err = new Error('The SAM process did not make the debugger available within the timelimit')
+                this.channelLogger.error(
+                    'AWS.samcli.local.invoke.debugger.timeout',
+                    'The SAM process did not make the debugger available within the time limit',
+                    err
+                )
+                if (!childProcess.killed()) {
+                    childProcess.kill()
                 }
-            })
-        } else {
-            await debuggerPromise
-        }
+                throw err
+            }
+        })
     }
 
     private emitMessage(text: string): void {

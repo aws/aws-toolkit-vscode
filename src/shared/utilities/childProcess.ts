@@ -109,9 +109,16 @@ export class ChildProcess {
         })
     }
 
-    public async kill(signal?: string): Promise<void> {
-        if (this.childProcess) {
+    public kill(signal?: string): void {
+        if (this.childProcess && !this.killed()) {
             this.childProcess.kill(signal)
+        } else {
+            throw new Error('Attempting to kill a process that has already been killed')
         }
+    }
+
+    public killed(): boolean {
+        // default to true for safety
+        return this.childProcess ? this.childProcess.killed : true
     }
 }

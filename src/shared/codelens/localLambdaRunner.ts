@@ -245,11 +245,7 @@ export class LocalLambdaRunner {
             invoker: this.localInvokeCommand
         })
 
-        const timelimit = this.configuration.readSetting<number>(
-            'samcli.debug.attach.timeout.millis',
-            SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
-        )
-        const timer = new Timeout(timelimit)
+        const timer = createInvokeTimer(this.configuration)
         await command.execute(timer)
 
         if (this.localInvokeParams.isDebug) {
@@ -516,11 +512,7 @@ export const invokeLambdaFunction = async (params: {
         invoker: params.samLocalInvokeCommand,
     })
 
-    const timelimit = params.configuration.readSetting<number>(
-        'samcli.debug.attach.timeout.millis',
-        SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
-    )
-    const timer = new Timeout(timelimit)
+    const timer = createInvokeTimer(params.configuration)
     await command.execute(timer)
 
     if (params.isDebug) {
@@ -753,6 +745,17 @@ function getAttachDebuggerMaxRetryLimit(
         'samcli.debug.attach.retry.maximum',
         defaultValue
     )!
+}
+
+function createInvokeTimer(
+    configuration: SettingsConfiguration,
+): Timeout {
+    const timelimit = configuration.readSetting<number>(
+        'samcli.debug.attach.timeout.millis',
+        SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
+    )
+
+    return new Timeout(timelimit)
 }
 
 /**

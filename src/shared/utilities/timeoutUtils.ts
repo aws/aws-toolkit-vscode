@@ -6,18 +6,20 @@
 'use strict'
 
 /**
- * Timeout coTimeoutbject that can handle both cancellation token- and time limit-style timeout situations.
+ * Timeout that can handle both cancellation token-style and time limit-style timeout situations.
  * @param timeoutLength Length of timeout duration (in ms)
  */
 export class Timeout {
     private readonly _startTime: number
     private readonly _endTime: number
-    private readonly _timer: Promise<boolean>
+    private readonly _timer: Promise<void>
+    private _timerTimeout?: NodeJS.Timeout
+    private _timerResolve?: (value?: void | PromiseLike<void> | undefined) => void
     public constructor(timeoutLength: number) {
         this._startTime = new Date().getTime()
         this._endTime = this._startTime + timeoutLength
-        this._timer = new Promise<boolean>((resolve) => {
-            setTimeout(() => resolve(false), timeoutLength)
+        this._timer = new Promise<void>((resolve, reject) => {
+            this.makeTimeoutHandlers(resolve, reject, timeoutLength)
         })
     }
 
@@ -26,9 +28,9 @@ export class Timeout {
      * Bottoms out at 0
      */
     public get remainingTime(): number {
-        const curr = new Date().getTime()
+        const remainingTime = this._endTime - new Date().getTime()
 
-        return (this._endTime - curr > 0 ? this._endTime - curr : 0)
+        return (remainingTime > 0 ? remainingTime : 0)
     }
 
     /**
@@ -36,7 +38,7 @@ export class Timeout {
      * Use this in Promise.race() calls in order to time out awaited functions
      * Once this timer has finished, cannot be restarted
      */
-    public get timer(): Promise<boolean> {
+    public get timer(): Promise<void> {
         return this._timer
     }
 
@@ -46,5 +48,38 @@ export class Timeout {
      */
     public get elapsedTime(): number {
         return new Date().getTime() - this._startTime
+    }
+
+    /**
+     * Kills the internal timer and resolves the timer's promise
+     * Helpful for tests!
+     */
+    public killTimer(): void {
+        if (this._timerTimeout) {
+            clearTimeout(this._timerTimeout)
+        }
+        if (this._timerResolve) {
+            this._timerResolve()
+        }
+    }
+
+    /**
+     * Helper function that makes the timeout (which rejects a promise) and reject values
+     * accessible outside the internal timer promise
+     *
+     * This allows us to manually kill the timer and resolve
+     * Helpful for tests!
+     *
+     * @param resolve resolve function from Promise
+     * @param reject reject function from Promise
+     * @param timeoutLength timer length
+     */
+    private makeTimeoutHandlers(
+        resolve: (value?: void | PromiseLike<void> | undefined) => void,
+        reject: (reason?: any) => void,
+        timeoutLength: number
+    ) {
+        this._timerTimeout = setTimeout(reject, timeoutLength)
+        this._timerResolve = resolve
     }
 }
