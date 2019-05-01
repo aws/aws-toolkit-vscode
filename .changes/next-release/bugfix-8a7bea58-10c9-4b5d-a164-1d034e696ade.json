@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix unable to map paths that have `.` or `..` in them"
+}

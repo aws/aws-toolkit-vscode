@@ -22,6 +22,7 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.checkBreakPointHit
 import software.aws.toolkits.jetbrains.services.lambda.sam.executeLambda
@@ -194,19 +195,6 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
     fun samIsExecutedWithDebugger() {
         projectRule.fixture.addFileToProject("requirements.txt", "")
 
-        runInEdtAndWait {
-            val document = projectRule.fixture.editor.document
-            val lambdaClass = projectRule.fixture.file as PyFile
-            val lambdaBody = lambdaClass.topLevelFunctions[0].statementList.statements[0]
-            val lineNumber = document.getLineNumber(lambdaBody.textOffset)
-
-            XDebuggerUtil.getInstance().toggleLineBreakpoint(
-                projectRule.project,
-                projectRule.fixture.file.virtualFile,
-                lineNumber
-            )
-        }
-
         val runConfiguration = createHandlerBasedRunConfiguration(
             project = projectRule.project,
             runtime = runtime,
@@ -216,6 +204,7 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
         )
         assertThat(runConfiguration).isNotNull
 
+        addBreakpoint()
         val debuggerIsHit = checkBreakPointHit(projectRule.project)
 
         val executeLambda = executeLambda(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
@@ -230,19 +219,6 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
     fun samIsExecutedWithDebuggerSourceRoot() {
         projectRule.fixture.addFileToProject("src/requirements.txt", "")
 
-        runInEdtAndWait {
-            val document = projectRule.fixture.editor.document
-            val lambdaClass = projectRule.fixture.file as PyFile
-            val lambdaBody = lambdaClass.topLevelFunctions[0].statementList.statements[0]
-            val lineNumber = document.getLineNumber(lambdaBody.textOffset)
-
-            XDebuggerUtil.getInstance().toggleLineBreakpoint(
-                projectRule.project,
-                projectRule.fixture.file.virtualFile,
-                lineNumber
-            )
-        }
-
         val srcRoot = projectRule.fixture.file.virtualFile.parent.parent
         PsiTestUtil.addSourceRoot(projectRule.module, srcRoot)
 
@@ -255,6 +231,87 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
         )
         assertThat(runConfiguration).isNotNull
 
+        addBreakpoint()
+        val debuggerIsHit = checkBreakPointHit(projectRule.project)
+
+        val executeLambda = executeLambda(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
+
+        // assertThat(executeLambda.exitCode).isEqualTo(0) TODO: When debugging, always exits with 137
+        assertThat(executeLambda.stdout).contains("Hello world")
+
+        assertThat(debuggerIsHit.get()).isTrue()
+    }
+
+    @Test
+    fun samIsExecutedWithTemplate() {
+        projectRule.fixture.addFileToProject("src/requirements.txt", "")
+
+        val srcRoot = projectRule.fixture.file.virtualFile.parent.parent
+        PsiTestUtil.addSourceRoot(projectRule.module, srcRoot)
+
+        val templateFile = projectRule.fixture.addFileToProject(
+            "template.yaml",
+            """
+            Resources:
+              SomeFunction:
+                Type: AWS::Serverless::Function
+                Properties:
+                  Handler: hello_world.app.lambda_handler
+                  CodeUri: src
+                  Runtime: $runtime
+                  Timeout: 900
+            """.trimIndent()
+        )
+
+        val runConfiguration = createTemplateRunConfiguration(
+            project = projectRule.project,
+            templateFile = templateFile.virtualFile.path,
+            logicalId = "SomeFunction",
+            input = "\"Hello World\"",
+            credentialsProviderId = mockId
+        )
+        assertThat(runConfiguration).isNotNull
+
+        addBreakpoint()
+        val debuggerIsHit = checkBreakPointHit(projectRule.project)
+
+        val executeLambda = executeLambda(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
+
+        // assertThat(executeLambda.exitCode).isEqualTo(0) TODO: When debugging, always exits with 137
+        assertThat(executeLambda.stdout).contains("Hello world")
+
+        assertThat(debuggerIsHit.get()).isTrue()
+    }
+
+    @Test
+    fun samIsExecutedWithTemplateWithLocalCodeUri() {
+        val templateFile = projectRule.fixture.addFileToProject(
+            "src/hello_world/template.yaml",
+            """
+            Resources:
+              SomeFunction:
+                Type: AWS::Serverless::Function
+                Properties:
+                  Handler: app.lambda_handler
+                  CodeUri: .
+                  Runtime: $runtime
+                  Timeout: 900
+            """.trimIndent()
+        )
+
+        projectRule.fixture.addFileToProject("src/hello_world/requirements.txt", "")
+        PsiTestUtil.addSourceRoot(projectRule.module, templateFile.virtualFile.parent)
+
+        val runConfiguration = createTemplateRunConfiguration(
+            project = projectRule.project,
+            templateFile = templateFile.virtualFile.path,
+            logicalId = "SomeFunction",
+            input = "\"Hello World\"",
+            credentialsProviderId = mockId
+        )
+        assertThat(runConfiguration).isNotNull
+
+        addBreakpoint()
         val debuggerIsHit = checkBreakPointHit(projectRule.project)
 
         val executeLambda = executeLambda(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
@@ -266,4 +323,19 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
     }
 
     private fun jsonToMap(data: String) = jacksonObjectMapper().readValue<Map<String, String>>(data)
+
+    private fun addBreakpoint() {
+        runInEdtAndWait {
+            val document = projectRule.fixture.editor.document
+            val lambdaClass = projectRule.fixture.file as PyFile
+            val lambdaBody = lambdaClass.topLevelFunctions[0].statementList.statements[0]
+            val lineNumber = document.getLineNumber(lambdaBody.textOffset)
+
+            XDebuggerUtil.getInstance().toggleLineBreakpoint(
+                projectRule.project,
+                projectRule.fixture.file.virtualFile,
+                lineNumber
+            )
+        }
+    }
 }
