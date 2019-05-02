@@ -32,6 +32,26 @@ export interface SamCliVersionValidator {
     notifyVersionIsNotValid(validationResult: SamCliVersionValidatorResult): Promise<void>
 }
 
+export function validateSamCliVersion(version?: string): SamCliVersionValidation {
+    if (!version) {
+        return SamCliVersionValidation.VersionNotParseable
+    }
+
+    if (!semver.valid(version)) {
+        return SamCliVersionValidation.VersionNotParseable
+    }
+
+    if (semver.lt(version, MINIMUM_SAM_CLI_VERSION_INCLUSIVE)) {
+        return SamCliVersionValidation.VersionTooLow
+    }
+
+    if (semver.gte(version, MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE)) {
+        return SamCliVersionValidation.VersionTooHigh
+    }
+
+    return SamCliVersionValidation.Valid
+}
+
 export class DefaultSamCliVersionValidator implements SamCliVersionValidator {
     private static readonly ACTION_GO_TO_SAM_CLI_PAGE = localize(
         'AWS.samcli.userChoice.visit.install.url',
@@ -46,7 +66,7 @@ export class DefaultSamCliVersionValidator implements SamCliVersionValidator {
     public async getCliValidationStatus(version?: string): Promise<SamCliVersionValidatorResult> {
         return {
             version: version,
-            validation: this.getValidationStatus(version)
+            validation: validateSamCliVersion(version)
         }
     }
 
@@ -69,26 +89,6 @@ export class DefaultSamCliVersionValidator implements SamCliVersionValidator {
         if (!!userResponse) {
             await this.handleUserResponse(userResponse)
         }
-    }
-
-    private getValidationStatus(version?: string): SamCliVersionValidation {
-        if (!version) {
-            return SamCliVersionValidation.VersionNotParseable
-        }
-
-        if (!semver.valid(version)) {
-            return SamCliVersionValidation.VersionNotParseable
-        }
-
-        if (semver.lt(version, MINIMUM_SAM_CLI_VERSION_INCLUSIVE)) {
-            return SamCliVersionValidation.VersionTooLow
-        }
-
-        if (semver.gte(version, MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE)) {
-            return SamCliVersionValidation.VersionTooHigh
-        }
-
-        return SamCliVersionValidation.Valid
     }
 
     private getNotificationRecommendation(validation: SamCliVersionValidation): string {

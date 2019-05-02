@@ -10,60 +10,63 @@ import {
     DefaultSamCliVersionValidator,
     MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
     SamCliVersionValidation,
-    SamCliVersionValidatorResult
+    SamCliVersionValidatorResult,
+    validateSamCliVersion
 } from '../../../../shared/sam/cli/samCliVersionValidator'
 
-const validator = new DefaultSamCliVersionValidator()
+const samCliVersionTestScenarios = [
+    {
+        situation: 'SAM CLI Version is valid',
+        version: MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
+        expectedVersionValidation: SamCliVersionValidation.Valid,
+    },
+    {
+        situation: 'SAM CLI Version is too low',
+        version: '0.0.1',
+        expectedVersionValidation: SamCliVersionValidation.VersionTooLow,
+    },
+    {
+        situation: 'SAM CLI Version is too high',
+        version: '999999.9999.999999',
+        expectedVersionValidation: SamCliVersionValidation.VersionTooHigh,
+    },
+    {
+        situation: 'SAM CLI Version is undefined',
+        version: undefined,
+        expectedVersionValidation: SamCliVersionValidation.VersionNotParseable,
+    },
+    {
+        situation: 'SAM CLI Version is unparsable - random text',
+        version: 'what.in.tarnation',
+        expectedVersionValidation: SamCliVersionValidation.VersionNotParseable,
+    },
+]
 
 describe('SamCliVersionValidator', async () => {
 
-    it('validates', async () => {
-        const validationResult: SamCliVersionValidatorResult =
-            await validator.getCliValidationStatus(MINIMUM_SAM_CLI_VERSION_INCLUSIVE)
+    const validator = new DefaultSamCliVersionValidator()
 
-        assert.strictEqual(validationResult.version, MINIMUM_SAM_CLI_VERSION_INCLUSIVE)
-        assert.strictEqual(validationResult.validation, SamCliVersionValidation.Valid)
+    samCliVersionTestScenarios.forEach(test => {
+        it(`validates when ${test.situation}`, async () => {
+            const validationResult: SamCliVersionValidatorResult =
+                await validator.getCliValidationStatus(test.version)
+
+            assert.strictEqual(validationResult.version, test.version, 'Unexpected version')
+            assert.strictEqual(
+                validationResult.validation,
+                test.expectedVersionValidation,
+                'Unexpected version validation'
+            )
+        })
     })
+})
 
-    it('rejects undefined version', async () => {
-        const validationResult: SamCliVersionValidatorResult = await validator.getCliValidationStatus(undefined)
+describe('validateSamCliVersion', async () => {
+    samCliVersionTestScenarios.forEach(test => {
+        it(`validates when ${test.situation}`, async () => {
+            const validation: SamCliVersionValidation = validateSamCliVersion(test.version)
 
-        assert.strictEqual(validationResult.version, undefined)
-        assert.strictEqual(validationResult.validation, SamCliVersionValidation.VersionNotParseable)
-    })
-
-    it('rejects out-of-date versions', async () => {
-        const testLowLevel = '0.0.1'
-
-        const validationResult: SamCliVersionValidatorResult = await validator.getCliValidationStatus(testLowLevel)
-
-        assert.strictEqual(validationResult.version, testLowLevel)
-        assert.strictEqual(validationResult.validation, SamCliVersionValidation.VersionTooLow)
-    })
-
-    it('rejects versions that are too new', async () => {
-        const testHighLevel = '999999.9999.999999'
-
-        const validationResult: SamCliVersionValidatorResult = await validator.getCliValidationStatus(testHighLevel)
-
-        assert.strictEqual(validationResult.version, testHighLevel)
-        assert.strictEqual(validationResult.validation, SamCliVersionValidation.VersionTooHigh)
-    })
-
-    it('rejects versions that are not valid semver versions', async () => {
-        const testWrongLevel = 'what.in.tarnation'
-
-        const validationResult: SamCliVersionValidatorResult = await validator.getCliValidationStatus(testWrongLevel)
-
-        assert.strictEqual(validationResult.version, testWrongLevel)
-        assert.strictEqual(validationResult.validation, SamCliVersionValidation.VersionNotParseable)
-    })
-
-    it('rejects undefined versions', async () => {
-
-        const validationResult: SamCliVersionValidatorResult = await validator.getCliValidationStatus()
-
-        assert.strictEqual(validationResult.version, undefined)
-        assert.strictEqual(validationResult.validation, SamCliVersionValidation.VersionNotParseable)
+            assert.strictEqual(validation, test.expectedVersionValidation, 'Unexpected version validation')
+        })
     })
 })
