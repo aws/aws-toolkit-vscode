@@ -24,7 +24,7 @@ class S3TemporaryBucketRule(private val s3Client: S3Client) : ExternalResource()
 
     private fun temporaryBucketName(prefix: String): String {
         val userName = System.getProperty("user.name", "unknown")
-        return "${prefix.toLowerCase()}-${userName.toLowerCase()}-${Random().nextInt(10000)}".substring(0, 63)
+        return "${prefix.toLowerCase()}-${userName.toLowerCase()}-${Random().nextInt(10000)}".take(63)
     }
 
     private fun prefixFromCallingClass(): String {
