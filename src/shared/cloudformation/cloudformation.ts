@@ -12,7 +12,7 @@ import * as filesystemUtilities from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 
 export namespace CloudFormation {
-    export const FUNCTION_TYPE = 'AWS::Serverless::Function'
+    export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function'
 
     export function validateProperties(
         {
@@ -51,7 +51,7 @@ export namespace CloudFormation {
     }
 
     export interface Resource {
-        Type: typeof FUNCTION_TYPE,
+        Type: typeof SERVERLESS_FUNCTION_TYPE,
         Properties?: ResourceProperties
     }
 
@@ -177,7 +177,7 @@ export namespace CloudFormation {
 
         const lambdaResources = Object.getOwnPropertyNames(template.Resources)
             .map(key => template.Resources![key]!)
-            .filter(resource => resource.Type === FUNCTION_TYPE)
+            .filter(resource => resource.Type === SERVERLESS_FUNCTION_TYPE)
             .map(resource => resource as Resource)
 
         if (lambdaResources.length <= 0) {
@@ -267,7 +267,7 @@ export namespace CloudFormation {
         handlerName: string
     }) {
         return resource &&
-            resource.Type === FUNCTION_TYPE &&
+            resource.Type === SERVERLESS_FUNCTION_TYPE &&
             resource.Properties &&
             resource.Properties.Handler === handlerName
     }

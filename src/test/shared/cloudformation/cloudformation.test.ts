@@ -43,7 +43,7 @@ describe ('CloudFormation', () => {
 
     function createBaseResource(): CloudFormation.Resource {
         return {
-            Type: CloudFormation.FUNCTION_TYPE,
+            Type: CloudFormation.SERVERLESS_FUNCTION_TYPE,
             Properties: {
                 Handler: 'handler',
                 CodeUri: 'codeuri',
@@ -67,7 +67,7 @@ describe ('CloudFormation', () => {
             const yamlStr: string =
 `Resources:
     TestResource:
-        Type: ${CloudFormation.FUNCTION_TYPE}
+        Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
         Properties:
             Handler: handler
             CodeUri: codeuri
@@ -119,7 +119,7 @@ describe ('CloudFormation', () => {
             const badYamlStr: string =
 `Resources:
     TestResource:
-        Type: ${CloudFormation.FUNCTION_TYPE}
+        Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
         Properties:
             Handler: handler
             CodeUri: codeuri
@@ -137,7 +137,7 @@ describe ('CloudFormation', () => {
             const badYamlStr: string =
 `Resources:
     TestResource:
-        Type: ${CloudFormation.FUNCTION_TYPE}
+        Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
         Properties:
             CodeUri: codeuri
             Runtime: runtime

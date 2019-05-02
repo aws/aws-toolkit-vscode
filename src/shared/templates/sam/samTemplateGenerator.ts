@@ -53,7 +53,7 @@ export class SamTemplateGenerator {
         const template: CloudFormation.Template = {
             Resources: {
                 [this.resourceName!]: {
-                    Type: CloudFormation.FUNCTION_TYPE,
+                    Type: CloudFormation.SERVERLESS_FUNCTION_TYPE,
                     Properties: CloudFormation.validateProperties(this.properties)
                 }
             }

@@ -31,7 +31,7 @@ export async function createWorkspaceFolder(prefix: string): Promise<{
 export async function saveTemplate(templatePath: string, runtime: string, ...functionNames: string[]) {
     const functionResources = functionNames.map(
         functionName => `    ${functionName}:
-        Type: ${CloudFormation.FUNCTION_TYPE}
+        Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
         Properties:
             CodeUri: hello_world/
             Handler: app.lambdaHandler
