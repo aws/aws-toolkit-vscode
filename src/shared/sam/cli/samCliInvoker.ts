@@ -70,17 +70,22 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
     public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
     public invoke(...args: string[]): Promise<ChildProcessResult>
     public async invoke(first: SpawnOptions | string, ...rest: string[]): Promise<ChildProcessResult> {
-        const samCliLocation = this._context.cliConfig.getSamCliLocation()
+        const args = typeof first === 'string' ? [first, ...rest] : rest
+        const options: SpawnOptions | undefined = typeof first === 'string' ? undefined : first
+
+        return await this.runCliCommand(this.samCliLocation, options, ...args)
+    }
+
+    // Gets SAM CLI Location, throws if not found
+    protected get samCliLocation(): string {
+        const samCliLocation: string | undefined = this._context.cliConfig.getSamCliLocation()
         if (!samCliLocation) {
             const err = new Error('SAM CLI location not configured')
             this._context.logger.error(err)
             throw err
         }
 
-        const args = typeof first === 'string' ? [first, ...rest] : rest
-        const options: SpawnOptions | undefined = typeof first === 'string' ? undefined : first
-
-        return await this.runCliCommand(samCliLocation, options, ...args)
+        return samCliLocation
     }
 
     protected async runCliCommand(
@@ -105,15 +110,7 @@ export class DefaultValidatingSamCliProcessInvoker extends DefaultSamCliProcessI
     public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
     public invoke(...args: string[]): Promise<ChildProcessResult>
     public async invoke(first: SpawnOptions | string, ...rest: string[]): Promise<ChildProcessResult> {
-
-        // TODO : de-dupe get sam cli location and error checking
-        const samCliLocation = this._context.cliConfig.getSamCliLocation()
-        if (!samCliLocation) {
-            const err = new Error('SAM CLI location not configured')
-            this._context.logger.error(err)
-            throw err
-        }
-        const validationResult = await this.getCliValidation(samCliLocation)
+        const validationResult = await this.getCliValidation(this.samCliLocation)
 
         if (validationResult.validation !== SamCliVersionValidation.Valid) {
             // prompt will redirect to external URL for updating. We do not need to wait on this.
