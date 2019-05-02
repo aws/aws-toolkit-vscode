@@ -60,16 +60,53 @@ export function resolveSamCliProcessInvokerContext(
     }
 }
 
+// todo : CC : toolkit code that currently calls this no longer has validation
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
 
     public constructor(
-        private readonly _context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()
+        protected readonly _context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()
     ) { }
 
     public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
     public invoke(...args: string[]): Promise<ChildProcessResult>
     public async invoke(first: SpawnOptions | string, ...rest: string[]): Promise<ChildProcessResult> {
+        const samCliLocation = this._context.cliConfig.getSamCliLocation()
+        if (!samCliLocation) {
+            const err = new Error('SAM CLI location not configured')
+            this._context.logger.error(err)
+            throw err
+        }
 
+        const args = typeof first === 'string' ? [first, ...rest] : rest
+        const options: SpawnOptions | undefined = typeof first === 'string' ? undefined : first
+
+        return await this.runCliCommand(samCliLocation, options, ...args)
+    }
+
+    protected async runCliCommand(
+        samCliLocation: string,
+        options?: SpawnOptions,
+        ...args: string[]
+    ): Promise<ChildProcessResult> {
+        const childProcess: ChildProcess = new ChildProcess(samCliLocation, options, ...args)
+
+        return await childProcess.run()
+    }
+}
+
+export class DefaultValidatingSamCliProcessInvoker extends DefaultSamCliProcessInvoker {
+
+    public constructor(
+        context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()
+    ) {
+        super(resolveSamCliProcessInvokerContext(context))
+    }
+
+    public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
+    public invoke(...args: string[]): Promise<ChildProcessResult>
+    public async invoke(first: SpawnOptions | string, ...rest: string[]): Promise<ChildProcessResult> {
+
+        // TODO : de-dupe get sam cli location and error checking
         const samCliLocation = this._context.cliConfig.getSamCliLocation()
         if (!samCliLocation) {
             const err = new Error('SAM CLI location not configured')
@@ -91,21 +128,14 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
             throw versionErr
         }
         const args = typeof first === 'string' ? [first, ...rest] : rest
-        const options: SpawnOptions | undefined = typeof first === 'string' ? undefined : first
+        // const options: SpawnOptions | undefined = typeof first === 'string' ? undefined : first
+        const options: SpawnOptions = typeof first === 'string' ? {} : first
 
-        return await this.runCliCommand(samCliLocation, options, ...args)
+        return super.invoke(options, ...args)
     }
 
-    private async runCliCommand(
-        samCliLocation: string,
-        options?: SpawnOptions,
-        ...args: string[]
-    ): Promise<ChildProcessResult> {
-        const childProcess: ChildProcess = new ChildProcess(samCliLocation, options, ...args)
-
-        return await childProcess.run()
-    }
-
+    // todo : cut over to standalone validator
+    // todo : note: probably need to deal with notifications here
     private async getCliValidation(samCliLocation: string): Promise<SamCliVersionValidatorResult> {
         const cliStat = await this._context.cliUtils.stat(samCliLocation)
         if ((!this._context.cliInfo.lastModified || cliStat.mtime !== this._context.cliInfo.lastModified)

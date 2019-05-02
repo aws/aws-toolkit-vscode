@@ -10,6 +10,7 @@ import { TestLogger } from '../../../../shared/loggerUtils'
 import { SamCliConfiguration } from '../../../../shared/sam/cli/samCliConfiguration'
 import {
     DefaultSamCliProcessInvoker,
+    DefaultValidatingSamCliProcessInvoker,
     resolveSamCliProcessInvokerContext
 } from '../../../../shared/sam/cli/samCliInvoker'
 import { assertRejects } from '../../utilities/assertUtils'
@@ -18,7 +19,7 @@ describe('DefaultSamCliInvoker', async () => {
 
     let logger: TestLogger
 
-    before( async () => {
+    before(async () => {
         logger = await TestLogger.createTestLogger()
     })
 
@@ -54,7 +55,7 @@ describe('DefaultSamCliInvoker', async () => {
             cliInfo: { info: { version: testHighLevel }, lastModified: testDate }
         })
 
-        const invoker = new DefaultSamCliProcessInvoker(context)
+        const invoker = new DefaultValidatingSamCliProcessInvoker(context)
 
         await assertRejects(async () => await invoker.invoke())
     })
@@ -75,7 +76,7 @@ describe('DefaultSamCliInvoker', async () => {
             cliInfo: { info: { version: testLowLevel }, lastModified: testDate }
         })
 
-        const invoker = new DefaultSamCliProcessInvoker(context)
+        const invoker = new DefaultValidatingSamCliProcessInvoker(context)
 
         await assertRejects(async () => await invoker.invoke())
     })
