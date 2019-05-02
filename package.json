@@ -346,7 +346,7 @@
         "@types/glob": "^7.1.1",
         "@types/js-yaml": "^3.12.0",
         "@types/lodash": "^4.14.110",
-        "@types/mocha": "^2.2.48",
+        "@types/mocha": "^5.2.0",
         "@types/node": "^10.12.12",
         "@types/opn": "^5.1.0",
         "@types/request": "^2.47.1",
