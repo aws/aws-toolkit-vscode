@@ -14,6 +14,7 @@ import { SamCliVersionValidatorResult } from './samCliVersionValidator'
 /**
  * Maps out the response text from the sam cli command `sam --info`
  */
+// TODO : Move this back to samCliInfo.ts
 export interface SamCliInfoResponse {
     version: string
 }
