@@ -24,11 +24,7 @@ class S3TemporaryBucketRule(private val s3Client: S3Client) : ExternalResource()
 
     private fun temporaryBucketName(prefix: String): String {
         val userName = System.getProperty("user.name", "unknown")
-        val bucketName = "${prefix.toLowerCase()}-${userName.toLowerCase()}-${Random().nextInt(10000)}"
-        if (bucketName.length > 63) {
-            throw RuntimeException("S3 buckets can only be 63 chars in length, try a shorter prefix")
-        }
-        return bucketName
+        return "${prefix.toLowerCase()}-${userName.toLowerCase()}-${Random().nextInt(10000)}".substring(0, 63)
     }
 
     private fun prefixFromCallingClass(): String {
