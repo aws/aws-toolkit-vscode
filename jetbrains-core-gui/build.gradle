@@ -14,7 +14,7 @@ intellij {
     pluginName rootIntelliJTask.pluginName
     updateSinceUntilBuild rootIntelliJTask.updateSinceUntilBuild
     downloadSources = rootIntelliJTask.downloadSources
-    plugins = rootIntelliJTask.plugins + ['com.intellij.testGuiFramework:183.6156.8']
+    plugins = rootIntelliJTask.plugins + ['com.intellij.testGuiFramework:0.9.44.1@nightly']
 }
 
 jacoco.applyTo(runIde)
@@ -38,6 +38,10 @@ task guiTest(type: Test) {
     sysProps.put("idea.gui.tests.gradle.runner", true) //Use Gradle Launcher to run GUI tests
     systemProperties sysProps
     include '**/*TestSuite*'
+
+    testLogging {
+        exceptionFormat = 'full'
+    }
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {

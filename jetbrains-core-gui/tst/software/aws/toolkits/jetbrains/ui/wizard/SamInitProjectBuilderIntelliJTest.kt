@@ -3,100 +3,106 @@
 
 package software.aws.toolkits.jetbrains.ui.wizard
 
-import com.intellij.openapi.roots.ui.configuration.JdkComboBox
+import com.intellij.testGuiFramework.framework.param.GuiTestSuiteParam
 import com.intellij.testGuiFramework.impl.GuiTestCase
-import com.intellij.testGuiFramework.impl.button
-import com.intellij.testGuiFramework.impl.combobox
-import com.intellij.testGuiFramework.impl.findComponent
-import com.intellij.testGuiFramework.impl.jList
 import com.intellij.testGuiFramework.impl.waitAMoment
 import com.intellij.testGuiFramework.util.scenarios.checkModule
+import com.intellij.testGuiFramework.util.scenarios.newProjectDialogModel
 import com.intellij.testGuiFramework.util.scenarios.openProjectStructureAndCheck
 import com.intellij.testGuiFramework.util.scenarios.projectStructureDialogModel
 import com.intellij.testGuiFramework.util.scenarios.projectStructureDialogScenarios
-import com.intellij.ui.tabs.impl.TabLabel
-import org.fest.swing.timing.Pause
-import org.junit.Assert.assertTrue
+import com.intellij.testGuiFramework.util.step
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
+import software.aws.toolkits.jetbrains.fixtures.ServerlessProjectOptions
+import software.aws.toolkits.jetbrains.fixtures.checkLibraryPrefixPresent
+import software.aws.toolkits.jetbrains.fixtures.checkProject
+import software.aws.toolkits.jetbrains.fixtures.createServerlessProject
+import software.aws.toolkits.jetbrains.fixtures.jbTab
+import software.aws.toolkits.jetbrains.fixtures.sdkChooser
+import java.io.Serializable
 
-class SamInitProjectBuilderIntelliJTest : GuiTestCase() {
-    @Test
-    fun testNewFromTemplate_defaults() {
-        welcomeFrame {
-            createNewProject()
-            // defensive wait...
-            Pause.pause(500)
-            dialog("New Project") {
-                jList("AWS").clickItem("AWS")
-                jList("AWS Serverless Application").clickItem("AWS Serverless Application")
-                button("Next").click()
-                button("Finish").click()
-            }
-            // wait for background tasks
-            waitAMoment()
-        }
-
-        checkSdkVersion("1.8")
+@RunWith(GuiTestSuiteParam::class)
+class SamInitProjectBuilderIntelliJTest(private val testParameters: TestParameters) : GuiTestCase() {
+    data class TestParameters(
+        val runtime: String,
+        val templateName: String,
+        val sdk: String,
+        val libraries: Set<String> = emptySet()
+    ) : Serializable {
+        override fun toString() = "$runtime - $templateName"
     }
 
     @Test
-    fun testNewFromTemplate_java() {
+    fun testNewFromTemplate_java_maven() {
         welcomeFrame {
             createNewProject()
-            // defensive wait...
-            Pause.pause(500)
-            dialog("New Project") {
-                jList("AWS").clickItem("AWS")
-                jList("AWS Serverless Application").clickItem("AWS Serverless Application")
-                button("Next").click()
-                Pause.pause(1000)
-                combobox("Runtime:").selectItem("java8")
-                combobox("SAM Template:").selectItem("AWS SAM Hello World (Maven)")
-                button("Finish").click()
-            }
-            // wait for background tasks
-            waitAMoment()
+            newProjectDialogModel.createServerlessProject(
+                projectFolder,
+                ServerlessProjectOptions(testParameters.runtime, testParameters.templateName),
+                testParameters.sdk
+            )
         }
 
-        checkSdkVersion("1.8")
+        waitAMoment()
+
+        ideFrame {
+            step("check the project structure is correct") {
+                with(projectStructureDialogModel) {
+                    projectStructureDialogScenarios.openProjectStructureAndCheck {
+                        step("check the SDKs are correct") {
+                            step("check the module SDK is inheriting project SDK") {
+                                projectStructureDialogModel.checkModule {
+                                    step("select the dependencies tab") {
+                                        jbTab("Dependencies").selectTab()
+                                        sdkChooser().requireSelection("Project SDK.*".toPattern())
+                                    }
+                                }
+                            }
+
+                            step("check the project SDK is correct") {
+                                projectStructureDialogModel.checkProject {
+                                    sdkChooser().requireSelection("${testParameters.sdk}.*".toPattern())
+                                }
+                            }
+                        }
+
+                        if (testParameters.libraries.isNotEmpty()) {
+                            step("check the libraries are correct") {
+                                testParameters.libraries.forEach {
+                                    step("looking for library '$it'") {
+                                        checkLibraryPrefixPresent(it)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
-    @Test
-    fun testNewFromTemplate_python() {
-        welcomeFrame {
-            createNewProject()
-            // defensive wait...
-            Pause.pause(500)
-            dialog("New Project") {
-                jList("AWS").clickItem("AWS")
-                jList("AWS Serverless Application").clickItem("AWS Serverless Application")
-                button("Next").click()
-                Pause.pause(1000)
-                combobox("Runtime:").selectItem("python3.6")
-                button("Finish").click()
-            }
-            // wait for background tasks
-            waitAMoment()
-        }
-
-        checkSdkVersion("Python")
-    }
-
-    fun GuiTestCase.checkSdkVersion(projectSdk: String) {
-        projectStructureDialogScenarios.openProjectStructureAndCheck {
-            // dialog fixture needs to be managed by the model or test will time out and fail
-            projectStructureDialogModel.checkModule {
-                val robot = robot()
-                val dependenciesTab = robot.findComponent(target(), TabLabel::class.java) { it.accessibleContext.accessibleName == "Dependencies" }
-                robot.click(dependenciesTab)
-                val moduleSdkCombo = robot.findComponent(target(), JdkComboBox::class.java)
-                // project sdk option is selected
-                assertTrue(moduleSdkCombo.selectedItem is JdkComboBox.ProjectJdkComboBoxItem)
-
-                jList("Project").clickItem("Project")
-                val projectSdkCombo = robot.findComponent(target(), JdkComboBox::class.java)
-                assertTrue(projectSdkCombo.selectedItem.sdkName?.contains(projectSdk) ?: false)
-            }
-        }
+    companion object {
+        @JvmStatic
+        @Parameterized.Parameters(name = "{0}")
+        fun data() = listOf(
+            TestParameters(
+                runtime = "java8",
+                templateName = "AWS SAM Hello World (Maven)",
+                sdk = "1.8",
+                libraries = setOf("Maven: com.amazonaws:aws-lambda-java-core:")
+            ),
+            TestParameters(
+                runtime = "java8",
+                templateName = "AWS SAM Hello World (Maven)",
+                sdk = "1.8"
+            ),
+            TestParameters(
+                runtime = "python3.6",
+                templateName = "AWS SAM Hello World",
+                sdk = "Python"
+            )
+        )
     }
 }

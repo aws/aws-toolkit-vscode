@@ -7,9 +7,9 @@ import com.intellij.testGuiFramework.impl.GuiTestCase
 import com.intellij.testGuiFramework.impl.button
 import com.intellij.testGuiFramework.impl.jTree
 import com.intellij.testGuiFramework.impl.textfield
-import com.intellij.testGuiFramework.util.logInfo
+import com.intellij.testGuiFramework.util.step
 import org.junit.Test
-import software.aws.toolkits.jetbrains.openSettingsDialog
+import software.aws.toolkits.jetbrains.fixtures.openSettingsDialog
 
 class SetSamCli : GuiTestCase() {
     @Test
@@ -20,9 +20,10 @@ class SetSamCli : GuiTestCase() {
             openSettingsDialog()
             dialog(defaultSettingsTitle) {
                 jTree("Tools", "AWS").clickPath()
-                val execPath = textfield("SAM CLI executable:")
-                execPath.setText(samPath)
-                logInfo("SAM CLI executable path set to ${execPath.text()}")
+                step("Set SAM CLI executable path to $samPath") {
+                    val execPath = textfield("SAM CLI executable:")
+                    execPath.setText(samPath)
+                }
                 button("OK").click()
             }
         }
