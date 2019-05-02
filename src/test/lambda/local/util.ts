@@ -8,6 +8,7 @@
 import * as os from 'os'
 import * as path from 'path'
 import { Uri, WorkspaceFolder } from 'vscode'
+import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { writeFile } from '../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
@@ -30,7 +31,7 @@ export async function createWorkspaceFolder(prefix: string): Promise<{
 export async function saveTemplate(templatePath: string, runtime: string, ...functionNames: string[]) {
     const functionResources = functionNames.map(
         functionName => `    ${functionName}:
-        Type: AWS::Serverless::Function
+        Type: ${CloudFormation.FUNCTION_TYPE}
         Properties:
             CodeUri: hello_world/
             Handler: app.lambdaHandler

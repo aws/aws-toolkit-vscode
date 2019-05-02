@@ -7,8 +7,8 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-
 import { NodejsDebugConfiguration } from '../../lambda/local/debugConfiguration'
+import { CloudFormation } from '../cloudformation/cloudformation'
 import { findFileInParentPaths } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import {
@@ -19,13 +19,10 @@ import { Datum } from '../telemetry/telemetryEvent'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { getDebugPort, localize } from '../utilities/vsCodeUtils'
-
 import {
     CodeLensProviderParams,
     getInvokeCmdKey,
     getMetricDatum,
-    getResourceFromTemplate,
-    getRuntime,
     makeCodeLenses,
 } from './codeLensUtils'
 import {
@@ -108,11 +105,11 @@ export function initialize({
     registerCommand({
         command: command,
         callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
-            const resource = await getResourceFromTemplate({
+            const resource = await CloudFormation.getResourceFromTemplate({
                 handlerName: params.handlerName,
                 templatePath: params.samTemplate.fsPath
             })
-            const runtime = getRuntime(resource)
+            const runtime = CloudFormation.getRuntime(resource)
 
             if (params.isDebug && unsupportedNodeJsRuntimes.has(runtime)) {
                 vscode.window.showErrorMessage(

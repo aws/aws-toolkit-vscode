@@ -26,8 +26,6 @@ import {
     CodeLensProviderParams,
     getInvokeCmdKey,
     getMetricDatum,
-    getResourceFromTemplate,
-    getRuntime,
     makeCodeLenses,
 } from './codeLensUtils'
 import {
@@ -103,7 +101,7 @@ async function onLocalInvokeCommand({
     processInvoker,
     taskInvoker,
     telemetryService,
-    getResource = async _args => await getResourceFromTemplate(_args),
+    getResourceFromTemplate = async _args => await CloudFormation.getResourceFromTemplate(_args),
 }: {
     configuration: SettingsConfiguration
     toolkitOutputChannel: vscode.OutputChannel,
@@ -112,18 +110,18 @@ async function onLocalInvokeCommand({
     processInvoker: SamCliProcessInvoker,
     taskInvoker: SamCliTaskInvoker,
     telemetryService: TelemetryService,
-    getResource?(args: {
+    getResourceFromTemplate?(args: {
         templatePath: string,
         handlerName: string
     }): Promise<CloudFormation.Resource>,
 }): Promise<{ datum: Datum }> {
 
     const channelLogger = getChannelLogger(toolkitOutputChannel)
-    const resource = await getResource({
+    const resource = await getResourceFromTemplate({
         templatePath: lambdaLocalInvokeParams.samTemplate.fsPath,
         handlerName: lambdaLocalInvokeParams.handlerName,
     })
-    const runtime = getRuntime(resource)
+    const runtime = CloudFormation.getRuntime(resource)
 
     // Switch over to the output channel so the user has feedback that we're getting things ready
     channelLogger.channel.show(true)
@@ -176,23 +174,23 @@ async function onLocalInvokeCommand({
                 samProcessInvoker: processInvoker,
             })
 
-            await invokeLambdaFunction({
-                baseBuildDir,
-                channelLogger,
-                configuration,
-                documentUri,
-                originalHandlerName: handlerName,
-                handlerName,
-                originalSamTemplatePath: inputTemplatePath,
-                samTemplatePath,
-                samTaskInvoker: taskInvoker,
-                telemetryService,
-                runtime,
-                isDebug: lambdaLocalInvokeParams.isDebug,
-
-                // TODO: Set on debug
-                debugConfig: undefined,
-            })
+            await invokeLambdaFunction(
+                {
+                    baseBuildDir,
+                    documentUri,
+                    originalHandlerName: handlerName,
+                    handlerName,
+                    originalSamTemplatePath: inputTemplatePath,
+                    samTemplatePath,
+                    runtime
+                },
+                {
+                    channelLogger,
+                    configuration,
+                    taskInvoker,
+                    telemetryService
+                }
+            )
         } else {
             vscode.window.showInformationMessage(`Local debug for ${runtime} is currently not implemented.`)
         }

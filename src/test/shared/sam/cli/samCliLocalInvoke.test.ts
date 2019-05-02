@@ -249,6 +249,37 @@ describe('SamCliLocalInvokeInvocation', async () => {
         }).execute()
     })
 
+    it('Passes debuggerPath to sam cli', async () => {
+        const expectedDebuggerPath = path.join('foo', 'bar')
+
+        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
+            assertArgsContainArgument(args, '--debugger-path', expectedDebuggerPath)
+        })
+
+        await new SamCliLocalInvokeInvocation({
+            templateResourceName: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            eventPath: placeholderEventFile,
+            environmentVariablePath: nonRelevantArg,
+            invoker: taskInvoker,
+            debuggerPath: expectedDebuggerPath
+        }).execute()
+    })
+
+    it('Does not pass debuggerPath to sam cli when undefined', async () => {
+        const taskInvoker: SamCliTaskInvoker = new TestTaskInvoker((args: any[]) => {
+            assertArgNotPresent(args, '--debugger-path')
+        })
+
+        await new SamCliLocalInvokeInvocation({
+            templateResourceName: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            eventPath: placeholderEventFile,
+            environmentVariablePath: nonRelevantArg,
+            invoker: taskInvoker,
+        }).execute()
+    })
+
     function assertArgsContainArgument(
         args: any[],
         argOfInterest: string,
