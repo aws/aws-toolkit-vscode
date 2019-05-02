@@ -454,7 +454,7 @@ export async function invokeLambdaFunction(
     {
         channelLogger,
         configuration,
-        taskInvoker: samTaskInvoker,
+        taskInvoker,
         telemetryService
     }: InvokeLambdaFunctionContext
 ): Promise<void> {
@@ -484,7 +484,7 @@ export async function invokeLambdaFunction(
         templatePath: invokeArgs.samTemplatePath,
         eventPath,
         environmentVariablePath,
-        invoker: samTaskInvoker,
+        invoker: taskInvoker,
     }
     const debugArgs = invokeArgs.debugArgs
     if (debugArgs) {

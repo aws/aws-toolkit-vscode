@@ -33,6 +33,7 @@ import {
     getLambdaInfoFromExistingTemplate,
     getRelativeFunctionHandler,
     invokeLambdaFunction,
+    InvokeLambdaFunctionArguments,
     LambdaLocalInvokeParams,
     makeBuildDir,
     makeInputTemplate,
@@ -255,7 +256,7 @@ export async function initialize({
 
         logger.debug(`pythonCodeLensProvider.initialize: ${
             JSON.stringify({ samProjectCodeRoot, inputTemplatePath, handlerName, manifestPath }, undefined, 2)
-            }`)
+        }`)
 
         const codeDir = samProjectCodeRoot
         const samTemplatePath: string = await executeSamBuild({
@@ -268,21 +269,26 @@ export async function initialize({
 
         })
 
-        const debugConfig: PythonDebugConfiguration = makeDebugConfig({ debugPort, samProjectCodeRoot })
+        const invokeArgs: InvokeLambdaFunctionArguments = {
+            baseBuildDir,
+            originalSamTemplatePath: args.samTemplate.fsPath,
+            samTemplatePath,
+            documentUri: args.document.uri,
+            originalHandlerName: args.handlerName,
+            handlerName,
+            runtime: args.runtime
+        }
+
+        if (args.isDebug) {
+            const debugConfig: PythonDebugConfiguration = makeDebugConfig({ debugPort, samProjectCodeRoot })
+            invokeArgs.debugArgs = {
+                debugConfig,
+                debugPort: debugConfig.port
+            }
+        }
+
         await invokeLambdaFunction(
-            {
-                baseBuildDir,
-                originalSamTemplatePath: args.samTemplate.fsPath,
-                samTemplatePath,
-                documentUri: args.document.uri,
-                originalHandlerName: args.handlerName,
-                handlerName,
-                runtime: args.runtime,
-                debugArgs: {
-                    debugConfig,
-                    debugPort: debugConfig.port
-                }
-            },
+            invokeArgs,
             {
                 channelLogger,
                 configuration,
