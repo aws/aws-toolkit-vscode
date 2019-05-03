@@ -53,7 +53,7 @@ export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set(
 export enum SamLambdaRuntimeFamily {
     Python,
     NodeJS,
-    DotNet,
+    DotNetCore,
     Go,
     Java,
     Ruby
@@ -75,7 +75,7 @@ export function getFamily(runtime: string | undefined): SamLambdaRuntimeFamily {
         case 'dotnetcore1.0':
         case 'dotnetcore':
         case 'dotnet':
-            return SamLambdaRuntimeFamily.DotNet
+            return SamLambdaRuntimeFamily.DotNetCore
         case 'go1.x':
         case 'go':
             return SamLambdaRuntimeFamily.Go

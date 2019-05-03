@@ -5,9 +5,9 @@
 
 'use strict'
 
+import * as path from 'path'
 import * as vscode from 'vscode'
 
-import { dirname } from 'path'
 import { detectLocalTemplates } from '../../lambda/local/detectLocalTemplates'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
@@ -157,7 +157,7 @@ async function getAssociatedSamTemplate(
     const templates = await toArrayAsync(templatesAsync)
     const candidateTemplates = templates
         .filter(template => {
-            const folder = dirname(template.fsPath)
+            const folder = path.dirname(template.fsPath)
 
             return documentUri.fsPath.indexOf(folder) === 0
         })

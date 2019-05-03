@@ -15,7 +15,7 @@ import { writeFile } from '../filesystem'
 import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from '../sam/cli/samCliBuild'
 import { SamCliProcessInvoker, SamCliTaskInvoker } from '../sam/cli/samCliInvokerUtils'
-import { SamCliLocalInvokeInvocation } from '../sam/cli/samCliLocalInvoke'
+import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
@@ -49,7 +49,7 @@ export interface OnDidSamBuildParams {
     isDebug: boolean
 }
 
-const TEMPLATE_RESOURCE_NAME: string = 'awsToolkitSamLocalResource'
+const TEMPLATE_RESOURCE_NAME = 'awsToolkitSamLocalResource'
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
 const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
 const MAX_DEBUGGER_RETRIES_DEFAULT: number = 30
@@ -308,47 +308,6 @@ export class LocalLambdaRunner {
     }
 } // end class LocalLambdaRunner
 
-export async function getRuntimeForLambda(params: {
-    handlerName: string,
-    templatePath: string,
-}): Promise<string> {
-    const samTemplateData: CloudFormation.Template = await CloudFormation.load(params.templatePath)
-    if (!samTemplateData.Resources) {
-        throw new Error(
-            `Please specify Resource for '${params.handlerName}' Lambda in SAM template: '${params.templatePath}'`
-        )
-    }
-    const runtimes = new Set<string>()
-    for (const resourceKey in samTemplateData.Resources) {
-        if (samTemplateData.Resources.hasOwnProperty(resourceKey)) {
-            const resource: CloudFormation.Resource | undefined = samTemplateData.Resources[resourceKey]
-            if (!resource) {
-                continue
-            }
-            if (resource.Type === 'AWS::Serverless::Function') {
-                if (!resource.Properties) {
-                    continue
-                }
-                if (resource.Properties.Runtime) {
-                    if (resource.Properties.Handler === params.handlerName) {
-                        return resource.Properties.Runtime
-                    } else {
-                        runtimes.add(resource.Properties.Runtime)
-                    }
-                }
-
-            }
-        }
-    }
-    if (runtimes.size === 1) {
-        // If all lambdas have the same runtime... assume that will continue to be the case
-        return Array.from(runtimes)[0]
-    }
-    throw new Error(
-        `Please specify runtime for '${params.handlerName}' Lambda in SAM template: '${params.templatePath}'`
-    )
-}
-
 export const makeBuildDir = async (): Promise<string> => {
     const buildDir = await makeTemporaryToolkitFolder()
     ExtensionDisposableFiles.getInstance().addFolder(buildDir)
@@ -423,31 +382,42 @@ export async function makeInputTemplate(params: {
     return inputTemplatePath
 }
 
-export async function executeSamBuild(params: {
-    baseBuildDir: string,
+export interface ExecuteSamBuildArguments {
+    baseBuildDir: string
     channelLogger: Pick<ChannelLogger, 'info'>,
     codeDir: string,
     inputTemplatePath: string,
     manifestPath?: string,
+    environmentVariables?: NodeJS.ProcessEnv,
     samProcessInvoker: SamCliProcessInvoker,
-}): Promise<string> {
-    params.channelLogger.info(
+}
+
+export async function executeSamBuild({
+    baseBuildDir,
+    channelLogger,
+    codeDir,
+    inputTemplatePath,
+    manifestPath,
+    environmentVariables,
+    samProcessInvoker
+}: ExecuteSamBuildArguments): Promise<string> {
+    channelLogger.info(
         'AWS.output.building.sam.application',
         'Building SAM Application...'
     )
 
-    const samBuildOutputFolder = path.join(params.baseBuildDir, 'output')
+    const samBuildOutputFolder = path.join(baseBuildDir, 'output')
 
     const samCliArgs: SamCliBuildInvocationArguments = {
         buildDir: samBuildOutputFolder,
-        baseDir: params.codeDir,
-        templatePath: params.inputTemplatePath,
-        invoker: params.samProcessInvoker,
-        manifestPath: params.manifestPath
+        baseDir: codeDir,
+        templatePath: inputTemplatePath,
+        invoker: samProcessInvoker,
+        manifestPath
     }
     await new SamCliBuildInvocation(samCliArgs).execute()
 
-    params.channelLogger.info(
+    channelLogger.info(
         'AWS.output.building.sam.application.complete',
         'Build complete.'
     )
@@ -455,54 +425,53 @@ export async function executeSamBuild(params: {
     return path.join(samBuildOutputFolder, 'template.yaml')
 }
 
-export const invokeLambdaFunction = async (params: {
-    baseBuildDir: string,
-    channelLogger: ChannelLogger,
-    configuration: SettingsConfiguration,
-    debugConfig?: DebugConfiguration,
-    documentUri: vscode.Uri,
-    originalHandlerName: string,
-    handlerName: string,
-    isDebug?: boolean,
-    originalSamTemplatePath: string,
-    samTemplatePath: string,
-    samTaskInvoker: SamCliTaskInvoker,
-    telemetryService: TelemetryService,
-    runtime: string,
-}): Promise<void> => {
-    if (params.isDebug && !params.debugConfig) {
-        const err = new Error('Started debug run without a debugConfig')
-        params.channelLogger.logger.error(err)
-        throw err
-    }
-    params.channelLogger.info(
+export interface InvokeLambdaFunctionArguments {
+    baseBuildDir: string
+    documentUri: vscode.Uri
+    originalHandlerName: string
+    handlerName: string
+    originalSamTemplatePath: string
+    samTemplatePath: string
+    runtime: string
+    debugArgs?: DebugLambdaFunctionArguments
+}
+
+export interface DebugLambdaFunctionArguments {
+    debugConfig: DebugConfiguration
+    debuggerPath?: string
+    debugPort: number
+}
+
+export interface InvokeLambdaFunctionContext {
+    channelLogger: ChannelLogger
+    configuration: SettingsConfiguration
+    taskInvoker: SamCliTaskInvoker
+    telemetryService: TelemetryService
+}
+
+export async function invokeLambdaFunction(
+    invokeArgs: InvokeLambdaFunctionArguments,
+    {
+        channelLogger,
+        configuration,
+        taskInvoker,
+        telemetryService
+    }: InvokeLambdaFunctionContext
+): Promise<void> {
+    channelLogger.info(
         'AWS.output.starting.sam.app.locally',
         'Starting the SAM Application locally (see Terminal for output)'
     )
-    params.channelLogger.logger.debug(`localLambdaRunner.invokeLambdaFunction: ${JSON.stringify(
-        {
-            baseBuildDir: params.baseBuildDir,
-            configuration: params.configuration,
-            debugConfig: params.debugConfig,
-            documentUri: vscode.Uri,
-            handlerName: params.handlerName,
-            originalHandlerName: params.originalHandlerName,
-            isDebug: params.isDebug,
-            samTemplatePath: params.samTemplatePath,
-            originalSamTemplatePath: params.originalSamTemplatePath,
-        },
-        undefined,
-        2)}`
-    )
+    channelLogger.logger.debug(`localLambdaRunner.invokeLambdaFunction: ${JSON.stringify(invokeArgs, undefined, 2)}`)
 
-    const eventPath: string = path.join(params.baseBuildDir, 'event.json')
-    const environmentVariablePath = path.join(params.baseBuildDir, 'env-vars.json')
+    const eventPath: string = path.join(invokeArgs.baseBuildDir, 'event.json')
+    const environmentVariablePath = path.join(invokeArgs.baseBuildDir, 'env-vars.json')
     const config = await getConfig({
-        handlerName: params.originalHandlerName,
-        documentUri: params.documentUri,
-        samTemplate: vscode.Uri.file(params.originalSamTemplatePath),
+        handlerName: invokeArgs.originalHandlerName,
+        documentUri: invokeArgs.documentUri,
+        samTemplate: vscode.Uri.file(invokeArgs.originalSamTemplatePath),
     })
-    const maxRetries: number = getAttachDebuggerMaxRetryLimit(params.configuration, MAX_DEBUGGER_RETRIES_DEFAULT)
+    const maxRetries: number = getAttachDebuggerMaxRetryLimit(configuration, MAX_DEBUGGER_RETRIES_DEFAULT)
 
     await writeFile(eventPath, JSON.stringify(config.event || {}))
     await writeFile(
@@ -510,39 +479,44 @@ export const invokeLambdaFunction = async (params: {
         JSON.stringify(getEnvironmentVariables(config))
     )
 
-    const command = new SamCliLocalInvokeInvocation({
+    const localInvokeArgs: SamCliLocalInvokeInvocationArguments = {
         templateResourceName: TEMPLATE_RESOURCE_NAME,
-        templatePath: params.samTemplatePath,
+        templatePath: invokeArgs.samTemplatePath,
         eventPath,
         environmentVariablePath,
-        debugPort: (params.isDebug && params.debugConfig) ? params.debugConfig.port.toString() : undefined,
-        invoker: params.samTaskInvoker
-    })
+        invoker: taskInvoker,
+    }
+    const debugArgs = invokeArgs.debugArgs
+    if (debugArgs) {
+        localInvokeArgs.debugPort = debugArgs.debugPort.toString()
+        localInvokeArgs.debuggerPath = debugArgs.debuggerPath
+    }
+    const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
 
     const startInvokeTime = new Date()
     await command.execute()
 
-    if (params.isDebug && params.debugConfig) {
+    if (debugArgs) {
         await waitForDebugPort({
-            debugPort: params.debugConfig.port,
-            configuration: params.configuration,
-            channelLogger: params.channelLogger
+            debugPort: debugArgs.debugPort,
+            configuration,
+            channelLogger
         })
 
         await attachDebugger({
-            debugConfig: params.debugConfig,
+            debugConfig: debugArgs.debugConfig,
             maxRetries,
             retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
-            channelLogger: params.channelLogger,
+            channelLogger,
             onRecordAttachDebuggerMetric: (
                 attachResult: boolean | undefined, attempts: number, attachResultDate: Date
             ): void => {
                 recordAttachDebuggerMetric({
-                    telemetryService: params.telemetryService,
+                    telemetryService: telemetryService,
                     result: attachResult,
                     attempts,
                     durationMillis: attachResultDate.getTime() - startInvokeTime.getTime(),
-                    runtime: params.runtime,
+                    runtime: invokeArgs.runtime,
                 })
             },
         })
@@ -739,7 +713,7 @@ export function shouldAppendRelativePathToFunctionHandler(runtime: string): bool
         case SamLambdaRuntimeFamily.Python:
         case SamLambdaRuntimeFamily.Ruby:
             return true
-        case SamLambdaRuntimeFamily.DotNet:
+        case SamLambdaRuntimeFamily.DotNetCore:
         case SamLambdaRuntimeFamily.Java:
         case SamLambdaRuntimeFamily.Go:
             return false

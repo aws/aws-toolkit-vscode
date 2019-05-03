@@ -8,6 +8,7 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 
+import { CloudFormation } from '../cloudformation/cloudformation'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
 import {
@@ -32,7 +33,6 @@ import {
     getHandlerRelativePath,
     getLambdaInfoFromExistingTemplate,
     getRelativeFunctionHandler,
-    getRuntimeForLambda,
     invokeLambdaFunction,
     LambdaLocalInvokeParams,
     makeBuildDir,
@@ -100,7 +100,8 @@ async function onLocalInvokeCommand({
     lambdaLocalInvokeParams,
     processInvoker,
     taskInvoker,
-    telemetryService
+    telemetryService,
+    getResourceFromTemplate = async _args => await CloudFormation.getResourceFromTemplate(_args),
 }: {
     configuration: SettingsConfiguration
     toolkitOutputChannel: vscode.OutputChannel,
@@ -108,14 +109,19 @@ async function onLocalInvokeCommand({
     lambdaLocalInvokeParams: LambdaLocalInvokeParams,
     processInvoker: SamCliProcessInvoker,
     taskInvoker: SamCliTaskInvoker,
-    telemetryService: TelemetryService
+    telemetryService: TelemetryService,
+    getResourceFromTemplate?(args: {
+        templatePath: string,
+        handlerName: string
+    }): Promise<CloudFormation.Resource>,
 }): Promise<{ datum: Datum }> {
 
     const channelLogger = getChannelLogger(toolkitOutputChannel)
-    const runtime = await getRuntimeForLambda({
+    const resource = await getResourceFromTemplate({
+        templatePath: lambdaLocalInvokeParams.samTemplate.fsPath,
         handlerName: lambdaLocalInvokeParams.handlerName,
-        templatePath: lambdaLocalInvokeParams.samTemplate.fsPath
     })
+    const runtime = CloudFormation.getRuntime(resource)
 
     // Switch over to the output channel so the user has feedback that we're getting things ready
     channelLogger.channel.show(true)
@@ -168,23 +174,23 @@ async function onLocalInvokeCommand({
                 samProcessInvoker: processInvoker,
             })
 
-            await invokeLambdaFunction({
-                baseBuildDir,
-                channelLogger,
-                configuration,
-                documentUri,
-                originalHandlerName: handlerName,
-                handlerName,
-                originalSamTemplatePath: inputTemplatePath,
-                samTemplatePath,
-                samTaskInvoker: taskInvoker,
-                telemetryService,
-                runtime,
-                isDebug: lambdaLocalInvokeParams.isDebug,
-
-                // TODO: Set on debug
-                debugConfig: undefined,
-            })
+            await invokeLambdaFunction(
+                {
+                    baseBuildDir,
+                    documentUri,
+                    originalHandlerName: handlerName,
+                    handlerName,
+                    originalSamTemplatePath: inputTemplatePath,
+                    samTemplatePath,
+                    runtime
+                },
+                {
+                    channelLogger,
+                    configuration,
+                    taskInvoker,
+                    telemetryService
+                }
+            )
         } else {
             vscode.window.showInformationMessage(`Local debug for ${runtime} is currently not implemented.`)
         }

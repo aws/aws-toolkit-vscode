@@ -8,8 +8,8 @@
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
-
 import { PythonDebugConfiguration } from '../../lambda/local/debugConfiguration'
+import { CloudFormation } from '../cloudformation/cloudformation'
 import { unlink, writeFile } from '../filesystem'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
@@ -21,7 +21,6 @@ import {
 import { Datum } from '../telemetry/telemetryEvent'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
-
 import {
     CodeLensProviderParams,
     getInvokeCmdKey,
@@ -33,8 +32,8 @@ import {
     getHandlerRelativePath,
     getLambdaInfoFromExistingTemplate,
     getRelativeFunctionHandler,
-    getRuntimeForLambda,
     invokeLambdaFunction,
+    InvokeLambdaFunctionArguments,
     LambdaLocalInvokeParams,
     makeBuildDir,
     makeInputTemplate,
@@ -257,7 +256,7 @@ export async function initialize({
 
         logger.debug(`pythonCodeLensProvider.initialize: ${
             JSON.stringify({ samProjectCodeRoot, inputTemplatePath, handlerName, manifestPath }, undefined, 2)
-            }`)
+        }`)
 
         const codeDir = samProjectCodeRoot
         const samTemplatePath: string = await executeSamBuild({
@@ -270,22 +269,33 @@ export async function initialize({
 
         })
 
-        const debugConfig: PythonDebugConfiguration = makeDebugConfig({ debugPort, samProjectCodeRoot })
-        await invokeLambdaFunction({
+        const invokeArgs: InvokeLambdaFunctionArguments = {
             baseBuildDir,
-            channelLogger,
-            configuration,
-            debugConfig,
-            samTaskInvoker: taskInvoker,
             originalSamTemplatePath: args.samTemplate.fsPath,
             samTemplatePath,
             documentUri: args.document.uri,
             originalHandlerName: args.handlerName,
             handlerName,
-            isDebug: args.isDebug,
-            runtime: args.runtime,
-            telemetryService
-        })
+            runtime: args.runtime
+        }
+
+        if (args.isDebug) {
+            const debugConfig: PythonDebugConfiguration = makeDebugConfig({ debugPort, samProjectCodeRoot })
+            invokeArgs.debugArgs = {
+                debugConfig,
+                debugPort: debugConfig.port
+            }
+        }
+
+        await invokeLambdaFunction(
+            invokeArgs,
+            {
+                channelLogger,
+                configuration,
+                taskInvoker,
+                telemetryService
+            }
+        )
         if (args.isDebug && lambdaDebugFilePath) {
             await unlink(lambdaDebugFilePath)
         }
@@ -295,11 +305,11 @@ export async function initialize({
     registerCommand({
         command: command,
         callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
-    
-            const runtime = await getRuntimeForLambda({
-              handlerName: params.handlerName,
-              templatePath: params.samTemplate.fsPath
+            const resource = await CloudFormation.getResourceFromTemplate({
+                handlerName: params.handlerName,
+                templatePath: params.samTemplate.fsPath
             })
+            const runtime = CloudFormation.getRuntime(resource)
 
             await invokeLambda({
                 runtime,
