@@ -13,11 +13,7 @@ export interface LambdaClient {
 
     deleteFunction(name: string): Promise<void>
 
-    getFunctionConfiguration(name: string): Promise<Lambda.FunctionConfiguration>
-
     invoke(name: string, payload?: _Blob): Promise<Lambda.InvocationResponse>
-
-    getPolicy(name: string): Promise<Lambda.GetPolicyResponse>
 
     listFunctions(): AsyncIterableIterator<Lambda.FunctionConfiguration>
 }

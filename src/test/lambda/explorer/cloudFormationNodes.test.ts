@@ -35,7 +35,7 @@ describe('DefaultCloudFormationStackNode', () => {
     const fakeIconPathPrefix: string = 'DefaultCloudFormationStackNode'
     let logger: TestLogger
 
-    before( async () => {
+    before(async () => {
         logger = await TestLogger.createTestLogger()
         fakeStackSummary = {
             CreationTime: new Date(),
@@ -138,16 +138,8 @@ describe('DefaultCloudFormationStackNode', () => {
 
             }
 
-            public async getFunctionConfiguration(name: string): Promise<Lambda.FunctionConfiguration> {
-                return this.lambdas.find(l => l.FunctionName === name) || {} as any as Lambda.FunctionConfiguration
-            }
-
             public async invoke(name: string, payload?: Lambda._Blob): Promise<Lambda.InvocationResponse> {
                 return {} as any as Lambda.InvocationResponse
-            }
-
-            public async getPolicy(name: string): Promise<Lambda.GetPolicyResponse> {
-                return {} as any as Lambda.GetPolicyResponse
             }
 
             public async *listFunctions(): AsyncIterableIterator<Lambda.FunctionConfiguration> {
@@ -256,11 +248,11 @@ describe('DefaultCloudFormationNode', () => {
 
     let logger: TestLogger
 
-    before ( async () => {
+    before(async () => {
         logger = await TestLogger.createTestLogger()
     })
 
-    after (async () => {
+    after(async () => {
         await logger.cleanupLogger()
     })
 
