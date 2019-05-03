@@ -20,6 +20,7 @@ export class DefaultValidatingSamCliProcessInvoker extends DefaultSamCliProcessI
         context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext(),
         private readonly samCliValidator: SamCliValidator = new DefaultSamCliValidator(
             context.cliConfig,
+            new DefaultSamCliProcessInvoker(context),
         ),
     ) {
         super(resolveSamCliProcessInvokerContext(context))

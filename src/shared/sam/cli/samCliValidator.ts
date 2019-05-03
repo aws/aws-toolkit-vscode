@@ -9,6 +9,7 @@ import { Stats } from 'fs'
 import { stat } from '../../filesystem'
 import { SamCliConfiguration } from './samCliConfiguration'
 import { SamCliInfoInvocation, SamCliInfoResponse } from './samCliInfo'
+import { SamCliProcessInvoker } from './samCliInvokerUtils'
 import { SamCliVersionValidatorResult, validateSamCliVersion } from './samCliVersionValidator'
 
 export interface SamCliValidator {
@@ -75,8 +76,10 @@ export abstract class BaseSamCliValidator implements SamCliValidator {
 
 export class DefaultSamCliValidator extends BaseSamCliValidator {
 
-    // todo : sam cli configuration - what if we pass in the location instead?
-    public constructor(private readonly samCliConfiguration: SamCliConfiguration) {
+    public constructor(
+        private readonly samCliConfiguration: SamCliConfiguration,
+        private readonly invoker: SamCliProcessInvoker
+    ) {
         super()
     }
 
@@ -89,9 +92,8 @@ export class DefaultSamCliValidator extends BaseSamCliValidator {
     }
 
     protected async getInfo(samCliLocation: string): Promise<SamCliInfoResponse> {
-        // todo : invoker?
-        const x = new SamCliInfoInvocation()
+        const samCliInfo = new SamCliInfoInvocation(this.invoker)
 
-        return await x.execute()
+        return await samCliInfo.execute()
     }
 }
