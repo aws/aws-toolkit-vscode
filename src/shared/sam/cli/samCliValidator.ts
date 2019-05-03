@@ -11,11 +11,6 @@ import { SamCliConfiguration } from './samCliConfiguration'
 import { SamCliInfoInvocation, SamCliInfoResponse } from './samCliInfo'
 import { SamCliVersionValidatorResult, validateSamCliVersion } from './samCliVersionValidator'
 
-export interface SamCliProcessInfo {
-    info?: SamCliInfoResponse
-    lastModified?: Date
-}
-
 export interface SamCliValidator {
     detectValidSamCli(): Promise<SamCliValidatorResult>
 }
@@ -26,8 +21,9 @@ export interface SamCliValidatorResult {
 }
 
 export abstract class BaseSamCliValidator implements SamCliValidator {
-    // todo : eliminate SamCliProcessInfo?
-    private readonly samCliProcessInfo: SamCliProcessInfo = {}
+    private cachedSamInfoResponse?: SamCliInfoResponse
+    // The modification timestamp of SAM CLI is used as the "cache key"
+    private cachedSamInfoResponseSource?: Date
 
     public constructor() {
     }
@@ -51,11 +47,11 @@ export abstract class BaseSamCliValidator implements SamCliValidator {
     public async getVersionValidatorResult(samCliLocation: string): Promise<SamCliVersionValidatorResult> {
         const cliStat: Pick<Stats, 'mtime'> = await this.getSamCliStat(samCliLocation)
         if (!this.isSamCliVersionCached(cliStat.mtime)) {
-            this.samCliProcessInfo.info = await this.getInfo(samCliLocation)
-            this.samCliProcessInfo.lastModified = cliStat.mtime
+            this.cachedSamInfoResponse = await this.getInfo(samCliLocation)
+            this.cachedSamInfoResponseSource = cliStat.mtime
         }
 
-        const version: string = this.samCliProcessInfo.info!.version
+        const version: string = this.cachedSamInfoResponse!.version
 
         return {
             version,
@@ -69,12 +65,11 @@ export abstract class BaseSamCliValidator implements SamCliValidator {
 
     protected abstract async getInfo(samCliLocation: string): Promise<SamCliInfoResponse>
 
-    // todo : could be public to unit test?
     private isSamCliVersionCached(samCliLastModifiedOn: Date): boolean {
-        if (!this.samCliProcessInfo.info) { return false }
-        if (!this.samCliProcessInfo.lastModified) { return false }
+        if (!this.cachedSamInfoResponse) { return false }
+        if (!this.cachedSamInfoResponseSource) { return false }
 
-        return this.samCliProcessInfo.lastModified === samCliLastModifiedOn
+        return this.cachedSamInfoResponseSource === samCliLastModifiedOn
     }
 }
 
