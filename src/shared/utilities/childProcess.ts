@@ -108,4 +108,17 @@ export class ChildProcess {
             this.childProcess!.removeAllListeners()
         })
     }
+
+    public kill(signal?: string): void {
+        if (this.childProcess && !this.killed) {
+            this.childProcess.kill(signal)
+        } else {
+            throw new Error('Attempting to kill a process that has already been killed')
+        }
+    }
+
+    public get killed(): boolean {
+        // default to true for safety
+        return this.childProcess ? this.childProcess.killed : true
+    }
 }

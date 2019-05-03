@@ -33,7 +33,7 @@ import { StandaloneFunctionNode } from './explorer/standaloneNodes'
 import { configureLocalLambda } from './local/configureLocalLambda'
 
 export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
-    public viewProviderId: string = 'lambda'
+    public viewProviderId: string = 'aws.explorer'
     public readonly onDidChangeTreeData: vscode.Event<AWSTreeNodeBase | undefined>
     private readonly _onDidChangeTreeData: vscode.EventEmitter<AWSTreeNodeBase | undefined>
     private readonly regionNodes: Map<string, RegionNode>

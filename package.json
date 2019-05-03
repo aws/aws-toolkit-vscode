@@ -37,7 +37,7 @@
         "onCommand:aws.logout",
         "onCommand:aws.showRegion",
         "onCommand:aws.hideRegion",
-        "onView:lambda",
+        "onView:aws.explorer",
         "onCommand:aws.deploySamApplication",
         "onCommand:aws.samcli.detect",
         "onCommand:aws.samcli.validate.version",
@@ -120,7 +120,7 @@
         "views": {
             "aws-explorer": [
                 {
-                    "id": "lambda",
+                    "id": "aws.explorer",
                     "name": "%AWS.lambda.explorerTitle%"
                 }
             ]
@@ -151,27 +151,32 @@
             "view/title": [
                 {
                     "command": "aws.refreshAwsExplorer",
-                    "when": "view == lambda",
+                    "when": "view == aws.explorer",
                     "group": "navigation@5"
                 },
                 {
                     "command": "aws.login",
+                    "when": "view == aws.explorer",
                     "group": "1_account@1"
                 },
                 {
                     "command": "aws.showRegion",
+                    "when": "view == aws.explorer",
                     "group": "2_region@1"
                 },
                 {
                     "command": "aws.hideRegion",
+                    "when": "view == aws.explorer",
                     "group": "2_region@2"
                 },
                 {
                     "command": "aws.help",
+                    "when": "view == aws.explorer",
                     "group": "z_help@1"
                 },
                 {
                     "command": "aws.github",
+                    "when": "view == aws.explorer",
                     "group": "z_help@2"
                 }
             ],
