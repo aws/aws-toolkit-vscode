@@ -7,10 +7,10 @@
 
 import { Stats } from 'fs'
 import { TestLogger } from '../../../../shared/loggerUtils'
+import { DefaultValidatingSamCliProcessInvoker } from '../../../../shared/sam/cli/defaultValidatingSamCliProcessInvoker'
 import { SamCliConfiguration } from '../../../../shared/sam/cli/samCliConfiguration'
 import {
     DefaultSamCliProcessInvoker,
-    DefaultValidatingSamCliProcessInvoker,
     resolveSamCliProcessInvokerContext
 } from '../../../../shared/sam/cli/samCliInvoker'
 import { assertRejects } from '../../utilities/assertUtils'

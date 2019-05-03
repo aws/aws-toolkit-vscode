@@ -39,8 +39,20 @@ export class DefaultSamCliUtils {
     }
 }
 
-export class InvalidSamError extends Error {
+export class InvalidSamCliError extends Error {
+    public constructor(message?: string | undefined) {
+        super(message)
+    }
+}
+
+export class SamCliNotFoundError extends InvalidSamCliError {
+    public constructor() {
+        super('SAM CLI was not found')
+    }
+}
+
+export class InvalidSamCliVersionError extends InvalidSamCliError {
     public constructor(public versionValidation: SamCliVersionValidatorResult) {
-        super()
+        super('SAM CLI has an invalid version')
     }
 }
