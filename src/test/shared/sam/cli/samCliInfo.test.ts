@@ -7,8 +7,7 @@
 
 import * as assert from 'assert'
 import { TestLogger } from '../../../../shared/loggerUtils'
-import { SamCliInfoInvocation } from '../../../../shared/sam/cli/samCliInfo'
-import { SamCliInfoResponse } from '../../../../shared/sam/cli/samCliInvokerUtils'
+import { SamCliInfoInvocation, SamCliInfoResponse } from '../../../../shared/sam/cli/samCliInfo'
 
 describe('SamInfoCliCommand', async () => {
 

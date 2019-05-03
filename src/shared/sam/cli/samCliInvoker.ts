@@ -13,7 +13,6 @@ import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliConfiguration, SamCliConfiguration } from './samCliConfiguration'
 import {
     DefaultSamCliUtils,
-    SamCliProcessInfo,
     SamCliProcessInvoker,
     SamCliUtils
 } from './samCliInvokerUtils'
@@ -25,7 +24,6 @@ import {
 
 export interface SamCliProcessInvokerContext {
     cliConfig: SamCliConfiguration
-    cliInfo: SamCliProcessInfo
     cliUtils: SamCliUtils
     logger: Logger
     validator: SamCliVersionValidator
@@ -36,7 +34,6 @@ export class DefaultSamCliProcessInvokerContext implements SamCliProcessInvokerC
         new DefaultSettingsConfiguration(extensionSettingsPrefix),
         new DefaultSamCliLocationProvider()
     )
-    public cliInfo: SamCliProcessInfo = { info: undefined, lastModified: undefined }
     public cliUtils: SamCliUtils = new DefaultSamCliUtils()
     public logger: Logger = getLogger()
     public validator: SamCliVersionValidator = new DefaultSamCliVersionValidator()
@@ -49,7 +46,6 @@ export function resolveSamCliProcessInvokerContext(
 
     return {
         cliConfig: params.cliConfig || defaults.cliConfig,
-        cliInfo: params.cliInfo || defaults.cliInfo,
         cliUtils: params.cliUtils || defaults.cliUtils,
         logger: params.logger || defaults.logger,
         validator: params.validator || defaults.validator,

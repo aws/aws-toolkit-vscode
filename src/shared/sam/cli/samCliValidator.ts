@@ -8,9 +8,13 @@
 import { Stats } from 'fs'
 import { stat } from '../../filesystem'
 import { SamCliConfiguration } from './samCliConfiguration'
-import { SamCliInfoInvocation } from './samCliInfo'
-import { SamCliInfoResponse, SamCliProcessInfo } from './samCliInvokerUtils'
+import { SamCliInfoInvocation, SamCliInfoResponse } from './samCliInfo'
 import { SamCliVersionValidatorResult, validateSamCliVersion } from './samCliVersionValidator'
+
+export interface SamCliProcessInfo {
+    info?: SamCliInfoResponse
+    lastModified?: Date
+}
 
 export interface SamCliValidator {
     detectValidSamCli(): Promise<SamCliValidatorResult>

@@ -8,8 +8,14 @@
 import { getLogger, Logger } from '../../logger'
 import { ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliProcessInvoker } from './samCliInvoker'
-// TODO : move SamCliInfoResponse back to this file
-import { SamCliInfoResponse, SamCliProcessInvoker } from './samCliInvokerUtils'
+import { SamCliProcessInvoker } from './samCliInvokerUtils'
+
+/**
+ * Maps out the response text from the sam cli command `sam --info`
+ */
+export interface SamCliInfoResponse {
+    version: string
+}
 
 export class SamCliInfoInvocation {
     public constructor(

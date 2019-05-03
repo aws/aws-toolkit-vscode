@@ -7,9 +7,7 @@
 
 import * as assert from 'assert'
 import { Stats } from 'fs'
-import { SamCliInfoResponse } from '../../../../shared/sam/cli/samCliInvokerUtils'
-// TODO : Move SamCliInfoResponse back to samCliInfo
-// import { SamCliInfoResponse } from '../../../../shared/sam/cli/samCliInfo'
+import { SamCliInfoResponse } from '../../../../shared/sam/cli/samCliInfo'
 import { BaseSamCliValidator } from '../../../../shared/sam/cli/samCliValidator'
 import {
     MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE,
