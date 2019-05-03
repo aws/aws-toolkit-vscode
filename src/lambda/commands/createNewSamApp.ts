@@ -60,6 +60,7 @@ export async function createNewSamApp(
 
     const uri = await getMainUri(config)
     if (!uri) {
+        // todo : this shouldn't return undefined
         return undefined
     }
 
@@ -76,6 +77,7 @@ export async function createNewSamApp(
     }
 
     return {
+        // todo : consider returning a success metadata
         runtime: config.runtime
     }
 }
