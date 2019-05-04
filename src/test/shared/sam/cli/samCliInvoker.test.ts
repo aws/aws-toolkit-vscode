@@ -50,9 +50,6 @@ describe('DefaultSamCliInvoker', async () => {
             cliConfig: {
                 getSamCliLocation: () => 'filler'
             } as any as SamCliConfiguration,
-            cliUtils: {
-                stat: async () => testStat
-            },
         })
 
         const invoker = new DefaultValidatingSamCliProcessInvoker(context)
@@ -71,9 +68,6 @@ describe('DefaultSamCliInvoker', async () => {
             cliConfig: {
                 getSamCliLocation: () => 'filler'
             } as any as SamCliConfiguration,
-            cliUtils: {
-                stat: async () => testStat
-            },
         })
 
         const invoker = new DefaultValidatingSamCliProcessInvoker(context)

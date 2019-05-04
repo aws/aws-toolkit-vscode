@@ -11,22 +11,12 @@ import { getLogger, Logger } from '../../logger'
 import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
 import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliConfiguration, SamCliConfiguration } from './samCliConfiguration'
-import {
-    DefaultSamCliUtils,
-    SamCliProcessInvoker,
-    SamCliUtils
-} from './samCliInvokerUtils'
+import { SamCliProcessInvoker } from './samCliInvokerUtils'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
-import {
-    DefaultSamCliVersionValidator,
-    SamCliVersionValidator,
-} from './samCliVersionValidator'
 
 export interface SamCliProcessInvokerContext {
     cliConfig: SamCliConfiguration
-    cliUtils: SamCliUtils
     logger: Logger
-    validator: SamCliVersionValidator
 }
 
 export class DefaultSamCliProcessInvokerContext implements SamCliProcessInvokerContext {
@@ -34,9 +24,7 @@ export class DefaultSamCliProcessInvokerContext implements SamCliProcessInvokerC
         new DefaultSettingsConfiguration(extensionSettingsPrefix),
         new DefaultSamCliLocationProvider()
     )
-    public cliUtils: SamCliUtils = new DefaultSamCliUtils()
     public logger: Logger = getLogger()
-    public validator: SamCliVersionValidator = new DefaultSamCliVersionValidator()
 }
 
 export function resolveSamCliProcessInvokerContext(
@@ -46,9 +34,7 @@ export function resolveSamCliProcessInvokerContext(
 
     return {
         cliConfig: params.cliConfig || defaults.cliConfig,
-        cliUtils: params.cliUtils || defaults.cliUtils,
         logger: params.logger || defaults.logger,
-        validator: params.validator || defaults.validator,
     }
 }
 
@@ -56,7 +42,7 @@ export function resolveSamCliProcessInvokerContext(
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
 
     public constructor(
-        protected readonly _context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()
+        private readonly _context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()
     ) { }
 
     public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>

@@ -6,24 +6,12 @@
 'use strict'
 
 import { SpawnOptions } from 'child_process'
-import { Stats } from 'fs'
-import { stat } from '../../filesystem'
 import { ChildProcessResult } from '../../utilities/childProcess'
 import { SamCliVersionValidatorResult } from './samCliVersionValidator'
 
 export interface SamCliProcessInvoker {
     invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
     invoke(...args: string[]): Promise<ChildProcessResult>
-}
-
-export interface SamCliUtils {
-    stat(samCliLocation: string): Promise<Stats>
-}
-
-export class DefaultSamCliUtils {
-    public async stat(samCliLocation: string): Promise<Stats> {
-        return await stat(samCliLocation)
-    }
 }
 
 export class InvalidSamCliError extends Error {
