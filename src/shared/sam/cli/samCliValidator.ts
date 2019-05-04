@@ -44,7 +44,7 @@ export abstract class BaseSamCliValidator implements SamCliValidator {
         return result
     }
 
-    // public for testing
+    // This method is public for testing purposes
     public async getVersionValidatorResult(samCliLocation: string): Promise<SamCliVersionValidatorResult> {
         const cliStat: Pick<Stats, 'mtime'> = await this.getSamCliStat(samCliLocation)
         if (!this.isSamCliVersionCached(cliStat.mtime)) {
