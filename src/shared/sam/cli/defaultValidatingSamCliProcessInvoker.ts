@@ -14,6 +14,9 @@ import { InvalidSamCliVersionError, SamCliNotFoundError } from './samCliInvokerU
 import { DefaultSamCliValidator, SamCliValidator } from './samCliValidator'
 import { SamCliVersionValidation } from './samCliVersionValidator'
 
+/**
+ * Validates the SAM CLI version before making calls to the SAM CLI.
+ */
 export class DefaultValidatingSamCliProcessInvoker extends DefaultSamCliProcessInvoker {
 
     public constructor(
