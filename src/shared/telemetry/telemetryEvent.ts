@@ -41,7 +41,7 @@ export function toMetricData(array: TelemetryEvent[]): MetricDatum[] {
                     }
 
                     return {
-                        MetricName: `${metricEvent.namespace}.${datum.name}`.replace(NAME_ILLEGAL_CHARS_REGEX, ''),
+                        MetricName: `${metricEvent.namespace}_${datum.name}`.replace(NAME_ILLEGAL_CHARS_REGEX, ''),
                         EpochTimestamp: metricEvent.createTime.getTime(),
                         Unit: unit,
                         Value: datum.value,

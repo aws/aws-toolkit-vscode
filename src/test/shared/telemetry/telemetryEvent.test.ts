@@ -43,8 +43,8 @@ describe('TelemetryEventArray', () => {
 
             assert.strictEqual(data.length, 3)
             assert.strictEqual(data[0].MetricName, 'namespace')
-            assert.strictEqual(data[1].MetricName, 'namespace.event1')
-            assert.strictEqual(data[2].MetricName, 'namespace.event:2')
+            assert.strictEqual(data[1].MetricName, 'namespace_event1')
+            assert.strictEqual(data[2].MetricName, 'namespace_event:2')
         })
 
         it('maps TelemetryEvent with no data to a single MetricDatum', () => {
@@ -89,8 +89,8 @@ describe('TelemetryEventArray', () => {
             assert.strictEqual(data.length, 2)
             assert.strictEqual(data[0].EpochTimestamp, metricEvent.createTime.getTime())
             assert.strictEqual(data[1].EpochTimestamp, metricEvent.createTime.getTime())
-            assert.strictEqual(data[0].MetricName, 'namespace.event1')
-            assert.strictEqual(data[1].MetricName, 'namespace.event2')
+            assert.strictEqual(data[0].MetricName, 'namespace_event1')
+            assert.strictEqual(data[1].MetricName, 'namespace_event2')
             assert.strictEqual(data[0].Value, 1)
             assert.strictEqual(data[1].Value, 0.5)
             assert.strictEqual(data[0].Unit, 'None')

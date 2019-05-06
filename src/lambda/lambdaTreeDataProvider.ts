@@ -12,7 +12,7 @@ import { ext } from '../shared/extensionGlobals'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { ResourceFetcher } from '../shared/resourceFetcher'
 import { Datum } from '../shared/telemetry/telemetryEvent'
-import { defaultMetricDatum, registerCommand } from '../shared/telemetry/telemetryUtils'
+import { defaultMetricDatum, registerCommand, TelemetryNamespace } from '../shared/telemetry/telemetryUtils'
 import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
@@ -73,6 +73,10 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
                 return {
                     datum
                 }
+            },
+            telemetryName: {
+                namespace: TelemetryNamespace.Project,
+                name: 'new'
             }
         })
 
@@ -83,7 +87,11 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
                 lambdaClient: ext.toolkitClientBuilder.createLambdaClient(node.regionCode),
                 outputChannel: this.lambdaOutputChannel,
                 onRefresh: () => this.refresh(node.parent)
-            })
+            }),
+            telemetryName: {
+                namespace: TelemetryNamespace.Lambda,
+                name: 'delete'
+            }
         })
 
         registerCommand({
@@ -91,7 +99,11 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
             callback: async (node: CloudFormationStackNode) => await deleteCloudFormation(
                 () => this.refresh(node.parent),
                 node
-            )
+            ),
+            telemetryName: {
+                namespace: TelemetryNamespace.Cloudformation,
+                name: 'delete'
+            }
         })
 
         registerCommand({
@@ -99,7 +111,11 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
             callback: async () => await deploySamApplication({
                 outputChannel: this.lambdaOutputChannel,
                 regionProvider: this.regionProvider
-            })
+            }),
+            telemetryName: {
+                namespace: TelemetryNamespace.Lambda,
+                name: 'deploy'
+            }
         })
 
         registerCommand({
@@ -114,12 +130,20 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
                 element: node,
                 outputChannel: this.lambdaOutputChannel,
                 resourceFetcher: this.resourceFetcher
-            })
+            }),
+            telemetryName: {
+                namespace: TelemetryNamespace.Lambda,
+                name: 'invoke_remote'
+            }
         })
 
         registerCommand({
             command: 'aws.configureLambda',
-            callback: configureLocalLambda
+            callback: configureLocalLambda,
+            telemetryName: {
+                namespace: TelemetryNamespace.Lambda,
+                name: 'configure'
+            }
         })
 
         registerCommand({

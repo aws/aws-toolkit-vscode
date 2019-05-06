@@ -15,6 +15,7 @@ import { DefaultTelemetryPublisher } from './defaultTelemetryPublisher'
 import { TelemetryEvent } from './telemetryEvent'
 import { TelemetryPublisher } from './telemetryPublisher'
 import { TelemetryService } from './telemetryService'
+import { TelemetryNamespace, defaultMetricDatum } from './telemetryUtils'
 
 export class DefaultTelemetryService implements TelemetryService {
     public static readonly TELEMETRY_COGNITO_ID_KEY = 'telemetryId'
@@ -58,8 +59,15 @@ export class DefaultTelemetryService implements TelemetryService {
 
     public async start(): Promise<void> {
         this.record({
-            namespace: 'ToolkitStart',
-            createTime: this.startTime
+            namespace: TelemetryNamespace.Session,
+            createTime: this.startTime,
+            data: [
+                {
+                    name: 'start',
+                    value: 0,
+                    unit: 'None'
+                }
+            ]
         })
         await this.startTimer()
     }
@@ -71,11 +79,11 @@ export class DefaultTelemetryService implements TelemetryService {
         }
         const currTime = new Date()
         this.record({
-            namespace: 'ToolkitEnd',
+            namespace: TelemetryNamespace.Session,
             createTime: currTime,
             data: [
                 {
-                    name: 'duration',
+                    name: 'end',
                     value: (currTime.getTime() - this.startTime.getTime()),
                     unit: 'Milliseconds'
                 }

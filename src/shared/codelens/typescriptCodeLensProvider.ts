@@ -13,7 +13,7 @@ import { findFileInParentPaths } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { DefaultSamCliProcessInvoker } from '../sam/cli/samCliInvoker'
 import { Datum } from '../telemetry/telemetryEvent'
-import { registerCommand } from '../telemetry/telemetryUtils'
+import { registerCommand, TelemetryNamespace } from '../telemetry/telemetryUtils'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { getChannelLogger, getDebugPort, localize } from '../utilities/vsCodeUtils'
 
@@ -135,6 +135,10 @@ export function initialize({
                 command,
                 runtime,
             })
+        },
+        telemetryName: {
+            namespace: TelemetryNamespace.Lambda,
+            name: 'invoke_local'
         }
     })
 }
