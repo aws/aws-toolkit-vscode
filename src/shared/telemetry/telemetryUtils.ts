@@ -10,13 +10,15 @@ import { ext } from '../extensionGlobals'
 import { Datum } from './telemetryEvent'
 
 export interface TelemetryName {
-    namespace: TelemetryNamespace
+    namespace: TelemetryNamespace | OldTelemetryNamespace
     name: string
 }
 
+type OldTelemetryNamespace = 'Command'
+
 export enum TelemetryNamespace {
+    Aws = 'aws',
     Cloudformation = 'cloudformation',
-    Credentials = 'aws_credentials',
     Lambda = 'lambda',
     Project = 'project',
     Session = 'session'
@@ -34,7 +36,10 @@ export function registerCommand<T>({
     command,
     thisArg,
     register = vscode.commands.registerCommand,
-    telemetryName,
+    telemetryName = {
+        namespace: 'Command',
+        name: command
+    },
     callback,
 }: {
     command: string
@@ -57,8 +62,7 @@ export function registerCommand<T>({
                 throw e
             } finally {
                 const endTime = new Date()
-                const datum = result && result.datum ?
-                    result.datum : defaultMetricDatum(telemetryName ? telemetryName.name : command)
+                const datum = result && result.datum ? result.datum : defaultMetricDatum(telemetryName.name)
                 if (!datum.metadata) {
                     datum.metadata = new Map()
                 }
@@ -66,7 +70,7 @@ export function registerCommand<T>({
                 datum.metadata.set('duration', `${endTime.getTime() - startTime.getTime()}`)
 
                 ext.telemetry.record({
-                    namespace: telemetryName ? telemetryName.namespace : 'Command',
+                    namespace: telemetryName.namespace,
                     createTime: startTime,
                     data: [datum]
                 })

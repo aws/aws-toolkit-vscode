@@ -7,7 +7,7 @@
 
 import { MetadataEntry, MetricDatum, Unit } from './clienttelemetry'
 
-const NAME_ILLEGAL_CHARS_REGEX = new RegExp('[^\\w+-.:]', 'g')
+const NAME_ILLEGAL_CHARS_REGEX = new RegExp('[^\\w+-.:_]', 'g')
 
 export interface Datum {
     name: string

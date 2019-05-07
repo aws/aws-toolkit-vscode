@@ -130,7 +130,7 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
             }),
             telemetryName: {
                 namespace: TelemetryNamespace.Lambda,
-                name: 'invoke_remote'
+                name: 'invokeremote'
             }
         })
 

@@ -87,8 +87,8 @@ export async function activate(context: vscode.ExtensionContext) {
             command: 'aws.login',
             callback: async () => await ext.awsContextCommands.onCommandLogin(),
             telemetryName: {
-                namespace: TelemetryNamespace.Credentials,
-                name: 'login'
+                namespace: TelemetryNamespace.Aws,
+                name: 'credentialslogin'
             }
         })
 
@@ -96,8 +96,8 @@ export async function activate(context: vscode.ExtensionContext) {
             command: 'aws.credential.profile.create',
             callback: async () => await ext.awsContextCommands.onCommandCreateCredentialsProfile(),
             telemetryName: {
-                namespace: TelemetryNamespace.Credentials,
-                name: 'create'
+                namespace: TelemetryNamespace.Aws,
+                name: 'credentialscreate'
             }
         })
 
@@ -105,8 +105,8 @@ export async function activate(context: vscode.ExtensionContext) {
             command: 'aws.logout',
             callback: async () => await ext.awsContextCommands.onCommandLogout(),
             telemetryName: {
-                namespace: TelemetryNamespace.Credentials,
-                name: 'logout'
+                namespace: TelemetryNamespace.Aws,
+                name: 'credentialslogout'
             }
         })
 

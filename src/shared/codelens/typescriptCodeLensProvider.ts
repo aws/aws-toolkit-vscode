@@ -138,7 +138,7 @@ export function initialize({
         },
         telemetryName: {
             namespace: TelemetryNamespace.Lambda,
-            name: 'invoke_local'
+            name: 'invokelocal'
         }
     })
 }
