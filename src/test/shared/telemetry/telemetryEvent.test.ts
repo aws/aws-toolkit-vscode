@@ -104,5 +104,39 @@ describe('TelemetryEventArray', () => {
 
             assert.deepStrictEqual(data[1].Metadata, expectedMetadata)
         })
+
+        it('always contains exactly one underscore in the metric name, separating the namespace and the name', () => {
+            const properNamespace = 'namespace'
+            const malformedNamespace = 'name_space'
+            const properName = 'metricname'
+            const malformedName = 'metric_name'
+            const eventArray = [
+                {
+                    namespace: properNamespace,
+                    createTime: new Date(),
+                    data: [
+                        {
+                            name: properName,
+                            value: 0
+                        }
+                    ]
+                },
+                {
+                    namespace: malformedNamespace,
+                    createTime: new Date(),
+                    data: [
+                        {
+                            name: malformedName,
+                            value: 0
+                        }
+                    ]
+                }
+            ]
+
+            const data = toMetricData(eventArray)
+            assert.strictEqual(data.length, 2)
+            assert.strictEqual(data[0].MetricName, `${properNamespace}_${properName}`)
+            assert.strictEqual(data[1].MetricName, `${properNamespace}_${properName}`)
+        })
     })
 })

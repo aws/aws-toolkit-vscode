@@ -7,7 +7,8 @@
 
 import { MetadataEntry, MetricDatum, Unit } from './clienttelemetry'
 
-const NAME_ILLEGAL_CHARS_REGEX = new RegExp('[^\\w+-.:_]', 'g')
+const NAME_ILLEGAL_CHARS_REGEX = new RegExp('[^\\w+-.:]', 'g')
+const REMOVE_UNDERSCORES_REGEX = new RegExp('_', 'g')
 
 export interface Datum {
     name: string
@@ -41,7 +42,12 @@ export function toMetricData(array: TelemetryEvent[]): MetricDatum[] {
                     }
 
                     return {
-                        MetricName: `${metricEvent.namespace}_${datum.name}`.replace(NAME_ILLEGAL_CHARS_REGEX, ''),
+                        // MetricName is the namespace without underscores and the name without underscores
+                        // concatenated with an underscore and passed through the service definition's regex
+                        // (alphanumeric + underscores + `+-.` + :)
+                        // tslint:disable-next-line:max-line-length
+                        MetricName: `${metricEvent.namespace.replace(REMOVE_UNDERSCORES_REGEX, '')}_${datum.name.replace(REMOVE_UNDERSCORES_REGEX, '')}`
+                            .replace(NAME_ILLEGAL_CHARS_REGEX, ''),
                         EpochTimestamp: metricEvent.createTime.getTime(),
                         Unit: unit,
                         Value: datum.value,
