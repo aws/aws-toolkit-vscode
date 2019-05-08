@@ -20,5 +20,8 @@ export const vscodeMarketplaceUrl: string = 'https://marketplace.visualstudio.co
 export const githubUrl: string = 'https://github.com/aws/aws-toolkit-vscode'
 export const documentationUrl: string = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html'
 
+// URLs for samInitWizard
+export const runtimeDocUrl: string = 'https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html'
+
 const npmPackage = () => require('../../../package.json') as NpmPackage
 export const pluginVersion = npmPackage().version

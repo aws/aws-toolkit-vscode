@@ -12,7 +12,9 @@ import * as immutable from 'immutable'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { runtimeDocUrl } from '../../shared/constants'
 import { SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
+import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import * as lambdaRuntime from '../models/samLambdaRuntime'
@@ -45,6 +47,10 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
     public async promptUserForRuntime(
         currRuntime?: lambdaRuntime.SamLambdaRuntime
     ): Promise<lambdaRuntime.SamLambdaRuntime | undefined> {
+        const helpButton = createHelpButton(localize(
+            'AWS.samcli.initWizard.runtime.help',
+            'Lambda runtimes currently supported by the AWS Toolkit for VS Code. Click for more information.'
+        ))
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
                 ignoreFocusOut: true,
@@ -54,6 +60,10 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
                 ),
                 value: currRuntime ? currRuntime : ''
             },
+            buttons: [
+                helpButton,
+                vscode.QuickInputButtons.Back
+            ],
             items: this.lambdaRuntimes
                 .toArray()
                 .sort()
@@ -66,7 +76,14 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
         })
 
         const choices = await picker.promptUser({
-            picker: quickPick
+            picker: quickPick,
+            onDidTriggerButton: (button, resolve, reject) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve(undefined)
+                } else if (button === helpButton) {
+                    vscode.env.openExternal(vscode.Uri.parse(runtimeDocUrl))
+                }
+            }
         })
         const val = picker.verifySinglePickerOutput(choices)
 
