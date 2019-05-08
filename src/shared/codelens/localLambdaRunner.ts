@@ -711,11 +711,8 @@ export function shouldAppendRelativePathToFunctionHandler(runtime: string): bool
     switch (getFamily(runtime)) {
         case SamLambdaRuntimeFamily.NodeJS:
         case SamLambdaRuntimeFamily.Python:
-        case SamLambdaRuntimeFamily.Ruby:
             return true
         case SamLambdaRuntimeFamily.DotNetCore:
-        case SamLambdaRuntimeFamily.Java:
-        case SamLambdaRuntimeFamily.Go:
             return false
         // if the runtime exists but for some reason we forgot to cover it here, throw anyway so we remember to cover it
         default:
