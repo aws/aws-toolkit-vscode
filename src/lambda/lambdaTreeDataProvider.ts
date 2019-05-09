@@ -139,7 +139,7 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
             callback: configureLocalLambda,
             telemetryName: {
                 namespace: TelemetryNamespace.Lambda,
-                name: 'configure'
+                name: 'configurelocal'
             }
         })
 

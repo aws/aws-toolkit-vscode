@@ -26,6 +26,9 @@ export interface TelemetryEvent {
 export function toMetricData(array: TelemetryEvent[]): MetricDatum[] {
     return ([] as MetricDatum[]).concat(
         ...array.map( metricEvent => {
+
+            const namespace = metricEvent.namespace.replace(REMOVE_UNDERSCORES_REGEX, '')
+
             if (metricEvent.data !== undefined) {
                 const mappedEventData = metricEvent.data.map( datum => {
                     let metadata: MetadataEntry[] | undefined
@@ -41,13 +44,10 @@ export function toMetricData(array: TelemetryEvent[]): MetricDatum[] {
                         unit = 'None'
                     }
 
+                    const name = datum.name.replace(REMOVE_UNDERSCORES_REGEX, '')
+
                     return {
-                        // MetricName is the namespace without underscores and the name without underscores
-                        // concatenated with an underscore and passed through the service definition's regex
-                        // (alphanumeric + underscores + `+-.` + :)
-                        // tslint:disable-next-line:max-line-length
-                        MetricName: `${metricEvent.namespace.replace(REMOVE_UNDERSCORES_REGEX, '')}_${datum.name.replace(REMOVE_UNDERSCORES_REGEX, '')}`
-                            .replace(NAME_ILLEGAL_CHARS_REGEX, ''),
+                        MetricName: `${namespace}_${name}`.replace(NAME_ILLEGAL_CHARS_REGEX, ''),
                         EpochTimestamp: metricEvent.createTime.getTime(),
                         Unit: unit,
                         Value: datum.value,
@@ -60,7 +60,7 @@ export function toMetricData(array: TelemetryEvent[]): MetricDatum[] {
 
             // case where there are no datum attached to the event, but we should still publish this
             return {
-                MetricName: metricEvent.namespace.replace(NAME_ILLEGAL_CHARS_REGEX, ''),
+                MetricName: namespace.replace(NAME_ILLEGAL_CHARS_REGEX, ''),
                 EpochTimestamp: metricEvent.createTime.getTime(),
                 Unit: 'None',
                 Value: 0
