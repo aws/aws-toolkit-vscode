@@ -29,6 +29,7 @@
             </constraints>
             <properties>
               <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.create.source_bucket.label"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.sourceBucket.tooltip"/>
             </properties>
           </component>
           <component id="84d36" class="javax.swing.JButton" binding="createBucket" default-binding="true">
@@ -64,6 +65,7 @@
             </constraints>
             <properties>
               <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.create.function_name.label"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.name.tooltip"/>
             </properties>
           </component>
           <component id="fe525" class="javax.swing.JTextField" binding="name">
@@ -91,7 +93,6 @@
               </grid>
             </constraints>
             <properties>
-              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.description.tooltip"/>
             </properties>
           </component>
           <component id="c772e" class="javax.swing.JLabel" binding="handlerLabel">
@@ -100,6 +101,7 @@
             </constraints>
             <properties>
               <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.handler.label"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.handler.tooltip"/>
             </properties>
           </component>
           <component id="d3efd" class="com.intellij.ui.EditorTextField" binding="handler" custom-create="true">
@@ -118,6 +120,7 @@
             </constraints>
             <properties>
               <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.runtime.label"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.runtime.tooltip"/>
             </properties>
           </component>
           <component id="ff813" class="javax.swing.JLabel">
@@ -126,6 +129,7 @@
             </constraints>
             <properties>
               <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.create.iam.role.label"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.iamRole.tooltip"/>
             </properties>
           </component>
           <component id="47072" class="javax.swing.JButton" binding="createRole">
@@ -151,6 +155,7 @@
             </constraints>
             <properties>
               <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.create.env_vars.label"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.env_vars.tooltip"/>
             </properties>
           </component>
           <component id="bd500" class="javax.swing.JLabel">
@@ -159,6 +164,7 @@
             </constraints>
             <properties>
               <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.create.timeout.label"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.timeout.tooltip"/>
             </properties>
           </component>
           <component id="27470" class="javax.swing.JTextField" binding="timeout">
@@ -176,6 +182,7 @@
             </constraints>
             <properties>
               <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.create.memory.label"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.memory.tooltip"/>
             </properties>
           </component>
           <component id="43a8" class="javax.swing.JTextField" binding="memorySize">

@@ -14,6 +14,7 @@
         </constraints>
         <properties>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.handler.label"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.handler.tooltip"/>
         </properties>
       </component>
       <component id="58044" class="com.intellij.ui.EditorTextField" binding="handler" custom-create="true">
@@ -32,6 +33,7 @@
         </constraints>
         <properties>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.runtime.label"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.runtime.tooltip"/>
         </properties>
       </component>
       <component id="7c830" class="javax.swing.JLabel">
@@ -40,6 +42,7 @@
         </constraints>
         <properties>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.create.env_vars.label"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.env_vars.tooltip"/>
         </properties>
       </component>
       <component id="c2e65" class="software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField" binding="environmentVariables">
@@ -64,6 +67,7 @@
         </constraints>
         <properties>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.region.label"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.region.tooltip"/>
         </properties>
       </component>
       <component id="e0920" class="software.aws.toolkits.jetbrains.ui.CredentialProviderSelector" binding="credentialSelector">
@@ -80,6 +84,7 @@
         </constraints>
         <properties>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.credentials.label"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.credentials.tooltip"/>
         </properties>
       </component>
       <component id="ff1bc" class="javax.swing.JCheckBox" binding="useTemplate">
