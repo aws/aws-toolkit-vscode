@@ -413,7 +413,8 @@ export async function executeSamBuild({
         baseDir: codeDir,
         templatePath: inputTemplatePath,
         invoker: samProcessInvoker,
-        manifestPath
+        manifestPath,
+        environmentVariables
     }
     await new SamCliBuildInvocation(samCliArgs).execute()
 

@@ -5,9 +5,14 @@
 
 'use strict'
 
+import * as crossSpawn from 'cross-spawn'
+import * as del from 'del'
+import * as fs from 'fs'
 import * as path from 'path'
+import * as util from 'util'
 import * as vscode from 'vscode'
 
+import { makeCoreCLRDebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
@@ -21,7 +26,7 @@ import { Datum } from '../telemetry/telemetryEvent'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
-import { getChannelLogger } from '../utilities/vsCodeUtils'
+import { getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
 import {
     CodeLensProviderParams,
     getInvokeCmdKey,
@@ -30,14 +35,17 @@ import {
 } from './codeLensUtils'
 import {
     executeSamBuild,
-    getHandlerRelativePath,
-    getLambdaInfoFromExistingTemplate,
-    getRelativeFunctionHandler,
+    ExecuteSamBuildArguments,
     invokeLambdaFunction,
+    InvokeLambdaFunctionArguments,
+    InvokeLambdaFunctionContext,
     LambdaLocalInvokeParams,
     makeBuildDir,
-    makeInputTemplate
+    makeInputTemplate,
 } from './localLambdaRunner'
+
+const access = util.promisify(fs.access)
+const mkdir = util.promisify(fs.mkdir)
 
 export const CSHARP_LANGUAGE = 'csharp'
 export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
@@ -115,7 +123,6 @@ async function onLocalInvokeCommand({
         handlerName: string
     }): Promise<CloudFormation.Resource>,
 }): Promise<{ datum: Datum }> {
-
     const channelLogger = getChannelLogger(toolkitOutputChannel)
     const resource = await getResourceFromTemplate({
         templatePath: lambdaLocalInvokeParams.samTemplate.fsPath,
@@ -123,76 +130,89 @@ async function onLocalInvokeCommand({
     })
     const runtime = CloudFormation.getRuntime(resource)
 
-    // Switch over to the output channel so the user has feedback that we're getting things ready
-    channelLogger.channel.show(true)
-
-    channelLogger.info(
-        'AWS.output.sam.local.start',
-        'Preparing to run {0} locally...',
-        lambdaLocalInvokeParams.handlerName
-    )
-
     try {
+        // Switch over to the output channel so the user has feedback that we're getting things ready
+        channelLogger.channel.show(true)
+        channelLogger.info(
+            'AWS.output.sam.local.start',
+            'Preparing to run {0} locally...',
+            lambdaLocalInvokeParams.handlerName
+        )
+
+        const baseBuildDir = await makeBuildDir()
+        const codeDir = path.dirname(lambdaLocalInvokeParams.document.uri.fsPath)
+        const documentUri = lambdaLocalInvokeParams.document.uri
+        const handlerName = lambdaLocalInvokeParams.handlerName
+
+        const inputTemplatePath = await makeInputTemplate({
+            baseBuildDir,
+            codeDir,
+            relativeFunctionHandler: handlerName,
+            runtime,
+        })
+
+        const buildArgs: ExecuteSamBuildArguments = {
+            baseBuildDir,
+            channelLogger,
+            codeDir,
+            inputTemplatePath,
+            samProcessInvoker: processInvoker,
+        }
+        if (lambdaLocalInvokeParams.isDebug) {
+            buildArgs.environmentVariables = {
+                SAM_BUILD_MODE: 'debug'
+            }
+        }
+        const samTemplatePath: string = await executeSamBuild(buildArgs)
+
+        const invokeArgs: InvokeLambdaFunctionArguments = {
+            baseBuildDir,
+            documentUri,
+            originalHandlerName: handlerName,
+            handlerName,
+            originalSamTemplatePath: inputTemplatePath,
+            samTemplatePath,
+            runtime,
+        }
+
+        const invokeContext: InvokeLambdaFunctionContext = {
+            channelLogger,
+            configuration,
+            taskInvoker,
+            telemetryService
+        }
+
         if (!lambdaLocalInvokeParams.isDebug) {
-            const baseBuildDir = await makeBuildDir()
-            const templateDir = path.dirname(lambdaLocalInvokeParams.samTemplate.fsPath)
-            const documentUri = lambdaLocalInvokeParams.document.uri
-            const handlerName = lambdaLocalInvokeParams.handlerName
-
-            const handlerFileRelativePath = getHandlerRelativePath({
-                codeRoot: templateDir,
-                filePath: documentUri.fsPath
-            })
-
-            const relativeFunctionHandler = getRelativeFunctionHandler({
-                handlerName,
+            await invokeLambdaFunction(
+                invokeArgs,
+                invokeContext
+            )
+        } else {
+            const codeUri = path.join(
+                path.dirname(lambdaLocalInvokeParams.samTemplate.fsPath),
+                CloudFormation.getCodeUri(resource)
+            )
+            const debuggerPath = await installDebugger({
                 runtime,
-                handlerFileRelativePath
+                codeUri
             })
-
-            const lambdaInfo = await getLambdaInfoFromExistingTemplate({
-                workspaceUri: lambdaLocalInvokeParams.workspaceFolder.uri,
-                relativeOriginalFunctionHandler: relativeFunctionHandler
-            })
-
-            const properties = lambdaInfo ? lambdaInfo.resource.Properties : undefined
-            const codeDir = properties ? path.join(templateDir, properties.CodeUri) : templateDir
-
-            const inputTemplatePath = await makeInputTemplate({
-                baseBuildDir,
-                codeDir,
-                relativeFunctionHandler,
-                properties,
-                runtime
-            })
-
-            const samTemplatePath: string = await executeSamBuild({
-                baseBuildDir,
-                channelLogger,
-                codeDir,
-                inputTemplatePath,
-                samProcessInvoker: processInvoker,
+            const port = await getDebugPort()
+            const debugConfig = makeCoreCLRDebugConfiguration({
+                port,
+                codeUri
             })
 
             await invokeLambdaFunction(
                 {
-                    baseBuildDir,
-                    documentUri,
-                    originalHandlerName: handlerName,
-                    handlerName,
-                    originalSamTemplatePath: inputTemplatePath,
-                    samTemplatePath,
-                    runtime
+                    ...invokeArgs,
+                    debugArgs: {
+                        debugConfig,
+                        debugPort: port,
+                        debuggerPath
+                    }
                 },
-                {
-                    channelLogger,
-                    configuration,
-                    taskInvoker,
-                    telemetryService
-                }
+                invokeContext
             )
-        } else {
-            vscode.window.showInformationMessage(`Local debug for ${runtime} is currently not implemented.`)
         }
     } catch (err) {
         const error = err as Error
@@ -379,4 +399,61 @@ export function isPublicMethodSymbol(
 
 export function generateDotNetLambdaHandler(components: DotNetLambdaHandlerComponents): string {
     return `${components.assembly}::${components.namespace}.${components.class}::${components.method}`
+}
+
+export async function installDebugger({
+    runtime,
+    codeUri
+}: {
+    runtime: string,
+    codeUri: string
+}): Promise<string> {
+    const vsdbgPath = path.resolve(codeUri, '.vsdbg')
+
+    try {
+        await access(vsdbgPath)
+
+         // vsdbg is already installed.
+        return vsdbgPath
+    } catch {
+        // We could not access vsdbgPath. Swallow error and continue.
+    }
+
+    try {
+        await mkdir(vsdbgPath)
+
+        const process = crossSpawn(
+            'docker',
+            [
+                'run',
+                '--rm',
+                '--mount',
+                `type=bind,src=${vsdbgPath},dst=/vsdbg`,
+                '--entrypoint',
+                'bash',
+                `lambci/lambda:${runtime}`,
+                '-c',
+                '"curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg"'
+            ],
+            {
+                windowsVerbatimArguments: true
+            }
+        )
+
+        await new Promise<void>((resolve, reject) => {
+            process.once('close', (code, signal) => {
+                if (code === 0) {
+                    resolve()
+                } else {
+                    reject(signal)
+                }
+            })
+        })
+    } catch (err) {
+        // Clean up to avoid leaving a bad installation in the user's workspace.
+        await del(vsdbgPath, { force: true })
+        throw err
+    }
+
+    return vsdbgPath
 }
