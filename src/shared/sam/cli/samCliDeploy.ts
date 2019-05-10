@@ -5,6 +5,8 @@
 
 'use strict'
 
+import { extensionSettingsPrefix, profileSettingKey } from '../../../shared/constants'
+import { DefaultSettingsConfiguration } from '../../../shared/settingsConfiguration'
 import { getLogger, Logger } from '../../logger'
 import { ChildProcessResult } from '../../utilities/childProcess'
 import { map } from '../../utilities/collectionUtils'
@@ -23,6 +25,15 @@ export class SamCliDeployInvocation {
 
     public async execute(): Promise<void> {
         const logger: Logger = getLogger()
+        let err: Error
+        const settingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
+        const profile = settingsConfiguration.readSetting<string>(profileSettingKey)
+
+        if (!profile) {
+            err = new Error('No AWS profile selected')
+            logger.error(err)
+            throw err
+        }
 
         const args = [
             'deploy',
@@ -30,6 +41,7 @@ export class SamCliDeployInvocation {
             '--stack-name', this.stackName,
             '--capabilities', 'CAPABILITY_IAM',
             '--region', this.region,
+            '--profile', profile
         ]
         if (this.parameterOverrides.size > 0) {
             const overrides = [
@@ -54,7 +66,7 @@ export class SamCliDeployInvocation {
         console.error(`stdout: ${stdout}`)
 
         const message = error && error.message ? error.message : stderr || stdout
-        const err = new Error(`sam deploy encountered an error: ${message}`)
+        err = new Error(`sam deploy encountered an error: ${message}`)
         logger.error(err)
         throw err
     }
