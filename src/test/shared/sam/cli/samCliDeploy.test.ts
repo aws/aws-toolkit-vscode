@@ -43,7 +43,8 @@ describe('SamCliDeployInvocation', async () => {
             'stackName',
             'region',
             new Map<string, string>(),
-            invoker
+            invoker,
+            'profile'
         )
 
         await invocation.execute()
@@ -68,7 +69,8 @@ describe('SamCliDeployInvocation', async () => {
                 ['key1', 'value1'],
                 ['key2', 'value2'],
             ]),
-            invoker
+            invoker,
+            'profile'
         )
 
         await invocation.execute()

@@ -5,8 +5,6 @@
 
 'use strict'
 
-import { extensionSettingsPrefix, profileSettingKey } from '../../../shared/constants'
-import { DefaultSettingsConfiguration } from '../../../shared/settingsConfiguration'
 import { getLogger, Logger } from '../../logger'
 import { ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliProcessInvoker } from './samCliInvoker'
@@ -19,21 +17,13 @@ export class SamCliPackageInvocation {
         private readonly s3Bucket: string,
         private readonly invoker: SamCliProcessInvoker =
         new DefaultSamCliProcessInvoker(),
-        private readonly region: string
+        private readonly region: string,
+        private readonly profile: string
     ) {
     }
 
     public async execute(): Promise<void> {
         const logger: Logger = getLogger()
-        let err: Error
-        const settingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
-        const profile = settingsConfiguration.readSetting<string>(profileSettingKey)
-
-        if (!profile) {
-            err = new Error('No AWS profile selected')
-            logger.error(err)
-            throw err
-        }
 
         const { exitCode, error, stderr, stdout }: ChildProcessResult = await this.invoker.invoke(
             'package',
@@ -41,7 +31,7 @@ export class SamCliPackageInvocation {
             '--s3-bucket', this.s3Bucket,
             '--output-template-file', this.outputTemplateFile,
             '--region', this.region,
-            '--profile', profile
+            '--profile', this.profile
         )
 
         if (exitCode === 0) {
@@ -55,7 +45,7 @@ export class SamCliPackageInvocation {
         console.error(`stdout: ${stdout}`)
 
         const message = error && error.message ? error.message : stderr || stdout
-        err = new Error(`sam package encountered an error: ${message}`)
+        const err = new Error(`sam package encountered an error: ${message}`)
         logger.error(err)
         throw err
     }
