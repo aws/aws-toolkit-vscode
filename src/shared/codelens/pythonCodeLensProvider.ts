@@ -16,7 +16,7 @@ import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
 import { DefaultSamCliProcessInvoker } from '../sam/cli/samCliInvoker'
 import { Datum } from '../telemetry/telemetryEvent'
-import { registerCommand } from '../telemetry/telemetryUtils'
+import { registerCommand, TelemetryNamespace } from '../telemetry/telemetryUtils'
 import { getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
 
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
@@ -320,6 +320,10 @@ export async function initialize({
                 command,
                 runtime,
             })
+        },
+        telemetryName: {
+            namespace: TelemetryNamespace.Lambda,
+            name: 'invokelocal'
         }
     })
 }
