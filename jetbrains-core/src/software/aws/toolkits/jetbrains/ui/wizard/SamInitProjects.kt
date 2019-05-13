@@ -19,7 +19,8 @@ val SAM_TEMPLATES = listOf(
     SamHelloWorldPython(),
     SamHelloWorldMaven(),
     SamHelloWorldGradle(),
-    SamDynamoDBCookieCutter()
+    SamDynamoDBCookieCutter(),
+    SamHelloWorldNodeJs()
 )
 
 class SamHelloWorldMaven : SamProjectTemplate() {
@@ -87,4 +88,15 @@ class SamDynamoDBCookieCutter : SamPythonProjectTemplate() {
     override fun getDescription() = message("sam.init.template.dynamodb_cookiecutter.description")
 
     override fun location(): String? = "gh:aws-samples/cookiecutter-aws-sam-dynamodb-python"
+}
+
+abstract class SamNodeJsProjectTemplate : SamProjectTemplate() {
+    // TODO support NodeJs 10.10 at some point
+    override fun supportedRuntimes(): Set<Runtime> = setOf(Runtime.NODEJS8_10)
+}
+
+class SamHelloWorldNodeJs : SamNodeJsProjectTemplate() {
+    override fun getName() = message("sam.init.template.hello_world.name")
+
+    override fun getDescription() = message("sam.init.template.hello_world.description")
 }
