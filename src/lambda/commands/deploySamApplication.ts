@@ -10,7 +10,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import { AwsContext } from '../../shared/awsContext'
+import { AwsContext, NoActiveCredentialError } from '../../shared/awsContext'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
@@ -31,7 +31,7 @@ export async function deploySamApplication(
         outputChannel: vscode.OutputChannel
         regionProvider: RegionProvider
     },
-    awsContext: AwsContext
+    awsContext: Pick<AwsContext, 'getCredentialProfileName'>
 ) {
     const args: SamDeployWizardResponse | undefined = await new SamDeployWizard(restParams.regionProvider).run()
     if (!args) {
@@ -50,8 +50,7 @@ export async function deploySamApplication(
 
         try {
             if (!profile) {
-                const err = new Error('No AWS profile selected')
-                throw err
+                throw new NoActiveCredentialError()
             }
 
             restParams.outputChannel.show(true)
@@ -110,7 +109,9 @@ export async function deploySamApplication(
                 'Successfully deployed SAM Application to CloudFormation Stack: {0} with profile: {1}',
                 stackName, profile
             )
-            outputFinalMessage(msg, restParams.outputChannel)
+            restParams.outputChannel.appendLine(msg)
+            // TODO: Is this the right way to provide this feedback?
+            vscode.window.showInformationMessage(msg)
         } catch (err) {
             let msg = localize(
                 'AWS.samcli.deploy.workflow.error',
@@ -127,7 +128,9 @@ export async function deploySamApplication(
                     msg += ` --profile ${profile}`
                 }
             }
-            outputFinalMessage(msg, restParams.outputChannel)
+            restParams.outputChannel.appendLine(msg)
+            // TODO: Is this the right way to provide this feedback?
+            vscode.window.showWarningMessage(msg)
         } finally {
             await del(tempFolder, {
                 force: true
@@ -143,10 +146,4 @@ export async function deploySamApplication(
         ),
         deployApplicationPromise
     )
-}
-
-function outputFinalMessage(msg: string, outputChannel: vscode.OutputChannel) {
-    outputChannel.appendLine(msg)
-    // TODO: Is this the right way to provide this feedback?
-    vscode.window.showWarningMessage(msg)
 }

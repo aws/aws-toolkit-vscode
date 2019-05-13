@@ -76,5 +76,29 @@ describe('SamCliDeployInvocation', async () => {
         await invocation.execute()
     })
 
-    // TODO: Add tests for template, stackName, and region.
+    it('includes a template, stack name, region, and profile ', async () => {
+        const invoker = new MockSamCliProcessInvoker(
+            args => {
+                const templateIndex = args.findIndex(arg => arg === '--template-file')
+                const stackIndex = args.findIndex(arg => arg === '--stack-name')
+                const regionIndex = args.findIndex(arg => arg === '--region')
+                const profileIndex = args.findIndex(arg => arg === '--profile')
+                assert.strictEqual(args[templateIndex + 1], 'template')
+                assert.strictEqual(args[stackIndex + 1], 'stackName')
+                assert.strictEqual(args[regionIndex + 1], 'region')
+                assert.strictEqual(args[profileIndex + 1], 'profile')
+            }
+        )
+
+        const invocation = new SamCliDeployInvocation(
+            'template',
+            'stackName',
+            'region',
+            new Map<string, string>(),
+            invoker,
+            'profile'
+        )
+
+        await invocation.execute()
+    })
 })
