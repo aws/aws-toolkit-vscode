@@ -78,7 +78,7 @@ class CloudFormationStackNodeTest {
 
     @Test
     fun nodeRefreshesHitCache() {
-        val node = CloudFormationStackNode(projectRule.project, "stack", StackStatus.CREATE_COMPLETE)
+        val node = aCloudFormationStackNode(StackStatus.CREATE_COMPLETE)
         assertThat(node.isChildCacheInInitialState).isEqualTo(true)
         val children = node.children
 
@@ -89,28 +89,28 @@ class CloudFormationStackNodeTest {
 
     @Test
     fun failedStackHaveNoChildren() {
-        val node = CloudFormationStackNode(projectRule.project, "stack", StackStatus.CREATE_FAILED)
+        val node = aCloudFormationStackNode(StackStatus.CREATE_FAILED)
 
         assertThat(node.children).isEmpty()
     }
 
     @Test
     fun failedStackHaveNoChildrenAfterRefresh() {
-        val node = CloudFormationStackNode(projectRule.project, "stack", StackStatus.CREATE_FAILED)
+        val node = aCloudFormationStackNode(StackStatus.CREATE_FAILED)
 
         assertThat(node.children).isEmpty()
     }
 
     @Test
     fun inProgressStacksHaveNoChildren() {
-        val node = CloudFormationStackNode(projectRule.project, "stack", StackStatus.CREATE_IN_PROGRESS)
+        val node = aCloudFormationStackNode(StackStatus.CREATE_IN_PROGRESS)
 
         assertThat(node.children).isEmpty()
     }
 
     @Test
     fun inProgressStacksHaveNoChildrenAfterRefresh() {
-        val node = CloudFormationStackNode(projectRule.project, "stack", StackStatus.CREATE_IN_PROGRESS)
+        val node = aCloudFormationStackNode(StackStatus.CREATE_IN_PROGRESS)
 
         assertThat(node.children).isEmpty()
     }
@@ -126,9 +126,11 @@ class CloudFormationStackNodeTest {
                 .build()
         )
 
-        val node = CloudFormationStackNode(projectRule.project, "stack", StackStatus.CREATE_COMPLETE)
+        val node = aCloudFormationStackNode(StackStatus.CREATE_COMPLETE)
 
         assertThat(node.children).hasSize(1)
         assertThat(node.children).hasOnlyElementsOfType(AwsExplorerEmptyNode::class.java)
     }
+
+    private fun aCloudFormationStackNode(status: StackStatus) = CloudFormationStackNode(projectRule.project, "stack", status, "stackId")
 }

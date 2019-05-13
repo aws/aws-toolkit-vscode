@@ -20,13 +20,10 @@ import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.core.explorer.AwsNodeAlwaysExpandable
 import software.aws.toolkits.jetbrains.core.explorer.AwsTruncatedResultNode
-import software.aws.toolkits.jetbrains.core.stack.openStack
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
 import software.aws.toolkits.jetbrains.utils.toHumanReadable
 import software.aws.toolkits.resources.message
-import javax.swing.tree.DefaultMutableTreeNode
-import javax.swing.tree.DefaultTreeModel
 
 class CloudFormationServiceNode(project: Project) : AwsExplorerServiceRootNode(project, message("explorer.node.cloudformation")) {
     override fun serviceName() = CloudFormationClient.SERVICE_NAME
@@ -41,7 +38,7 @@ class CloudFormationServiceNode(project: Project) : AwsExplorerServiceRootNode(p
         val nodes = response.stacks().filterNotNull().asSequence()
             .filter { it.stackStatus() !in DELETING_STACK_STATES }
             .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.stackName() })
-            .map { it -> CloudFormationStackNode(nodeProject, it.stackName(), it.stackStatus()) }
+            .map { CloudFormationStackNode(nodeProject, it.stackName(), it.stackStatus(), it.stackId()) }
             .toList()
 
         return nodes + paginationNodeIfRequired(response.nextToken())
@@ -57,7 +54,7 @@ class CloudFormationServiceNode(project: Project) : AwsExplorerServiceRootNode(p
     }
 }
 
-class CloudFormationStackNode(project: Project, val stackName: String, private val stackStatus: StackStatus) :
+class CloudFormationStackNode(project: Project, val stackName: String, private val stackStatus: StackStatus, val stackId: String) :
     AwsExplorerResourceNode<String>(project, CloudFormationClient.SERVICE_NAME, stackName, AwsIcons.Resources.CLOUDFORMATION_STACK),
     AwsNodeAlwaysExpandable {
     override fun resourceType() = "stack"
@@ -85,11 +82,6 @@ class CloudFormationStackNode(project: Project, val stackName: String, private v
         }
 
         return cachedChildren
-    }
-
-    override fun onDoubleClick(model: DefaultTreeModel, selectedElement: DefaultMutableTreeNode) {
-        super.onDoubleClick(model, selectedElement)
-        openStack(nodeProject, stackName)
     }
 
     private fun updateCachedChildren() {
