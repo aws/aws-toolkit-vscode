@@ -10,7 +10,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import { extensionSettingsPrefix, profileSettingKey } from '../../shared/constants'
+import { AwsContext } from '../../shared/awsContext'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
@@ -18,19 +18,21 @@ import { SamCliDeployInvocation } from '../../shared/sam/cli/samCliDeploy'
 import { DefaultSamCliProcessInvoker } from '../../shared/sam/cli/samCliInvoker'
 import { SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvokerUtils'
 import { SamCliPackageInvocation } from '../../shared/sam/cli/samCliPackage'
-import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 import { SamDeployWizard, SamDeployWizardResponse } from '../wizards/samDeployWizard'
 
 const localize = nls.loadMessageBundle()
 
-export async function deploySamApplication({
-    invoker = new DefaultSamCliProcessInvoker(),
-    ...restParams
-}: {
-    invoker?: SamCliProcessInvoker
-    outputChannel: vscode.OutputChannel
-    regionProvider: RegionProvider
-}) {
+export async function deploySamApplication(
+    {
+        invoker = new DefaultSamCliProcessInvoker(),
+        ...restParams
+    }: {
+        invoker?: SamCliProcessInvoker
+        outputChannel: vscode.OutputChannel
+        regionProvider: RegionProvider
+    },
+    awsContext: AwsContext
+) {
     const args: SamDeployWizardResponse | undefined = await new SamDeployWizard(restParams.regionProvider).run()
     if (!args) {
         return
@@ -44,9 +46,7 @@ export async function deploySamApplication({
         const outputTemplatePath = path.join(tempFolder, 'template.yaml')
         let stage: 'starting up' | 'building' | 'packaging' | 'deploying' = 'starting up'
 
-        const settingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
-        const profile = settingsConfiguration.readSetting<string>(profileSettingKey)
-        let msg = ''
+        const profile = awsContext.getCredentialProfileName()
 
         try {
             if (!profile) {
@@ -100,18 +100,19 @@ export async function deploySamApplication({
             // Deploying can take a very long time for Python Lambda's with native dependencies so user needs feedback
             restParams.outputChannel.appendLine(localize(
                 'AWS.samcli.deploy.workflow.stackName.initiated',
-                'Deploying SAM Application to CloudFormation Stack: {0}',
-                stackName
+                'Deploying SAM Application to CloudFormation Stack: {0} with profile: {1}',
+                stackName, profile
             ))
             await deployInvocation.execute()
 
-            msg = localize(
+            const msg = localize(
                 'AWS.samcli.deploy.workflow.success',
                 'Successfully deployed SAM Application to CloudFormation Stack: {0} with profile: {1}',
                 stackName, profile
             )
+            outputFinalMessage(msg, restParams.outputChannel)
         } catch (err) {
-            msg = localize(
+            let msg = localize(
                 'AWS.samcli.deploy.workflow.error',
                 'Failed to deploy SAM application. Error while {0}: {1}',
                 stage, String(err)
@@ -126,10 +127,8 @@ export async function deploySamApplication({
                     msg += ` --profile ${profile}`
                 }
             }
+            outputFinalMessage(msg, restParams.outputChannel)
         } finally {
-            restParams.outputChannel.appendLine(msg)
-            // TODO: Is this the right way to provide this feedback?
-            vscode.window.showWarningMessage(msg)
             await del(tempFolder, {
                 force: true
             })
@@ -144,4 +143,10 @@ export async function deploySamApplication({
         ),
         deployApplicationPromise
     )
+}
+
+function outputFinalMessage(msg: string, outputChannel: vscode.OutputChannel) {
+    outputChannel.appendLine(msg)
+    // TODO: Is this the right way to provide this feedback?
+    vscode.window.showWarningMessage(msg)
 }

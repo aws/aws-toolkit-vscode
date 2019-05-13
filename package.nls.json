@@ -103,7 +103,7 @@
     "AWS.samcli.detect.settings.not.updated": "No settings changes necessary.",
     "AWS.samcli.deploy.workflow.init": "Building SAM Application...",
     "AWS.samcli.deploy.workflow.packaging": "Packaging SAM Application to S3 Bucket: {0} with profile: {1}",
-    "AWS.samcli.deploy.workflow.stackName.initiated": "Deploying SAM Application to CloudFormation Stack: {0}",
+    "AWS.samcli.deploy.workflow.stackName.initiated": "Deploying SAM Application to CloudFormation Stack: {0} with profile: {1}",
     "AWS.samcli.deploy.workflow.success": "Successfully deployed SAM Application to CloudFormation Stack: {0} with profile: {1}",
     "AWS.samcli.deploy.workflow.error": "Failed to deploy SAM application. Error while {0}: {1}",
     "AWS.samcli.deploy.parameters.mandatoryPrompt.message": "The template {0} contains parameters without default values. In order to deploy, you must provide values for these parameters. Configure them now?",
