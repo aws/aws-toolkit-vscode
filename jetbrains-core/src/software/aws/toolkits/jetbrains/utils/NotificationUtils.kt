@@ -16,6 +16,7 @@ import com.intellij.openapi.ui.DialogBuilder
 import com.intellij.ui.ScrollPaneFactory
 import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
 import software.aws.toolkits.jetbrains.core.SettingsSelectorAction
+import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
 import software.aws.toolkits.resources.message
 import javax.swing.JLabel
@@ -133,6 +134,7 @@ fun createShowMoreInfoDialogAction(actionName: String?, title: String?, message:
                 setNorthPanel(JLabel(message))
                 setCenterPanel(ScrollPaneFactory.createScrollPane(textArea))
                 setPreferredFocusComponent(textArea)
+                setHelpId(HelpIds.SETUP_CREDENTIALS.id)
                 removeAllActions()
                 addOkAction()
             }
