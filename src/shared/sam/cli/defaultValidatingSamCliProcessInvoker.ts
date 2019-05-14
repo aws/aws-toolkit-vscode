@@ -40,7 +40,8 @@ export class DefaultValidatingSamCliProcessInvoker extends DefaultSamCliProcessI
             await super.validate()
         } catch (err) {
             if (err instanceof InvalidSamCliError) {
-                // TODO : Showing dialog here is temporary until LINK_ISSUE is complete.
+                // TODO : Showing dialog here is temporary until https://github.com/aws/aws-toolkit-vscode/issues/526
+                // TODO : is complete. The dialog will be raised earlier than this point, leaving this to throw Errors.
                 // Don't wait for the dialog to be acted on. Reacting code is self-contained, and
                 // there is no downstream code that depends on it.
                 // tslint:disable-next-line:no-floating-promises
