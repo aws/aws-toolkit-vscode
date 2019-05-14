@@ -14,6 +14,7 @@ import software.amazon.awssdk.http.ExecutableHttpRequest
 import software.amazon.awssdk.http.HttpExecuteRequest
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.http.apache.ApacheHttpClient
+import software.amazon.awssdk.http.apache.ProxyConfiguration
 import software.aws.toolkits.core.utils.assertTrue
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
@@ -26,6 +27,7 @@ class AwsSdkClient : Disposable {
     val sdkHttpClient: SdkHttpClient by lazy {
         LOG.info { "Create new Apache client" }
         val httpClientBuilder = ApacheHttpClient.builder()
+                .proxyConfiguration(ProxyConfiguration.builder().useSystemPropertyValues(false).build())
                 .httpRoutePlanner(SystemDefaultRoutePlanner(CommonProxy.getInstance()))
                 .credentialsProvider(SystemDefaultCredentialsProvider())
 
@@ -53,7 +55,6 @@ class AwsSdkClient : Disposable {
     companion object {
         private val LOG = getLogger<AwsSdkClient>()
         private const val WRONG_THREAD = "Network calls can't be made inside read/write action"
-        private const val EXPERIMENT_ID = "aws.toolkit.useProxy"
 
         fun getInstance(): AwsSdkClient = ServiceManager.getService(AwsSdkClient::class.java)
     }
