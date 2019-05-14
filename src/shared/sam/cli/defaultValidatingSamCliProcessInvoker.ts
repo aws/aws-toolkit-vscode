@@ -10,8 +10,8 @@ import {
     resolveSamCliProcessInvokerContext,
     SamCliProcessInvokerContext
 } from './samCliInvoker'
-import { InvalidSamCliVersionError, SamCliNotFoundError } from './samCliInvokerUtils'
-import { DefaultSamCliValidator, SamCliValidator } from './samCliValidator'
+import { InvalidSamCliError, InvalidSamCliVersionError, SamCliNotFoundError } from './samCliInvokerUtils'
+import { DefaultSamCliValidator, notifySamCliValidation, SamCliValidator } from './samCliValidator'
 import { SamCliVersionValidation } from './samCliVersionValidator'
 
 /**
@@ -30,8 +30,18 @@ export class DefaultValidatingSamCliProcessInvoker extends DefaultSamCliProcessI
     }
 
     protected async validate(): Promise<void> {
-        await this.validateSamCli()
-        await super.validate()
+        try {
+            await this.validateSamCli()
+            await super.validate()
+        } catch (err) {
+            // TODO : TEMP: This gets handled up top - reference issue - remove notify from here
+            if (err instanceof InvalidSamCliError) {
+                notifySamCliValidation(err)
+            }
+
+            // TODO : TEMP: This gets handled up top - reference issue
+            throw err
+        }
     }
 
     private async validateSamCli(): Promise<void> {
