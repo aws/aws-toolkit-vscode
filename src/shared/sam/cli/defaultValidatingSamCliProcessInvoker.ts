@@ -10,11 +10,11 @@ import {
     resolveSamCliProcessInvokerContext,
     SamCliProcessInvokerContext
 } from './samCliInvoker'
+import { notifySamCliValidation } from './samCliValidationNotification'
 import {
     DefaultSamCliValidator,
     InvalidSamCliError,
     InvalidSamCliVersionError,
-    notifySamCliValidation,
     SamCliNotFoundError, SamCliValidator,
     SamCliVersionValidation
 } from './samCliValidator'
