@@ -34,7 +34,7 @@ import { AWSStatusBar } from './shared/statusBar'
 import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
 import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryService'
 import { TelemetryService } from './shared/telemetry/telemetryService'
-import { registerCommand } from './shared/telemetry/telemetryUtils'
+import { registerCommand, TelemetryNamespace } from './shared/telemetry/telemetryUtils'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { PromiseSharer } from './shared/utilities/promiseUtilities'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
@@ -85,17 +85,29 @@ export async function activate(context: vscode.ExtensionContext) {
 
         registerCommand({
             command: 'aws.login',
-            callback: async () => await ext.awsContextCommands.onCommandLogin()
+            callback: async () => await ext.awsContextCommands.onCommandLogin(),
+            telemetryName: {
+                namespace: TelemetryNamespace.Aws,
+                name: 'credentialslogin'
+            }
         })
 
         registerCommand({
             command: 'aws.credential.profile.create',
-            callback: async () => await ext.awsContextCommands.onCommandCreateCredentialsProfile()
+            callback: async () => await ext.awsContextCommands.onCommandCreateCredentialsProfile(),
+            telemetryName: {
+                namespace: TelemetryNamespace.Aws,
+                name: 'credentialscreate'
+            }
         })
 
         registerCommand({
             command: 'aws.logout',
-            callback: async () => await ext.awsContextCommands.onCommandLogout()
+            callback: async () => await ext.awsContextCommands.onCommandLogout(),
+            telemetryName: {
+                namespace: TelemetryNamespace.Aws,
+                name: 'credentialslogout'
+            }
         })
 
         registerCommand({

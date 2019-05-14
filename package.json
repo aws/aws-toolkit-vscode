@@ -37,7 +37,7 @@
         "onCommand:aws.logout",
         "onCommand:aws.showRegion",
         "onCommand:aws.hideRegion",
-        "onView:lambda",
+        "onView:aws.explorer",
         "onCommand:aws.deploySamApplication",
         "onCommand:aws.samcli.detect",
         "onCommand:aws.samcli.validate.version",
@@ -120,7 +120,7 @@
         "views": {
             "aws-explorer": [
                 {
-                    "id": "lambda",
+                    "id": "aws.explorer",
                     "name": "%AWS.lambda.explorerTitle%"
                 }
             ]
@@ -133,14 +133,6 @@
                 },
                 {
                     "command": "aws.deleteLambda",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.getLambdaConfig",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.getLambdaPolicy",
                     "when": "false"
                 },
                 {
@@ -159,27 +151,32 @@
             "view/title": [
                 {
                     "command": "aws.refreshAwsExplorer",
-                    "when": "view == lambda",
+                    "when": "view == aws.explorer",
                     "group": "navigation@5"
                 },
                 {
                     "command": "aws.login",
+                    "when": "view == aws.explorer",
                     "group": "1_account@1"
                 },
                 {
                     "command": "aws.showRegion",
+                    "when": "view == aws.explorer",
                     "group": "2_region@1"
                 },
                 {
                     "command": "aws.hideRegion",
+                    "when": "view == aws.explorer",
                     "group": "2_region@2"
                 },
                 {
                     "command": "aws.help",
+                    "when": "view == aws.explorer",
                     "group": "z_help@1"
                 },
                 {
                     "command": "aws.github",
+                    "when": "view == aws.explorer",
                     "group": "z_help@2"
                 }
             ],
@@ -190,19 +187,9 @@
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.getLambdaConfig",
-                    "when": "view == lambda && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
-                    "group": "1@1"
-                },
-                {
-                    "command": "aws.getLambdaPolicy",
-                    "when": "view == lambda && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
-                    "group": "1@2"
-                },
-                {
                     "command": "aws.deleteLambda",
                     "when": "view == lambda && viewItem == awsRegionFunctionNode",
-                    "group": "2@1"
+                    "group": "1@1"
                 },
                 {
                     "command": "aws.deleteCloudFormation",
@@ -275,16 +262,6 @@
                     "dark": "third-party/resources/from-vscode/dark/refresh.svg",
                     "light": "third-party/resources/from-vscode/light/refresh.svg"
                 }
-            },
-            {
-                "command": "aws.getLambdaConfig",
-                "title": "%AWS.command.getLambdaConfig%",
-                "category": "AWS"
-            },
-            {
-                "command": "aws.getLambdaPolicy",
-                "title": "%AWS.command.getLambdaPolicy%",
-                "category": "AWS"
             },
             {
                 "command": "aws.samcli.detect",

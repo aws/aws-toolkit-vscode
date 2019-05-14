@@ -15,7 +15,7 @@ import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
 import { Datum } from '../telemetry/telemetryEvent'
-import { registerCommand } from '../telemetry/telemetryUtils'
+import { registerCommand, TelemetryNamespace } from '../telemetry/telemetryUtils'
 import { getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
 
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
@@ -320,6 +320,10 @@ export async function initialize({
                 command,
                 runtime,
             })
+        },
+        telemetryName: {
+            namespace: TelemetryNamespace.Lambda,
+            name: 'invokelocal'
         }
     })
 }

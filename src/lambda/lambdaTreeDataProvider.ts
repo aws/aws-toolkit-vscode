@@ -12,7 +12,7 @@ import { ext } from '../shared/extensionGlobals'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { ResourceFetcher } from '../shared/resourceFetcher'
 import { Datum } from '../shared/telemetry/telemetryEvent'
-import { defaultMetricDatum, registerCommand } from '../shared/telemetry/telemetryUtils'
+import { defaultMetricDatum, registerCommand, TelemetryNamespace } from '../shared/telemetry/telemetryUtils'
 import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
@@ -22,7 +22,6 @@ import { createNewSamApp } from './commands/createNewSamApp'
 import { deleteCloudFormation } from './commands/deleteCloudFormation'
 import { deleteLambda } from './commands/deleteLambda'
 import { deploySamApplication } from './commands/deploySamApplication'
-import { getLambdaConfig } from './commands/getLambdaConfig'
 import { invokeLambda } from './commands/invokeLambda'
 import { showErrorDetails } from './commands/showErrorDetails'
 import { CloudFormationStackNode } from './explorer/cloudFormationNodes'
@@ -31,12 +30,10 @@ import { ErrorNode } from './explorer/errorNode'
 import { FunctionNodeBase } from './explorer/functionNode'
 import { RegionNode } from './explorer/regionNode'
 import { StandaloneFunctionNode } from './explorer/standaloneNodes'
-import { DefaultLambdaPolicyProvider, LambdaPolicyView } from './lambdaPolicy'
 import { configureLocalLambda } from './local/configureLocalLambda'
-import * as utils from './utils'
 
 export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
-    public viewProviderId: string = 'lambda'
+    public viewProviderId: string = 'aws.explorer'
     public readonly onDidChangeTreeData: vscode.Event<AWSTreeNodeBase | undefined>
     private readonly _onDidChangeTreeData: vscode.EventEmitter<AWSTreeNodeBase | undefined>
     private readonly regionNodes: Map<string, RegionNode>
@@ -73,6 +70,10 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
                 return {
                     datum
                 }
+            },
+            telemetryName: {
+                namespace: TelemetryNamespace.Project,
+                name: 'new'
             }
         })
 
@@ -83,7 +84,11 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
                 lambdaClient: ext.toolkitClientBuilder.createLambdaClient(node.regionCode),
                 outputChannel: this.lambdaOutputChannel,
                 onRefresh: () => this.refresh(node.parent)
-            })
+            }),
+            telemetryName: {
+                namespace: TelemetryNamespace.Lambda,
+                name: 'delete'
+            }
         })
 
         registerCommand({
@@ -91,7 +96,11 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
             callback: async (node: CloudFormationStackNode) => await deleteCloudFormation(
                 () => this.refresh(node.parent),
                 node
-            )
+            ),
+            telemetryName: {
+                namespace: TelemetryNamespace.Cloudformation,
+                name: 'delete'
+            }
         })
 
         registerCommand({
@@ -99,7 +108,11 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
             callback: async () => await deploySamApplication({
                 outputChannel: this.lambdaOutputChannel,
                 regionProvider: this.regionProvider
-            })
+            }),
+            telemetryName: {
+                namespace: TelemetryNamespace.Lambda,
+                name: 'deploy'
+            }
         })
 
         registerCommand({
@@ -114,34 +127,19 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
                 element: node,
                 outputChannel: this.lambdaOutputChannel,
                 resourceFetcher: this.resourceFetcher
-            })
+            }),
+            telemetryName: {
+                namespace: TelemetryNamespace.Lambda,
+                name: 'invokeremote'
+            }
         })
 
         registerCommand({
             command: 'aws.configureLambda',
-            callback: configureLocalLambda
-        })
-
-        registerCommand({
-            command: 'aws.getLambdaConfig',
-            callback: async (node: FunctionNodeBase) => await getLambdaConfig(
-                this.awsContext,
-                node
-            )
-        })
-
-        registerCommand({
-            command: 'aws.getLambdaPolicy',
-            callback: async (node: FunctionNodeBase) => {
-                const functionNode: FunctionNodeBase = await utils.selectLambdaNode(this.awsContext, node)
-
-                const policyProvider = new DefaultLambdaPolicyProvider(
-                    functionNode.configuration.FunctionName!,
-                    functionNode.regionCode
-                )
-
-                const view = new LambdaPolicyView(policyProvider)
-                await view.load()
+            callback: configureLocalLambda,
+            telemetryName: {
+                namespace: TelemetryNamespace.Lambda,
+                name: 'configurelocal'
             }
         })
 

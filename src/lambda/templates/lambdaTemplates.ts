@@ -41,46 +41,4 @@ export class LambdaTemplates {
         <script nonce="<%= scr.nonce %>" src="<%= scr.uri %>"></script>
     <% }); %>
     `
-    public static readonly GET_CONFIG_TEMPLATE = `
-    <h1>
-        Configuration for <%= FunctionName %>...
-    </h1>
-    <p>Function Name: <%= FunctionName %></p>
-    <p>Function Arn: <%= FunctionArn %>
-    <p>Description: <%= Description %>
-    <p>Handler: <%= Handler %>
-    <p>Last Modified: <%= LastModified %>
-    <p>Memory Size: <%= MemorySize %>
-    <p>Role: <%= Role %>
-    <p>Timeout: <%= Timeout %>
-    <p>Version: <%= Version %>
-    `
-}
-
-export class LambdaPolicyTemplates {
-    // This is the constant view frame, regardless of view state
-    public static readonly OUTER_TEMPLATE = String.raw`
-    <h1>
-        Lambda Function Policy: <%= FunctionName %>
-    </h1>
-    <%= innerContent %>
-    `
-    public static readonly INNER_TEMPLATE_LOADING = String.raw`
-    <h2>
-        Loading...
-    </h2>
-    `
-    public static readonly INNER_TEMPLATE_POLICY = String.raw`
-    <p>Policy:
-        <pre><%- Policy %></pre>
-    </p>
-    `
-    public static readonly INNER_TEMPLATE_ERROR = String.raw`
-    <p>Error getting Lambda Function Policy:
-        <ul>
-            <li>Code: <pre><%= ErrorCode %></pre></li>
-            <li>Message: <pre><%= ErrorMessage %></pre></li>
-        </ul>
-    </p>
-    `
 }
