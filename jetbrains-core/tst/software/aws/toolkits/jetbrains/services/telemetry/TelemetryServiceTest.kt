@@ -37,9 +37,6 @@ class TelemetryServiceTest {
         DefaultTelemetryService(
                 messageBusService,
                 MockAwsSettings(true, true, UUID.randomUUID()),
-                1,
-                TimeUnit.HOURS,
-                mock(),
                 batcher
         )
 
@@ -63,9 +60,6 @@ class TelemetryServiceTest {
         DefaultTelemetryService(
                 messageBusService,
                 MockAwsSettings(true, true, UUID.randomUUID()),
-                1,
-                TimeUnit.HOURS,
-                mock(),
                 batcher
         )
 

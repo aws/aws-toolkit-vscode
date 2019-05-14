@@ -34,7 +34,7 @@ import javax.swing.Action
 import javax.swing.JComponent
 
 open class SamDeployDialog(
-    project: Project,
+    private val project: Project,
     private val stackName: String,
     private val template: VirtualFile,
     private val parameters: Map<String, String>,
@@ -214,7 +214,7 @@ open class SamDeployDialog(
         }
 
         return future.whenComplete { _, exception ->
-            TelemetryService.getInstance().record("SamDeploy") {
+            TelemetryService.getInstance().record(project, "SamDeploy") {
                 datum(title) {
                     count()
                     // exception can be null but is not annotated as nullable

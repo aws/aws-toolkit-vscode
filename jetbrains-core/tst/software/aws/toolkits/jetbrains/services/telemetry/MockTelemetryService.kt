@@ -3,11 +3,12 @@
 
 package software.aws.toolkits.jetbrains.services.telemetry
 
+import com.intellij.openapi.project.Project
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent
 import software.aws.toolkits.core.telemetry.MetricEvent
 
 class MockTelemetryService : TelemetryService {
-    override fun record(namespace: String, buildEvent: MetricEvent.Builder.() -> kotlin.Unit): MetricEvent {
+    override fun record(project: Project?, namespace: String, buildEvent: MetricEvent.Builder.() -> kotlin.Unit): MetricEvent {
         val builder = DefaultMetricEvent.builder(namespace)
         buildEvent(builder)
         return builder.build()

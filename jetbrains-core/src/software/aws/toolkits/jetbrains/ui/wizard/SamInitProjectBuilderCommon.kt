@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.ui.wizard
 
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.DefaultProjectFactory
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.util.text.StringUtil
@@ -37,7 +38,7 @@ abstract class SamProjectTemplate {
 
     fun getIcon() = AwsIcons.Resources.SERVERLESS_APP
 
-    fun build(runtime: Runtime, outputDir: VirtualFile) {
+    fun build(project: Project, runtime: Runtime, outputDir: VirtualFile) {
         var hasException = false
         try {
             doBuild(runtime, outputDir)
@@ -45,7 +46,7 @@ abstract class SamProjectTemplate {
             hasException = true
             throw e
         } finally {
-            TelemetryService.getInstance().record("SAM") {
+            TelemetryService.getInstance().record(project, "SAM") {
                 datum("Init") {
                     metadata("name", getName())
                     metadata("runtime", runtime.name)

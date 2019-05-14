@@ -71,6 +71,7 @@ public class EditFunctionPanel {
         handler = new TextFieldWithCompletion(project, new HandlerCompletionProvider(project), "", true, true, true, true);
         runtimeModel = new SortedComboBoxModel<>(Comparator.comparing(Runtime::toString, Comparator.naturalOrder()));
         runtime = new ComboBox<>(runtimeModel);
+        envVars = new EnvironmentVariablesTextField(project);
     }
 
     public void setRuntimes(Collection<Runtime> runtimes) {

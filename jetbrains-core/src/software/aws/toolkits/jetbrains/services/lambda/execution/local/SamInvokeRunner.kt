@@ -100,7 +100,7 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
                 buildingPromise.setError(it)
                 throw it
             }.whenComplete { _, exception ->
-                TelemetryService.getInstance().record("SamInvoke") {
+                TelemetryService.getInstance().record(module.project, "SamInvoke") {
                     val type = if (environment.isDebug()) "Debug" else "Run"
                     datum(type) {
                         count()

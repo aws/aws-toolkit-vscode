@@ -84,6 +84,7 @@ public final class LocalLambdaRunSettingsEditorPanel {
 
         runtimeModel = new SortedComboBoxModel<>(Comparator.comparing(Runtime::toString, Comparator.naturalOrder()));
         runtime = new ComboBox<>(runtimeModel);
+        environmentVariables = new EnvironmentVariablesTextField(project);
     }
 
     private void updateComponents() {
