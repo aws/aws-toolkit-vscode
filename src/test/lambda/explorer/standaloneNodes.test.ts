@@ -18,6 +18,7 @@ import {
 } from '../../../lambda/explorer/standaloneNodes'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
+import { StsClient } from '../../../shared/clients/stsClient'
 import { ext } from '../../../shared/extensionGlobals'
 import { TestLogger } from '../../../shared/loggerUtils'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
@@ -195,6 +196,10 @@ describe('DefaultStandaloneFunctionGroupNode', () => {
 
             createLambdaClient(regionCode: string): LambdaClient {
                 return new FunctionNamesMockLambdaClient(inputFunctionNames)
+            },
+
+            createStsClient(regionCode: string): StsClient {
+                throw new Error('sts client unused')
             }
         }
 

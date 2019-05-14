@@ -8,8 +8,7 @@
 import * as handlebars from 'handlebars'
 import * as path from 'path'
 
-import { STS } from 'aws-sdk'
-import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import { StsClient } from '../clients/stsClient'
 import { EnvironmentVariables } from '../environmentVariables'
 import { ext } from '../extensionGlobals'
 import { mkdir, writeFile } from '../filesystem'
@@ -124,19 +123,20 @@ export class UserCredentialsUtils {
      * an error message.
      */
     public static async validateCredentials(
-        accessKey: string,
-        secretKey: string,
-        sts?: STS
+        accessKeyId: string,
+        secretAccessKey: string,
+        sts?: StsClient
     ): Promise<CredentialsValidationResult> {
         const logger: Logger = getLogger()
         try {
             if (!sts) {
-                sts = await UserCredentialsUtils.createSTSClient(accessKey, secretKey)
+                // Past iteration did not include a set region. Should we change this?
+                sts = ext.toolkitClientBuilder.createStsClient('us-east-1', {accessKeyId, secretAccessKey})
             }
 
-            await sts.getCallerIdentity().promise()
+            const response = await sts.getCallerIdentity()
 
-            return { isValid: true }
+            return response.Account ? { isValid: true } : { isValid: false }
 
         } catch (err) {
 
@@ -152,20 +152,5 @@ export class UserCredentialsUtils {
 
             return { isValid: false, invalidMessage: reason }
         }
-    }
-
-    private static async createSTSClient(
-        accessKey: string,
-        secretKey: string,
-    ): Promise<STS> {
-        const awsServiceOpts: ServiceConfigurationOptions = {
-            accessKeyId: accessKey,
-            secretAccessKey: secretKey
-        }
-
-        return await ext.sdkClientBuilder.createAndConfigureServiceClient<STS>(
-            (options) => new STS(options),
-            awsServiceOpts,
-        )
     }
 }

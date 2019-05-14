@@ -7,9 +7,12 @@
 
 import { CloudFormationClient } from './cloudFormationClient'
 import { LambdaClient } from './lambdaClient'
+import { StsClient } from './stsClient'
 
 export interface ToolkitClientBuilder {
     createCloudFormationClient(regionCode: string): CloudFormationClient
 
     createLambdaClient(regionCode: string): LambdaClient
+
+    createStsClient(regionCode: string, credentials?: { accessKeyId: string, secretAccessKey: string }): StsClient
 }

@@ -12,6 +12,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { promisify } from 'util'
 
+import { StsClient } from '../../../shared/clients/stsClient'
 import {
     loadSharedConfigFiles,
     SharedConfigFiles
@@ -179,10 +180,8 @@ describe('UserCredentialsUtils', () => {
 
             let timesCalled: number = 0
 
-            const mockResponse = {
-                promise: async () => {
-                    return Promise.resolve()
-                }
+            const mockResponse: AWS.STS.GetCallerIdentityResponse = {
+                Account: 'valid'
             }
 
             const mockSts = {
@@ -196,20 +195,18 @@ describe('UserCredentialsUtils', () => {
             const result: CredentialsValidationResult = await UserCredentialsUtils.validateCredentials(
                 'fakeaccess',
                 'fakesecret',
-                mockSts as any as AWS.STS)
+                mockSts as any as StsClient)
 
             assert.strictEqual(timesCalled, 1)
             assert.strictEqual(result.isValid, true)
         })
 
-        it('fails if getCallerIdentity rejects', async () => {
+        it('fails if getCallerIdentity returns undefined', async () => {
 
             let timesCalled: number = 0
 
-            const mockResponse = {
-                promise: async () => {
-                    return Promise.reject('Simulating error')
-                }
+            const mockResponse: AWS.STS.GetCallerIdentityResponse = {
+                Account: undefined
             }
 
             const mockSts = {
@@ -223,35 +220,28 @@ describe('UserCredentialsUtils', () => {
             const result: CredentialsValidationResult = await UserCredentialsUtils.validateCredentials(
                 'fakeaccess',
                 'fakesecret',
-                mockSts as any as AWS.STS)
+                mockSts as any as StsClient)
 
             assert.strictEqual(timesCalled, 1)
             assert.strictEqual(result.isValid, false)
-            assert.strictEqual(result.invalidMessage, 'Simulating error')
         })
 
         it('fails if getCallerIdentity throws', async () => {
 
             let timesCalled: number = 0
 
-            const mockResponse = {
-                promise: () => {
-                    throw new Error('Simulating error with explicit throw')
-                }
-            }
-
             const mockSts = {
                 getCallerIdentity: () => {
                     timesCalled++
 
-                    return mockResponse
+                    throw new Error('Simulating error with explicit throw')
                 }
             }
 
             const result: CredentialsValidationResult = await UserCredentialsUtils.validateCredentials(
                 'fakeaccess',
                 'fakesecret',
-                mockSts as any as AWS.STS)
+                mockSts as any as StsClient)
 
             assert.strictEqual(timesCalled, 1)
             assert.strictEqual(result.isValid, false)
