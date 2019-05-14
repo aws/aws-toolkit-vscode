@@ -8,12 +8,12 @@
 import * as assert from 'assert'
 import { Stats } from 'fs'
 import { SamCliInfoResponse } from '../../../../shared/sam/cli/samCliInfo'
-import { BaseSamCliValidator } from '../../../../shared/sam/cli/samCliValidator'
 import {
+    BaseSamCliValidator,
     MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE,
     MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
     SamCliVersionValidation
-} from '../../../../shared/sam/cli/samCliVersionValidator'
+} from '../../../../shared/sam/cli/samCliValidator'
 
 describe('BaseSamCliValidator', async () => {
 
@@ -69,7 +69,7 @@ describe('BaseSamCliValidator', async () => {
         },
         {
             situation: 'SAM CLI Version is unparsable - random text',
-            version: 'qwerty',
+            version: 'what.in.tarnation',
             expectedVersionValidation: SamCliVersionValidation.VersionNotParseable,
         },
     ]
@@ -143,4 +143,13 @@ describe('BaseSamCliValidator', async () => {
         })
     })
 
+    describe('validateSamCliVersion', async () => {
+        samCliVersionTestScenarios.forEach(test => {
+            it(`validates when ${test.situation}`, async () => {
+                const validation: SamCliVersionValidation = BaseSamCliValidator.validateSamCliVersion(test.version)
+
+                assert.strictEqual(validation, test.expectedVersionValidation, 'Unexpected version validation')
+            })
+        })
+    })
 })

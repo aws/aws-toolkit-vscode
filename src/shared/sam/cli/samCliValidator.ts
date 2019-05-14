@@ -6,27 +6,19 @@
 'use strict'
 
 import { Stats } from 'fs'
+import * as semver from 'semver'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { samAboutInstallUrl, vscodeMarketplaceUrl } from '../../constants'
 import { stat } from '../../filesystem'
 import { SamCliConfiguration } from './samCliConfiguration'
 import { SamCliInfoInvocation, SamCliInfoResponse } from './samCliInfo'
-import {
-    InvalidSamCliError,
-    InvalidSamCliVersionError,
-    SamCliNotFoundError,
-    SamCliProcessInvoker
-} from './samCliInvokerUtils'
-import {
-    MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE,
-    MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
-    SamCliVersionValidation,
-    SamCliVersionValidatorResult,
-    validateSamCliVersion,
-} from './samCliVersionValidator'
+import { SamCliProcessInvoker } from './samCliInvokerUtils'
 
 const localize = nls.loadMessageBundle()
+
+export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE = '0.11.0'
+export const MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE = '0.16.0'
 
 const ACTION_GO_TO_SAM_CLI_PAGE: string = localize(
     'AWS.samcli.userChoice.visit.install.url',
@@ -47,6 +39,36 @@ const RECOMMENDATION_UPDATE_SAM_CLI: string = localize(
     'AWS.samcli.recommend.update.samcli',
     'Please update your SAM CLI.'
 )
+
+export class InvalidSamCliError extends Error {
+    public constructor(message?: string | undefined) {
+        super(message)
+    }
+}
+
+export class SamCliNotFoundError extends InvalidSamCliError {
+    public constructor() {
+        super('SAM CLI was not found')
+    }
+}
+
+export class InvalidSamCliVersionError extends InvalidSamCliError {
+    public constructor(public versionValidation: SamCliVersionValidatorResult) {
+        super('SAM CLI has an invalid version')
+    }
+}
+
+export enum SamCliVersionValidation {
+    Valid = 'Valid',
+    VersionTooLow = 'VersionTooLow',
+    VersionTooHigh = 'VersionTooHigh',
+    VersionNotParseable = 'VersionNotParseable',
+}
+
+export interface SamCliVersionValidatorResult {
+    version?: string,
+    validation: SamCliVersionValidation
+}
 
 export interface SamCliValidator {
     detectValidSamCli(): Promise<SamCliValidatorResult>
@@ -92,7 +114,7 @@ export abstract class BaseSamCliValidator implements SamCliValidator {
 
         return {
             version,
-            validation: validateSamCliVersion(version),
+            validation: BaseSamCliValidator.validateSamCliVersion(version),
         }
     }
 
@@ -107,6 +129,26 @@ export abstract class BaseSamCliValidator implements SamCliValidator {
         if (!this.cachedSamInfoResponseSource) { return false }
 
         return this.cachedSamInfoResponseSource === samCliLastModifiedOn
+    }
+
+    public static validateSamCliVersion(version?: string): SamCliVersionValidation {
+        if (!version) {
+            return SamCliVersionValidation.VersionNotParseable
+        }
+
+        if (!semver.valid(version)) {
+            return SamCliVersionValidation.VersionNotParseable
+        }
+
+        if (semver.lt(version, MINIMUM_SAM_CLI_VERSION_INCLUSIVE)) {
+            return SamCliVersionValidation.VersionTooLow
+        }
+
+        if (semver.gte(version, MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE)) {
+            return SamCliVersionValidation.VersionTooHigh
+        }
+
+        return SamCliVersionValidation.Valid
     }
 }
 
@@ -252,7 +294,7 @@ class DefaultSamCliValidationNotification implements SamCliValidationNotificatio
         if (userResponse) {
             const responseActions: Promise<void>[] = this.actions
                 .filter(action => action.label === userResponse)
-                .map(action => action.invoke())
+                .map(async action => action.invoke())
 
             await Promise.all(responseActions)
         }

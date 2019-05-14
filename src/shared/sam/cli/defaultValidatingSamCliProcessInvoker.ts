@@ -10,9 +10,14 @@ import {
     resolveSamCliProcessInvokerContext,
     SamCliProcessInvokerContext
 } from './samCliInvoker'
-import { InvalidSamCliError, InvalidSamCliVersionError, SamCliNotFoundError } from './samCliInvokerUtils'
-import { DefaultSamCliValidator, notifySamCliValidation, SamCliValidator } from './samCliValidator'
-import { SamCliVersionValidation } from './samCliVersionValidator'
+import {
+    DefaultSamCliValidator,
+    InvalidSamCliError,
+    InvalidSamCliVersionError,
+    notifySamCliValidation,
+    SamCliNotFoundError, SamCliValidator,
+    SamCliVersionValidation
+} from './samCliValidator'
 
 /**
  * Validates the SAM CLI version before making calls to the SAM CLI.
@@ -34,12 +39,14 @@ export class DefaultValidatingSamCliProcessInvoker extends DefaultSamCliProcessI
             await this.validateSamCli()
             await super.validate()
         } catch (err) {
-            // TODO : TEMP: This gets handled up top - reference issue - remove notify from here
             if (err instanceof InvalidSamCliError) {
+                // TODO : Showing dialog here is temporary until LINK_ISSUE is complete.
+                // Don't wait for the dialog to be acted on. Reacting code is self-contained, and
+                // there is no downstream code that depends on it.
+                // tslint:disable-next-line:no-floating-promises
                 notifySamCliValidation(err)
             }
 
-            // TODO : TEMP: This gets handled up top - reference issue
             throw err
         }
     }
