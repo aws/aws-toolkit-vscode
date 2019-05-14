@@ -258,7 +258,7 @@ task guiTest(type: Test) {
 }
 
 dependencies {
-    compile project(':jetbrains-ultimate')
+    compile project(':jetbrains-core') 
 
     ktlint "com.github.shyiko:ktlint:$ktlintVersion"
     ktlint project(":ktlint-rules")
