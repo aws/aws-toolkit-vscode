@@ -11,9 +11,9 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { RegionProvider } from '../../shared/regions/regionProvider'
+import { DefaultValidatingSamCliProcessInvoker } from '../../shared/sam/cli/defaultValidatingSamCliProcessInvoker'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { SamCliDeployInvocation } from '../../shared/sam/cli/samCliDeploy'
-import { DefaultSamCliProcessInvoker } from '../../shared/sam/cli/samCliInvoker'
 import { SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvokerUtils'
 import { SamCliPackageInvocation } from '../../shared/sam/cli/samCliPackage'
 import { SamDeployWizard, SamDeployWizardResponse } from '../wizards/samDeployWizard'
@@ -21,7 +21,7 @@ import { SamDeployWizard, SamDeployWizardResponse } from '../wizards/samDeployWi
 const localize = nls.loadMessageBundle()
 
 export async function deploySamApplication({
-    invoker = new DefaultSamCliProcessInvoker(),
+    invoker = new DefaultValidatingSamCliProcessInvoker(),
     ...restParams
 }: {
     invoker?: SamCliProcessInvoker

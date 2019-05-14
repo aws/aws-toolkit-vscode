@@ -38,7 +38,6 @@ export function resolveSamCliProcessInvokerContext(
     }
 }
 
-// todo : CC : toolkit code that currently calls this no longer has validation
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
 
     public constructor(

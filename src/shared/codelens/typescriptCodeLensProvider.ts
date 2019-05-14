@@ -11,12 +11,12 @@ import * as vscode from 'vscode'
 import { NodejsDebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { findFileInParentPaths } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
-import { DefaultSamCliProcessInvoker } from '../sam/cli/samCliInvoker'
 import { Datum } from '../telemetry/telemetryEvent'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { getChannelLogger, getDebugPort, localize } from '../utilities/vsCodeUtils'
 
+import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import {
     CodeLensProviderParams,
@@ -55,7 +55,7 @@ async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
 export function initialize({
     configuration,
     outputChannel: toolkitOutputChannel,
-    processInvoker = new DefaultSamCliProcessInvoker(),
+    processInvoker = new DefaultValidatingSamCliProcessInvoker(),
     localInvokeCommand = new DefaultSamLocalInvokeCommand(
         getChannelLogger(toolkitOutputChannel),
         [WAIT_FOR_DEBUGGER_MESSAGES.NODEJS]
