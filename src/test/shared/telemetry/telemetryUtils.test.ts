@@ -10,7 +10,8 @@ import { Disposable } from 'vscode'
 import { ext } from '../../../shared/extensionGlobals'
 import { TelemetryEvent } from '../../../shared/telemetry/telemetryEvent'
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
-import { registerCommand, TelemetryNamespace } from '../../../shared/telemetry/telemetryUtils'
+import { TelemetryNamespace } from '../../../shared/telemetry/telemetryTypes'
+import { registerCommand } from '../../../shared/telemetry/telemetryUtils'
 
 class MockTelemetryService implements TelemetryService {
     public persistFilePath: string = ''

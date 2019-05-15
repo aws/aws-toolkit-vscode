@@ -7,7 +7,7 @@
 
 import { AwsContext } from '../awsContext'
 import { MetadataEntry, MetricDatum } from './clienttelemetry'
-import { Datum, TelemetryNamespace } from './telemetryUtils'
+import { Datum, TelemetryNamespace } from './telemetryTypes'
 
 const NAME_ILLEGAL_CHARS_REGEX = new RegExp('[^\\w+-.:]', 'g')
 const REMOVE_UNDERSCORES_REGEX = new RegExp('_', 'g')
