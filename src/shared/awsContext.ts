@@ -9,8 +9,11 @@ import * as vscode from 'vscode'
 
 // Carries the current context data on events
 export class ContextChangeEventsArgs {
-    public constructor(public profileName: string | undefined, public regions: string[]) {
-    }
+    public constructor(
+        public profileName: string | undefined,
+        public accountId: string | undefined,
+        public regions: string[]
+    ) {}
 }
 
 // Represents a credential profile and zero or more regions.

@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import { ConfigurationTarget } from 'vscode'
-import { profileSettingKey, regionSettingKey } from '../../shared/constants'
+import { accountIdSettingKey, profileSettingKey, regionSettingKey } from '../../shared/constants'
 import { DefaultAwsContext } from '../../shared/defaultAwsContext'
 import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { FakeExtensionContext, FakeMementoStorage } from '../fakeExtensionContext'
@@ -44,6 +44,23 @@ describe('DefaultAwsContext', () => {
 
         const testContext = new DefaultAwsContext(new TestConfiguration(), new FakeExtensionContext())
         assert.strictEqual(testContext.getCredentialProfileName(), testProfileValue)
+    })
+
+    it('reads account ID from config on startup', () => {
+
+        class TestConfiguration extends ContextTestsSettingsConfigurationBase {
+            public readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
+                if (settingKey === accountIdSettingKey) {
+                    return testAccountIdValue as any as T
+                }
+
+                return super.readSetting(settingKey, defaultValue)
+            }
+
+        }
+
+        const testContext = new DefaultAwsContext(new TestConfiguration(), new FakeExtensionContext())
+        assert.strictEqual(testContext.getCredentialAccountId(), testAccountIdValue)
     })
 
     it('gets single region from config on startup', async () => {
@@ -145,6 +162,20 @@ describe('DefaultAwsContext', () => {
         await testContext.setCredentialProfileName(testProfileValue)
     })
 
+    it('updates config on account ID change', async () => {
+
+        class TestConfiguration extends ContextTestsSettingsConfigurationBase {
+            public async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
+                assert.strictEqual(settingKey, accountIdSettingKey)
+                assert.strictEqual(value, testAccountIdValue)
+                assert.strictEqual(target, ConfigurationTarget.Global)
+            }
+        }
+
+        const testContext = new DefaultAwsContext(new TestConfiguration(), new FakeExtensionContext())
+        await testContext.setCredentialAccountId(testAccountIdValue)
+    })
+
     it('fires event on single region change', async () => {
 
         const testContext = new DefaultAwsContext(
@@ -198,6 +229,24 @@ describe('DefaultAwsContext', () => {
         })
 
         await testContext.setCredentialProfileName(testProfileValue)
+
+        assert.strictEqual(invocationCount, 1)
+    })
+
+    it('fires event on accountId change', async () => {
+
+        const testContext = new DefaultAwsContext(
+            new ContextTestsSettingsConfigurationBase(),
+            new FakeExtensionContext()
+        )
+
+        let invocationCount = 0
+        testContext.onDidChangeContext((c) => {
+            assert.strictEqual(c.accountId, testAccountIdValue)
+            invocationCount++
+        })
+
+        await testContext.setCredentialAccountId(testAccountIdValue)
 
         assert.strictEqual(invocationCount, 1)
     })

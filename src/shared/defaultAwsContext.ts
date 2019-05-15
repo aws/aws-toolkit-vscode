@@ -92,7 +92,11 @@ export class DefaultAwsContext implements AwsContext {
             await this._credentialsMru.setMostRecentlyUsedProfile(this.profileName)
         }
 
-        this._onDidChangeContext.fire(new ContextChangeEventsArgs(this.profileName, this.explorerRegions))
+        this._onDidChangeContext.fire(new ContextChangeEventsArgs(
+            this.profileName,
+            this.accountId,
+            this.explorerRegions
+        ))
     }
 
     // returns the configured profile's account ID, if any
@@ -106,7 +110,11 @@ export class DefaultAwsContext implements AwsContext {
         await this.settingsConfiguration.writeSetting(accountIdSettingKey, accountId, vscode.ConfigurationTarget.Global)
 
         // nothing using this even at this time...is this necessary?
-        this._onDidChangeContext.fire(new ContextChangeEventsArgs(this.accountId, this.explorerRegions))
+        this._onDidChangeContext.fire(new ContextChangeEventsArgs(
+            this.profileName,
+            this.accountId,
+            this.explorerRegions
+        ))
     }
 
     // async so that we could *potentially* support other ways of obtaining
@@ -126,7 +134,11 @@ export class DefaultAwsContext implements AwsContext {
             }
         })
         await this.context.globalState.update(regionSettingKey, this.explorerRegions)
-        this._onDidChangeContext.fire(new ContextChangeEventsArgs(this.profileName, this.explorerRegions))
+        this._onDidChangeContext.fire(new ContextChangeEventsArgs(
+            this.profileName,
+            this.accountId,
+            this.explorerRegions
+        ))
     }
 
     // removes one or more regions from the user's preferred set, persisting the set afterwards as a
@@ -140,6 +152,10 @@ export class DefaultAwsContext implements AwsContext {
         })
 
         await this.context.globalState.update(regionSettingKey, this.explorerRegions)
-        this._onDidChangeContext.fire(new ContextChangeEventsArgs(this.profileName, this.explorerRegions))
+        this._onDidChangeContext.fire(new ContextChangeEventsArgs(
+            this.profileName,
+            this.accountId,
+            this.explorerRegions
+        ))
     }
 }
