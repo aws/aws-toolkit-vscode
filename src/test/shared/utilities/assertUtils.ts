@@ -32,6 +32,7 @@ export async function assertThrowsError(
     try {
         await action()
     } catch (err) {
+        assert.ok(err instanceof Error, 'caught error was not an instance of Error')
         error = err as Error
     } finally {
         // Test that an error was caught

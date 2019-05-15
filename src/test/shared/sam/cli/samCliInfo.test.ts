@@ -26,12 +26,7 @@ describe('SamCliInfoInvocation', async () => {
                 stdout = '',
                 stderr = '',
                 ...params
-            }: {
-                exitCode?: number
-                error?: Error | undefined
-                stdout?: string
-                stderr?: string
-            }
+            }: Partial<ChildProcessResult>
         ) {
             this.exitCode = exitCode
             this.error = params.error
@@ -59,6 +54,14 @@ describe('SamCliInfoInvocation', async () => {
     it('converts sam info response to SamCliInfoResponse', async () => {
         const response: SamCliInfoResponse | undefined = new TestSamCliInfoCommand()
             .convertOutput('{"version": "1.2.3"}')
+
+        assert.ok(response)
+        assert.strictEqual(response!.version, '1.2.3')
+    })
+
+    it('converts sam info response containing unexpected fields to SamCliInfoResponse', async () => {
+        const response: SamCliInfoResponse | undefined = new TestSamCliInfoCommand()
+            .convertOutput('{"version": "1.2.3", "bananas": "123"}')
 
         assert.ok(response)
         assert.strictEqual(response!.version, '1.2.3')
