@@ -9,6 +9,7 @@ import * as assert from 'assert'
 import { DefaultTelemetryService } from '../../../shared/telemetry/defaultTelemetryService'
 import { TelemetryPublisher } from '../../../shared/telemetry/telemetryPublisher'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
+import { FakeAwsContext } from '../../utilities/fakeAwsContext'
 
 class MockTelemetryPublisher implements TelemetryPublisher {
     public flushCount = 0
@@ -30,8 +31,9 @@ class MockTelemetryPublisher implements TelemetryPublisher {
 describe('DefaultTelemetryService', () => {
     it('publishes periodically if user has said ok', async () => {
         const mockContext = new FakeExtensionContext()
+        const fakeAwsContext = new FakeAwsContext()
         const mockPublisher = new MockTelemetryPublisher()
-        const service = new DefaultTelemetryService(mockContext, mockPublisher)
+        const service = new DefaultTelemetryService(mockContext, fakeAwsContext, mockPublisher)
         service.clearRecords()
         service.telemetryEnabled = true
         service.notifyOptOutOptionMade()
@@ -51,8 +53,9 @@ describe('DefaultTelemetryService', () => {
 
     it('events are kept in memory if user has not made a decision', async () => {
         const mockContext = new FakeExtensionContext()
+        const fakeAwsContext = new FakeAwsContext()
         const mockPublisher = new MockTelemetryPublisher()
-        const service = new DefaultTelemetryService(mockContext, mockPublisher)
+        const service = new DefaultTelemetryService(mockContext, fakeAwsContext, mockPublisher)
         service.clearRecords()
         service.telemetryEnabled = false
         service.flushPeriod = 10
@@ -81,8 +84,9 @@ describe('DefaultTelemetryService', () => {
 
     it('events are never recorded if telemetry has been disabled', async () => {
         const mockContext = new FakeExtensionContext()
+        const fakeAwsContext = new FakeAwsContext()
         const mockPublisher = new MockTelemetryPublisher()
-        const service = new DefaultTelemetryService(mockContext, mockPublisher)
+        const service = new DefaultTelemetryService(mockContext, fakeAwsContext, mockPublisher)
         service.clearRecords()
         service.telemetryEnabled = false
         service.notifyOptOutOptionMade()
@@ -106,8 +110,9 @@ describe('DefaultTelemetryService', () => {
 
     it('events are cleared after user disables telemetry via prompt', async () => {
         const mockContext = new FakeExtensionContext()
+        const fakeAwsContext = new FakeAwsContext()
         const mockPublisher = new MockTelemetryPublisher()
-        const service = new DefaultTelemetryService(mockContext, mockPublisher)
+        const service = new DefaultTelemetryService(mockContext, fakeAwsContext, mockPublisher)
         service.clearRecords()
 
         service.flushPeriod = 10
@@ -136,8 +141,9 @@ describe('DefaultTelemetryService', () => {
 
     it('events are kept after user enables telemetry via prompt', async () => {
         const mockContext = new FakeExtensionContext()
+        const fakeAwsContext = new FakeAwsContext()
         const mockPublisher = new MockTelemetryPublisher()
-        const service = new DefaultTelemetryService(mockContext, mockPublisher)
+        const service = new DefaultTelemetryService(mockContext, fakeAwsContext, mockPublisher)
         service.clearRecords()
 
         service.flushPeriod = 10

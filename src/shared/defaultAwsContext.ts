@@ -9,7 +9,7 @@ import * as AWS from 'aws-sdk'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { AwsContext, ContextChangeEventsArgs } from './awsContext'
-import { profileSettingKey, regionSettingKey } from './constants'
+import { accountIdSettingKey, profileSettingKey, regionSettingKey } from './constants'
 import { CredentialsProfileMru } from './credentials/credentialsProfileMru'
 import { CredentialsManager } from './credentialsManager'
 import { SettingsConfiguration } from './settingsConfiguration'
@@ -31,6 +31,8 @@ export class DefaultAwsContext implements AwsContext {
     // the user's credential context (currently this maps to an sdk/cli credential profile)
     private profileName: string | undefined
 
+    private accountId: string | undefined
+
     private readonly _credentialsManager: CredentialsManager
 
     public constructor(public settingsConfiguration: SettingsConfiguration, public context: vscode.ExtensionContext) {
@@ -39,6 +41,7 @@ export class DefaultAwsContext implements AwsContext {
         this.onDidChangeContext = this._onDidChangeContext.event
 
         this.profileName = settingsConfiguration.readSetting(profileSettingKey, '')
+        this.accountId = settingsConfiguration.readSetting(accountIdSettingKey, '')
         const persistedRegions = context.globalState.get<string[]>(regionSettingKey)
         this.explorerRegions = persistedRegions || []
 
@@ -90,6 +93,20 @@ export class DefaultAwsContext implements AwsContext {
         }
 
         this._onDidChangeContext.fire(new ContextChangeEventsArgs(this.profileName, this.explorerRegions))
+    }
+
+    // returns the configured profile's account ID, if any
+    public getCredentialAccountId(): string | undefined {
+        return this.accountId
+    }
+
+    // resets the context to the indicated profile, saving it into settings
+    public async setCredentialAccountId(accountId?: string): Promise<void> {
+        this.accountId = accountId
+        await this.settingsConfiguration.writeSetting(accountIdSettingKey, accountId, vscode.ConfigurationTarget.Global)
+
+        // nothing using this even at this time...is this necessary?
+        this._onDidChangeContext.fire(new ContextChangeEventsArgs(this.accountId, this.explorerRegions))
     }
 
     // async so that we could *potentially* support other ways of obtaining

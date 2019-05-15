@@ -15,6 +15,7 @@ describe('DefaultAwsContext', () => {
     const testRegion1Value: string = 're-gion-1'
     const testRegion2Value: string = 're-gion-2'
     const testProfileValue: string = 'profile1'
+    const testAccountIdValue: string = '123456789012'
 
     class ContextTestsSettingsConfigurationBase implements SettingsConfiguration {
         public readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {

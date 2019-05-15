@@ -8,6 +8,7 @@
 import { Credentials, Service } from 'aws-sdk'
 import * as os from 'os'
 import * as vscode from 'vscode'
+import { AwsContext } from '../awsContext'
 import * as constants from '../constants'
 import { ext } from '../extensionGlobals'
 import * as ClientTelemetry from './clienttelemetry'
@@ -21,7 +22,11 @@ export class DefaultTelemetryClient implements TelemetryClient {
 
     private static readonly PRODUCT_NAME = 'AWS Toolkit For VS Code'
 
-    private constructor(private readonly clientId: string, private readonly client: ClientTelemetry) {}
+    private constructor(
+        private readonly clientId: string,
+        private readonly client: ClientTelemetry,
+        private readonly trimmedAwsContext: Pick<AwsContext, 'getCredentialAccountId'>
+    ) {}
 
     /**
      * Returns failed events
@@ -37,7 +42,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                 OSVersion: os.release(),
                 ParentProduct: vscode.env.appName,
                 ParentProductVersion: vscode.version,
-                MetricData: toMetricData(batch)
+                MetricData: toMetricData(batch, this.trimmedAwsContext)
             }).promise()
             console.info(`Successfully sent a telemetry batch of ${batch.length}`)
         } catch (err) {
@@ -47,20 +52,26 @@ export class DefaultTelemetryClient implements TelemetryClient {
         }
     }
 
-    public static async createDefaultClient(clientId: string, region: string, credentials: Credentials)
-        : Promise<DefaultTelemetryClient> {
+    public static async createDefaultClient(
+        clientId: string,
+        region: string,
+        credentials: Credentials,
+        trimmedAwsContext: Pick<AwsContext, 'getCredentialAccountId'>
+    ): Promise<DefaultTelemetryClient> {
 
         await credentials.getPromise()
 
-        return new DefaultTelemetryClient(clientId, await ext.sdkClientBuilder.createAndConfigureServiceClient(
-            opts => new Service(opts), {
+        return new DefaultTelemetryClient(
+            clientId,
+            await ext.sdkClientBuilder.createAndConfigureServiceClient(opts => new Service(opts), {
                 // @ts-ignore: apiConfig is internal and not in the TS declaration file
                 apiConfig: apiConfig,
                 region: region,
                 credentials: credentials,
                 correctClockSkew: true,
                 endpoint: DefaultTelemetryClient.DEFAULT_TELEMETRY_ENDPOINT
-            }
-        ))
+            }),
+            trimmedAwsContext
+        )
     }
 }

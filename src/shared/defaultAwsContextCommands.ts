@@ -81,7 +81,10 @@ export class DefaultAWSContextCommands {
     public async onCommandLogin() {
         const profileName = await this.getProfileNameFromUser()
         if (profileName) {
+            // TODO: verify credentials
             await this._awsContext.setCredentialProfileName(profileName)
+            const accountId = await this.getAccountId()
+            await this._awsContext.setCredentialAccountId(accountId)
             this.refresh()
 
             await this.checkExplorerForDefaultRegion(profileName)
@@ -98,6 +101,8 @@ export class DefaultAWSContextCommands {
 
             if (profileName) {
                 await this._awsContext.setCredentialProfileName(profileName)
+                const accountId = await this.getAccountId()
+                await this._awsContext.setCredentialAccountId(accountId)
             }
         } else {
             // Get the editor set up and turn things over to the user
@@ -107,6 +112,7 @@ export class DefaultAWSContextCommands {
 
     public async onCommandLogout() {
         await this._awsContext.setCredentialProfileName()
+        await this._awsContext.setCredentialAccountId()
         this.refresh()
     }
 
@@ -409,5 +415,12 @@ export class DefaultAWSContextCommands {
     private async addRegion(profileRegion: string): Promise<void> {
         await this._awsContext.addExplorerRegion(profileRegion)
         this.refresh()
+    }
+
+    private async getAccountId(): Promise<string | undefined> {
+        const client = ext.toolkitClientBuilder.createStsClient('us-east-1')
+        const response = await client.getCallerIdentity()
+
+        return response ? response.Account : undefined
     }
 }

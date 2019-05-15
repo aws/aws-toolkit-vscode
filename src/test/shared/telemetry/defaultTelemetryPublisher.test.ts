@@ -9,6 +9,7 @@ import * as assert from 'assert'
 import AWS = require('aws-sdk')
 import { DefaultTelemetryPublisher } from '../../../shared/telemetry/defaultTelemetryPublisher'
 import { TelemetryClient } from '../../../shared/telemetry/telemetryClient'
+import { FakeAwsContext } from '../../utilities/fakeAwsContext'
 
 class MockTelemetryClient implements TelemetryClient {
     private readonly returnValue: any
@@ -24,7 +25,13 @@ class MockTelemetryClient implements TelemetryClient {
 
 describe('DefaultTelemetryPublisher', () => {
     it('enqueues events', () => {
-        const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
+        const publisher = new DefaultTelemetryPublisher(
+            '',
+            '',
+            new AWS.Credentials('', ''),
+            new FakeAwsContext(),
+            new MockTelemetryClient()
+        )
         publisher.enqueue(...[
             { namespace: 'name', createTime: new Date() },
         ])
@@ -40,7 +47,13 @@ describe('DefaultTelemetryPublisher', () => {
     })
 
     it('can flush single event', async () => {
-        const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
+        const publisher = new DefaultTelemetryPublisher(
+            '',
+            '',
+            new AWS.Credentials('', ''),
+            new FakeAwsContext(),
+            new MockTelemetryClient()
+        )
         publisher.enqueue(...[
             { namespace: 'name', createTime: new Date() },
         ])
@@ -59,6 +72,7 @@ describe('DefaultTelemetryPublisher', () => {
             '',
             '',
             new AWS.Credentials('', ''),
+            new FakeAwsContext(),
             new MockTelemetryClient(batch)
         )
         publisher.enqueue(...batch)

@@ -7,11 +7,18 @@
 
 import * as vscode from 'vscode'
 import { ext } from '../extensionGlobals'
-import { Datum } from './telemetryEvent'
+import { Unit } from './clienttelemetry'
 
 export interface TelemetryName {
     namespace: TelemetryNamespace | OldTelemetryNamespace
     name: string
+}
+
+export interface Datum {
+    name: string
+    value: number
+    unit?: Unit
+    metadata?: Map<string, string>
 }
 
 type OldTelemetryNamespace = 'Command'

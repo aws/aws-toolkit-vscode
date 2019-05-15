@@ -9,6 +9,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import uuidv4 = require('uuid/v4')
 import { ExtensionContext } from 'vscode'
+import { AwsContext } from '../awsContext'
 import * as filesystem from '../filesystem'
 import { DefaultTelemetryClient } from './defaultTelemetryClient'
 import { DefaultTelemetryPublisher } from './defaultTelemetryPublisher'
@@ -35,7 +36,11 @@ export class DefaultTelemetryService implements TelemetryService {
     private publisher?: TelemetryPublisher
     private readonly _eventQueue: TelemetryEvent[]
 
-    public constructor(private readonly context: ExtensionContext, publisher?: TelemetryPublisher) {
+    public constructor(
+        private readonly context: ExtensionContext,
+        private readonly trimmedAwsContext: Pick<AwsContext, 'getCredentialAccountId'>,
+        publisher?: TelemetryPublisher
+    ) {
         const persistPath = context.globalStoragePath
         this.persistFilePath = path.join(persistPath, 'telemetryCache')
 
@@ -183,7 +188,7 @@ export class DefaultTelemetryService implements TelemetryService {
             // if we don't have an identity, get one
             if (!identity) {
                 const identityPublisherTuple =
-                    await DefaultTelemetryPublisher.fromDefaultIdentityPool(clientId)
+                    await DefaultTelemetryPublisher.fromDefaultIdentityPool(clientId, this.trimmedAwsContext)
 
                 // save it
                 identityMap.set(poolId, identityPublisherTuple.cognitoIdentityId)
@@ -195,7 +200,7 @@ export class DefaultTelemetryService implements TelemetryService {
                 // return the publisher
                 return identityPublisherTuple.publisher
             } else {
-                return DefaultTelemetryPublisher.fromIdentityId(clientId, identity)
+                return DefaultTelemetryPublisher.fromIdentityId(clientId, identity, this.trimmedAwsContext)
             }
         } catch (err) {
             console.error(`Got ${err} while initializing telemetry publisher`)

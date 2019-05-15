@@ -5,17 +5,12 @@
 
 'use strict'
 
-import { MetadataEntry, MetricDatum, Unit } from './clienttelemetry'
+import { AwsContext } from '../awsContext'
+import { MetadataEntry, MetricDatum } from './clienttelemetry'
+import { Datum, TelemetryNamespace } from './telemetryUtils'
 
 const NAME_ILLEGAL_CHARS_REGEX = new RegExp('[^\\w+-.:]', 'g')
 const REMOVE_UNDERSCORES_REGEX = new RegExp('_', 'g')
-
-export interface Datum {
-    name: string
-    value: number
-    unit?: Unit
-    metadata?: Map<string, string>
-}
 
 export interface TelemetryEvent {
     namespace: string
@@ -23,21 +18,45 @@ export interface TelemetryEvent {
     data?: Datum[]
 }
 
-export function toMetricData(array: TelemetryEvent[]): MetricDatum[] {
+export function toMetricData(
+    array: TelemetryEvent[],
+    trimmedAwsContext: Pick<AwsContext, 'getCredentialAccountId'>
+): MetricDatum[] {
     return ([] as MetricDatum[]).concat(
         ...array.map( metricEvent => {
 
             const namespace = metricEvent.namespace.replace(REMOVE_UNDERSCORES_REGEX, '')
+            let metadata: MetadataEntry[] = []
+            const account = trimmedAwsContext.getCredentialAccountId()
+
+            if (namespace === TelemetryNamespace.Session) {
+                // this matches JetBrains' functionality: the AWS account ID is not set on session start.
+                metadata.push({
+                    Key: 'account',
+                    Value: undefined
+                })
+            } else {
+                if (account) {
+                    metadata.push({
+                        Key: 'account',
+                        Value: account
+                    })
+                } else {
+                    metadata.push({
+                        Key: 'account',
+                        Value: ''
+                    })
+                }
+            }
 
             if (metricEvent.data !== undefined) {
                 const mappedEventData = metricEvent.data.map( datum => {
-                    let metadata: MetadataEntry[] | undefined
                     let unit = datum.unit
 
                     if (datum.metadata !== undefined) {
-                        metadata = Array.from(datum.metadata).map(entry => {
+                        metadata = metadata.concat(Array.from(datum.metadata).map(entry => {
                             return { Key: entry[0], Value: entry[1] }
-                        })
+                        }))
                     }
 
                     if (unit === undefined) {
@@ -63,7 +82,8 @@ export function toMetricData(array: TelemetryEvent[]): MetricDatum[] {
                 MetricName: namespace.replace(NAME_ILLEGAL_CHARS_REGEX, ''),
                 EpochTimestamp: metricEvent.createTime.getTime(),
                 Unit: 'None',
-                Value: 0
+                Value: 0,
+                Metadata: metadata
             }
         })
     )

@@ -25,6 +25,9 @@ export interface AwsContext {
     // resets the context to the indicated profile, saving it into settings
     setCredentialProfileName(profileName?: string): Promise<void>
 
+    getCredentialAccountId(): string | undefined
+    setCredentialAccountId(accountId?: string): Promise<void>
+
     getExplorerRegions(): Promise<string[]>
 
     // adds one or more regions into the preferred set

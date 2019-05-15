@@ -68,7 +68,7 @@ export async function activate(context: vscode.ExtensionContext) {
         ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
         ext.statusBar = new AWSStatusBar(awsContext, context)
-        ext.telemetry = new DefaultTelemetryService(context)
+        ext.telemetry = new DefaultTelemetryService(context, awsContext)
         new AwsTelemetryOptOut(ext.telemetry, new DefaultSettingsConfiguration(extensionSettingsPrefix))
             .ensureUserNotified()
             .catch((err) => {
