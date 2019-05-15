@@ -35,7 +35,7 @@ class SamInitProjectBuilderIntelliJTest(private val testParameters: TestParamete
     }
 
     @Test
-    fun testNewFromTemplate_java_maven() {
+    fun testNewFromTemplate() {
         welcomeFrame {
             createNewProject()
             newProjectDialogModel.createServerlessProject(

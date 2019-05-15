@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.fixtures
 
-import com.intellij.testGuiFramework.framework.Timeouts
 import com.intellij.testGuiFramework.impl.button
 import com.intellij.testGuiFramework.impl.combobox
 import com.intellij.testGuiFramework.impl.jList
@@ -20,32 +19,6 @@ import com.intellij.testGuiFramework.util.step
 
 private const val AWS_GROUP = "AWS"
 
-fun NewProjectDialogModel.assertAwsGroupPresent() {
-    with(connectDialog()) {
-        // TODO: PyCharm doesnt have Empty Project
-        val list = jList(NewProjectDialogModel.Constants.groupEmptyProject, timeout = Timeouts.seconds05)
-
-        step("check '$AWS_GROUP' group is present in the New Project dialog") {
-            assert(list.contents().contains(AWS_GROUP)) {
-                "'$AWS_GROUP' group is absent"
-            }
-        }
-    }
-}
-
-fun NewProjectDialogModel.selectAwsProjectGroup() {
-    with(connectDialog()) {
-        step("select '$AWS_GROUP' project group") {
-            waitLoadingTemplates()
-            assertAwsGroupPresent()
-
-            val list = jList(AWS_GROUP)
-            step("click '$AWS_GROUP'") { list.clickItem(AWS_GROUP) }
-            list.requireSelection(AWS_GROUP)
-        }
-    }
-}
-
 data class ServerlessProjectOptions(val runtime: String, val template: String)
 
 fun NewProjectDialogModel.createServerlessProject(
@@ -57,7 +30,13 @@ fun NewProjectDialogModel.createServerlessProject(
         fileSystemUtils.assertProjectPathExists(projectPath)
 
         with(connectDialog()) {
-            selectAwsProjectGroup()
+            step("select '$AWS_GROUP' project group") {
+                waitLoadingTemplates()
+
+                val list = jList(AWS_GROUP)
+                step("click '$AWS_GROUP'") { list.clickItem(AWS_GROUP) }
+                list.requireSelection(AWS_GROUP)
+            }
 
             val projectType = "AWS Serverless Application"
             step("select project type '$projectType'") {
