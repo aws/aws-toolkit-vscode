@@ -10,7 +10,7 @@ import { Disposable } from 'vscode'
 import { ext } from '../../../shared/extensionGlobals'
 import { TelemetryEvent } from '../../../shared/telemetry/telemetryEvent'
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
-import { registerCommand } from '../../../shared/telemetry/telemetryUtils'
+import { registerCommand, TelemetryNamespace } from '../../../shared/telemetry/telemetryUtils'
 
 class MockTelemetryService implements TelemetryService {
     public persistFilePath: string = ''
@@ -42,13 +42,16 @@ describe('telemetryUtils', () => {
                     // vscode.commands.registerCommand is not async, but we can't check until the callback is complete
                     callback().then(() => {
                         assert.notStrictEqual(mockService.lastEvent, undefined)
-                        assert.notStrictEqual(mockService.lastEvent!.namespace, undefined)
                         assert.notStrictEqual(mockService.lastEvent!.createTime, undefined)
                         assert.notStrictEqual(mockService.lastEvent!.data, undefined)
-                        assert.notStrictEqual(mockService.lastEvent!.data![0].name, undefined)
                         assert.notStrictEqual(mockService.lastEvent!.data![0].metadata, undefined)
                         assert.notStrictEqual(mockService.lastEvent!.data![0].metadata!.get('duration'), undefined)
 
+                        assert.strictEqual(
+                            mockService.lastEvent!.data![0].metadata!.get('result'), 'Succeeded'
+                        )
+                        assert.strictEqual(mockService.lastEvent!.namespace, 'Command')
+                        assert.strictEqual(mockService.lastEvent!.data![0].name, 'command')
                         done()
                     }).catch(err => {
                         throw err
@@ -58,6 +61,68 @@ describe('telemetryUtils', () => {
                 },
                 command: 'command',
                 callback: async () => {}
+            })
+        })
+
+        it('records telemetry with custom names and namespaces', (done) => {
+            registerCommand({
+                register: (_command, callback: (...args: any[]) => Promise<void>, _thisArg) => {
+                    // vscode.commands.registerCommand is not async, but we can't check until the callback is complete
+                    callback().then(() => {
+                        assert.notStrictEqual(mockService.lastEvent, undefined)
+                        assert.notStrictEqual(mockService.lastEvent!.createTime, undefined)
+                        assert.notStrictEqual(mockService.lastEvent!.data, undefined)
+                        assert.notStrictEqual(mockService.lastEvent!.data![0].metadata, undefined)
+                        assert.notStrictEqual(mockService.lastEvent!.data![0].metadata!.get('duration'), undefined)
+
+                        assert.strictEqual(
+                            mockService.lastEvent!.data![0].metadata!.get('result'), 'Succeeded'
+                        )
+                        assert.strictEqual(mockService.lastEvent!.namespace, TelemetryNamespace.Aws)
+                        assert.strictEqual(mockService.lastEvent!.data![0].name, 'thisAintYourFathersNameField')
+                        done()
+                    }).catch(err => {
+                        throw err
+                    })
+
+                    return Disposable.from()
+                },
+                command: 'command',
+                callback: async () => {},
+                telemetryName: {
+                    namespace: TelemetryNamespace.Aws,
+                    name: 'thisAintYourFathersNameField'
+                }
+            })
+        })
+
+        it('records telemetry with failures', (done) => {
+            registerCommand({
+                register: (_command, callback: (...args: any[]) => Promise<void>, _thisArg) => {
+                    // vscode.commands.registerCommand is not async, but we can't check until the callback is complete
+                    callback().then(() => {
+                        assert.fail('skip me please!')
+                        done()
+                    }).catch(err => {
+                        console.log(mockService.lastEvent!.data![0].metadata)
+                        assert.notStrictEqual(mockService.lastEvent, undefined)
+                        assert.notStrictEqual(mockService.lastEvent!.createTime, undefined)
+                        assert.notStrictEqual(mockService.lastEvent!.data, undefined)
+                        assert.notStrictEqual(mockService.lastEvent!.data![0].metadata, undefined)
+                        assert.notStrictEqual(mockService.lastEvent!.data![0].metadata!.get('duration'), undefined)
+
+                        assert.strictEqual(
+                            mockService.lastEvent!.data![0].metadata!.get('result'), 'Failed'
+                        )
+                        assert.strictEqual(mockService.lastEvent!.namespace, 'Command')
+                        assert.strictEqual(mockService.lastEvent!.data![0].name, 'command')
+                        done()
+                    })
+
+                    return Disposable.from()
+                },
+                command: 'command',
+                callback: async () => { throw new Error('we\'re all gonna die!') }
             })
         })
     })

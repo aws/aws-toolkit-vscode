@@ -8,6 +8,7 @@
 import { MetadataEntry, MetricDatum, Unit } from './clienttelemetry'
 
 const NAME_ILLEGAL_CHARS_REGEX = new RegExp('[^\\w+-.:]', 'g')
+const REMOVE_UNDERSCORES_REGEX = new RegExp('_', 'g')
 
 export interface Datum {
     name: string
@@ -25,6 +26,9 @@ export interface TelemetryEvent {
 export function toMetricData(array: TelemetryEvent[]): MetricDatum[] {
     return ([] as MetricDatum[]).concat(
         ...array.map( metricEvent => {
+
+            const namespace = metricEvent.namespace.replace(REMOVE_UNDERSCORES_REGEX, '')
+
             if (metricEvent.data !== undefined) {
                 const mappedEventData = metricEvent.data.map( datum => {
                     let metadata: MetadataEntry[] | undefined
@@ -40,8 +44,10 @@ export function toMetricData(array: TelemetryEvent[]): MetricDatum[] {
                         unit = 'None'
                     }
 
+                    const name = datum.name.replace(REMOVE_UNDERSCORES_REGEX, '')
+
                     return {
-                        MetricName: `${metricEvent.namespace}.${datum.name}`.replace(NAME_ILLEGAL_CHARS_REGEX, ''),
+                        MetricName: `${namespace}_${name}`.replace(NAME_ILLEGAL_CHARS_REGEX, ''),
                         EpochTimestamp: metricEvent.createTime.getTime(),
                         Unit: unit,
                         Value: datum.value,
@@ -54,7 +60,7 @@ export function toMetricData(array: TelemetryEvent[]): MetricDatum[] {
 
             // case where there are no datum attached to the event, but we should still publish this
             return {
-                MetricName: metricEvent.namespace.replace(NAME_ILLEGAL_CHARS_REGEX, ''),
+                MetricName: namespace.replace(NAME_ILLEGAL_CHARS_REGEX, ''),
                 EpochTimestamp: metricEvent.createTime.getTime(),
                 Unit: 'None',
                 Value: 0

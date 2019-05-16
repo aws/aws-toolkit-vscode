@@ -73,8 +73,10 @@ describe('DefaultTelemetryService', () => {
         // events are, in order, the dummy test event, the start event, and the shutdown event
         // test event is first since we record it before starting the service
         assert.strictEqual(service.records[0].namespace, 'name')
-        assert.strictEqual(service.records[1].namespace, 'ToolkitStart')
-        assert.strictEqual(service.records[2].namespace, 'ToolkitEnd')
+        assert.strictEqual(service.records[1].namespace, 'session')
+        assert.strictEqual(service.records[1].data![0].name, 'start')
+        assert.strictEqual(service.records[2].namespace, 'session')
+        assert.strictEqual(service.records[2].data![0].name, 'end')
     })
 
     it('events are never recorded if telemetry has been disabled', async () => {
