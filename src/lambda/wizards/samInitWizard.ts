@@ -22,6 +22,7 @@ import { MultiStepWizard, WizardStep } from '../wizards/multiStepWizard'
 export interface CreateNewSamAppWizardContext {
     readonly lambdaRuntimes: immutable.Set<lambdaRuntime.SamLambdaRuntime>
     readonly workspaceFolders: vscode.WorkspaceFolder[] | undefined
+    readonly extContext: Pick<vscode.ExtensionContext, 'asAbsolutePath'>
 
     promptUserForRuntime(
         currRuntime?: lambdaRuntime.SamLambdaRuntime
@@ -36,18 +37,18 @@ export interface CreateNewSamAppWizardContext {
     ): Thenable<vscode.Uri[] | undefined>
 }
 
-class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
+export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
     public readonly lambdaRuntimes = lambdaRuntime.samLambdaRuntimes
     public readonly showOpenDialog = vscode.window.showOpenDialog
     private readonly helpButton = createHelpButton(
-        this.vscodeContext,
+        this.extContext,
         localize(
             'AWS.command.help',
             'View Documentation'
         )
     )
 
-    public constructor(private readonly vscodeContext: Pick<vscode.ExtensionContext, 'asAbsolutePath'>) {
+    public constructor(readonly extContext: Pick<vscode.ExtensionContext, 'asAbsolutePath'>) {
     }
 
     public get workspaceFolders(): vscode.WorkspaceFolder[] | undefined {
@@ -181,18 +182,11 @@ export class CreateNewSamAppWizard extends MultiStepWizard<SamCliInitArgs> {
     private runtime?: lambdaRuntime.SamLambdaRuntime
     private location?: vscode.Uri
     private name?: string
-    private readonly context: CreateNewSamAppWizardContext
 
     public constructor(
-        private readonly vscodeContext: Pick<vscode.ExtensionContext, 'asAbsolutePath' | 'globalState'>,
-        context?: CreateNewSamAppWizardContext
+        private readonly context: CreateNewSamAppWizardContext
     ) {
         super()
-        if (!context) {
-            this.context = new DefaultCreateNewSamAppWizardContext(this.vscodeContext)
-        } else {
-            this.context = context
-        }
     }
 
     protected get startStep() {

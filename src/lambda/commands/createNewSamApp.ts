@@ -12,7 +12,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { SamCliInitArgs, SamCliInitInvocation } from '../../shared/sam/cli/samCliInit'
 import { getMainSourceFileUri } from '../utilities/getMainSourceFile'
-import { CreateNewSamAppWizard } from '../wizards/samInitWizard'
+import { CreateNewSamAppWizard, DefaultCreateNewSamAppWizardContext } from '../wizards/samInitWizard'
 
 export const URI_TO_OPEN_ON_INIT_KEY = 'URI_TO_OPEN_ON_INIT_KEY'
 
@@ -50,7 +50,8 @@ interface NewSamAppMetadata {
 export async function createNewSamApp(
     context: Pick<vscode.ExtensionContext, 'asAbsolutePath' | 'globalState'>
 ): Promise<NewSamAppMetadata | undefined> {
-    const config = await new CreateNewSamAppWizard(context).run()
+    const wizardContext = new DefaultCreateNewSamAppWizardContext(context)
+    const config = await new CreateNewSamAppWizard(wizardContext).run()
     if (!config) {
         return undefined
     }

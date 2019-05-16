@@ -31,6 +31,34 @@ function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
 }
 
 class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
+
+    public get lambdaRuntimes(): immutable.Set<SamLambdaRuntime> {
+        if (Array.isArray(this._lambdaRuntimes)) {
+            if (this._lambdaRuntimes!.length <= 0) {
+                throw new Error('lambdaRuntimes was called more times than expected')
+            }
+
+            return (this._lambdaRuntimes as immutable.Set<SamLambdaRuntime>[]).pop() || immutable.Set()
+        }
+
+        return (this._lambdaRuntimes as immutable.Set<SamLambdaRuntime>) || immutable.Set()
+    }
+
+    public get workspaceFolders(): vscode.WorkspaceFolder[] {
+        if (isMultiDimensionalArray(this._workspaceFolders)) {
+            if (this._workspaceFolders!.length <= 0) {
+                throw new Error('workspaceFolders was called more times than expected')
+            }
+
+            return (this._workspaceFolders as vscode.WorkspaceFolder[][]).pop() || []
+        }
+
+        return (this._workspaceFolders as vscode.WorkspaceFolder[]) || []
+
+    }
+
+    public readonly extContext = new FakeExtensionContext()
+
     /**
      * @param  {vscode.WorkspaceFolder[] | vscode.WorkspaceFolder[][]} _workspaceFolders
      *         The value to return from context.workspaceFolders.
@@ -62,31 +90,6 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
         if (isMultiDimensionalArray(this.openDialogResult)) {
             this.openDialogResult = (openDialogResult as vscode.Uri[][]).reverse()
         }
-    }
-
-    public get lambdaRuntimes(): immutable.Set<SamLambdaRuntime> {
-        if (Array.isArray(this._lambdaRuntimes)) {
-            if (this._lambdaRuntimes!.length <= 0) {
-                throw new Error('lambdaRuntimes was called more times than expected')
-            }
-
-            return (this._lambdaRuntimes as immutable.Set<SamLambdaRuntime>[]).pop() || immutable.Set()
-        }
-
-        return (this._lambdaRuntimes as immutable.Set<SamLambdaRuntime>) || immutable.Set()
-    }
-
-    public get workspaceFolders(): vscode.WorkspaceFolder[] {
-        if (isMultiDimensionalArray(this._workspaceFolders)) {
-            if (this._workspaceFolders!.length <= 0) {
-                throw new Error('workspaceFolders was called more times than expected')
-            }
-
-            return (this._workspaceFolders as vscode.WorkspaceFolder[][]).pop() || []
-        }
-
-        return (this._workspaceFolders as vscode.WorkspaceFolder[]) || []
-
     }
 
     public async showOpenDialog(
@@ -136,9 +139,6 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
 
 describe('CreateNewSamAppWizard', async () => {
     describe('runtime', async () => {
-
-        const extContext = new FakeExtensionContext()
-
         it('uses user response as runtime', async () => {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
@@ -146,7 +146,7 @@ describe('CreateNewSamAppWizard', async () => {
                 'myName',
                 [vscode.Uri.file(path.join('my', 'workspace', 'folder'))]
             )
-            const wizard = new CreateNewSamAppWizard(extContext, context)
+            const wizard = new CreateNewSamAppWizard(context)
             const args = await wizard.run()
 
             assert.ok(args)
@@ -160,7 +160,7 @@ describe('CreateNewSamAppWizard', async () => {
                 'myName',
                 [vscode.Uri.file(path.join('my', 'workspace', 'folder'))]
             )
-            const wizard = new CreateNewSamAppWizard(extContext, context)
+            const wizard = new CreateNewSamAppWizard(context)
             const args = await wizard.run()
 
             assert.ok(!args)
@@ -168,9 +168,6 @@ describe('CreateNewSamAppWizard', async () => {
     })
 
     describe('location', async () => {
-
-        const extContext = new FakeExtensionContext()
-
         it('uses user response as location', async () => {
             const locationPath = path.join('my', 'quick', 'pick', 'result')
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
@@ -179,7 +176,7 @@ describe('CreateNewSamAppWizard', async () => {
                 'myName',
                 [vscode.Uri.file(locationPath)]
             )
-            const wizard = new CreateNewSamAppWizard(extContext, context)
+            const wizard = new CreateNewSamAppWizard(context)
             const args = await wizard.run()
 
             assert.ok(args)
@@ -200,7 +197,7 @@ describe('CreateNewSamAppWizard', async () => {
                     [vscode.Uri.file(locationPath)]
                 ]
             )
-            const wizard = new CreateNewSamAppWizard(extContext, context)
+            const wizard = new CreateNewSamAppWizard(context)
             const args = await wizard.run()
 
             assert.ok(args)
@@ -218,7 +215,7 @@ describe('CreateNewSamAppWizard', async () => {
                 name,
                 [vscode.Uri.file(locationPath)]
             )
-            const wizard = new CreateNewSamAppWizard(extContext, context)
+            const wizard = new CreateNewSamAppWizard(context)
             const args = await wizard.run()
 
             assert.ok(args)
@@ -242,7 +239,7 @@ describe('CreateNewSamAppWizard', async () => {
                 'myName',
                 []
             )
-            const wizard = new CreateNewSamAppWizard(extContext, context)
+            const wizard = new CreateNewSamAppWizard(context)
             const args = await wizard.run()
 
             assert.ok(args)
@@ -251,9 +248,6 @@ describe('CreateNewSamAppWizard', async () => {
     })
 
     describe('name', async () => {
-
-        const extContext = new FakeExtensionContext()
-
         it('uses user response as name', async () => {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
@@ -261,7 +255,7 @@ describe('CreateNewSamAppWizard', async () => {
                 'myName',
                 [vscode.Uri.file(path.join('my', 'quick', 'pick', 'result'))]
             )
-            const wizard = new CreateNewSamAppWizard(extContext, context)
+            const wizard = new CreateNewSamAppWizard(context)
             const args = await wizard.run()
 
             assert.ok(args)
@@ -278,7 +272,7 @@ describe('CreateNewSamAppWizard', async () => {
                     [vscode.Uri.file(path.join('my', 'quick', 'pick', 'result', '2'))]
                 ]
             )
-            const wizard = new CreateNewSamAppWizard(extContext, context)
+            const wizard = new CreateNewSamAppWizard(context)
             const args = await wizard.run()
 
             assert.ok(args)
