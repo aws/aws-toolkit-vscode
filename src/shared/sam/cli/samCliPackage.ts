@@ -15,20 +15,21 @@ export class SamCliPackageInvocation {
         private readonly templateFile: string,
         private readonly outputTemplateFile: string,
         private readonly s3Bucket: string,
-        private readonly invoker: SamCliProcessInvoker =
-        new DefaultSamCliProcessInvoker(),
-        private readonly region: string
-    ) {
-    }
+        private readonly invoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker(),
+        private readonly region: string,
+        private readonly profile: string
+    ) {}
 
     public async execute(): Promise<void> {
         const logger: Logger = getLogger()
+
         const { exitCode, error, stderr, stdout }: ChildProcessResult = await this.invoker.invoke(
             'package',
             '--template-file', this.templateFile,
             '--s3-bucket', this.s3Bucket,
             '--output-template-file', this.outputTemplateFile,
-            '--region', this.region
+            '--region', this.region,
+            '--profile', this.profile
         )
 
         if (exitCode === 0) {

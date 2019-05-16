@@ -9,6 +9,8 @@ import * as del from 'del'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+
+import { AwsContext, NoActiveCredentialError } from '../../shared/awsContext'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { DefaultValidatingSamCliProcessInvoker } from '../../shared/sam/cli/defaultValidatingSamCliProcessInvoker'
@@ -20,14 +22,17 @@ import { SamDeployWizard, SamDeployWizardResponse } from '../wizards/samDeployWi
 
 const localize = nls.loadMessageBundle()
 
-export async function deploySamApplication({
-    invoker = new DefaultValidatingSamCliProcessInvoker({}),
-    ...restParams
-}: {
-    invoker?: SamCliProcessInvoker
-    outputChannel: vscode.OutputChannel
-    regionProvider: RegionProvider
-}) {
+export async function deploySamApplication(
+    {
+        invoker = new DefaultValidatingSamCliProcessInvoker({}),
+        ...restParams
+    }: {
+        invoker?: SamCliProcessInvoker
+        outputChannel: vscode.OutputChannel
+        regionProvider: RegionProvider
+    },
+    awsContext: Pick<AwsContext, 'getCredentialProfileName'>
+) {
     const args: SamDeployWizardResponse | undefined = await new SamDeployWizard(restParams.regionProvider).run()
     if (!args) {
         return
@@ -40,7 +45,14 @@ export async function deploySamApplication({
         const buildTemplatePath = path.join(buildDestination, 'template.yaml')
         const outputTemplatePath = path.join(tempFolder, 'template.yaml')
         let stage: 'starting up' | 'building' | 'packaging' | 'deploying' = 'starting up'
+
+        const profile = awsContext.getCredentialProfileName()
+
         try {
+            if (!profile) {
+                throw new NoActiveCredentialError()
+            }
+
             restParams.outputChannel.show(true)
             stage = 'building'
             const build = new SamCliBuildInvocation(
@@ -49,9 +61,13 @@ export async function deploySamApplication({
                     baseDir: undefined,
                     templatePath: template.fsPath,
                     invoker
-                })
-            // TODO: Add nls support
-            restParams.outputChannel.appendLine('Building SAM Application...')
+                }
+            )
+
+            restParams.outputChannel.appendLine(localize(
+                'AWS.samcli.deploy.workflow.init',
+                'Building SAM Application...'
+            ))
             await build.execute()
 
             stage = 'packaging'
@@ -60,10 +76,15 @@ export async function deploySamApplication({
                 outputTemplatePath,
                 s3Bucket,
                 invoker,
-                region
+                region,
+                profile
             )
-            // TODO: Add nls support
-            restParams.outputChannel.appendLine(`Packaging SAM Application to S3 Bucket: ${s3Bucket}`)
+
+            restParams.outputChannel.appendLine(localize(
+                'AWS.samcli.deploy.workflow.packaging',
+                'Packaging SAM Application to S3 Bucket: {0} with profile: {1}',
+                s3Bucket, profile
+            ))
             await packageInvocation.execute()
 
             stage = 'deploying'
@@ -72,29 +93,40 @@ export async function deploySamApplication({
                 stackName,
                 region,
                 parameterOverrides,
-                invoker
+                invoker,
+                profile
             )
             // Deploying can take a very long time for Python Lambda's with native dependencies so user needs feedback
             restParams.outputChannel.appendLine(localize(
-                'AWS.samcli.deploy.stackName.initiated',
-                'Deploying {0} stack...',
-                stackName
+                'AWS.samcli.deploy.workflow.stackName.initiated',
+                'Deploying SAM Application to CloudFormation Stack: {0} with profile: {1}',
+                stackName, profile
             ))
             await deployInvocation.execute()
-            // TODO: Add nls support
-            const msg = `Successfully deployed SAM Application to CloudFormation Stack: ${stackName}`
+
+            const msg = localize(
+                'AWS.samcli.deploy.workflow.success',
+                'Successfully deployed SAM Application to CloudFormation Stack: {0} with profile: {1}',
+                stackName, profile
+            )
             restParams.outputChannel.appendLine(msg)
             // TODO: Is this the right way to provide this feedback?
             vscode.window.showInformationMessage(msg)
         } catch (err) {
-            // TODO: Add nls support
-            let msg = `Failed to deploy SAM application. Error while ${stage}: ${String(err)}`
+            let msg = localize(
+                'AWS.samcli.deploy.workflow.error',
+                'Failed to deploy SAM application. Error while {0}: {1}',
+                stage, String(err)
+            )
             // tslint:disable-next-line:max-line-length
             // detect error message from https://github.com/aws/aws-cli/blob/4ff0cbacbac69a21d4dd701921fe0759cf7852ed/awscli/customizations/cloudformation/exceptions.py#L42
             // and append region to assist in troubleshooting the error
             // (command uses CLI configured value--users that don't know this and omit region won't see error)
             if (msg.includes(`aws cloudformation describe-stack-events --stack-name ${args.stackName}`)) {
                 msg += ` --region ${args.region}`
+                if (profile) {
+                    msg += ` --profile ${profile}`
+                }
             }
             restParams.outputChannel.appendLine(msg)
             // TODO: Is this the right way to provide this feedback?

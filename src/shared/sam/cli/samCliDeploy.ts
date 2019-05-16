@@ -18,8 +18,8 @@ export class SamCliDeployInvocation {
         private readonly region: string,
         private readonly parameterOverrides: Map<string, string>,
         private readonly invoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker(),
-    ) {
-    }
+        private readonly profile: string
+    ) {}
 
     public async execute(): Promise<void> {
         const logger: Logger = getLogger()
@@ -30,6 +30,7 @@ export class SamCliDeployInvocation {
             '--stack-name', this.stackName,
             '--capabilities', 'CAPABILITY_IAM',
             '--region', this.region,
+            '--profile', this.profile
         ]
         if (this.parameterOverrides.size > 0) {
             const overrides = [
