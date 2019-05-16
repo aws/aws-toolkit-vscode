@@ -5,7 +5,6 @@
 
 'use strict'
 
-import { Stats } from 'fs'
 import * as semver from 'semver'
 import { stat } from '../../filesystem'
 import { SamCliConfiguration } from './samCliConfiguration'
@@ -56,12 +55,17 @@ export interface SamCliValidator {
     detectValidSamCli(): Promise<SamCliValidatorResult>
 }
 
-export abstract class BaseSamCliValidator implements SamCliValidator {
-    private cachedSamInfoResponse?: SamCliInfoResponse
-    // The modification timestamp of SAM CLI is used as the "cache key"
-    private cachedSamInfoResponseSource?: Date
+export interface SamCliValidatorContext {
+    samCliLocation: string | undefined
+    getSamCliExecutableId(): Promise<string>
+    getSamCliInfo(): Promise<SamCliInfoResponse>
+}
 
-    public constructor() {
+export class DefaultSamCliValidator implements SamCliValidator {
+    private cachedSamInfoResponse?: SamCliInfoResponse
+    private cachedSamCliVersionId?: string
+
+    public constructor(private readonly context: SamCliValidatorContext) {
     }
 
     public async detectValidSamCli(): Promise<SamCliValidatorResult> {
@@ -69,43 +73,37 @@ export abstract class BaseSamCliValidator implements SamCliValidator {
             samCliFound: false
         }
 
-        const samCliLocation = this.getSamCliLocation()
+        const samCliLocation = this.context.samCliLocation
         if (samCliLocation) {
             result.samCliFound = true
 
-            result.versionValidation = await this.getVersionValidatorResult(samCliLocation)
+            result.versionValidation = await this.getVersionValidatorResult()
         }
 
         return result
     }
 
     // This method is public for testing purposes
-    public async getVersionValidatorResult(samCliLocation: string): Promise<SamCliVersionValidatorResult> {
-        const cliStat: Pick<Stats, 'mtime'> = await this.getSamCliStat(samCliLocation)
-        if (!this.isSamCliVersionCached(cliStat.mtime)) {
-            this.cachedSamInfoResponse = await this.getInfo(samCliLocation)
-            this.cachedSamInfoResponseSource = cliStat.mtime
+    public async getVersionValidatorResult(): Promise<SamCliVersionValidatorResult> {
+        const samCliId: string = await this.context.getSamCliExecutableId()
+        if (!this.isSamCliVersionCached(samCliId)) {
+            this.cachedSamInfoResponse = await this.context.getSamCliInfo()
+            this.cachedSamCliVersionId = samCliId
         }
 
         const version: string = this.cachedSamInfoResponse!.version
 
         return {
             version,
-            validation: BaseSamCliValidator.validateSamCliVersion(version),
+            validation: DefaultSamCliValidator.validateSamCliVersion(version),
         }
     }
 
-    protected abstract async getSamCliStat(samCliLocation: string): Promise<Pick<Stats, 'mtime'>>
-
-    protected abstract getSamCliLocation(): string | undefined
-
-    protected abstract async getInfo(samCliLocation: string): Promise<SamCliInfoResponse>
-
-    private isSamCliVersionCached(samCliLastModifiedOn: Date): boolean {
+    private isSamCliVersionCached(samCliVersionId: string): boolean {
         if (!this.cachedSamInfoResponse) { return false }
-        if (!this.cachedSamInfoResponseSource) { return false }
+        if (!this.cachedSamCliVersionId) { return false }
 
-        return this.cachedSamInfoResponseSource === samCliLastModifiedOn
+        return this.cachedSamCliVersionId === samCliVersionId
     }
 
     public static validateSamCliVersion(version?: string): SamCliVersionValidation {
@@ -129,24 +127,28 @@ export abstract class BaseSamCliValidator implements SamCliValidator {
     }
 }
 
-export class DefaultSamCliValidator extends BaseSamCliValidator {
-
+export class DefaultSamCliValidatorContext implements SamCliValidatorContext {
     public constructor(
         private readonly samCliConfiguration: SamCliConfiguration,
         private readonly invoker: SamCliProcessInvoker
     ) {
-        super()
     }
 
-    protected async getSamCliStat(samCliLocation: string): Promise<Stats> {
-        return stat(samCliLocation)
-    }
-
-    protected getSamCliLocation(): string | undefined {
+    public get samCliLocation(): string | undefined {
         return this.samCliConfiguration.getSamCliLocation()
     }
 
-    protected async getInfo(samCliLocation: string): Promise<SamCliInfoResponse> {
+    public async getSamCliExecutableId(): Promise<string> {
+        // Function should never get called if there is no SAM CLI
+        if (!this.samCliLocation) { throw new Error('SAM CLI does not exist') }
+
+        // The modification timestamp of SAM CLI is used as the "distinct executable id"
+        const stats = await stat(this.samCliLocation)
+
+        return stats.mtime.valueOf().toString()
+    }
+
+    public async getSamCliInfo(): Promise<SamCliInfoResponse> {
         const samCliInfo = new SamCliInfoInvocation(this.invoker)
 
         return await samCliInfo.execute()

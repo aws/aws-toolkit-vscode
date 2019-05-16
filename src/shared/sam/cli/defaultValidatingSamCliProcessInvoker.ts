@@ -16,9 +16,11 @@ import { SamCliProcessInvoker } from './samCliInvokerUtils'
 import { notifySamCliValidation } from './samCliValidationNotification'
 import {
     DefaultSamCliValidator,
+    DefaultSamCliValidatorContext,
     InvalidSamCliError,
     InvalidSamCliVersionError,
-    SamCliNotFoundError, SamCliValidator,
+    SamCliNotFoundError,
+    SamCliValidator,
     SamCliVersionValidation
 } from './samCliValidator'
 
@@ -41,8 +43,10 @@ export class DefaultValidatingSamCliProcessInvoker implements SamCliProcessInvok
 
         // Regardless of the sam cli invoker provided, the default validator will always use the standard invoker
         this.validator = params.validator || new DefaultSamCliValidator(
-            this.invokerContext.cliConfig,
-            new DefaultSamCliProcessInvoker(this.invokerContext),
+            new DefaultSamCliValidatorContext(
+                this.invokerContext.cliConfig,
+                new DefaultSamCliProcessInvoker(this.invokerContext),
+            )
         )
     }
 
