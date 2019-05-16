@@ -6,29 +6,8 @@
 'use strict'
 
 import * as assert from 'assert'
-import { SpawnOptions } from 'child_process'
 import { SamCliDeployInvocation } from '../../../../shared/sam/cli/samCliDeploy'
-import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
-import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
-
-class MockSamCliProcessInvoker implements SamCliProcessInvoker {
-    public constructor(
-        private readonly validateArgs: (args: string[]) => void
-    ) {
-    }
-
-    public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
-    public invoke(...args: string[]): Promise<ChildProcessResult>
-    public async invoke(first: SpawnOptions | string, ...rest: string[]): Promise<ChildProcessResult> {
-        const args: string[] = typeof first === 'string' ? [first, ...rest] : rest
-        this.validateArgs(args)
-
-        return {
-            exitCode: 0
-        } as any as ChildProcessResult
-    }
-
-}
+import { MockSamCliProcessInvoker } from './samCliTestUtils'
 
 describe('SamCliDeployInvocation', async () => {
     it('does not include --parameter-overrides if there are no overrides', async () => {
@@ -43,7 +22,8 @@ describe('SamCliDeployInvocation', async () => {
             'stackName',
             'region',
             new Map<string, string>(),
-            invoker
+            invoker,
+            'profile'
         )
 
         await invocation.execute()
@@ -68,11 +48,36 @@ describe('SamCliDeployInvocation', async () => {
                 ['key1', 'value1'],
                 ['key2', 'value2'],
             ]),
-            invoker
+            invoker,
+            'profile'
         )
 
         await invocation.execute()
     })
 
-    // TODO: Add tests for template, stackName, and region.
+    it('includes a template, stack name, region, and profile ', async () => {
+        const invoker = new MockSamCliProcessInvoker(
+            args => {
+                const templateIndex = args.findIndex(arg => arg === '--template-file')
+                const stackIndex = args.findIndex(arg => arg === '--stack-name')
+                const regionIndex = args.findIndex(arg => arg === '--region')
+                const profileIndex = args.findIndex(arg => arg === '--profile')
+                assert.strictEqual(args[templateIndex + 1], 'template')
+                assert.strictEqual(args[stackIndex + 1], 'stackName')
+                assert.strictEqual(args[regionIndex + 1], 'region')
+                assert.strictEqual(args[profileIndex + 1], 'profile')
+            }
+        )
+
+        const invocation = new SamCliDeployInvocation(
+            'template',
+            'stackName',
+            'region',
+            new Map<string, string>(),
+            invoker,
+            'profile'
+        )
+
+        await invocation.execute()
+    })
 })
