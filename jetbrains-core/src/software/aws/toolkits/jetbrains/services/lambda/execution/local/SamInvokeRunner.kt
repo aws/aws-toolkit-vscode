@@ -18,8 +18,10 @@ import com.intellij.openapi.module.ModuleUtil
 import com.intellij.psi.PsiFile
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
+import org.slf4j.event.Level
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.lambda.BuildLambdaFromHandler
 import software.aws.toolkits.jetbrains.services.lambda.BuildLambdaFromTemplate
@@ -46,19 +48,19 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
         // Requires SamDebugSupport too
         if (DefaultDebugExecutor.EXECUTOR_ID == executorId) {
             val runtimeValue = if (profile.isUsingTemplate()) {
-                SamTemplateUtils.findFunctionsFromTemplate(profile.project, File(profile.templateFile()))
-                    .find { it.logicalName == profile.logicalId() }
-                    ?.runtime()
-                    ?.let {
-                        Runtime.fromValue(it)?.validOrNull
-                    }
+                LOG.tryOrNull("Failed to get runtime of ${profile.logicalId()}", Level.WARN) {
+                    SamTemplateUtils.findFunctionsFromTemplate(profile.project, File(profile.templateFile()))
+                        .find { it.logicalName == profile.logicalId() }
+                        ?.runtime()
+                        ?.let {
+                            Runtime.fromValue(it)?.validOrNull
+                        }
+                }
             } else {
                 profile.runtime()
             }
 
-            val runtimeGroup = runtimeValue?.runtimeGroup
-
-            return SamDebugSupport.supportedRuntimeGroups.contains(runtimeGroup)
+            return SamDebugSupport.supportedRuntimeGroups.contains(runtimeValue?.runtimeGroup)
         }
 
         return false

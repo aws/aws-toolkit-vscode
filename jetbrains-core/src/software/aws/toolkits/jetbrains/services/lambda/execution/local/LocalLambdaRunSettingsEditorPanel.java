@@ -34,6 +34,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.yaml.YAMLFileType;
 import software.amazon.awssdk.services.lambda.model.Runtime;
+import software.aws.toolkits.core.utils.ExceptionUtils;
 import software.aws.toolkits.jetbrains.services.cloudformation.Function;
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupUtil;
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaInputPanel;
@@ -99,7 +100,10 @@ public final class LocalLambdaRunSettingsEditorPanel {
             if (functionModels.getSelectedItem() instanceof Function) {
                 Function selected = (Function) functionModels.getSelectedItem();
                 handler.setText(selected.handler());
-                runtimeModel.setSelectedItem(RuntimeGroupUtil.getValidOrNull(Runtime.fromValue(selected.runtime())));
+
+                Runtime runtime = Runtime.fromValue(ExceptionUtils.tryOrNull(selected::runtime));
+                runtimeModel.setSelectedItem(RuntimeGroupUtil.getValidOrNull(runtime));
+
                 function.setEnabled(true);
             }
         } else {

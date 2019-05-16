@@ -88,7 +88,7 @@ class LocalLambdaRunConfigurationTest {
     }
 
     @Test
-    fun handlerIsNotSet() {
+    fun handlerNotSet() {
         runInEdtAndWait {
             val runConfiguration = createHandlerBasedRunConfiguration(
                 project = projectRule.project,
@@ -196,6 +196,37 @@ class LocalLambdaRunConfigurationTest {
     }
 
     @Test
+    fun runtimeNotSetInTemplate() {
+        runInEdtAndWait {
+            val template = tempDir.newFile("template.yaml").also {
+                it.writeText(
+                    """
+                Resources:
+                  SomeFunction:
+                    Type: AWS::Serverless::Function
+                    Properties:
+                      Handler: com.example.LambdaHandler::handleRequest
+                      CodeUri: /some/dummy/code/location
+                      Timeout: 900
+                """.trimIndent()
+                )
+            }.absolutePath
+            val logicalName = "SomeFunction"
+
+            val runConfiguration = createTemplateRunConfiguration(
+                project = projectRule.project,
+                templateFile = template,
+                logicalId = logicalName,
+                credentialsProviderId = mockId
+            )
+            assertThat(runConfiguration).isNotNull
+            assertThatThrownBy { getState(runConfiguration) }
+                .isInstanceOf(ExecutionException::class.java)
+                .hasMessage(message("lambda.run_configuration.no_runtime_specified", logicalName, template))
+        }
+    }
+
+    @Test
     fun unsupportedRuntime() {
         runInEdtAndWait {
             val template = tempDir.newFile("template.yaml").also {
@@ -224,6 +255,37 @@ class LocalLambdaRunConfigurationTest {
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
                 .hasMessage(message("lambda.run_configuration.no_runtime_specified", logicalName, template))
+        }
+    }
+
+    @Test
+    fun handlerNotSetInTemplate() {
+        runInEdtAndWait {
+            val template = tempDir.newFile("template.yaml").also {
+                it.writeText(
+                    """
+                Resources:
+                  SomeFunction:
+                    Type: AWS::Serverless::Function
+                    Properties:
+                      Runtime: java8
+                      CodeUri: /some/dummy/code/location
+                      Timeout: 900
+                """.trimIndent()
+                )
+            }.absolutePath
+            val logicalName = "SomeFunction"
+
+            val runConfiguration = createTemplateRunConfiguration(
+                project = projectRule.project,
+                templateFile = template,
+                logicalId = logicalName,
+                credentialsProviderId = mockId
+            )
+            assertThat(runConfiguration).isNotNull
+            assertThatThrownBy { getState(runConfiguration) }
+                .isInstanceOf(ExecutionException::class.java)
+                .hasMessage(message("lambda.run_configuration.no_handler_specified", logicalName, template))
         }
     }
 
