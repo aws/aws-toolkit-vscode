@@ -181,14 +181,17 @@ export class CreateNewSamAppWizard extends MultiStepWizard<SamCliInitArgs> {
     private runtime?: lambdaRuntime.SamLambdaRuntime
     private location?: vscode.Uri
     private name?: string
+    private readonly context: CreateNewSamAppWizardContext
 
     public constructor(
         private readonly vscodeContext: Pick<vscode.ExtensionContext, 'asAbsolutePath' | 'globalState'>,
-        private readonly context?: CreateNewSamAppWizardContext
+        context?: CreateNewSamAppWizardContext
     ) {
         super()
-        if (!this.context) {
+        if (!context) {
             this.context = new DefaultCreateNewSamAppWizardContext(this.vscodeContext)
+        } else {
+            this.context = context
         }
     }
 
@@ -209,19 +212,19 @@ export class CreateNewSamAppWizard extends MultiStepWizard<SamCliInitArgs> {
     }
 
     private readonly RUNTIME: WizardStep = async () => {
-        this.runtime = await this.context!.promptUserForRuntime(this.runtime)
+        this.runtime = await this.context.promptUserForRuntime(this.runtime)
 
         return this.runtime ? this.LOCATION : undefined
     }
 
     private readonly LOCATION: WizardStep = async () => {
-        this.location = await this.context!.promptUserForLocation()
+        this.location = await this.context.promptUserForLocation()
 
         return this.location ? this.NAME : this.RUNTIME
     }
 
     private readonly NAME: WizardStep = async () => {
-        this.name = await this.context!.promptUserForName()
+        this.name = await this.context.promptUserForName()
 
         return this.name ? undefined : this.LOCATION
     }
