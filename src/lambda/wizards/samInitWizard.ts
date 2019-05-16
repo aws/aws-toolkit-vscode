@@ -12,7 +12,7 @@ import * as immutable from 'immutable'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { runtimeDocUrl } from '../../shared/constants'
+import { samInitDocUrl } from '../../shared/constants'
 import { SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
@@ -87,7 +87,7 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(runtimeDocUrl))
+                    vscode.env.openExternal(vscode.Uri.parse(samInitDocUrl))
                 }
             }
         })
@@ -122,7 +122,7 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(runtimeDocUrl))
+                    vscode.env.openExternal(vscode.Uri.parse(samInitDocUrl))
                 }
             }
         })
@@ -170,7 +170,7 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(runtimeDocUrl))
+                    vscode.env.openExternal(vscode.Uri.parse(samInitDocUrl))
                 }
             }
         })
