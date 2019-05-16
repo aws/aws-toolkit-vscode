@@ -21,7 +21,7 @@ import { SamDeployWizard, SamDeployWizardResponse } from '../wizards/samDeployWi
 const localize = nls.loadMessageBundle()
 
 export async function deploySamApplication({
-    invoker = new DefaultValidatingSamCliProcessInvoker(),
+    invoker = new DefaultValidatingSamCliProcessInvoker({}),
     ...restParams
 }: {
     invoker?: SamCliProcessInvoker

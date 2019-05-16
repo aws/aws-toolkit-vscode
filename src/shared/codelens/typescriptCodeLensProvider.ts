@@ -55,7 +55,7 @@ async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
 export function initialize({
     configuration,
     outputChannel: toolkitOutputChannel,
-    processInvoker = new DefaultValidatingSamCliProcessInvoker(),
+    processInvoker = new DefaultValidatingSamCliProcessInvoker({}),
     localInvokeCommand = new DefaultSamLocalInvokeCommand(
         getChannelLogger(toolkitOutputChannel),
         [WAIT_FOR_DEBUGGER_MESSAGES.NODEJS]

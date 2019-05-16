@@ -13,6 +13,7 @@ import {
     resolveSamCliProcessInvokerContext,
     SamCliProcessInvokerContext
 } from '../../../../shared/sam/cli/samCliInvoker'
+import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import {
     InvalidSamCliVersionError,
     SamCliNotFoundError,
@@ -20,12 +21,20 @@ import {
     SamCliValidatorResult,
     SamCliVersionValidation,
 } from '../../../../shared/sam/cli/samCliValidator'
+import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 import { assertThrowsError } from '../../utilities/assertUtils'
+import { TestSamCliProcessInvoker } from './testSamCliProcessInvoker'
 
 describe('DefaultValidatingSamCliProcessInvoker', async () => {
 
     let logger: TestLogger
     let processInvokerContext: SamCliProcessInvokerContext
+    const errorInvoker: SamCliProcessInvoker = new TestSamCliProcessInvoker(
+        () => {
+            assert.fail('invoke was not expected to be called')
+            throw new Error('invoke was not expected to be called')
+        }
+    )
 
     before(async () => {
         logger = await TestLogger.createTestLogger()
@@ -70,7 +79,11 @@ describe('DefaultValidatingSamCliProcessInvoker', async () => {
                 }
             }
 
-            const invoker = new DefaultValidatingSamCliProcessInvoker(processInvokerContext, validator)
+            const invoker = new DefaultValidatingSamCliProcessInvoker({
+                invoker: errorInvoker,
+                invokerContext: processInvokerContext,
+                validator,
+            })
 
             const error: Error = await assertThrowsError(
                 async () => await invoker.invoke(), 'Expected invoke to throw an error'
@@ -96,7 +109,11 @@ describe('DefaultValidatingSamCliProcessInvoker', async () => {
             }
         }
 
-        const invoker = new DefaultValidatingSamCliProcessInvoker(processInvokerContext, validator)
+        const invoker = new DefaultValidatingSamCliProcessInvoker({
+            invoker: errorInvoker,
+            invokerContext: processInvokerContext,
+            validator,
+        })
 
         const error: Error = await assertThrowsError(
             async () => await invoker.invoke(), 'Expected invoke to throw an error'
@@ -115,10 +132,47 @@ describe('DefaultValidatingSamCliProcessInvoker', async () => {
             }
         }
 
-        const invoker = new DefaultValidatingSamCliProcessInvoker(processInvokerContext, validator)
+        const invoker = new DefaultValidatingSamCliProcessInvoker({
+            invoker: errorInvoker,
+            invokerContext: processInvokerContext,
+            validator,
+        })
 
         await assertThrowsError(
             async () => await invoker.invoke(), 'Expected invoke to throw an error'
         )
+    })
+
+    it('invokes when there are no validation issues', async () => {
+        let timesCalled: number = 0
+
+        const samCliInvoker: TestSamCliProcessInvoker = new TestSamCliProcessInvoker(
+            () => {
+                timesCalled++
+
+                return {} as any as ChildProcessResult
+            }
+        )
+
+        const validator: SamCliValidator = {
+            detectValidSamCli: async (): Promise<SamCliValidatorResult> => {
+                return {
+                    samCliFound: true,
+                    versionValidation: {
+                        validation: SamCliVersionValidation.Valid
+                    },
+                }
+            }
+        }
+
+        const invoker = new DefaultValidatingSamCliProcessInvoker({
+            invoker: samCliInvoker,
+            invokerContext: processInvokerContext,
+            validator,
+        })
+
+        await invoker.invoke()
+
+        assert.strictEqual(timesCalled, 1, 'Expected invoke to get called')
     })
 })

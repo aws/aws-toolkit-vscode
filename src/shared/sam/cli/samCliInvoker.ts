@@ -41,45 +41,29 @@ export function resolveSamCliProcessInvokerContext(
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
 
     public constructor(
-        private readonly _context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()
+        private readonly context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()
     ) { }
 
     public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
     public invoke(...args: string[]): Promise<ChildProcessResult>
     public async invoke(first: SpawnOptions | string, ...rest: string[]): Promise<ChildProcessResult> {
-        await this.validate()
-
         const args = typeof first === 'string' ? [first, ...rest] : rest
         const options: SpawnOptions | undefined = typeof first === 'string' ? undefined : first
 
-        return await this.runCliCommand(this.samCliLocation, options, ...args)
-    }
+        const childProcess: ChildProcess = new ChildProcess(this.samCliLocation, options, ...args)
 
-    /**
-     * Overridable method that throws Errors when validations fail.
-     */
-    protected async validate(): Promise<void> {
+        return await childProcess.run()
     }
 
     // Gets SAM CLI Location, throws if not found
-    protected get samCliLocation(): string {
-        const samCliLocation: string | undefined = this._context.cliConfig.getSamCliLocation()
+    private get samCliLocation(): string {
+        const samCliLocation: string | undefined = this.context.cliConfig.getSamCliLocation()
         if (!samCliLocation) {
             const err = new Error('SAM CLI location not configured')
-            this._context.logger.error(err)
+            this.context.logger.error(err)
             throw err
         }
 
         return samCliLocation
-    }
-
-    protected async runCliCommand(
-        samCliLocation: string,
-        options?: SpawnOptions,
-        ...args: string[]
-    ): Promise<ChildProcessResult> {
-        const childProcess: ChildProcess = new ChildProcess(samCliLocation, options, ...args)
-
-        return await childProcess.run()
     }
 }

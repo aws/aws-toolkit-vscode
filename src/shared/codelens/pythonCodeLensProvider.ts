@@ -198,7 +198,7 @@ function makeDebugConfig(
 export async function initialize({
     configuration,
     outputChannel: toolkitOutputChannel,
-    processInvoker = new DefaultValidatingSamCliProcessInvoker(),
+    processInvoker = new DefaultValidatingSamCliProcessInvoker({}),
     telemetryService: telemetryService,
     localInvokeCommand,
 }: CodeLensProviderParams): Promise<void> {

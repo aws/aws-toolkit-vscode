@@ -25,7 +25,7 @@ export class SamCliInitInvocation {
     public constructor(
         { name, runtime, location }: SamCliInitArgs,
         private readonly invoker: SamCliProcessInvoker =
-            new DefaultValidatingSamCliProcessInvoker()
+            new DefaultValidatingSamCliProcessInvoker({})
     ) {
         this.name = name
         this.runtime = runtime

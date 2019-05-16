@@ -5,11 +5,14 @@
 
 'use strict'
 
+import { SpawnOptions } from 'child_process'
+import { ChildProcessResult } from '../../utilities/childProcess'
 import {
     DefaultSamCliProcessInvoker,
     resolveSamCliProcessInvokerContext,
     SamCliProcessInvokerContext
 } from './samCliInvoker'
+import { SamCliProcessInvoker } from './samCliInvokerUtils'
 import { notifySamCliValidation } from './samCliValidationNotification'
 import {
     DefaultSamCliValidator,
@@ -22,22 +25,41 @@ import {
 /**
  * Validates the SAM CLI version before making calls to the SAM CLI.
  */
-export class DefaultValidatingSamCliProcessInvoker extends DefaultSamCliProcessInvoker {
+export class DefaultValidatingSamCliProcessInvoker implements SamCliProcessInvoker {
 
-    public constructor(
-        context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext(),
-        private readonly samCliValidator: SamCliValidator = new DefaultSamCliValidator(
-            context.cliConfig,
-            new DefaultSamCliProcessInvoker(context),
-        ),
-    ) {
-        super(resolveSamCliProcessInvokerContext(context))
+    private readonly invoker: SamCliProcessInvoker
+    private readonly invokerContext: SamCliProcessInvokerContext
+    private readonly validator: SamCliValidator
+
+    public constructor(params: {
+        invoker?: SamCliProcessInvoker,
+        invokerContext?: SamCliProcessInvokerContext,
+        validator?: SamCliValidator,
+    }) {
+        this.invokerContext = resolveSamCliProcessInvokerContext(params.invokerContext)
+        this.invoker = params.invoker || new DefaultSamCliProcessInvoker(this.invokerContext)
+
+        // Regardless of the sam cli invoker provided, the default validator will always use the standard invoker
+        this.validator = params.validator || new DefaultSamCliValidator(
+            this.invokerContext.cliConfig,
+            new DefaultSamCliProcessInvoker(this.invokerContext),
+        )
     }
 
-    protected async validate(): Promise<void> {
+    public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
+    public invoke(...args: string[]): Promise<ChildProcessResult>
+    public async invoke(first: SpawnOptions | string, ...rest: string[]): Promise<ChildProcessResult> {
+        await this.validate()
+
+        const args = typeof first === 'string' ? [first, ...rest] : rest
+        const options: SpawnOptions = typeof first === 'string' ? {} : first
+
+        return await this.invoker.invoke(options, ...args)
+    }
+
+    private async validate(): Promise<void> {
         try {
             await this.validateSamCli()
-            await super.validate()
         } catch (err) {
             if (err instanceof InvalidSamCliError) {
                 // TODO : Showing dialog here is temporary until https://github.com/aws/aws-toolkit-vscode/issues/526
@@ -53,7 +75,7 @@ export class DefaultValidatingSamCliProcessInvoker extends DefaultSamCliProcessI
     }
 
     private async validateSamCli(): Promise<void> {
-        const validationResult = await this.samCliValidator.detectValidSamCli()
+        const validationResult = await this.validator.detectValidSamCli()
 
         if (!validationResult.samCliFound) {
             throw new SamCliNotFoundError()
