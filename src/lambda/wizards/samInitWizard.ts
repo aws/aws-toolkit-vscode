@@ -39,6 +39,16 @@ export interface CreateNewSamAppWizardContext {
 class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
     public readonly lambdaRuntimes = lambdaRuntime.samLambdaRuntimes
     public readonly showOpenDialog = vscode.window.showOpenDialog
+    private readonly helpButton = createHelpButton(
+        this.vscodeContext,
+        localize(
+            'AWS.command.help',
+            'View Documentation'
+        )
+    )
+
+    public constructor(private readonly vscodeContext: Pick<vscode.ExtensionContext, 'asAbsolutePath'>) {
+    }
 
     public get workspaceFolders(): vscode.WorkspaceFolder[] | undefined {
         return vscode.workspace.workspaceFolders
@@ -47,10 +57,6 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
     public async promptUserForRuntime(
         currRuntime?: lambdaRuntime.SamLambdaRuntime
     ): Promise<lambdaRuntime.SamLambdaRuntime | undefined> {
-        const helpButton = createHelpButton(localize(
-            'AWS.samcli.initWizard.runtime.help',
-            'Lambda runtimes currently supported by the AWS Toolkit for VS Code. Click for more information.'
-        ))
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
                 ignoreFocusOut: true,
@@ -61,7 +67,7 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
                 value: currRuntime ? currRuntime : ''
             },
             buttons: [
-                helpButton,
+                this.helpButton,
                 vscode.QuickInputButtons.Back
             ],
             items: this.lambdaRuntimes
@@ -80,7 +86,7 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
             onDidTriggerButton: (button, resolve, reject) => {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
-                } else if (button === helpButton) {
+                } else if (button === this.helpButton) {
                     vscode.env.openExternal(vscode.Uri.parse(runtimeDocUrl))
                 }
             }
@@ -105,6 +111,7 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
             },
             items: items,
             buttons: [
+                this.helpButton,
                 vscode.QuickInputButtons.Back
             ]
         })
@@ -114,6 +121,8 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
             onDidTriggerButton: (button, resolve, reject) => {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
+                } else if (button === this.helpButton) {
+                    vscode.env.openExternal(vscode.Uri.parse(runtimeDocUrl))
                 }
             }
         })
@@ -132,6 +141,7 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
                 ignoreFocusOut: true,
             },
             buttons: [
+                this.helpButton,
                 vscode.QuickInputButtons.Back
             ]
         })
@@ -159,6 +169,8 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
             onDidTriggerButton: (button, resolve, reject) => {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
+                } else if (button === this.helpButton) {
+                    vscode.env.openExternal(vscode.Uri.parse(runtimeDocUrl))
                 }
             }
         })
@@ -171,9 +183,13 @@ export class CreateNewSamAppWizard extends MultiStepWizard<SamCliInitArgs> {
     private name?: string
 
     public constructor(
-        private readonly context: CreateNewSamAppWizardContext = new DefaultCreateNewSamAppWizardContext()
+        private readonly vscodeContext: Pick<vscode.ExtensionContext, 'asAbsolutePath' | 'globalState'>,
+        private readonly context?: CreateNewSamAppWizardContext
     ) {
         super()
+        if (!this.context) {
+            this.context = new DefaultCreateNewSamAppWizardContext(this.vscodeContext)
+        }
     }
 
     protected get startStep() {
@@ -193,19 +209,19 @@ export class CreateNewSamAppWizard extends MultiStepWizard<SamCliInitArgs> {
     }
 
     private readonly RUNTIME: WizardStep = async () => {
-        this.runtime = await this.context.promptUserForRuntime(this.runtime)
+        this.runtime = await this.context!.promptUserForRuntime(this.runtime)
 
         return this.runtime ? this.LOCATION : undefined
     }
 
     private readonly LOCATION: WizardStep = async () => {
-        this.location = await this.context.promptUserForLocation()
+        this.location = await this.context!.promptUserForLocation()
 
         return this.location ? this.NAME : this.RUNTIME
     }
 
     private readonly NAME: WizardStep = async () => {
-        this.name = await this.context.promptUserForName()
+        this.name = await this.context!.promptUserForName()
 
         return this.name ? undefined : this.LOCATION
     }

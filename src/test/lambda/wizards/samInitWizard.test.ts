@@ -14,6 +14,7 @@ import {
     CreateNewSamAppWizard,
     CreateNewSamAppWizardContext
 } from '../../../lambda/wizards/samInitWizard'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
     if (!array) {
@@ -135,6 +136,9 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
 
 describe('CreateNewSamAppWizard', async () => {
     describe('runtime', async () => {
+
+        const extContext = new FakeExtensionContext()
+
         it('uses user response as runtime', async () => {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
@@ -142,7 +146,7 @@ describe('CreateNewSamAppWizard', async () => {
                 'myName',
                 [vscode.Uri.file(path.join('my', 'workspace', 'folder'))]
             )
-            const wizard = new CreateNewSamAppWizard(context)
+            const wizard = new CreateNewSamAppWizard(extContext, context)
             const args = await wizard.run()
 
             assert.ok(args)
@@ -156,7 +160,7 @@ describe('CreateNewSamAppWizard', async () => {
                 'myName',
                 [vscode.Uri.file(path.join('my', 'workspace', 'folder'))]
             )
-            const wizard = new CreateNewSamAppWizard(context)
+            const wizard = new CreateNewSamAppWizard(extContext, context)
             const args = await wizard.run()
 
             assert.ok(!args)
@@ -164,6 +168,9 @@ describe('CreateNewSamAppWizard', async () => {
     })
 
     describe('location', async () => {
+
+        const extContext = new FakeExtensionContext()
+
         it('uses user response as location', async () => {
             const locationPath = path.join('my', 'quick', 'pick', 'result')
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
@@ -172,7 +179,7 @@ describe('CreateNewSamAppWizard', async () => {
                 'myName',
                 [vscode.Uri.file(locationPath)]
             )
-            const wizard = new CreateNewSamAppWizard(context)
+            const wizard = new CreateNewSamAppWizard(extContext, context)
             const args = await wizard.run()
 
             assert.ok(args)
@@ -193,7 +200,7 @@ describe('CreateNewSamAppWizard', async () => {
                     [vscode.Uri.file(locationPath)]
                 ]
             )
-            const wizard = new CreateNewSamAppWizard(context)
+            const wizard = new CreateNewSamAppWizard(extContext, context)
             const args = await wizard.run()
 
             assert.ok(args)
@@ -211,7 +218,7 @@ describe('CreateNewSamAppWizard', async () => {
                 name,
                 [vscode.Uri.file(locationPath)]
             )
-            const wizard = new CreateNewSamAppWizard(context)
+            const wizard = new CreateNewSamAppWizard(extContext, context)
             const args = await wizard.run()
 
             assert.ok(args)
@@ -235,7 +242,7 @@ describe('CreateNewSamAppWizard', async () => {
                 'myName',
                 []
             )
-            const wizard = new CreateNewSamAppWizard(context)
+            const wizard = new CreateNewSamAppWizard(extContext, context)
             const args = await wizard.run()
 
             assert.ok(args)
@@ -244,6 +251,9 @@ describe('CreateNewSamAppWizard', async () => {
     })
 
     describe('name', async () => {
+
+        const extContext = new FakeExtensionContext()
+
         it('uses user response as name', async () => {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
@@ -251,7 +261,7 @@ describe('CreateNewSamAppWizard', async () => {
                 'myName',
                 [vscode.Uri.file(path.join('my', 'quick', 'pick', 'result'))]
             )
-            const wizard = new CreateNewSamAppWizard(context)
+            const wizard = new CreateNewSamAppWizard(extContext, context)
             const args = await wizard.run()
 
             assert.ok(args)
@@ -268,7 +278,7 @@ describe('CreateNewSamAppWizard', async () => {
                     [vscode.Uri.file(path.join('my', 'quick', 'pick', 'result', '2'))]
                 ]
             )
-            const wizard = new CreateNewSamAppWizard(context)
+            const wizard = new CreateNewSamAppWizard(extContext, context)
             const args = await wizard.run()
 
             assert.ok(args)

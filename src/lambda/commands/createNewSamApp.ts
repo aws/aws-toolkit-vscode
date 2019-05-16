@@ -48,9 +48,9 @@ interface NewSamAppMetadata {
  * Runs `sam init` in the given context and returns useful metadata about its invocation
  */
 export async function createNewSamApp(
-    context: Pick<vscode.ExtensionContext, 'globalState'>
+    context: Pick<vscode.ExtensionContext, 'asAbsolutePath' | 'globalState'>
 ): Promise<NewSamAppMetadata | undefined> {
-    const config = await new CreateNewSamAppWizard().run()
+    const config = await new CreateNewSamAppWizard(context).run()
     if (!config) {
         return undefined
     }
