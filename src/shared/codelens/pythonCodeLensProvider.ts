@@ -14,11 +14,11 @@ import { unlink, writeFile } from '../filesystem'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
-import { DefaultSamCliProcessInvoker } from '../sam/cli/samCliInvoker'
 import { Datum } from '../telemetry/telemetryEvent'
 import { registerCommand, TelemetryNamespace } from '../telemetry/telemetryUtils'
 import { getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
 
+import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import {
     CodeLensProviderParams,
@@ -198,7 +198,7 @@ function makeDebugConfig(
 export async function initialize({
     configuration,
     outputChannel: toolkitOutputChannel,
-    processInvoker = new DefaultSamCliProcessInvoker(),
+    processInvoker = new DefaultValidatingSamCliProcessInvoker({}),
     telemetryService: telemetryService,
     localInvokeCommand,
 }: CodeLensProviderParams): Promise<void> {
