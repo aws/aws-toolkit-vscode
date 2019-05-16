@@ -60,6 +60,8 @@ export async function createNewSamApp(
 
     const uri = await getMainUri(config)
     if (!uri) {
+        // todo : this shouldn't return undefined. We are losing metrics. Wrap in a try/finally
+        // todo : will be addressed with https://github.com/aws/aws-toolkit-vscode/issues/526
         return undefined
     }
 
@@ -76,6 +78,8 @@ export async function createNewSamApp(
     }
 
     return {
+        // todo : consider returning a success metadata
+        // todo : will be addressed with https://github.com/aws/aws-toolkit-vscode/issues/526
         runtime: config.runtime
     }
 }
