@@ -3,15 +3,13 @@
 
 package software.aws.toolkits.jetbrains.services.telemetry
 
-import assertk.assert
-import assertk.assertions.hasSize
-import assertk.assertions.isEqualTo
 import com.intellij.util.messages.MessageBus
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.stub
 import com.nhaarman.mockitokotlin2.verify
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
 import software.aws.toolkits.jetbrains.settings.MockAwsSettings
@@ -42,8 +40,8 @@ class TelemetryServiceTest {
 
         changeCountDown.await(5, TimeUnit.SECONDS)
         verify(batcher).onTelemetryEnabledChanged(true)
-        assert(changeCaptor.allValues).hasSize(1)
-        assert(changeCaptor.firstValue).isEqualTo(true)
+        assertThat(changeCaptor.allValues).hasSize(1)
+        assertThat(changeCaptor.firstValue).isEqualTo(true)
     }
 
     @Test
@@ -71,8 +69,8 @@ class TelemetryServiceTest {
         changeCountDown.await(5, TimeUnit.SECONDS)
         verify(batcher).onTelemetryEnabledChanged(true)
         verify(batcher).onTelemetryEnabledChanged(false)
-        assert(changeCaptor.allValues).hasSize(2)
-        assert(changeCaptor.firstValue).isEqualTo(true)
-        assert(changeCaptor.secondValue).isEqualTo(false)
+        assertThat(changeCaptor.allValues).hasSize(2)
+        assertThat(changeCaptor.firstValue).isEqualTo(true)
+        assertThat(changeCaptor.secondValue).isEqualTo(false)
     }
 }

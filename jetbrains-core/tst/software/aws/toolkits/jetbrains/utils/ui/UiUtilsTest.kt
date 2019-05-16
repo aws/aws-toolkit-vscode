@@ -34,6 +34,6 @@ class UiUtilsTest {
     fun canFindAnElementFromAListModel() {
         val listModel = DefaultComboBoxModel<String>(arrayOf("hello", "world"))
         assertThat(listModel.find { it == "hello" }).isEqualTo("hello")
-        assertThat(listModel.find { it == "bye" }).isEqualTo(null)
+        assertThat(listModel.find { it == "bye" }).isNull()
     }
 }

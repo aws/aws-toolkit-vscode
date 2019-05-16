@@ -3,17 +3,10 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.java
 
-import assertk.Assert
-import assertk.assert
-import assertk.assertions.hasSize
-import assertk.assertions.isEmpty
-import assertk.assertions.isEqualTo
-import assertk.assertions.isInstanceOf
-import assertk.assertions.isNotNull
-import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiIdentifier
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
 import com.intellij.testFramework.runInEdtAndWait
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -86,8 +79,7 @@ class JavaLambdaLineMarkerTest {
         )
 
         findAndAssertMarks(fixture) { marks ->
-            assert(marks).hasSize(1)
-            assert(marks.first().lineMarkerInfo.element).isIdentifierWithName("upperCase")
+            assertLineMarkerIs(marks, "upperCase")
         }
     }
 
@@ -112,7 +104,7 @@ class JavaLambdaLineMarkerTest {
         )
 
         findAndAssertMarks(fixture) { marks ->
-            assert(marks).isEmpty()
+            assertThat(marks).isEmpty()
         }
     }
 
@@ -149,8 +141,7 @@ Resources:
         )
 
         findAndAssertMarks(fixture) { marks ->
-            assert(marks).hasSize(1)
-            assert(marks.first().lineMarkerInfo.element).isIdentifierWithName("upperCase")
+            assertLineMarkerIs(marks, "upperCase")
         }
     }
 
@@ -176,8 +167,7 @@ Resources:
         )
 
         findAndAssertMarks(fixture) { marks ->
-            assert(marks).hasSize(1)
-            assert(marks.first().lineMarkerInfo.element).isIdentifierWithName("upperCase")
+            assertLineMarkerIs(marks, "upperCase")
         }
     }
 
@@ -201,8 +191,7 @@ Resources:
         )
 
         findAndAssertMarks(fixture) { marks ->
-            assert(marks).hasSize(1)
-            assert(marks.first().lineMarkerInfo.element).isIdentifierWithName("upperCase")
+            assertLineMarkerIs(marks, "upperCase")
         }
     }
 
@@ -224,8 +213,7 @@ Resources:
         )
 
         findAndAssertMarks(fixture) { marks ->
-            assert(marks).hasSize(1)
-            assert(marks.first().lineMarkerInfo.element).isIdentifierWithName("upperCase")
+            assertLineMarkerIs(marks, "upperCase")
         }
     }
 
@@ -246,7 +234,9 @@ Resources:
              """
         )
 
-        findAndAssertMarks(fixture) { assert(it).isEmpty() }
+        findAndAssertMarks(fixture) { marks ->
+            assertThat(marks).isEmpty()
+        }
     }
 
     @Test
@@ -272,7 +262,9 @@ Resources:
              """
         )
 
-        findAndAssertMarks(fixture) { assert(it).isEmpty() }
+        findAndAssertMarks(fixture) { marks ->
+            assertThat(marks).isEmpty()
+        }
     }
 
     @Test
@@ -291,7 +283,9 @@ Resources:
              """
         )
 
-        findAndAssertMarks(fixture) { assert(it).isEmpty() }
+        findAndAssertMarks(fixture) { marks ->
+            assertThat(marks).isEmpty()
+        }
     }
 
     @Test
@@ -311,7 +305,9 @@ Resources:
             """
         )
 
-        findAndAssertMarks(fixture) { assert(it).isEmpty() }
+        findAndAssertMarks(fixture) { marks ->
+            assertThat(marks).isEmpty()
+        }
     }
 
     @Test
@@ -333,7 +329,9 @@ Resources:
              """
         )
 
-        findAndAssertMarks(fixture) { assert(it).hasSize(0) }
+        findAndAssertMarks(fixture) { marks ->
+            assertThat(marks).isEmpty()
+        }
     }
 
     @Test
@@ -364,9 +362,8 @@ Resources:
             """
         )
 
-        findAndAssertMarks(fixture) {
-            assert(it).hasSize(1)
-            assert(it.first().lineMarkerInfo.element).isIdentifierWithName("ConcreteHandler")
+        findAndAssertMarks(fixture) { marks ->
+            assertLineMarkerIs(marks, "ConcreteHandler")
         }
     }
 
@@ -398,7 +395,9 @@ Resources:
             """
         )
 
-        findAndAssertMarks(fixture) { assert(it).hasSize(0) }
+        findAndAssertMarks(fixture) { marks ->
+            assertThat(marks).isEmpty()
+        }
     }
 
     @Test
@@ -430,9 +429,8 @@ Resources:
             """
         )
 
-        findAndAssertMarks(fixture) {
-            assert(it).hasSize(1)
-            assert(it.first().lineMarkerInfo.element).isIdentifierWithName("ConcreteHandler")
+        findAndAssertMarks(fixture) { marks ->
+            assertLineMarkerIs(marks, "ConcreteHandler")
         }
     }
 
@@ -446,10 +444,11 @@ Resources:
         }
     }
 
-    private fun Assert<PsiElement?>.isIdentifierWithName(name: String) {
-        this.isNotNull {
-            it.isInstanceOf(PsiIdentifier::class)
-            assert(it.actual.text).isEqualTo(name)
-        }
+    private fun assertLineMarkerIs(marks: List<LambdaLineMarker.LambdaGutterIcon>, elementName: String) {
+        assertThat(marks).hasSize(1)
+        assertThat(marks.first().lineMarkerInfo.element)
+            .isInstanceOf(PsiIdentifier::class.java)
+            .extracting { it?.text }
+            .isEqualTo(elementName)
     }
 }
