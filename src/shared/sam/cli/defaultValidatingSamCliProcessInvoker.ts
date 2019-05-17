@@ -61,7 +61,7 @@ export class DefaultValidatingSamCliProcessInvoker implements SamCliProcessInvok
     private async validateSamCli(): Promise<void> {
         const validationResult: SamCliValidatorResult = await this.validator.detectValidSamCli()
 
-        // TODO : Showing dialog here is temporary until https://github.com/aws/aws-toolkit-vscode/issues/526
+        // TODO : Showing dialog here is temporary until https://github.com/aws/aws-toolkit-vscode/issues/527
         // TODO : is complete. The dialog will be raised earlier than this point, leaving this to throw Errors.
         throwAndNotifyIfInvalid(validationResult)
     }
