@@ -13,6 +13,7 @@ const REMOVE_UNDERSCORES_REGEX = new RegExp('_', 'g')
 export const METADATA_FIELD_NAME = {
     RESULT: 'result',
     DURATION: 'duration',
+    REASON: 'reason',
 }
 
 export const METADATA_RESULT_PASS = 'Succeeded'

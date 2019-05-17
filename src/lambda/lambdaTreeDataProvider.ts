@@ -11,7 +11,12 @@ import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
 import { ext } from '../shared/extensionGlobals'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { ResourceFetcher } from '../shared/resourceFetcher'
-import { Datum } from '../shared/telemetry/telemetryEvent'
+import {
+    Datum,
+    METADATA_FIELD_NAME,
+    METADATA_RESULT_FAIL,
+    METADATA_RESULT_PASS
+} from '../shared/telemetry/telemetryEvent'
 import { defaultMetricDatum, registerCommand, TelemetryNamespace } from '../shared/telemetry/telemetryUtils'
 import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
@@ -66,8 +71,8 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
                 const datum = defaultMetricDatum(createNewSamAppCommand)
                 datum.metadata = metadata ? new Map([
                     ['runtime', metadata.runtime],
-                    ['result', String(metadata.success)],
-                    ['reason', metadata.reason],
+                    [METADATA_FIELD_NAME.RESULT, metadata.success ? METADATA_RESULT_PASS : METADATA_RESULT_FAIL],
+                    [METADATA_FIELD_NAME.REASON, metadata.reason],
                 ]) : undefined
 
                 return {
