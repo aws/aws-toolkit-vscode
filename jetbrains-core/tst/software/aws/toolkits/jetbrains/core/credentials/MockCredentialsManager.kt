@@ -9,7 +9,7 @@ import software.amazon.awssdk.services.sts.StsClient
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 
-class MockCredentialsManager : CredentialManager {
+class MockCredentialsManager : CredentialManager() {
     private val providers = mutableMapOf<String, ToolkitCredentialsProvider>()
 
     override fun getCredentialProviders(): List<ToolkitCredentialsProvider> = providers.values.toList()
@@ -18,11 +18,13 @@ class MockCredentialsManager : CredentialManager {
         ?: throw CredentialProviderNotFound("$providerId not found")
 
     fun reset() {
+        incModificationCount()
         providers.clear()
     }
 
     fun addCredentials(id: String, credentials: AwsCredentials, isValid: Boolean = true): ToolkitCredentialsProvider =
         MockCredentialsProvider(id, id, credentials, isValid).also {
+            incModificationCount()
             providers[id] = it
         }
 
