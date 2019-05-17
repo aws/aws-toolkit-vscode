@@ -8,7 +8,13 @@
 import * as assert from 'assert'
 import { Disposable } from 'vscode'
 import { ext } from '../../../shared/extensionGlobals'
-import { Datum, TelemetryEvent } from '../../../shared/telemetry/telemetryEvent'
+import {
+    Datum,
+    METADATA_FIELD_NAME,
+    METADATA_RESULT_FAIL,
+    METADATA_RESULT_PASS,
+    TelemetryEvent
+} from '../../../shared/telemetry/telemetryEvent'
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
 import { defaultMetricDatum, registerCommand, TelemetryNamespace } from '../../../shared/telemetry/telemetryUtils'
 
@@ -48,7 +54,8 @@ describe('telemetryUtils', () => {
                         assert.notStrictEqual(mockService.lastEvent!.data![0].metadata!.get('duration'), undefined)
 
                         assert.strictEqual(
-                            mockService.lastEvent!.data![0].metadata!.get('result'), 'Succeeded'
+                            mockService.lastEvent!.data![0].metadata!.get(METADATA_FIELD_NAME.RESULT),
+                            METADATA_RESULT_PASS
                         )
                         assert.strictEqual(mockService.lastEvent!.namespace, 'Command')
                         assert.strictEqual(mockService.lastEvent!.data![0].name, 'command')
@@ -79,7 +86,7 @@ describe('telemetryUtils', () => {
 
                         assert.notStrictEqual(metadata.get('duration'), undefined)
 
-                        assert.strictEqual(metadata.get('result'), 'Succeeded')
+                        assert.strictEqual(metadata.get(METADATA_FIELD_NAME.RESULT), METADATA_RESULT_PASS)
                         assert.strictEqual(metadata.get('foo'), 'bar')
                         assert.strictEqual(metadata.get('hitcount'), '5')
 
@@ -115,8 +122,12 @@ describe('telemetryUtils', () => {
                         const data = mockService.lastEvent!.data![0]
                         const metadata = data.metadata!
 
-                        assert.strictEqual(metadata.get('result'), 'bananas', 'Unexpected value for metadata.result')
-                        assert.strictEqual(metadata.get('duration'), '999999', 'Unexpected value for metadata.duration')
+                        assert.strictEqual(
+                            metadata.get(METADATA_FIELD_NAME.RESULT), 'bananas',
+                            'Unexpected value for metadata.result')
+                        assert.strictEqual(
+                            metadata.get('duration'), '999999',
+                            'Unexpected value for metadata.duration')
 
                         done()
                     }).catch(err => {
@@ -129,7 +140,7 @@ describe('telemetryUtils', () => {
                 callback: async () => {
                     const datum: Datum = defaultMetricDatum('somemetric')
                     datum.metadata = new Map([
-                        ['result', 'bananas'],
+                        [METADATA_FIELD_NAME.RESULT, 'bananas'],
                         ['duration', '999999'],
                     ])
 
@@ -152,7 +163,8 @@ describe('telemetryUtils', () => {
                         assert.notStrictEqual(mockService.lastEvent!.data![0].metadata!.get('duration'), undefined)
 
                         assert.strictEqual(
-                            mockService.lastEvent!.data![0].metadata!.get('result'), 'Succeeded'
+                            mockService.lastEvent!.data![0].metadata!.get(METADATA_FIELD_NAME.RESULT),
+                            METADATA_RESULT_PASS
                         )
                         assert.strictEqual(mockService.lastEvent!.namespace, TelemetryNamespace.Aws)
                         assert.strictEqual(mockService.lastEvent!.data![0].name, 'thisAintYourFathersNameField')
@@ -188,7 +200,8 @@ describe('telemetryUtils', () => {
                         assert.notStrictEqual(mockService.lastEvent!.data![0].metadata!.get('duration'), undefined)
 
                         assert.strictEqual(
-                            mockService.lastEvent!.data![0].metadata!.get('result'), 'Failed'
+                            mockService.lastEvent!.data![0].metadata!.get(METADATA_FIELD_NAME.RESULT),
+                            METADATA_RESULT_FAIL
                         )
                         assert.strictEqual(mockService.lastEvent!.namespace, 'Command')
                         assert.strictEqual(mockService.lastEvent!.data![0].name, 'command')
