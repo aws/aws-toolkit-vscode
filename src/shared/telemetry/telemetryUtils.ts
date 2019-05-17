@@ -66,8 +66,8 @@ export function registerCommand<T>({
                 if (!datum.metadata) {
                     datum.metadata = new Map()
                 }
-                datum.metadata.set('result', hasException ? 'Failed' : 'Succeeded')
-                datum.metadata.set('duration', `${endTime.getTime() - startTime.getTime()}`)
+                setMetadataIfNotExists(datum.metadata, 'result', hasException ? 'Failed' : 'Succeeded')
+                setMetadataIfNotExists(datum.metadata, 'duration', `${endTime.getTime() - startTime.getTime()}`)
 
                 ext.telemetry.record({
                     namespace: telemetryName.namespace,
@@ -84,4 +84,10 @@ export function registerCommand<T>({
         },
         thisArg
     )
+}
+
+function setMetadataIfNotExists(metadata: Map<string, string>, key: string, value: string) {
+    if (!metadata.has(key)) {
+        metadata.set(key, value)
+    }
 }

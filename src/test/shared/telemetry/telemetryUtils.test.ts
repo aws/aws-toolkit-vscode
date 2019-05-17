@@ -107,6 +107,39 @@ describe('telemetryUtils', () => {
             })
         })
 
+        it('records telemetry with metadata overriding result and duration', (done) => {
+            registerCommand({
+                register: (_command, callback: (...args: any[]) => Promise<void>, _thisArg) => {
+                    // vscode.commands.registerCommand is not async, but we can't check until the callback is complete
+                    callback().then(() => {
+                        const data = mockService.lastEvent!.data![0]
+                        const metadata = data.metadata!
+
+                        assert.strictEqual(metadata.get('result'), 'bananas', 'Unexpected value for metadata.result')
+                        assert.strictEqual(metadata.get('duration'), '999999', 'Unexpected value for metadata.duration')
+
+                        done()
+                    }).catch(err => {
+                        throw err
+                    })
+
+                    return Disposable.from()
+                },
+                command: 'command',
+                callback: async () => {
+                    const datum: Datum = defaultMetricDatum('somemetric')
+                    datum.metadata = new Map([
+                        ['result', 'bananas'],
+                        ['duration', '999999'],
+                    ])
+
+                    return {
+                        datum
+                    }
+                }
+            })
+        })
+
         it('records telemetry with custom names and namespaces', (done) => {
             registerCommand({
                 register: (_command, callback: (...args: any[]) => Promise<void>, _thisArg) => {
