@@ -8,9 +8,15 @@
 import * as assert from 'assert'
 import { Disposable } from 'vscode'
 import { ext } from '../../../shared/extensionGlobals'
-import { TelemetryEvent } from '../../../shared/telemetry/telemetryEvent'
+import {
+    Datum,
+    METADATA_FIELD_NAME,
+    METADATA_RESULT_FAIL,
+    METADATA_RESULT_PASS,
+    TelemetryEvent
+} from '../../../shared/telemetry/telemetryEvent'
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
-import { registerCommand, TelemetryNamespace } from '../../../shared/telemetry/telemetryUtils'
+import { defaultMetricDatum, registerCommand, TelemetryNamespace } from '../../../shared/telemetry/telemetryUtils'
 
 class MockTelemetryService implements TelemetryService {
     public persistFilePath: string = ''
@@ -26,9 +32,9 @@ class MockTelemetryService implements TelemetryService {
 
     public async start(): Promise<void> { return }
     public async shutdown(): Promise<void> { return }
-    public record(event: TelemetryEvent ): void { this.lastEvent = event }
-    public clearRecords(): void {}
-    public notifyOptOutOptionMade(): void {}
+    public record(event: TelemetryEvent): void { this.lastEvent = event }
+    public clearRecords(): void { }
+    public notifyOptOutOptionMade(): void { }
 }
 
 describe('telemetryUtils', () => {
@@ -48,7 +54,8 @@ describe('telemetryUtils', () => {
                         assert.notStrictEqual(mockService.lastEvent!.data![0].metadata!.get('duration'), undefined)
 
                         assert.strictEqual(
-                            mockService.lastEvent!.data![0].metadata!.get('result'), 'Succeeded'
+                            mockService.lastEvent!.data![0].metadata!.get(METADATA_FIELD_NAME.RESULT),
+                            METADATA_RESULT_PASS
                         )
                         assert.strictEqual(mockService.lastEvent!.namespace, 'Command')
                         assert.strictEqual(mockService.lastEvent!.data![0].name, 'command')
@@ -60,7 +67,87 @@ describe('telemetryUtils', () => {
                     return Disposable.from()
                 },
                 command: 'command',
-                callback: async () => {}
+                callback: async () => { }
+            })
+        })
+
+        it('records telemetry with metadata', (done) => {
+            registerCommand({
+                register: (_command, callback: (...args: any[]) => Promise<void>, _thisArg) => {
+                    // vscode.commands.registerCommand is not async, but we can't check until the callback is complete
+                    callback().then(() => {
+                        assert.notStrictEqual(mockService.lastEvent, undefined)
+                        assert.notStrictEqual(mockService.lastEvent!.createTime, undefined)
+                        assert.notStrictEqual(mockService.lastEvent!.data, undefined)
+
+                        const data = mockService.lastEvent!.data![0]
+                        assert.notStrictEqual(data.metadata, undefined)
+                        const metadata = data.metadata!
+
+                        assert.notStrictEqual(metadata.get('duration'), undefined)
+
+                        assert.strictEqual(metadata.get(METADATA_FIELD_NAME.RESULT), METADATA_RESULT_PASS)
+                        assert.strictEqual(metadata.get('foo'), 'bar')
+                        assert.strictEqual(metadata.get('hitcount'), '5')
+
+                        assert.strictEqual(mockService.lastEvent!.namespace, 'Command')
+                        assert.strictEqual(data.name, 'somemetric')
+                        done()
+                    }).catch(err => {
+                        throw err
+                    })
+
+                    return Disposable.from()
+                },
+                command: 'command',
+                callback: async () => {
+                    const datum: Datum = defaultMetricDatum('somemetric')
+                    datum.metadata = new Map([
+                        ['foo', 'bar'],
+                        ['hitcount', '5'],
+                    ])
+
+                    return {
+                        datum
+                    }
+                }
+            })
+        })
+
+        it('records telemetry with metadata overriding result and duration', (done) => {
+            registerCommand({
+                register: (_command, callback: (...args: any[]) => Promise<void>, _thisArg) => {
+                    // vscode.commands.registerCommand is not async, but we can't check until the callback is complete
+                    callback().then(() => {
+                        const data = mockService.lastEvent!.data![0]
+                        const metadata = data.metadata!
+
+                        assert.strictEqual(
+                            metadata.get(METADATA_FIELD_NAME.RESULT), 'bananas',
+                            'Unexpected value for metadata.result')
+                        assert.strictEqual(
+                            metadata.get('duration'), '999999',
+                            'Unexpected value for metadata.duration')
+
+                        done()
+                    }).catch(err => {
+                        throw err
+                    })
+
+                    return Disposable.from()
+                },
+                command: 'command',
+                callback: async () => {
+                    const datum: Datum = defaultMetricDatum('somemetric')
+                    datum.metadata = new Map([
+                        [METADATA_FIELD_NAME.RESULT, 'bananas'],
+                        ['duration', '999999'],
+                    ])
+
+                    return {
+                        datum
+                    }
+                }
             })
         })
 
@@ -76,7 +163,8 @@ describe('telemetryUtils', () => {
                         assert.notStrictEqual(mockService.lastEvent!.data![0].metadata!.get('duration'), undefined)
 
                         assert.strictEqual(
-                            mockService.lastEvent!.data![0].metadata!.get('result'), 'Succeeded'
+                            mockService.lastEvent!.data![0].metadata!.get(METADATA_FIELD_NAME.RESULT),
+                            METADATA_RESULT_PASS
                         )
                         assert.strictEqual(mockService.lastEvent!.namespace, TelemetryNamespace.Aws)
                         assert.strictEqual(mockService.lastEvent!.data![0].name, 'thisAintYourFathersNameField')
@@ -88,7 +176,7 @@ describe('telemetryUtils', () => {
                     return Disposable.from()
                 },
                 command: 'command',
-                callback: async () => {},
+                callback: async () => { },
                 telemetryName: {
                     namespace: TelemetryNamespace.Aws,
                     name: 'thisAintYourFathersNameField'
@@ -112,7 +200,8 @@ describe('telemetryUtils', () => {
                         assert.notStrictEqual(mockService.lastEvent!.data![0].metadata!.get('duration'), undefined)
 
                         assert.strictEqual(
-                            mockService.lastEvent!.data![0].metadata!.get('result'), 'Failed'
+                            mockService.lastEvent!.data![0].metadata!.get(METADATA_FIELD_NAME.RESULT),
+                            METADATA_RESULT_FAIL
                         )
                         assert.strictEqual(mockService.lastEvent!.namespace, 'Command')
                         assert.strictEqual(mockService.lastEvent!.data![0].name, 'command')
