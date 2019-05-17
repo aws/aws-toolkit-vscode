@@ -17,7 +17,7 @@ import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
 import { intersection, toMap, updateInPlace } from '../shared/utilities/collectionUtils'
-import { localize } from '../shared/utilities/vsCodeUtils'
+import { ChannelLogger, localize } from '../shared/utilities/vsCodeUtils'
 import { createNewSamApp } from './commands/createNewSamApp'
 import { deleteCloudFormation } from './commands/deleteCloudFormation'
 import { deleteLambda } from './commands/deleteLambda'
@@ -43,6 +43,7 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         private readonly awsContextTrees: AwsContextTreeCollection,
         private readonly regionProvider: RegionProvider,
         private readonly resourceFetcher: ResourceFetcher,
+        private readonly channelLogger: ChannelLogger,
         private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string,
         private readonly lambdaOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda'),
     ) {
@@ -61,10 +62,12 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         registerCommand({
             command: createNewSamAppCommand,
             callback: async (): Promise<{ datum: Datum }> => {
-                const metadata = await createNewSamApp(context)
+                const metadata = await createNewSamApp(this.channelLogger, context)
                 const datum = defaultMetricDatum(createNewSamAppCommand)
                 datum.metadata = metadata ? new Map([
-                    ['runtime', metadata.runtime]
+                    ['runtime', metadata.runtime],
+                    ['result', String(metadata.success)],
+                    ['reason', metadata.reason],
                 ]) : undefined
 
                 return {
