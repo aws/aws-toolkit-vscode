@@ -45,15 +45,14 @@ class AwsSettingsMenuTest {
         val credentialsManager = MockCredentialsManager.getInstance()
 
         val actionGroup = sut.getChildren(null).first() as DefaultActionGroup
-        val credentialsActionGroup =
-            actionGroup.getChildren(null).first { it.templateText == "All Credentials" } as ActionGroup
+        val credentialsActionGroup = actionGroup.getChildren(null).first { it.templatePresentation.text == "All Credentials" } as ActionGroup
 
         credentialsManager.addCredentials("Creds", AwsBasicCredentials.create("Access", "Secret"), true)
         val providers = credentialsManager.getCredentialProviders().map { it.displayName }.toList()
-        assertThat(credentialsActionGroup.getChildren(null).map { it.templateText }).containsAll(providers)
+        assertThat(credentialsActionGroup.getChildren(null).map { it.templatePresentation.text }).containsAll(providers)
 
         credentialsManager.addCredentials("New Creds", AwsBasicCredentials.create("Access", "Secret"), true)
         val updatedProviders = credentialsManager.getCredentialProviders().map { it.displayName }.toList()
-        assertThat(credentialsActionGroup.getChildren(null).map { it.templateText }).containsAll(updatedProviders)
+        assertThat(credentialsActionGroup.getChildren(null).map { it.templatePresentation.text }).containsAll(updatedProviders)
     }
 }
