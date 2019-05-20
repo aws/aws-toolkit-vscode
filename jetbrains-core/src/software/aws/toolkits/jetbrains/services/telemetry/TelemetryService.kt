@@ -8,16 +8,34 @@ import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.toolkittelemetry.model.Unit
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent
+import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NA
+import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NOT_SET
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.core.credentials.activeAwsAccount
+import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
 
 interface TelemetryService : Disposable {
-    fun record(project: Project?, namespace: String, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): MetricEvent
+    data class MetricEventMetadata(
+        val awsAccount: String = METADATA_NA,
+        val awsRegion: String = METADATA_NA
+    )
+
+    // TODO consider using DataProvider for the metricEventMetadata.
+    fun record(namespace: String, metricEventMetadata: MetricEventMetadata, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): MetricEvent
+
+    fun record(project: Project?, namespace: String, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): MetricEvent {
+        val metricEventMetadata = if (project == null) MetricEventMetadata() else MetricEventMetadata(
+            awsAccount = project.activeAwsAccount() ?: METADATA_NOT_SET,
+            awsRegion = project.activeRegion().id
+        )
+        return record(namespace, metricEventMetadata, buildEvent)
+    }
 
     fun record(namespace: String, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): MetricEvent = record(null, namespace, buildEvent)
 
@@ -71,9 +89,11 @@ class DefaultTelemetryService(
         batcher.shutdown()
     }
 
-    override fun record(project: Project?, namespace: String, buildEvent: MetricEvent.Builder.() -> kotlin.Unit): MetricEvent {
+    override fun record(namespace: String, metricEventMetadata: TelemetryService.MetricEventMetadata, buildEvent: MetricEvent.Builder.() -> kotlin.Unit): MetricEvent {
         val builder = DefaultMetricEvent.builder(namespace)
         buildEvent(builder)
+        builder.awsAccount(metricEventMetadata.awsAccount)
+        builder.awsRegion(metricEventMetadata.awsRegion)
         val event = builder.build()
         batcher.enqueue(event)
         return event

@@ -8,11 +8,13 @@ import com.intellij.openapi.project.Project
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+import software.amazon.awssdk.services.sts.StsClient
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager.Companion.createDummyProvider
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
+import software.aws.toolkits.jetbrains.utils.delegateMock
 
 class MockProjectAccountSettingsManager : ProjectAccountSettingsManager {
     private var internalProvider: ToolkitCredentialsProvider? = DUMMY_PROVIDER
@@ -23,6 +25,9 @@ class MockProjectAccountSettingsManager : ProjectAccountSettingsManager {
 
     override val activeCredentialProvider: ToolkitCredentialsProvider
         get() = internalProvider ?: throw CredentialProviderNotFound("boom")
+
+    override val activeAwsAccount: String?
+        get() = if (hasActiveCredentials()) activeCredentialProvider.getAwsAccount(delegateMock()) else null
 
     override fun recentlyUsedRegions(): List<AwsRegion> = recentlyUsedRegions
 
@@ -42,6 +47,7 @@ class MockProjectAccountSettingsManager : ProjectAccountSettingsManager {
 
     fun reset() {
         internalProvider = DUMMY_PROVIDER
+        activeRegion = AwsRegionProvider.getInstance().defaultRegion()
         recentlyUsedRegions.clear()
         recentlyUsedCredentials.clear()
     }
@@ -57,6 +63,8 @@ class MockProjectAccountSettingsManager : ProjectAccountSettingsManager {
             override val displayName = id
 
             override fun resolveCredentials(): AwsCredentials = awsCredentials
+
+            override fun getAwsAccount(stsClient: StsClient): String = "111111111111"
         }
 
         fun getInstance(project: Project): MockProjectAccountSettingsManager =

@@ -20,9 +20,11 @@ import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
 import org.slf4j.event.Level
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_INVALID
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.core.AwsAccountCache
 import software.aws.toolkits.jetbrains.services.lambda.BuildLambdaFromHandler
 import software.aws.toolkits.jetbrains.services.lambda.BuildLambdaFromTemplate
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderUtils
@@ -102,7 +104,13 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
                 buildingPromise.setError(it)
                 throw it
             }.whenComplete { _, exception ->
-                TelemetryService.getInstance().record(module.project, "SamInvoke") {
+                TelemetryService.getInstance().record(
+                    "SamInvoke",
+                    TelemetryService.MetricEventMetadata(
+                        awsAccount = AwsAccountCache.getInstance().awsAccount(lambdaSettings.credentials) ?: METADATA_INVALID,
+                        awsRegion = lambdaSettings.region.id
+                    )
+                ) {
                     val type = if (environment.isDebug()) "Debug" else "Run"
                     datum(type) {
                         count()

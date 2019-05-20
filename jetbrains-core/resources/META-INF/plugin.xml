@@ -130,6 +130,9 @@
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.settings.AwsSettings"
                             serviceImplementation="software.aws.toolkits.jetbrains.settings.DefaultAwsSettings"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.SamSettings"/>
+        <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.AwsAccountCache"
+                            serviceImplementation="software.aws.toolkits.jetbrains.core.DefaultAwsAccountCache"
+                            testServiceImplementation="software.aws.toolkits.jetbrains.core.MockAwsAccountCache"/>
 
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.settings.LambdaSettings"/>
 

@@ -22,8 +22,8 @@ class MockCredentialsManager : CredentialManager() {
         providers.clear()
     }
 
-    fun addCredentials(id: String, credentials: AwsCredentials, isValid: Boolean = true): ToolkitCredentialsProvider =
-        MockCredentialsProvider(id, id, credentials, isValid).also {
+    fun addCredentials(id: String, credentials: AwsCredentials, isValid: Boolean = true, awsAccountId: String = "111111111111"): ToolkitCredentialsProvider =
+        MockCredentialsProvider(id, id, credentials, isValid, awsAccountId).also {
             incModificationCount()
             providers[id] = it
         }
@@ -36,12 +36,15 @@ class MockCredentialsManager : CredentialManager() {
         override val id: String,
         override val displayName: String,
         private val credentials: AwsCredentials,
-        private val isValid: Boolean
+        private val isValid: Boolean,
+        private val awsAccountId: String
     ) : ToolkitCredentialsProvider() {
         override fun resolveCredentials(): AwsCredentials = credentials
-        override fun isValidOrThrow(stsClient: StsClient) {
+        override fun getAwsAccount(stsClient: StsClient): String {
             if (!isValid) {
                 throw IllegalStateException("$displayName is not valid")
+            } else {
+                return awsAccountId
             }
         }
     }

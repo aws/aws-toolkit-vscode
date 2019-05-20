@@ -63,12 +63,22 @@ class DefaultTelemetryPublisher(
                     .metricName("${metricEvent.namespace}.${datum.name}")
                     .unit(datum.unit)
                     .value(datum.value)
-                    .metadata(datum.metadata.entries.stream().map {
-                        MetadataEntry.builder()
-                            .key(it.key)
-                            .value(it.value)
-                            .build()
-                    }.toList())
+                    .metadata(
+                        datum.metadata.entries.stream().map {
+                            MetadataEntry.builder()
+                                .key(it.key)
+                                .value(it.value)
+                                .build()
+                        }.toList() + listOf(
+                            MetadataEntry.builder()
+                                .key(METADATA_AWS_ACCOUNT)
+                                .value(metricEvent.awsAccount)
+                                .build(),
+                            MetadataEntry.builder()
+                                .key(METADATA_AWS_REGION)
+                                .value(metricEvent.awsRegion)
+                                .build()
+                        ))
                     .build()
             }.ifEmpty {
                 listOf(
@@ -84,6 +94,9 @@ class DefaultTelemetryPublisher(
 
     private companion object {
         private val LOG = getLogger<DefaultTelemetryPublisher>()
+
+        private const val METADATA_AWS_ACCOUNT = "awsAccount"
+        private const val METADATA_AWS_REGION = "awsRegion"
 
         private fun createDefaultTelemetryClient(): ToolkitTelemetryClient {
             val sdkClient = AwsSdkClient.getInstance()
