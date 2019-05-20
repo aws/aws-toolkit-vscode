@@ -3,7 +3,7 @@
 
 package software.aws.toolkits.ktlint.rules
 
-import com.github.shyiko.ktlint.core.Rule
+import com.pinterest.ktlint.core.Rule
 import org.jetbrains.kotlin.com.intellij.lang.ASTNode
 
 class BannedPatternRule(private val patterns: List<BannedPattern>) : Rule("banned-pattern"), Rule.Modifier.RestrictToRoot {

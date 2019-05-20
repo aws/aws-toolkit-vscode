@@ -2,6 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 dependencies {
-    compile "com.github.shyiko.ktlint:ktlint-core:$ktlintVersion"
-    testCompile "com.github.shyiko.ktlint:ktlint-test:$ktlintVersion"
+    compile "com.pinterest.ktlint:ktlint-core:$ktlintVersion"
+    testCompile "com.pinterest.ktlint:ktlint-test:$ktlintVersion"
 }
