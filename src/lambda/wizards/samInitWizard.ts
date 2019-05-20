@@ -13,7 +13,6 @@ import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { samInitDocUrl } from '../../shared/constants'
-import { SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
@@ -178,7 +177,13 @@ export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizar
     }
 }
 
-export class CreateNewSamAppWizard extends MultiStepWizard<SamCliInitArgs> {
+export interface CreateNewSamAppWizardResults {
+    runtime: lambdaRuntime.SamLambdaRuntime
+    location: vscode.Uri
+    name: string
+}
+
+export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizardResults> {
     private runtime?: lambdaRuntime.SamLambdaRuntime
     private location?: vscode.Uri
     private name?: string
@@ -193,7 +198,7 @@ export class CreateNewSamAppWizard extends MultiStepWizard<SamCliInitArgs> {
         return this.RUNTIME
     }
 
-    protected getResult(): SamCliInitArgs | undefined {
+    protected getResult(): CreateNewSamAppWizardResults | undefined {
         if (!this.runtime || !this.location || !this.name) {
             return undefined
         }

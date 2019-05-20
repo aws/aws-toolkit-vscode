@@ -12,7 +12,7 @@ import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 
 export class TestSamCliProcessInvoker implements SamCliProcessInvoker {
     public constructor(
-        private readonly onInvoke: (...args: any[]) => ChildProcessResult
+        private readonly onInvoke: (spawnOptions: SpawnOptions, ...args: any[]) => ChildProcessResult
     ) {
     }
 
@@ -20,7 +20,8 @@ export class TestSamCliProcessInvoker implements SamCliProcessInvoker {
     public invoke(...args: string[]): Promise<ChildProcessResult>
     public async invoke(first: SpawnOptions | string, ...rest: string[]): Promise<ChildProcessResult> {
         const args = typeof first === 'string' ? [first, ...rest] : rest
+        const spawnOptions: SpawnOptions = typeof first === 'string' ? {} : first
 
-        return this.onInvoke(args)
+        return this.onInvoke(spawnOptions, args)
     }
 }

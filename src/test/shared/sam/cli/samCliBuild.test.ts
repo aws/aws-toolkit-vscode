@@ -6,6 +6,7 @@
 'use strict'
 
 import * as assert from 'assert'
+import { SpawnOptions } from 'child_process'
 import * as del from 'del'
 import * as path from 'path'
 import { writeFile } from '../../../../shared/filesystem'
@@ -31,7 +32,7 @@ describe('SamCliBuildInvocation', async () => {
         public constructor(
             onInvoke: (...args: any[]) => void
         ) {
-            super((...args: any[]) => {
+            super((spawnOptions: SpawnOptions, ...args: any[]) => {
                 onInvoke(...args)
 
                 return new FakeChildProcessResult()

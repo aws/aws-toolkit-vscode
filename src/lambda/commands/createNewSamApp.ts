@@ -11,12 +11,16 @@ const localize = nls.loadMessageBundle()
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
-import { SamCliInitArgs, SamCliInitInvocation } from '../../shared/sam/cli/samCliInit'
+import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { getMainSourceFileUri } from '../utilities/getMainSourceFile'
-import { CreateNewSamAppWizard, DefaultCreateNewSamAppWizardContext } from '../wizards/samInitWizard'
+import {
+    CreateNewSamAppWizard,
+    CreateNewSamAppWizardResults,
+    DefaultCreateNewSamAppWizardContext
+} from '../wizards/samInitWizard'
 
 export const URI_TO_OPEN_ON_INIT_KEY = 'URI_TO_OPEN_ON_INIT_KEY'
 
@@ -68,7 +72,7 @@ export async function createNewSamApp(
         await validateSamCli(samCliContext.validator)
 
         const wizardContext = new DefaultCreateNewSamAppWizardContext(extensionContext)
-        const config = await new CreateNewSamAppWizard(wizardContext).run()
+        const config: CreateNewSamAppWizardResults | undefined = await new CreateNewSamAppWizard(wizardContext).run()
         if (!config) {
             resultsMetadata.reason = 'cancelled'
 
@@ -77,8 +81,12 @@ export async function createNewSamApp(
 
         resultsMetadata.runtime = config.runtime
 
-        const invocation = new SamCliInitInvocation(config, samCliContext.invoker)
-        await invocation.execute()
+        const initArguments: SamCliInitArgs = {
+            name: config.name,
+            location: config.location.fsPath,
+            runtime: config.runtime,
+        }
+        await runSamCliInit(initArguments, samCliContext.invoker)
 
         resultsMetadata.success = true
 
@@ -122,7 +130,9 @@ async function validateSamCli(samCliValidator: SamCliValidator): Promise<void> {
     throwAndNotifyIfInvalid(validationResult)
 }
 
-async function getMainUri(config: Pick<SamCliInitArgs, 'location' | 'name'>): Promise<vscode.Uri | undefined> {
+async function getMainUri(
+    config: Pick<CreateNewSamAppWizardResults, 'location' | 'name'>
+): Promise<vscode.Uri | undefined> {
     try {
         return await getMainSourceFileUri({
             root: vscode.Uri.file(path.join(config.location.fsPath, config.name))
