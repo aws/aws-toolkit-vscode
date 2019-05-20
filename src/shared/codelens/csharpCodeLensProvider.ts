@@ -5,15 +5,14 @@
 
 'use strict'
 
-import * as crossSpawn from 'cross-spawn'
 import * as del from 'del'
-import * as fs from 'fs'
 import * as path from 'path'
-import * as util from 'util'
 import * as vscode from 'vscode'
 
 import { makeCoreCLRDebugConfiguration } from '../../lambda/local/debugConfiguration'
+import { DefaultDockerClient, DockerClient } from '../clients/dockerClient'
 import { CloudFormation } from '../cloudformation/cloudformation'
+import { access, mkdir } from '../filesystem'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
 import {
@@ -43,9 +42,6 @@ import {
     makeBuildDir,
     makeInputTemplate,
 } from './localLambdaRunner'
-
-const access = util.promisify(fs.access)
-const mkdir = util.promisify(fs.mkdir)
 
 export const CSHARP_LANGUAGE = 'csharp'
 export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
@@ -77,17 +73,31 @@ export async function initialize({
     registerCommand({
         command,
         callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
-            return await onLocalInvokeCommand({
-                commandName: command,
-                lambdaLocalInvokeParams: params,
-                configuration,
-                toolkitOutputChannel,
-                processInvoker,
-                taskInvoker,
-                telemetryService
-            })
+            return await onLocalInvokeCommand(
+                {
+                    commandName: command,
+                    lambdaLocalInvokeParams: params,
+                    configuration,
+                    toolkitOutputChannel,
+                    processInvoker,
+                    taskInvoker,
+                    telemetryService
+                }
+            )
         },
     })
+}
+
+export interface OnLocalInvokeCommandContext {
+    installDebugger(args: InstallDebuggerArgs): Promise<InstallDebuggerResult>
+}
+
+class DefaultOnLocalInvokeCommandContext implements OnLocalInvokeCommandContext {
+    private readonly dockerClient: DockerClient = new DefaultDockerClient()
+
+    public async installDebugger(args: InstallDebuggerArgs): Promise<InstallDebuggerResult> {
+        return await _installDebugger(args, { dockerClient: this.dockerClient })
+    }
 }
 
 /**
@@ -101,28 +111,31 @@ export async function initialize({
  * @param taskInvoker - SAM CLI Task invoker
  * @param telemetryService - Telemetry service for metrics
  */
-async function onLocalInvokeCommand({
-    configuration,
-    toolkitOutputChannel,
-    commandName,
-    lambdaLocalInvokeParams,
-    processInvoker,
-    taskInvoker,
-    telemetryService,
-    getResourceFromTemplate = async _args => await CloudFormation.getResourceFromTemplate(_args),
-}: {
-    configuration: SettingsConfiguration
-    toolkitOutputChannel: vscode.OutputChannel,
-    commandName: string,
-    lambdaLocalInvokeParams: LambdaLocalInvokeParams,
-    processInvoker: SamCliProcessInvoker,
-    taskInvoker: SamCliTaskInvoker,
-    telemetryService: TelemetryService,
-    getResourceFromTemplate?(args: {
-        templatePath: string,
-        handlerName: string
-    }): Promise<CloudFormation.Resource>,
-}): Promise<{ datum: Datum }> {
+async function onLocalInvokeCommand(
+    {
+        configuration,
+        toolkitOutputChannel,
+        commandName,
+        lambdaLocalInvokeParams,
+        processInvoker,
+        taskInvoker,
+        telemetryService,
+        getResourceFromTemplate = async _args => await CloudFormation.getResourceFromTemplate(_args),
+    }: {
+        configuration: SettingsConfiguration
+        toolkitOutputChannel: vscode.OutputChannel,
+        commandName: string,
+        lambdaLocalInvokeParams: LambdaLocalInvokeParams,
+        processInvoker: SamCliProcessInvoker,
+        taskInvoker: SamCliTaskInvoker,
+        telemetryService: TelemetryService,
+        getResourceFromTemplate?(args: {
+            templatePath: string,
+            handlerName: string
+        }): Promise<CloudFormation.Resource>,
+    },
+    { installDebugger }: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext()
+): Promise<{ datum: Datum }> {
     const channelLogger = getChannelLogger(toolkitOutputChannel)
     const resource = await getResourceFromTemplate({
         templatePath: lambdaLocalInvokeParams.samTemplate.fsPath,
@@ -149,6 +162,7 @@ async function onLocalInvokeCommand({
             codeDir,
             relativeFunctionHandler: handlerName,
             runtime,
+            properties: resource.Properties
         })
 
         const buildArgs: ExecuteSamBuildArguments = {
@@ -188,11 +202,14 @@ async function onLocalInvokeCommand({
                 invokeContext
             )
         } else {
-            const codeUri = path.join(
-                path.dirname(lambdaLocalInvokeParams.samTemplate.fsPath),
-                CloudFormation.getCodeUri(resource)
-            )
-            const debuggerPath = await installDebugger({
+            const rawCodeUri = CloudFormation.getCodeUri(resource)
+            const codeUri = path.isAbsolute(rawCodeUri) ?
+                rawCodeUri :
+                path.join(
+                    path.dirname(lambdaLocalInvokeParams.samTemplate.fsPath),
+                    rawCodeUri
+                )
+            const { debuggerPath } = await installDebugger({
                 runtime,
                 codeUri
             })
@@ -401,53 +418,48 @@ export function generateDotNetLambdaHandler(components: DotNetLambdaHandlerCompo
     return `${components.assembly}::${components.namespace}.${components.class}::${components.method}`
 }
 
-export async function installDebugger({
-    runtime,
-    codeUri
-}: {
+interface InstallDebuggerArgs {
     runtime: string,
     codeUri: string
-}): Promise<string> {
+}
+
+interface InstallDebuggerResult {
+    debuggerPath: string
+}
+
+async function _installDebugger(
+    { runtime, codeUri }: InstallDebuggerArgs,
+    { dockerClient }: { dockerClient: DockerClient }
+): Promise<InstallDebuggerResult> {
     const vsdbgPath = path.resolve(codeUri, '.vsdbg')
 
     try {
         await access(vsdbgPath)
 
          // vsdbg is already installed.
-        return vsdbgPath
+        return { debuggerPath: vsdbgPath }
     } catch {
         // We could not access vsdbgPath. Swallow error and continue.
     }
 
     try {
         await mkdir(vsdbgPath)
-
-        const process = crossSpawn(
-            'docker',
-            [
-                'run',
-                '--rm',
-                '--mount',
-                `type=bind,src=${vsdbgPath},dst=/vsdbg`,
-                '--entrypoint',
-                'bash',
-                `lambci/lambda:${runtime}`,
-                '-c',
-                '"curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg"'
-            ],
-            {
-                windowsVerbatimArguments: true
+        await dockerClient.invoke({
+            command: 'run',
+            image: `lambci/lambda:${runtime}`,
+            removeOnExit: true,
+            mount: {
+                type: 'bind',
+                source: vsdbgPath,
+                destination: '/vsdbg'
+            },
+            entryPoint: {
+                command: 'bash',
+                args: [
+                    '-c',
+                    '"curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg"'
+                ]
             }
-        )
-
-        await new Promise<void>((resolve, reject) => {
-            process.once('close', (code, signal) => {
-                if (code === 0) {
-                    resolve()
-                } else {
-                    reject(signal)
-                }
-            })
         })
     } catch (err) {
         // Clean up to avoid leaving a bad installation in the user's workspace.
@@ -455,5 +467,5 @@ export async function installDebugger({
         throw err
     }
 
-    return vsdbgPath
+    return { debuggerPath: vsdbgPath }
 }

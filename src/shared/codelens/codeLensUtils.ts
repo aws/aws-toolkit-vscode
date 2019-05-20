@@ -38,6 +38,8 @@ interface MakeConfigureCodeLensParams {
     language: Language
 }
 
+export const DRIVE_LETTER_REGEX = /^\w\:/
+
 export async function makeCodeLenses({ document, token, handlers, language }: {
     document: vscode.TextDocument,
     token: vscode.CancellationToken,

@@ -23,6 +23,7 @@ import { registerCommand } from '../telemetry/telemetryUtils'
 import { getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
 import {
     CodeLensProviderParams,
+    DRIVE_LETTER_REGEX,
     getInvokeCmdKey,
     getMetricDatum,
     makeCodeLenses,
@@ -155,7 +156,7 @@ def ${debugHandlerFunctionName}(event, context):
 
 const fixFilePathCapitalization = (filePath: string): string => {
     if (process.platform === 'win32') {
-        return filePath.replace(/^[a-z]/, match => match.toUpperCase())
+        return filePath.replace(DRIVE_LETTER_REGEX, match => match.toUpperCase())
     }
 
     return filePath

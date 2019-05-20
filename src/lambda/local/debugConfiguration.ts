@@ -7,6 +7,9 @@
 
 import * as os from 'os'
 import * as vscode from 'vscode'
+import { DRIVE_LETTER_REGEX } from '../../shared/codelens/codeLensUtils'
+
+const DEBUGGER_PATH = '/tmp/lambci_debug_files/vsdbg'
 
 export interface DebugConfiguration extends vscode.DebugConfiguration {
     readonly type: 'node' | 'python' | 'coreclr'
@@ -50,7 +53,7 @@ export interface DotNetCoreDebugConfiguration extends DebugConfiguration {
 export interface PipeTransport {
     pipeProgram: 'sh' | 'powershell'
     pipeArgs: string[]
-    debuggerPath: '/tmp/lambci_debug_files/vsdbg',
+    debuggerPath: typeof DEBUGGER_PATH,
     pipeCwd: string
 }
 
@@ -64,29 +67,28 @@ export function makeCoreCLRDebugConfiguration(
         '-c',
         `docker exec -i $(docker ps -q -f publish=${port}) \${debuggerCommand}`
     ]
-    const debuggerPath = '/tmp/lambci_debug_files/vsdbg'
 
     if (os.platform() === 'win32') {
         // Coerce drive letter to uppercase. While Windows is case-insensitive, sourceFileMap is case-sensitive.
-        codeUri = codeUri.replace(/^\w\:/, match => match.toUpperCase())
+        codeUri = codeUri.replace(DRIVE_LETTER_REGEX, match => match.toUpperCase())
     }
 
     return {
-        name: '.NET Core Docker Attach',
+        name: 'SamLocalDebug',
         type: 'coreclr',
         request: 'attach',
         processId: '1',
         pipeTransport: {
             pipeProgram: 'sh',
             pipeArgs,
-            debuggerPath,
+            debuggerPath: DEBUGGER_PATH,
             pipeCwd: codeUri
         },
         windows: {
             pipeTransport: {
                 pipeProgram: 'powershell',
                 pipeArgs,
-                debuggerPath,
+                debuggerPath: DEBUGGER_PATH,
                 pipeCwd: codeUri
             }
         },
