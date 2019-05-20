@@ -57,11 +57,13 @@ export interface PipeTransport {
     pipeCwd: string
 }
 
+export interface MakeCoreCLRDebugConfigurationArguments {
+    port: number,
+    codeUri: string
+}
+
 export function makeCoreCLRDebugConfiguration(
-    { codeUri, port }: {
-        port: number,
-        codeUri: string
-    }
+    { codeUri, port }: MakeCoreCLRDebugConfigurationArguments
 ): DotNetCoreDebugConfiguration {
     const pipeArgs = [
         '-c',
