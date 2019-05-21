@@ -18,7 +18,7 @@ import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { getMainSourceFileUri } from '../utilities/getMainSourceFile'
 import {
     CreateNewSamAppWizard,
-    CreateNewSamAppWizardResults,
+    CreateNewSamAppWizardResponse,
     DefaultCreateNewSamAppWizardContext
 } from '../wizards/samInitWizard'
 
@@ -49,7 +49,7 @@ export async function resumeCreateNewSamApp(context: Pick<vscode.ExtensionContex
     }
 }
 
-interface NewSamAppMetadata {
+export interface CreateNewSamAppResults {
     reason: string
     success: boolean
     runtime: string
@@ -61,8 +61,8 @@ export async function createNewSamApp(
     channelLogger: ChannelLogger,
     extensionContext: Pick<vscode.ExtensionContext, 'asAbsolutePath' | 'globalState'>,
     samCliContext: SamCliContext = getSamCliContext(),
-): Promise<NewSamAppMetadata | undefined> {
-    const resultsMetadata: NewSamAppMetadata = {
+): Promise<CreateNewSamAppResults> {
+    const resultsMetadata: CreateNewSamAppResults = {
         reason: 'unknown',
         success: false,
         runtime: 'unknown',
@@ -72,7 +72,7 @@ export async function createNewSamApp(
         await validateSamCli(samCliContext.validator)
 
         const wizardContext = new DefaultCreateNewSamAppWizardContext(extensionContext)
-        const config: CreateNewSamAppWizardResults | undefined = await new CreateNewSamAppWizard(wizardContext).run()
+        const config: CreateNewSamAppWizardResponse | undefined = await new CreateNewSamAppWizard(wizardContext).run()
         if (!config) {
             resultsMetadata.reason = 'cancelled'
 
@@ -131,7 +131,7 @@ async function validateSamCli(samCliValidator: SamCliValidator): Promise<void> {
 }
 
 async function getMainUri(
-    config: Pick<CreateNewSamAppWizardResults, 'location' | 'name'>
+    config: Pick<CreateNewSamAppWizardResponse, 'location' | 'name'>
 ): Promise<vscode.Uri | undefined> {
     try {
         return await getMainSourceFileUri({

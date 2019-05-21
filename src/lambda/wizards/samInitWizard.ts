@@ -177,13 +177,13 @@ export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizar
     }
 }
 
-export interface CreateNewSamAppWizardResults {
+export interface CreateNewSamAppWizardResponse {
     runtime: lambdaRuntime.SamLambdaRuntime
     location: vscode.Uri
     name: string
 }
 
-export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizardResults> {
+export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizardResponse> {
     private runtime?: lambdaRuntime.SamLambdaRuntime
     private location?: vscode.Uri
     private name?: string
@@ -198,7 +198,7 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
         return this.RUNTIME
     }
 
-    protected getResult(): CreateNewSamAppWizardResults | undefined {
+    protected getResult(): CreateNewSamAppWizardResponse | undefined {
         if (!this.runtime || !this.location || !this.name) {
             return undefined
         }

@@ -23,7 +23,7 @@ import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
 import { intersection, toMap, updateInPlace } from '../shared/utilities/collectionUtils'
 import { ChannelLogger, localize } from '../shared/utilities/vsCodeUtils'
-import { createNewSamApp } from './commands/createNewSamApp'
+import { createNewSamApp, CreateNewSamAppResults } from './commands/createNewSamApp'
 import { deleteCloudFormation } from './commands/deleteCloudFormation'
 import { deleteLambda } from './commands/deleteLambda'
 import { deploySamApplication } from './commands/deploySamApplication'
@@ -67,13 +67,13 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         registerCommand({
             command: createNewSamAppCommand,
             callback: async (): Promise<{ datum: Datum }> => {
-                const metadata = await createNewSamApp(this.channelLogger, context)
+                const metadata: CreateNewSamAppResults = await createNewSamApp(this.channelLogger, context)
                 const datum = defaultMetricDatum(createNewSamAppCommand)
-                datum.metadata = metadata ? new Map([
+                datum.metadata = new Map([
                     ['runtime', metadata.runtime],
                     [METADATA_FIELD_NAME.RESULT, metadata.success ? METADATA_RESULT_PASS : METADATA_RESULT_FAIL],
                     [METADATA_FIELD_NAME.REASON, metadata.reason],
-                ]) : undefined
+                ])
 
                 return {
                     datum
