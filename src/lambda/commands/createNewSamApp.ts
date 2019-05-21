@@ -50,7 +50,7 @@ export async function resumeCreateNewSamApp(context: Pick<vscode.ExtensionContex
     }
 }
 
-export interface CreateNewSamAppResults {
+export interface CreateNewSamApplicationResults {
     reason: 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
     result: 'pass' | 'fail' | 'cancel',
     runtime: string
@@ -59,12 +59,12 @@ export interface CreateNewSamAppResults {
 /**
  * Runs `sam init` in the given context and returns useful metadata about its invocation
  */
-export async function createNewSamApp(
+export async function createNewSamApplication(
     channelLogger: ChannelLogger,
     extensionContext: Pick<vscode.ExtensionContext, 'asAbsolutePath' | 'globalState'>,
     samCliContext: SamCliContext = getSamCliContext(),
-): Promise<CreateNewSamAppResults> {
-    const resultsMetadata: CreateNewSamAppResults = {
+): Promise<CreateNewSamApplicationResults> {
+    const resultsMetadata: CreateNewSamApplicationResults = {
         reason: 'unknown',
         result: 'fail',
         runtime: 'unknown',
@@ -215,7 +215,7 @@ async function addWorkspaceFolder(
     return !updateExistingWorkspacePromise
 }
 
-export function applyResultsToMetadata(createResults: CreateNewSamAppResults, metadata: Map<string, string>) {
+export function applyResultsToMetadata(createResults: CreateNewSamApplicationResults, metadata: Map<string, string>) {
     let metadataResult: MetadataResult
 
     switch (createResults.result) {

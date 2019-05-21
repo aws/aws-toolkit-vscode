@@ -18,7 +18,11 @@ import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
 import { intersection, toMap, updateInPlace } from '../shared/utilities/collectionUtils'
 import { ChannelLogger, localize } from '../shared/utilities/vsCodeUtils'
-import { applyResultsToMetadata, createNewSamApp, CreateNewSamAppResults } from './commands/createNewSamApp'
+import {
+    applyResultsToMetadata,
+    createNewSamApplication,
+    CreateNewSamApplicationResults
+} from './commands/createNewSamApp'
 import { deleteCloudFormation } from './commands/deleteCloudFormation'
 import { deleteLambda } from './commands/deleteLambda'
 import { deploySamApplication } from './commands/deploySamApplication'
@@ -62,7 +66,7 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         registerCommand({
             command: createNewSamAppCommand,
             callback: async (): Promise<{ datum: Datum }> => {
-                const createNewSamApplicationResults: CreateNewSamAppResults = await createNewSamApp(
+                const createNewSamApplicationResults: CreateNewSamApplicationResults = await createNewSamApplication(
                     this.channelLogger,
                     context
                 )
