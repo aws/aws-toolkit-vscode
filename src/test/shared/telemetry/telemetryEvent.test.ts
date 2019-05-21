@@ -6,7 +6,7 @@
 'use strict'
 
 import * as assert from 'assert'
-import { toMetricData, TelemetryEvent } from '../../../shared/telemetry/telemetryEvent'
+import { TelemetryEvent, toMetricData } from '../../../shared/telemetry/telemetryEvent'
 import { DEFAULT_TEST_ACCOUNT_ID, FakeAwsContext } from '../../utilities/fakeAwsContext'
 
 describe('TelemetryEventArray', () => {
