@@ -12,36 +12,36 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.resources.message
 
-class SamInitRunner(
-    private val name: String,
-    private val outputDir: VirtualFile,
-    private val runtime: Runtime,
-    private val location: String? = null,
-    private val dependencyManager: String? = null
-) {
-    fun execute() = ApplicationManager.getApplication().runWriteAction {
+object SamInitRunner {
+    fun execute(
+        name: String,
+        outputDir: VirtualFile,
+        runtime: Runtime,
+        location: String? = null,
+        dependencyManager: String? = null
+    ) = ApplicationManager.getApplication().runWriteAction {
         // set output to a temp dir
         val tempDir = createTempDir()
         val commandLine = SamCommon.getSamCommandLine()
-                .withParameters("init")
-                .withParameters("--no-input")
-                .withParameters("--name")
-                .withParameters(name)
-                .withParameters("--runtime")
-                .withParameters(runtime.toString())
-                .withParameters("--output-dir")
-                .withParameters(tempDir.path)
-                .apply {
-                    location?.let {
-                        this.withParameters("--location")
-                            .withParameters(it)
-                    }
-
-                    dependencyManager?.let {
-                        this.withParameters("--dependency-manager")
-                            .withParameters(it)
-                    }
+            .withParameters("init")
+            .withParameters("--no-input")
+            .withParameters("--name")
+            .withParameters(name)
+            .withParameters("--runtime")
+            .withParameters(runtime.toString())
+            .withParameters("--output-dir")
+            .withParameters(tempDir.path)
+            .apply {
+                location?.let {
+                    this.withParameters("--location")
+                        .withParameters(it)
                 }
+
+                dependencyManager?.let {
+                    this.withParameters("--dependency-manager")
+                        .withParameters(it)
+                }
+            }
 
         val process = CapturingProcessHandler(commandLine).runProcess()
         if (process.exitCode != 0) {
