@@ -131,12 +131,14 @@ export class UserCredentialsUtils {
         try {
             if (!sts) {
                 // Past iteration did not include a set region. Should we change this?
+                // We can also use the set region when we migrate to a single-region experience:
+                // https://github.com/aws/aws-toolkit-vscode/issues/549
                 sts = ext.toolkitClientBuilder.createStsClient('us-east-1', {accessKeyId, secretAccessKey})
             }
 
             const response = await sts.getCallerIdentity()
 
-            return response.Account ? { isValid: true } : { isValid: false }
+            return { isValid: !!response.Account }
 
         } catch (err) {
 

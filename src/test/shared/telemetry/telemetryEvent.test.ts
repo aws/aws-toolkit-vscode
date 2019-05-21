@@ -6,7 +6,7 @@
 'use strict'
 
 import * as assert from 'assert'
-import { toMetricData } from '../../../shared/telemetry/telemetryEvent'
+import { toMetricData, TelemetryEvent } from '../../../shared/telemetry/telemetryEvent'
 import { DEFAULT_TEST_ACCOUNT_ID, FakeAwsContext } from '../../utilities/fakeAwsContext'
 
 describe('TelemetryEventArray', () => {
@@ -71,7 +71,7 @@ describe('TelemetryEventArray', () => {
 
         it('maps TelemetryEvent with data to a multiple MetricDatum', () => {
             const fakeAwsContext = new FakeAwsContext()
-            const eventArray = []
+            const eventArray: TelemetryEvent[] = []
             const metricEvent = {
                 namespace: 'namespace',
                 createTime: new Date(),
@@ -88,6 +88,14 @@ describe('TelemetryEventArray', () => {
                             ['key', 'value'],
                             ['key2', 'value2']
                         ])
+                    },
+                    {
+                        name: 'event3',
+                        value: 0.333,
+                        unit: 'Percent',
+                        metadata: new Map([
+                            ['key3', 'value3'],
+                        ])
                     }
                 ]
             }
@@ -98,24 +106,33 @@ describe('TelemetryEventArray', () => {
             eventArray.push(metricEvent)
             const data = toMetricData(eventArray, fakeAwsContext)
 
-            assert.strictEqual(data.length, 2)
+            assert.strictEqual(data.length, 3)
             assert.strictEqual(data[0].EpochTimestamp, metricEvent.createTime.getTime())
             assert.strictEqual(data[1].EpochTimestamp, metricEvent.createTime.getTime())
+            assert.strictEqual(data[2].EpochTimestamp, metricEvent.createTime.getTime())
             assert.strictEqual(data[0].MetricName, 'namespace_event1')
             assert.strictEqual(data[1].MetricName, 'namespace_event2')
+            assert.strictEqual(data[2].MetricName, 'namespace_event3')
             assert.strictEqual(data[0].Value, 1)
             assert.strictEqual(data[1].Value, 0.5)
+            assert.strictEqual(data[2].Value, 0.333)
             assert.strictEqual(data[0].Unit, 'None')
             assert.strictEqual(data[1].Unit, 'Percent')
+            assert.strictEqual(data[2].Unit, 'Percent')
             assert.deepStrictEqual(data[0].Metadata, [accountMetadata])
 
-            const expectedMetadata = [
+            const expectedMetadata1 = [
                 accountMetadata,
                 { Key: 'key', Value: 'value' },
                 { Key: 'key2', Value: 'value2' }
             ]
+            const expectedMetadata2 = [
+                accountMetadata,
+                { Key: 'key3', Value: 'value3' }
+            ]
 
-            assert.deepStrictEqual(data[1].Metadata, expectedMetadata)
+            assert.deepStrictEqual(data[1].Metadata, expectedMetadata1)
+            assert.deepStrictEqual(data[2].Metadata, expectedMetadata2)
         })
 
         it('always contains exactly one underscore in the metric name, separating the namespace and the name', () => {

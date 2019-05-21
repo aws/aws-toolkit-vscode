@@ -38,7 +38,7 @@ export class DefaultTelemetryService implements TelemetryService {
 
     public constructor(
         private readonly context: ExtensionContext,
-        private readonly trimmedAwsContext: Pick<AwsContext, 'getCredentialAccountId'>,
+        private readonly awsContext: Pick<AwsContext, 'getCredentialAccountId'>,
         publisher?: TelemetryPublisher
     ) {
         const persistPath = context.globalStoragePath
@@ -188,7 +188,7 @@ export class DefaultTelemetryService implements TelemetryService {
             // if we don't have an identity, get one
             if (!identity) {
                 const identityPublisherTuple =
-                    await DefaultTelemetryPublisher.fromDefaultIdentityPool(clientId, this.trimmedAwsContext)
+                    await DefaultTelemetryPublisher.fromDefaultIdentityPool(clientId, this.awsContext)
 
                 // save it
                 identityMap.set(poolId, identityPublisherTuple.cognitoIdentityId)
@@ -200,7 +200,7 @@ export class DefaultTelemetryService implements TelemetryService {
                 // return the publisher
                 return identityPublisherTuple.publisher
             } else {
-                return DefaultTelemetryPublisher.fromIdentityId(clientId, identity, this.trimmedAwsContext)
+                return DefaultTelemetryPublisher.fromIdentityId(clientId, identity, this.awsContext)
             }
         } catch (err) {
             console.error(`Got ${err} while initializing telemetry publisher`)

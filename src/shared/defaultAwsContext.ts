@@ -9,7 +9,7 @@ import * as AWS from 'aws-sdk'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { AwsContext, ContextChangeEventsArgs } from './awsContext'
-import { accountIdSettingKey, profileSettingKey, regionSettingKey } from './constants'
+import { profileSettingKey, regionSettingKey } from './constants'
 import { CredentialsProfileMru } from './credentials/credentialsProfileMru'
 import { CredentialsManager } from './credentialsManager'
 import { SettingsConfiguration } from './settingsConfiguration'
@@ -41,7 +41,6 @@ export class DefaultAwsContext implements AwsContext {
         this.onDidChangeContext = this._onDidChangeContext.event
 
         this.profileName = settingsConfiguration.readSetting(profileSettingKey, '')
-        this.accountId = settingsConfiguration.readSetting(accountIdSettingKey, '')
         const persistedRegions = context.globalState.get<string[]>(regionSettingKey)
         this.explorerRegions = persistedRegions || []
 
@@ -92,11 +91,7 @@ export class DefaultAwsContext implements AwsContext {
             await this._credentialsMru.setMostRecentlyUsedProfile(this.profileName)
         }
 
-        this._onDidChangeContext.fire(new ContextChangeEventsArgs(
-            this.profileName,
-            this.accountId,
-            this.explorerRegions
-        ))
+        this.emitEvent()
     }
 
     // returns the configured profile's account ID, if any
@@ -107,14 +102,9 @@ export class DefaultAwsContext implements AwsContext {
     // resets the context to the indicated profile, saving it into settings
     public async setCredentialAccountId(accountId?: string): Promise<void> {
         this.accountId = accountId
-        await this.settingsConfiguration.writeSetting(accountIdSettingKey, accountId, vscode.ConfigurationTarget.Global)
 
         // nothing using this even at this time...is this necessary?
-        this._onDidChangeContext.fire(new ContextChangeEventsArgs(
-            this.profileName,
-            this.accountId,
-            this.explorerRegions
-        ))
+        this.emitEvent()
     }
 
     // async so that we could *potentially* support other ways of obtaining
@@ -134,11 +124,7 @@ export class DefaultAwsContext implements AwsContext {
             }
         })
         await this.context.globalState.update(regionSettingKey, this.explorerRegions)
-        this._onDidChangeContext.fire(new ContextChangeEventsArgs(
-            this.profileName,
-            this.accountId,
-            this.explorerRegions
-        ))
+        this.emitEvent()
     }
 
     // removes one or more regions from the user's preferred set, persisting the set afterwards as a
@@ -152,6 +138,10 @@ export class DefaultAwsContext implements AwsContext {
         })
 
         await this.context.globalState.update(regionSettingKey, this.explorerRegions)
+        this.emitEvent()
+    }
+
+    private emitEvent() {
         this._onDidChangeContext.fire(new ContextChangeEventsArgs(
             this.profileName,
             this.accountId,

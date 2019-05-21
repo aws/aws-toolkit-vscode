@@ -12,7 +12,6 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { promisify } from 'util'
 
-import { StsClient } from '../../../shared/clients/stsClient'
 import {
     loadSharedConfigFiles,
     SharedConfigFiles
@@ -24,6 +23,7 @@ import {
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { TestLogger } from '../../../shared/loggerUtils'
+import { MockStsClient } from '../clients/mockClients'
 
 describe('UserCredentialsUtils', () => {
 
@@ -184,18 +184,16 @@ describe('UserCredentialsUtils', () => {
                 Account: 'valid'
             }
 
-            const mockSts = {
-                getCallerIdentity: () => {
-                    timesCalled++
-
-                    return mockResponse
-                }
-            }
-
             const result: CredentialsValidationResult = await UserCredentialsUtils.validateCredentials(
                 'fakeaccess',
                 'fakesecret',
-                mockSts as any as StsClient)
+                new MockStsClient({
+                    getCallerIdentity: async () => {
+                        timesCalled++
+
+                        return mockResponse
+                    }
+                }))
 
             assert.strictEqual(timesCalled, 1)
             assert.strictEqual(result.isValid, true)
@@ -209,18 +207,17 @@ describe('UserCredentialsUtils', () => {
                 Account: undefined
             }
 
-            const mockSts = {
-                getCallerIdentity: () => {
-                    timesCalled++
-
-                    return mockResponse
-                }
-            }
-
             const result: CredentialsValidationResult = await UserCredentialsUtils.validateCredentials(
                 'fakeaccess',
                 'fakesecret',
-                mockSts as any as StsClient)
+                new MockStsClient({
+                    getCallerIdentity: async () => {
+                        timesCalled++
+
+                        return mockResponse
+                    }
+                })
+            )
 
             assert.strictEqual(timesCalled, 1)
             assert.strictEqual(result.isValid, false)
@@ -230,18 +227,17 @@ describe('UserCredentialsUtils', () => {
 
             let timesCalled: number = 0
 
-            const mockSts = {
-                getCallerIdentity: () => {
-                    timesCalled++
-
-                    throw new Error('Simulating error with explicit throw')
-                }
-            }
-
             const result: CredentialsValidationResult = await UserCredentialsUtils.validateCredentials(
                 'fakeaccess',
                 'fakesecret',
-                mockSts as any as StsClient)
+                new MockStsClient({
+                    getCallerIdentity: async () => {
+                        timesCalled++
+
+                        throw new Error('Simulating error with explicit throw')
+                    }
+                })
+            )
 
             assert.strictEqual(timesCalled, 1)
             assert.strictEqual(result.isValid, false)

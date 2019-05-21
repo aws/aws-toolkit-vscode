@@ -25,7 +25,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
     private constructor(
         private readonly clientId: string,
         private readonly client: ClientTelemetry,
-        private readonly trimmedAwsContext: Pick<AwsContext, 'getCredentialAccountId'>
+        private readonly awsContext: Pick<AwsContext, 'getCredentialAccountId'>
     ) {}
 
     /**
@@ -42,7 +42,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                 OSVersion: os.release(),
                 ParentProduct: vscode.env.appName,
                 ParentProductVersion: vscode.version,
-                MetricData: toMetricData(batch, this.trimmedAwsContext)
+                MetricData: toMetricData(batch, this.awsContext)
             }).promise()
             console.info(`Successfully sent a telemetry batch of ${batch.length}`)
         } catch (err) {
@@ -56,7 +56,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
         clientId: string,
         region: string,
         credentials: Credentials,
-        trimmedAwsContext: Pick<AwsContext, 'getCredentialAccountId'>
+        awsContext: Pick<AwsContext, 'getCredentialAccountId'>
     ): Promise<DefaultTelemetryClient> {
 
         await credentials.getPromise()
@@ -71,7 +71,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                 correctClockSkew: true,
                 endpoint: DefaultTelemetryClient.DEFAULT_TELEMETRY_ENDPOINT
             }),
-            trimmedAwsContext
+            awsContext
         )
     }
 }

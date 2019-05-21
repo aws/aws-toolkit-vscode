@@ -26,7 +26,7 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
         private readonly clientId: string,
         private readonly region: string,
         private readonly credentials: AWS.Credentials,
-        private readonly trimmedAwsContext: Pick<AwsContext, 'getCredentialAccountId'>,
+        private readonly awsContext: Pick<AwsContext, 'getCredentialAccountId'>,
         private telemetryClient?: TelemetryClient
     ) {
         this._eventQueue = []
@@ -68,15 +68,15 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
             this.clientId,
             this.region,
             this.credentials,
-            this.trimmedAwsContext
+            this.awsContext
         )
     }
 
     public static async fromDefaultIdentityPool(
         clientId: string,
-        trimmedAwsContext: Pick<AwsContext, 'getCredentialAccountId'>
+        awsContext: Pick<AwsContext, 'getCredentialAccountId'>
     ): Promise<IdentityPublisherTuple> {
-        return this.fromIdentityPool(clientId, DefaultTelemetryClient.DEFAULT_IDENTITY_POOL, trimmedAwsContext)
+        return this.fromIdentityPool(clientId, DefaultTelemetryClient.DEFAULT_IDENTITY_POOL, awsContext)
     }
 
     /**
@@ -86,7 +86,7 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
     public static async fromIdentityPool(
         clientId: string,
         identityPool: string,
-        trimmedAwsContext: Pick<AwsContext, 'getCredentialAccountId'>
+        awsContext: Pick<AwsContext, 'getCredentialAccountId'>
     ): Promise<IdentityPublisherTuple> {
         const region = identityPool.split(':')[0]
         try {
@@ -106,7 +106,7 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
 
             return {
                 cognitoIdentityId: identityId,
-                publisher: DefaultTelemetryPublisher.fromIdentityId(clientId, identityId, trimmedAwsContext)
+                publisher: DefaultTelemetryPublisher.fromIdentityId(clientId, identityId, awsContext)
             }
         } catch (err) {
             return Promise.reject(`Failed to get an Cognito identity for telemetry: ${err}`)
@@ -116,7 +116,7 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
     public static fromIdentityId(
         clientId: string,
         identityId: string,
-        trimmedAwsContext: Pick<AwsContext, 'getCredentialAccountId'>
+        awsContext: Pick<AwsContext, 'getCredentialAccountId'>
     ): DefaultTelemetryPublisher {
         const region = identityId.split(':')[0]
         const cognitoCredentials = new CognitoIdentityCredentials(
@@ -124,6 +124,6 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
             { region: region }
         )
 
-        return new this(clientId, region, cognitoCredentials, trimmedAwsContext)
+        return new this(clientId, region, cognitoCredentials, awsContext)
     }
 }
