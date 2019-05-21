@@ -26,11 +26,16 @@ phases:
         if [ "$RECORD_UI" ]; then
         ffmpeg -f x11grab -video_size 1920x1080 -i :99 -codec:v libx264 -r 12 /tmp/screen_recording.mp4 &
         fi
-      - ./gradlew guiTest
+      - ./gradlew guiTest coverageReport --info
   post_build:
     commands:
       - if [ "$RECORD_UI" ]; then pkill -2 ffmpeg; while pgrep ffmpeg > /dev/null; do sleep 1; done; fi
       - if [ "$RECORD_UI" ]; then cp /tmp/screen_recording.mp4 jetbrains-core-gui/build/idea-sandbox/system/log/screen_recording.mp4; fi
+      - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
+      - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
+      - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
+      - curl -s https://codecov.io/bash > codecov.sh
+      - if [ "$CODEBUILD_BUILD_SUCCEEDING" ] && [ "$CODE_COV_TOKEN" ]; then bash ./codecov.sh -t $CODE_COV_TOKEN -F uitest || true; fi
 artifacts:
   files:
     - guitest.log
