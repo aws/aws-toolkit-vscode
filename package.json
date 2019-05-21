@@ -313,6 +313,7 @@
         "postinstall": "node ./node_modules/vscode/bin/install",
         "test": "npm run compile && node ./test-scripts/test.js",
         "lint": "tslint --project .",
+        "lintfix": "tslint --project . --fix",
         "package": "vsce package",
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix"
     },
