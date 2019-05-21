@@ -28,9 +28,7 @@ let settingsConfiguration: SettingsConfiguration
 let logger: Logger
 
 export function initialize(
-    {
-        ...params
-    }: {
+    params: {
         settingsConfiguration: SettingsConfiguration,
         logger: Logger,
     }
