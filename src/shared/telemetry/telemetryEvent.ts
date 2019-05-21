@@ -16,8 +16,11 @@ export const METADATA_FIELD_NAME = {
     REASON: 'reason',
 }
 
-export const METADATA_RESULT_PASS = 'Succeeded'
-export const METADATA_RESULT_FAIL = 'Failed'
+export enum MetadataResult {
+    Pass = 'Succeeded',
+    Fail = 'Failed',
+    Cancel = 'Cancelled',
+}
 
 export interface Datum {
     name: string

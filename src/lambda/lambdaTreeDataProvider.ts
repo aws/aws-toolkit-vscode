@@ -11,19 +11,14 @@ import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
 import { ext } from '../shared/extensionGlobals'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { ResourceFetcher } from '../shared/resourceFetcher'
-import {
-    Datum,
-    METADATA_FIELD_NAME,
-    METADATA_RESULT_FAIL,
-    METADATA_RESULT_PASS
-} from '../shared/telemetry/telemetryEvent'
+import { Datum } from '../shared/telemetry/telemetryEvent'
 import { defaultMetricDatum, registerCommand, TelemetryNamespace } from '../shared/telemetry/telemetryUtils'
 import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
 import { intersection, toMap, updateInPlace } from '../shared/utilities/collectionUtils'
 import { ChannelLogger, localize } from '../shared/utilities/vsCodeUtils'
-import { createNewSamApp, CreateNewSamAppResults } from './commands/createNewSamApp'
+import { applyResultsToMetadata, createNewSamApp, CreateNewSamAppResults } from './commands/createNewSamApp'
 import { deleteCloudFormation } from './commands/deleteCloudFormation'
 import { deleteLambda } from './commands/deleteLambda'
 import { deploySamApplication } from './commands/deploySamApplication'
@@ -67,13 +62,13 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         registerCommand({
             command: createNewSamAppCommand,
             callback: async (): Promise<{ datum: Datum }> => {
-                const metadata: CreateNewSamAppResults = await createNewSamApp(this.channelLogger, context)
+                const createNewSamApplicationResults: CreateNewSamAppResults = await createNewSamApp(
+                    this.channelLogger,
+                    context
+                )
                 const datum = defaultMetricDatum(createNewSamAppCommand)
-                datum.metadata = new Map([
-                    ['runtime', metadata.runtime],
-                    [METADATA_FIELD_NAME.RESULT, metadata.success ? METADATA_RESULT_PASS : METADATA_RESULT_FAIL],
-                    [METADATA_FIELD_NAME.REASON, metadata.reason],
-                ])
+                datum.metadata = new Map()
+                applyResultsToMetadata(createNewSamApplicationResults, datum.metadata)
 
                 return {
                     datum

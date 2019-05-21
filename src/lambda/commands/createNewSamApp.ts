@@ -14,6 +14,7 @@ import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliCont
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
+import { METADATA_FIELD_NAME, MetadataResult } from '../../shared/telemetry/telemetryEvent'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { getMainSourceFileUri } from '../utilities/getMainSourceFile'
 import {
@@ -50,10 +51,11 @@ export async function resumeCreateNewSamApp(context: Pick<vscode.ExtensionContex
 }
 
 export interface CreateNewSamAppResults {
-    reason: string
-    success: boolean
+    reason: 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
+    result: 'pass' | 'fail' | 'cancel',
     runtime: string
 }
+
 /**
  * Runs `sam init` in the given context and returns useful metadata about its invocation
  */
@@ -64,7 +66,7 @@ export async function createNewSamApp(
 ): Promise<CreateNewSamAppResults> {
     const resultsMetadata: CreateNewSamAppResults = {
         reason: 'unknown',
-        success: false,
+        result: 'fail',
         runtime: 'unknown',
     }
 
@@ -74,7 +76,8 @@ export async function createNewSamApp(
         const wizardContext = new DefaultCreateNewSamAppWizardContext(extensionContext)
         const config: CreateNewSamAppWizardResponse | undefined = await new CreateNewSamAppWizard(wizardContext).run()
         if (!config) {
-            resultsMetadata.reason = 'cancelled'
+            resultsMetadata.result = 'cancel'
+            resultsMetadata.reason = 'userCancelled'
 
             return resultsMetadata
         }
@@ -88,11 +91,11 @@ export async function createNewSamApp(
         }
         await runSamCliInit(initArguments, samCliContext.invoker)
 
-        resultsMetadata.success = true
+        resultsMetadata.result = 'pass'
 
         const uri = await getMainUri(config)
         if (!uri) {
-            resultsMetadata.reason = 'startup file not found'
+            resultsMetadata.reason = 'fileNotFound'
 
             return resultsMetadata
         }
@@ -119,7 +122,8 @@ export async function createNewSamApp(
 
         const error = err as Error
         channelLogger.logger.error(error)
-        resultsMetadata.reason = error.message || 'error'
+        resultsMetadata.result = 'fail'
+        resultsMetadata.reason = 'error'
     }
 
     return resultsMetadata
@@ -209,4 +213,25 @@ async function addWorkspaceFolder(
 
     // Return true if the current process will be terminated by VS Code (because the first workspaceFolder was changed)
     return !updateExistingWorkspacePromise
+}
+
+export function applyResultsToMetadata(createResults: CreateNewSamAppResults, metadata: Map<string, string>) {
+    let metadataResult: MetadataResult
+
+    switch (createResults.result) {
+        case 'pass':
+            metadataResult = MetadataResult.Pass
+            break
+        case 'cancel':
+            metadataResult = MetadataResult.Cancel
+            break
+        case 'fail':
+        default:
+            metadataResult = MetadataResult.Fail
+            break
+    }
+
+    metadata.set('runtime', createResults.runtime)
+    metadata.set(METADATA_FIELD_NAME.RESULT, metadataResult.toString())
+    metadata.set(METADATA_FIELD_NAME.REASON, createResults.reason)
 }
