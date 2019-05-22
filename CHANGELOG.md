@@ -11,6 +11,7 @@ All notable changes to the "aws-vscode-tools" extension will be documented in th
 * When creating a new SAM Application, the toolkit now checks for a valid SAM CLI version before prompting the user for inputs
 * When deploying a SAM Application, the toolkit now checks for a valid SAM CLI version before prompting the user for inputs
 
+
 ## 0.1.1 (Developer Preview)
 
 * Updated Marketplace page to display information on how to use the Toolkit once installed
