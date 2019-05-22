@@ -64,7 +64,7 @@ export async function createNewSamApplication(
     extensionContext: Pick<vscode.ExtensionContext, 'asAbsolutePath' | 'globalState'>,
     samCliContext: SamCliContext = getSamCliContext(),
 ): Promise<CreateNewSamApplicationResults> {
-    const resultsMetadata: CreateNewSamApplicationResults = {
+    const results: CreateNewSamApplicationResults = {
         reason: 'unknown',
         result: 'fail',
         runtime: 'unknown',
@@ -76,13 +76,13 @@ export async function createNewSamApplication(
         const wizardContext = new DefaultCreateNewSamAppWizardContext(extensionContext)
         const config: CreateNewSamAppWizardResponse | undefined = await new CreateNewSamAppWizard(wizardContext).run()
         if (!config) {
-            resultsMetadata.result = 'cancel'
-            resultsMetadata.reason = 'userCancelled'
+            results.result = 'cancel'
+            results.reason = 'userCancelled'
 
-            return resultsMetadata
+            return results
         }
 
-        resultsMetadata.runtime = config.runtime
+        results.runtime = config.runtime
 
         const initArguments: SamCliInitArgs = {
             name: config.name,
@@ -91,13 +91,13 @@ export async function createNewSamApplication(
         }
         await runSamCliInit(initArguments, samCliContext.invoker)
 
-        resultsMetadata.result = 'pass'
+        results.result = 'pass'
 
         const uri = await getMainUri(config)
         if (!uri) {
-            resultsMetadata.reason = 'fileNotFound'
+            results.reason = 'fileNotFound'
 
-            return resultsMetadata
+            return results
         }
 
         if (await addWorkspaceFolder(
@@ -112,7 +112,7 @@ export async function createNewSamApplication(
             await vscode.window.showTextDocument(uri)
         }
 
-        resultsMetadata.reason = 'complete'
+        results.reason = 'complete'
     } catch (err) {
         channelLogger.channel.show(true)
         channelLogger.error(
@@ -122,11 +122,11 @@ export async function createNewSamApplication(
 
         const error = err as Error
         channelLogger.logger.error(error)
-        resultsMetadata.result = 'fail'
-        resultsMetadata.reason = 'error'
+        results.result = 'fail'
+        results.reason = 'error'
     }
 
-    return resultsMetadata
+    return results
 }
 
 async function validateSamCli(samCliValidator: SamCliValidator): Promise<void> {
