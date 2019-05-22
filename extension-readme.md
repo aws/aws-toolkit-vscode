@@ -2,6 +2,8 @@
 
 The AWS Toolkit for Visual Studio Code is an extension that enables you to interact with [Amazon Web Services (AWS)](https://aws.amazon.com/what-is-aws/) from within Visual Studio Code.
 
+*This is pre-release software and we recommend against using it in a production environment.*
+
 ![Overview](./resources/marketplace/overview.png)
 
 ## Contents

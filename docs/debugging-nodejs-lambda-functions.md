@@ -1,54 +1,23 @@
-# Debugging Python lambda functions
+# Debugging NodeJS lambda functions
 
 You can debug your Serverless Application's Lambda Function locally using the CodeLens links above the lambda handler. If you would like to use the Debug Panel to launch the debugger instead, use the following steps to configure your project's Debug Configuration.
 
 ## Install and configure prerequisites
 
-1. Install the [AWS Toolkit for Visual Studio Code](https://github.com/aws/aws-toolkit-vscode#getting-started).
-2. Install the [Python extension for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-python.python). This extension gives VS Code the ability to debug Python applications.
-3. Launch Visual Studio Code and open a SAM application or create a new one. <!-- TODO: Link to separate doc with instructions. -->
+1. Install the [AWS Toolkit for Visual Studio Code](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-toolkit.html).
+2. Launch Visual Studio Code and open a SAM application or create a new one. <!-- TODO: Link to separate doc with instructions. -->
 
     Note: Open the folder that contains `template.yaml`.
 
-4. Open a terminal at the root of your application and configure `virtualenv` by running `python -m venv ./.venv`.
-
-## Instrument your code
+## Configure your debugger
 
 Throughout these instructions, replace the following:
 
 |Name|Replace With|
 |-|-|
 |`<sam app root>`|The root of your SAM app (typically this is the directory containing `template.yaml`)|
-|`<python project root>`|The root of your Python source code (typically this is the directory containing `requirements.txt`)|
-
-1. Add the line `ptvsd==4.2.4` to `<python project root>/requirements.txt`
-2. Open a terminal in `<sam app root>`, then run:
-
-    ```bash
-    # Bash
-    . ./.venv/Scripts/activate
-    python -m pip install -r <python project root>/requirements.txt
-    ```
-
-    ```powershell
-    # PowerShell
-    .\.venv\Scripts\Activate.ps1
-    python -m pip install -r <python project root>/requirements.txt
-    ```
-
-3. Select a port to use for debugging. In this example, we will use port `5678`.
-4. Add the following code to the beginning of `<python project root>/app.py`:
-
-    ```python
-    import ptvsd
-    import sys
-    ptvsd.enable_attach(address=('0.0.0.0', 5678), redirect_output=True)
-    print("waiting for debugger to attach...")
-    sys.stdout.flush()
-    ptvsd.wait_for_attach()
-    ```
-
-## Configure your debugger
+|`<nodejs project root>`|The root of your NodeJS source code (the directory containing `package.json`)|
+|`<protocol>`|Either `inspector` (for NodeJS 6.3+) or `legacy` (for prior versions of NodeJS)|
 
 1. Open `<sam app root>/.vscode/launch.json` (create a new file if it does not already exist), and add the following contents.
 
@@ -60,51 +29,43 @@ Throughout these instructions, replace the following:
         "version": "0.2.0",
         "configurations": [
             {
-                "name": "Python: Remote Attach",
-                "type": "python",
+                "name": "NodeJS: Remote Attach",
+                "type": "node",
                 "request": "attach",
                 "port": 5678,
-                "host": "localhost",
-                "pathMappings": [
-                    {
-                        "localRoot": "${workspaceFolder}/<python project root>",
-                        "remoteRoot": "/var/task"
-                    }
+                "address": "localhost",
+                "localRoot": "<nodejs project root>",
+                "remoteRoot": "/var/task",
+                "protocol": "<protocol>",
+                "skipFiles": [
+                    "/var/runtime/node_modules/**/*.js",
+                    "<node_internals>/**/*.js"
                 ]
             }
         ]
     }
     ```
 
-2. Launch Visual Studio Code and open the folder containing your application.
+2. Launch Visual Studio Code and open `<sam app root>`.
 3. Press `Ctrl+Shift+D` or click the `Debug` icon to open the debug viewlet:
 
     ![Debug Icon](./images/view_debug.png)
 
-4. Select `Python: Remote Attach` from the drop-down menu at the top of the viewlet:
+4. Select `NodeJS: Remote Attach` from the drop-down menu at the top of the viewlet:
 
     ![Launch Configuration](./images/select_launch_config.png)
 
 ## Start debugging
 
-1. Set a breakpoint in your lambda handler somewhere after the line `ptvsd.wait_for_attach()`.
+1. Set a breakpoint anywhere in your lambda handler.
 2. Open a terminal in `<sam app root>`, and run the following commands. The SAM CLI will invoke your lambda handler, and wait for a debugger to attach to it. Replace `HelloWorldFunction` with the name of the function that you want to invoke.
 
     ```bash
-    # Bash
-    . ./.venv/Scripts/activate
     sam build --use-container
-    echo '{}' | sam local invoke HelloWorldFunction -d 5678
+    sam local invoke HelloWorldFunction -d 5678 --no-event
     ```
 
-    ```powershell
-    # PowerShell
-    .\.venv\Scripts\Activate.ps1
-    sam build --use-container
-    echo '{}' | sam local invoke HelloWorldFunction -d 5678
-    ```
-
-3. When you see `waiting for debugger to attach...`, go back to Visual Studio Code and press F5 to attach the debugger to the handler that you invoked in the previous step.
+3. When you see the message starting with `Debugger listening on`, go back to Visual Studio Code and press F5 to attach the debugger to the handler that you invoked in the previous step.
 
 ## Optional: Automatically start debugging when ready
 
@@ -120,7 +81,7 @@ With the above steps, you need to manually invoke SAM CLI from the command line,
         "version": "2.0.0",
         "tasks": [
             {
-                "label": "Debug Python Lambda Function",
+                "label": "Debug NodeJS Lambda Function",
                 "type": "shell",
                 "command": "sam",
                 "args": [
@@ -133,11 +94,6 @@ With the above steps, you need to manually invoke SAM CLI from the command line,
                     "-d",
                     "5678"
                 ],
-                "options": {
-                    "env": {
-                        "VIRTUAL_ENV": "${workspaceFolder}/.venv"
-                    }
-                },
                 "isBackground": true,
                 "problemMatcher": {
                     "pattern": [
@@ -152,8 +108,8 @@ With the above steps, you need to manually invoke SAM CLI from the command line,
                     "background": {
                         // This is how the debugger knows when it can attach
                         "activeOnStart": true,
-                        "beginsPattern": "^Fetching lambci\\.\\w+ Docker container image",
-                        "endsPattern": "^waiting for debugger to attach\\.\\.\\.$"
+                "beginsPattern": "^Fetching lambci.* Docker container image......$",
+                "endsPattern": "^.* Mounting .* as .*:ro inside runtime container$"
                     }
                 }
             }
@@ -161,10 +117,10 @@ With the above steps, you need to manually invoke SAM CLI from the command line,
     }
     ```
 
-3. Open `<sam app root>/.vscode/launch.json`, and add the following property to the `Python: Remote Attach` configuration that you created earlier, after `"request": "attach",`:
+3. Open `<sam app root>/.vscode/launch.json`, and add the following property to the `NodeJS: Remote Attach` configuration that you created earlier, after `"request": "attach",`:
 
     ```jsonc
-    "preLaunchTask": "Debug Python Lambda Function",
+    "preLaunchTask": "Debug NodeJS Lambda Function",
     ```
 
-Now you can just press `F5`, and Visual Studio Code will invoke SAM CLI and wait for the `waiting for debugger to attach...` message before attaching the debugger.
+Now you can just press `F5`, and Visual Studio Code will invoke SAM CLI and wait for the `Mounting .* as .*:ro inside runtime container` message before attaching the debugger.
