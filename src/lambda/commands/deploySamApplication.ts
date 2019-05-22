@@ -32,7 +32,7 @@ export async function deploySamApplication(
         regionProvider: RegionProvider
     },
     awsContext: Pick<AwsContext, 'getCredentialProfileName'>
-) {
+): Promise<void> {
     const args: SamDeployWizardResponse | undefined = await new SamDeployWizard(restParams.regionProvider).run()
     if (!args) {
         return
