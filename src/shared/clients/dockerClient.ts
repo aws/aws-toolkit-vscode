@@ -70,7 +70,7 @@ export class DefaultDockerClient implements DockerClient {
         mount,
         entryPoint
     }: DockerInvokeArguments): Promise<void> {
-        const args: string[] = [ command, image ]
+        const args: string[] = [ command ]
 
         if (removeOnExit) {
             args.push('--rm')

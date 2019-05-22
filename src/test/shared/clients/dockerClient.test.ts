@@ -167,9 +167,9 @@ describe('DefaultDockerClient', async () => {
                         'mycommand'
                     )
 
-                    const argsStartIndex = flagCommandIndex + 1
-                    entryPointArgs.forEach((value, index) => {
-                        const argIndex = argsStartIndex + index
+                    const endIndex = (args!.length - 1)
+                    entryPointArgs.reverse().forEach((value, index) => {
+                        const argIndex = endIndex - index
                         assert.ok(argIndex < args!.length)
                         assert.strictEqual(args![argIndex], value)
                     })
