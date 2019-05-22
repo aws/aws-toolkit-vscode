@@ -114,7 +114,7 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
             command: 'aws.deploySamApplication',
             callback: async () => await deploySamApplication(
                 {
-                    outputChannel: this.channelLogger.channel,
+                    channelLogger: this.channelLogger,
                     regionProvider: this.regionProvider
                 },
                 this.awsContext

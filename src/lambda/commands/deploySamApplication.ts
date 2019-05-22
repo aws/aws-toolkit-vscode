@@ -10,7 +10,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import { AwsContext } from '../../shared/awsContext'
+import { AwsContext, NoActiveCredentialError } from '../../shared/awsContext'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
@@ -19,7 +19,7 @@ import { SamCliDeployInvocation } from '../../shared/sam/cli/samCliDeploy'
 import { SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvokerUtils'
 import { SamCliPackageInvocation } from '../../shared/sam/cli/samCliPackage'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
-import { ChannelLogger, getChannelLogger } from '../../shared/utilities/vsCodeUtils'
+import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { SamDeployWizard, SamDeployWizardResponse } from '../wizards/samDeployWizard'
 
 const localize = nls.loadMessageBundle()
@@ -37,68 +37,69 @@ interface DeploySamApplicationParameters {
 export async function deploySamApplication(
     {
         samCliContext = getSamCliContext(),
-        // todo : replace output channel with channel logger
-        // channelLogger: ChannelLogger,
+        channelLogger,
         ...restParams
     }: {
         samCliContext?: SamCliContext
-        outputChannel: vscode.OutputChannel
+        channelLogger: ChannelLogger,
         regionProvider: RegionProvider
     },
     awsContext: Pick<AwsContext, 'getCredentialProfileName'>
 ): Promise<void> {
-    // todo : exit with handling (message/log) like createNewSamApp
-
-    const profile: string | undefined = awsContext.getCredentialProfileName()
-    if (!profile) {
-        // todo : restore error
-        // throw new NoActiveCredentialError()
-        return
-    }
-
     try {
+        const profile: string | undefined = awsContext.getCredentialProfileName()
+        if (!profile) {
+            throw new NoActiveCredentialError()
+        }
+
         throwAndNotifyIfInvalid(await samCliContext.validator.detectValidSamCli())
+
+        const deployWizardResponse: SamDeployWizardResponse | undefined = await new SamDeployWizard(
+            restParams.regionProvider
+        ).run()
+
+        if (!deployWizardResponse) {
+            return
+        }
+
+        const deployParameters: DeploySamApplicationParameters = {
+            deployRootFolder: await makeTemporaryToolkitFolder('samDeploy'),
+            destinationStackName: deployWizardResponse.stackName,
+            packageBucketName: deployWizardResponse.s3Bucket,
+            parameterOverrides: deployWizardResponse.parameterOverrides,
+            profile,
+            region: deployWizardResponse.region,
+            sourceTemplatePath: deployWizardResponse.template.fsPath,
+        }
+
+        const deployApplicationPromise = buildPackageDeploy({
+            deployParameters,
+            channelLogger,
+            invoker: samCliContext.invoker,
+        }).then(async () =>
+            await del(deployParameters.deployRootFolder, {
+                force: true
+            })
+        )
+
+        vscode.window.setStatusBarMessage(
+            localize(
+                'AWS.samcli.deploy.statusbar.message',
+                '$(cloud-upload) Deploying SAM Application to {0}...',
+                deployWizardResponse.stackName,
+            ),
+            deployApplicationPromise
+        )
     } catch (err) {
-        // todo : log error
-        return
+        const error = err as Error
+        channelLogger.logger.error(error)
+
+        channelLogger.channel.show(true)
+        channelLogger.error(
+            'AWS.samcli.deploy.general.error',
+            'An error occurred while deploying a SAM Application. Check the logs for more information.'
+        )
     }
-
-    const deployWizardResponse: SamDeployWizardResponse | undefined = await new SamDeployWizard(
-        restParams.regionProvider
-    ).run()
-
-    if (!deployWizardResponse) {
-        return
-    }
-
-    const deployParameters: DeploySamApplicationParameters = {
-        deployRootFolder: await makeTemporaryToolkitFolder('samDeploy'),
-        destinationStackName: deployWizardResponse.stackName,
-        packageBucketName: deployWizardResponse.s3Bucket,
-        parameterOverrides: deployWizardResponse.parameterOverrides,
-        profile,
-        region: deployWizardResponse.region,
-        sourceTemplatePath: deployWizardResponse.template.fsPath,
-    }
-
-    const deployApplicationPromise = buildPackageDeploy({
-        deployParameters,
-        channelLogger: getChannelLogger(restParams.outputChannel),
-        invoker: samCliContext.invoker,
-    }).then(async () =>
-        await del(deployParameters.deployRootFolder, {
-            force: true
-        })
-    )
-
-    vscode.window.setStatusBarMessage(
-        localize(
-            'AWS.samcli.deploy.statusbar.message',
-            '$(cloud-upload) Deploying SAM Application to {0}...',
-            deployWizardResponse.stackName,
-        ),
-        deployApplicationPromise
-    )
 }
 
 function getBuildRootFolder(deployRootFolder: string): string {
