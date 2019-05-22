@@ -5,12 +5,12 @@
 
 'use strict'
 
-import { getLogger, Logger } from '../../logger'
+import { BasicLogger, getLogger } from '../../logger'
 import { ChildProcessResult } from '../../utilities/childProcess'
 import { map } from '../../utilities/collectionUtils'
 import { SamCliProcessInvoker } from './samCliInvokerUtils'
 
-export interface SamCliDeployArgs {
+export interface SamCliDeployParameters {
     templateFile: string
     parameterOverrides: Map<string, string>
     profile: string
@@ -19,9 +19,9 @@ export interface SamCliDeployArgs {
 }
 
 export async function runSamCliDeploy(
-    deployArguments: SamCliDeployArgs,
+    deployArguments: SamCliDeployParameters,
     invoker: SamCliProcessInvoker,
-    logger: Logger = getLogger(),
+    logger: BasicLogger = getLogger(),
 ): Promise<void> {
     const args = [
         'deploy',

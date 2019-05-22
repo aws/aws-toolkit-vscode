@@ -183,6 +183,7 @@ async function buildPackageDeploy(params: {
                 stackName: params.deployParameters.destinationStackName,
             },
             params.invoker,
+            params.channelLogger.logger,
         )
 
         const msg = localize(

@@ -34,9 +34,9 @@ export function assertArgsContainArgument(
     expectedArgValue: string
 ) {
     const argPos = args.indexOf(argOfInterest)
-    assert.notStrictEqual(argPos, -1, `Expected arg ${argOfInterest} was not found`)
-    assert.ok(args.length >= argPos + 2, `Args does not contain a value for ${argOfInterest}`)
-    assert.strictEqual(args[argPos + 1], expectedArgValue, `Arg ${argOfInterest} did not have expected value`)
+    assert.notStrictEqual(argPos, -1, `Expected arg '${argOfInterest}' was not found`)
+    assert.ok(args.length >= argPos + 2, `Args does not contain a value for '${argOfInterest}'`)
+    assert.strictEqual(args[argPos + 1], expectedArgValue, `Arg '${argOfInterest}' did not have expected value`)
 }
 
 export function assertArgIsPresent(
@@ -46,7 +46,7 @@ export function assertArgIsPresent(
     assert.notStrictEqual(
         args.indexOf(argOfInterest),
         -1,
-        `Expected ${argOfInterest} arg`
+        `Expected '${argOfInterest}' arg`
     )
 }
 
@@ -57,6 +57,6 @@ export function assertArgNotPresent(
     assert.strictEqual(
         args.indexOf(argOfInterest),
         -1,
-        `Did not expect ${argOfInterest} arg`
+        `Did not expect '${argOfInterest}' arg`
     )
 }
