@@ -6,36 +6,40 @@
 'use strict'
 
 import * as assert from 'assert'
-import { SamCliPackageInvocation } from '../../../../shared/sam/cli/samCliPackage'
-import { MockSamCliProcessInvoker } from './samCliTestUtils'
+import { runSamCliPackage } from '../../../../shared/sam/cli/samCliPackage'
+import { assertArgsContainArgument, MockSamCliProcessInvoker } from './samCliTestUtils'
 
 describe('SamCliPackageInvocation', async () => {
+
+    let invokeCount: number
+
+    beforeEach(() => {
+        invokeCount = 0
+    })
 
     it('includes a template, s3 bucket, output template file, region, and profile ', async () => {
         const invoker = new MockSamCliProcessInvoker(
             args => {
-                const templateIndex = args.findIndex(arg => arg === '--template-file')
-                const s3Index = args.findIndex(arg => arg === '--s3-bucket')
-                const outputIndex = args.findIndex(arg => arg === '--output-template-file')
-                const regionIndex = args.findIndex(arg => arg === '--region')
-                const profileIndex = args.findIndex(arg => arg === '--profile')
-                assert.strictEqual(args[templateIndex + 1], 'template')
-                assert.strictEqual(args[s3Index + 1], 'bucket')
-                assert.strictEqual(args[outputIndex + 1], 'output')
-                assert.strictEqual(args[regionIndex + 1], 'region')
-                assert.strictEqual(args[profileIndex + 1], 'profile')
+                invokeCount++
+                assertArgsContainArgument(args, '--template-file', 'template')
+                assertArgsContainArgument(args, '--s3-bucket', 'bucket')
+                assertArgsContainArgument(args, '--output-template-file', 'output')
+                assertArgsContainArgument(args, '--region', 'region')
+                assertArgsContainArgument(args, '--profile', 'profile')
             }
         )
 
-        const invocation = new SamCliPackageInvocation(
-            'template',
-            'output',
-            'bucket',
-            invoker,
-            'region',
-            'profile'
+        await runSamCliPackage(
+            {
+                sourceTemplateFile: 'template',
+                destinationTemplateFile: 'output',
+                profile: 'profile',
+                region: 'region',
+                s3Bucket: 'bucket'
+            },
+            invoker
         )
 
-        await invocation.execute()
+        assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
     })
 })
