@@ -46,8 +46,6 @@ export async function deploySamApplication(
     },
     awsContext: Pick<AwsContext, 'getCredentialProfileName'>
 ): Promise<void> {
-    let deployRootFolder: string | undefined
-
     try {
         const profile: string | undefined = awsContext.getCredentialProfileName()
         if (!profile) {
@@ -64,10 +62,8 @@ export async function deploySamApplication(
             return
         }
 
-        deployRootFolder = await makeTemporaryToolkitFolder('samDeploy')
-
         const deployParameters: DeploySamApplicationParameters = {
-            deployRootFolder,
+            deployRootFolder: await makeTemporaryToolkitFolder('samDeploy'),
             destinationStackName: deployWizardResponse.stackName,
             packageBucketName: deployWizardResponse.s3Bucket,
             parameterOverrides: deployWizardResponse.parameterOverrides,
@@ -80,7 +76,13 @@ export async function deploySamApplication(
             deployParameters,
             channelLogger,
             invoker: samCliContext.invoker,
-        })
+        }).then(async () =>
+            // The parent method will exit shortly, and the status bar will run this promise
+            // Cleanup has to be chained into the promise as a result.
+            await del(deployParameters.deployRootFolder, {
+                force: true
+            })
+        )
 
         vscode.window.setStatusBarMessage(
             localize(
@@ -99,12 +101,6 @@ export async function deploySamApplication(
             'AWS.samcli.deploy.general.error',
             'An error occurred while deploying a SAM Application. Check the logs for more information.'
         )
-    } finally {
-        if (deployRootFolder) {
-            await del(deployRootFolder, {
-                force: true
-            })
-        }
     }
 }
 
