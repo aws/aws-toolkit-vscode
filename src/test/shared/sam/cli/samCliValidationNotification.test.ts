@@ -25,7 +25,7 @@ describe('makeSamCliValidationNotification', async () => {
         show: () => { throw new Error('show is unused') }
     }
     const actionLabelUpdateSamCli = 'Get SAM CLI'
-    const actionLabelUpdateToolkit = 'Update AWS Toolkit'
+    const actionLabelUpdateToolkit = 'Visit Marketplace'
 
     it('handles SamCliNotFoundError', async () => {
         makeSamCliValidationNotification(
@@ -57,7 +57,7 @@ describe('makeSamCliValidationNotification', async () => {
         {
             situation: 'SAM CLI Version is too high',
             versionValidation: SamCliVersionValidation.VersionTooHigh,
-            messageFragment: 'Please update your AWS Toolkit.',
+            messageFragment: 'Please check the Marketplace for an updated Toolkit.',
             actionLabel: actionLabelUpdateToolkit,
         },
         {
