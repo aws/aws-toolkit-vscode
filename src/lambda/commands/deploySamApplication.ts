@@ -13,26 +13,32 @@ import * as nls from 'vscode-nls'
 import { AwsContext, NoActiveCredentialError } from '../../shared/awsContext'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { RegionProvider } from '../../shared/regions/regionProvider'
-import { DefaultValidatingSamCliProcessInvoker } from '../../shared/sam/cli/defaultValidatingSamCliProcessInvoker'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
+import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
 import { SamCliDeployInvocation } from '../../shared/sam/cli/samCliDeploy'
-import { SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvokerUtils'
 import { SamCliPackageInvocation } from '../../shared/sam/cli/samCliPackage'
+import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { SamDeployWizard, SamDeployWizardResponse } from '../wizards/samDeployWizard'
 
 const localize = nls.loadMessageBundle()
 
 export async function deploySamApplication(
     {
-        invoker = new DefaultValidatingSamCliProcessInvoker({}),
+        samCliContext = getSamCliContext(),
         ...restParams
     }: {
-        invoker?: SamCliProcessInvoker
+        samCliContext?: SamCliContext
         outputChannel: vscode.OutputChannel
         regionProvider: RegionProvider
     },
     awsContext: Pick<AwsContext, 'getCredentialProfileName'>
 ): Promise<void> {
+    try {
+        throwAndNotifyIfInvalid(await samCliContext.validator.detectValidSamCli())
+    } catch (err) {
+        return
+    }
+
     const args: SamDeployWizardResponse | undefined = await new SamDeployWizard(restParams.regionProvider).run()
     if (!args) {
         return
@@ -60,7 +66,7 @@ export async function deploySamApplication(
                     buildDir: buildDestination,
                     baseDir: undefined,
                     templatePath: template.fsPath,
-                    invoker
+                    invoker: samCliContext.invoker,
                 }
             )
 
@@ -75,7 +81,7 @@ export async function deploySamApplication(
                 buildTemplatePath,
                 outputTemplatePath,
                 s3Bucket,
-                invoker,
+                samCliContext.invoker,
                 region,
                 profile
             )
@@ -93,7 +99,7 @@ export async function deploySamApplication(
                 stackName,
                 region,
                 parameterOverrides,
-                invoker,
+                samCliContext.invoker,
                 profile
             )
             // Deploying can take a very long time for Python Lambda's with native dependencies so user needs feedback
