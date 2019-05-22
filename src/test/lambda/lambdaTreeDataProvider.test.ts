@@ -12,13 +12,32 @@ import { RegionNode } from '../../lambda/explorer/regionNode'
 import { LambdaTreeDataProvider } from '../../lambda/lambdaTreeDataProvider'
 import { AwsContext, ContextChangeEventsArgs } from '../../shared/awsContext'
 import { AwsContextTreeCollection } from '../../shared/awsContextTreeCollection'
+import { TestLogger } from '../../shared/loggerUtils'
 import { RegionInfo } from '../../shared/regions/regionInfo'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { ResourceFetcher } from '../../shared/resourceFetcher'
 import { ResourceLocation } from '../../shared/resourceLocation'
+import { ChannelLogger, getChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { MockOutputChannel } from '../mockOutputChannel'
 
 describe('LambdaProvider', () => {
+
+    let logger: TestLogger
+    const outputChannel: MockOutputChannel = new MockOutputChannel()
+    let channelLogger: ChannelLogger
+
+    before(async () => {
+        logger = await TestLogger.createTestLogger()
+    })
+
+    beforeEach(async () => {
+        outputChannel.clear()
+        channelLogger = getChannelLogger(outputChannel)
+    })
+
+    after(async () => {
+        await logger.cleanupLogger()
+    })
 
     it('displays region nodes with user-friendly region names', async () => {
 
@@ -78,6 +97,7 @@ describe('LambdaProvider', () => {
             awsContextTreeCollection,
             regionProvider,
             resourceFetcher,
+            channelLogger,
             (path) => { throw new Error('unused') },
             mockChannel
         )

@@ -28,6 +28,7 @@ import { ext } from './shared/extensionGlobals'
 import { safeGet } from './shared/extensionUtilities'
 import * as logFactory from './shared/logger'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
+import * as SamCliContext from './shared/sam/cli/samCliContext'
 import * as SamCliDetection from './shared/sam/cli/samCliDetection'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from './shared/settingsConfiguration'
 import { AWSStatusBar } from './shared/statusBar'
@@ -138,6 +139,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 awsContextTrees,
                 regionProvider,
                 resourceFetcher,
+                getChannelLogger(toolkitOutputChannel),
                 (relativeExtensionPath) => getExtensionAbsolutePath(context, relativeExtensionPath)
             )
         ]
@@ -149,7 +151,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await ext.statusBar.updateContext(undefined)
 
-        await initializeSamCli()
+        await initializeSamCli(
+            new DefaultSettingsConfiguration(extensionSettingsPrefix),
+            logFactory.getLogger()
+        )
 
         await ExtensionDisposableFiles.initialize(context)
 
@@ -217,7 +222,12 @@ async function activateCodeLensProviders(
 /**
  * Performs SAM CLI relevant extension initialization
  */
-async function initializeSamCli(): Promise<void> {
+async function initializeSamCli(
+    settingsConfiguration: SettingsConfiguration,
+    logger: logFactory.Logger,
+): Promise<void> {
+    SamCliContext.initialize({ settingsConfiguration, logger })
+
     registerCommand({
         command: 'aws.samcli.detect',
         callback: async () => await PromiseSharer.getExistingPromiseOrCreate(

@@ -10,9 +10,18 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { SamCliInitArgs, SamCliInitInvocation } from '../../shared/sam/cli/samCliInit'
+import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
+import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
+import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
+import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
+import { METADATA_FIELD_NAME, MetadataResult } from '../../shared/telemetry/telemetryEvent'
+import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { getMainSourceFileUri } from '../utilities/getMainSourceFile'
-import { CreateNewSamAppWizard, DefaultCreateNewSamAppWizardContext } from '../wizards/samInitWizard'
+import {
+    CreateNewSamAppWizard,
+    CreateNewSamAppWizardResponse,
+    DefaultCreateNewSamAppWizardContext
+} from '../wizards/samInitWizard'
 
 export const URI_TO_OPEN_ON_INIT_KEY = 'URI_TO_OPEN_ON_INIT_KEY'
 
@@ -41,51 +50,93 @@ export async function resumeCreateNewSamApp(context: Pick<vscode.ExtensionContex
     }
 }
 
-interface NewSamAppMetadata {
+export interface CreateNewSamApplicationResults {
+    reason: 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
+    result: 'pass' | 'fail' | 'cancel',
     runtime: string
 }
+
 /**
  * Runs `sam init` in the given context and returns useful metadata about its invocation
  */
-export async function createNewSamApp(
-    context: Pick<vscode.ExtensionContext, 'asAbsolutePath' | 'globalState'>
-): Promise<NewSamAppMetadata | undefined> {
-    const wizardContext = new DefaultCreateNewSamAppWizardContext(context)
-    const config = await new CreateNewSamAppWizard(wizardContext).run()
-    if (!config) {
-        return undefined
+export async function createNewSamApplication(
+    channelLogger: ChannelLogger,
+    extensionContext: Pick<vscode.ExtensionContext, 'asAbsolutePath' | 'globalState'>,
+    samCliContext: SamCliContext = getSamCliContext(),
+): Promise<CreateNewSamApplicationResults> {
+    const results: CreateNewSamApplicationResults = {
+        reason: 'unknown',
+        result: 'fail',
+        runtime: 'unknown',
     }
 
-    const invocation = new SamCliInitInvocation(config)
-    await invocation.execute()
+    try {
+        await validateSamCli(samCliContext.validator)
 
-    const uri = await getMainUri(config)
-    if (!uri) {
-        // todo : this shouldn't return undefined. We are losing metrics. Wrap in a try/finally
-        // todo : will be addressed with https://github.com/aws/aws-toolkit-vscode/issues/526
-        return undefined
+        const wizardContext = new DefaultCreateNewSamAppWizardContext(extensionContext)
+        const config: CreateNewSamAppWizardResponse | undefined = await new CreateNewSamAppWizard(wizardContext).run()
+        if (!config) {
+            results.result = 'cancel'
+            results.reason = 'userCancelled'
+
+            return results
+        }
+
+        results.runtime = config.runtime
+
+        const initArguments: SamCliInitArgs = {
+            name: config.name,
+            location: config.location.fsPath,
+            runtime: config.runtime,
+        }
+        await runSamCliInit(initArguments, samCliContext.invoker)
+
+        results.result = 'pass'
+
+        const uri = await getMainUri(config)
+        if (!uri) {
+            results.reason = 'fileNotFound'
+
+            return results
+        }
+
+        if (await addWorkspaceFolder(
+            {
+                uri: config.location,
+                name: path.basename(config.location.fsPath)
+            },
+            uri
+        )) {
+            extensionContext.globalState.update(URI_TO_OPEN_ON_INIT_KEY, uri!.fsPath)
+        } else {
+            await vscode.window.showTextDocument(uri)
+        }
+
+        results.reason = 'complete'
+    } catch (err) {
+        channelLogger.channel.show(true)
+        channelLogger.error(
+            'AWS.samcli.initWizard.general.error',
+            'An error occurred while creating a new SAM Application. Check the logs for more information.'
+        )
+
+        const error = err as Error
+        channelLogger.logger.error(error)
+        results.result = 'fail'
+        results.reason = 'error'
     }
 
-    if (await addWorkspaceFolder(
-        {
-            uri: config.location,
-            name: path.basename(config.location.fsPath)
-        },
-        uri
-    )) {
-        context.globalState.update(URI_TO_OPEN_ON_INIT_KEY, uri!.fsPath)
-    } else {
-        await vscode.window.showTextDocument(uri)
-    }
-
-    return {
-        // todo : consider returning a success metadata
-        // todo : will be addressed with https://github.com/aws/aws-toolkit-vscode/issues/526
-        runtime: config.runtime
-    }
+    return results
 }
 
-async function getMainUri(config: Pick<SamCliInitArgs, 'location' | 'name'>): Promise<vscode.Uri | undefined> {
+async function validateSamCli(samCliValidator: SamCliValidator): Promise<void> {
+    const validationResult = await samCliValidator.detectValidSamCli()
+    throwAndNotifyIfInvalid(validationResult)
+}
+
+async function getMainUri(
+    config: Pick<CreateNewSamAppWizardResponse, 'location' | 'name'>
+): Promise<vscode.Uri | undefined> {
     try {
         return await getMainSourceFileUri({
             root: vscode.Uri.file(path.join(config.location.fsPath, config.name))
@@ -162,4 +213,25 @@ async function addWorkspaceFolder(
 
     // Return true if the current process will be terminated by VS Code (because the first workspaceFolder was changed)
     return !updateExistingWorkspacePromise
+}
+
+export function applyResultsToMetadata(createResults: CreateNewSamApplicationResults, metadata: Map<string, string>) {
+    let metadataResult: MetadataResult
+
+    switch (createResults.result) {
+        case 'pass':
+            metadataResult = MetadataResult.Pass
+            break
+        case 'cancel':
+            metadataResult = MetadataResult.Cancel
+            break
+        case 'fail':
+        default:
+            metadataResult = MetadataResult.Fail
+            break
+    }
+
+    metadata.set('runtime', createResults.runtime)
+    metadata.set(METADATA_FIELD_NAME.RESULT, metadataResult.toString())
+    metadata.set(METADATA_FIELD_NAME.REASON, createResults.reason)
 }

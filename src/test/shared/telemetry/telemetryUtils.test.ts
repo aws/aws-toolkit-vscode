@@ -11,8 +11,7 @@ import { ext } from '../../../shared/extensionGlobals'
 import {
     Datum,
     METADATA_FIELD_NAME,
-    METADATA_RESULT_FAIL,
-    METADATA_RESULT_PASS,
+    MetadataResult,
     TelemetryEvent
 } from '../../../shared/telemetry/telemetryEvent'
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
@@ -55,7 +54,7 @@ describe('telemetryUtils', () => {
 
                         assert.strictEqual(
                             mockService.lastEvent!.data![0].metadata!.get(METADATA_FIELD_NAME.RESULT),
-                            METADATA_RESULT_PASS
+                            MetadataResult.Pass
                         )
                         assert.strictEqual(mockService.lastEvent!.namespace, 'Command')
                         assert.strictEqual(mockService.lastEvent!.data![0].name, 'command')
@@ -86,7 +85,7 @@ describe('telemetryUtils', () => {
 
                         assert.notStrictEqual(metadata.get('duration'), undefined)
 
-                        assert.strictEqual(metadata.get(METADATA_FIELD_NAME.RESULT), METADATA_RESULT_PASS)
+                        assert.strictEqual(metadata.get(METADATA_FIELD_NAME.RESULT), MetadataResult.Pass)
                         assert.strictEqual(metadata.get('foo'), 'bar')
                         assert.strictEqual(metadata.get('hitcount'), '5')
 
@@ -164,7 +163,7 @@ describe('telemetryUtils', () => {
 
                         assert.strictEqual(
                             mockService.lastEvent!.data![0].metadata!.get(METADATA_FIELD_NAME.RESULT),
-                            METADATA_RESULT_PASS
+                            MetadataResult.Pass
                         )
                         assert.strictEqual(mockService.lastEvent!.namespace, TelemetryNamespace.Aws)
                         assert.strictEqual(mockService.lastEvent!.data![0].name, 'thisAintYourFathersNameField')
@@ -201,7 +200,7 @@ describe('telemetryUtils', () => {
 
                         assert.strictEqual(
                             mockService.lastEvent!.data![0].metadata!.get(METADATA_FIELD_NAME.RESULT),
-                            METADATA_RESULT_FAIL
+                            MetadataResult.Fail
                         )
                         assert.strictEqual(mockService.lastEvent!.namespace, 'Command')
                         assert.strictEqual(mockService.lastEvent!.data![0].name, 'command')
