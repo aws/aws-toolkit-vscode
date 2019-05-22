@@ -62,7 +62,9 @@ interface ProjectAccountSettingsManager {
         @Throws(CredentialProviderNotFound::class) get
 
     /**
-     * The underlying AWS account for current active credential provider. Return null if credential provider is not set
+     * The underlying AWS account for current active credential provider. Return null if credential provider is not set.
+     * Calls of this member should be in non-UI thread since it makes network call using an STS client for retrieving the
+     * underlying AWS account.
      */
     val activeAwsAccount: String?
 

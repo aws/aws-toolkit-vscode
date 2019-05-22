@@ -110,17 +110,14 @@ class TelemetryServiceTest {
             batcher
         )
 
-        telemetryService.record(projectRule.project, "Foo")
+        telemetryService.record(projectRule.project, "Foo").join()
         telemetryService.dispose()
 
         verify(batcher, times(3)).enqueue(eventCaptor.capture())
-        val startSessionEvent = eventCaptor.firstValue
-        val fooEvent = eventCaptor.secondValue
-        val endSessionEvent = eventCaptor.thirdValue
 
-        assertMetricEvent(startSessionEvent, "ToolkitStart", METADATA_NA, METADATA_NA)
-        assertMetricEvent(fooEvent, "Foo", METADATA_NOT_SET, "us-east-1")
-        assertMetricEvent(endSessionEvent, "ToolkitEnd", METADATA_NA, METADATA_NA)
+        assertMetricEventsContains(eventCaptor.allValues, "ToolkitStart", METADATA_NA, METADATA_NA)
+        assertMetricEventsContains(eventCaptor.allValues, "Foo", METADATA_NOT_SET, "us-east-1")
+        assertMetricEventsContains(eventCaptor.allValues, "ToolkitEnd", METADATA_NA, METADATA_NA)
     }
 
     @Test
@@ -147,13 +144,11 @@ class TelemetryServiceTest {
             batcher
         )
 
-        telemetryService.record(projectRule.project, "Foo")
+        telemetryService.record(projectRule.project, "Foo").join()
         telemetryService.dispose()
 
         verify(batcher, times(3)).enqueue(eventCaptor.capture())
-        val fooEvent = eventCaptor.secondValue
-
-        assertMetricEvent(fooEvent, "Foo", "111111111111", "foo-region")
+        assertMetricEventsContains(eventCaptor.allValues, "Foo", "111111111111", "foo-region")
     }
 
     @Test
@@ -187,14 +182,14 @@ class TelemetryServiceTest {
         telemetryService.dispose()
 
         verify(batcher, times(3)).enqueue(eventCaptor.capture())
-        val fooEvent = eventCaptor.secondValue
-
-        assertMetricEvent(fooEvent, "Foo", "222222222222", "bar-region")
+        assertMetricEventsContains(eventCaptor.allValues, "Foo", "222222222222", "bar-region")
     }
 
-    private fun assertMetricEvent(event: MetricEvent, namespace: String, awsAccount: String, awsRegion: String) {
-        assertThat(event.namespace).isEqualTo(namespace)
-        assertThat(event.awsAccount).isEqualTo(awsAccount)
-        assertThat(event.awsRegion).isEqualTo(awsRegion)
+    private fun assertMetricEventsContains(events: List<MetricEvent>, namespace: String, awsAccount: String, awsRegion: String) {
+        val event = events.find {
+            it.namespace == namespace && it.awsAccount == awsAccount && it.awsRegion == awsRegion
+        }
+
+        assertThat(event).isNotNull
     }
 }

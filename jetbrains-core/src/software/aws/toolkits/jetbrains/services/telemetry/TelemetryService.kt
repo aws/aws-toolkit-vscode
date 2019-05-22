@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.telemetry
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.toolkittelemetry.model.Unit
@@ -18,6 +19,7 @@ import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicBoolean
 
 interface TelemetryService : Disposable {
@@ -29,15 +31,21 @@ interface TelemetryService : Disposable {
     // TODO consider using DataProvider for the metricEventMetadata.
     fun record(namespace: String, metricEventMetadata: MetricEventMetadata, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): MetricEvent
 
-    fun record(project: Project?, namespace: String, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): MetricEvent {
-        val metricEventMetadata = if (project == null) MetricEventMetadata() else MetricEventMetadata(
-            awsAccount = project.activeAwsAccount() ?: METADATA_NOT_SET,
-            awsRegion = project.activeRegion().id
-        )
-        return record(namespace, metricEventMetadata, buildEvent)
+    fun record(project: Project?, namespace: String, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): CompletableFuture<MetricEvent> {
+        val metricEvent = CompletableFuture<MetricEvent>()
+        ApplicationManager.getApplication().executeOnPooledThread {
+            try {
+                val metricEventMetadata = if (project == null) MetricEventMetadata() else MetricEventMetadata(
+                    awsAccount = project.activeAwsAccount() ?: METADATA_NOT_SET,
+                    awsRegion = project.activeRegion().id
+                )
+                metricEvent.complete(record(namespace, metricEventMetadata, buildEvent))
+            } catch (e: Exception) {
+                metricEvent.completeExceptionally(e)
+            }
+        }
+        return metricEvent
     }
-
-    fun record(namespace: String, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): MetricEvent = record(null, namespace, buildEvent)
 
     companion object {
         @JvmStatic
@@ -98,6 +106,9 @@ class DefaultTelemetryService(
         batcher.enqueue(event)
         return event
     }
+
+    private fun record(namespace: String, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): MetricEvent =
+        record(namespace, TelemetryService.MetricEventMetadata(), buildEvent)
 
     companion object {
         private val LOG = getLogger<TelemetryService>()
