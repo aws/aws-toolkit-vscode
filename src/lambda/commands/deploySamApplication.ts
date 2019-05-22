@@ -46,6 +46,8 @@ export async function deploySamApplication(
     },
     awsContext: Pick<AwsContext, 'getCredentialProfileName'>
 ): Promise<void> {
+    let deployRootFolder: string | undefined
+
     try {
         const profile: string | undefined = awsContext.getCredentialProfileName()
         if (!profile) {
@@ -62,8 +64,10 @@ export async function deploySamApplication(
             return
         }
 
+        deployRootFolder = await makeTemporaryToolkitFolder('samDeploy')
+
         const deployParameters: DeploySamApplicationParameters = {
-            deployRootFolder: await makeTemporaryToolkitFolder('samDeploy'),
+            deployRootFolder,
             destinationStackName: deployWizardResponse.stackName,
             packageBucketName: deployWizardResponse.s3Bucket,
             parameterOverrides: deployWizardResponse.parameterOverrides,
@@ -76,11 +80,7 @@ export async function deploySamApplication(
             deployParameters,
             channelLogger,
             invoker: samCliContext.invoker,
-        }).then(async () =>
-            await del(deployParameters.deployRootFolder, {
-                force: true
-            })
-        )
+        })
 
         vscode.window.setStatusBarMessage(
             localize(
@@ -99,6 +99,12 @@ export async function deploySamApplication(
             'AWS.samcli.deploy.general.error',
             'An error occurred while deploying a SAM Application. Check the logs for more information.'
         )
+    } finally {
+        if (deployRootFolder) {
+            await del(deployRootFolder, {
+                force: true
+            })
+        }
     }
 }
 
@@ -107,6 +113,8 @@ function getBuildRootFolder(deployRootFolder: string): string {
 }
 
 function getBuildTemplatePath(deployRootFolder: string): string {
+    // Assumption: sam build will always produce a template.yaml file.
+    // If that is not the case, revisit this logic.
     return path.join(getBuildRootFolder(deployRootFolder), 'template.yaml')
 }
 
