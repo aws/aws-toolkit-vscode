@@ -93,14 +93,7 @@ export async function deploySamApplication(
             deployApplicationPromise
         )
     } catch (err) {
-        const error = err as Error
-        channelLogger.logger.error(error)
-
-        channelLogger.channel.show(true)
-        channelLogger.error(
-            'AWS.samcli.deploy.general.error',
-            'An error occurred while deploying a SAM Application. Check the logs for more information.'
-        )
+        outputDeployError(err as Error, channelLogger)
     }
 }
 
@@ -237,18 +230,7 @@ async function deploy(params: {
             'SAM Application deployment succeeded.'
         ))
     } catch (err) {
-        const error = err as Error
-        params.channelLogger.logger.error(error)
-
-        if (error.message) {
-            params.channelLogger.channel.appendLine(error.message)
-        }
-
-        params.channelLogger.channel.show(true)
-        params.channelLogger.error(
-            'AWS.samcli.deploy.general.error',
-            'An error occurred while deploying a SAM Application. Check the logs for more information.'
-        )
+        outputDeployError(err as Error, params.channelLogger)
 
         vscode.window.showErrorMessage(localize(
             'AWS.samcli.deploy.workflow.error',
@@ -274,4 +256,18 @@ function enhanceAwsCloudFormationInstructions(
     }
 
     return message
+}
+
+function outputDeployError(error: Error, channelLogger: ChannelLogger) {
+    channelLogger.logger.error(error)
+
+    if (error.message) {
+        channelLogger.channel.appendLine(error.message)
+    }
+
+    channelLogger.channel.show(true)
+    channelLogger.error(
+        'AWS.samcli.deploy.general.error',
+        'An error occurred while deploying a SAM Application. Check the logs for more information.'
+    )
 }
