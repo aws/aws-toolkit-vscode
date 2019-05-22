@@ -6,32 +6,46 @@
 'use strict'
 
 import * as assert from 'assert'
-import { SamCliDeployInvocation } from '../../../../shared/sam/cli/samCliDeploy'
+import { runSamCliDeploy } from '../../../../shared/sam/cli/samCliDeploy'
 import { MockSamCliProcessInvoker } from './samCliTestUtils'
 
-describe('SamCliDeployInvocation', async () => {
+describe('runSamCliDeploy', async () => {
+    const fakeProfile = 'profile'
+    const fakeRegion = 'region'
+    const fakeStackName = 'stackName'
+    const fakeTemplateFile = 'template'
+    let invokeCount: number
+
+    beforeEach(() => {
+        invokeCount = 0
+    })
+
     it('does not include --parameter-overrides if there are no overrides', async () => {
         const invoker = new MockSamCliProcessInvoker(
             args => {
+                invokeCount++
                 assert.strictEqual(args.some(arg => arg === '--parameter-overrides'), false)
             }
         )
 
-        const invocation = new SamCliDeployInvocation(
-            'template',
-            'stackName',
-            'region',
-            new Map<string, string>(),
-            invoker,
-            'profile'
+        await runSamCliDeploy(
+            {
+                profile: fakeProfile,
+                parameterOverrides: new Map<string, string>(),
+                region: fakeRegion,
+                stackName: fakeStackName,
+                templateFile: fakeTemplateFile,
+            },
+            invoker
         )
 
-        await invocation.execute()
+        assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
     })
 
     it('includes overrides as a string of key=value pairs', async () => {
         const invoker = new MockSamCliProcessInvoker(
             args => {
+                invokeCount++
                 const overridesIndex = args.findIndex(arg => arg === '--parameter-overrides')
                 assert.strictEqual(overridesIndex > -1, true)
                 assert.strictEqual(args.length >= overridesIndex + 3, true)
@@ -40,24 +54,27 @@ describe('SamCliDeployInvocation', async () => {
             }
         )
 
-        const invocation = new SamCliDeployInvocation(
-            'template',
-            'stackName',
-            'region',
-            new Map<string, string>([
-                ['key1', 'value1'],
-                ['key2', 'value2'],
-            ]),
-            invoker,
-            'profile'
+        await runSamCliDeploy(
+            {
+                profile: fakeProfile,
+                parameterOverrides: new Map<string, string>([
+                    ['key1', 'value1'],
+                    ['key2', 'value2'],
+                ]),
+                region: fakeRegion,
+                stackName: fakeStackName,
+                templateFile: fakeTemplateFile,
+            },
+            invoker
         )
 
-        await invocation.execute()
+        assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
     })
 
     it('includes a template, stack name, region, and profile ', async () => {
         const invoker = new MockSamCliProcessInvoker(
             args => {
+                invokeCount++
                 const templateIndex = args.findIndex(arg => arg === '--template-file')
                 const stackIndex = args.findIndex(arg => arg === '--stack-name')
                 const regionIndex = args.findIndex(arg => arg === '--region')
@@ -69,15 +86,17 @@ describe('SamCliDeployInvocation', async () => {
             }
         )
 
-        const invocation = new SamCliDeployInvocation(
-            'template',
-            'stackName',
-            'region',
-            new Map<string, string>(),
-            invoker,
-            'profile'
+        await runSamCliDeploy(
+            {
+                profile: fakeProfile,
+                parameterOverrides: new Map<string, string>(),
+                region: fakeRegion,
+                stackName: fakeStackName,
+                templateFile: fakeTemplateFile,
+            },
+            invoker
         )
 
-        await invocation.execute()
+        assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
     })
 })

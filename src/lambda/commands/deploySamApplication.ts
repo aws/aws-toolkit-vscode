@@ -15,7 +15,7 @@ import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
-import { SamCliDeployInvocation } from '../../shared/sam/cli/samCliDeploy'
+import { runSamCliDeploy } from '../../shared/sam/cli/samCliDeploy'
 import { SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvokerUtils'
 import { SamCliPackageInvocation } from '../../shared/sam/cli/samCliPackage'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
@@ -166,14 +166,6 @@ async function buildPackageDeploy(params: {
         await packageInvocation.execute()
 
         stage = 'deploying'
-        const deployInvocation = new SamCliDeployInvocation(
-            packageTemplatePath,
-            params.deployParameters.destinationStackName,
-            params.deployParameters.region,
-            params.deployParameters.parameterOverrides,
-            params.invoker,
-            params.deployParameters.profile
-        )
         // Deploying can take a very long time for Python Lambda's with native dependencies so user needs feedback
         params.channelLogger.channel.appendLine(localize(
             'AWS.samcli.deploy.workflow.stackName.initiated',
@@ -181,7 +173,17 @@ async function buildPackageDeploy(params: {
             params.deployParameters.destinationStackName,
             params.deployParameters.profile
         ))
-        await deployInvocation.execute()
+
+        await runSamCliDeploy(
+            {
+                parameterOverrides: params.deployParameters.parameterOverrides,
+                profile: params.deployParameters.profile,
+                templateFile: packageTemplatePath,
+                region: params.deployParameters.region,
+                stackName: params.deployParameters.destinationStackName,
+            },
+            params.invoker,
+        )
 
         const msg = localize(
             'AWS.samcli.deploy.workflow.success',
