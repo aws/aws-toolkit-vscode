@@ -31,6 +31,17 @@ export interface Closeable {
     onClose(callback: (code: number, signal: string, args?: string[]) => void): void
 }
 
+class CloseableChildProcess implements Closeable {
+    public constructor(
+        private readonly process: child_process.ChildProcess,
+        private readonly args?: string[]
+    ) { }
+
+    public onClose(callback: (code: number, signal: string, args?: string[]) => void): void {
+        this.process.once('close', (_code, _signal) => callback(_code, _signal, this.args))
+    }
+}
+
 export interface DockerInvokeContext {
     spawn(
         command: string,
@@ -40,19 +51,17 @@ export interface DockerInvokeContext {
 }
 
 // TODO: Replace with a library such as https://www.npmjs.com/package/node-docker-api.
+class DefaultDockerInvokeContext implements DockerInvokeContext {
+    public spawn(command: string, args?: string[], options?: child_process.SpawnOptions): Closeable {
+        const process = crossSpawn('docker', args, { windowsVerbatimArguments: true })
+
+        return new CloseableChildProcess(process, args)
+    }
+}
+
 export class DefaultDockerClient implements DockerClient {
 
-    public constructor(private readonly context: DockerInvokeContext = {
-        spawn(command, args, options): Closeable {
-            const process = crossSpawn('docker', args, { windowsVerbatimArguments: true })
-
-            return {
-                onClose(callback: (code: number, signal: string, args?: string[]) => void): void {
-                    process.once('close', (_code, _signal) => callback(_code, _signal, args))
-                }
-            }
-        }
-    }) { }
+    public constructor(private readonly context: DockerInvokeContext = new DefaultDockerInvokeContext()) { }
 
     public async invoke({
         command,

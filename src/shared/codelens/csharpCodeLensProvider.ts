@@ -211,7 +211,7 @@ async function onLocalInvokeCommand(
                 )
             const { debuggerPath } = await context.installDebugger({
                 runtime,
-                codeUri
+                targetFolder: codeUri
             })
             const port = await getDebugPort()
             const debugConfig = makeCoreCLRDebugConfiguration({
@@ -420,7 +420,7 @@ export function generateDotNetLambdaHandler(components: DotNetLambdaHandlerCompo
 
 interface InstallDebuggerArgs {
     runtime: string,
-    codeUri: string
+    targetFolder: string
 }
 
 interface InstallDebuggerResult {
@@ -428,10 +428,10 @@ interface InstallDebuggerResult {
 }
 
 async function _installDebugger(
-    { runtime, codeUri }: InstallDebuggerArgs,
+    { runtime, targetFolder }: InstallDebuggerArgs,
     { dockerClient }: { dockerClient: DockerClient }
 ): Promise<InstallDebuggerResult> {
-    const vsdbgPath = path.resolve(codeUri, '.vsdbg')
+    const vsdbgPath = path.resolve(targetFolder, '.vsdbg')
 
     try {
         await access(vsdbgPath)

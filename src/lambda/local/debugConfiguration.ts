@@ -9,7 +9,7 @@ import * as os from 'os'
 import * as vscode from 'vscode'
 import { DRIVE_LETTER_REGEX } from '../../shared/codelens/codeLensUtils'
 
-const DEBUGGER_PATH = '/tmp/lambci_debug_files/vsdbg'
+const DOTNET_CORE_DEBUGGER_PATH = '/tmp/lambci_debug_files/vsdbg'
 
 export interface DebugConfiguration extends vscode.DebugConfiguration {
     readonly type: 'node' | 'python' | 'coreclr'
@@ -53,7 +53,7 @@ export interface DotNetCoreDebugConfiguration extends DebugConfiguration {
 export interface PipeTransport {
     pipeProgram: 'sh' | 'powershell'
     pipeArgs: string[]
-    debuggerPath: typeof DEBUGGER_PATH,
+    debuggerPath: typeof DOTNET_CORE_DEBUGGER_PATH,
     pipeCwd: string
 }
 
@@ -83,14 +83,14 @@ export function makeCoreCLRDebugConfiguration(
         pipeTransport: {
             pipeProgram: 'sh',
             pipeArgs,
-            debuggerPath: DEBUGGER_PATH,
+            debuggerPath: DOTNET_CORE_DEBUGGER_PATH,
             pipeCwd: codeUri
         },
         windows: {
             pipeTransport: {
                 pipeProgram: 'powershell',
                 pipeArgs,
-                debuggerPath: DEBUGGER_PATH,
+                debuggerPath: DOTNET_CORE_DEBUGGER_PATH,
                 pipeCwd: codeUri
             }
         },
