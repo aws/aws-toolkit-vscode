@@ -100,6 +100,17 @@ class DefaultOnLocalInvokeCommandContext implements OnLocalInvokeCommandContext 
     }
 }
 
+function getCodeUri(resource: CloudFormation.Resource, samTemplateUri: vscode.Uri) {
+    const rawCodeUri = CloudFormation.getCodeUri(resource)
+
+    return path.isAbsolute(rawCodeUri) ?
+        rawCodeUri :
+        path.join(
+            path.dirname(samTemplateUri.fsPath),
+            rawCodeUri
+        )
+}
+
 /**
  * The command that is run when user clicks on Run Local or Debug Local CodeLens
  * Accepts object containing the following params:
@@ -153,13 +164,13 @@ async function onLocalInvokeCommand(
         )
 
         const baseBuildDir = await makeBuildDir()
-        const codeDir = path.dirname(lambdaLocalInvokeParams.document.uri.fsPath)
+        const codeUri = getCodeUri(resource, lambdaLocalInvokeParams.samTemplate)
         const documentUri = lambdaLocalInvokeParams.document.uri
         const handlerName = lambdaLocalInvokeParams.handlerName
 
         const inputTemplatePath = await makeInputTemplate({
             baseBuildDir,
-            codeDir,
+            codeDir: codeUri,
             relativeFunctionHandler: handlerName,
             runtime,
             properties: resource.Properties
@@ -168,7 +179,7 @@ async function onLocalInvokeCommand(
         const buildArgs: ExecuteSamBuildArguments = {
             baseBuildDir,
             channelLogger,
-            codeDir,
+            codeDir: codeUri,
             inputTemplatePath,
             samProcessInvoker: processInvoker,
         }
@@ -202,13 +213,6 @@ async function onLocalInvokeCommand(
                 invokeContext
             )
         } else {
-            const rawCodeUri = CloudFormation.getCodeUri(resource)
-            const codeUri = path.isAbsolute(rawCodeUri) ?
-                rawCodeUri :
-                path.join(
-                    path.dirname(lambdaLocalInvokeParams.samTemplate.fsPath),
-                    rawCodeUri
-                )
             const { debuggerPath } = await context.installDebugger({
                 runtime,
                 targetFolder: codeUri
