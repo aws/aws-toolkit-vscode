@@ -162,7 +162,8 @@ async function buildPackageDeploy(params: {
                 region: params.deployParameters.region,
                 s3Bucket: params.deployParameters.packageBucketName,
             },
-            params.invoker
+            params.invoker,
+            params.channelLogger.logger,
         )
 
         stage = 'deploying'

@@ -5,11 +5,11 @@
 
 'use strict'
 
-import { getLogger, Logger } from '../../logger'
+import { BasicLogger, getLogger } from '../../logger'
 import { ChildProcessResult } from '../../utilities/childProcess'
 import { SamCliProcessInvoker } from './samCliInvokerUtils'
 
-export interface SamCliPackageArgs {
+export interface SamCliPackageParameters {
     /**
      * The SAM Template to package
      */
@@ -24,9 +24,9 @@ export interface SamCliPackageArgs {
 }
 
 export async function runSamCliPackage(
-    packageArguments: SamCliPackageArgs,
+    packageArguments: SamCliPackageParameters,
     invoker: SamCliProcessInvoker,
-    logger: Logger = getLogger(),
+    logger: BasicLogger = getLogger(),
 ): Promise<void> {
     const { exitCode, error, stderr, stdout }: ChildProcessResult = await invoker.invoke(
         'package',
