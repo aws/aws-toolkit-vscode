@@ -6,32 +6,52 @@
 'use strict'
 
 import * as assert from 'assert'
-import { SamCliDeployInvocation } from '../../../../shared/sam/cli/samCliDeploy'
-import { MockSamCliProcessInvoker } from './samCliTestUtils'
+import { runSamCliDeploy } from '../../../../shared/sam/cli/samCliDeploy'
+import {
+    assertArgIsPresent,
+    assertArgNotPresent,
+    assertArgsContainArgument,
+    MockSamCliProcessInvoker
+} from './samCliTestUtils'
 
-describe('SamCliDeployInvocation', async () => {
+describe('runSamCliDeploy', async () => {
+    const fakeProfile = 'profile'
+    const fakeRegion = 'region'
+    const fakeStackName = 'stackName'
+    const fakeTemplateFile = 'template'
+    let invokeCount: number
+
+    beforeEach(() => {
+        invokeCount = 0
+    })
+
     it('does not include --parameter-overrides if there are no overrides', async () => {
         const invoker = new MockSamCliProcessInvoker(
             args => {
-                assert.strictEqual(args.some(arg => arg === '--parameter-overrides'), false)
+                invokeCount++
+                assertArgNotPresent(args, '--parameter-overrides')
             }
         )
 
-        const invocation = new SamCliDeployInvocation(
-            'template',
-            'stackName',
-            'region',
-            new Map<string, string>(),
-            invoker,
-            'profile'
+        await runSamCliDeploy(
+            {
+                profile: fakeProfile,
+                parameterOverrides: new Map<string, string>(),
+                region: fakeRegion,
+                stackName: fakeStackName,
+                templateFile: fakeTemplateFile,
+            },
+            invoker
         )
 
-        await invocation.execute()
+        assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
     })
 
     it('includes overrides as a string of key=value pairs', async () => {
         const invoker = new MockSamCliProcessInvoker(
             args => {
+                invokeCount++
+                assertArgIsPresent(args, '--parameter-overrides')
                 const overridesIndex = args.findIndex(arg => arg === '--parameter-overrides')
                 assert.strictEqual(overridesIndex > -1, true)
                 assert.strictEqual(args.length >= overridesIndex + 3, true)
@@ -40,44 +60,45 @@ describe('SamCliDeployInvocation', async () => {
             }
         )
 
-        const invocation = new SamCliDeployInvocation(
-            'template',
-            'stackName',
-            'region',
-            new Map<string, string>([
-                ['key1', 'value1'],
-                ['key2', 'value2'],
-            ]),
-            invoker,
-            'profile'
+        await runSamCliDeploy(
+            {
+                profile: fakeProfile,
+                parameterOverrides: new Map<string, string>([
+                    ['key1', 'value1'],
+                    ['key2', 'value2'],
+                ]),
+                region: fakeRegion,
+                stackName: fakeStackName,
+                templateFile: fakeTemplateFile,
+            },
+            invoker
         )
 
-        await invocation.execute()
+        assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
     })
 
     it('includes a template, stack name, region, and profile ', async () => {
         const invoker = new MockSamCliProcessInvoker(
             args => {
-                const templateIndex = args.findIndex(arg => arg === '--template-file')
-                const stackIndex = args.findIndex(arg => arg === '--stack-name')
-                const regionIndex = args.findIndex(arg => arg === '--region')
-                const profileIndex = args.findIndex(arg => arg === '--profile')
-                assert.strictEqual(args[templateIndex + 1], 'template')
-                assert.strictEqual(args[stackIndex + 1], 'stackName')
-                assert.strictEqual(args[regionIndex + 1], 'region')
-                assert.strictEqual(args[profileIndex + 1], 'profile')
+                invokeCount++
+                assertArgsContainArgument(args, '--template-file', fakeTemplateFile)
+                assertArgsContainArgument(args, '--stack-name', fakeStackName)
+                assertArgsContainArgument(args, '--region', fakeRegion)
+                assertArgsContainArgument(args, '--profile', fakeProfile)
             }
         )
 
-        const invocation = new SamCliDeployInvocation(
-            'template',
-            'stackName',
-            'region',
-            new Map<string, string>(),
-            invoker,
-            'profile'
+        await runSamCliDeploy(
+            {
+                profile: fakeProfile,
+                parameterOverrides: new Map<string, string>(),
+                region: fakeRegion,
+                stackName: fakeStackName,
+                templateFile: fakeTemplateFile,
+            },
+            invoker
         )
 
-        await invocation.execute()
+        assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
     })
 })
