@@ -8,6 +8,7 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
+import { Credentials } from 'aws-sdk'
 import opn = require('opn')
 import { Uri, ViewColumn, window, workspace } from 'vscode'
 import { AwsContext } from './awsContext'
@@ -80,14 +81,17 @@ export class DefaultAWSContextCommands {
 
     public async onCommandLogin() {
         const profileName = await this.getProfileNameFromUser()
+        let successfulLogin = false
         if (profileName) {
-            // TODO: verify credentials
-            await this._awsContext.setCredentialProfileName(profileName)
-            const accountId = await this.getAccountId()
-            await this._awsContext.setCredentialAccountId(accountId)
-            this.refresh()
-
-            await this.checkExplorerForDefaultRegion(profileName)
+            successfulLogin = await UserCredentialsUtils.addUserDataToContext(profileName, this._awsContext)
+            if (successfulLogin) {
+                this.refresh()
+                await this.checkExplorerForDefaultRegion(profileName)
+            }
+        }
+        if (!profileName || !successfulLogin) {
+            // credentials are invalid. Prompt user and log out
+            await this.onCommandLogout()
         }
     }
 
@@ -100,9 +104,11 @@ export class DefaultAWSContextCommands {
             const profileName: string | undefined = await this.promptAndCreateNewCredentialsFile()
 
             if (profileName) {
-                await this._awsContext.setCredentialProfileName(profileName)
-                const accountId = await this.getAccountId()
-                await this._awsContext.setCredentialAccountId(accountId)
+                const successfulLogin = await UserCredentialsUtils.addUserDataToContext(profileName, this._awsContext)
+                if (!successfulLogin) {
+                    // credentials are invalid. Prompt user and log out
+                    await this.onCommandLogout()
+                }
             }
         } else {
             // Get the editor set up and turn things over to the user
@@ -111,8 +117,7 @@ export class DefaultAWSContextCommands {
     }
 
     public async onCommandLogout() {
-        await this._awsContext.setCredentialProfileName()
-        await this._awsContext.setCredentialAccountId()
+        await UserCredentialsUtils.removeUserDataFromContext(this._awsContext)
         this.refresh()
     }
 
@@ -158,8 +163,7 @@ export class DefaultAWSContextCommands {
             }
 
             const validationResult: CredentialsValidationResult = await UserCredentialsUtils.validateCredentials(
-                state.accesskey,
-                state.secretKey
+                new Credentials(state.accesskey, state.secretKey)
             )
 
             if (validationResult.isValid) {
@@ -415,12 +419,5 @@ export class DefaultAWSContextCommands {
     private async addRegion(profileRegion: string): Promise<void> {
         await this._awsContext.addExplorerRegion(profileRegion)
         this.refresh()
-    }
-
-    private async getAccountId(): Promise<string | undefined> {
-        const client = ext.toolkitClientBuilder.createStsClient('us-east-1')
-        const response = await client.getCallerIdentity()
-
-        return response ? response.Account : undefined
     }
 }

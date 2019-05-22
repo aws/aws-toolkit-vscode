@@ -21,7 +21,8 @@ export interface AwsContext {
 
     onDidChangeContext: vscode.Event<ContextChangeEventsArgs>
 
-    getCredentials(): Promise<AWS.Credentials | undefined>
+    // optionally accepts a profile to validate a profile that hasn't logged in yet
+    getCredentials(profileName?: string): Promise<AWS.Credentials | undefined>
 
     // returns the configured profile, if any
     getCredentialProfileName(): string | undefined

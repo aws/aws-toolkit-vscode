@@ -12,6 +12,7 @@ import { RegionProvider } from '../../shared/regions/regionProvider'
 import { ResourceFetcher } from '../../shared/resourceFetcher'
 import { ResourceLocation } from '../../shared/resourceLocation'
 
+export const DEFAULT_TEST_PROFILE_NAME = 'qwerty'
 export const DEFAULT_TEST_ACCOUNT_ID = '123456789012'
 export const DEFAULT_TEST_REGION_CODE = 'regionQuerty'
 export const DEFAULT_TEST_REGION_NAME = 'The Querty Region'
@@ -23,22 +24,38 @@ export class FakeRegionProvider implements RegionProvider {
     }
 }
 
+export interface FakeAwsContextParams {
+    credentials?: AWS.Credentials,
+    profileName?: string,
+    accountId?: string
+}
+
 export class FakeAwsContext implements AwsContext {
+
     public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> =
         new vscode.EventEmitter<ContextChangeEventsArgs>().event
-
+    private readonly credentials: AWS.Credentials | undefined
     private accountId: string | undefined = DEFAULT_TEST_ACCOUNT_ID
+    private profileName: string | undefined = DEFAULT_TEST_PROFILE_NAME
+
+    public constructor(params?: FakeAwsContextParams) {
+        if (params) {
+            this.credentials = params.credentials ? params.credentials : this.credentials
+            this.accountId = params.accountId ? params.accountId : this.accountId
+            this.profileName = params.profileName ? params.profileName : this.profileName
+        }
+    }
 
     public async getCredentials(): Promise<AWS.Credentials | undefined> {
-        return undefined
+        return this.credentials
     }
 
     public getCredentialProfileName(): string | undefined {
-        return 'qwerty'
+        return this.profileName
     }
 
     public async setCredentialProfileName(profileName?: string | undefined): Promise<void> {
-        throw new Error('Method not implemented.')
+        this.profileName = profileName
     }
 
     public getCredentialAccountId(): string | undefined {

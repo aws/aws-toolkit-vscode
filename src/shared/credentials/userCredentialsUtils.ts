@@ -8,6 +8,9 @@
 import * as handlebars from 'handlebars'
 import * as path from 'path'
 
+import { Credentials } from 'aws-sdk'
+import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import { AwsContext } from '../awsContext'
 import { StsClient } from '../clients/stsClient'
 import { EnvironmentVariables } from '../environmentVariables'
 import { ext } from '../extensionGlobals'
@@ -28,6 +31,7 @@ export interface CredentialsTemplateContext {
 
 export interface CredentialsValidationResult {
     isValid: boolean,
+    account?: string,
     invalidMessage?: string
 }
 
@@ -119,12 +123,12 @@ export class UserCredentialsUtils {
      * @param secretKey secret key of credentials to validate
      * @param sts (Optional) STS Service Client
      *
-     * @returns a validation result, indicating whether or not credentials are valid, and if not,
-     * an error message.
+     * @returns a validation result, indicating whether or not credentials are valid
+     *      if valid: result includes active account
+     *      if invalid: result includes message with reason
      */
     public static async validateCredentials(
-        accessKeyId: string,
-        secretAccessKey: string,
+        credentials: Credentials,
         sts?: StsClient
     ): Promise<CredentialsValidationResult> {
         const logger: Logger = getLogger()
@@ -133,12 +137,16 @@ export class UserCredentialsUtils {
                 // Past iteration did not include a set region. Should we change this?
                 // We can also use the set region when we migrate to a single-region experience:
                 // https://github.com/aws/aws-toolkit-vscode/issues/549
-                sts = ext.toolkitClientBuilder.createStsClient('us-east-1', {accessKeyId, secretAccessKey})
+                const transformedCredentials: ServiceConfigurationOptions = {
+                    accessKeyId: credentials.accessKeyId,
+                    secretAccessKey: credentials.secretAccessKey
+                }
+                sts = ext.toolkitClientBuilder.createStsClient('us-east-1', transformedCredentials)
             }
 
             const response = await sts.getCallerIdentity()
 
-            return { isValid: !!response.Account }
+            return { isValid: !!response.Account, account: response.Account }
 
         } catch (err) {
 
@@ -154,5 +162,42 @@ export class UserCredentialsUtils {
 
             return { isValid: false, invalidMessage: reason }
         }
+    }
+
+    /**
+     * Adds valid profiles to the AWS context and settings. Returns false if invalid.
+     *
+     * @param profileName Profile name to add to AWS Context/AWS settings
+     * @param awsContext Current AWS Context
+     * @param sts (Optional) STS Service Client
+     *
+     * @returns true if the profile was valid and added to the context
+     *          false if the profile was not valid and thus not added.
+     */
+    public static async addUserDataToContext(
+        profileName: string,
+        awsContext: AwsContext,
+        sts?: StsClient
+    ): Promise<boolean> {
+        const credentials = await awsContext.getCredentials(profileName)
+        const account = credentials ? await this.validateCredentials(credentials, sts) : undefined
+        if (account && account.isValid) {
+            await awsContext.setCredentialProfileName(profileName)
+            await awsContext.setCredentialAccountId(account.account)
+
+            return true
+        }
+
+        return false
+    }
+
+    /**
+     * Removes user's profile and account from AWS context
+     *
+     * @param awsContext Current AWS Context
+     */
+    public static async removeUserDataFromContext(awsContext: AwsContext) {
+        await awsContext.setCredentialProfileName()
+        await awsContext.setCredentialAccountId()
     }
 }

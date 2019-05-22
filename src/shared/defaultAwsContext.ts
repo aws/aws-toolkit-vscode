@@ -52,15 +52,17 @@ export class DefaultAwsContext implements AwsContext {
      * @description Gets the Credentials for the current specified profile.
      * If an error is encountered, or the profile cannot be found, an Error is thrown.
      */
-    public async getCredentials(): Promise<AWS.Credentials | undefined> {
+    public async getCredentials(profileName?: string): Promise<AWS.Credentials | undefined> {
         // async so that we could *potentially* support other ways of obtaining
         // credentials in future - for example from instance metadata if the
         // user was running Code on an EC2 instance.
 
-        if (!this.profileName) { return undefined }
+        const profile = profileName ? profileName : this.profileName
+
+        if (!profile) { return undefined }
 
         try {
-            const credentials = await this._credentialsManager.getCredentials(this.profileName)
+            const credentials = await this._credentialsManager.getCredentials(profile)
 
             return credentials
         } catch (err) {
@@ -69,7 +71,7 @@ export class DefaultAwsContext implements AwsContext {
             vscode.window.showErrorMessage(localize(
                 'AWS.message.credentials.error',
                 'There was an issue trying to use credentials profile {0}.\nYou will be disconnected from AWS.\n\n{1}',
-                this.profileName,
+                profile,
                 error.message
             ))
 

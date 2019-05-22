@@ -5,6 +5,7 @@
 
 'use strict'
 
+import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { CloudFormationClient } from './cloudFormationClient'
 import { LambdaClient } from './lambdaClient'
 import { StsClient } from './stsClient'
@@ -14,5 +15,5 @@ export interface ToolkitClientBuilder {
 
     createLambdaClient(regionCode: string): LambdaClient
 
-    createStsClient(regionCode: string, credentials?: { accessKeyId: string, secretAccessKey: string }): StsClient
+    createStsClient(regionCode: string, credentials?: ServiceConfigurationOptions): StsClient
 }

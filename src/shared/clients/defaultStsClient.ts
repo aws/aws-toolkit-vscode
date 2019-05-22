@@ -12,16 +12,10 @@ import { StsClient } from './stsClient'
 
 export class DefaultStsClient implements StsClient {
 
-    private readonly _credentials: ServiceConfigurationOptions | undefined
-
     public constructor (
         public readonly regionCode: string,
-        credentials?: { accessKeyId: string, secretAccessKey: string }
-    ) {
-        if (credentials) {
-            this._credentials = credentials
-        }
-    }
+        private readonly _credentials?: ServiceConfigurationOptions
+    ) { }
 
     public async getCallerIdentity(): Promise<STS.GetCallerIdentityResponse> {
         const sdkClient = await this.createSdkClient()

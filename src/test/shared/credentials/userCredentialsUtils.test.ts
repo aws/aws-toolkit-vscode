@@ -23,12 +23,15 @@ import {
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { TestLogger } from '../../../shared/loggerUtils'
+import { DEFAULT_TEST_ACCOUNT_ID, DEFAULT_TEST_PROFILE_NAME, FakeAwsContext } from '../../utilities/fakeAwsContext'
 import { MockStsClient } from '../clients/mockClients'
 
 describe('UserCredentialsUtils', () => {
 
     let tempFolder: string
     let logger: TestLogger
+
+    const fakeCredentials = new AWS.Credentials('fakeaccess', 'fakesecret')
 
     before( async () => {
         // Make a temp folder for all these tests
@@ -185,8 +188,7 @@ describe('UserCredentialsUtils', () => {
             }
 
             const result: CredentialsValidationResult = await UserCredentialsUtils.validateCredentials(
-                'fakeaccess',
-                'fakesecret',
+                fakeCredentials,
                 new MockStsClient({
                     getCallerIdentity: async () => {
                         timesCalled++
@@ -208,8 +210,7 @@ describe('UserCredentialsUtils', () => {
             }
 
             const result: CredentialsValidationResult = await UserCredentialsUtils.validateCredentials(
-                'fakeaccess',
-                'fakesecret',
+                fakeCredentials,
                 new MockStsClient({
                     getCallerIdentity: async () => {
                         timesCalled++
@@ -228,8 +229,7 @@ describe('UserCredentialsUtils', () => {
             let timesCalled: number = 0
 
             const result: CredentialsValidationResult = await UserCredentialsUtils.validateCredentials(
-                'fakeaccess',
-                'fakesecret',
+                fakeCredentials,
                 new MockStsClient({
                     getCallerIdentity: async () => {
                         timesCalled++
@@ -242,6 +242,66 @@ describe('UserCredentialsUtils', () => {
             assert.strictEqual(timesCalled, 1)
             assert.strictEqual(result.isValid, false)
             assert.strictEqual(result.invalidMessage, 'Simulating error with explicit throw')
+        })
+    })
+
+    describe('addUserDataToContext', async () => {
+        it ('adds profile data to the context if the profile is valid', async () => {
+
+            const testProfile = 'testprofile'
+            const testAccount = 'testaccount'
+            const mockSts = new MockStsClient({
+                getCallerIdentity: async () => {
+                    return {
+                        UserId: 'testuser',
+                        Account: testAccount,
+                        Arn: 'testarn'
+                    }
+                }
+            })
+            const mockAws = new FakeAwsContext(
+                {
+                    credentials: new AWS.Credentials('access', 'secret')
+                }
+            )
+
+            assert.strictEqual(mockAws.getCredentialProfileName(), DEFAULT_TEST_PROFILE_NAME)
+            assert.strictEqual(mockAws.getCredentialAccountId(), DEFAULT_TEST_ACCOUNT_ID)
+            const returnValue = await UserCredentialsUtils.addUserDataToContext(testProfile, mockAws, mockSts)
+            assert.strictEqual(returnValue, true)
+            assert.strictEqual(mockAws.getCredentialProfileName(), testProfile)
+            assert.strictEqual(mockAws.getCredentialAccountId(), testAccount)
+        })
+
+        it ('does not add new profile data if credentials are invalid', async () => {
+
+            const testProfile = 'testprofile'
+            const mockSts = new MockStsClient({
+                getCallerIdentity: async () => {
+                    throw new AWS.AWSError()
+                }
+            })
+            const mockAws = new FakeAwsContext(
+                {
+                    credentials: new AWS.Credentials('access', 'secret')
+                }
+            )
+
+            const returnValue = await UserCredentialsUtils.addUserDataToContext(testProfile, mockAws, mockSts)
+            assert.strictEqual(returnValue, false)
+            assert.strictEqual(mockAws.getCredentialProfileName(), DEFAULT_TEST_PROFILE_NAME)
+            assert.strictEqual(mockAws.getCredentialAccountId(), DEFAULT_TEST_ACCOUNT_ID)
+        })
+    })
+
+    describe('removeUserDataFromContext', async () => {
+        it('removes user data', async () => {
+            const mockAws = new FakeAwsContext()
+            assert.strictEqual(mockAws.getCredentialProfileName(), DEFAULT_TEST_PROFILE_NAME)
+            assert.strictEqual(mockAws.getCredentialAccountId(), DEFAULT_TEST_ACCOUNT_ID)
+            await UserCredentialsUtils.removeUserDataFromContext(mockAws)
+            assert.strictEqual(mockAws.getCredentialAccountId(), undefined)
+            assert.strictEqual(mockAws.getCredentialProfileName(), undefined)
         })
     })
 

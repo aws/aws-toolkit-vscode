@@ -20,9 +20,11 @@ import * as pyLensProvider from './shared/codelens/pythonCodeLensProvider'
 import * as tsLensProvider from './shared/codelens/typescriptCodeLensProvider'
 import { documentationUrl, extensionSettingsPrefix, githubUrl } from './shared/constants'
 import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
+import { UserCredentialsUtils } from './shared/credentials/userCredentialsUtils'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
 import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
+import { DefaultAWSStatusBar } from './shared/defaultStatusBar'
 import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
 import { safeGet } from './shared/extensionUtilities'
@@ -30,7 +32,6 @@ import * as logFactory from './shared/logger'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import * as SamCliDetection from './shared/sam/cli/samCliDetection'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from './shared/settingsConfiguration'
-import { AWSStatusBar } from './shared/statusBar'
 import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
 import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryService'
 import { TelemetryService } from './shared/telemetry/telemetryService'
@@ -65,10 +66,19 @@ export async function activate(context: vscode.ExtensionContext) {
         const resourceFetcher = new DefaultResourceFetcher()
         const regionProvider = new DefaultRegionProvider(context, resourceFetcher)
 
+        // check to see if current user is valid
+        const currentProfile = awsContext.getCredentialProfileName()
+        if (currentProfile) {
+             const successfulLogin = await UserCredentialsUtils.addUserDataToContext(currentProfile, awsContext)
+             if (!successfulLogin) {
+                await UserCredentialsUtils.removeUserDataFromContext(awsContext)
+             }
+        }
+
         ext.awsContextCommands = new DefaultAWSContextCommands(awsContext, awsContextTrees, regionProvider)
         ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
-        ext.statusBar = new AWSStatusBar(awsContext, context)
+        ext.statusBar = new DefaultAWSStatusBar(awsContext, context)
         ext.telemetry = new DefaultTelemetryService(context, awsContext)
         new AwsTelemetryOptOut(ext.telemetry, new DefaultSettingsConfiguration(extensionSettingsPrefix))
             .ensureUserNotified()
