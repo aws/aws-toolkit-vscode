@@ -134,7 +134,7 @@ async function onLocalInvokeCommand(
             handlerName: string
         }): Promise<CloudFormation.Resource>,
     },
-    { installDebugger }: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext()
+    context: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext()
 ): Promise<{ datum: Datum }> {
     const channelLogger = getChannelLogger(toolkitOutputChannel)
     const resource = await getResourceFromTemplate({
@@ -209,7 +209,7 @@ async function onLocalInvokeCommand(
                     path.dirname(lambdaLocalInvokeParams.samTemplate.fsPath),
                     rawCodeUri
                 )
-            const { debuggerPath } = await installDebugger({
+            const { debuggerPath } = await context.installDebugger({
                 runtime,
                 codeUri
             })
@@ -435,36 +435,32 @@ async function _installDebugger(
 
     try {
         await access(vsdbgPath)
-
-         // vsdbg is already installed.
-        return { debuggerPath: vsdbgPath }
     } catch {
-        // We could not access vsdbgPath. Swallow error and continue.
-    }
-
-    try {
-        await mkdir(vsdbgPath)
-        await dockerClient.invoke({
-            command: 'run',
-            image: `lambci/lambda:${runtime}`,
-            removeOnExit: true,
-            mount: {
-                type: 'bind',
-                source: vsdbgPath,
-                destination: '/vsdbg'
-            },
-            entryPoint: {
-                command: 'bash',
-                args: [
-                    '-c',
-                    '"curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg"'
-                ]
-            }
-        })
-    } catch (err) {
-        // Clean up to avoid leaving a bad installation in the user's workspace.
-        await del(vsdbgPath, { force: true })
-        throw err
+        // We could not access vsdbgPath, probably because it doesn't exist.
+        try {
+            await mkdir(vsdbgPath)
+            await dockerClient.invoke({
+                command: 'run',
+                image: `lambci/lambda:${runtime}`,
+                removeOnExit: true,
+                mount: {
+                    type: 'bind',
+                    source: vsdbgPath,
+                    destination: '/vsdbg'
+                },
+                entryPoint: {
+                    command: 'bash',
+                    args: [
+                        '-c',
+                        '"curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg"'
+                    ]
+                }
+            })
+        } catch (err) {
+            // Clean up to avoid leaving a bad installation in the user's workspace.
+            await del(vsdbgPath, { force: true })
+            throw err
+        }
     }
 
     return { debuggerPath: vsdbgPath }

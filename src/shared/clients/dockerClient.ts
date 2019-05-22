@@ -68,18 +68,17 @@ export class DefaultDockerClient implements DockerClient {
         }
 
         if (mount) {
-            args.push(
-                '--mount',
-                `type=${mount.type},src=${mount.source},dst=${mount.destination}`
-            )
+            args.push('--mount', `type=${mount.type},src=${mount.source},dst=${mount.destination}`)
         }
 
         if (entryPoint) {
-            args.push(
-                '--entrypoint',
-                entryPoint.command,
-                ...entryPoint.args
-            )
+            args.push('--entrypoint', entryPoint.command)
+        }
+
+        args.push(image)
+
+        if (entryPoint) {
+            args.push(...entryPoint.args)
         }
 
         const process = this.context.spawn(
