@@ -7,7 +7,12 @@
 
 import * as assert from 'assert'
 import { runSamCliDeploy } from '../../../../shared/sam/cli/samCliDeploy'
-import { MockSamCliProcessInvoker } from './samCliTestUtils'
+import {
+    assertArgIsPresent,
+    assertArgNotPresent,
+    assertArgsContainArgument,
+    MockSamCliProcessInvoker
+} from './samCliTestUtils'
 
 describe('runSamCliDeploy', async () => {
     const fakeProfile = 'profile'
@@ -24,7 +29,7 @@ describe('runSamCliDeploy', async () => {
         const invoker = new MockSamCliProcessInvoker(
             args => {
                 invokeCount++
-                assert.strictEqual(args.some(arg => arg === '--parameter-overrides'), false)
+                assertArgNotPresent(args, '--parameter-overrides')
             }
         )
 
@@ -46,6 +51,7 @@ describe('runSamCliDeploy', async () => {
         const invoker = new MockSamCliProcessInvoker(
             args => {
                 invokeCount++
+                assertArgIsPresent(args, '--parameter-overrides')
                 const overridesIndex = args.findIndex(arg => arg === '--parameter-overrides')
                 assert.strictEqual(overridesIndex > -1, true)
                 assert.strictEqual(args.length >= overridesIndex + 3, true)
@@ -75,14 +81,10 @@ describe('runSamCliDeploy', async () => {
         const invoker = new MockSamCliProcessInvoker(
             args => {
                 invokeCount++
-                const templateIndex = args.findIndex(arg => arg === '--template-file')
-                const stackIndex = args.findIndex(arg => arg === '--stack-name')
-                const regionIndex = args.findIndex(arg => arg === '--region')
-                const profileIndex = args.findIndex(arg => arg === '--profile')
-                assert.strictEqual(args[templateIndex + 1], 'template')
-                assert.strictEqual(args[stackIndex + 1], 'stackName')
-                assert.strictEqual(args[regionIndex + 1], 'region')
-                assert.strictEqual(args[profileIndex + 1], 'profile')
+                assertArgsContainArgument(args, '--template-file', fakeTemplateFile)
+                assertArgsContainArgument(args, '--stack-name', fakeStackName)
+                assertArgsContainArgument(args, '--region', fakeRegion)
+                assertArgsContainArgument(args, '--profile', fakeProfile)
             }
         )
 
