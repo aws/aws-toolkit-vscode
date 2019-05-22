@@ -17,7 +17,7 @@ import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
 import { runSamCliDeploy } from '../../shared/sam/cli/samCliDeploy'
 import { SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvokerUtils'
-import { SamCliPackageInvocation } from '../../shared/sam/cli/samCliPackage'
+import { runSamCliPackage } from '../../shared/sam/cli/samCliPackage'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { SamDeployWizard, SamDeployWizardResponse } from '../wizards/samDeployWizard'
@@ -148,22 +148,23 @@ async function buildPackageDeploy(params: {
         await build.execute()
 
         stage = 'packaging'
-        const packageInvocation = new SamCliPackageInvocation(
-            buildTemplatePath,
-            packageTemplatePath,
-            params.deployParameters.packageBucketName,
-            params.invoker,
-            params.deployParameters.region,
-            params.deployParameters.profile
-        )
-
         params.channelLogger.channel.appendLine(localize(
             'AWS.samcli.deploy.workflow.packaging',
             'Packaging SAM Application to S3 Bucket: {0} with profile: {1}',
             params.deployParameters.packageBucketName,
             params.deployParameters.profile
         ))
-        await packageInvocation.execute()
+        await runSamCliPackage(
+            {
+                sourceTemplateFile: buildTemplatePath,
+                destinationTemplateFile: packageTemplatePath,
+                profile: params.deployParameters.profile,
+                region: params.deployParameters.region,
+                s3Bucket: params.deployParameters.packageBucketName,
+            },
+            params.invoker,
+            params.channelLogger.logger,
+        )
 
         stage = 'deploying'
         // Deploying can take a very long time for Python Lambda's with native dependencies so user needs feedback
