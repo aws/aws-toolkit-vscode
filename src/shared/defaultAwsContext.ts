@@ -50,7 +50,10 @@ export class DefaultAwsContext implements AwsContext {
 
     /**
      * @description Gets the Credentials for the current specified profile.
+     * If a profile name is provided, overrides existing profile.
      * If an error is encountered, or the profile cannot be found, an Error is thrown.
+     *
+     * @param profileName (optional): override profile name to pull credentials for (useful for validation)
      */
     public async getCredentials(profileName?: string): Promise<AWS.Credentials | undefined> {
         // async so that we could *potentially* support other ways of obtaining

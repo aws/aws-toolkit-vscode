@@ -9,7 +9,6 @@ import * as assert from 'assert'
 import AWS = require('aws-sdk')
 import { DefaultTelemetryPublisher } from '../../../shared/telemetry/defaultTelemetryPublisher'
 import { TelemetryClient } from '../../../shared/telemetry/telemetryClient'
-import { FakeAwsContext } from '../../utilities/fakeAwsContext'
 
 class MockTelemetryClient implements TelemetryClient {
     private readonly returnValue: any
@@ -29,7 +28,6 @@ describe('DefaultTelemetryPublisher', () => {
             '',
             '',
             new AWS.Credentials('', ''),
-            new FakeAwsContext(),
             new MockTelemetryClient()
         )
         publisher.enqueue(...[
@@ -51,7 +49,6 @@ describe('DefaultTelemetryPublisher', () => {
             '',
             '',
             new AWS.Credentials('', ''),
-            new FakeAwsContext(),
             new MockTelemetryClient()
         )
         publisher.enqueue(...[
@@ -72,7 +69,6 @@ describe('DefaultTelemetryPublisher', () => {
             '',
             '',
             new AWS.Credentials('', ''),
-            new FakeAwsContext(),
             new MockTelemetryClient(batch)
         )
         publisher.enqueue(...batch)

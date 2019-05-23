@@ -91,6 +91,7 @@ export class DefaultAWSContextCommands {
         }
         if (!profileName || !successfulLogin) {
             // credentials are invalid. Prompt user and log out
+            // TODO: Prompt user!
             await this.onCommandLogout()
         }
     }
@@ -107,6 +108,7 @@ export class DefaultAWSContextCommands {
                 const successfulLogin = await UserCredentialsUtils.addUserDataToContext(profileName, this._awsContext)
                 if (!successfulLogin) {
                     // credentials are invalid. Prompt user and log out
+                    // TODO: Prompt user!
                     await this.onCommandLogout()
                 }
             }

@@ -8,7 +8,6 @@
 import { Credentials, Service } from 'aws-sdk'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import { AwsContext } from '../awsContext'
 import * as constants from '../constants'
 import { ext } from '../extensionGlobals'
 import * as ClientTelemetry from './clienttelemetry'
@@ -25,7 +24,6 @@ export class DefaultTelemetryClient implements TelemetryClient {
     private constructor(
         private readonly clientId: string,
         private readonly client: ClientTelemetry,
-        private readonly awsContext: Pick<AwsContext, 'getCredentialAccountId'>
     ) {}
 
     /**
@@ -42,7 +40,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                 OSVersion: os.release(),
                 ParentProduct: vscode.env.appName,
                 ParentProductVersion: vscode.version,
-                MetricData: toMetricData(batch, this.awsContext)
+                MetricData: toMetricData(batch)
             }).promise()
             console.info(`Successfully sent a telemetry batch of ${batch.length}`)
         } catch (err) {
@@ -56,22 +54,23 @@ export class DefaultTelemetryClient implements TelemetryClient {
         clientId: string,
         region: string,
         credentials: Credentials,
-        awsContext: Pick<AwsContext, 'getCredentialAccountId'>
     ): Promise<DefaultTelemetryClient> {
 
         await credentials.getPromise()
 
         return new DefaultTelemetryClient(
             clientId,
-            await ext.sdkClientBuilder.createAndConfigureServiceClient(opts => new Service(opts), {
-                // @ts-ignore: apiConfig is internal and not in the TS declaration file
-                apiConfig: apiConfig,
-                region: region,
-                credentials: credentials,
-                correctClockSkew: true,
-                endpoint: DefaultTelemetryClient.DEFAULT_TELEMETRY_ENDPOINT
-            }),
-            awsContext
+            await ext.sdkClientBuilder.createAndConfigureServiceClient(
+                opts => new Service(opts),
+                {
+                    // @ts-ignore: apiConfig is internal and not in the TS declaration file
+                    apiConfig: apiConfig,
+                    region: region,
+                    credentials: credentials,
+                    correctClockSkew: true,
+                    endpoint: DefaultTelemetryClient.DEFAULT_TELEMETRY_ENDPOINT
+                }
+            ),
         )
     }
 }

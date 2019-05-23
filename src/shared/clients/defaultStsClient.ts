@@ -14,7 +14,7 @@ export class DefaultStsClient implements StsClient {
 
     public constructor (
         public readonly regionCode: string,
-        private readonly _credentials?: ServiceConfigurationOptions
+        private readonly credentials?: ServiceConfigurationOptions
     ) { }
 
     public async getCallerIdentity(): Promise<STS.GetCallerIdentityResponse> {
@@ -28,7 +28,7 @@ export class DefaultStsClient implements StsClient {
     private async createSdkClient(): Promise<STS> {
         return await ext.sdkClientBuilder.createAndConfigureServiceClient(
             (options) => new STS(options),
-            this._credentials,
+            this.credentials,
             this.regionCode
         )
     }

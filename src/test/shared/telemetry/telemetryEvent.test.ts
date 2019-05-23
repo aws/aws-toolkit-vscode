@@ -7,12 +7,10 @@
 
 import * as assert from 'assert'
 import { TelemetryEvent, toMetricData } from '../../../shared/telemetry/telemetryEvent'
-import { DEFAULT_TEST_ACCOUNT_ID, FakeAwsContext } from '../../utilities/fakeAwsContext'
 
 describe('TelemetryEventArray', () => {
     describe('toMetricData', () => {
         it('strips names of invalid characters', () => {
-            const fakeAwsContext = new FakeAwsContext()
             const eventArray = []
             const metricEvents = [
                 {
@@ -41,7 +39,7 @@ describe('TelemetryEventArray', () => {
             ]
 
             eventArray.push(...metricEvents)
-            const data = toMetricData(eventArray, fakeAwsContext)
+            const data = toMetricData(eventArray)
 
             assert.strictEqual(data.length, 3)
             assert.strictEqual(data[0].MetricName, 'namespace')
@@ -50,27 +48,21 @@ describe('TelemetryEventArray', () => {
         })
 
         it('maps TelemetryEvent with no data to a single MetricDatum', () => {
-            const fakeAwsContext = new FakeAwsContext()
             const eventArray = []
             const metricEvent = {
                 namespace: 'namespace',
                 createTime: new Date()
             }
-            const accountMetadata = {
-                Key: 'account',
-                Value: DEFAULT_TEST_ACCOUNT_ID
-            }
             eventArray.push(metricEvent)
-            const data = toMetricData(eventArray, fakeAwsContext)
+            const data = toMetricData(eventArray)
 
             assert.strictEqual(data.length, 1)
             assert.strictEqual(data[0].EpochTimestamp, metricEvent.createTime.getTime())
             assert.strictEqual(data[0].MetricName, metricEvent.namespace)
-            assert.deepStrictEqual(data[0].Metadata, [accountMetadata])
+            assert.deepStrictEqual(data[0].Metadata, undefined)
         })
 
         it('maps TelemetryEvent with data to a multiple MetricDatum', () => {
-            const fakeAwsContext = new FakeAwsContext()
             const eventArray: TelemetryEvent[] = []
             const metricEvent = {
                 namespace: 'namespace',
@@ -99,12 +91,8 @@ describe('TelemetryEventArray', () => {
                     }
                 ]
             }
-            const accountMetadata = {
-                Key: 'account',
-                Value: DEFAULT_TEST_ACCOUNT_ID
-            }
             eventArray.push(metricEvent)
-            const data = toMetricData(eventArray, fakeAwsContext)
+            const data = toMetricData(eventArray)
 
             assert.strictEqual(data.length, 3)
             assert.strictEqual(data[0].EpochTimestamp, metricEvent.createTime.getTime())
@@ -119,15 +107,13 @@ describe('TelemetryEventArray', () => {
             assert.strictEqual(data[0].Unit, 'None')
             assert.strictEqual(data[1].Unit, 'Percent')
             assert.strictEqual(data[2].Unit, 'Percent')
-            assert.deepStrictEqual(data[0].Metadata, [accountMetadata])
+            assert.deepStrictEqual(data[0].Metadata, undefined)
 
             const expectedMetadata1 = [
-                accountMetadata,
                 { Key: 'key', Value: 'value' },
                 { Key: 'key2', Value: 'value2' }
             ]
             const expectedMetadata2 = [
-                accountMetadata,
                 { Key: 'key3', Value: 'value3' }
             ]
 
@@ -136,7 +122,6 @@ describe('TelemetryEventArray', () => {
         })
 
         it('always contains exactly one underscore in the metric name, separating the namespace and the name', () => {
-            const fakeAwsContext = new FakeAwsContext()
             const properNamespace = 'namespace'
             const malformedNamespace = 'name_space'
             const properName = 'metricname'
@@ -164,7 +149,7 @@ describe('TelemetryEventArray', () => {
                 }
             ]
 
-            const data = toMetricData(eventArray, fakeAwsContext)
+            const data = toMetricData(eventArray)
             assert.strictEqual(data.length, 2)
             assert.strictEqual(data[0].MetricName, `${properNamespace}_${properName}`)
             assert.strictEqual(data[1].MetricName, `${properNamespace}_${properName}`)

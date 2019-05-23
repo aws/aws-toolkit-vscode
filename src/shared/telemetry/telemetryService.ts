@@ -5,6 +5,7 @@
 
 'use strict'
 
+import { AwsContext } from '../awsContext'
 import { TelemetryEvent } from './telemetryEvent'
 
 export interface TelemetryService {
@@ -13,7 +14,7 @@ export interface TelemetryService {
 
     start(): Promise<void>
     shutdown(): Promise<void>
-    record(event: TelemetryEvent): void
+    record(event: TelemetryEvent, awsContext?: AwsContext): void
     clearRecords(): void
     notifyOptOutOptionMade(): void
 }

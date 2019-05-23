@@ -20,6 +20,7 @@ export interface Datum {
 }
 
 type OldTelemetryNamespace = 'Command'
+export const ACCOUNT_METADATA_KEY = 'awsAccount'
 
 export enum TelemetryNamespace {
     Aws = 'aws',
@@ -27,4 +28,10 @@ export enum TelemetryNamespace {
     Lambda = 'lambda',
     Project = 'project',
     Session = 'session'
+}
+
+export enum AccountStatus {
+    NotApplicable = 'n/a',
+    NotSet = 'not-set',
+    Invalid = 'invalid'
 }

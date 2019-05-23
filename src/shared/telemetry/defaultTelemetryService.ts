@@ -16,7 +16,7 @@ import { DefaultTelemetryPublisher } from './defaultTelemetryPublisher'
 import { TelemetryEvent } from './telemetryEvent'
 import { TelemetryPublisher } from './telemetryPublisher'
 import { TelemetryService } from './telemetryService'
-import { TelemetryNamespace } from './telemetryTypes'
+import { ACCOUNT_METADATA_KEY, AccountStatus, TelemetryNamespace } from './telemetryTypes'
 
 export class DefaultTelemetryService implements TelemetryService {
     public static readonly TELEMETRY_COGNITO_ID_KEY = 'telemetryId'
@@ -38,7 +38,7 @@ export class DefaultTelemetryService implements TelemetryService {
 
     public constructor(
         private readonly context: ExtensionContext,
-        private readonly awsContext: Pick<AwsContext, 'getCredentialAccountId'>,
+        private readonly awsContext: AwsContext,
         publisher?: TelemetryPublisher
     ) {
         const persistPath = context.globalStoragePath
@@ -63,17 +63,20 @@ export class DefaultTelemetryService implements TelemetryService {
     }
 
     public async start(): Promise<void> {
-        this.record({
-            namespace: TelemetryNamespace.Session,
-            createTime: this.startTime,
-            data: [
-                {
-                    name: 'start',
-                    value: 0,
-                    unit: 'None'
-                }
-            ]
-        })
+        this.record(
+            {
+                namespace: TelemetryNamespace.Session,
+                createTime: this.startTime,
+                data: [
+                    {
+                        name: 'start',
+                        value: 0,
+                        unit: 'None'
+                    }
+                ]
+            },
+            this.awsContext
+        )
         await this.startTimer()
     }
 
@@ -83,17 +86,20 @@ export class DefaultTelemetryService implements TelemetryService {
             this._timer = undefined
         }
         const currTime = new Date()
-        this.record({
-            namespace: TelemetryNamespace.Session,
-            createTime: currTime,
-            data: [
-                {
-                    name: 'end',
-                    value: (currTime.getTime() - this.startTime.getTime()),
-                    unit: 'Milliseconds'
-                }
-            ]
-        })
+        this.record(
+            {
+                namespace: TelemetryNamespace.Session,
+                createTime: currTime,
+                data: [
+                    {
+                        name: 'end',
+                        value: (currTime.getTime() - this.startTime.getTime()),
+                        unit: 'Milliseconds'
+                    }
+                ]
+            },
+            this.awsContext
+        )
 
         // only write events to disk if telemetry is enabled at shutdown time
         if (this.telemetryEnabled) {
@@ -122,11 +128,13 @@ export class DefaultTelemetryService implements TelemetryService {
         this._flushPeriod = period
     }
 
-    public record(event: TelemetryEvent): void {
+    public record(event: TelemetryEvent, awsContext?: AwsContext): void {
         // record events only if telemetry is enabled or the user hasn't expressed a preference
         // events should only be flushed if the user has consented
+        const actualAwsContext = awsContext ? awsContext : this.awsContext
+        const eventWithAccountMetadata = this.injectAccountMetadata(event, actualAwsContext)
         if (this.telemetryEnabled || !this._telemetryOptionExplicitlyStated) {
-            this._eventQueue.push(event)
+            this._eventQueue.push(eventWithAccountMetadata)
         }
     }
 
@@ -188,7 +196,7 @@ export class DefaultTelemetryService implements TelemetryService {
             // if we don't have an identity, get one
             if (!identity) {
                 const identityPublisherTuple =
-                    await DefaultTelemetryPublisher.fromDefaultIdentityPool(clientId, this.awsContext)
+                    await DefaultTelemetryPublisher.fromDefaultIdentityPool(clientId)
 
                 // save it
                 identityMap.set(poolId, identityPublisherTuple.cognitoIdentityId)
@@ -200,7 +208,7 @@ export class DefaultTelemetryService implements TelemetryService {
                 // return the publisher
                 return identityPublisherTuple.publisher
             } else {
-                return DefaultTelemetryPublisher.fromIdentityId(clientId, identity, this.awsContext)
+                return DefaultTelemetryPublisher.fromIdentityId(clientId, identity)
             }
         } catch (err) {
             console.error(`Got ${err} while initializing telemetry publisher`)
@@ -212,6 +220,58 @@ export class DefaultTelemetryService implements TelemetryService {
         if (this.publisher !== undefined) {
             await this.publisher.init()
         }
+    }
+
+    private injectAccountMetadata(event: TelemetryEvent, awsContext: AwsContext): TelemetryEvent {
+        let accountValue: string | AccountStatus
+        if (event.namespace === TelemetryNamespace.Session) {
+            // this matches JetBrains' functionality: the AWS account ID is not set on session start.
+            accountValue = AccountStatus.NotApplicable
+        } else {
+            const account = awsContext.getCredentialAccountId()
+            if (account) {
+                const accountIdRegex = /[0-9]{12}/
+                if (accountIdRegex.test(account)) {
+                    // account is valid
+                    accountValue = account
+                } else {
+                    // account is not valid, we can use any non-12-digit string as our stored value to trigger this.
+                    // JetBrains uses this value if you're running a sam local invoke with an invalid profile.
+                    // no direct calls to production AWS should ever have this value.
+                    accountValue = AccountStatus.Invalid
+                }
+            } else {
+                // user isn't logged in
+                accountValue = AccountStatus.NotSet
+            }
+        }
+        // event has data
+        if (event.data) {
+            for (const datum of event.data) {
+                if (datum.metadata) {
+                    datum.metadata.set(ACCOUNT_METADATA_KEY, accountValue)
+                } else {
+                    datum.metadata = new Map([
+                        [ACCOUNT_METADATA_KEY, accountValue]
+                    ])
+                }
+            }
+        } else {
+            // event doesn't have data, give it dummy data with the account info
+            // this shouldn't happen
+            const data = [
+                {
+                    name: 'noData',
+                    value: 0,
+                    metadata: new Map([
+                        [ACCOUNT_METADATA_KEY, accountValue]
+                    ])
+                }
+            ]
+            event.data = data
+        }
+
+        return event
     }
 
     private static readEventsFromCache(cachePath: string): TelemetryEvent[] {
