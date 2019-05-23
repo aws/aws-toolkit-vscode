@@ -117,7 +117,9 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
                     channelLogger: this.channelLogger,
                     regionProvider: this.regionProvider
                 },
-                this.awsContext
+                {
+                    awsContext: this.awsContext
+                }
             ),
             telemetryName: {
                 namespace: TelemetryNamespace.Lambda,

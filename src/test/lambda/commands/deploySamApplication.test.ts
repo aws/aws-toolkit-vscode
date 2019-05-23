@@ -168,8 +168,10 @@ describe('deploySamApplication', async () => {
                 regionProvider,
                 samDeployWizard,
             },
-            awsContext,
-            window,
+            {
+                awsContext,
+                window,
+            },
         )
 
         await waitForDeployToComplete()
@@ -186,8 +188,10 @@ describe('deploySamApplication', async () => {
                 regionProvider,
                 samDeployWizard,
             },
-            awsContext,
-            window,
+            {
+                awsContext,
+                window,
+            },
         )
 
         assertGeneralErrorLogged(channelLogger)
@@ -201,8 +205,10 @@ describe('deploySamApplication', async () => {
                 regionProvider,
                 samDeployWizard,
             },
-            awsContext,
-            window,
+            {
+                awsContext,
+                window,
+            },
         )
 
         assertGeneralErrorLogged(channelLogger)
@@ -218,8 +224,10 @@ describe('deploySamApplication', async () => {
                 regionProvider,
                 samDeployWizard,
             },
-            awsContext,
-            window,
+            {
+                awsContext,
+                window,
+            },
         )
 
         assert.strictEqual(invokerCalledCount, 0, 'Did not expect sam cli to get invoked')
@@ -246,8 +254,10 @@ describe('deploySamApplication', async () => {
                 regionProvider,
                 samDeployWizard,
             },
-            awsContext,
-            window,
+            {
+                awsContext,
+                window,
+            },
         )
 
         await waitForDeployToComplete()
@@ -277,8 +287,10 @@ describe('deploySamApplication', async () => {
                 regionProvider,
                 samDeployWizard,
             },
-            awsContext,
-            window,
+            {
+                awsContext,
+                window,
+            },
         )
 
         await waitForDeployToComplete()
@@ -308,8 +320,10 @@ describe('deploySamApplication', async () => {
                 regionProvider,
                 samDeployWizard,
             },
-            awsContext,
-            window,
+            {
+                awsContext,
+                window,
+            },
         )
 
         await waitForDeployToComplete()

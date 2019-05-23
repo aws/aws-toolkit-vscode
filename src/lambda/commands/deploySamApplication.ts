@@ -52,15 +52,19 @@ export async function deploySamApplication(
         samDeployWizard = getDefaultSamDeployWizardResponseProvider(
             regionProvider
         ),
-        ...restParams
     }: {
         samCliContext?: SamCliContext
         channelLogger: ChannelLogger,
         regionProvider: RegionProvider,
         samDeployWizard?: SamDeployWizardResponseProvider,
     },
-    awsContext: Pick<AwsContext, 'getCredentialProfileName'>,
-    window: WindowFunctions = getDefaultWindowFunctions(),
+    {
+        awsContext,
+        window = getDefaultWindowFunctions(),
+    }: {
+        awsContext: Pick<AwsContext, 'getCredentialProfileName'>,
+        window?: WindowFunctions,
+    },
 ): Promise<void> {
     try {
         const profile: string | undefined = awsContext.getCredentialProfileName()
