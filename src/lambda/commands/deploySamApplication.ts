@@ -34,17 +34,33 @@ interface DeploySamApplicationParameters {
     parameterOverrides: Map<string, string>
 }
 
+export interface WindowFunctions {
+    showInformationMessage: typeof vscode.window.showInformationMessage
+    showErrorMessage: typeof vscode.window.showErrorMessage
+    setStatusBarMessage(text: string, hideWhenDone: Thenable<any>): vscode.Disposable
+}
+
+export interface SamDeployWizardResponseProvider {
+    getSamDeployWizardResponse(): Promise<SamDeployWizardResponse | undefined>
+}
+
 export async function deploySamApplication(
     {
         samCliContext = getSamCliContext(),
         channelLogger,
+        regionProvider,
+        samDeployWizard = getDefaultSamDeployWizardResponseProvider(
+            regionProvider
+        ),
         ...restParams
     }: {
         samCliContext?: SamCliContext
         channelLogger: ChannelLogger,
-        regionProvider: RegionProvider
+        regionProvider: RegionProvider,
+        samDeployWizard?: SamDeployWizardResponseProvider,
     },
-    awsContext: Pick<AwsContext, 'getCredentialProfileName'>
+    awsContext: Pick<AwsContext, 'getCredentialProfileName'>,
+    window: WindowFunctions = getDefaultWindowFunctions(),
 ): Promise<void> {
     try {
         const profile: string | undefined = awsContext.getCredentialProfileName()
@@ -54,9 +70,7 @@ export async function deploySamApplication(
 
         throwAndNotifyIfInvalid(await samCliContext.validator.detectValidSamCli())
 
-        const deployWizardResponse: SamDeployWizardResponse | undefined = await new SamDeployWizard(
-            restParams.regionProvider
-        ).run()
+        const deployWizardResponse = await samDeployWizard.getSamDeployWizardResponse()
 
         if (!deployWizardResponse) {
             return
@@ -76,6 +90,7 @@ export async function deploySamApplication(
             deployParameters,
             channelLogger,
             invoker: samCliContext.invoker,
+            window,
         }).then(async () =>
             // The parent method will exit shortly, and the status bar will run this promise
             // Cleanup has to be chained into the promise as a result.
@@ -84,7 +99,7 @@ export async function deploySamApplication(
             })
         )
 
-        vscode.window.setStatusBarMessage(
+        window.setStatusBarMessage(
             localize(
                 'AWS.samcli.deploy.statusbar.message',
                 '$(cloud-upload) Deploying SAM Application to {0}...',
@@ -206,6 +221,7 @@ async function deploy(params: {
     deployParameters: DeploySamApplicationParameters,
     invoker: SamCliProcessInvoker,
     channelLogger: ChannelLogger,
+    window: WindowFunctions,
 }): Promise<void> {
     try {
         params.channelLogger.channel.show(true)
@@ -225,14 +241,14 @@ async function deploy(params: {
             params.deployParameters.profile
         )
 
-        vscode.window.showInformationMessage(localize(
+        params.window.showInformationMessage(localize(
             'AWS.samcli.deploy.workflow.success.general',
             'SAM Application deployment succeeded.'
         ))
     } catch (err) {
         outputDeployError(err as Error, params.channelLogger)
 
-        vscode.window.showErrorMessage(localize(
+        params.window.showErrorMessage(localize(
             'AWS.samcli.deploy.workflow.error',
             'Failed to deploy SAM application.'
         ))
@@ -270,4 +286,22 @@ function outputDeployError(error: Error, channelLogger: ChannelLogger) {
         'AWS.samcli.deploy.general.error',
         'An error occurred while deploying a SAM Application. Check the logs for more information.'
     )
+}
+
+function getDefaultWindowFunctions(): WindowFunctions {
+    return {
+        setStatusBarMessage: vscode.window.setStatusBarMessage,
+        showErrorMessage: vscode.window.showErrorMessage,
+        showInformationMessage: vscode.window.showInformationMessage,
+    }
+}
+
+function getDefaultSamDeployWizardResponseProvider(regionProvider: RegionProvider): SamDeployWizardResponseProvider {
+    return {
+        getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {
+            const wizard = new SamDeployWizard(regionProvider)
+
+            return wizard.run()
+        }
+    }
 }
