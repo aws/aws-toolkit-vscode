@@ -76,7 +76,7 @@ export class SamCliBuildInvocation {
             skipPullImage = false,
             ...params
         }: SamCliBuildInvocationArguments,
-        private readonly file: FileFunctions = getDefaultFileFunctions()
+        private readonly context: { file: FileFunctions } = { file: getDefaultFileFunctions() },
     ) {
         this.buildDir = params.buildDir
         this.baseDir = params.baseDir
@@ -117,7 +117,7 @@ export class SamCliBuildInvocation {
     }
 
     private async validate(): Promise<void> {
-        if (!await this.file.fileExists(this.templatePath)) {
+        if (!await this.context.file.fileExists(this.templatePath)) {
             const logger: Logger = getLogger()
 
             const err = new Error(`template path does not exist: ${this.templatePath}`)

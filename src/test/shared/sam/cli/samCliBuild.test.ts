@@ -291,7 +291,9 @@ describe('SamCliBuildInvocation', async () => {
                         templatePath: placeholderTemplateFile,
                         invoker: badExitCodeProcessInvoker,
                     },
-                    fakeFileFunctions
+                    {
+                        file: fakeFileFunctions
+                    },
                 ).execute()
             },
             'Expected an error to be thrown'
