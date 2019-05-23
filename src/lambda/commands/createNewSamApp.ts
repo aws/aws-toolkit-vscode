@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -14,7 +14,7 @@ import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliCont
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
-import { METADATA_FIELD_NAME, MetadataResult } from '../../shared/telemetry/telemetryEvent'
+import { METADATA_FIELD_NAME, MetadataResult } from '../../shared/telemetry/telemetryTypes'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { getMainSourceFileUri } from '../utilities/getMainSourceFile'
 import {

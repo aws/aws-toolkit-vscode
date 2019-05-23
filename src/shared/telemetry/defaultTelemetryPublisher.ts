@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -69,7 +69,9 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
         )
     }
 
-    public static async fromDefaultIdentityPool(clientId: string): Promise<IdentityPublisherTuple> {
+    public static async fromDefaultIdentityPool(
+        clientId: string
+    ): Promise<IdentityPublisherTuple> {
         return this.fromIdentityPool(clientId, DefaultTelemetryClient.DEFAULT_IDENTITY_POOL)
     }
 
@@ -77,8 +79,10 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
      * Create a telemetry publisher from the given clientId and identityPool
      * @return A tuple containing the new identityId and the telemetry publisher
      */
-    public static async fromIdentityPool(clientId: string, identityPool: string)
-        : Promise<IdentityPublisherTuple> {
+    public static async fromIdentityPool(
+        clientId: string,
+        identityPool: string
+    ): Promise<IdentityPublisherTuple> {
         const region = identityPool.split(':')[0]
         try {
             const res = await new CognitoIdentity({
@@ -104,7 +108,10 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
         }
     }
 
-    public static fromIdentityId(clientId: string, identityId: string): DefaultTelemetryPublisher {
+    public static fromIdentityId(
+        clientId: string,
+        identityId: string
+    ): DefaultTelemetryPublisher {
         const region = identityId.split(':')[0]
         const cognitoCredentials = new CognitoIdentityCredentials(
             { IdentityId: identityId },

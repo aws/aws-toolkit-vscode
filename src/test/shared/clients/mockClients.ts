@@ -1,13 +1,14 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 'use strict'
 
-import { CloudFormation, Lambda } from 'aws-sdk'
+import { CloudFormation, Lambda, STS } from 'aws-sdk'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
+import { StsClient } from '../../../shared/clients/stsClient'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 
 import '../../../shared/utilities/asyncIteratorShim'
@@ -20,7 +21,9 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
     public constructor(
         private readonly cloudFormationClient: CloudFormationClient = new MockCloudFormationClient(),
 
-        private readonly lambdaClient: LambdaClient = new MockLambdaClient({})
+        private readonly lambdaClient: LambdaClient = new MockLambdaClient({}),
+
+        private readonly stsClient: StsClient = new MockStsClient({})
     ) {
     }
 
@@ -30,6 +33,10 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
 
     public createLambdaClient(regionCode: string): LambdaClient {
         return this.lambdaClient
+    }
+
+    public createStsClient(regionCode: string): StsClient {
+        return this.stsClient
     }
 }
 
@@ -73,5 +80,21 @@ export class MockLambdaClient implements LambdaClient {
         this.deleteFunction = deleteFunction
         this.invoke = invoke
         this.listFunctions = listFunctions
+    }
+}
+
+export class MockStsClient implements StsClient {
+    public readonly regionCode: string
+    public readonly getCallerIdentity: () => Promise<STS.GetCallerIdentityResponse>
+
+    public constructor({
+        regionCode = '',
+        getCallerIdentity = async () => ({})
+    }: {
+        regionCode?: string
+        getCallerIdentity?(): Promise<STS.GetCallerIdentityResponse>
+    }) {
+        this.regionCode = regionCode
+        this.getCallerIdentity = getCallerIdentity
     }
 }

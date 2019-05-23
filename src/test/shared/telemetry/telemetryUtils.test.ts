@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -8,14 +8,15 @@
 import * as assert from 'assert'
 import { Disposable } from 'vscode'
 import { ext } from '../../../shared/extensionGlobals'
+import { TelemetryEvent } from '../../../shared/telemetry/telemetryEvent'
+import { TelemetryService } from '../../../shared/telemetry/telemetryService'
 import {
     Datum,
     METADATA_FIELD_NAME,
     MetadataResult,
-    TelemetryEvent
-} from '../../../shared/telemetry/telemetryEvent'
-import { TelemetryService } from '../../../shared/telemetry/telemetryService'
-import { defaultMetricDatum, registerCommand, TelemetryNamespace } from '../../../shared/telemetry/telemetryUtils'
+    TelemetryNamespace
+} from '../../../shared/telemetry/telemetryTypes'
+import { defaultMetricDatum, registerCommand } from '../../../shared/telemetry/telemetryUtils'
 
 class MockTelemetryService implements TelemetryService {
     public persistFilePath: string = ''

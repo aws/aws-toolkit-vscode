@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,22 +7,7 @@
 
 import * as vscode from 'vscode'
 import { ext } from '../extensionGlobals'
-import { Datum, METADATA_FIELD_NAME, MetadataResult, } from './telemetryEvent'
-
-export interface TelemetryName {
-    namespace: TelemetryNamespace | OldTelemetryNamespace
-    name: string
-}
-
-type OldTelemetryNamespace = 'Command'
-
-export enum TelemetryNamespace {
-    Aws = 'aws',
-    Cloudformation = 'cloudformation',
-    Lambda = 'lambda',
-    Project = 'project',
-    Session = 'session'
-}
+import { Datum, METADATA_FIELD_NAME, MetadataResult, TelemetryName } from './telemetryTypes'
 
 export function defaultMetricDatum(name: string): Datum {
     return {
