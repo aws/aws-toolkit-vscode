@@ -132,6 +132,13 @@ rules:
     options:
       - check-space
   encoding: true
+  # This now allows dates with formats similar to the below:
+  # 2018
+  # 2018-2019
+  # 2018, 2020
+  # 2018-2020, 2022
+  # 2018-2020, 2022-2023
+  # etc.
   file-header:
     options:
       - "Copyright ([0-9]{4}[-,]{0,1}[ ]{0,1}){1,} Amazon.com, Inc. or its affiliates. All Rights Reserved.\\r?\\n \\* SPDX-License-Identifier: Apache-2.0"
