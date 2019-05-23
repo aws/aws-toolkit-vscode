@@ -6,9 +6,8 @@
 'use strict'
 
 import { BasicLogger, getLogger } from '../../logger'
-import { ChildProcessResult } from '../../utilities/childProcess'
 import { map } from '../../utilities/collectionUtils'
-import { SamCliProcessInvoker } from './samCliInvokerUtils'
+import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 
 export interface SamCliDeployParameters {
     templateFile: string
@@ -41,20 +40,7 @@ export async function runSamCliDeploy(
         args.push('--parameter-overrides', ...overrides)
     }
 
-    const { exitCode, error, stderr, stdout }: ChildProcessResult = await invoker.invoke(...args)
+    const childProcessResult = await invoker.invoke(...args)
 
-    if (exitCode === 0) {
-        return
-    }
-
-    console.error('SAM deploy error')
-    console.error(`Exit code: ${exitCode}`)
-    console.error(`Error: ${error}`)
-    console.error(`stderr: ${stderr}`)
-    console.error(`stdout: ${stdout}`)
-
-    const message = error && error.message ? error.message : stderr || stdout
-    const err = new Error(`sam deploy encountered an error: ${message}`)
-    logger.error(err)
-    throw err
+    logAndThrowIfUnexpectedExitCode(childProcessResult, 0, logger)
 }
