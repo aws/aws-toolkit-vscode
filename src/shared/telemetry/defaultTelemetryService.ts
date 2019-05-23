@@ -131,7 +131,7 @@ export class DefaultTelemetryService implements TelemetryService {
     public record(event: TelemetryEvent, awsContext?: AwsContext): void {
         // record events only if telemetry is enabled or the user hasn't expressed a preference
         // events should only be flushed if the user has consented
-        const actualAwsContext = awsContext ? awsContext : this.awsContext
+        const actualAwsContext = awsContext || this.awsContext
         const eventWithAccountMetadata = this.injectAccountMetadata(event, actualAwsContext)
         if (this.telemetryEnabled || !this._telemetryOptionExplicitlyStated) {
             this._eventQueue.push(eventWithAccountMetadata)

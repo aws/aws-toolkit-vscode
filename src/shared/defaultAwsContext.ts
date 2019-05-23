@@ -60,7 +60,7 @@ export class DefaultAwsContext implements AwsContext {
         // credentials in future - for example from instance metadata if the
         // user was running Code on an EC2 instance.
 
-        const profile = profileName ? profileName : this.profileName
+        const profile = profileName || this.profileName
 
         if (!profile) { return undefined }
 
