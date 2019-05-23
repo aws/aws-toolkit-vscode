@@ -141,4 +141,3 @@ describe('runSamCliDeploy', async () => {
         await assertLogContainsBadExitInformation(logger, badExitCodeProcessInvoker.makeChildProcessResult())
     })
 })
-// temp
