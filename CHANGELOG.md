@@ -8,6 +8,9 @@ All notable changes to the "aws-vscode-tools" extension will be documented in th
 * Removed Lambda view that showed the Lambda Policy
 * Removed Lambda view that showed the Lambda Configuration
 * The AWS Explorer menu items no longer appear on other VS Code panel menus
+* When creating a new SAM Application, the toolkit now checks for a valid SAM CLI version before prompting the user for inputs
+* When deploying a SAM Application, the toolkit now checks for a valid SAM CLI version before prompting the user for inputs
+* Telemetry now sends AWS account data
 
 ## 0.1.1 (Developer Preview)
 

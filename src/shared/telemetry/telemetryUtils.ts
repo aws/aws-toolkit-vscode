@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,7 +7,7 @@
 
 import * as vscode from 'vscode'
 import { ext } from '../extensionGlobals'
-import { Datum, TelemetryName } from './telemetryTypes'
+import { Datum, METADATA_FIELD_NAME, MetadataResult, TelemetryName } from './telemetryTypes'
 
 export function defaultMetricDatum(name: string): Datum {
     return {
@@ -51,8 +51,11 @@ export function registerCommand<T>({
                 if (!datum.metadata) {
                     datum.metadata = new Map()
                 }
-                datum.metadata.set('result', hasException ? 'Failed' : 'Succeeded')
-                datum.metadata.set('duration', `${endTime.getTime() - startTime.getTime()}`)
+                setMetadataIfNotExists(
+                    datum.metadata,
+                    METADATA_FIELD_NAME.RESULT,
+                    hasException ? MetadataResult.Fail.toString() : MetadataResult.Pass.toString())
+                setMetadataIfNotExists(datum.metadata, 'duration', `${endTime.getTime() - startTime.getTime()}`)
 
                 ext.telemetry.record({
                     namespace: telemetryName.namespace,
@@ -69,4 +72,10 @@ export function registerCommand<T>({
         },
         thisArg
     )
+}
+
+function setMetadataIfNotExists(metadata: Map<string, string>, key: string, value: string) {
+    if (!metadata.has(key)) {
+        metadata.set(key, value)
+    }
 }

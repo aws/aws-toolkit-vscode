@@ -39,3 +39,7 @@ export interface AwsContext {
     // removes one or more regions from the user's preferred set
     removeExplorerRegion(...regions: string[]): Promise<void>
 }
+
+export class NoActiveCredentialError extends Error {
+    public message = 'No AWS profile selected'
+}

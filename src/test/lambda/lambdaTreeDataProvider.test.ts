@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -9,6 +9,8 @@ import * as assert from 'assert'
 import { RegionNode } from '../../lambda/explorer/regionNode'
 import { LambdaTreeDataProvider } from '../../lambda/lambdaTreeDataProvider'
 import { AwsContextTreeCollection } from '../../shared/awsContextTreeCollection'
+import { TestLogger } from '../../shared/loggerUtils'
+import { ChannelLogger, getChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { MockOutputChannel } from '../mockOutputChannel'
 import {
     DEFAULT_TEST_REGION_CODE,
@@ -19,6 +21,23 @@ import {
 } from '../utilities/fakeAwsContext'
 
 describe('LambdaProvider', () => {
+
+    let logger: TestLogger
+    const outputChannel: MockOutputChannel = new MockOutputChannel()
+    let channelLogger: ChannelLogger
+
+    before(async () => {
+        logger = await TestLogger.createTestLogger()
+    })
+
+    beforeEach(async () => {
+        outputChannel.clear()
+        channelLogger = getChannelLogger(outputChannel)
+    })
+
+    after(async () => {
+        await logger.cleanupLogger()
+    })
 
     it('displays region nodes with user-friendly region names', async () => {
 
@@ -33,6 +52,7 @@ describe('LambdaProvider', () => {
             awsContextTreeCollection,
             regionProvider,
             resourceFetcher,
+            channelLogger,
             (path) => { throw new Error('unused') },
             mockChannel
         )

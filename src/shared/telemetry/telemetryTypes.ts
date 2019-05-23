@@ -35,3 +35,15 @@ export enum AccountStatus {
     NotSet = 'not-set',
     Invalid = 'invalid'
 }
+
+export const METADATA_FIELD_NAME = {
+    RESULT: 'result',
+    DURATION: 'duration',
+    REASON: 'reason',
+}
+
+export enum MetadataResult {
+    Pass = 'Succeeded',
+    Fail = 'Failed',
+    Cancel = 'Cancelled',
+}
