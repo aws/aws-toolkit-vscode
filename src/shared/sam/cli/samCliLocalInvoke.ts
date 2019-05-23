@@ -5,10 +5,124 @@
 
 'use strict'
 
+import * as child_process from 'child_process'
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import { fileExists } from '../../filesystemUtilities'
-import { DefaultSamCliTaskInvoker } from './samCliInvoker'
-import { SamCliTaskInvoker } from './samCliInvokerUtils'
+import { ChildProcess } from '../../utilities/childProcess'
+import { ChannelLogger } from '../../utilities/vsCodeUtils'
+
+const localize = nls.loadMessageBundle()
+
+export const WAIT_FOR_DEBUGGER_MESSAGES = {
+    PYTHON: 'Waiting for debugger to attach...',
+    NODEJS: 'Debugger listening on',
+    DOTNET: 'Waiting for debugger to attach...',
+}
+
+export interface SamLocalInvokeCommandArgs {
+    command: string,
+    args: string[],
+    options?: child_process.SpawnOptions,
+    isDebug: boolean,
+}
+
+/**
+ * Represents and manages the SAM CLI command that is run to locally invoke SAM Applications.
+ */
+export interface SamLocalInvokeCommand {
+    invoke({ }: SamLocalInvokeCommandArgs): Promise<void>
+}
+
+export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
+    public constructor(
+        private readonly channelLogger: ChannelLogger,
+        private readonly debuggerAttachCues: string[] = [
+            WAIT_FOR_DEBUGGER_MESSAGES.PYTHON,
+            WAIT_FOR_DEBUGGER_MESSAGES.NODEJS,
+        ],
+    ) {
+    }
+
+    public async invoke({
+        options = {},
+        ...params
+    }: SamLocalInvokeCommandArgs): Promise<void> {
+        this.channelLogger.info(
+            'AWS.running.command',
+            'Running command: {0}',
+            `${params.command} ${params.args.join(' ')}`
+        )
+
+        const childProcess = new ChildProcess(params.command, options, ...params.args)
+
+        await new Promise<void>(async (resolve, reject) => {
+            let checkForDebuggerAttachCue: boolean = params.isDebug
+            let promiseResolved: boolean = false
+
+            await childProcess.start(
+                {
+                    onStdout: (text: string): void => {
+                        this.emitMessage(text)
+                    },
+                    onStderr: (text: string): void => {
+                        this.emitMessage(text)
+                        if (checkForDebuggerAttachCue) {
+                            // Look for messages like "Waiting for debugger to attach" before returning back to caller
+                            if (this.debuggerAttachCues.some(cue => text.includes(cue))) {
+                                checkForDebuggerAttachCue = false
+                                this.channelLogger.logger.verbose(
+                                    'Local SAM App should be ready for a debugger to attach now.'
+                                )
+                                promiseResolved = true
+                                resolve()
+                            }
+                        }
+                    },
+                    onClose: (code: number, signal: string): void => {
+                        this.channelLogger.logger.verbose(
+                            `The child process for sam local invoke closed with code ${code}`
+                        )
+                        this.channelLogger.channel.appendLine(
+                            localize(
+                                'AWS.samcli.local.invoke.ended',
+                                'Local invoke of SAM Application has ended.'
+                            )
+                        )
+
+                        // Handles scenarios where the process exited before we anticipated.
+                        // Example: We didn't see an expected debugger attach cue, and the process or docker container
+                        // was terminated by the user, or the user manually attached to the sam app.
+                        if (!promiseResolved) {
+                            reject(new Error('The SAM Application closed unexpectedly'))
+                        }
+                    },
+                    onError: (error: Error): void => {
+                        this.channelLogger.error(
+                            'AWS.samcli.local.invoke.error',
+                            'Error encountered running local SAM Application',
+                            error
+                        )
+                    },
+                }
+            )
+
+            if (!params.isDebug) {
+                this.channelLogger.logger.verbose('Local SAM App does not expect a debugger to attach.')
+                promiseResolved = true
+                resolve()
+            }
+        })
+
+    }
+
+    private emitMessage(text: string): void {
+        // From VS Code API: If no debug session is active, output sent to the debug console is not shown.
+        // We send text to output channel and debug console to ensure no text is lost.
+        this.channelLogger.channel.append(text)
+        vscode.debug.activeDebugConsole.append(text)
+    }
+}
 
 export interface SamCliLocalInvokeInvocationArguments {
     /**
@@ -34,7 +148,7 @@ export interface SamCliLocalInvokeInvocationArguments {
     /**
      * Manages the sam cli execution.
      */
-    invoker: SamCliTaskInvoker,
+    invoker: SamLocalInvokeCommand,
     /**
      * Specifies the name or id of an existing Docker network to Lambda Docker containers should connect to,
      * along with the default bridge network.
@@ -57,18 +171,16 @@ export class SamCliLocalInvokeInvocation {
     private readonly eventPath: string
     private readonly environmentVariablePath: string
     private readonly debugPort?: string
-    private readonly invoker: SamCliTaskInvoker
+    private readonly invoker: SamLocalInvokeCommand
     private readonly dockerNetwork?: string
     private readonly skipPullImage: boolean
     private readonly debuggerPath?: string
 
     /**
      * @see SamCliLocalInvokeInvocationArguments for parameter info
-     * invoker - Defaults to DefaultSamCliTaskInvoker
      * skipPullImage - Defaults to false (the latest Docker image will be pulled down if necessary)
      */
     public constructor({
-        invoker = new DefaultSamCliTaskInvoker(),
         skipPullImage = false,
         ...params
     }: SamCliLocalInvokeInvocationArguments
@@ -78,7 +190,7 @@ export class SamCliLocalInvokeInvocation {
         this.eventPath = params.eventPath
         this.environmentVariablePath = params.environmentVariablePath
         this.debugPort = params.debugPort
-        this.invoker = invoker
+        this.invoker = params.invoker
         this.dockerNetwork = params.dockerNetwork
         this.skipPullImage = skipPullImage
         this.debuggerPath = params.debuggerPath
@@ -104,17 +216,11 @@ export class SamCliLocalInvokeInvocation {
         this.addArgumentIf(args, !!this.skipPullImage, '--skip-pull-image')
         this.addArgumentIf(args, !!this.debuggerPath, '--debugger-path', this.debuggerPath!)
 
-        const execution = new vscode.ShellExecution('sam', args)
-
-        await this.invoker.invoke(new vscode.Task(
-            {
-                type: 'samLocalInvoke',
-            },
-            vscode.TaskScope.Workspace,
-            'LocalLambdaDebug',
-            'SAM CLI',
-            execution
-        ))
+        await this.invoker.invoke({
+            command: 'sam',
+            args,
+            isDebug: !!this.debugPort,
+        })
     }
 
     protected async validate(): Promise<void> {

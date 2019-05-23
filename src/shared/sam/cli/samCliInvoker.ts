@@ -6,7 +6,6 @@
 'use strict'
 
 import { SpawnOptions } from 'child_process'
-import * as vscode from 'vscode'
 import { extensionSettingsPrefix } from '../../constants'
 import { getLogger, Logger } from '../../logger'
 import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
@@ -18,8 +17,8 @@ import {
     SamCliInfoResponse,
     SamCliProcessInfo,
     SamCliProcessInvoker,
-    SamCliTaskInvoker,
-    SamCliUtils } from './samCliInvokerUtils'
+    SamCliUtils
+} from './samCliInvokerUtils'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
 import {
     DefaultSamCliVersionValidator,
@@ -63,7 +62,9 @@ export function resolveSamCliProcessInvokerContext(
 
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
 
-    public constructor(private readonly _context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()) {}
+    public constructor(
+        private readonly _context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()
+    ) { }
 
     public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
     public invoke(...args: string[]): Promise<ChildProcessResult>
@@ -89,7 +90,7 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
 
             throw versionErr
         }
-        const args = typeof first === 'string' ? [ first, ...rest ] : rest
+        const args = typeof first === 'string' ? [first, ...rest] : rest
         const options: SpawnOptions | undefined = typeof first === 'string' ? undefined : first
 
         return await this.runCliCommand(samCliLocation, options, ...args)
@@ -99,7 +100,7 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
         samCliLocation: string,
         options?: SpawnOptions,
         ...args: string[]
-    ): Promise<ChildProcessResult>  {
+    ): Promise<ChildProcessResult> {
         const childProcess: ChildProcess = new ChildProcess(samCliLocation, options, ...args)
 
         return await childProcess.run()
@@ -131,7 +132,7 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
             throw new Error('SAM CLI did not return expected data')
         }
         const err = new Error(
-`sam --info encountered an error: ${error}
+            `sam --info encountered an error: ${error}
     ${error && error.message ? 'message: ' + error.message : ''}
     stderr : ${stderr}
     stdout : ${stdout}`
@@ -153,11 +154,5 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
 
             return undefined
         }
-    }
-}
-
-export class DefaultSamCliTaskInvoker implements SamCliTaskInvoker {
-    public async invoke(task: vscode.Task): Promise<vscode.TaskExecution> {
-        return await vscode.tasks.executeTask(task)
     }
 }

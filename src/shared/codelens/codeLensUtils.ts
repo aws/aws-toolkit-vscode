@@ -11,7 +11,8 @@ import * as vscode from 'vscode'
 import { detectLocalTemplates } from '../../lambda/local/detectLocalTemplates'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
-import { SamCliProcessInvoker, SamCliTaskInvoker } from '../sam/cli/samCliInvokerUtils'
+import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
+import { SamLocalInvokeCommand } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { Datum } from '../telemetry/telemetryEvent'
 import { TelemetryService } from '../telemetry/telemetryService'
@@ -25,7 +26,7 @@ export interface CodeLensProviderParams {
     configuration: SettingsConfiguration,
     outputChannel: vscode.OutputChannel,
     processInvoker?: SamCliProcessInvoker,
-    taskInvoker?: SamCliTaskInvoker,
+    localInvokeCommand?: SamLocalInvokeCommand,
     telemetryService: TelemetryService,
 }
 

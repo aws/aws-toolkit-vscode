@@ -15,11 +15,13 @@ import { CloudFormation } from '../cloudformation/cloudformation'
 import { access, mkdir } from '../filesystem'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
+import { DefaultSamCliProcessInvoker } from '../sam/cli/samCliInvoker'
+import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
 import {
-    DefaultSamCliProcessInvoker,
-    DefaultSamCliTaskInvoker
-} from '../sam/cli/samCliInvoker'
-import { SamCliProcessInvoker, SamCliTaskInvoker } from '../sam/cli/samCliInvokerUtils'
+    DefaultSamLocalInvokeCommand,
+    SamLocalInvokeCommand,
+    WAIT_FOR_DEBUGGER_MESSAGES,
+} from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { Datum } from '../telemetry/telemetryEvent'
 import { TelemetryService } from '../telemetry/telemetryService'
@@ -66,24 +68,25 @@ export async function initialize({
     configuration,
     outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultSamCliProcessInvoker(),
-    taskInvoker = new DefaultSamCliTaskInvoker(),
-    telemetryService
+    telemetryService,
+    localInvokeCommand = new DefaultSamLocalInvokeCommand(
+        getChannelLogger(toolkitOutputChannel),
+        [WAIT_FOR_DEBUGGER_MESSAGES.DOTNET]
+    ),
 }: CodeLensProviderParams): Promise<void> {
     const command = getInvokeCmdKey(CSHARP_LANGUAGE)
     registerCommand({
         command,
         callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
-            return await onLocalInvokeCommand(
-                {
-                    commandName: command,
-                    lambdaLocalInvokeParams: params,
-                    configuration,
-                    toolkitOutputChannel,
-                    processInvoker,
-                    taskInvoker,
-                    telemetryService
-                }
-            )
+            return await onLocalInvokeCommand({
+                commandName: command,
+                lambdaLocalInvokeParams: params,
+                configuration,
+                toolkitOutputChannel,
+                processInvoker,
+                localInvokeCommand,
+                telemetryService
+            })
         },
     })
 }
@@ -129,7 +132,7 @@ async function onLocalInvokeCommand(
         commandName,
         lambdaLocalInvokeParams,
         processInvoker,
-        taskInvoker,
+        localInvokeCommand,
         telemetryService,
         getResourceFromTemplate = async _args => await CloudFormation.getResourceFromTemplate(_args),
     }: {
@@ -138,7 +141,7 @@ async function onLocalInvokeCommand(
         commandName: string,
         lambdaLocalInvokeParams: LambdaLocalInvokeParams,
         processInvoker: SamCliProcessInvoker,
-        taskInvoker: SamCliTaskInvoker,
+        localInvokeCommand: SamLocalInvokeCommand
         telemetryService: TelemetryService,
         getResourceFromTemplate?(args: {
             templatePath: string,
@@ -147,6 +150,7 @@ async function onLocalInvokeCommand(
     },
     context: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext()
 ): Promise<{ datum: Datum }> {
+
     const channelLogger = getChannelLogger(toolkitOutputChannel)
     const resource = await getResourceFromTemplate({
         templatePath: lambdaLocalInvokeParams.samTemplate.fsPath,
@@ -203,7 +207,7 @@ async function onLocalInvokeCommand(
         const invokeContext: InvokeLambdaFunctionContext = {
             channelLogger,
             configuration,
-            taskInvoker,
+            samLocalInvokeCommand: localInvokeCommand,
             telemetryService
         }
 
@@ -232,7 +236,12 @@ async function onLocalInvokeCommand(
                         debuggerPath
                     }
                 },
-                invokeContext
+                {
+                    channelLogger,
+                    configuration,
+                    samLocalInvokeCommand: localInvokeCommand,
+                    telemetryService
+                }
             )
         }
     } catch (err) {
