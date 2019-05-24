@@ -11,7 +11,14 @@ import { TestLogger } from '../../../../shared/loggerUtils'
 import { runSamCliInit, SamCliInitArgs } from '../../../../shared/sam/cli/samCliInit'
 import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
-import { TestSamCliProcessInvoker } from './testSamCliProcessInvoker'
+import { assertThrowsError } from '../../utilities/assertUtils'
+import { assertArgsContainArgument } from './samCliTestUtils'
+import {
+    assertErrorContainsBadExitMessage,
+    assertLogContainsBadExitInformation,
+    BadExitCodeSamCliProcessInvoker,
+    TestSamCliProcessInvoker
+} from './testSamCliProcessInvoker'
 
 describe('runSamCliInit', async () => {
 
@@ -89,14 +96,17 @@ describe('runSamCliInit', async () => {
         await runSamCliInit(sampleSamInitArgs, processInvoker)
     })
 
-    function assertArgsContainArgument(
-        args: any[],
-        argOfInterest: string,
-        expectedArgValue: string
-    ) {
-        const argPos = args.indexOf(argOfInterest)
-        assert.notStrictEqual(argPos, -1, `Expected arg ${argOfInterest} was not found`)
-        assert.ok(args.length >= argPos + 2, `Args does not contain a value for ${argOfInterest}`)
-        assert.strictEqual(args[argPos + 1], expectedArgValue, `Arg ${argOfInterest} did not have expected value`)
-    }
+    it('throws on unexpected exit code', async () => {
+        const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
+
+        const error = await assertThrowsError(
+            async () => {
+                await runSamCliInit(sampleSamInitArgs, badExitCodeProcessInvoker)
+            },
+            'Expected an error to be thrown'
+        )
+
+        assertErrorContainsBadExitMessage(error, badExitCodeProcessInvoker.error.message)
+        await assertLogContainsBadExitInformation(logger, badExitCodeProcessInvoker.makeChildProcessResult(), 0)
+    })
 })
