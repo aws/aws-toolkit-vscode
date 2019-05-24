@@ -143,11 +143,9 @@ export class UserCredentialsUtils {
                 // https://github.com/aws/aws-toolkit-vscode/issues/549
                 sts = ext.toolkitClientBuilder.createStsClient('us-east-1', transformedCredentials)
             } catch (err) {
-                if (err instanceof Error) {
-                    const error = err as Error
-                    logger.error(error)
-                    throw error
-                }
+                const error = err as Error
+                logger.error(error)
+                throw error
             }
         }
 
