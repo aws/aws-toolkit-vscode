@@ -5,6 +5,8 @@ package software.aws.toolkits.ktlint.rules
 
 import com.pinterest.ktlint.core.RuleSet
 import com.pinterest.ktlint.core.RuleSetProvider
+import com.pinterest.ktlint.ruleset.experimental.ImportOrderingRule
+import com.pinterest.ktlint.ruleset.standard.NoWildcardImportsRule
 
 class CustomRuleSetProvider : RuleSetProvider {
     override fun get() = RuleSet(
@@ -13,6 +15,8 @@ class CustomRuleSetProvider : RuleSetProvider {
         BannedPatternRule(BannedPatternRule.DEFAULT_PATTERNS),
         ExpressionBodyRule(),
         LazyLogRule(),
-        DialogModalityRule()
+        DialogModalityRule(),
+        ImportOrderingRule(), // Include the experimental rule in our set
+        NoWildcardImportsRule() // Disabled by default, so including in our rule set
     )
 }
