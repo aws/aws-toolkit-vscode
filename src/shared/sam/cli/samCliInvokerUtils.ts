@@ -16,7 +16,7 @@ export interface SamCliProcessInvoker {
 
 export function logAndThrowIfUnexpectedExitCode(
     processResult: ChildProcessResult,
-    expectedExitCode: number = 0,
+    expectedExitCode: number,
     logger: BasicLogger = getLogger(),
 ): void {
     if (processResult.exitCode === expectedExitCode) { return }
