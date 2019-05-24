@@ -74,10 +74,24 @@ export async function activate(context: vscode.ExtensionContext) {
         // check to see if current user is valid
         const currentProfile = awsContext.getCredentialProfileName()
         if (currentProfile) {
-             const successfulLogin = await UserCredentialsUtils.addUserDataToContext(currentProfile, awsContext)
-             if (!successfulLogin) {
+            try {
+                const successfulLogin = await UserCredentialsUtils.addUserDataToContext(currentProfile, awsContext)
+                if (!successfulLogin) {
+                    await UserCredentialsUtils.removeUserDataFromContext(awsContext)
+                }
+            } catch (err) {
+                const error = err as Error
+                vscode.window.showErrorMessage(
+                    localize(
+                        'AWS.message.credentials.error',
+                        // tslint:disable-next-line:max-line-length
+                        'There was an issue trying to use credentials profile {0}.\nYou will be disconnected from AWS.\n\n{1}',
+                        currentProfile,
+                        error.message
+                    )
+                )
                 await UserCredentialsUtils.removeUserDataFromContext(awsContext)
-             }
+            }
         }
 
         ext.statusBar = new DefaultAWSStatusBar(awsContext, context)

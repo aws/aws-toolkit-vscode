@@ -132,26 +132,32 @@ export class UserCredentialsUtils {
         sts?: StsClient
     ): Promise<CredentialsValidationResult> {
         const logger: Logger = getLogger()
-        try {
-            if (!sts) {
-                // Past iteration did not include a set region. Should we change this?
-                // We can also use the set region when we migrate to a single-region experience:
-                // https://github.com/aws/aws-toolkit-vscode/issues/549
-                const transformedCredentials: ServiceConfigurationOptions = {
-                    accessKeyId: credentials.accessKeyId,
-                    secretAccessKey: credentials.secretAccessKey
-                }
-                sts = ext.toolkitClientBuilder.createStsClient('us-east-1', transformedCredentials)
+        if (!sts) {
+            const transformedCredentials: ServiceConfigurationOptions = {
+                accessKeyId: credentials.accessKeyId,
+                secretAccessKey: credentials.secretAccessKey
             }
+            try {
+                // Past iteration did not include a set region. Should we change this?
+                // We can also use the set region if/when we migrate to a single-region experience:
+                // https://github.com/aws/aws-toolkit-vscode/issues/549
+                sts = ext.toolkitClientBuilder.createStsClient('us-east-1', transformedCredentials)
+            } catch (err) {
+                if (err instanceof Error) {
+                    const error = err as Error
+                    logger.error(error)
+                    throw error
+                }
+            }
+        }
 
-            const response = await sts.getCallerIdentity()
+        try {
+            // by this time, sts is either defined or error has been thrown; exclamation mark should be safe
+            const response = await sts!.getCallerIdentity()
 
             return { isValid: !!response.Account, account: response.Account }
-
         } catch (err) {
-
             let reason: string
-
             if (err instanceof Error) {
                 const error = err as Error
                 reason = error.message
