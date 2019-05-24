@@ -119,7 +119,7 @@ describe('DefaultAwsContext', () => {
         assert.strictEqual(creds, undefined)
     })
 
-    it('returns undefined if no profile is provided', async () => {
+    it('returns undefined if no profile is provided and no profile was previously saved to settings', async () => {
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
             public readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
                 if (settingKey === profileSettingKey) {
@@ -134,7 +134,7 @@ describe('DefaultAwsContext', () => {
             new TestConfiguration(),
             new FakeExtensionContext()
         )
-        const creds = await testContext.getCredentials(testProfileValue)
+        const creds = await testContext.getCredentials()
         assert.strictEqual(creds, undefined)
     })
 
