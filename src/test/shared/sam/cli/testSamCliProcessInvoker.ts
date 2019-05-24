@@ -25,3 +25,24 @@ export class TestSamCliProcessInvoker implements SamCliProcessInvoker {
         return this.onInvoke(spawnOptions, args)
     }
 }
+
+export class FakeChildProcessResult implements ChildProcessResult {
+    public exitCode: number
+    public error: Error | undefined
+    public stdout: string
+    public stderr: string
+
+    public constructor(
+        {
+            exitCode = 0,
+            stdout = '',
+            stderr = '',
+            ...params
+        }: Partial<ChildProcessResult>
+    ) {
+        this.exitCode = exitCode
+        this.error = params.error
+        this.stdout = stdout
+        this.stderr = stderr
+    }
+}
