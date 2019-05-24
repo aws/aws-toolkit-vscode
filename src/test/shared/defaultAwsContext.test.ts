@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -15,6 +15,7 @@ describe('DefaultAwsContext', () => {
     const testRegion1Value: string = 're-gion-1'
     const testRegion2Value: string = 're-gion-2'
     const testProfileValue: string = 'profile1'
+    const testAccountIdValue: string = '123456789012'
 
     class ContextTestsSettingsConfigurationBase implements SettingsConfiguration {
         public readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
@@ -144,6 +145,15 @@ describe('DefaultAwsContext', () => {
         await testContext.setCredentialProfileName(testProfileValue)
     })
 
+    it('updates config on account ID change', async () => {
+        const testContext = new DefaultAwsContext(
+            new ContextTestsSettingsConfigurationBase(),
+            new FakeExtensionContext()
+        )
+        await testContext.setCredentialAccountId(testAccountIdValue)
+        assert.strictEqual(testContext.getCredentialAccountId(), testAccountIdValue)
+    })
+
     it('fires event on single region change', async () => {
 
         const testContext = new DefaultAwsContext(
@@ -197,6 +207,24 @@ describe('DefaultAwsContext', () => {
         })
 
         await testContext.setCredentialProfileName(testProfileValue)
+
+        assert.strictEqual(invocationCount, 1)
+    })
+
+    it('fires event on accountId change', async () => {
+
+        const testContext = new DefaultAwsContext(
+            new ContextTestsSettingsConfigurationBase(),
+            new FakeExtensionContext()
+        )
+
+        let invocationCount = 0
+        testContext.onDidChangeContext((c) => {
+            assert.strictEqual(c.accountId, testAccountIdValue)
+            invocationCount++
+        })
+
+        await testContext.setCredentialAccountId(testAccountIdValue)
 
         assert.strictEqual(invocationCount, 1)
     })

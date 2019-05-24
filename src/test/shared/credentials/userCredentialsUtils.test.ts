@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -23,11 +23,15 @@ import {
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { TestLogger } from '../../../shared/loggerUtils'
+import { DEFAULT_TEST_ACCOUNT_ID, DEFAULT_TEST_PROFILE_NAME, FakeAwsContext } from '../../utilities/fakeAwsContext'
+import { MockStsClient } from '../clients/mockClients'
 
 describe('UserCredentialsUtils', () => {
 
     let tempFolder: string
     let logger: TestLogger
+
+    const fakeCredentials = new AWS.Credentials('fakeaccess', 'fakesecret')
 
     before( async () => {
         // Make a temp folder for all these tests
@@ -179,83 +183,125 @@ describe('UserCredentialsUtils', () => {
 
             let timesCalled: number = 0
 
-            const mockResponse = {
-                promise: async () => {
-                    return Promise.resolve()
-                }
-            }
-
-            const mockSts = {
-                getCallerIdentity: () => {
-                    timesCalled++
-
-                    return mockResponse
-                }
+            const mockResponse: AWS.STS.GetCallerIdentityResponse = {
+                Account: 'valid'
             }
 
             const result: CredentialsValidationResult = await UserCredentialsUtils.validateCredentials(
-                'fakeaccess',
-                'fakesecret',
-                mockSts as any as AWS.STS)
+                fakeCredentials,
+                new MockStsClient({
+                    getCallerIdentity: async () => {
+                        timesCalled++
+
+                        return mockResponse
+                    }
+                }))
 
             assert.strictEqual(timesCalled, 1)
             assert.strictEqual(result.isValid, true)
         })
 
-        it('fails if getCallerIdentity rejects', async () => {
+        it('fails if getCallerIdentity returns undefined', async () => {
 
             let timesCalled: number = 0
 
-            const mockResponse = {
-                promise: async () => {
-                    return Promise.reject('Simulating error')
-                }
-            }
-
-            const mockSts = {
-                getCallerIdentity: () => {
-                    timesCalled++
-
-                    return mockResponse
-                }
+            const mockResponse: AWS.STS.GetCallerIdentityResponse = {
+                Account: undefined
             }
 
             const result: CredentialsValidationResult = await UserCredentialsUtils.validateCredentials(
-                'fakeaccess',
-                'fakesecret',
-                mockSts as any as AWS.STS)
+                fakeCredentials,
+                new MockStsClient({
+                    getCallerIdentity: async () => {
+                        timesCalled++
+
+                        return mockResponse
+                    }
+                })
+            )
 
             assert.strictEqual(timesCalled, 1)
             assert.strictEqual(result.isValid, false)
-            assert.strictEqual(result.invalidMessage, 'Simulating error')
         })
 
         it('fails if getCallerIdentity throws', async () => {
 
             let timesCalled: number = 0
 
-            const mockResponse = {
-                promise: () => {
-                    throw new Error('Simulating error with explicit throw')
-                }
-            }
-
-            const mockSts = {
-                getCallerIdentity: () => {
-                    timesCalled++
-
-                    return mockResponse
-                }
-            }
-
             const result: CredentialsValidationResult = await UserCredentialsUtils.validateCredentials(
-                'fakeaccess',
-                'fakesecret',
-                mockSts as any as AWS.STS)
+                fakeCredentials,
+                new MockStsClient({
+                    getCallerIdentity: async () => {
+                        timesCalled++
+
+                        throw new Error('Simulating error with explicit throw')
+                    }
+                })
+            )
 
             assert.strictEqual(timesCalled, 1)
             assert.strictEqual(result.isValid, false)
             assert.strictEqual(result.invalidMessage, 'Simulating error with explicit throw')
+        })
+    })
+
+    describe('addUserDataToContext', async () => {
+        it ('adds profile data to the context if the profile is valid', async () => {
+
+            const testProfile = 'testprofile'
+            const testAccount = 'testaccount'
+            const mockSts = new MockStsClient({
+                getCallerIdentity: async () => {
+                    return {
+                        UserId: 'testuser',
+                        Account: testAccount,
+                        Arn: 'testarn'
+                    }
+                }
+            })
+            const mockAws = new FakeAwsContext(
+                {
+                    credentials: new AWS.Credentials('access', 'secret')
+                }
+            )
+
+            assert.strictEqual(mockAws.getCredentialProfileName(), DEFAULT_TEST_PROFILE_NAME)
+            assert.strictEqual(mockAws.getCredentialAccountId(), DEFAULT_TEST_ACCOUNT_ID)
+            const returnValue = await UserCredentialsUtils.addUserDataToContext(testProfile, mockAws, mockSts)
+            assert.strictEqual(returnValue, true)
+            assert.strictEqual(mockAws.getCredentialProfileName(), testProfile)
+            assert.strictEqual(mockAws.getCredentialAccountId(), testAccount)
+        })
+
+        it ('does not add new profile data if credentials are invalid', async () => {
+
+            const testProfile = 'testprofile'
+            const mockSts = new MockStsClient({
+                getCallerIdentity: async () => {
+                    throw new AWS.AWSError()
+                }
+            })
+            const mockAws = new FakeAwsContext(
+                {
+                    credentials: new AWS.Credentials('access', 'secret')
+                }
+            )
+
+            const returnValue = await UserCredentialsUtils.addUserDataToContext(testProfile, mockAws, mockSts)
+            assert.strictEqual(returnValue, false)
+            assert.strictEqual(mockAws.getCredentialProfileName(), DEFAULT_TEST_PROFILE_NAME)
+            assert.strictEqual(mockAws.getCredentialAccountId(), DEFAULT_TEST_ACCOUNT_ID)
+        })
+    })
+
+    describe('removeUserDataFromContext', async () => {
+        it('removes user data', async () => {
+            const mockAws = new FakeAwsContext()
+            assert.strictEqual(mockAws.getCredentialProfileName(), DEFAULT_TEST_PROFILE_NAME)
+            assert.strictEqual(mockAws.getCredentialAccountId(), DEFAULT_TEST_ACCOUNT_ID)
+            await UserCredentialsUtils.removeUserDataFromContext(mockAws)
+            assert.strictEqual(mockAws.getCredentialAccountId(), undefined)
+            assert.strictEqual(mockAws.getCredentialProfileName(), undefined)
         })
     })
 

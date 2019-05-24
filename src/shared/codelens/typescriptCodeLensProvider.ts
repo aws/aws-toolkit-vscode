@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -11,8 +11,8 @@ import * as vscode from 'vscode'
 import { NodejsDebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { findFileInParentPaths } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
-import { Datum } from '../telemetry/telemetryEvent'
-import { registerCommand, TelemetryNamespace } from '../telemetry/telemetryUtils'
+import { Datum, TelemetryNamespace } from '../telemetry/telemetryTypes'
+import { registerCommand } from '../telemetry/telemetryUtils'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { getChannelLogger, getDebugPort, localize } from '../utilities/vsCodeUtils'
 

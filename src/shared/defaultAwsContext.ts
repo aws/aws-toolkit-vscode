@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -31,6 +31,8 @@ export class DefaultAwsContext implements AwsContext {
     // the user's credential context (currently this maps to an sdk/cli credential profile)
     private profileName: string | undefined
 
+    private accountId: string | undefined
+
     private readonly _credentialsManager: CredentialsManager
 
     public constructor(public settingsConfiguration: SettingsConfiguration, public context: vscode.ExtensionContext) {
@@ -48,17 +50,22 @@ export class DefaultAwsContext implements AwsContext {
 
     /**
      * @description Gets the Credentials for the current specified profile.
+     * If a profile name is provided, overrides existing profile.
      * If an error is encountered, or the profile cannot be found, an Error is thrown.
+     *
+     * @param profileName (optional): override profile name to pull credentials for (useful for validation)
      */
-    public async getCredentials(): Promise<AWS.Credentials | undefined> {
+    public async getCredentials(profileName?: string): Promise<AWS.Credentials | undefined> {
         // async so that we could *potentially* support other ways of obtaining
         // credentials in future - for example from instance metadata if the
         // user was running Code on an EC2 instance.
 
-        if (!this.profileName) { return undefined }
+        const profile = profileName || this.profileName
+
+        if (!profile) { return undefined }
 
         try {
-            const credentials = await this._credentialsManager.getCredentials(this.profileName)
+            const credentials = await this._credentialsManager.getCredentials(profile)
 
             return credentials
         } catch (err) {
@@ -67,7 +74,7 @@ export class DefaultAwsContext implements AwsContext {
             vscode.window.showErrorMessage(localize(
                 'AWS.message.credentials.error',
                 'There was an issue trying to use credentials profile {0}.\nYou will be disconnected from AWS.\n\n{1}',
-                this.profileName,
+                profile,
                 error.message
             ))
 
@@ -89,7 +96,20 @@ export class DefaultAwsContext implements AwsContext {
             await this._credentialsMru.setMostRecentlyUsedProfile(this.profileName)
         }
 
-        this._onDidChangeContext.fire(new ContextChangeEventsArgs(this.profileName, this.explorerRegions))
+        this.emitEvent()
+    }
+
+    // returns the configured profile's account ID, if any
+    public getCredentialAccountId(): string | undefined {
+        return this.accountId
+    }
+
+    // resets the context to the indicated profile, saving it into settings
+    public async setCredentialAccountId(accountId?: string): Promise<void> {
+        this.accountId = accountId
+
+        // nothing using this even at this time...is this necessary?
+        this.emitEvent()
     }
 
     // async so that we could *potentially* support other ways of obtaining
@@ -109,7 +129,7 @@ export class DefaultAwsContext implements AwsContext {
             }
         })
         await this.context.globalState.update(regionSettingKey, this.explorerRegions)
-        this._onDidChangeContext.fire(new ContextChangeEventsArgs(this.profileName, this.explorerRegions))
+        this.emitEvent()
     }
 
     // removes one or more regions from the user's preferred set, persisting the set afterwards as a
@@ -123,6 +143,14 @@ export class DefaultAwsContext implements AwsContext {
         })
 
         await this.context.globalState.update(regionSettingKey, this.explorerRegions)
-        this._onDidChangeContext.fire(new ContextChangeEventsArgs(this.profileName, this.explorerRegions))
+        this.emitEvent()
+    }
+
+    private emitEvent() {
+        this._onDidChangeContext.fire(new ContextChangeEventsArgs(
+            this.profileName,
+            this.accountId,
+            this.explorerRegions
+        ))
     }
 }
