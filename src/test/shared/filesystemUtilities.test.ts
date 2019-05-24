@@ -13,6 +13,7 @@ import {
     fileExists,
     findFileInParentPaths,
     makeTemporaryToolkitFolder,
+    mkdirRecursive,
     tempDirPath
 } from '../../shared/filesystemUtilities'
 
@@ -104,6 +105,33 @@ describe('filesystemUtilities', () => {
             assert.strictEqual(
                 await findFileInParentPaths(childFolder, targetFilename),
                 targetFilePath)
+        })
+    })
+
+    describe('mkdirRecursive', async () => {
+        it('does not err on existing folders', async () => {
+            await mkdirRecursive(tempFolder)
+        })
+
+        it('makes subfolder to existing folder', async () => {
+            const dstFolder = path.join(tempFolder, 'level1')
+            await mkdirRecursive(dstFolder)
+
+            assert.ok(fileExists(dstFolder), 'expected folder to exist')
+        })
+
+        it('makes two levels of subfolders', async () => {
+            const dstFolder = path.join(tempFolder, 'level1', 'level2')
+            await mkdirRecursive(dstFolder)
+
+            assert.ok(fileExists(dstFolder), 'expected folder to exist')
+        })
+
+        it('makes many levels of subfolders', async () => {
+            const dstFolder = path.join(tempFolder, 'level1', 'level2', 'level3', 'level4', 'level5')
+            await mkdirRecursive(dstFolder)
+
+            assert.ok(fileExists(dstFolder), 'expected folder to exist')
         })
     })
 })

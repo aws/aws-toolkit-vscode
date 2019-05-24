@@ -72,7 +72,7 @@ export async function findFileInParentPaths(searchFolder: string, fileToFind: st
 }
 
 const mkdtemp = promisify(fs.mkdtemp)
-export const  makeTemporaryToolkitFolder = async (...relativePathParts: string[]) => {
+export const makeTemporaryToolkitFolder = async (...relativePathParts: string[]) => {
     const _relativePathParts = relativePathParts || ['vsctk']
     const tmpPath = path.join(tempDirPath, ..._relativePathParts)
     const tmpPathParent = path.dirname(tmpPath)
@@ -83,4 +83,21 @@ export const  makeTemporaryToolkitFolder = async (...relativePathParts: string[]
     }
 
     return mkdtemp(tmpPath)
+}
+
+/**
+ * Convenience method -- mkdir calls with recurse do not work as expected when called through electron.
+ * See: https://github.com/nodejs/node/issues/24698#issuecomment-486405542
+ */
+export async function mkdirRecursive(folder: string): Promise<void> {
+    if (await fileExists(folder)) {
+        return
+    }
+
+    const parent = path.dirname(folder)
+    if (parent !== folder) {
+        await mkdirRecursive(parent)
+    }
+
+    await mkdir(folder)
 }

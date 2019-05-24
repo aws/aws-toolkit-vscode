@@ -12,6 +12,7 @@ import * as nls from 'vscode-nls'
 import * as winston from 'winston'
 import * as Transport from 'winston-transport'
 import { extensionSettingsPrefix } from './constants'
+import { mkdirRecursive } from './filesystemUtilities'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from './settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
@@ -58,9 +59,13 @@ export interface LoggerParams {
  */
 export async function initialize(params?: LoggerParams): Promise<Logger> {
     if (!params) {
+        const logPath = getDefaultLogPath()
+        const logFolder = path.dirname(logPath)
+        await mkdirRecursive(logFolder)
+
         defaultLogger = createLogger({
             outputChannel: DEFAULT_OUTPUT_CHANNEL,
-            logPath: getDefaultLogPath()
+            logPath
         })
         // only the default logger (with default params) gets a registered command
         // check list of registered commands to see if aws.viewLogs has already been registered.
@@ -95,7 +100,7 @@ export function getLogger(): Logger {
     if (defaultLogger) {
         return defaultLogger
     }
-    throw new Error ('Default Logger not initialized. Call logger.initialize() first.')
+    throw new Error('Default Logger not initialized. Call logger.initialize() first.')
 }
 
 /**
@@ -227,7 +232,7 @@ function generateWriteParams(
     level: LogLevel,
     message: ErrorOrString[],
     outputChannel?: vscode.OutputChannel
- ): WriteToLogParams {
+): WriteToLogParams {
     return { logger: logger, level: level, message: message, outputChannel: outputChannel }
 }
 
