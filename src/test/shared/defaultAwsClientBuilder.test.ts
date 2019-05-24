@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -8,39 +8,10 @@
 import * as assert from 'assert'
 import { Service } from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
-import * as vscode from 'vscode'
 import { DefaultAWSClientBuilder } from '../../shared/awsClientBuilder'
-import { AwsContext, ContextChangeEventsArgs } from '../../shared/awsContext'
+import { FakeAwsContext } from '../utilities/fakeAwsContext'
 
 describe('DefaultAwsClientBuilder', () => {
-    class FakeAwsContext implements AwsContext {
-        public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> =
-            new vscode.EventEmitter<ContextChangeEventsArgs>().event
-
-        public async getCredentials(): Promise<AWS.Credentials | undefined> {
-            return undefined
-        }
-
-        public getCredentialProfileName(): string | undefined {
-            throw new Error('Method not implemented.')
-        }
-
-        public async setCredentialProfileName(profileName?: string | undefined): Promise<void> {
-            throw new Error('Method not implemented.')
-        }
-
-        public async getExplorerRegions(): Promise<string[]> {
-            throw new Error('Method not implemented.')
-        }
-
-        public async addExplorerRegion(...regions: string[]): Promise<void> {
-            throw new Error('Method not implemented.')
-        }
-
-        public async removeExplorerRegion(...regions: string[]): Promise<void> {
-            throw new Error('Method not implemented.')
-        }
-    }
 
     describe('createAndConfigureSdkClient', () => {
         class FakeService extends Service {
