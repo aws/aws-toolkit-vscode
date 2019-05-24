@@ -150,8 +150,7 @@ export class UserCredentialsUtils {
         }
 
         try {
-            // by this time, sts is either defined or error has been thrown; exclamation mark should be safe
-            const response = await sts!.getCallerIdentity()
+            const response = await sts.getCallerIdentity()
 
             return { isValid: !!response.Account, account: response.Account }
         } catch (err) {
