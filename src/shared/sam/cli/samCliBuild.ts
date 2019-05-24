@@ -7,9 +7,8 @@
 
 import { fileExists } from '../../filesystemUtilities'
 import { getLogger, Logger } from '../../logger'
-import { ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliProcessInvoker } from './samCliInvoker'
-import { SamCliProcessInvoker } from './samCliInvokerUtils'
+import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 
 export interface SamCliBuildInvocationArguments {
     /**
@@ -50,6 +49,10 @@ export interface SamCliBuildInvocationArguments {
     manifestPath?: string
 }
 
+export interface FileFunctions {
+    fileExists: typeof fileExists
+}
+
 export class SamCliBuildInvocation {
     private readonly buildDir: string
     private readonly baseDir?: string
@@ -73,6 +76,7 @@ export class SamCliBuildInvocation {
             skipPullImage = false,
             ...params
         }: SamCliBuildInvocationArguments,
+        private readonly context: { file: FileFunctions } = { file: getDefaultFileFunctions() },
     ) {
         this.buildDir = params.buildDir
         this.baseDir = params.baseDir
@@ -85,7 +89,6 @@ export class SamCliBuildInvocation {
     }
 
     public async execute(): Promise<void> {
-        const logger: Logger = getLogger()
         await this.validate()
 
         const invokeArgs: string[] = [
@@ -100,24 +103,11 @@ export class SamCliBuildInvocation {
         this.addArgumentIf(invokeArgs, !!this.skipPullImage, '--skip-pull-image')
         this.addArgumentIf(invokeArgs, !!this.manifestPath, '--manifest', this.manifestPath!)
 
-        const { exitCode, error, stderr, stdout }: ChildProcessResult = await this.invoker.invoke(
+        const childProcessResult = await this.invoker.invoke(
             ...invokeArgs
         )
 
-        if (exitCode === 0) {
-            return
-        }
-
-        console.error('SAM CLI error')
-        console.error(`Exit code: ${exitCode}`)
-        console.error(`Error: ${error}`)
-        console.error(`stderr: ${stderr}`)
-        console.error(`stdout: ${stdout}`)
-
-        const err =
-            new Error(`sam build encountered an error: ${error && error.message ? error.message : stderr || stdout}`)
-        logger.error(err)
-        throw err
+        logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
     }
 
     private addArgumentIf(args: string[], addIfConditional: boolean, ...argsToAdd: string[]) {
@@ -127,11 +117,18 @@ export class SamCliBuildInvocation {
     }
 
     private async validate(): Promise<void> {
-        const logger: Logger = getLogger()
-        if (!await fileExists(this.templatePath)) {
+        if (!await this.context.file.fileExists(this.templatePath)) {
+            const logger: Logger = getLogger()
+
             const err = new Error(`template path does not exist: ${this.templatePath}`)
             logger.error(err)
             throw err
         }
+    }
+}
+
+function getDefaultFileFunctions(): FileFunctions {
+    return {
+        fileExists
     }
 }

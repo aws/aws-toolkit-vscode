@@ -10,30 +10,15 @@ import { TestLogger } from '../../../../shared/loggerUtils'
 import { SamCliInfoInvocation, SamCliInfoResponse } from '../../../../shared/sam/cli/samCliInfo'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 import { assertThrowsError } from '../../utilities/assertUtils'
-import { TestSamCliProcessInvoker } from './testSamCliProcessInvoker'
+import {
+    assertErrorContainsBadExitMessage,
+    assertLogContainsBadExitInformation,
+    BadExitCodeSamCliProcessInvoker,
+    FakeChildProcessResult,
+    TestSamCliProcessInvoker
+} from './testSamCliProcessInvoker'
 
 describe('SamCliInfoInvocation', async () => {
-
-    class FakeChildProcessResult implements ChildProcessResult {
-        public exitCode: number
-        public error: Error | undefined
-        public stdout: string
-        public stderr: string
-
-        public constructor(
-            {
-                exitCode = 0,
-                stdout = '',
-                stderr = '',
-                ...params
-            }: Partial<ChildProcessResult>
-        ) {
-            this.exitCode = exitCode
-            this.error = params.error
-            this.stdout = stdout
-            this.stderr = stderr
-        }
-    }
 
     class TestSamCliInfoCommand extends SamCliInfoInvocation {
         public convertOutput(text: string): SamCliInfoResponse | undefined {
@@ -124,30 +109,18 @@ describe('SamCliInfoInvocation', async () => {
         )
     })
 
-    it('throws when unsuccessful errorcode is encountered', async () => {
-        const childProcessResult: FakeChildProcessResult = new FakeChildProcessResult(
-            {
-                exitCode: 1,
-                error: new Error('some-error-message'),
-                stderr: 'somestderr',
-                stdout: 'somestdout',
-            }
-        )
+    it('throws on unexpected exit code', async () => {
+        const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
 
-        const invoker: TestSamCliProcessInvoker = new TestSamCliProcessInvoker(
-            (spawnOptions, args: any[]): ChildProcessResult => childProcessResult
-        )
-        const samInfo: SamCliInfoInvocation = new SamCliInfoInvocation(invoker)
-
-        const error: Error = await assertThrowsError(
+        const error = await assertThrowsError(
             async () => {
+                const samInfo: SamCliInfoInvocation = new SamCliInfoInvocation(badExitCodeProcessInvoker)
                 await samInfo.execute()
             },
-            'Expected a error to be thrown'
+            'Expected an error to be thrown'
         )
 
-        assert.ok(error.message.indexOf(childProcessResult.error!.message) !== -1, 'error message was not in error')
-        assert.ok(error.message.indexOf(childProcessResult.stderr) !== -1, 'stderr was not in error')
-        assert.ok(error.message.indexOf(childProcessResult.stdout) !== -1, 'stdout was not in error')
+        assertErrorContainsBadExitMessage(error, badExitCodeProcessInvoker.error.message)
+        await assertLogContainsBadExitInformation(logger, badExitCodeProcessInvoker.makeChildProcessResult(), 0)
     })
 })
