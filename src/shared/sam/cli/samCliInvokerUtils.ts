@@ -21,7 +21,7 @@ export function logAndThrowIfUnexpectedExitCode(
 ): void {
     if (processResult.exitCode === expectedExitCode) { return }
 
-    logger.error(`Unexpected exitcode (${processResult.exitCode}), expecting ${expectedExitCode}`)
+    logger.error(`Unexpected exitcode (${processResult.exitCode}), expecting (${expectedExitCode})`)
     logger.error(`Error: ${processResult.error}`)
     logger.error(`stderr: ${processResult.stderr}`)
     logger.error(`stdout: ${processResult.stdout}`)

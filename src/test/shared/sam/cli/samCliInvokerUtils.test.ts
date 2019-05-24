@@ -54,6 +54,6 @@ describe('logAndThrowIfUnexpectedExitCode', async () => {
         )
 
         assertErrorContainsBadExitMessage(error, exitError.message)
-        await assertLogContainsBadExitInformation(logger, childProcessResult)
+        await assertLogContainsBadExitInformation(logger, childProcessResult, 456)
     })
 })

@@ -80,23 +80,24 @@ export function assertErrorContainsBadExitMessage(
 
 export async function assertLogContainsBadExitInformation(
     logger: TestLogger,
-    expectedChildProcessResult: ChildProcessResult
+    errantChildProcessResult: ChildProcessResult,
+    expectedExitCode: number,
 ): Promise<void> {
     assert.ok(
         // tslint:disable-next-line:max-line-length
-        await logger.logContainsText(`Unexpected exitcode (${expectedChildProcessResult.exitCode}), expecting (${expectedChildProcessResult.exitCode})`),
+        await logger.logContainsText(`Unexpected exitcode (${errantChildProcessResult.exitCode}), expecting (${expectedExitCode})`),
         'Log message missing for exit code'
     )
     assert.ok(
-        await logger.logContainsText(`Error: ${expectedChildProcessResult.error}`),
+        await logger.logContainsText(`Error: ${errantChildProcessResult.error}`),
         'Log message missing for error'
     )
     assert.ok(
-        await logger.logContainsText(`stderr: ${expectedChildProcessResult.stderr}`),
+        await logger.logContainsText(`stderr: ${errantChildProcessResult.stderr}`),
         'Log message missing for stderr'
     )
     assert.ok(
-        await logger.logContainsText(`stdout: ${expectedChildProcessResult.stdout}`),
+        await logger.logContainsText(`stdout: ${errantChildProcessResult.stdout}`),
         'Log message missing for stdout'
     )
 }

@@ -141,6 +141,6 @@ describe('SamCliInfoInvocation', async () => {
         )
 
         assertErrorContainsBadExitMessage(error, badExitCodeProcessInvoker.error.message)
-        await assertLogContainsBadExitInformation(logger, badExitCodeProcessInvoker.makeChildProcessResult())
+        await assertLogContainsBadExitInformation(logger, badExitCodeProcessInvoker.makeChildProcessResult(), 0)
     })
 })
