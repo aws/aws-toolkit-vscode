@@ -8,7 +8,6 @@ import com.intellij.util.xmlb.annotations.OptionTag
 import com.intellij.util.xmlb.annotations.Property
 import software.aws.toolkits.jetbrains.services.lambda.execution.BaseLambdaOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
-import java.util.LinkedHashMap
 
 class LocalLambdaOptions : BaseLambdaOptions() {
     @get:Property(flat = true) // flat for backwards compat
@@ -24,5 +23,5 @@ class FunctionOptions : BaseState() {
     var logicalId by string()
     var runtime by string()
     var handler by string()
-    var environmentVariables by map(LinkedHashMap<String, String>())
+    var environmentVariables by map<String, String>()
 }

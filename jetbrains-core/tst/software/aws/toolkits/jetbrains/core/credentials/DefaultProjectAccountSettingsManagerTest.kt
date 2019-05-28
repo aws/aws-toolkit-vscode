@@ -3,8 +3,8 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
-import com.intellij.configurationStore.deserialize
-import com.intellij.configurationStore.serialize
+import com.intellij.configurationStore.deserializeAndLoadState
+import com.intellij.configurationStore.serializeStateInto
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.testFramework.ProjectRule
 import com.intellij.util.messages.MessageBusConnection
@@ -165,7 +165,8 @@ class DefaultProjectAccountSettingsManagerTest {
     @Test
     fun testSavingActiveRegion() {
         manager.changeRegion(AwsRegion.GLOBAL)
-        val element = manager.state.serialize()
+        val element = Element("AccountState")
+        serializeStateInto(manager, element)
         assertThat(element.string()).isEqualToIgnoringWhitespace(
             """
             <AccountState>
@@ -188,7 +189,8 @@ class DefaultProjectAccountSettingsManagerTest {
                 AwsBasicCredentials.create("Access", "Secret")
             )
         )
-        val element = manager.state.serialize()
+        val element = Element("AccountState")
+        serializeStateInto(manager, element)
         assertThat(element.string()).isEqualToIgnoringWhitespace(
             """
             <AccountState>
@@ -221,7 +223,7 @@ class DefaultProjectAccountSettingsManagerTest {
             AwsBasicCredentials.create("Access", "Secret")
         )
 
-        manager.loadState(element.deserialize())
+        deserializeAndLoadState(manager, element)
 
         waitForEvents(2)
 
@@ -241,7 +243,7 @@ class DefaultProjectAccountSettingsManagerTest {
                 </option>
             </AccountState>
         """.toElement()
-        manager.loadState(element.deserialize())
+        deserializeAndLoadState(manager, element)
 
         val region = mockRegionManager.lookupRegionById("MockRegion-1")
         assertThat(manager.activeRegion).isEqualTo(region)
@@ -260,7 +262,7 @@ class DefaultProjectAccountSettingsManagerTest {
                 </option>
             </AccountState>
         """.toElement()
-        manager.loadState(element.deserialize())
+        deserializeAndLoadState(manager, element)
 
         assertThat(manager.activeRegion).isEqualTo(AwsRegionProvider.getInstance().defaultRegion())
         assertThat(manager.recentlyUsedRegions()).isEmpty()
@@ -278,7 +280,7 @@ class DefaultProjectAccountSettingsManagerTest {
                 </option>
             </AccountState>
         """.toElement()
-        manager.loadState(element.deserialize())
+        deserializeAndLoadState(manager, element)
 
         assertThat(manager.hasActiveCredentials()).isFalse()
         assertThat(manager.recentlyUsedCredentials()).isEmpty()
@@ -305,7 +307,7 @@ class DefaultProjectAccountSettingsManagerTest {
             false
         )
 
-        manager.loadState(element.deserialize())
+        deserializeAndLoadState(manager, element)
 
         assertThat(manager.hasActiveCredentials()).isFalse()
     }
@@ -318,7 +320,7 @@ class DefaultProjectAccountSettingsManagerTest {
             <AccountState/>
         """.toElement()
 
-        manager.loadState(element.deserialize())
+        deserializeAndLoadState(manager, element)
 
         waitForEvents(2)
 
