@@ -14,7 +14,6 @@ import {
     CreateNewSamAppWizard,
     CreateNewSamAppWizardContext
 } from '../../../lambda/wizards/samInitWizard'
-import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
     if (!array) {
@@ -56,8 +55,6 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
         return (this._workspaceFolders as vscode.WorkspaceFolder[]) || []
 
     }
-
-    public readonly extContext = new FakeExtensionContext()
 
     /**
      * @param  {vscode.WorkspaceFolder[] | vscode.WorkspaceFolder[][]} _workspaceFolders
