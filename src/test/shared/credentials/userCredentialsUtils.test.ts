@@ -25,6 +25,7 @@ import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { TestLogger } from '../../../shared/loggerUtils'
 import { DEFAULT_TEST_ACCOUNT_ID, DEFAULT_TEST_PROFILE_NAME, FakeAwsContext } from '../../utilities/fakeAwsContext'
 import { MockStsClient } from '../clients/mockClients'
+import { assertThrowsError } from '../utilities/assertUtils'
 
 describe('UserCredentialsUtils', () => {
 
@@ -179,7 +180,7 @@ describe('UserCredentialsUtils', () => {
     })
 
     describe('validateCredentials', () => {
-        it('succeeds if getCallerIdentity resolves', async () => {
+        it('returns a valid result if getCallerIdentity resolves', async () => {
 
             let timesCalled: number = 0
 
@@ -199,9 +200,10 @@ describe('UserCredentialsUtils', () => {
 
             assert.strictEqual(timesCalled, 1)
             assert.strictEqual(result.isValid, true)
+            assert.strictEqual(result.account, mockResponse.Account)
         })
 
-        it('fails if getCallerIdentity returns undefined', async () => {
+        it('returns an invalid result if getCallerIdentity returns undefined', async () => {
 
             let timesCalled: number = 0
 
@@ -224,7 +226,7 @@ describe('UserCredentialsUtils', () => {
             assert.strictEqual(result.isValid, false)
         })
 
-        it('fails if getCallerIdentity throws', async () => {
+        it('returns an invalid result if getCallerIdentity throws', async () => {
 
             let timesCalled: number = 0
 
@@ -243,6 +245,15 @@ describe('UserCredentialsUtils', () => {
             assert.strictEqual(result.isValid, false)
             assert.strictEqual(result.invalidMessage, 'Simulating error with explicit throw')
         })
+
+        it (
+            'throws an error if STS is not defined and ext.toolkitClientBuilder cannot create an STS client',
+            async () => {
+                await assertThrowsError(async () => await UserCredentialsUtils.validateCredentials(
+                    fakeCredentials
+                ))
+            }
+        )
     })
 
     describe('addUserDataToContext', async () => {
