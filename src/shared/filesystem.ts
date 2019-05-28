@@ -6,10 +6,12 @@
 'use strict'
 
 import * as fs from 'fs'
+import * as _path from 'path'
 import { promisify } from 'util'
 
 // interfaces & types
 export type PathLike = fs.PathLike
+export type MakeDirectoryOptions = fs.MakeDirectoryOptions
 
 export interface Stats extends fs.Stats {
     // fs.Stats is a class, so for easy mocking we code against an interface with the same shape.
@@ -18,7 +20,48 @@ export interface Stats extends fs.Stats {
 // functions
 export const access = promisify(fs.access)
 
-export const mkdir = promisify(fs.mkdir)
+const _mkdir = promisify(fs.mkdir)
+
+export async function mkdir(
+    path: PathLike,
+    options?: number | string | MakeDirectoryOptions | undefined | null,
+): Promise<void> {
+    try {
+        await _mkdir(path, options)
+    } catch (err) {
+        // mkdir calls with recurse do not work as expected when called through electron.
+        // See: https://github.com/nodejs/node/issues/24698#issuecomment-486405542
+        if (err.code && err.code === 'ENOENT') {
+            if (options && typeof options === 'object' && options.recursive && typeof path === 'string') {
+                await mkdirRecursive(path, options)
+
+                return
+            }
+        }
+
+        throw err
+    }
+}
+
+async function mkdirRecursive(
+    path: string,
+    options: MakeDirectoryOptions,
+): Promise<void> {
+    try {
+        await access(path)
+
+        // path exists, nothing left to do
+        return
+    } catch (err) {
+        // path does not exist, recurse to parent folder before trying to make path of interest
+        const parent = _path.dirname(path)
+        if (parent !== path) {
+            await mkdir(parent, options)
+        }
+
+        await mkdir(path, options)
+    }
+}
 
 export const mkdtemp = promisify(fs.mkdtemp)
 

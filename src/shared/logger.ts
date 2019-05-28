@@ -12,7 +12,8 @@ import * as nls from 'vscode-nls'
 import * as winston from 'winston'
 import * as Transport from 'winston-transport'
 import { extensionSettingsPrefix } from './constants'
-import { mkdirRecursive } from './filesystemUtilities'
+import { mkdir } from './filesystem'
+import { fileExists } from './filesystemUtilities'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from './settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
@@ -61,7 +62,9 @@ export async function initialize(params?: LoggerParams): Promise<Logger> {
     if (!params) {
         const logPath = getDefaultLogPath()
         const logFolder = path.dirname(logPath)
-        await mkdirRecursive(logFolder)
+        if (!await fileExists(logFolder)) {
+            await mkdir(logFolder, { recursive: true })
+        }
 
         defaultLogger = createLogger({
             outputChannel: DEFAULT_OUTPUT_CHANNEL,
