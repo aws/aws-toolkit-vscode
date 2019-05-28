@@ -33,7 +33,8 @@ export async function mkdir(
         await _mkdir(path, options)
     } catch (err) {
         // mkdir calls with recurse do not work as expected when called through electron.
-        // See: https://github.com/nodejs/node/issues/24698#issuecomment-486405542
+        // See: https://github.com/nodejs/node/issues/24698#issuecomment-486405542 for info.
+        // TODO : When VS Code uses Electron 5+, remove this custom mkdir implementation.
         const error = err as ErrorWithCode
         if (error.code && error.code === 'ENOENT') {
             if (options && typeof options === 'object' && options.recursive && typeof path === 'string') {
@@ -51,20 +52,12 @@ async function mkdirRecursive(
     path: string,
     options: MakeDirectoryOptions,
 ): Promise<void> {
-    try {
-        await access(path)
-
-        // path exists, nothing left to do
-        return
-    } catch (err) {
-        // path does not exist, recurse to parent folder before trying to make path of interest
-        const parent = _path.dirname(path)
-        if (parent !== path) {
-            await mkdir(parent, options)
-        }
-
-        await mkdir(path, options)
+    const parent = _path.dirname(path)
+    if (parent !== path) {
+        await mkdir(parent, options)
     }
+
+    await mkdir(path, options)
 }
 
 export const mkdtemp = promisify(fs.mkdtemp)
