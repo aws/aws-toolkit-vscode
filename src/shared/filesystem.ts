@@ -21,6 +21,9 @@ export interface Stats extends fs.Stats {
 export const access = promisify(fs.access)
 
 const _mkdir = promisify(fs.mkdir)
+interface ErrorWithCode {
+    code?: string
+}
 
 export async function mkdir(
     path: PathLike,
@@ -31,7 +34,8 @@ export async function mkdir(
     } catch (err) {
         // mkdir calls with recurse do not work as expected when called through electron.
         // See: https://github.com/nodejs/node/issues/24698#issuecomment-486405542
-        if (err.code && err.code === 'ENOENT') {
+        const error = err as ErrorWithCode
+        if (error.code && error.code === 'ENOENT') {
             if (options && typeof options === 'object' && options.recursive && typeof path === 'string') {
                 await mkdirRecursive(path, options)
 
