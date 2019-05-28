@@ -22,6 +22,7 @@ import software.aws.toolkits.jetbrains.fixtures.createServerlessProject
 import software.aws.toolkits.jetbrains.fixtures.jbTab
 import software.aws.toolkits.jetbrains.fixtures.sdkChooser
 import java.io.Serializable
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @RunWith(GuiTestSuiteParam::class)
@@ -85,6 +86,10 @@ class SamInitProjectBuilderIntelliJTest(private val testParameters: TestParamete
 
             step("check the run configuration is created") {
                 assertTrue(runConfigurationList.getRunConfigurationList().containsAll(testParameters.runConfigNames))
+            }
+
+            step("check the default README.md file is open in editor") {
+                assertEquals("README.md", editor.currentFileName)
             }
         }
     }

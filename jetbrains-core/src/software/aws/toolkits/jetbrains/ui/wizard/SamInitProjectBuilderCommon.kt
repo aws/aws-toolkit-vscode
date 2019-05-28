@@ -5,15 +5,20 @@
 package software.aws.toolkits.jetbrains.ui.wizard
 
 import com.intellij.execution.RunManager
+import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.DefaultProjectFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.util.text.StringUtil
+import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfigurationProducer
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
@@ -38,8 +43,15 @@ abstract class SamProjectTemplate {
 
     open fun postCreationAction(runtime: Runtime, contentRoot: VirtualFile, rootModel: ModifiableRootModel) {
         SamCommon.excludeSamDirectory(contentRoot, rootModel)
-
+        openReadmeFile(contentRoot, rootModel.project)
         createRunConfigurations(contentRoot, rootModel.project)
+    }
+
+    private fun openReadmeFile(contentRoot: VirtualFile, project: Project) {
+        VfsUtil.findRelativeFile(contentRoot, "README.md")?.let {
+            val fileEditorManager = FileEditorManager.getInstance(project)
+            fileEditorManager.openTextEditor(OpenFileDescriptor(project, it), true) ?: LOG.warn { "Failed to open README.md" }
+        }
     }
 
     private fun createRunConfigurations(contentRoot: VirtualFile, project: Project) {
@@ -95,6 +107,10 @@ abstract class SamProjectTemplate {
     protected open fun dependencyManager(): String? = null
 
     open fun supportedRuntimes(): Set<Runtime> = Runtime.knownValues().toSet()
+
+    companion object {
+        val LOG = getLogger<SamProjectTemplate>()
+    }
 }
 
 @JvmOverloads
