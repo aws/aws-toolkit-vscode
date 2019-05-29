@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -115,7 +115,8 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
             callback: async () => await deploySamApplication(
                 {
                     channelLogger: this.channelLogger,
-                    regionProvider: this.regionProvider
+                    regionProvider: this.regionProvider,
+                    extensionContext: context
                 },
                 {
                     awsContext: this.awsContext
