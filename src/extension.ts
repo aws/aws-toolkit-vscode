@@ -77,6 +77,8 @@ export async function activate(context: vscode.ExtensionContext) {
             const successfulLogin = await UserCredentialsUtils.addUserDataToContext(currentProfile, awsContext)
             if (!successfulLogin) {
                 await UserCredentialsUtils.removeUserDataFromContext(awsContext)
+                // tslint:disable-next-line: no-floating-promises
+                UserCredentialsUtils.notifyUserCredentialsAreBad(currentProfile)
             }
         }
 
