@@ -15,9 +15,9 @@ export class SamCliPackageInvocation {
         private readonly templateFile: string,
         private readonly outputTemplateFile: string,
         private readonly s3Bucket: string,
-        private readonly invoker: SamCliProcessInvoker =
-        new DefaultSamCliProcessInvoker(),
-        private readonly region: string
+        private readonly invoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker(),
+        private readonly region: string,
+        private readonly profile: string
     ) {
     }
 
@@ -28,7 +28,8 @@ export class SamCliPackageInvocation {
             '--template-file', this.templateFile,
             '--s3-bucket', this.s3Bucket,
             '--output-template-file', this.outputTemplateFile,
-            '--region', this.region
+            '--region', this.region,
+            '--profile', this.profile
         )
 
         if (exitCode === 0) {
