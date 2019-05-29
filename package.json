@@ -183,28 +183,28 @@
             "view/item/context": [
                 {
                     "command": "aws.invokeLambda",
-                    "when": "view == lambda && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
                     "group": "0@1"
                 },
                 {
                     "command": "aws.deleteLambda",
-                    "when": "view == lambda && viewItem == awsRegionFunctionNode",
+                    "when": "view == aws.explorer && viewItem == awsRegionFunctionNode",
                     "group": "1@1"
                 },
                 {
                     "command": "aws.deleteCloudFormation",
-                    "when": "view == lambda && viewItem == awsCloudFormationNode",
+                    "when": "view == aws.explorer && viewItem == awsCloudFormationNode",
                     "group": "0@5"
                 },
                 {
                     "command": "aws.showErrorDetails",
-                    "when": "view == lambda && viewItem == awsErrorNode",
+                    "when": "view == aws.explorer && viewItem == awsErrorNode",
                     "group": "0@5"
                 },
                 {
                     "command": "aws.hideRegion",
                     "group": "0@1",
-                    "when": "view == lambda && viewItem == awsRegionNode"
+                    "when": "view == aws.explorer && viewItem == awsRegionNode"
                 }
             ]
         },
