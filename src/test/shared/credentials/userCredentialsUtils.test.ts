@@ -283,26 +283,6 @@ describe('UserCredentialsUtils', () => {
             assert.strictEqual(mockAws.getCredentialProfileName(), testProfile)
             assert.strictEqual(mockAws.getCredentialAccountId(), testAccount)
         })
-
-        it ('wipes profile data if credentials are invalid', async () => {
-
-            const testProfile = 'testprofile'
-            const mockSts = new MockStsClient({
-                getCallerIdentity: async () => {
-                    throw new AWS.AWSError()
-                }
-            })
-            const mockAws = new FakeAwsContext(
-                {
-                    credentials: new AWS.Credentials('access', 'secret')
-                }
-            )
-
-            const returnValue = await UserCredentialsUtils.addUserDataToContext(testProfile, mockAws, mockSts)
-            assert.strictEqual(returnValue, false)
-            assert.strictEqual(mockAws.getCredentialProfileName(), undefined)
-            assert.strictEqual(mockAws.getCredentialAccountId(), undefined)
-        })
     })
 
     describe('removeUserDataFromContext', async () => {

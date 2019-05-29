@@ -10,6 +10,8 @@ import * as path from 'path'
 
 import { Credentials } from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import { AwsContext } from '../awsContext'
 import { StsClient } from '../clients/stsClient'
 import { EnvironmentVariables } from '../environmentVariables'
@@ -18,6 +20,8 @@ import { mkdir, writeFile } from '../filesystem'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { getLogger, Logger } from '../logger'
 import { SystemUtilities } from '../systemUtilities'
+
+const localize = nls.loadMessageBundle()
 
 /**
  * The payload used to fill in the handlebars template
@@ -134,8 +138,10 @@ export class UserCredentialsUtils {
         const logger: Logger = getLogger()
         if (!sts) {
             const transformedCredentials: ServiceConfigurationOptions = {
-                accessKeyId: credentials.accessKeyId,
-                secretAccessKey: credentials.secretAccessKey
+                credentials: {
+                    accessKeyId: credentials.accessKeyId,
+                    secretAccessKey: credentials.secretAccessKey
+                }
             }
             try {
                 // Past iteration did not include a set region. Should we change this?
@@ -169,7 +175,6 @@ export class UserCredentialsUtils {
 
     /**
      * Adds valid profiles to the AWS context and settings.
-     * Wipes set profile data and returns false if invalid.
      *
      * @param profileName Profile name to add to AWS Context/AWS settings
      * @param awsContext Current AWS Context
@@ -194,12 +199,8 @@ export class UserCredentialsUtils {
                 return true
             }
         } catch (err) {
-            // swallow any errors--anything that isn't a success should end in the same state:
-            // no set profile + return false
+            // swallow any errors--anything that isn't a success be handled as a failure by the caller
         }
-        // wipe any set profile data
-        await awsContext.setCredentialProfileName()
-        await awsContext.setCredentialAccountId()
 
         return false
     }
@@ -212,5 +213,15 @@ export class UserCredentialsUtils {
     public static async removeUserDataFromContext(awsContext: AwsContext) {
         await awsContext.setCredentialProfileName()
         await awsContext.setCredentialAccountId()
+    }
+
+    public static async badUserCredentialPrompt(profileName: string) {
+        vscode.window.showErrorMessage(
+            localize(
+                'AWS.message.credentials.invalidprofile',
+                'Credentials profile {0} is invalid',
+                profileName
+            )
+        )
     }
 }

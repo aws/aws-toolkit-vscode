@@ -87,13 +87,13 @@ export class DefaultAWSContextCommands {
             if (successfulLogin) {
                 this.refresh()
                 await this.checkExplorerForDefaultRegion(profileName)
+            } else {
+                await this.onCommandLogout()
+                // tslint:disable-next-line: no-floating-promises
+                UserCredentialsUtils.badUserCredentialPrompt(profileName)
             }
         }
-        if (!profileName || !successfulLogin) {
-            // credentials are invalid. Prompt user and log out
-            // TODO: Prompt user!
-            await this.onCommandLogout()
-        }
+        // do nothing if !profileName: that means user didn't select from the quick pick.
     }
 
     public async onCommandCreateCredentialsProfile(): Promise<void> {
@@ -107,9 +107,9 @@ export class DefaultAWSContextCommands {
             if (profileName) {
                 const successfulLogin = await UserCredentialsUtils.addUserDataToContext(profileName, this._awsContext)
                 if (!successfulLogin) {
-                    // credentials are invalid. Prompt user and log out
-                    // TODO: Prompt user!
                     await this.onCommandLogout()
+                    // tslint:disable-next-line: no-floating-promises
+                    UserCredentialsUtils.badUserCredentialPrompt(profileName)
                 }
             }
         } else {
