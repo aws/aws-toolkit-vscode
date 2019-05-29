@@ -30,6 +30,7 @@ import { getFamily, SamLambdaRuntimeFamily } from '../../lambda/models/samLambda
 import { BasicLogger } from '../logger'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
+import { Timeout } from '../utilities/timeoutUtils'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 
 export interface LambdaLocalInvokeParams {
@@ -249,14 +250,15 @@ export class LocalLambdaRunner {
             invoker: this.localInvokeCommand
         })
 
-        const startInvokeTime = new Date()
-        await command.execute()
+        const timer = createInvokeTimer(this.configuration)
+        await command.execute(timer)
 
         if (this.localInvokeParams.isDebug) {
             const isPortOpen = await waitForDebugPort({
                 debugPort: this.debugPort,
                 configuration: this.configuration,
-                channelLogger: this.channelLogger
+                channelLogger: this.channelLogger,
+                timeoutDuration: timer.remainingTime
             })
 
             if (!isPortOpen) {
@@ -273,13 +275,13 @@ export class LocalLambdaRunner {
                 retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
                 channelLogger: this.channelLogger,
                 onRecordAttachDebuggerMetric: (
-                    attachResult: boolean | undefined, attempts: number, attachResultDate: Date
+                    attachResult: boolean | undefined, attempts: number
                 ): void => {
                     recordAttachDebuggerMetric({
                         telemetryService: this.telemetryService,
                         result: attachResult,
                         attempts,
-                        durationMillis: attachResultDate.getTime() - startInvokeTime.getTime(),
+                        durationMillis: timer.elapsedTime,
                         runtime: this.runtime,
                     })
                 },
@@ -498,6 +500,7 @@ export async function invokeLambdaFunction(
         environmentVariablePath,
         invoker: samLocalInvokeCommand,
     }
+
     const debugArgs = invokeArgs.debugArgs
     if (debugArgs) {
         localInvokeArgs.debugPort = debugArgs.debugPort.toString()
@@ -505,14 +508,15 @@ export async function invokeLambdaFunction(
     }
     const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
 
-    const startInvokeTime = new Date()
-    await command.execute()
+    const timer = createInvokeTimer(configuration)
+    await command.execute(timer)
 
     if (debugArgs) {
         const isPortOpen = await waitForDebugPort({
             debugPort: debugArgs.debugPort,
             configuration,
-            channelLogger
+            channelLogger,
+            timeoutDuration: timer.remainingTime
         })
 
         if (!isPortOpen) {
@@ -529,13 +533,13 @@ export async function invokeLambdaFunction(
             retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
             channelLogger,
             onRecordAttachDebuggerMetric: (
-                attachResult: boolean | undefined, attempts: number, attachResultDate: Date
+                attachResult: boolean | undefined, attempts: number
             ): void => {
                 recordAttachDebuggerMetric({
                     telemetryService: telemetryService,
                     result: attachResult,
                     attempts,
-                    durationMillis: attachResultDate.getTime() - startInvokeTime.getTime(),
+                    durationMillis: timer.elapsedTime,
                     runtime: invokeArgs.runtime,
                 })
             },
@@ -586,7 +590,7 @@ export interface AttachDebuggerContext {
     retryDelayMillis?: number
     channelLogger: Pick<ChannelLogger, 'info' | 'error' | 'logger'>
     onStartDebugging?: typeof vscode.debug.startDebugging
-    onRecordAttachDebuggerMetric?(attachResult: boolean | undefined, attempts: number, attachResultDate: Date): void
+    onRecordAttachDebuggerMetric?(attachResult: boolean | undefined, attempts: number): void
     onWillRetry?(): Promise<void>
 }
 
@@ -639,7 +643,7 @@ export async function attachDebugger(
     } while (isDebuggerAttached === undefined)
 
     if (params.onRecordAttachDebuggerMetric) {
-        params.onRecordAttachDebuggerMetric(isDebuggerAttached, retries + 1, new Date())
+        params.onRecordAttachDebuggerMetric(isDebuggerAttached, retries + 1)
     }
 
     if (isDebuggerAttached) {
@@ -664,32 +668,31 @@ async function waitForDebugPort({
     debugPort,
     configuration,
     channelLogger,
+    timeoutDuration
 }: {
     debugPort: number
     configuration: SettingsConfiguration
-    channelLogger: ChannelLogger
+    channelLogger: ChannelLogger,
+    timeoutDuration: number
 }): Promise<boolean> {
     channelLogger.info(
         'AWS.output.sam.local.waiting',
         'Waiting for SAM Application to start before attaching debugger...'
     )
 
-    const timeoutMillis = configuration.readSetting<number>(
-        'samcli.debug.attach.timeout.millis',
-        SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
-    )
-
     try {
+        // this should not fail: if it hits this point, the port should be open
+        // this function always attempts once no matter the timeoutDuration
         await tcpPortUsed.waitUntilUsed(
             debugPort,
             SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS,
-            timeoutMillis
+            timeoutDuration
         )
 
         return true
     } catch (err) {
         channelLogger.logger.verbose(
-            `Timed out after ${timeoutMillis} ms waiting for port ${debugPort} to open: ${err}`
+            `Timed out after ${timeoutDuration} ms waiting for port ${debugPort} to open: ${err}`
         )
 
         return false
@@ -754,6 +757,17 @@ export function shouldAppendRelativePathToFunctionHandler(runtime: string): bool
         default:
             throw new Error('localLambdaRunner can not determine if runtime requires a relative path.')
     }
+}
+
+function createInvokeTimer(
+    configuration: SettingsConfiguration,
+): Timeout {
+    const timelimit = configuration.readSetting<number>(
+        'samcli.debug.attach.timeout.millis',
+        SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
+    )
+
+    return new Timeout(timelimit)
 }
 
 /**

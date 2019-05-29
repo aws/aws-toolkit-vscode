@@ -142,8 +142,7 @@ describe('localLambdaRunner', async () => {
                 onWillRetry,
                 onRecordAttachDebuggerMetric: (
                     attachResult: boolean | undefined,
-                    attempts: number,
-                    attachResultDate: Date
+                    attempts: number
                 ) => {
                     assert.ok(attachResult, 'Expected to be logging an attach success metric')
                     assert.strictEqual(attempts, 1, 'Unexpected Attempt count')
@@ -202,8 +201,7 @@ describe('localLambdaRunner', async () => {
                 onWillRetry,
                 onRecordAttachDebuggerMetric: (
                     attachResult: boolean | undefined,
-                    attempts: number,
-                    attachResultDate: Date
+                    attempts: number
                 ) => {
                     assert.strictEqual(attachResult, false, 'Expected to be logging an attach failure metric')
                 }

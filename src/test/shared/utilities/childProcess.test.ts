@@ -317,8 +317,140 @@ describe('ChildProcess', async () => {
         })
     })
 
+    describe('kill & killed', async () => {
+        if (process.platform === 'win32') {
+            // tslint:disable-next-line:max-line-length
+            it ('detects running processes and successfully sends a kill signal to a running process - Windows', async () => {
+                const batchFile = path.join(tempFolder, 'test-script.bat')
+                writeBatchFileWithDelays(batchFile)
+
+                const childProcess = new ChildProcess(
+                    batchFile
+                )
+
+                // awaiting this means that the script finishes before it can be killed
+                // worst case scenario, this script will take 2 seconds to run its course
+                // tslint:disable-next-line: no-floating-promises
+                childProcess.run()
+                assert.strictEqual(childProcess.killed, false)
+                childProcess.kill()
+                await new Promise<void>((resolve) => {
+                    setTimeout(
+                        () => {
+                            assert.strictEqual(childProcess.killed, true)
+                            resolve()
+                        },
+                        100
+                    )
+                })
+            })
+
+            it ('can not kill previously killed processes - Windows', async () => {
+                const batchFile = path.join(tempFolder, 'test-script.bat')
+                writeBatchFileWithDelays(batchFile)
+
+                const childProcess = new ChildProcess(
+                    batchFile
+                )
+
+                // awaiting this means that the script finishes before it can be killed
+                // worst case scenario, this script will take 2 seconds to run its course
+                // tslint:disable-next-line: no-floating-promises
+                childProcess.run()
+                childProcess.kill()
+                await new Promise<void>( (resolve) => {
+                    setTimeout(
+                        () => {
+                            assert.strictEqual(childProcess.killed, true)
+                            resolve()
+                        },
+                        100
+                    )
+                })
+                await new Promise<void>( (resolve) => {
+                    setTimeout(
+                        () => {
+                            assert.throws( () => { childProcess.kill() })
+                            resolve()
+                        },
+                        100
+                    )
+                })
+            })
+        } // END Windows-only tests
+
+        if (process.platform !== 'win32') {
+            // tslint:disable-next-line:max-line-length
+            it ('detects running processes and successfully sends a kill signal to a running process - Unix', async () => {
+                const scriptFile = path.join(tempFolder, 'test-script.sh')
+                writeShellFileWithDelays(scriptFile)
+
+                const childProcess = new ChildProcess(
+                    scriptFile
+                )
+
+                // awaiting this means that the script finishes before it can be killed
+                // worst case scenario, this script will take 2 seconds to run its course
+                // tslint:disable-next-line: no-floating-promises
+                childProcess.run()
+                assert.strictEqual(childProcess.killed, false)
+                childProcess.kill()
+                await new Promise<void>((resolve) => {
+                    setTimeout(
+                        () => {
+                            assert.strictEqual(childProcess.killed, true)
+                            resolve()
+                        },
+                        100
+                    )
+                })
+            })
+
+            it ('can not kill previously killed processes - Unix', async () => {
+                const scriptFile = path.join(tempFolder, 'test-script.sh')
+                writeShellFileWithDelays(scriptFile)
+
+                const childProcess = new ChildProcess(
+                    scriptFile
+                )
+
+                // awaiting this means that the script finishes before it can be killed
+                // worst case scenario, this script will take 2 seconds to run its course
+                // tslint:disable-next-line: no-floating-promises
+                childProcess.run()
+                childProcess.kill()
+                await new Promise<void>( (resolve) => {
+                    setTimeout(
+                        () => {
+                            assert.strictEqual(childProcess.killed, true)
+                            resolve()
+                        },
+                        100
+                    )
+                })
+                await new Promise<void>( (resolve) => {
+                    setTimeout(
+                        () => {
+                            assert.throws( () => { childProcess.kill() })
+                            resolve()
+                        },
+                        100
+                    )
+                })
+            })
+        } // END Unix-only tests
+    })
+
     function writeBatchFile(filename: string): void {
         fs.writeFileSync(filename, '@echo hi')
+    }
+
+    function writeBatchFileWithDelays(filename: string): void {
+        const file = `
+        @echo hi
+        SLEEP 2
+        @echo bye`
+        fs.writeFileSync(filename, file)
     }
 
     function writeWindowsCommandFile(filename: string): void {
@@ -327,6 +459,15 @@ describe('ChildProcess', async () => {
 
     function writeShellFile(filename: string): void {
         fs.writeFileSync(filename, 'echo hi')
+        fs.chmodSync(filename, 0o744)
+    }
+
+    function writeShellFileWithDelays(filename: string): void {
+        const file = `
+        echo hi
+        sleep 2
+        echo bye`
+        fs.writeFileSync(filename, file)
         fs.chmodSync(filename, 0o744)
     }
 })
