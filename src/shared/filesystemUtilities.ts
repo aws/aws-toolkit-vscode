@@ -72,7 +72,7 @@ export async function findFileInParentPaths(searchFolder: string, fileToFind: st
 }
 
 const mkdtemp = promisify(fs.mkdtemp)
-export const  makeTemporaryToolkitFolder = async (...relativePathParts: string[]) => {
+export const makeTemporaryToolkitFolder = async (...relativePathParts: string[]) => {
     const _relativePathParts = relativePathParts || ['vsctk']
     const tmpPath = path.join(tempDirPath, ..._relativePathParts)
     const tmpPathParent = path.dirname(tmpPath)

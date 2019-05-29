@@ -4,11 +4,15 @@
  */
 
 import * as assert from 'assert'
+import { Credentials } from 'aws-sdk'
 import { ConfigurationTarget } from 'vscode'
 import { profileSettingKey, regionSettingKey } from '../../shared/constants'
+import { CredentialsManager } from '../../shared/credentialsManager'
 import { DefaultAwsContext } from '../../shared/defaultAwsContext'
 import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { FakeExtensionContext, FakeMementoStorage } from '../fakeExtensionContext'
+import { TestSettingsConfiguration } from '../utilities/testSettingsConfiguration'
+import { assertThrowsError } from './utilities/assertUtils'
 
 describe('DefaultAwsContext', () => {
 
@@ -16,6 +20,8 @@ describe('DefaultAwsContext', () => {
     const testRegion2Value: string = 're-gion-2'
     const testProfileValue: string = 'profile1'
     const testAccountIdValue: string = '123456789012'
+    const testAccessKey: string = 'opensesame'
+    const testSecretKey: string = 'itsasecrettoeverybody'
 
     class ContextTestsSettingsConfigurationBase implements SettingsConfiguration {
         public readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
@@ -27,22 +33,82 @@ describe('DefaultAwsContext', () => {
             target: ConfigurationTarget
         ): Promise<void> {
         }
-    }
+}
 
-    it('reads profile from config on startup', () => {
-
-        class TestConfiguration extends ContextTestsSettingsConfigurationBase {
-            public readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
-                if (settingKey === profileSettingKey) {
-                    return testProfileValue as any as T
-                }
-
-                return super.readSetting(settingKey, defaultValue)
-            }
-
+    class TestCredentialsManager extends CredentialsManager {
+        public constructor(
+            private readonly expectedName?: string,
+            private readonly reportedCredentials?: Credentials
+        ) {
+            super()
         }
 
-        const testContext = new DefaultAwsContext(new TestConfiguration(), new FakeExtensionContext())
+        public async getCredentials(profileName: string): Promise<Credentials> {
+            if (this.reportedCredentials && this.expectedName === profileName) {
+                return this.reportedCredentials
+            }
+            throw new Error()
+        }
+    }
+
+    it('gets credentials if a profile exists with credentials', async () => {
+        const settingsConfig = new TestSettingsConfiguration()
+        await settingsConfig.writeSetting<string>(profileSettingKey, testProfileValue)
+        const reportedCredentials = new Credentials(testAccessKey, testSecretKey)
+
+        const testContext = new DefaultAwsContext(
+            settingsConfig,
+            new FakeExtensionContext(),
+            new TestCredentialsManager(testProfileValue, reportedCredentials)
+        )
+        const creds = await testContext.getCredentials()
+        assert.strictEqual(creds, reportedCredentials)
+    })
+
+    it('gets credentials if a profile exists with credentials', async () => {
+        const overrideProfile = 'asdf'
+        const settingsConfig = new TestSettingsConfiguration()
+        await settingsConfig.writeSetting<string>(profileSettingKey, overrideProfile)
+        const reportedCredentials = new Credentials(testAccessKey, testSecretKey)
+
+        const testContext = new DefaultAwsContext(
+            settingsConfig,
+            new FakeExtensionContext(),
+            new TestCredentialsManager(overrideProfile, reportedCredentials)
+        )
+        const creds = await testContext.getCredentials(overrideProfile)
+        assert.strictEqual(creds, reportedCredentials)
+    })
+
+    it('throws an error if a profile does not exist', async () => {
+        const overrideProfile = 'asdf'
+        const settingsConfig = new TestSettingsConfiguration()
+        await settingsConfig.writeSetting<string>(profileSettingKey, overrideProfile)
+
+        const testContext = new DefaultAwsContext(
+            settingsConfig,
+            new FakeExtensionContext(),
+            new TestCredentialsManager(overrideProfile)
+        )
+        await assertThrowsError( async () => { await testContext.getCredentials(testProfileValue) } )
+    })
+
+    it('returns undefined if no profile is provided and no profile was previously saved to settings', async () => {
+        const settingsConfig = new TestSettingsConfiguration()
+
+        const testContext = new DefaultAwsContext(
+            settingsConfig,
+            new FakeExtensionContext()
+        )
+        const creds = await testContext.getCredentials()
+        assert.strictEqual(creds, undefined)
+    })
+
+    it('reads profile from config on startup', async () => {
+        const settingsConfig = new TestSettingsConfiguration()
+        await settingsConfig.writeSetting<string>(profileSettingKey, testProfileValue)
+
+        const testContext = new DefaultAwsContext(settingsConfig, new FakeExtensionContext())
         assert.strictEqual(testContext.getCredentialProfileName(), testProfileValue)
     })
 
