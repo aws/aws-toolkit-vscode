@@ -30,7 +30,8 @@ import software.amazon.awssdk.services.lambda.model.Runtime
  */
 enum class RuntimeGroup {
     JAVA,
-    PYTHON;
+    PYTHON,
+    DOTNET;
 
     private val info by lazy {
         RuntimeGroupInformation.getInstances(this)

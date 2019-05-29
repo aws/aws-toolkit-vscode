@@ -1,0 +1,15 @@
+<!-- Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin>
+
+    <extensions defaultExtensionNs="aws.toolkit.lambda">
+        <runtimeGroup runtimeGroup="DOTNET" implementation="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetRuntimeGroup"/>
+        <builder runtimeGroup="DOTNET" implementation="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetLambdaBuilder"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <projectTemplateProvider implementation="software.aws.toolkits.jetbrains.ui.wizard.RiderSamProjectProvider" order="last"/>
+    </extensions>
+
+</idea-plugin>

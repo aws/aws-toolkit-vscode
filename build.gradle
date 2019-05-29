@@ -245,7 +245,9 @@ if (gradle.startParameter.taskNames.contains("runIde")) {
                     it.enabled = false
                 }
             } else {
-                if (it.name == "runIde" && it.project != project(':jetbrains-core')) {
+                if (it.name == "runIde" && 
+                        it.project != project(':jetbrains-core') && 
+                        it.project != project(':jetbrains-rider')) {
                     it.enabled = false
                 }
             }

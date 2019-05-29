@@ -105,8 +105,8 @@ open class BaseLambdaOptions : LocatableRunConfigurationOptions() {
 }
 
 class AccountOptions : BaseState() {
-    var credentialProviderId by property("")
-    var regionId by property("")
+    var credentialProviderId by string("")
+    var regionId by string("")
 }
 
 class InputOptions : BaseState() {

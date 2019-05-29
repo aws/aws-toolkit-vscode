@@ -20,7 +20,6 @@ import com.intellij.ui.TreeUIHelper
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBSwingUtilities
-import com.intellij.util.ui.UIUtil
 import software.aws.toolkits.jetbrains.components.telemetry.ToolkitActionPlaces
 import software.aws.toolkits.jetbrains.core.SettingsSelector
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
@@ -92,7 +91,6 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
     private fun createTree(model: DefaultTreeModel): Tree {
         val awsTree = Tree()
         TreeUIHelper.getInstance().installTreeSpeedSearch(awsTree)
-        UIUtil.setLineStyleAngled(awsTree)
         awsTree.isRootVisible = false
         awsTree.autoscrolls = true
         awsTree.cellRenderer = AwsTreeCellRenderer()

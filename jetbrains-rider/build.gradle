@@ -13,8 +13,18 @@ intellij {
     version ideVersion("RD")
     pluginName parentIntellijTask.pluginName
     updateSinceUntilBuild parentIntellijTask.updateSinceUntilBuild
-    downloadSources = parentIntellijTask.downloadSources
+    // Disable downloading source to avoid issues related to Rider SDK naming that is missed in Idea
+    // snapshots repository. The task is failed due to unable to find related IC sources.
+    downloadSources = false
     plugins = idePlugins("RD")
+}
+
+instrumentCode {
+    // javac2 is required to compile .form files from IntelliJ IDEA UI Designer
+    // Since Rider distribution does not contain it, take it from IDEA
+    javac2 {
+        "${project(":jetbrains-core").extensions.getByName("intellij").ideaDependency.classes}/lib/javac2.jar"
+    }
 }
 
 runIde {

@@ -15,7 +15,6 @@ import com.intellij.util.indexing.FileBasedIndexExtension
 import com.intellij.util.indexing.FileContent
 import com.intellij.util.indexing.FileContentImpl
 import com.intellij.util.indexing.ID
-import com.intellij.util.indexing.PsiDependentIndex
 import com.intellij.util.io.DataExternalizer
 import com.intellij.util.io.EnumeratorStringDescriptor
 import com.intellij.util.io.KeyDescriptor
@@ -25,7 +24,7 @@ import software.aws.toolkits.jetbrains.services.cloudformation.yaml.YamlCloudFor
 import java.io.DataInput
 import java.io.DataOutput
 
-class CloudFormationTemplateIndex : FileBasedIndexExtension<String, MutableList<IndexedResource>>(), PsiDependentIndex {
+class CloudFormationTemplateIndex : FileBasedIndexExtension<String, MutableList<IndexedResource>>() {
     private val fileFilter by lazy {
         val supportedFiles = arrayOf(YAMLLanguage.INSTANCE.associatedFileType)
 

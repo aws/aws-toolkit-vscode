@@ -5,7 +5,7 @@ package software.aws.toolkits.jetbrains.ui
 
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.CollectionComboBoxModel
-import com.intellij.ui.ListCellRendererWrapper
+import com.intellij.ui.SimpleListCellRenderer
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import javax.swing.JList
@@ -39,15 +39,15 @@ class RegionSelector : ComboBox<AwsRegion>() {
             selectedItem = value
         }
 
-    private inner class Renderer : ListCellRendererWrapper<AwsRegion>() {
+    private inner class Renderer : SimpleListCellRenderer<AwsRegion>() {
         override fun customize(
-            list: JList<*>,
+            list: JList<out AwsRegion>?,
             value: AwsRegion?,
             index: Int,
             selected: Boolean,
             hasFocus: Boolean
         ) {
-            setText(value?.displayName)
+            text = value?.displayName
         }
     }
 }

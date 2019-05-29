@@ -73,14 +73,19 @@ public class SamInitSelectionPanel implements ValidatablePanel {
         templateComboBox.setRenderer(new ColoredListCellRenderer<SamProjectTemplate>() {
             @Override
             protected void customizeCellRenderer(@NotNull JList<? extends SamProjectTemplate> list, SamProjectTemplate value, int index, boolean selected, boolean hasFocus) {
+                if (value == null) return;
                 setIcon(value.getIcon());
                 append(value.getName());
             }
         });
 
         // if selected runtime is null, we're on an unsupported platform
-        projectSettings.setRuntime(selectedRuntime);
-        projectSettings.setTemplate((SamProjectTemplate) templateComboBox.getSelectedItem());
+        if (selectedRuntime != null)
+            projectSettings.setRuntime(selectedRuntime);
+
+        Object selectedTemplate = templateComboBox.getSelectedItem();
+        if (selectedTemplate != null)
+            projectSettings.setTemplate((SamProjectTemplate) selectedTemplate);
     }
 
     public void addSdkPanel(@Nullable JLabel label, JComponent sdkSelector) {

@@ -248,9 +248,9 @@ class LambdaHandlerIndexTest {
                 .contains("com.example.LambdaHandler::handleRequest")
         }
 
-        WriteCommandAction.runWriteCommandAction(fixture.project) {
+        WriteCommandAction.runWriteCommandAction(fixture.project, null, null, {
             psiClass.containingFile.virtualFile.delete(null)
-        }
+        }, arrayOf())
 
         runInEdtAndWait {
             assertThat(LambdaHandlerIndex.listHandlers(projectRule.project)).isEmpty()

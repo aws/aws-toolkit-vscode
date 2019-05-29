@@ -160,7 +160,7 @@ class DefaultProjectAccountSettingsManagerTest {
     @Test
     fun testSavingActiveRegion() {
         manager.changeRegion(AwsRegion.GLOBAL)
-        val element = manager.state.serialize()
+        val element = serialize(manager.state)
         assertThat(element.string()).isEqualToIgnoringWhitespace(
             """
             <AccountState>
@@ -183,7 +183,7 @@ class DefaultProjectAccountSettingsManagerTest {
                 AwsBasicCredentials.create("Access", "Secret")
             )
         )
-        val element = manager.state.serialize()
+        val element = serialize(manager.state)
         assertThat(element.string()).isEqualToIgnoringWhitespace(
             """
             <AccountState>
@@ -216,7 +216,7 @@ class DefaultProjectAccountSettingsManagerTest {
             AwsBasicCredentials.create("Access", "Secret")
         )
 
-        manager.loadState(element.deserialize())
+        manager.loadState(element.deserialize(AccountState::class.java))
 
         waitForEvents(2)
 
@@ -236,7 +236,7 @@ class DefaultProjectAccountSettingsManagerTest {
                 </option>
             </AccountState>
         """.toElement()
-        manager.loadState(element.deserialize())
+        manager.loadState(element.deserialize(AccountState::class.java))
 
         val region = mockRegionManager.lookupRegionById("MockRegion-1")
         assertThat(manager.activeRegion).isEqualTo(region)
@@ -255,7 +255,7 @@ class DefaultProjectAccountSettingsManagerTest {
                 </option>
             </AccountState>
         """.toElement()
-        manager.loadState(element.deserialize())
+        manager.loadState(element.deserialize(AccountState::class.java))
 
         assertThat(manager.activeRegion).isEqualTo(AwsRegionProvider.getInstance().defaultRegion())
         assertThat(manager.recentlyUsedRegions()).isEmpty()
@@ -273,7 +273,7 @@ class DefaultProjectAccountSettingsManagerTest {
                 </option>
             </AccountState>
         """.toElement()
-        manager.loadState(element.deserialize())
+        manager.loadState(element.deserialize(AccountState::class.java))
 
         assertThat(manager.hasActiveCredentials()).isFalse()
         assertThat(manager.recentlyUsedCredentials()).isEmpty()
@@ -300,7 +300,7 @@ class DefaultProjectAccountSettingsManagerTest {
             false
         )
 
-        manager.loadState(element.deserialize())
+        manager.loadState(element.deserialize(AccountState::class.java))
 
         assertThat(manager.hasActiveCredentials()).isFalse()
     }
@@ -313,7 +313,7 @@ class DefaultProjectAccountSettingsManagerTest {
             <AccountState/>
         """.toElement()
 
-        manager.loadState(element.deserialize())
+        manager.loadState(element.deserialize(AccountState::class.java))
 
         assertThat(manager.hasActiveCredentials()).isTrue()
         assertThat(manager.recentlyUsedCredentials()).hasOnlyOneElementSatisfying { assertThat(it.id).isEqualTo("profile:default") }
