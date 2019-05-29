@@ -10,6 +10,14 @@ import { MetadataEntry, MetricDatum, Unit } from './clienttelemetry'
 const NAME_ILLEGAL_CHARS_REGEX = new RegExp('[^\\w+-.:]', 'g')
 const REMOVE_UNDERSCORES_REGEX = new RegExp('_', 'g')
 
+export const METADATA_FIELD_NAME = {
+    RESULT: 'result',
+    DURATION: 'duration',
+}
+
+export const METADATA_RESULT_PASS = 'Succeeded'
+export const METADATA_RESULT_FAIL = 'Failed'
+
 export interface Datum {
     name: string
     value: number
@@ -25,11 +33,11 @@ export interface TelemetryEvent {
 
 export function toMetricData(array: TelemetryEvent[]): MetricDatum[] {
     return ([] as MetricDatum[]).concat(
-        ...array.map( metricEvent => {
+        ...array.map(metricEvent => {
             const namespace = metricEvent.namespace.replace(REMOVE_UNDERSCORES_REGEX, '')
 
             if (metricEvent.data !== undefined) {
-                const mappedEventData = metricEvent.data.map( datum => {
+                const mappedEventData = metricEvent.data.map(datum => {
                     let metadata: MetadataEntry[] | undefined
                     let unit = datum.unit
 
