@@ -8,7 +8,7 @@
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { PythonDebugConfiguration } from '../../lambda/local/debugConfiguration'
+import { PythonDebugConfiguration, PythonPathMapping } from '../../lambda/local/debugConfiguration'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { unlink, writeFile } from '../filesystem'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
@@ -152,31 +152,41 @@ def ${debugHandlerFunctionName}(event, context):
     }
 }
 
-const fixFilePathCapitalization = (filePath: string): string => {
-    if (process.platform === 'win32') {
-        return filePath.replace(DRIVE_LETTER_REGEX, match => match.toUpperCase())
+export function getLocalRootVariants(filePath: string): string[] {
+    if (process.platform === 'win32' && DRIVE_LETTER_REGEX.test(filePath)) {
+        return [
+            filePath.replace(DRIVE_LETTER_REGEX, match => match.toLowerCase()),
+            filePath.replace(DRIVE_LETTER_REGEX, match => match.toUpperCase())
+        ]
     }
 
-    return filePath
+    return [filePath]
 }
 
-const makeDebugConfig = ({ debugPort, samProjectCodeRoot }: {
-    debugPort?: number,
-    samProjectCodeRoot: string,
-}): PythonDebugConfiguration => {
+function makeDebugConfig(
+    {
+        debugPort,
+        samProjectCodeRoot
+    }: {
+        debugPort?: number,
+        samProjectCodeRoot: string
+    }
+): PythonDebugConfiguration {
+    const pathMappings: PythonPathMapping[] = getLocalRootVariants(samProjectCodeRoot)
+        .map<PythonPathMapping>(variant => {
+            return {
+                localRoot: variant,
+                remoteRoot: '/var/task',
+            }
+        })
+    
     return {
         type: PYTHON_LANGUAGE,
         request: 'attach',
         name: 'SamLocalDebug',
         host: 'localhost',
         port: debugPort!,
-        pathMappings: [
-            {
-                // tslint:disable-next-line:no-invalid-template-strings
-                localRoot: fixFilePathCapitalization(samProjectCodeRoot),
-                remoteRoot: '/var/task'
-            }
-        ],
+        pathMappings,
         // Disable redirectOutput to prevent the Python Debugger from automatically writing stdout/stderr text
         // to the Debug Console. We're taking the child process stdout/stderr and explicitly writing that to
         // the Debug Console.

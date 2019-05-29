@@ -26,16 +26,16 @@ export interface NodejsDebugConfiguration extends DebugConfiguration {
     readonly port: number
 }
 
+export interface PythonPathMapping {
+    localRoot: string
+    remoteRoot: string
+}
+
 export interface PythonDebugConfiguration extends DebugConfiguration {
     readonly type: 'python'
     readonly host: string
     readonly port: number
-    readonly pathMappings: [
-        {
-            localRoot: string
-            remoteRoot: string
-        }
-    ]
+    readonly pathMappings: PythonPathMapping[]
 }
 
 export interface DotNetCoreDebugConfiguration extends DebugConfiguration {
