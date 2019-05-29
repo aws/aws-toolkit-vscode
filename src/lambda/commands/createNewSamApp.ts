@@ -12,11 +12,13 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { fileExists } from '../../shared/filesystemUtilities'
 import { SamCliInitArgs, SamCliInitInvocation } from '../../shared/sam/cli/samCliInit'
-import { CreateNewSamAppWizard } from '../wizards/samInitWizard'
+import { CreateNewSamAppWizard, DefaultCreateNewSamAppWizardContext } from '../wizards/samInitWizard'
 
 export const URI_TO_OPEN_ON_INIT_KEY = 'URI_TO_OPEN_ON_INIT_KEY'
 
-export async function resumeCreateNewSamApp(context: Pick<vscode.ExtensionContext, 'globalState'>) {
+export async function resumeCreateNewSamApp(
+    context: Pick<vscode.ExtensionContext, 'asAbsolutePath' | 'globalState'>
+) {
     const rawUri = context.globalState.get<string>(URI_TO_OPEN_ON_INIT_KEY)
     if (!rawUri) {
         return
@@ -48,9 +50,10 @@ interface NewSamAppMetadata {
  * Runs `sam init` in the given context and returns useful metadata about its invocation
  */
 export async function createNewSamApp(
-    context: Pick<vscode.ExtensionContext, 'globalState'>
+    context: Pick<vscode.ExtensionContext, 'asAbsolutePath' | 'globalState'>
 ): Promise<NewSamAppMetadata | undefined> {
-    const config: SamCliInitArgs | undefined = await new CreateNewSamAppWizard().run()
+    const wizardContext = new DefaultCreateNewSamAppWizardContext(context)
+    const config = await new CreateNewSamAppWizard(wizardContext).run()
     if (!config) {
         return undefined
     }

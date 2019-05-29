@@ -14,6 +14,7 @@ import {
     CreateNewSamAppWizard,
     CreateNewSamAppWizardContext
 } from '../../../lambda/wizards/samInitWizard'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
     if (!array) {
@@ -30,6 +31,34 @@ function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
 }
 
 class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
+
+    public get lambdaRuntimes(): immutable.Set<SamLambdaRuntime> {
+        if (Array.isArray(this._lambdaRuntimes)) {
+            if (this._lambdaRuntimes!.length <= 0) {
+                throw new Error('lambdaRuntimes was called more times than expected')
+            }
+
+            return (this._lambdaRuntimes as immutable.Set<SamLambdaRuntime>[]).pop() || immutable.Set()
+        }
+
+        return (this._lambdaRuntimes as immutable.Set<SamLambdaRuntime>) || immutable.Set()
+    }
+
+    public get workspaceFolders(): vscode.WorkspaceFolder[] {
+        if (isMultiDimensionalArray(this._workspaceFolders)) {
+            if (this._workspaceFolders!.length <= 0) {
+                throw new Error('workspaceFolders was called more times than expected')
+            }
+
+            return (this._workspaceFolders as vscode.WorkspaceFolder[][]).pop() || []
+        }
+
+        return (this._workspaceFolders as vscode.WorkspaceFolder[]) || []
+
+    }
+
+    public readonly extContext = new FakeExtensionContext()
+
     /**
      * @param  {vscode.WorkspaceFolder[] | vscode.WorkspaceFolder[][]} _workspaceFolders
      *         The value to return from context.workspaceFolders.
@@ -61,31 +90,6 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
         if (isMultiDimensionalArray(this.openDialogResult)) {
             this.openDialogResult = (openDialogResult as vscode.Uri[][]).reverse()
         }
-    }
-
-    public get lambdaRuntimes(): immutable.Set<SamLambdaRuntime> {
-        if (Array.isArray(this._lambdaRuntimes)) {
-            if (this._lambdaRuntimes!.length <= 0) {
-                throw new Error('lambdaRuntimes was called more times than expected')
-            }
-
-            return (this._lambdaRuntimes as immutable.Set<SamLambdaRuntime>[]).pop() || immutable.Set()
-        }
-
-        return (this._lambdaRuntimes as immutable.Set<SamLambdaRuntime>) || immutable.Set()
-    }
-
-    public get workspaceFolders(): vscode.WorkspaceFolder[] {
-        if (isMultiDimensionalArray(this._workspaceFolders)) {
-            if (this._workspaceFolders!.length <= 0) {
-                throw new Error('workspaceFolders was called more times than expected')
-            }
-
-            return (this._workspaceFolders as vscode.WorkspaceFolder[][]).pop() || []
-        }
-
-        return (this._workspaceFolders as vscode.WorkspaceFolder[]) || []
-
     }
 
     public async showOpenDialog(
