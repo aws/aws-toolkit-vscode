@@ -27,6 +27,7 @@ import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { getFamily, SamLambdaRuntimeFamily } from '../../lambda/models/samLambdaRuntime'
+import { BasicLogger } from '../logger'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
@@ -266,7 +267,7 @@ export class LocalLambdaRunner {
                 )
             }
 
-            await attachDebugger({
+            const attachResults = await attachDebugger({
                 debugConfig: this.debugConfig,
                 maxRetries,
                 retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
@@ -283,6 +284,12 @@ export class LocalLambdaRunner {
                     })
                 },
             })
+
+            if (attachResults.success) {
+                await showDebugConsole({
+                    logger: this.channelLogger.logger
+                })
+            }
         }
     }
 
@@ -516,7 +523,7 @@ export async function invokeLambdaFunction(
             )
         }
 
-        await attachDebugger({
+        const attachResults = await attachDebugger({
             debugConfig: debugArgs.debugConfig,
             maxRetries,
             retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
@@ -533,6 +540,12 @@ export async function invokeLambdaFunction(
                 })
             },
         })
+
+        if (attachResults.success) {
+            await showDebugConsole({
+                logger: channelLogger.logger
+            })
+        }
     }
 }
 
@@ -740,5 +753,28 @@ export function shouldAppendRelativePathToFunctionHandler(runtime: string): bool
         // if the runtime exists but for some reason we forgot to cover it here, throw anyway so we remember to cover it
         default:
             throw new Error('localLambdaRunner can not determine if runtime requires a relative path.')
+    }
+}
+
+/**
+ * Brings the Debug Console in focus.
+ * If the OutputChannel is showing, focus does not consistently switch over to the debug console, so we're
+ * helping make this happen.
+ */
+async function showDebugConsole({
+    executeVsCodeCommand = vscode.commands.executeCommand,
+    ...params
+}: {
+    executeVsCodeCommand?: typeof vscode.commands.executeCommand
+    logger: BasicLogger
+}): Promise<void> {
+    try {
+        await executeVsCodeCommand('workbench.debug.action.toggleRepl')
+    } catch (err) {
+        // in case the vs code command changes or misbehaves, swallow error
+        params.logger.verbose(
+            'Unable to switch to the Debug Console',
+            err as Error
+        )
     }
 }
