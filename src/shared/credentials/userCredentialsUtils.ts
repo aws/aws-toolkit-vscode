@@ -14,6 +14,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { AwsContext } from '../awsContext'
 import { StsClient } from '../clients/stsClient'
+import { credentialHelpUrl } from '../constants'
 import { EnvironmentVariables } from '../environmentVariables'
 import { ext } from '../extensionGlobals'
 import { mkdir, writeFile } from '../filesystem'
@@ -199,7 +200,7 @@ export class UserCredentialsUtils {
                 return true
             }
         } catch (err) {
-            // swallow any errors--anything that isn't a success be handled as a failure by the caller
+            // swallow any errors--anything that isn't a success should be handled as a failure by the caller
         }
 
         return false
@@ -215,13 +216,22 @@ export class UserCredentialsUtils {
         await awsContext.setCredentialAccountId()
     }
 
-    public static async badUserCredentialPrompt(profileName: string) {
-        vscode.window.showErrorMessage(
+    public static async notifyUserCredentialsAreBad(profileName: string) {
+        const getHelp = localize(
+            'AWS.message.credentials.invalidProfile.help',
+            'Get Help...'
+        )
+        const selection = await vscode.window.showErrorMessage(
             localize(
-                'AWS.message.credentials.invalidprofile',
+                'AWS.message.credentials.invalidProfile',
                 'Credentials profile {0} is invalid',
                 profileName
-            )
+            ),
+            getHelp
         )
+
+        if (selection === getHelp) {
+            vscode.env.openExternal(vscode.Uri.parse(credentialHelpUrl))
+        }
     }
 }

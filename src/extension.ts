@@ -78,7 +78,7 @@ export async function activate(context: vscode.ExtensionContext) {
             if (!successfulLogin) {
                 await UserCredentialsUtils.removeUserDataFromContext(awsContext)
                 // tslint:disable-next-line: no-floating-promises
-                UserCredentialsUtils.badUserCredentialPrompt(currentProfile)
+                UserCredentialsUtils.notifyUserCredentialsAreBad(currentProfile)
             }
         }
 

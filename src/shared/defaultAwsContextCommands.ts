@@ -81,19 +81,19 @@ export class DefaultAWSContextCommands {
 
     public async onCommandLogin() {
         const profileName = await this.getProfileNameFromUser()
-        let successfulLogin = false
-        if (profileName) {
-            successfulLogin = await UserCredentialsUtils.addUserDataToContext(profileName, this._awsContext)
-            if (successfulLogin) {
-                this.refresh()
-                await this.checkExplorerForDefaultRegion(profileName)
-            } else {
-                await this.onCommandLogout()
-                // tslint:disable-next-line: no-floating-promises
-                UserCredentialsUtils.badUserCredentialPrompt(profileName)
-            }
+        if (!profileName) {
+            // user clicked away from quick pick or entered nothing
+            return
         }
-        // do nothing if !profileName: that means user didn't select from the quick pick.
+        const successfulLogin = await UserCredentialsUtils.addUserDataToContext(profileName, this._awsContext)
+        if (successfulLogin) {
+            this.refresh()
+            await this.checkExplorerForDefaultRegion(profileName)
+        } else {
+            await this.onCommandLogout()
+            // tslint:disable-next-line: no-floating-promises
+            UserCredentialsUtils.notifyUserCredentialsAreBad(profileName)
+        }
     }
 
     public async onCommandCreateCredentialsProfile(): Promise<void> {
@@ -109,7 +109,7 @@ export class DefaultAWSContextCommands {
                 if (!successfulLogin) {
                     await this.onCommandLogout()
                     // tslint:disable-next-line: no-floating-promises
-                    UserCredentialsUtils.badUserCredentialPrompt(profileName)
+                    UserCredentialsUtils.notifyUserCredentialsAreBad(profileName)
                 }
             }
         } else {
