@@ -29,6 +29,7 @@ import {
     SamCliVersionValidation
 } from '../../../shared/sam/cli/samCliValidator'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { FakeChannelLogger } from '../../shared/fakeChannelLogger'
 import { FakeChildProcessResult, TestSamCliProcessInvoker } from '../../shared/sam/cli/testSamCliProcessInvoker'
 
@@ -132,6 +133,8 @@ describe('deploySamApplication', async () => {
         }
     }
 
+    const extContext = new FakeExtensionContext()
+
     let logger: TestLogger
     let tempToolkitFolder: string
     beforeEach(async () => {
@@ -167,6 +170,7 @@ describe('deploySamApplication', async () => {
                 channelLogger,
                 regionProvider,
                 samDeployWizard,
+                extensionContext: extContext
             },
             {
                 awsContext,
@@ -187,6 +191,7 @@ describe('deploySamApplication', async () => {
                 channelLogger,
                 regionProvider,
                 samDeployWizard,
+                extensionContext: extContext
             },
             {
                 awsContext,
@@ -204,6 +209,7 @@ describe('deploySamApplication', async () => {
                 channelLogger,
                 regionProvider,
                 samDeployWizard,
+                extensionContext: extContext
             },
             {
                 awsContext,
@@ -223,6 +229,7 @@ describe('deploySamApplication', async () => {
                 channelLogger,
                 regionProvider,
                 samDeployWizard,
+                extensionContext: extContext
             },
             {
                 awsContext,
@@ -253,6 +260,7 @@ describe('deploySamApplication', async () => {
                 channelLogger,
                 regionProvider,
                 samDeployWizard,
+                extensionContext: extContext
             },
             {
                 awsContext,
@@ -286,6 +294,7 @@ describe('deploySamApplication', async () => {
                 channelLogger,
                 regionProvider,
                 samDeployWizard,
+                extensionContext: extContext
             },
             {
                 awsContext,
@@ -319,6 +328,7 @@ describe('deploySamApplication', async () => {
                 channelLogger,
                 regionProvider,
                 samDeployWizard,
+                extensionContext: extContext
             },
             {
                 awsContext,
