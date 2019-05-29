@@ -170,7 +170,7 @@ describe('deploySamApplication', async () => {
                 channelLogger,
                 regionProvider,
                 samDeployWizard,
-                context: extContext
+                extensionContext: extContext
             },
             {
                 awsContext,
@@ -191,7 +191,7 @@ describe('deploySamApplication', async () => {
                 channelLogger,
                 regionProvider,
                 samDeployWizard,
-                context: extContext
+                extensionContext: extContext
             },
             {
                 awsContext,
@@ -209,7 +209,7 @@ describe('deploySamApplication', async () => {
                 channelLogger,
                 regionProvider,
                 samDeployWizard,
-                context: extContext
+                extensionContext: extContext
             },
             {
                 awsContext,
@@ -229,7 +229,7 @@ describe('deploySamApplication', async () => {
                 channelLogger,
                 regionProvider,
                 samDeployWizard,
-                context: extContext
+                extensionContext: extContext
             },
             {
                 awsContext,
@@ -260,7 +260,7 @@ describe('deploySamApplication', async () => {
                 channelLogger,
                 regionProvider,
                 samDeployWizard,
-                context: extContext
+                extensionContext: extContext
             },
             {
                 awsContext,
@@ -294,7 +294,7 @@ describe('deploySamApplication', async () => {
                 channelLogger,
                 regionProvider,
                 samDeployWizard,
-                context: extContext
+                extensionContext: extContext
             },
             {
                 awsContext,
@@ -328,7 +328,7 @@ describe('deploySamApplication', async () => {
                 channelLogger,
                 regionProvider,
                 samDeployWizard,
-                context: extContext
+                extensionContext: extContext
             },
             {
                 awsContext,
