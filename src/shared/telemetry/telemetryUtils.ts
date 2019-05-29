@@ -9,6 +9,21 @@ import * as vscode from 'vscode'
 import { ext } from '../extensionGlobals'
 import { Datum } from './telemetryEvent'
 
+export interface TelemetryName {
+    namespace: TelemetryNamespace | OldTelemetryNamespace
+    name: string
+}
+
+type OldTelemetryNamespace = 'Command'
+
+export enum TelemetryNamespace {
+    Aws = 'aws',
+    Cloudformation = 'cloudformation',
+    Lambda = 'lambda',
+    Project = 'project',
+    Session = 'session'
+}
+
 export function defaultMetricDatum(name: string): Datum {
     return {
         name: name,
@@ -21,11 +36,16 @@ export function registerCommand<T>({
     command,
     thisArg,
     register = vscode.commands.registerCommand,
+    telemetryName = {
+        namespace: 'Command',
+        name: command
+    },
     callback
 }: {
     command: string
     thisArg?: any
     register?: typeof vscode.commands.registerCommand
+    telemetryName?: TelemetryName
     callback(...args: any[]): (Promise<T & { datum?: Datum } | void>)
 }): vscode.Disposable {
     return register(
@@ -42,15 +62,15 @@ export function registerCommand<T>({
                 throw e
             } finally {
                 const endTime = new Date()
-                const datum = result && result.datum ? result.datum : defaultMetricDatum(command)
+                const datum = result && result.datum ? result.datum : defaultMetricDatum(telemetryName.name)
                 if (!datum.metadata) {
                     datum.metadata = new Map()
                 }
-                datum.metadata.set('hasException', `${hasException}`)
+                datum.metadata.set('result', hasException ? 'Failed' : 'Succeeded')
                 datum.metadata.set('duration', `${endTime.getTime() - startTime.getTime()}`)
 
                 ext.telemetry.record({
-                    namespace: 'Command',
+                    namespace: telemetryName.namespace,
                     createTime: startTime,
                     data: [datum]
                 })
