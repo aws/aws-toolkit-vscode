@@ -91,8 +91,7 @@ export class DefaultAWSContextCommands {
             await this.checkExplorerForDefaultRegion(profileName)
         } else {
             await this.onCommandLogout()
-            // tslint:disable-next-line: no-floating-promises
-            UserCredentialsUtils.notifyUserCredentialsAreBad(profileName)
+            await UserCredentialsUtils.notifyUserCredentialsAreBad(profileName)
         }
     }
 
@@ -108,8 +107,7 @@ export class DefaultAWSContextCommands {
                 const successfulLogin = await UserCredentialsUtils.addUserDataToContext(profileName, this._awsContext)
                 if (!successfulLogin) {
                     await this.onCommandLogout()
-                    // tslint:disable-next-line: no-floating-promises
-                    UserCredentialsUtils.notifyUserCredentialsAreBad(profileName)
+                    await UserCredentialsUtils.notifyUserCredentialsAreBad(profileName)
                 }
             }
         } else {
