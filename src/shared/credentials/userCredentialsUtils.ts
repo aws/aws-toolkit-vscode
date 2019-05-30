@@ -169,7 +169,8 @@ export class UserCredentialsUtils {
     }
 
     /**
-     * Adds valid profiles to the AWS context and settings. Returns false if invalid.
+     * Adds valid profiles to the AWS context and settings.
+     * Wipes set profile data and returns false if invalid.
      *
      * @param profileName Profile name to add to AWS Context/AWS settings
      * @param awsContext Current AWS Context
@@ -183,14 +184,24 @@ export class UserCredentialsUtils {
         awsContext: AwsContext,
         sts?: StsClient
     ): Promise<boolean> {
-        const credentials = await awsContext.getCredentials(profileName)
-        const account = credentials ? await this.validateCredentials(credentials, sts) : undefined
-        if (account && account.isValid) {
-            await awsContext.setCredentialProfileName(profileName)
-            await awsContext.setCredentialAccountId(account.account)
+        let credentials: Credentials | undefined
+        try {
+            credentials = await awsContext.getCredentials(profileName)
+            const account = credentials ? await this.validateCredentials(credentials, sts) : undefined
+            if (account && account.isValid) {
+                await awsContext.setCredentialProfileName(profileName)
+                await awsContext.setCredentialAccountId(account.account)
 
-            return true
+                return true
+            }
+        } catch (err) {
+            // swallow any errors--anything that isn't a success should end in the same state:
+            // no set profile + return false
         }
+
+        // wipe any set profile data
+        await awsContext.setCredentialProfileName()
+        await awsContext.setCredentialAccountId()
 
         return false
     }

@@ -284,7 +284,7 @@ describe('UserCredentialsUtils', () => {
             assert.strictEqual(mockAws.getCredentialAccountId(), testAccount)
         })
 
-        it ('does not add new profile data if credentials are invalid', async () => {
+        it ('wipes profile data if credentials are invalid', async () => {
 
             const testProfile = 'testprofile'
             const mockSts = new MockStsClient({
@@ -300,8 +300,8 @@ describe('UserCredentialsUtils', () => {
 
             const returnValue = await UserCredentialsUtils.addUserDataToContext(testProfile, mockAws, mockSts)
             assert.strictEqual(returnValue, false)
-            assert.strictEqual(mockAws.getCredentialProfileName(), DEFAULT_TEST_PROFILE_NAME)
-            assert.strictEqual(mockAws.getCredentialAccountId(), DEFAULT_TEST_ACCOUNT_ID)
+            assert.strictEqual(mockAws.getCredentialProfileName(), undefined)
+            assert.strictEqual(mockAws.getCredentialAccountId(), undefined)
         })
     })
 
