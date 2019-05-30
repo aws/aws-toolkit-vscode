@@ -70,7 +70,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         val (handler, runtime) = resolveLambdaInfo()
         handlerPsiElement(handler, runtime) ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
         regionId() ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
-        resolveInput()
+        checkInput()
     }
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): SamRunningState {
