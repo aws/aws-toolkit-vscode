@@ -12,10 +12,17 @@ import * as path from 'path'
 import { writeFile } from '../../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import { TestLogger } from '../../../../shared/loggerUtils'
-import { SamCliBuildInvocation } from '../../../../shared/sam/cli/samCliBuild'
+import { FileFunctions, SamCliBuildInvocation } from '../../../../shared/sam/cli/samCliBuild'
 import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
-import { TestSamCliProcessInvoker } from './testSamCliProcessInvoker'
+import { assertThrowsError } from '../../utilities/assertUtils'
+import { assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
+import {
+    assertErrorContainsBadExitMessage,
+    assertLogContainsBadExitInformation,
+    BadExitCodeSamCliProcessInvoker,
+    TestSamCliProcessInvoker
+} from './testSamCliProcessInvoker'
 
 describe('SamCliBuildInvocation', async () => {
 
@@ -43,6 +50,11 @@ describe('SamCliBuildInvocation', async () => {
     let logger: TestLogger
     let tempFolder: string
     let placeholderTemplateFile: string
+    const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
+    const nonRelevantArg = 'arg is not of interest to this test'
+    const fakeFileFunctions: FileFunctions = {
+        fileExists: async (filePath: string): Promise<boolean> => true
+    }
 
     before(async () => {
         logger = await TestLogger.createTestLogger()
@@ -63,8 +75,6 @@ describe('SamCliBuildInvocation', async () => {
     })
 
     it('Passes build command to sam cli', async () => {
-        const nonRelevantArg = 'arg is not of interest to this test'
-
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assert.ok(args.length > 0, 'Expected args to be present')
             assert.strictEqual(args[0], 'build', 'Expected first arg to be the build command')
@@ -80,7 +90,6 @@ describe('SamCliBuildInvocation', async () => {
 
     it('Passes Build Dir to sam cli', async () => {
         const expectedBuildDir = '/build'
-        const nonRelevantArg = 'arg is not of interest to this test'
 
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assertArgsContainArgument(args, '--build-dir', expectedBuildDir)
@@ -96,7 +105,6 @@ describe('SamCliBuildInvocation', async () => {
 
     it('Passes Base Dir to sam cli', async () => {
         const expectedBaseDir = '/src'
-        const nonRelevantArg = 'arg is not of interest to this test'
 
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assertArgsContainArgument(args, '--base-dir', expectedBaseDir)
@@ -111,8 +119,6 @@ describe('SamCliBuildInvocation', async () => {
     })
 
     it('Does not pass Base Dir to sam cli', async () => {
-        const nonRelevantArg = 'arg is not of interest to this test'
-
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assertArgNotPresent(args, '--base-dir')
         })
@@ -125,8 +131,6 @@ describe('SamCliBuildInvocation', async () => {
     })
 
     it('Passes Template to sam cli', async () => {
-        const nonRelevantArg = 'arg is not of interest to this test'
-
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assertArgsContainArgument(args, '--template', placeholderTemplateFile)
         })
@@ -140,8 +144,6 @@ describe('SamCliBuildInvocation', async () => {
     })
 
     it('passes --use-container to sam cli if useContainer is true', async () => {
-        const nonRelevantArg = 'arg is not of interest to this test'
-
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assert.notStrictEqual(
                 args.indexOf('--use-container'),
@@ -159,8 +161,6 @@ describe('SamCliBuildInvocation', async () => {
     })
 
     it('does not pass --use-container to sam cli if useContainer is false', async () => {
-        const nonRelevantArg = 'arg is not of interest to this test'
-
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assertArgNotPresent(args, '--use-container')
         })
@@ -174,8 +174,6 @@ describe('SamCliBuildInvocation', async () => {
     })
 
     it('does not pass --use-container to sam cli if useContainer is undefined', async () => {
-        const nonRelevantArg = 'arg is not of interest to this test'
-
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assertArgNotPresent(args, '--use-container')
         })
@@ -195,7 +193,7 @@ describe('SamCliBuildInvocation', async () => {
         })
 
         await new SamCliBuildInvocation({
-            buildDir: 'arg is not of interest to this test',
+            buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
             invoker: processInvoker,
             manifestPath: expectedArg,
@@ -209,7 +207,7 @@ describe('SamCliBuildInvocation', async () => {
         })
 
         await new SamCliBuildInvocation({
-            buildDir: 'arg is not of interest to this test',
+            buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
             invoker: processInvoker
         }).execute()
@@ -217,7 +215,6 @@ describe('SamCliBuildInvocation', async () => {
 
     it('Passes docker network to sam cli', async () => {
         const expectedDockerNetwork = 'hello-world'
-        const nonRelevantArg = 'arg is not of interest to this test'
 
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assertArgsContainArgument(args, '--docker-network', expectedDockerNetwork)
@@ -232,8 +229,6 @@ describe('SamCliBuildInvocation', async () => {
     })
 
     it('Does not pass docker network to sam cli if undefined', async () => {
-        const nonRelevantArg = 'arg is not of interest to this test'
-
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assertArgNotPresent(args, '--docker-network')
         })
@@ -246,8 +241,6 @@ describe('SamCliBuildInvocation', async () => {
     })
 
     it('passes --skip-pull-image to sam cli if skipPullImage is true', async () => {
-        const nonRelevantArg = 'arg is not of interest to this test'
-
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assert.notStrictEqual(
                 args.indexOf('--skip-pull-image'),
@@ -265,8 +258,6 @@ describe('SamCliBuildInvocation', async () => {
     })
 
     it('does not pass --skip-pull-image to sam cli if skipPullImageis false', async () => {
-        const nonRelevantArg = 'arg is not of interest to this test'
-
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assertArgNotPresent(args, '--skip-pull-image')
         })
@@ -280,8 +271,6 @@ describe('SamCliBuildInvocation', async () => {
     })
 
     it('does not pass --skip-pull-image to sam cli if skipPullImage is undefined', async () => {
-        const nonRelevantArg = 'arg is not of interest to this test'
-
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assertArgNotPresent(args, '--skip-pull-image')
         })
@@ -293,25 +282,24 @@ describe('SamCliBuildInvocation', async () => {
         }).execute()
     })
 
-    function assertArgsContainArgument(
-        args: any[],
-        argOfInterest: string,
-        expectedArgValue: string
-    ) {
-        const argPos = args.indexOf(argOfInterest)
-        assert.notStrictEqual(argPos, -1, `Expected arg ${argOfInterest} was not found`)
-        assert.ok(args.length >= argPos + 2, `Args does not contain a value for ${argOfInterest}`)
-        assert.strictEqual(args[argPos + 1], expectedArgValue, `Arg ${argOfInterest} did not have expected value`)
-    }
-
-    function assertArgNotPresent(
-        args: any[],
-        argOfInterest: string,
-    ) {
-        assert.strictEqual(
-            args.indexOf(argOfInterest),
-            -1,
-            `Did not expect ${argOfInterest} arg`
+    it('throws on unexpected exit code', async () => {
+        const error = await assertThrowsError(
+            async () => {
+                await new SamCliBuildInvocation(
+                    {
+                        buildDir: nonRelevantArg,
+                        templatePath: placeholderTemplateFile,
+                        invoker: badExitCodeProcessInvoker,
+                    },
+                    {
+                        file: fakeFileFunctions
+                    },
+                ).execute()
+            },
+            'Expected an error to be thrown'
         )
-    }
+
+        assertErrorContainsBadExitMessage(error, badExitCodeProcessInvoker.error.message)
+        await assertLogContainsBadExitInformation(logger, badExitCodeProcessInvoker.makeChildProcessResult(), 0)
+    })
 })

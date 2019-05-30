@@ -6,24 +6,41 @@
 'use strict'
 
 import * as assert from 'assert'
+import { TestLogger } from '../../../../shared/loggerUtils'
 import { runSamCliDeploy } from '../../../../shared/sam/cli/samCliDeploy'
+import { assertThrowsError } from '../../utilities/assertUtils'
 import {
     assertArgIsPresent,
     assertArgNotPresent,
     assertArgsContainArgument,
     MockSamCliProcessInvoker
 } from './samCliTestUtils'
+import {
+    assertErrorContainsBadExitMessage,
+    assertLogContainsBadExitInformation,
+    BadExitCodeSamCliProcessInvoker
+} from './testSamCliProcessInvoker'
 
 describe('runSamCliDeploy', async () => {
+    let logger: TestLogger
     const fakeProfile = 'profile'
     const fakeRegion = 'region'
     const fakeStackName = 'stackName'
     const fakeTemplateFile = 'template'
     let invokeCount: number
 
+    before(async () => {
+        logger = await TestLogger.createTestLogger()
+    })
+
     beforeEach(() => {
         invokeCount = 0
     })
+
+    after(async () => {
+        await logger.cleanupLogger()
+    })
+
 
     it('does not include --parameter-overrides if there are no overrides', async () => {
         const invoker = new MockSamCliProcessInvoker(
@@ -100,5 +117,28 @@ describe('runSamCliDeploy', async () => {
         )
 
         assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
+    })
+
+    it('throws on unexpected exit code', async () => {
+        const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
+
+        const error = await assertThrowsError(
+            async () => {
+                await runSamCliDeploy(
+                    {
+                        profile: fakeProfile,
+                        parameterOverrides: new Map<string, string>(),
+                        region: fakeRegion,
+                        stackName: fakeStackName,
+                        templateFile: fakeTemplateFile,
+                    },
+                    badExitCodeProcessInvoker
+                )
+            },
+            'Expected an error to be thrown'
+        )
+
+        assertErrorContainsBadExitMessage(error, badExitCodeProcessInvoker.error.message)
+        await assertLogContainsBadExitInformation(logger, badExitCodeProcessInvoker.makeChildProcessResult(), 0)
     })
 })
