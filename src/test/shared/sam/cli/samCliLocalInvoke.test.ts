@@ -16,6 +16,7 @@ import {
     SamLocalInvokeCommand,
     SamLocalInvokeCommandArgs,
 } from '../../../../shared/sam/cli/samCliLocalInvoke'
+import { assertArgIsPresent, assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
 
 describe('SamCliLocalInvokeInvocation', async () => {
 
@@ -295,37 +296,4 @@ describe('SamCliLocalInvokeInvocation', async () => {
             invoker: taskInvoker,
         }).execute()
     })
-
-    function assertArgsContainArgument(
-        args: any[],
-        argOfInterest: string,
-        expectedArgValue: string
-    ) {
-        const argPos = args.indexOf(argOfInterest)
-        assert.notStrictEqual(argPos, -1, `Expected arg ${argOfInterest} was not found`)
-        assert.ok(args.length >= argPos + 2, `Args does not contain a value for ${argOfInterest}`)
-        assert.strictEqual(args[argPos + 1], expectedArgValue, `Arg ${argOfInterest} did not have expected value`)
-    }
-
-    function assertArgIsPresent(
-        args: any[],
-        argOfInterest: string,
-    ) {
-        assert.notStrictEqual(
-            args.indexOf(argOfInterest),
-            -1,
-            `Expected ${argOfInterest} arg`
-        )
-    }
-
-    function assertArgNotPresent(
-        args: any[],
-        argOfInterest: string,
-    ) {
-        assert.strictEqual(
-            args.indexOf(argOfInterest),
-            -1,
-            `Did not expect ${argOfInterest} arg`
-        )
-    }
 })
