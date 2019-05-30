@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -20,7 +20,7 @@ import { SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvokerUtils'
 import { runSamCliPackage } from '../../shared/sam/cli/samCliPackage'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
-import { SamDeployWizard, SamDeployWizardResponse } from '../wizards/samDeployWizard'
+import { DefaultSamDeployWizardContext, SamDeployWizard, SamDeployWizardResponse } from '../wizards/samDeployWizard'
 
 const localize = nls.loadMessageBundle()
 
@@ -49,14 +49,17 @@ export async function deploySamApplication(
         samCliContext = getSamCliContext(),
         channelLogger,
         regionProvider,
+        extensionContext,
         samDeployWizard = getDefaultSamDeployWizardResponseProvider(
-            regionProvider
+            regionProvider,
+            extensionContext
         ),
     }: {
         samCliContext?: SamCliContext
         channelLogger: ChannelLogger,
         regionProvider: RegionProvider,
         samDeployWizard?: SamDeployWizardResponseProvider,
+        extensionContext: Pick<vscode.ExtensionContext, 'asAbsolutePath'>
     },
     {
         awsContext,
@@ -300,10 +303,13 @@ function getDefaultWindowFunctions(): WindowFunctions {
     }
 }
 
-function getDefaultSamDeployWizardResponseProvider(regionProvider: RegionProvider): SamDeployWizardResponseProvider {
+function getDefaultSamDeployWizardResponseProvider(
+    regionProvider: RegionProvider,
+    context: Pick<vscode.ExtensionContext, 'asAbsolutePath'>
+): SamDeployWizardResponseProvider {
     return {
         getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {
-            const wizard = new SamDeployWizard(regionProvider)
+            const wizard = new SamDeployWizard(regionProvider, new DefaultSamDeployWizardContext(context))
 
             return wizard.run()
         }

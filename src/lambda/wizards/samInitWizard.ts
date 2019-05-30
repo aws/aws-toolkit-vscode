@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -22,7 +22,6 @@ import { MultiStepWizard, WizardStep } from '../wizards/multiStepWizard'
 export interface CreateNewSamAppWizardContext {
     readonly lambdaRuntimes: immutable.Set<lambdaRuntime.SamLambdaRuntime>
     readonly workspaceFolders: vscode.WorkspaceFolder[] | undefined
-    readonly extContext: Pick<vscode.ExtensionContext, 'asAbsolutePath'>
 
     promptUserForRuntime(
         currRuntime?: lambdaRuntime.SamLambdaRuntime
@@ -48,7 +47,7 @@ export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizar
         )
     )
 
-    public constructor(readonly extContext: Pick<vscode.ExtensionContext, 'asAbsolutePath'>) {
+    public constructor(private readonly extContext: Pick<vscode.ExtensionContext, 'asAbsolutePath'>) {
     }
 
     public get workspaceFolders(): vscode.WorkspaceFolder[] | undefined {
