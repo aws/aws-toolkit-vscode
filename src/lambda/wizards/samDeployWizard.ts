@@ -8,8 +8,10 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
+import { S3 } from 'aws-sdk'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { DefaultS3Client } from '../../shared/clients/defaultS3Client'
 import { samDeployDocUrl } from '../../shared/constants'
 import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
@@ -134,6 +136,9 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             'View Documentation'
         )
     )
+    // this represents a cache that is created once per wizard load.
+    // if we wish to change the frequency of this cache, remove `readonly` so you can reassign later
+    private readonly regionBucketMap: Map<string, string[]> = new Map<string, string[]>()
 
     public constructor(private readonly extContext: Pick<vscode.ExtensionContext, 'asAbsolutePath'>) {
     }
@@ -340,14 +345,35 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     }
 
     /**
-     * Retrieves an S3 Bucket to deploy to from the user.
+     * Prompts user to select a bucket from a regionalized list of S3 buckets
+     * Caches buckets for the entire Wizard run the first time it hits this step
+     * Allows the user to go back a step if the selected region doesn't have any buckets
      *
      * @param initialValue Optional, Initial value to prompt with
      *
-     * @returns S3 Bucket name. Undefined represents cancel.
+     * @returns S3 Bucket name. Undefined represents back.
      */
     public async promptUserForS3Bucket(selectedRegion: string, initialValue?: string): Promise<string | undefined> {
-        const inputBox = input.createInputBox({
+        const s3Client = new DefaultS3Client(selectedRegion)
+        let listBucketsResponse: S3.ListBucketsOutput | undefined
+        // does the cache have any entries? If so, don't list buckets
+        if (this.regionBucketMap.size === 0) {
+            listBucketsResponse = await s3Client.listBuckets()
+        }
+        let buckets: vscode.QuickPickItem[] | undefined
+
+        const noBuckets = localize(
+            'AWS.samcli.deploy.s3bucket.none',
+            'You do not have any S3 buckets in {0}',
+            selectedRegion
+        )
+
+        const loadingBuckets = localize(
+            'AWS.samcli.deploy.s3bucket.loading',
+            'Loading S3 buckets...',
+        )
+
+        const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             buttons: [
                 this.helpButton,
                 vscode.QuickInputButtons.Back
@@ -357,23 +383,84 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                     'AWS.samcli.deploy.s3Bucket.prompt',
                     'Enter the AWS S3 bucket to which your code should be deployed'
                 ),
+                value: initialValue || '',
+                matchOnDetail: true,
                 ignoreFocusOut: true,
-                prompt: localize(
-                    'AWS.samcli.deploy.s3Bucket.region',
-                    'S3 bucket must be in selected region: {0}',
-                    selectedRegion
-                )
-            }
+            },
+            // preloaded "busy screen" message
+            // using a const in case we want to make this clickable as a way to abort the lookup.
+            items: [
+                {
+                    label: loadingBuckets
+                }
+            ],
         })
 
-        // Pre-populate the value if it was already set
-        if (initialValue) {
-            inputBox.value = initialValue
+        // throw up a busy screen while the S3 buckets are loading
+        quickPick.enabled = false
+        quickPick.busy = true
+        quickPick.show()
+
+        // sort through buckets and add to cache if you had to run a listBuckets
+        if (listBucketsResponse && listBucketsResponse.Buckets) {
+            // listBuckets lists all buckets tied to an account regardless of region
+            // we need to filter the list ourselves since we do care about the region
+            const promises = listBucketsResponse.Buckets
+                .filter(bucket => bucket.Name)
+                .map(async bucket => {
+                    const bucketLocation = await s3Client.getBucketLocation(bucket.Name!)
+                    // intermediate var used to correct blank and 'EU' locations:
+                    // https://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
+                    let transformedLocation = bucketLocation.LocationConstraint
+                    if (!transformedLocation || transformedLocation === '') {
+                        transformedLocation = 'us-east-1'
+                    } else if (transformedLocation === 'EU') {
+                        transformedLocation = 'eu-west-1'
+                    }
+                    this.addBucketToRegionMap(bucket.Name!, transformedLocation)
+                })
+
+            await Promise.all(promises)
         }
 
-        return await input.promptUser({
-            inputBox: inputBox,
-            onValidateInput: validateS3Bucket,
+        // does the selected region have buckets? If so, add to the QP
+        if (this.regionBucketMap.size > 0) {
+            const regionBucket = this.regionBucketMap.get(selectedRegion)
+            if (regionBucket && regionBucket.length > 0) {
+                // turn these into quick pick items
+                buckets = regionBucket.map(b => (
+                    {
+                        label: b!,
+                        // this is the only way to get this to show on going back
+                        // this will make it so it always shows even when searching for something else
+                        alwaysShow: b === initialValue,
+                        description: b === initialValue ?
+                            localize('AWS.samcli.wizard.selectedPreviously', 'Selected Previously') : ''
+                    }
+                ))
+            }
+        }
+
+        // add the buckets to the QP OR add a message that buckets don't exist (and prompt to go back)
+        if (buckets && buckets.length > 0) {
+            quickPick.items = buckets
+        } else {
+            quickPick.items = [
+                {
+                    label: noBuckets,
+                    description: localize(
+                        'AWS.samcli.deploy.s3bucket.none.description',
+                        'Go back to region selection...'
+                    )
+                }
+            ]
+        }
+        // loading is done, restore to a selectable state
+        quickPick.enabled = true
+        quickPick.busy = false
+
+        const pickedItem =  await picker.promptUser<vscode.QuickPickItem>({
+            picker: quickPick,
             onDidTriggerButton: (button, resolve, reject) => {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
@@ -382,6 +469,10 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 }
             }
         })
+
+        const val = picker.verifySinglePickerOutput(pickedItem)
+
+        return (val && val.label !== noBuckets) ? val.label : undefined
     }
 
     /**
@@ -431,6 +522,13 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 }
             }
         })
+    }
+
+    private addBucketToRegionMap(bucket: string, region: string) {
+        if (!this.regionBucketMap.has(region)) {
+            this.regionBucketMap.set(region, [])
+        }
+        this.regionBucketMap.get(region)!.push(bucket)
     }
 }
 
@@ -602,60 +700,6 @@ class SamTemplateQuickPickItem implements vscode.QuickPickItem {
 
         return uri.fsPath
     }
-}
-
-// https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-s3-bucket-naming-requirements.html
-function validateS3Bucket(value: string): string | undefined {
-    if (value.length < 3 || value.length > 63) {
-        return localize(
-            'AWS.samcli.deploy.s3Bucket.error.length',
-            'S3 bucket name must be between 3 and 63 characters long'
-        )
-    }
-
-    if (!/^[a-z\d\.\-]+$/.test(value)) {
-        return localize(
-            'AWS.samcli.deploy.s3Bucket.error.invalidCharacters',
-            'S3 bucket name may only contain lower-case characters, numbers, periods, and dashes'
-        )
-    }
-
-    if (/^\d+\.\d+\.\d+\.\d+$/.test(value)) {
-        return localize(
-            'AWS.samcli.deploy.s3Bucket.error.ipAddress',
-            'S3 bucket name may not be formatted as an IP address (198.51.100.24)'
-        )
-    }
-
-    if (value[value.length - 1] === '-') {
-        return localize(
-            'AWS.samcli.deploy.s3Bucket.error.endsWithDash',
-            'S3 bucket name may not end with a dash'
-        )
-    }
-
-    if (value.includes('..')) {
-        return localize(
-            'AWS.samcli.deploy.s3Bucket.error.consecutivePeriods',
-            'S3 bucket name may not have consecutive periods'
-        )
-    }
-
-    if (value.includes('.-') || value.includes('-.')) {
-        return localize(
-            'AWS.samcli.deploy.s3Bucket.error.dashAdjacentPeriods',
-            'S3 bucket name may not contain a period adjacent to a dash'
-        )
-    }
-
-    if (value.split('.').some(label => !/^[a-z\d]/.test(label))) {
-        return localize(
-            'AWS.samcli.deploy.s3Bucket.error.labelFirstCharacter',
-            'Each label in an S3 bucket name must begin with a number or a lower-case character'
-        )
-    }
-
-    return undefined
 }
 
 // https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html
