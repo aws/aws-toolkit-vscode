@@ -7,7 +7,7 @@
 
 import * as vscode from 'vscode'
 import { ext } from '../extensionGlobals'
-import { Datum, METADATA_FIELD_NAME, METADATA_RESULT_FAIL, METADATA_RESULT_PASS } from './telemetryEvent'
+import { Datum, METADATA_FIELD_NAME, MetadataResult } from './telemetryEvent'
 
 export interface TelemetryName {
     namespace: TelemetryNamespace | OldTelemetryNamespace
@@ -69,7 +69,7 @@ export function registerCommand<T>({
                 setMetadataIfNotExists(
                     datum.metadata,
                     METADATA_FIELD_NAME.RESULT,
-                    hasException ? METADATA_RESULT_FAIL : METADATA_RESULT_PASS
+                    hasException ? MetadataResult.Fail.toString() : MetadataResult.Pass.toString()
                 )
                 setMetadataIfNotExists(datum.metadata, 'duration', `${endTime.getTime() - startTime.getTime()}`)
 

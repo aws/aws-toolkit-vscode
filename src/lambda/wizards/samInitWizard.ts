@@ -13,12 +13,12 @@ import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { samInitDocUrl } from '../../shared/constants'
-import { SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import * as lambdaRuntime from '../models/samLambdaRuntime'
 import { MultiStepWizard, WizardStep } from '../wizards/multiStepWizard'
+
 export interface CreateNewSamAppWizardContext {
     readonly lambdaRuntimes: immutable.Set<lambdaRuntime.SamLambdaRuntime>
     readonly workspaceFolders: vscode.WorkspaceFolder[] | undefined
@@ -178,7 +178,13 @@ export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizar
     }
 }
 
-export class CreateNewSamAppWizard extends MultiStepWizard<SamCliInitArgs> {
+export interface CreateNewSamAppWizardResponse {
+    runtime: lambdaRuntime.SamLambdaRuntime
+    location: vscode.Uri
+    name: string
+}
+
+export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizardResponse> {
     private runtime?: lambdaRuntime.SamLambdaRuntime
     private location?: vscode.Uri
     private name?: string
@@ -193,7 +199,7 @@ export class CreateNewSamAppWizard extends MultiStepWizard<SamCliInitArgs> {
         return this.RUNTIME
     }
 
-    protected getResult(): SamCliInitArgs | undefined {
+    protected getResult(): CreateNewSamAppWizardResponse | undefined {
         if (!this.runtime || !this.location || !this.name) {
             return undefined
         }

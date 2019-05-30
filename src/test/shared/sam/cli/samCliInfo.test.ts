@@ -89,7 +89,7 @@ describe('SamCliInfoInvocation', async () => {
 
     it('handles successful errorcode and output', async () => {
         const invoker: TestSamCliProcessInvoker = new TestSamCliProcessInvoker(
-            (args: any[]): ChildProcessResult => {
+            (spawnOptions, args: any[]): ChildProcessResult => {
                 return new FakeChildProcessResult(
                     {
                         stdout: '{"version": "1.2.3"}'
@@ -106,7 +106,7 @@ describe('SamCliInfoInvocation', async () => {
 
     it('handles successful errorcode with strange output', async () => {
         const invoker: TestSamCliProcessInvoker = new TestSamCliProcessInvoker(
-            (args: any[]): ChildProcessResult => {
+            (spawnOptions, args: any[]): ChildProcessResult => {
                 return new FakeChildProcessResult(
                     {
                         stdout: 'unexpected output'
@@ -135,7 +135,7 @@ describe('SamCliInfoInvocation', async () => {
         )
 
         const invoker: TestSamCliProcessInvoker = new TestSamCliProcessInvoker(
-            (args: any[]): ChildProcessResult => childProcessResult
+            (spawnOptions, args: any[]): ChildProcessResult => childProcessResult
         )
         const samInfo: SamCliInfoInvocation = new SamCliInfoInvocation(invoker)
 
