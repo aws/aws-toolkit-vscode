@@ -6,12 +6,12 @@ package software.aws.toolkits.jetbrains.services.lambda.execution.remote
 import com.intellij.execution.ExecutorRegistry
 import com.intellij.execution.Output
 import com.intellij.execution.OutputListener
-import com.intellij.execution.RunManager
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.util.io.FileUtil
+import com.intellij.testFramework.ProjectRule
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
@@ -27,13 +27,10 @@ import software.amazon.awssdk.services.lambda.model.InvokeRequest
 import software.amazon.awssdk.services.lambda.model.InvokeResponse
 import software.amazon.awssdk.services.lambda.model.LambdaException
 import software.amazon.awssdk.services.lambda.model.LogType
-import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
-import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
+import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.utils.delegateMock
-import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 import java.util.concurrent.CompletableFuture
@@ -42,7 +39,7 @@ import java.util.concurrent.TimeUnit
 class RemoteLambdaExecutionTest {
     @Rule
     @JvmField
-    val projectRule = HeavyJavaCodeInsightTestFixtureRule()
+    val projectRule = ProjectRule()
 
     @Rule
     @JvmField
@@ -50,7 +47,8 @@ class RemoteLambdaExecutionTest {
 
     @Before
     fun setUp() {
-        createMockCredentials()
+        MockCredentialsManager.getInstance()
+            .addCredentials(CREDENTIAL_ID, AwsBasicCredentials.create("Access", "Secret"))
     }
 
     @Test
@@ -131,7 +129,14 @@ class RemoteLambdaExecutionTest {
     }
 
     private fun executeLambda(inputText: String = "Input", inputFile: Boolean = false): Output {
-        val runConfiguration = createRunConfiguration(inputSource = inputText, inputFile = inputFile)
+        val runConfiguration = createRunConfiguration(
+            project = projectRule.project,
+            input = inputText,
+            inputIsFile = inputFile,
+            credentialId = CREDENTIAL_ID,
+            functionName = FUNCTION_NAME,
+            regionId = MockRegionProvider.US_EAST_1
+        )
 
         val executor = ExecutorRegistry.getInstance().getExecutorById(DefaultRunExecutor.EXECUTOR_ID)
         val executionEnvironment = ExecutionEnvironmentBuilder.create(executor, runConfiguration).build()
@@ -150,33 +155,8 @@ class RemoteLambdaExecutionTest {
         return executionFuture.get(5, TimeUnit.SECONDS)
     }
 
-    private fun createRunConfiguration(inputSource: String, inputFile: Boolean): LambdaRemoteRunConfiguration {
-        val runManager = RunManager.getInstance(projectRule.project)
-        val factory = LambdaRunConfiguration.getInstance().configurationFactories.first { it is LambdaRemoteRunConfigurationFactory }
-        val runConfigurationAndSettings = runManager.createConfiguration("Test", factory)
-        val runConfiguration = runConfigurationAndSettings.configuration as LambdaRemoteRunConfiguration
-        runManager.addConfiguration(runConfigurationAndSettings)
-
-        runConfiguration.credentialProviderId(CREDENTIAL_ID)
-        runConfiguration.regionId(REGION_ID)
-        runConfiguration.functionName(FUNCTION_NAME)
-        if (inputFile) {
-            runConfiguration.useInputFile(inputSource)
-        } else {
-            runConfiguration.useInputText(inputSource)
-        }
-
-        return runConfiguration
-    }
-
-    private fun createMockCredentials(): ToolkitCredentialsProvider {
-        val credentialsManager = CredentialManager.getInstance() as MockCredentialsManager
-        return credentialsManager.addCredentials(CREDENTIAL_ID, AwsBasicCredentials.create("Access", "Secret"))
-    }
-
     private companion object {
         const val CREDENTIAL_ID = "MockCredentials"
-        const val REGION_ID = "us-east-1"
         const val FUNCTION_NAME = "DummyFunction"
     }
 }
