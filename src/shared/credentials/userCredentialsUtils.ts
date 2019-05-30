@@ -10,14 +10,19 @@ import * as path from 'path'
 
 import { Credentials } from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import { AwsContext } from '../awsContext'
 import { StsClient } from '../clients/stsClient'
+import { credentialHelpUrl } from '../constants'
 import { EnvironmentVariables } from '../environmentVariables'
 import { ext } from '../extensionGlobals'
 import { mkdir, writeFile } from '../filesystem'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { getLogger, Logger } from '../logger'
 import { SystemUtilities } from '../systemUtilities'
+
+const localize = nls.loadMessageBundle()
 
 /**
  * The payload used to fill in the handlebars template
@@ -132,26 +137,31 @@ export class UserCredentialsUtils {
         sts?: StsClient
     ): Promise<CredentialsValidationResult> {
         const logger: Logger = getLogger()
-        try {
-            if (!sts) {
-                // Past iteration did not include a set region. Should we change this?
-                // We can also use the set region when we migrate to a single-region experience:
-                // https://github.com/aws/aws-toolkit-vscode/issues/549
-                const transformedCredentials: ServiceConfigurationOptions = {
+        if (!sts) {
+            const transformedCredentials: ServiceConfigurationOptions = {
+                credentials: {
                     accessKeyId: credentials.accessKeyId,
                     secretAccessKey: credentials.secretAccessKey
                 }
-                sts = ext.toolkitClientBuilder.createStsClient('us-east-1', transformedCredentials)
             }
+            try {
+                // Past iteration did not include a set region. Should we change this?
+                // We can also use the set region if/when we migrate to a single-region experience:
+                // https://github.com/aws/aws-toolkit-vscode/issues/549
+                sts = ext.toolkitClientBuilder.createStsClient('us-east-1', transformedCredentials)
+            } catch (err) {
+                const error = err as Error
+                logger.error(error)
+                throw error
+            }
+        }
 
+        try {
             const response = await sts.getCallerIdentity()
 
             return { isValid: !!response.Account, account: response.Account }
-
         } catch (err) {
-
             let reason: string
-
             if (err instanceof Error) {
                 const error = err as Error
                 reason = error.message
@@ -165,7 +175,7 @@ export class UserCredentialsUtils {
     }
 
     /**
-     * Adds valid profiles to the AWS context and settings. Returns false if invalid.
+     * Adds valid profiles to the AWS context and settings.
      *
      * @param profileName Profile name to add to AWS Context/AWS settings
      * @param awsContext Current AWS Context
@@ -179,13 +189,18 @@ export class UserCredentialsUtils {
         awsContext: AwsContext,
         sts?: StsClient
     ): Promise<boolean> {
-        const credentials = await awsContext.getCredentials(profileName)
-        const account = credentials ? await this.validateCredentials(credentials, sts) : undefined
-        if (account && account.isValid) {
-            await awsContext.setCredentialProfileName(profileName)
-            await awsContext.setCredentialAccountId(account.account)
+        let credentials: Credentials | undefined
+        try {
+            credentials = await awsContext.getCredentials(profileName)
+            const account = credentials ? await this.validateCredentials(credentials, sts) : undefined
+            if (account && account.isValid) {
+                await awsContext.setCredentialProfileName(profileName)
+                await awsContext.setCredentialAccountId(account.account)
 
-            return true
+                return true
+            }
+        } catch (err) {
+            // swallow any errors--anything that isn't a success should be handled as a failure by the caller
         }
 
         return false
@@ -199,5 +214,24 @@ export class UserCredentialsUtils {
     public static async removeUserDataFromContext(awsContext: AwsContext) {
         await awsContext.setCredentialProfileName()
         await awsContext.setCredentialAccountId()
+    }
+
+    public static async notifyUserCredentialsAreBad(profileName: string) {
+        const getHelp = localize(
+            'AWS.message.credentials.invalidProfile.help',
+            'Get Help...'
+        )
+        const selection = await vscode.window.showErrorMessage(
+            localize(
+                'AWS.message.credentials.invalidProfile',
+                'Credentials profile {0} is invalid',
+                profileName
+            ),
+            getHelp
+        )
+
+        if (selection === getHelp) {
+            vscode.env.openExternal(vscode.Uri.parse(credentialHelpUrl))
+        }
     }
 }

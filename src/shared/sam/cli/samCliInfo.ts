@@ -6,9 +6,8 @@
 'use strict'
 
 import { getLogger, Logger } from '../../logger'
-import { ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliProcessInvoker } from './samCliInvoker'
-import { SamCliProcessInvoker } from './samCliInvokerUtils'
+import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 
 /**
  * Maps out the response text from the sam cli command `sam --info`
@@ -24,33 +23,17 @@ export class SamCliInfoInvocation {
     }
 
     public async execute(): Promise<SamCliInfoResponse> {
-        const logger: Logger = getLogger()
-        const { error, exitCode, stderr, stdout }: ChildProcessResult = await this.invoker.invoke('--info')
+        const childProcessResult = await this.invoker.invoke('--info')
 
-        if (exitCode === 0) {
-            const response = this.convertOutput(stdout)
+        logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
 
-            if (!!response) {
-                return response
-            }
+        const response = this.convertOutput(childProcessResult.stdout)
 
+        if (!response) {
             throw new Error('SAM CLI did not return expected data')
         }
 
-        console.error('SAM CLI error')
-        console.error(`Exit code: ${exitCode}`)
-        console.error(`Error: ${error}`)
-        console.error(`stderr: ${stderr}`)
-        console.error(`stdout: ${stdout}`)
-
-        const err = new Error(
-            `sam --info encountered an error: ${error}
-    ${error && error.message ? 'message: ' + error.message : ''}
-    stderr : ${stderr}
-    stdout : ${stdout}`
-        )
-        logger.error(err)
-        throw err
+        return response
     }
 
     /**

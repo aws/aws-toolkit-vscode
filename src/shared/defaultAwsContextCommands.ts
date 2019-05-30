@@ -81,18 +81,17 @@ export class DefaultAWSContextCommands {
 
     public async onCommandLogin() {
         const profileName = await this.getProfileNameFromUser()
-        let successfulLogin = false
-        if (profileName) {
-            successfulLogin = await UserCredentialsUtils.addUserDataToContext(profileName, this._awsContext)
-            if (successfulLogin) {
-                this.refresh()
-                await this.checkExplorerForDefaultRegion(profileName)
-            }
+        if (!profileName) {
+            // user clicked away from quick pick or entered nothing
+            return
         }
-        if (!profileName || !successfulLogin) {
-            // credentials are invalid. Prompt user and log out
-            // TODO: Prompt user!
+        const successfulLogin = await UserCredentialsUtils.addUserDataToContext(profileName, this._awsContext)
+        if (successfulLogin) {
+            this.refresh()
+            await this.checkExplorerForDefaultRegion(profileName)
+        } else {
             await this.onCommandLogout()
+            await UserCredentialsUtils.notifyUserCredentialsAreBad(profileName)
         }
     }
 
@@ -107,9 +106,8 @@ export class DefaultAWSContextCommands {
             if (profileName) {
                 const successfulLogin = await UserCredentialsUtils.addUserDataToContext(profileName, this._awsContext)
                 if (!successfulLogin) {
-                    // credentials are invalid. Prompt user and log out
-                    // TODO: Prompt user!
                     await this.onCommandLogout()
+                    await UserCredentialsUtils.notifyUserCredentialsAreBad(profileName)
                 }
             }
         } else {

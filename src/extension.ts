@@ -67,18 +67,21 @@ export async function activate(context: vscode.ExtensionContext) {
         const resourceFetcher = new DefaultResourceFetcher()
         const regionProvider = new DefaultRegionProvider(context, resourceFetcher)
 
-        // check to see if current user is valid
-        const currentProfile = awsContext.getCredentialProfileName()
-        if (currentProfile) {
-             const successfulLogin = await UserCredentialsUtils.addUserDataToContext(currentProfile, awsContext)
-             if (!successfulLogin) {
-                await UserCredentialsUtils.removeUserDataFromContext(awsContext)
-             }
-        }
-
         ext.awsContextCommands = new DefaultAWSContextCommands(awsContext, awsContextTrees, regionProvider)
         ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
+
+        // check to see if current user is valid
+        const currentProfile = awsContext.getCredentialProfileName()
+        if (currentProfile) {
+            const successfulLogin = await UserCredentialsUtils.addUserDataToContext(currentProfile, awsContext)
+            if (!successfulLogin) {
+                await UserCredentialsUtils.removeUserDataFromContext(awsContext)
+                // tslint:disable-next-line: no-floating-promises
+                UserCredentialsUtils.notifyUserCredentialsAreBad(currentProfile)
+            }
+        }
+
         ext.statusBar = new DefaultAWSStatusBar(awsContext, context)
         ext.telemetry = new DefaultTelemetryService(context, awsContext)
         new AwsTelemetryOptOut(ext.telemetry, new DefaultSettingsConfiguration(extensionSettingsPrefix))
