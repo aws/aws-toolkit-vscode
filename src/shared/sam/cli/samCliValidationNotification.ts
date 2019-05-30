@@ -24,7 +24,7 @@ const localize = nls.loadMessageBundle()
 // Messages
 const RECOMMENDATION_UPDATE_TOOLKIT: string = localize(
     'AWS.samcli.recommend.update.toolkit',
-    'Please update your AWS Toolkit.'
+    'Please check the Marketplace for an updated Toolkit.'
 )
 
 const RECOMMENDATION_UPDATE_SAM_CLI: string = localize(
@@ -51,7 +51,7 @@ const actionGoToSamCli: SamCliValidationNotificationAction = {
 const actionGoToVsCodeMarketplace: SamCliValidationNotificationAction = {
     label: localize(
         'AWS.samcli.userChoice.update.awstoolkit.url',
-        'Update AWS Toolkit'
+        'Visit Marketplace'
     ),
     invoke: async () => {
         // TODO : Switch to the Extension panel in VS Code instead
