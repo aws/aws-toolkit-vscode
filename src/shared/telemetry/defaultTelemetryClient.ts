@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -21,7 +21,10 @@ export class DefaultTelemetryClient implements TelemetryClient {
 
     private static readonly PRODUCT_NAME = 'AWS Toolkit For VS Code'
 
-    private constructor(private readonly clientId: string, private readonly client: ClientTelemetry) {}
+    private constructor(
+        private readonly clientId: string,
+        private readonly client: ClientTelemetry,
+    ) {}
 
     /**
      * Returns failed events
@@ -47,20 +50,27 @@ export class DefaultTelemetryClient implements TelemetryClient {
         }
     }
 
-    public static async createDefaultClient(clientId: string, region: string, credentials: Credentials)
-        : Promise<DefaultTelemetryClient> {
+    public static async createDefaultClient(
+        clientId: string,
+        region: string,
+        credentials: Credentials
+    ): Promise<DefaultTelemetryClient> {
 
         await credentials.getPromise()
 
-        return new DefaultTelemetryClient(clientId, await ext.sdkClientBuilder.createAndConfigureServiceClient(
-            opts => new Service(opts), {
-                // @ts-ignore: apiConfig is internal and not in the TS declaration file
-                apiConfig: apiConfig,
-                region: region,
-                credentials: credentials,
-                correctClockSkew: true,
-                endpoint: DefaultTelemetryClient.DEFAULT_TELEMETRY_ENDPOINT
-            }
-        ))
+        return new DefaultTelemetryClient(
+            clientId,
+            await ext.sdkClientBuilder.createAndConfigureServiceClient(
+                opts => new Service(opts),
+                {
+                    // @ts-ignore: apiConfig is internal and not in the TS declaration file
+                    apiConfig: apiConfig,
+                    region: region,
+                    credentials: credentials,
+                    correctClockSkew: true,
+                    endpoint: DefaultTelemetryClient.DEFAULT_TELEMETRY_ENDPOINT
+                }
+            ),
+        )
     }
 }

@@ -23,8 +23,8 @@ import {
     WAIT_FOR_DEBUGGER_MESSAGES,
 } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import { Datum } from '../telemetry/telemetryEvent'
 import { TelemetryService } from '../telemetry/telemetryService'
+import { Datum } from '../telemetry/telemetryTypes'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
 import { getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'

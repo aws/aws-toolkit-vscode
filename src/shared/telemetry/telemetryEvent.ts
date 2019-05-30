@@ -5,29 +5,11 @@
 
 'use strict'
 
-import { MetadataEntry, MetricDatum, Unit } from './clienttelemetry'
+import { MetadataEntry, MetricDatum } from './clienttelemetry'
+import { Datum } from './telemetryTypes'
 
 const NAME_ILLEGAL_CHARS_REGEX = new RegExp('[^\\w+-.:]', 'g')
 const REMOVE_UNDERSCORES_REGEX = new RegExp('_', 'g')
-
-export const METADATA_FIELD_NAME = {
-    RESULT: 'result',
-    DURATION: 'duration',
-    REASON: 'reason',
-}
-
-export enum MetadataResult {
-    Pass = 'Succeeded',
-    Fail = 'Failed',
-    Cancel = 'Cancelled',
-}
-
-export interface Datum {
-    name: string
-    value: number
-    unit?: Unit
-    metadata?: Map<string, string>
-}
 
 export interface TelemetryEvent {
     namespace: string

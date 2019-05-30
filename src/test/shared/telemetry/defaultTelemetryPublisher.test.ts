@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -24,7 +24,12 @@ class MockTelemetryClient implements TelemetryClient {
 
 describe('DefaultTelemetryPublisher', () => {
     it('enqueues events', () => {
-        const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
+        const publisher = new DefaultTelemetryPublisher(
+            '',
+            '',
+            new AWS.Credentials('', ''),
+            new MockTelemetryClient()
+        )
         publisher.enqueue(...[
             { namespace: 'name', createTime: new Date() },
         ])
@@ -40,7 +45,12 @@ describe('DefaultTelemetryPublisher', () => {
     })
 
     it('can flush single event', async () => {
-        const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
+        const publisher = new DefaultTelemetryPublisher(
+            '',
+            '',
+            new AWS.Credentials('', ''),
+            new MockTelemetryClient()
+        )
         publisher.enqueue(...[
             { namespace: 'name', createTime: new Date() },
         ])
