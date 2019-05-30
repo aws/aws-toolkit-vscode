@@ -68,13 +68,17 @@ export async function activate(context: vscode.ExtensionContext) {
         const resourceFetcher = new DefaultResourceFetcher()
         const regionProvider = new DefaultRegionProvider(context, resourceFetcher)
 
+        ext.awsContextCommands = new DefaultAWSContextCommands(awsContext, awsContextTrees, regionProvider)
+        ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
+        ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
+
         // check to see if current user is valid
         const currentProfile = awsContext.getCredentialProfileName()
         if (currentProfile) {
-                const successfulLogin = await UserCredentialsUtils.addUserDataToContext(currentProfile, awsContext)
-                if (!successfulLogin) {
+            const successfulLogin = await UserCredentialsUtils.addUserDataToContext(currentProfile, awsContext)
+            if (!successfulLogin) {
                 await UserCredentialsUtils.removeUserDataFromContext(awsContext)
-                }
+            }
         }
 
         ext.awsContextCommands = new DefaultAWSContextCommands(awsContext, awsContextTrees, regionProvider)
