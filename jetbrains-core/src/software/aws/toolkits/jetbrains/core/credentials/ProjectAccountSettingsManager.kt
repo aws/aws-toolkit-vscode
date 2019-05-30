@@ -264,7 +264,9 @@ class DefaultProjectAccountSettingsManager(
 
     private fun broadcastChangeEvent() {
         val event = AccountSettingsEvent(isLoading, activeProfileInternal, activeRegionInternal)
-        project.messageBus.syncPublisher(ACCOUNT_SETTINGS_CHANGED).settingsChanged(event)
+        if (!project.isDisposed) {
+            project.messageBus.syncPublisher(ACCOUNT_SETTINGS_CHANGED).settingsChanged(event)
+        }
     }
 
     companion object {
