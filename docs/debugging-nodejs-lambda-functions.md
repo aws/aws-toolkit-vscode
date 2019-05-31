@@ -13,16 +13,16 @@ You can debug your Serverless Application's Lambda Function locally using the Co
 
 Throughout these instructions, replace the following:
 
-|Name|Replace With|
-|-|-|
-|`<sam app root>`|The root of your SAM app (typically this is the directory containing `template.yaml`)|
-|`<nodejs project root>`|The root of your NodeJS source code (the directory containing `package.json`)|
-|`<protocol>`|Either `inspector` (for NodeJS 6.3+) or `legacy` (for prior versions of NodeJS)|
+| Name                    | Replace With                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------- |
+| `<sam app root>`        | The root of your SAM app (typically this is the directory containing `template.yaml`) |
+| `<nodejs project root>` | The root of your NodeJS source code (the directory containing `package.json`)         |
+| `<protocol>`            | Either `inspector` (for NodeJS 6.3+) or `legacy` (for prior versions of NodeJS)       |
 
 1. Open `<sam app root>/.vscode/launch.json` (create a new file if it does not already exist), and add the following contents.
 
-    * Due to a bug in how VS Code handles path mappings, Windows users must provide an absolute path for `localRoot`. If you use a path relative to `${workspaceFolder}`, the path mappings will not work.
-    * If desired, replace `5678` with the port that you wish to use for debugging.
+    - Due to a bug in how VS Code handles path mappings, Windows users must provide an absolute path for `localRoot`. If you use a path relative to `${workspaceFolder}`, the path mappings will not work.
+    - If desired, replace `5678` with the port that you wish to use for debugging.
 
     ```jsonc
     {
@@ -37,10 +37,7 @@ Throughout these instructions, replace the following:
                 "localRoot": "<nodejs project root>",
                 "remoteRoot": "/var/task",
                 "protocol": "<protocol>",
-                "skipFiles": [
-                    "/var/runtime/node_modules/**/*.js",
-                    "<node_internals>/**/*.js"
-                ]
+                "skipFiles": ["/var/runtime/node_modules/**/*.js", "<node_internals>/**/*.js"]
             }
         ]
     }
@@ -108,8 +105,8 @@ With the above steps, you need to manually invoke SAM CLI from the command line,
                     "background": {
                         // This is how the debugger knows when it can attach
                         "activeOnStart": true,
-                "beginsPattern": "^Fetching lambci.* Docker container image......$",
-                "endsPattern": "^.* Mounting .* as .*:ro inside runtime container$"
+                        "beginsPattern": "^Fetching lambci.* Docker container image......$",
+                        "endsPattern": "^.* Mounting .* as .*:ro inside runtime container$"
                     }
                 }
             }

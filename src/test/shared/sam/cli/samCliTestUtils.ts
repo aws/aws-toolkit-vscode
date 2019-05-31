@@ -11,10 +11,7 @@ import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUt
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 
 export class MockSamCliProcessInvoker implements SamCliProcessInvoker {
-    public constructor(
-        private readonly validateArgs: (args: string[]) => void
-    ) {
-    }
+    public constructor(private readonly validateArgs: (args: string[]) => void) {}
 
     public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
     public invoke(...args: string[]): Promise<ChildProcessResult>
@@ -22,41 +19,23 @@ export class MockSamCliProcessInvoker implements SamCliProcessInvoker {
         const args: string[] = typeof first === 'string' ? [first, ...rest] : rest
         this.validateArgs(args)
 
-        return {
+        return ({
             exitCode: 0
-        } as any as ChildProcessResult
-   }
+        } as any) as ChildProcessResult
+    }
 }
 
-export function assertArgsContainArgument(
-    args: any[],
-    argOfInterest: string,
-    expectedArgValue: string
-) {
+export function assertArgsContainArgument(args: any[], argOfInterest: string, expectedArgValue: string) {
     const argPos = args.indexOf(argOfInterest)
     assert.notStrictEqual(argPos, -1, `Expected arg '${argOfInterest}' was not found`)
     assert.ok(args.length >= argPos + 2, `Args does not contain a value for '${argOfInterest}'`)
     assert.strictEqual(args[argPos + 1], expectedArgValue, `Arg '${argOfInterest}' did not have expected value`)
 }
 
-export function assertArgIsPresent(
-    args: any[],
-    argOfInterest: string,
-) {
-    assert.notStrictEqual(
-        args.indexOf(argOfInterest),
-        -1,
-        `Expected '${argOfInterest}' arg`
-    )
+export function assertArgIsPresent(args: any[], argOfInterest: string) {
+    assert.notStrictEqual(args.indexOf(argOfInterest), -1, `Expected '${argOfInterest}' arg`)
 }
 
-export function assertArgNotPresent(
-    args: any[],
-    argOfInterest: string,
-) {
-    assert.strictEqual(
-        args.indexOf(argOfInterest),
-        -1,
-        `Did not expect '${argOfInterest}' arg`
-    )
+export function assertArgNotPresent(args: any[], argOfInterest: string) {
+    assert.strictEqual(args.indexOf(argOfInterest), -1, `Did not expect '${argOfInterest}' arg`)
 }

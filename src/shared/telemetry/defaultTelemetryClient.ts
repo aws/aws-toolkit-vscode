@@ -21,10 +21,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
 
     private static readonly PRODUCT_NAME = 'AWS Toolkit For VS Code'
 
-    private constructor(
-        private readonly clientId: string,
-        private readonly client: ClientTelemetry,
-    ) {}
+    private constructor(private readonly clientId: string, private readonly client: ClientTelemetry) {}
 
     /**
      * Returns failed events
@@ -32,16 +29,18 @@ export class DefaultTelemetryClient implements TelemetryClient {
      */
     public async postMetrics(batch: TelemetryEvent[]): Promise<TelemetryEvent[] | undefined> {
         try {
-            await this.client.postMetrics({
-                AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
-                AWSProductVersion: constants.pluginVersion,
-                ClientID: this.clientId,
-                OS: os.platform(),
-                OSVersion: os.release(),
-                ParentProduct: vscode.env.appName,
-                ParentProductVersion: vscode.version,
-                MetricData: toMetricData(batch)
-            }).promise()
+            await this.client
+                .postMetrics({
+                    AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
+                    AWSProductVersion: constants.pluginVersion,
+                    ClientID: this.clientId,
+                    OS: os.platform(),
+                    OSVersion: os.release(),
+                    ParentProduct: vscode.env.appName,
+                    ParentProductVersion: vscode.version,
+                    MetricData: toMetricData(batch)
+                })
+                .promise()
             console.info(`Successfully sent a telemetry batch of ${batch.length}`)
         } catch (err) {
             console.error(`Batch error: ${err}`)
@@ -55,22 +54,18 @@ export class DefaultTelemetryClient implements TelemetryClient {
         region: string,
         credentials: Credentials
     ): Promise<DefaultTelemetryClient> {
-
         await credentials.getPromise()
 
         return new DefaultTelemetryClient(
             clientId,
-            await ext.sdkClientBuilder.createAndConfigureServiceClient(
-                opts => new Service(opts),
-                {
-                    // @ts-ignore: apiConfig is internal and not in the TS declaration file
-                    apiConfig: apiConfig,
-                    region: region,
-                    credentials: credentials,
-                    correctClockSkew: true,
-                    endpoint: DefaultTelemetryClient.DEFAULT_TELEMETRY_ENDPOINT
-                }
-            ),
+            await ext.sdkClientBuilder.createAndConfigureServiceClient(opts => new Service(opts), {
+                // @ts-ignore: apiConfig is internal and not in the TS declaration file
+                apiConfig: apiConfig,
+                region: region,
+                credentials: credentials,
+                correctClockSkew: true,
+                endpoint: DefaultTelemetryClient.DEFAULT_TELEMETRY_ENDPOINT
+            })
         )
     }
 }

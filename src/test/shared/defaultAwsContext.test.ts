@@ -15,7 +15,6 @@ import { TestSettingsConfiguration } from '../utilities/testSettingsConfiguratio
 import { assertThrowsError } from './utilities/assertUtils'
 
 describe('DefaultAwsContext', () => {
-
     const testRegion1Value: string = 're-gion-1'
     const testRegion2Value: string = 're-gion-2'
     const testProfileValue: string = 'profile1'
@@ -29,17 +28,14 @@ describe('DefaultAwsContext', () => {
         }
 
         public async writeSetting<T>(
-            settingKey: string, value: T | undefined,
+            settingKey: string,
+            value: T | undefined,
             target: ConfigurationTarget
-        ): Promise<void> {
-        }
+        ): Promise<void> {}
     }
 
     class TestCredentialsManager extends CredentialsManager {
-        public constructor(
-            private readonly expectedName?: string,
-            private readonly reportedCredentials?: Credentials
-        ) {
+        public constructor(private readonly expectedName?: string, private readonly reportedCredentials?: Credentials) {
             super()
         }
 
@@ -90,16 +86,15 @@ describe('DefaultAwsContext', () => {
             new FakeExtensionContext(),
             new TestCredentialsManager(overrideProfile)
         )
-        await assertThrowsError( async () => { await testContext.getCredentials(testProfileValue) } )
+        await assertThrowsError(async () => {
+            await testContext.getCredentials(testProfileValue)
+        })
     })
 
     it('returns undefined if no profile is provided and no profile was previously saved to settings', async () => {
         const settingsConfig = new TestSettingsConfiguration()
 
-        const testContext = new DefaultAwsContext(
-            settingsConfig,
-            new FakeExtensionContext()
-        )
+        const testContext = new DefaultAwsContext(settingsConfig, new FakeExtensionContext())
         const creds = await testContext.getCredentials()
         assert.strictEqual(creds, undefined)
     })
@@ -113,7 +108,6 @@ describe('DefaultAwsContext', () => {
     })
 
     it('gets single region from config on startup', async () => {
-
         const fakeMementoStorage: FakeMementoStorage = {}
         fakeMementoStorage[regionSettingKey] = [testRegion1Value]
 
@@ -128,7 +122,6 @@ describe('DefaultAwsContext', () => {
     })
 
     it('gets multiple regions from config on startup', async () => {
-
         const fakeMementoStorage: FakeMementoStorage = {}
         fakeMementoStorage[regionSettingKey] = [testRegion1Value, testRegion2Value]
 
@@ -144,7 +137,6 @@ describe('DefaultAwsContext', () => {
     })
 
     it('updates config on single region change', async () => {
-
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
             public async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
                 const array: string[] = value as any
@@ -160,12 +152,11 @@ describe('DefaultAwsContext', () => {
     })
 
     it('updates config on multiple region change', async () => {
-
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
             public async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
                 assert.strictEqual(settingKey, regionSettingKey)
                 assert(value instanceof Array)
-                const values = value as any as string[]
+                const values = (value as any) as string[]
                 assert.strictEqual(values[0], testRegion1Value)
                 assert.strictEqual(values[1], testRegion2Value)
                 assert.strictEqual(target, ConfigurationTarget.Global)
@@ -177,18 +168,17 @@ describe('DefaultAwsContext', () => {
     })
 
     it('updates on region removal', async () => {
-
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
             public readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
                 if (settingKey === regionSettingKey) {
-                    return [ testRegion1Value, testRegion2Value ] as any as T
+                    return ([testRegion1Value, testRegion2Value] as any) as T
                 }
 
                 return super.readSetting<T>(settingKey, defaultValue)
             }
             public async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
                 assert.strictEqual(settingKey, regionSettingKey)
-                assert.deepStrictEqual(value, [ testRegion1Value ])
+                assert.deepStrictEqual(value, [testRegion1Value])
                 assert.strictEqual(target, ConfigurationTarget.Global)
             }
         }
@@ -198,7 +188,6 @@ describe('DefaultAwsContext', () => {
     })
 
     it('updates config on profile change', async () => {
-
         class TestConfiguration extends ContextTestsSettingsConfigurationBase {
             public async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
                 assert.strictEqual(settingKey, profileSettingKey)
@@ -221,14 +210,13 @@ describe('DefaultAwsContext', () => {
     })
 
     it('fires event on single region change', async () => {
-
         const testContext = new DefaultAwsContext(
             new ContextTestsSettingsConfigurationBase(),
             new FakeExtensionContext()
         )
 
         let invocationCount = 0
-        testContext.onDidChangeContext((c) => {
+        testContext.onDidChangeContext(c => {
             assert.strictEqual(c.regions.length, 1)
             assert.strictEqual(c.regions[0], testRegion1Value)
             invocationCount++
@@ -240,14 +228,13 @@ describe('DefaultAwsContext', () => {
     })
 
     it('fires event on multi region change', async () => {
-
         const testContext = new DefaultAwsContext(
             new ContextTestsSettingsConfigurationBase(),
             new FakeExtensionContext()
         )
 
         let invocationCount = 0
-        testContext.onDidChangeContext((c) => {
+        testContext.onDidChangeContext(c => {
             assert.strictEqual(c.regions.length, 2)
             assert.strictEqual(c.regions[0], testRegion1Value)
             assert.strictEqual(c.regions[1], testRegion2Value)
@@ -260,14 +247,13 @@ describe('DefaultAwsContext', () => {
     })
 
     it('fires event on profile change', async () => {
-
         const testContext = new DefaultAwsContext(
             new ContextTestsSettingsConfigurationBase(),
             new FakeExtensionContext()
         )
 
         let invocationCount = 0
-        testContext.onDidChangeContext((c) => {
+        testContext.onDidChangeContext(c => {
             assert.strictEqual(c.profileName, testProfileValue)
             invocationCount++
         })
@@ -278,14 +264,13 @@ describe('DefaultAwsContext', () => {
     })
 
     it('fires event on accountId change', async () => {
-
         const testContext = new DefaultAwsContext(
             new ContextTestsSettingsConfigurationBase(),
             new FakeExtensionContext()
         )
 
         let invocationCount = 0
-        testContext.onDidChangeContext((c) => {
+        testContext.onDidChangeContext(c => {
             assert.strictEqual(c.accountId, testAccountIdValue)
             invocationCount++
         })

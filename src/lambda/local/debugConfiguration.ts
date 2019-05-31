@@ -31,6 +31,11 @@ export interface PythonPathMapping {
     remoteRoot: string
 }
 
+export interface PythonPathMapping {
+    localRoot: string
+    remoteRoot: string
+}
+
 export interface PythonDebugConfiguration extends DebugConfiguration {
     readonly type: 'python'
     readonly host: string
@@ -53,22 +58,20 @@ export interface DotNetCoreDebugConfiguration extends DebugConfiguration {
 export interface PipeTransport {
     pipeProgram: 'sh' | 'powershell'
     pipeArgs: string[]
-    debuggerPath: typeof DOTNET_CORE_DEBUGGER_PATH,
+    debuggerPath: typeof DOTNET_CORE_DEBUGGER_PATH
     pipeCwd: string
 }
 
 export interface MakeCoreCLRDebugConfigurationArguments {
-    port: number,
+    port: number
     codeUri: string
 }
 
-export function makeCoreCLRDebugConfiguration(
-    { codeUri, port }: MakeCoreCLRDebugConfigurationArguments
-): DotNetCoreDebugConfiguration {
-    const pipeArgs = [
-        '-c',
-        `docker exec -i $(docker ps -q -f publish=${port}) \${debuggerCommand}`
-    ]
+export function makeCoreCLRDebugConfiguration({
+    codeUri,
+    port
+}: MakeCoreCLRDebugConfigurationArguments): DotNetCoreDebugConfiguration {
+    const pipeArgs = ['-c', `docker exec -i $(docker ps -q -f publish=${port}) \${debuggerCommand}`]
 
     if (os.platform() === 'win32') {
         // Coerce drive letter to uppercase. While Windows is case-insensitive, sourceFileMap is case-sensitive.

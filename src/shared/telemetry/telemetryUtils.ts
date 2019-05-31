@@ -31,7 +31,7 @@ export function registerCommand<T>({
     thisArg?: any
     register?: typeof vscode.commands.registerCommand
     telemetryName?: TelemetryName
-    callback(...args: any[]): (Promise<T & { datum?: Datum } | void>)
+    callback(...args: any[]): Promise<T & { datum?: Datum } | void>
 }): vscode.Disposable {
     return register(
         command,

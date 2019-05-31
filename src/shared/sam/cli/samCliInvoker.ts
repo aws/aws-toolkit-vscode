@@ -34,15 +34,12 @@ export function resolveSamCliProcessInvokerContext(
 
     return {
         cliConfig: params.cliConfig || defaults.cliConfig,
-        logger: params.logger || defaults.logger,
+        logger: params.logger || defaults.logger
     }
 }
 
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
-
-    public constructor(
-        private readonly context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()
-    ) { }
+    public constructor(private readonly context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()) {}
 
     public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
     public invoke(...args: string[]): Promise<ChildProcessResult>
@@ -55,6 +52,7 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
         return await childProcess.run()
     }
 
+    // Gets SAM CLI Location, throws if not found
     private get samCliLocation(): string {
         const samCliLocation: string | undefined = this.context.cliConfig.getSamCliLocation()
         if (!samCliLocation) {
