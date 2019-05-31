@@ -112,18 +112,21 @@ describe('runSamCliDeploy', async () => {
     it('throws on unexpected exit code', async () => {
         const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
 
-        const error = await assertThrowsError(async () => {
-            await runSamCliDeploy(
-                {
-                    profile: fakeProfile,
-                    parameterOverrides: new Map<string, string>(),
-                    region: fakeRegion,
-                    stackName: fakeStackName,
-                    templateFile: fakeTemplateFile
-                },
-                badExitCodeProcessInvoker
-            )
-        }, 'Expected an error to be thrown')
+        const error = await assertThrowsError(
+            async () => {
+                await runSamCliDeploy(
+                    {
+                        profile: fakeProfile,
+                        parameterOverrides: new Map<string, string>(),
+                        region: fakeRegion,
+                        stackName: fakeStackName,
+                        templateFile: fakeTemplateFile
+                    },
+                    badExitCodeProcessInvoker
+                )
+            },
+            'Expected an error to be thrown'
+        )
 
         assertErrorContainsBadExitMessage(error, badExitCodeProcessInvoker.error.message)
         await assertLogContainsBadExitInformation(logger, badExitCodeProcessInvoker.makeChildProcessResult(), 0)

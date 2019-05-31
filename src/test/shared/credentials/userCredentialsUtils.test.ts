@@ -237,7 +237,7 @@ describe('UserCredentialsUtils', () => {
             assert.strictEqual(result.invalidMessage, 'Simulating error with explicit throw')
         })
 
-        it('throws an error if STS is not defined and ext.toolkitClientBuilder cannot create an STS client', async () => {
+        it('throws an error if STS is not defined and toolkitClientBuilder cannot create an STS client', async () => {
             await assertThrowsError(async () => await UserCredentialsUtils.validateCredentials(fakeCredentials))
         })
     })

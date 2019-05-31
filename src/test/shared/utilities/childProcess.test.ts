@@ -318,10 +318,13 @@ describe('ChildProcess', async () => {
                 assert.strictEqual(childProcess.killed, false)
                 childProcess.kill()
                 await new Promise<void>(resolve => {
-                    setTimeout(() => {
-                        assert.strictEqual(childProcess.killed, true)
-                        resolve()
-                    }, 100)
+                    setTimeout(
+                        () => {
+                            assert.strictEqual(childProcess.killed, true)
+                            resolve()
+                        },
+                        100
+                    )
                 })
             })
 
@@ -337,18 +340,24 @@ describe('ChildProcess', async () => {
                 childProcess.run()
                 childProcess.kill()
                 await new Promise<void>(resolve => {
-                    setTimeout(() => {
-                        assert.strictEqual(childProcess.killed, true)
-                        resolve()
-                    }, 100)
+                    setTimeout(
+                        () => {
+                            assert.strictEqual(childProcess.killed, true)
+                            resolve()
+                        },
+                        100
+                    )
                 })
                 await new Promise<void>(resolve => {
-                    setTimeout(() => {
-                        assert.throws(() => {
-                            childProcess.kill()
-                        })
-                        resolve()
-                    }, 100)
+                    setTimeout(
+                        () => {
+                            assert.throws(() => {
+                                childProcess.kill()
+                            })
+                            resolve()
+                        },
+                        100
+                    )
                 })
             })
         } // END Windows-only tests
@@ -368,10 +377,13 @@ describe('ChildProcess', async () => {
                 assert.strictEqual(childProcess.killed, false)
                 childProcess.kill()
                 await new Promise<void>(resolve => {
-                    setTimeout(() => {
-                        assert.strictEqual(childProcess.killed, true)
-                        resolve()
-                    }, 100)
+                    setTimeout(
+                        () => {
+                            assert.strictEqual(childProcess.killed, true)
+                            resolve()
+                        },
+                        100
+                    )
                 })
             })
 
@@ -387,18 +399,24 @@ describe('ChildProcess', async () => {
                 childProcess.run()
                 childProcess.kill()
                 await new Promise<void>(resolve => {
-                    setTimeout(() => {
-                        assert.strictEqual(childProcess.killed, true)
-                        resolve()
-                    }, 100)
+                    setTimeout(
+                        () => {
+                            assert.strictEqual(childProcess.killed, true)
+                            resolve()
+                        },
+                        100
+                    )
                 })
                 await new Promise<void>(resolve => {
-                    setTimeout(() => {
-                        assert.throws(() => {
-                            childProcess.kill()
-                        })
-                        resolve()
-                    }, 100)
+                    setTimeout(
+                        () => {
+                            assert.throws(() => {
+                                childProcess.kill()
+                            })
+                            resolve()
+                        },
+                        100
+                    )
                 })
             })
         } // END Unix-only tests
