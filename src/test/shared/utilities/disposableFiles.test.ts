@@ -9,7 +9,7 @@ import * as assert from 'assert'
 import * as del from 'del'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import {  mkdir, writeFile } from '../../../shared/filesystem'
+import { mkdir, writeFile } from '../../../shared/filesystem'
 import { fileExists, makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { TestLogger } from '../../../shared/loggerUtils'
 import { DisposableFiles, ExtensionDisposableFiles } from '../../../shared/utilities/disposableFiles'
@@ -18,7 +18,7 @@ describe('DisposableFiles', async () => {
     let tempFolder: string
     let logger: TestLogger
 
-    before( async () => {
+    before(async () => {
         logger = await TestLogger.createTestLogger()
     })
 
@@ -105,6 +105,10 @@ describe('ExtensionDisposableFiles', async () => {
 
     class TestExtensionDisposableFiles extends ExtensionDisposableFiles {
         public static reset() {
+            if (ExtensionDisposableFiles.INSTANCE) {
+                del.sync([ExtensionDisposableFiles.INSTANCE.toolkitTempFolder], { force: true })
+            }
+
             ExtensionDisposableFiles.INSTANCE = undefined
         }
     }
