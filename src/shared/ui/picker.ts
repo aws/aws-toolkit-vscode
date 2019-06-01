@@ -146,3 +146,13 @@ export function verifySinglePickerOutput<T extends vscode.QuickPickItem>(
 
     return choices[0]
 }
+
+export function makeQuickPickBusy(quickPick: vscode.QuickPick<vscode.QuickPickItem>): void {
+    quickPick.enabled = false
+    quickPick.busy = true
+}
+
+export function makeQuickPickNotBusy(quickPick: vscode.QuickPick<vscode.QuickPickItem>): void {
+    quickPick.enabled = true
+    quickPick.busy = false
+}
