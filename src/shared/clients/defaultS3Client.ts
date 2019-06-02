@@ -12,7 +12,7 @@ import { S3Client } from './s3Client'
 export class DefaultS3Client implements S3Client {
 
     public constructor (
-        public readonly regionCode: string
+        private readonly regionCode: string
     ) { }
 
     public async getBucketLocation(bucket: string): Promise<S3.GetBucketLocationOutput> {

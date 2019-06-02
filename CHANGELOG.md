@@ -11,7 +11,7 @@ All notable changes to the "aws-vscode-tools" extension will be documented in th
 * When creating a new SAM Application, the toolkit now checks for a valid SAM CLI version before prompting the user for inputs
 * When deploying a SAM Application, the toolkit now checks for a valid SAM CLI version before prompting the user for inputs
 * Telemetry now sends AWS account data
-* Added a regionalized S3 selector to the "Deploy SAM Application" workflow with rudimentary caching
+* S3 Buckets can now be selected from a list during the "Deploy SAM Application" workflow
 
 ## 0.1.1 (Developer Preview)
 

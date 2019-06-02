@@ -11,12 +11,17 @@ import * as vscode from 'vscode'
 import { detectLocalTemplates } from '../../../lambda/local/detectLocalTemplates'
 import * as paramUtils from '../../../lambda/utilities/parameterUtils'
 import {
+    addBucketsToRegionMap,
+    addBucketToRegionMap,
+    createBucketQuickPickItems,
+    normalizeLocation,
     ParameterPromptResult,
     SamDeployWizard,
     SamDeployWizardContext,
 } from '../../../lambda/wizards/samDeployWizard'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { RegionProvider } from '../../../shared/regions/regionProvider'
+import { MockS3Client } from '../../shared/clients/mockClients'
 
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
@@ -729,5 +734,86 @@ describe('SamDeployWizard', async () => {
                 await assertValidationFails(parts.join(''))
             })
         })
+    })
+})
+
+describe('addBucketsToRegionMap', async () => {
+    it('adds buckets the bucketsByRegion map', async () => {
+        const output = new Map<string, string[]>()
+        output.set('region1', [])
+        output.set('region2', [])
+
+        const bucketsMap = new Map<string, string>()
+        bucketsMap.set('bucket1a', 'region1')
+        bucketsMap.set('bucket2a', 'region2')
+        bucketsMap.set('bucket1b', 'region1')
+        bucketsMap.set('bucket2b', 'region2')
+
+        const bucketsArray = [
+            { Name: 'bucket1a' },
+            { Name: 'bucket1b' },
+            { Name: 'bucket2a' },
+            { Name: 'bucket2b' },
+        ]
+        const s3 = new MockS3Client(bucketsMap)
+        await addBucketsToRegionMap(bucketsArray, output, s3)
+
+        assert.strictEqual(output.size, 2)
+        assert.strictEqual(output.get('region1')!.length, 2)
+        assert.ok(output.get('region1')!.indexOf('bucket1a') > -1)
+        assert.ok(output.get('region1')!.indexOf('bucket1b') > -1)
+        assert.strictEqual(output.get('region2')!.length, 2)
+        assert.ok(output.get('region2')!.indexOf('bucket2a') > -1)
+        assert.ok(output.get('region2')!.indexOf('bucket2b') > -1)
+
+    })
+})
+
+describe('normalizeLocation', () => {
+    it ('handles blank regions', () => {
+        assert.strictEqual(normalizeLocation(''), 'us-east-1')
+    })
+
+    it ('handles undefined regions', () => {
+        assert.strictEqual(normalizeLocation(), 'us-east-1')
+    })
+
+    it ('handles EU region', () => {
+        assert.strictEqual(normalizeLocation('EU'), 'eu-west-1')
+    })
+})
+
+describe('addBucketToRegionMap', () => {
+    it ('creates a map entry if one does not exist', () => {
+        const map = new Map<string, string[]>()
+        addBucketToRegionMap('bucket', map, 'region')
+        assert.ok(map.has('region'))
+        assert.deepStrictEqual(map.get('region'), ['bucket'])
+    })
+
+    it ('adds to the array for a preinitialized region', () => {
+        const map = new Map<string, string[]>()
+        map.set('region', ['bucket1', 'bucket2'])
+        addBucketToRegionMap('bucket3', map, 'region')
+        assert.ok(map.has('region'))
+        assert.deepStrictEqual(map.get('region'), ['bucket1', 'bucket2', 'bucket3'])
+    })
+})
+
+describe('createBucketQuickPickItems', () => {
+    it ('adds items in sorted order to a quick pick array and applies a selected previously label', () => {
+        const buckets = ['yabba', 'dabba', 'doo']
+        const output = createBucketQuickPickItems(buckets, 'dabba')
+        assert.strictEqual(output.length, 3)
+        assert.strictEqual(output[0].label, 'dabba')
+        assert.ok(output[0].alwaysShow)
+        assert.ok(output[0].description)
+        assert.strictEqual(output[1].label, 'doo')
+        assert.strictEqual(output[2].label, 'yabba')
+    })
+
+    it ('returns an empty array if no buckets are added', () => {
+        const temp = createBucketQuickPickItems([])
+        assert.strictEqual(temp.length, 0)
     })
 })

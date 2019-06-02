@@ -5,9 +5,10 @@
 
 'use strict'
 
-import { CloudFormation, Lambda, STS } from 'aws-sdk'
+import { AWSError, CloudFormation, Lambda, S3, STS } from 'aws-sdk'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
+import { S3Client } from '../../../shared/clients/s3Client'
 import { StsClient } from '../../../shared/clients/stsClient'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 
@@ -97,4 +98,55 @@ export class MockStsClient implements StsClient {
         this.regionCode = regionCode
         this.getCallerIdentity = getCallerIdentity
     }
+}
+
+export class MockS3Client implements S3Client {
+    public constructor (
+        private readonly bucketToRegion: Map<string, string>
+    ) { }
+
+    public async getBucketLocation(bucket: string): Promise<S3.GetBucketLocationOutput> {
+        const region = this.bucketToRegion.get(bucket)
+        if (!region) {
+            throw new AWSError('bucket not found')
+        }
+
+        const valueToReturn: S3.GetBucketLocationOutput = {
+            LocationConstraint: region
+        }
+
+        return await latencyGenerator(valueToReturn)
+    }
+
+    public async listBuckets(): Promise<S3.ListBucketsOutput> {
+        const response: S3.ListBucketsOutput = {
+            Buckets: [],
+            // this is sample text from the docs:
+            // https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#listBuckets-property
+            Owner: {
+                DisplayName: 'own-display-name',
+                ID: 'examplee7a2f25102679df27bb0ae12b3f85be6f290b936c4393484be31'
+            }
+        }
+
+        const buckets = this.bucketToRegion.keys()
+        for (const bucket of buckets) {
+            response.Buckets!.push({
+                CreationDate: new Date(),
+                Name: bucket
+            })
+        }
+
+        return await latencyGenerator(response)
+    }
+}
+
+// generates a random call latency from 0-50 ms
+async function latencyGenerator<T>(valueToReturn: T): Promise<T> {
+    return new Promise<T>((resolve) => {
+        setTimeout(
+            () => resolve(valueToReturn),
+            Math.random() * 50
+        )
+    })
 }

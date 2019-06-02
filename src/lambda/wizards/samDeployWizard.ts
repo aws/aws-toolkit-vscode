@@ -437,21 +437,11 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         }
         // does the selected region have buckets? If so, add to the QP
         const regionBucket = this.bucketsByRegion.get(selectedRegion)
-        let buckets: vscode.QuickPickItem[] | undefined
+
         if (regionBucket && regionBucket.length > 0) {
-            // turn these into quick pick items
-            buckets = createBucketQuickPickItems(regionBucket, initialValue)
+            quickPick.items = createBucketQuickPickItems(regionBucket, initialValue)
         }
-        // add the buckets to the QP OR add a message that buckets don't exist (and prompt to go back)
-        if (buckets && buckets.length > 0) {
-            quickPick.items = buckets.sort((a, b) => {
-                if (a.label < b.label) {
-                    return -1
-                } else {
-                    return 1
-                }
-            })
-        } else {
+        if (quickPick.items.length === 0) {
             bucketMessage = bucketMessage || localize(
                 'AWS.samcli.deploy.s3bucket.error.none',
                 'You do not have access to any S3 buckets in {0}',
@@ -765,7 +755,7 @@ async function getTemplateChoices(
 }
 
 export async function addBucketsToRegionMap(
-    buckets: S3.Bucket[],
+    buckets: Pick<S3.Bucket, 'Name'>[],
     bucketsByRegion: Map<string, string[]>,
     s3Client: S3Client
 ): Promise<void> {
@@ -791,6 +781,7 @@ export function normalizeLocation(location?: string): string {
 
     return location
 }
+
 export function addBucketToRegionMap(bucket: string, bucketsByRegion: Map<string, string[]>, region: string) {
     // just in case the region doesn't exist. This should already be populated
     if (!bucketsByRegion.has(region)) {
@@ -804,7 +795,7 @@ export function createBucketQuickPickItems(
     initialValue?: string
 ): vscode.QuickPickItem[] {
     // turn these into quick pick items
-    return bucketsInRegion.map(b => (
+    const output = bucketsInRegion.map(b => (
         {
             label: b!,
             // this is the only way to get this to show on going back
@@ -814,4 +805,12 @@ export function createBucketQuickPickItems(
                 localize('AWS.samcli.wizard.selectedPreviously', 'Selected Previously') : ''
         }
     ))
+
+    return output.sort((a, b) => {
+        if (a.label < b.label) {
+            return -1
+        } else {
+            return 1
+        }
+    })
 }
