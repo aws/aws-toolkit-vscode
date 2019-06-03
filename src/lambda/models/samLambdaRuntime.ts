@@ -16,6 +16,7 @@ export type SamLambdaRuntime =
     'python' |
     'nodejs6.10' |
     'nodejs8.10' |
+    'nodejs10.x' |
     'nodejs' |
     'dotnetcore2.1' |
     'dotnetcore2.0' |
@@ -36,6 +37,7 @@ export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set(
     'python',
     'nodejs6.10',
     'nodejs8.10',
+    'nodejs10.x',
     'nodejs',
     'dotnetcore2.1',
     'dotnetcore2.0',
@@ -68,6 +70,7 @@ export function getFamily(runtime: string | undefined): SamLambdaRuntimeFamily {
             return SamLambdaRuntimeFamily.Python
         case 'nodejs6.10':
         case 'nodejs8.10':
+        case 'nodejs10.x':
         case 'nodejs':
             return SamLambdaRuntimeFamily.NodeJS
         case 'dotnetcore2.1':
