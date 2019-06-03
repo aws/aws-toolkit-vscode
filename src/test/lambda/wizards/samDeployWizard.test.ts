@@ -781,6 +781,10 @@ describe('normalizeLocation', () => {
     it ('handles EU region', () => {
         assert.strictEqual(normalizeLocation('EU'), 'eu-west-1')
     })
+
+    it ('does not modify non-special-case regions', () => {
+        assert.strictEqual(normalizeLocation('us-west-2'), 'us-west-2')
+    })
 })
 
 describe('addBucketToRegionMap', () => {
