@@ -27,7 +27,7 @@ import { TelemetryService } from '../telemetry/telemetryService'
 import { Datum } from '../telemetry/telemetryTypes'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
-import { getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
+import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
 import {
     CodeLensProviderParams,
     getInvokeCmdKey,
@@ -219,7 +219,8 @@ async function onLocalInvokeCommand(
         } else {
             const { debuggerPath } = await context.installDebugger({
                 runtime,
-                targetFolder: codeUri
+                targetFolder: codeUri,
+                channelLogger
             })
             const port = await getDebugPort()
             const debugConfig = makeCoreCLRDebugConfiguration({
@@ -434,6 +435,7 @@ export function generateDotNetLambdaHandler(components: DotNetLambdaHandlerCompo
 interface InstallDebuggerArgs {
     runtime: string,
     targetFolder: string
+    channelLogger: ChannelLogger
 }
 
 interface InstallDebuggerResult {
@@ -441,7 +443,7 @@ interface InstallDebuggerResult {
 }
 
 async function _installDebugger(
-    { runtime, targetFolder }: InstallDebuggerArgs,
+    { runtime, targetFolder, channelLogger }: InstallDebuggerArgs,
     { dockerClient }: { dockerClient: DockerClient }
 ): Promise<InstallDebuggerResult> {
     const vsdbgPath = path.resolve(targetFolder, '.vsdbg')
@@ -451,6 +453,12 @@ async function _installDebugger(
     } catch {
         // We could not access vsdbgPath, probably because it doesn't exist.
         try {
+            channelLogger.info(
+                'AWS.samcli.local.invoke.debugger.install',
+                'Installing .NET Core Debugger to {0}...',
+                vsdbgPath
+            )
+
             await mkdir(vsdbgPath)
             await dockerClient.invoke({
                 command: 'run',
@@ -470,6 +478,15 @@ async function _installDebugger(
                 }
             })
         } catch (err) {
+            channelLogger.info(
+                'AWS.samcli.local.invoke.debugger.install.failed',
+                'Error installing .NET Core Debugger: {0}',
+                err instanceof Error ? err as Error : String(err)
+            )
+            channelLogger.info(
+                'AWS.samcli.local.invoke.debugger.install.cleanup',
+                'Cleaning up bad .NET Core Debugger installation...'
+            )
             // Clean up to avoid leaving a bad installation in the user's workspace.
             await del(vsdbgPath, { force: true })
             throw err

@@ -9,24 +9,24 @@ import * as assert from 'assert'
 import * as path from 'path'
 
 import {
-    Closeable,
     DefaultDockerClient,
     DockerInvokeArguments
 } from '../../../shared/clients/dockerClient'
+import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 
-class MockCloseable implements Closeable {
-    private callback?: (code: number, signal: string, args?: string[]) => void
-
-    public onClose(callback: (code: number, signal: string, args?: string[]) => void): void {
-        this.callback = callback
-    }
-
-    public close(code: number, signal: string, args?: string[]) {
-        if (!this.callback) {
-            throw new Error('Callback not set')
-        }
-
-        this.callback(code, signal, args)
+function makeResult(
+    {
+        exitCode = 0,
+        error,
+        stdout = '',
+        stderr = ''
+    }: Partial<ChildProcessResult>
+): ChildProcessResult {
+    return {
+        exitCode,
+        error,
+        stdout,
+        stderr
     }
 }
 
@@ -46,61 +46,53 @@ describe('DefaultDockerClient', async () => {
     describe('invoke', async () => {
         it('uses the specified command', async () => {
             let spawnCount = 0
-            const closeable = new MockCloseable()
             const client = new DefaultDockerClient({
-                spawn(command, args, options): Closeable {
+                async run(args): Promise<ChildProcessResult> {
                     spawnCount++
                     assert.ok(args)
                     assert.ok(args!.length)
                     assert.strictEqual(args![0], 'run')
 
-                    return closeable
+                    return makeResult({})
                 }
             })
 
-            const invokePromise = client.invoke(makeInvokeArgs({}))
-            closeable.close(0, 'mysignal')
-            await invokePromise
+            await client.invoke(makeInvokeArgs({}))
 
             assert.strictEqual(spawnCount, 1)
         })
 
         it('uses the specified image', async () => {
             let spawnCount = 0
-            const closeable = new MockCloseable()
             const client = new DefaultDockerClient({
-                spawn(command, args, options): Closeable {
+                async run(args): Promise<ChildProcessResult> {
                     spawnCount++
                     assert.strictEqual(args && args.some(arg => arg === 'myimage'), true)
 
-                    return closeable
+                    return makeResult({})
                 }
+
             })
 
-            const invokePromise = client.invoke(makeInvokeArgs({}))
-            closeable.close(0, 'mysignal')
-            await invokePromise
+            await client.invoke(makeInvokeArgs({}))
 
             assert.strictEqual(spawnCount, 1)
         })
 
         it('includes the --rm flag if specified', async () => {
             let spawnCount = 0
-            const closeable = new MockCloseable()
             const client = new DefaultDockerClient({
-                spawn(command, args, options): Closeable {
+                async run(args): Promise<ChildProcessResult> {
                     spawnCount++
                     assert.strictEqual(args && args.some(arg => arg === '--rm'), true)
 
-                    return closeable
+                    return makeResult({})
                 }
             })
 
-            const invokePromise = client.invoke(makeInvokeArgs({
+            await client.invoke(makeInvokeArgs({
                 removeOnExit: true
             }))
-            closeable.close(0, 'mysignal')
-            await invokePromise
 
             assert.strictEqual(spawnCount, 1)
         })
@@ -110,9 +102,8 @@ describe('DefaultDockerClient', async () => {
             const destination = path.join('my', 'dst')
 
             let spawnCount = 0
-            const closeable = new MockCloseable()
             const client = new DefaultDockerClient({
-                spawn(command, args, options): Closeable {
+                async run(args): Promise<ChildProcessResult> {
                     spawnCount++
 
                     assert.ok(args)
@@ -127,19 +118,17 @@ describe('DefaultDockerClient', async () => {
                         `type=bind,src=${source},dst=${destination}`
                     )
 
-                    return closeable
+                    return makeResult({})
                 }
             })
 
-            const invokePromise = client.invoke(makeInvokeArgs({
+            await client.invoke(makeInvokeArgs({
                 mount: {
                     type: 'bind',
                     source,
                     destination
                 }
             }))
-            closeable.close(0, 'mysignal')
-            await invokePromise
 
             assert.strictEqual(spawnCount, 1)
         })
@@ -150,9 +139,8 @@ describe('DefaultDockerClient', async () => {
                 'myArg2'
             ]
             let spawnCount = 0
-            const closeable = new MockCloseable()
             const client = new DefaultDockerClient({
-                spawn(command, args, options): Closeable {
+                async run(args): Promise<ChildProcessResult> {
                     spawnCount++
 
                     assert.ok(args)
@@ -174,57 +162,16 @@ describe('DefaultDockerClient', async () => {
                         assert.strictEqual(args![argIndex], value)
                     })
 
-                    return closeable
+                    return makeResult({})
                 }
             })
 
-            const invokePromise = client.invoke(makeInvokeArgs({
+            await client.invoke(makeInvokeArgs({
                 entryPoint: {
                     command: 'mycommand',
                     args: entryPointArgs
                 }
             }))
-            closeable.close(0, 'mysignal')
-            await invokePromise
-
-            assert.strictEqual(spawnCount, 1)
-        })
-
-        it('relies on PATH to locate docker', async () => {
-            let spawnCount = 0
-            const closeable = new MockCloseable()
-            const client = new DefaultDockerClient({
-                spawn(command, args, options): Closeable {
-                    spawnCount++
-                    assert.strictEqual(command, 'docker')
-
-                    return closeable
-                }
-            })
-
-            const invokePromise = client.invoke(makeInvokeArgs({}))
-            closeable.close(0, 'mysignal')
-            await invokePromise
-
-            assert.strictEqual(spawnCount, 1)
-        })
-
-        it('uses verbatim arguments on windows', async () => {
-            let spawnCount = 0
-            const closeable = new MockCloseable()
-            const client = new DefaultDockerClient({
-                spawn(command, args, options): Closeable {
-                    spawnCount++
-                    assert.ok(options)
-                    assert.strictEqual(options!.windowsVerbatimArguments, true)
-
-                    return closeable
-                }
-            })
-
-            const invokePromise = client.invoke(makeInvokeArgs({}))
-            closeable.close(0, 'mysignal')
-            await invokePromise
 
             assert.strictEqual(spawnCount, 1)
         })
