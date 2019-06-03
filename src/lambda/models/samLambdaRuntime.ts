@@ -93,3 +93,23 @@ export function getFamily(runtime: string | undefined): SamLambdaRuntimeFamily {
 
     }
 }
+
+// This allows us to do things like "sort" nodejs10.x after nodejs8.10
+// Map Values are used for comparisons, not for display
+const runtimeCompareText: Map<SamLambdaRuntime, string> = new Map<SamLambdaRuntime, string>(
+    [
+        ['nodejs6.10', 'nodejs06.10'],
+        ['nodejs8.10', 'nodejs08.10'],
+    ]
+)
+
+function getSortableCompareText(runtime: SamLambdaRuntime): string {
+    return runtimeCompareText.get(runtime) || runtime.toString()
+}
+
+export function compareSamLambdaRuntime(
+    a: SamLambdaRuntime,
+    b: SamLambdaRuntime,
+): number {
+    return getSortableCompareText(a).localeCompare(getSortableCompareText(b))
+}
