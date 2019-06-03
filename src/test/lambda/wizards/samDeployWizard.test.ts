@@ -738,7 +738,7 @@ describe('SamDeployWizard', async () => {
 })
 
 describe('addBucketsToRegionMap', async () => {
-    it('adds buckets the bucketsByRegion map', async () => {
+    it('adds buckets to a region-sorted map', async () => {
         const output = new Map<string, string[]>()
         output.set('region1', [])
         output.set('region2', [])
