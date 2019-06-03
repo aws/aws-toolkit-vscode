@@ -11,6 +11,8 @@ All notable changes to the "aws-vscode-tools" extension will be documented in th
 * When creating a new SAM Application, the toolkit now checks for a valid SAM CLI version before prompting the user for inputs
 * When deploying a SAM Application, the toolkit now checks for a valid SAM CLI version before prompting the user for inputs
 * Telemetry now sends AWS account data
+* Minimum SAM CLI version has been bumped to 0.16.0
+* Added support for local run and debug of node 10.x SAM Applications
 
 ## 0.1.1 (Developer Preview)
 
