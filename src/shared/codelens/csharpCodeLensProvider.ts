@@ -5,7 +5,6 @@
 
 'use strict'
 
-import * as del from 'del'
 import * as path from 'path'
 import * as vscode from 'vscode'
 
@@ -442,56 +441,63 @@ interface InstallDebuggerResult {
     debuggerPath: string
 }
 
-async function _installDebugger(
-    { runtime, targetFolder, channelLogger }: InstallDebuggerArgs,
-    { dockerClient }: { dockerClient: DockerClient }
-): Promise<InstallDebuggerResult> {
-    const vsdbgPath = path.resolve(targetFolder, '.vsdbg')
+function getDebuggerPath(parentFolder: string): string {
+    return path.resolve(parentFolder, '.vsdbg')
+}
+
+async function ensureDebuggerPathExists(
+    parentFolder: string
+): Promise<void> {
+    const vsdbgPath = getDebuggerPath(parentFolder)
 
     try {
         await access(vsdbgPath)
     } catch {
-        // We could not access vsdbgPath, probably because it doesn't exist.
-        try {
-            channelLogger.info(
-                'AWS.samcli.local.invoke.debugger.install',
-                'Installing .NET Core Debugger to {0}...',
-                vsdbgPath
-            )
-
-            await mkdir(vsdbgPath)
-            await dockerClient.invoke({
-                command: 'run',
-                image: `lambci/lambda:${runtime}`,
-                removeOnExit: true,
-                mount: {
-                    type: 'bind',
-                    source: vsdbgPath,
-                    destination: '/vsdbg'
-                },
-                entryPoint: {
-                    command: 'bash',
-                    args: [
-                        '-c',
-                        '"curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg"'
-                    ]
-                }
-            })
-        } catch (err) {
-            channelLogger.info(
-                'AWS.samcli.local.invoke.debugger.install.failed',
-                'Error installing .NET Core Debugger: {0}',
-                err instanceof Error ? err as Error : String(err)
-            )
-            channelLogger.info(
-                'AWS.samcli.local.invoke.debugger.install.cleanup',
-                'Cleaning up bad .NET Core Debugger installation...'
-            )
-            // Clean up to avoid leaving a bad installation in the user's workspace.
-            await del(vsdbgPath, { force: true })
-            throw err
-        }
+        await mkdir(vsdbgPath)
     }
+}
 
-    return { debuggerPath: vsdbgPath }
+async function _installDebugger(
+    { runtime, targetFolder, channelLogger }: InstallDebuggerArgs,
+    { dockerClient }: { dockerClient: DockerClient }
+): Promise<InstallDebuggerResult> {
+    await ensureDebuggerPathExists(targetFolder)
+
+    try {
+        const vsdbgPath = getDebuggerPath(targetFolder)
+
+        channelLogger.info(
+            'AWS.samcli.local.invoke.debugger.install',
+            'Installing .NET Core Debugger to {0}...',
+            vsdbgPath
+        )
+
+        await dockerClient.invoke({
+            command: 'run',
+            image: `lambci/lambda:${runtime}`,
+            removeOnExit: true,
+            mount: {
+                type: 'bind',
+                source: vsdbgPath,
+                destination: '/vsdbg'
+            },
+            entryPoint: {
+                command: 'bash',
+                args: [
+                    '-c',
+                    '"curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg"'
+                ]
+            }
+        })
+
+        return { debuggerPath: vsdbgPath }
+    } catch (err) {
+        channelLogger.info(
+            'AWS.samcli.local.invoke.debugger.install.failed',
+            'Error installing .NET Core Debugger: {0}',
+            err instanceof Error ? err as Error : String(err)
+        )
+
+        throw err
+    }
 }
