@@ -6,7 +6,7 @@
 'use strict'
 
 import * as vscode from 'vscode'
-import { ChildProcess, ChildProcessResult } from '../utilities/childProcess'
+import { ChildProcess } from '../utilities/childProcess'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 
 export interface DockerClient {
