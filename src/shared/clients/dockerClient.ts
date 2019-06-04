@@ -49,10 +49,37 @@ class DefaultDockerInvokeContext implements DockerInvokeContext {
             ...(args || [])
         )
 
-        const result = await process.run()
-        if (result.exitCode) {
-            throw new DockerError(result, args)
-        }
+        return new Promise<void>(async (resolve, reject) => {
+            let stderr: string
+
+            await process.start({
+                onStdout: (text: string) => {
+                    this.channelLogger.channel.append(text)
+                },
+                onStderr: (text: string) => {
+                    stderr += text
+                },
+                onError: (error: Error) => {
+                    reject(error)
+                },
+                onClose: (code, signal) => {
+                    if (code) {
+                        const errorMessage: string = `Could not invoke docker with arguments: [${args.join(', ')}].`
+                            + `${JSON.stringify(
+                                {
+                                    exitCode: code,
+                                    stdErr: stderr,
+                                },
+                                undefined,
+                                4)}`
+
+                        reject(new Error(errorMessage))
+                    }
+
+                    resolve()
+                }
+            })
+        })
     }
 }
 
