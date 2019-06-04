@@ -142,7 +142,6 @@
     "AWS.samcli.local.invoke.port.not.open": "The debug port doesn't appear to be open. The debugger might not succeed when attaching to your SAM Application.",
     "AWS.samcli.local.invoke.debugger.install": "Installing .NET Core Debugger to {0}...",
     "AWS.samcli.local.invoke.debugger.install.failed": "Error installing .NET Core Debugger: {0}",
-    "AWS.samcli.local.invoke.debugger.install.cleanup": "Cleaning up bad .NET Core Debugger installation...",
     "AWS.samcli.local.invoke.debugger.timeout": "The SAM process did not make the debugger available within the time limit",
     "AWS.samcli.notification.not.found": "Unable to find SAM CLI. It is required in order to work with Serverless Applications locally.",
     "AWS.samcli.notification.unexpected.validation.issue": "An unexpected issue occured while validating SAM CLI: {0}",
