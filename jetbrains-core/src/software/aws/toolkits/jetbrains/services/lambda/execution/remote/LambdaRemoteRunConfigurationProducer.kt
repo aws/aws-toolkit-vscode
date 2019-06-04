@@ -12,7 +12,7 @@ import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiElement
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
 
-@Suppress("DEPRECATION") // LazyRunConfigurationProducer not added till 2019.1 FIX_WHEN_MIN_IS_192
+@Suppress("DEPRECATION") // LazyRunConfigurationProducer not added till 2019.1
 class LambdaRemoteRunConfigurationProducer : RunConfigurationProducer<LambdaRemoteRunConfiguration>(getFactory()) {
     // Filter all Lambda run configurations down to only ones that are Lambda remote for this run producer
     override fun getConfigurationSettingsList(runManager: RunManager): List<RunnerAndConfigurationSettings> =

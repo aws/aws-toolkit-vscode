@@ -35,7 +35,7 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
 
     override fun getIcon(): Icon? = AwsIcons.Resources.LAMBDA_FUNCTION
 
-    @Suppress("DEPRECATION") // Non-deprecated constructor for LineMarkerInfo not introduced till 2019.1 FIX_WHEN_MIN_IS_192
+    @Suppress("DEPRECATION") // Non-deprecated constructor for LineMarkerInfo not introduced till 2019.1
     override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<*>? {
         // Only process leaf elements
         if (element.firstChild != null) {
