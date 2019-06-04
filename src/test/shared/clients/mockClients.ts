@@ -102,10 +102,12 @@ export class MockStsClient implements StsClient {
 
 export class MockS3Client implements S3Client {
     public constructor (
-        private readonly bucketToRegion: Map<string, string>
+        private readonly bucketToRegion: Map<string, string>,
+        private readonly throwError: boolean = false
     ) { }
 
     public async getBucketLocation(bucket: string): Promise<S3.GetBucketLocationOutput> {
+        shouldThrowError(this.throwError)
         const region = this.bucketToRegion.get(bucket)
         if (!region) {
             throw new AWSError('bucket not found')
@@ -119,6 +121,7 @@ export class MockS3Client implements S3Client {
     }
 
     public async listBuckets(): Promise<S3.ListBucketsOutput> {
+        shouldThrowError(this.throwError)
         const response: S3.ListBucketsOutput = {
             Buckets: [],
             // this is sample text from the docs:
@@ -149,4 +152,10 @@ async function latencyGenerator<T>(valueToReturn: T): Promise<T> {
             Math.random() * 50
         )
     })
+}
+
+function shouldThrowError(shouldThrow: boolean): void {
+    if (shouldThrow) {
+        throw new AWSError('client-generated AWS error')
+    }
 }

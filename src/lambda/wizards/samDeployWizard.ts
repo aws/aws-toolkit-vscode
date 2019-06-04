@@ -137,11 +137,6 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             'View Documentation'
         )
     )
-    // this represents a cache that is created once per wizard load.
-    // key: region code, value: array of buckets in the region
-    // if we wish to change the frequency of this cache, remove `readonly` so you can reassign later
-    private readonly bucketsByRegion: Map<string, string[]> = new Map<string, string[]>()
-    private populatedBucketsByRegion: boolean = false
 
     public constructor(private readonly extContext: Pick<vscode.ExtensionContext, 'asAbsolutePath'>) {
     }
@@ -305,15 +300,6 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     ): Promise<string | undefined> {
         const regionData = await regionProvider.getRegionData()
 
-        if (this.bucketsByRegion.size === 0) {
-            for (const regionDatum of regionData) {
-                // populate the bucketsByRegion map with empty arrays here
-                // that way, we can push into the arrays without worrying whether or not they exist
-                // and avoid all of the async concerns that come with that
-                this.bucketsByRegion.set(regionDatum.regionCode, [])
-            }
-        }
-
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
                 title: localize(
@@ -378,6 +364,23 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             'Loading S3 buckets...',
         )
 
+        const s3ErrorLabel = localize(
+            'AWS.samcli.deploy.s3bucket.error',
+            'There was a problem accessing S3 in region {0}',
+            selectedRegion
+        )
+
+        const s3NoBucketsLabel = localize(
+            'AWS.samcli.deploy.s3bucket.error.none',
+            'You do not have access to any S3 buckets in {0}',
+            selectedRegion
+        )
+
+        const s3GoBack = localize(
+            'AWS.samcli.deploy.s3bucket.error.none.description',
+            'Go back to region selection...'
+        )
+
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             buttons: [
                 this.helpButton,
@@ -405,56 +408,40 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         picker.makeQuickPickBusy(quickPick)
         quickPick.show()
 
-        let listBucketsResponse: S3.ListBucketsOutput | undefined
-        let bucketMessage: string | undefined
-        let bucketError: string | undefined
-        // does the cache have any entries? If so, don't list buckets
-        if (!this.populatedBucketsByRegion) {
-            try {
-                listBucketsResponse = await s3Client.listBuckets()
+        try {
+            const listBucketsResponse = await s3Client.listBuckets()
 
-                // sort through buckets and add to cache if you had to run a listBuckets
-                if (listBucketsResponse && listBucketsResponse.Buckets) {
-                    // listBuckets lists all buckets tied to an account regardless of region
-                    // we need to filter the list ourselves since we do care about the region
-                    await addBucketsToRegionMap(listBucketsResponse.Buckets, this.bucketsByRegion, s3Client)
-                    // you've successfully added buckets to regions. Cool. Now don't do it again.
-                    this.populatedBucketsByRegion = true
-                }
-
-            } catch (err) {
-                // user doesn't have access to region for some reason
-                // change bucketError message
-                const error = err as Error
-                bucketMessage = localize(
-                    'AWS.samcli.deploy.s3bucket.error',
-                    'There was a problem accessing S3 in region {0}',
-                    selectedRegion
+            // sort through buckets and add to cache if you had to run a listBuckets
+            if (listBucketsResponse && listBucketsResponse.Buckets) {
+                // listBuckets lists all buckets tied to an account regardless of region
+                // we need to filter the list ourselves since we do care about the region
+                const bucketsForRegion = await getBucketsForRegion(
+                    listBucketsResponse.Buckets,
+                    selectedRegion,
+                    s3Client
                 )
-                bucketError = error.message
+                quickPick.items = createBucketQuickPickItems(bucketsForRegion, initialValue)
             }
 
-        }
-        // does the selected region have buckets? If so, add to the QP
-        const regionBucket = this.bucketsByRegion.get(selectedRegion)
-
-        if (regionBucket && regionBucket.length > 0) {
-            quickPick.items = createBucketQuickPickItems(regionBucket, initialValue)
-        }
-        if (quickPick.items.length === 0) {
-            bucketMessage = bucketMessage || localize(
-                'AWS.samcli.deploy.s3bucket.error.none',
-                'You do not have access to any S3 buckets in {0}',
-                selectedRegion
-            )
+            // no buckets found for region
+            if (quickPick.items.length === 0) {
+                quickPick.items = [
+                    {
+                        label: s3NoBucketsLabel,
+                        description: s3GoBack
+                    }
+                ]
+            }
+        } catch (err) {
+            // user doesn't have access to region for some reason
+            const error = err as Error
+            const logger = getLogger()
+            logger.warn(error)
             quickPick.items = [
                 {
-                    label: bucketMessage,
-                    detail: bucketError,
-                    description: localize(
-                        'AWS.samcli.deploy.s3bucket.error.none.description',
-                        'Go back to region selection...'
-                    )
+                    label: s3ErrorLabel,
+                    description: s3GoBack,
+                    detail: error.message
                 }
             ]
         }
@@ -475,7 +462,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
         const val = picker.verifySinglePickerOutput(pickedItem)
 
-        return (val && val.label !== bucketMessage) ? val.label : undefined
+        return (val && val.label !== s3ErrorLabel && val.label !== s3NoBucketsLabel) ? val.label : undefined
     }
 
     /**
@@ -754,20 +741,35 @@ async function getTemplateChoices(
         .sort((a, b) => a.compareTo(b))
 }
 
-export async function addBucketsToRegionMap(
+export async function getBucketsForRegion(
     buckets: Pick<S3.Bucket, 'Name'>[],
-    bucketsByRegion: Map<string, string[]>,
+    region: string,
     s3Client: S3Client
-): Promise<void> {
+): Promise<string[]> {
+    const bucketsInSelectedRegion: string[] = []
+
     const promises = buckets
         .filter(bucket => bucket.Name)
         .map(async bucket => {
-            const bucketLocation = await s3Client.getBucketLocation(bucket.Name!)
-            const transformedLocation = normalizeLocation(bucketLocation.LocationConstraint)
-            addBucketToRegionMap(bucket.Name!, bucketsByRegion, transformedLocation)
+            if (bucket.Name) {
+                try {
+                    const bucketLocation = await s3Client.getBucketLocation(bucket.Name)
+                    const transformedLocation = normalizeLocation(bucketLocation.LocationConstraint)
+                    if (transformedLocation === region) {
+                        bucketsInSelectedRegion.push(bucket.Name)
+                    }
+                } catch (err) {
+                    // swallow error:
+                    // user has buckets in a region that they don't have access to and we just queried that bucket
+                    const logger = getLogger()
+                    logger.warn(err as Error)
+                }
+            }
         })
 
     await Promise.all(promises)
+
+    return bucketsInSelectedRegion
 }
 
 // correct blank and 'EU' locations:
@@ -782,22 +784,14 @@ export function normalizeLocation(location?: string): string {
     return location
 }
 
-export function addBucketToRegionMap(bucket: string, bucketsByRegion: Map<string, string[]>, region: string) {
-    // just in case the region doesn't exist. This should already be populated
-    if (!bucketsByRegion.has(region)) {
-        bucketsByRegion.set(region, [])
-    }
-    bucketsByRegion.get(region)!.push(bucket)
-}
-
 export function createBucketQuickPickItems(
-    bucketsInRegion: string[],
+    buckets: string[],
     initialValue?: string
 ): vscode.QuickPickItem[] {
     // turn these into quick pick items
-    const output = bucketsInRegion.map(b => (
+    const output = buckets.map(b => (
         {
-            label: b!,
+            label: b,
             // this is the only way to get this to show on going back
             // this will make it so it always shows even when searching for something else
             alwaysShow: b === initialValue,
@@ -807,10 +801,6 @@ export function createBucketQuickPickItems(
     ))
 
     return output.sort((a, b) => {
-        if (a.label < b.label) {
-            return -1
-        } else {
-            return 1
-        }
+        return a.label.localeCompare(b.label)
     })
 }

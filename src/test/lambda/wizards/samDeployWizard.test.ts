@@ -11,9 +11,8 @@ import * as vscode from 'vscode'
 import { detectLocalTemplates } from '../../../lambda/local/detectLocalTemplates'
 import * as paramUtils from '../../../lambda/utilities/parameterUtils'
 import {
-    addBucketsToRegionMap,
-    addBucketToRegionMap,
     createBucketQuickPickItems,
+    getBucketsForRegion,
     normalizeLocation,
     ParameterPromptResult,
     SamDeployWizard,
@@ -737,35 +736,41 @@ describe('SamDeployWizard', async () => {
     })
 })
 
-describe('addBucketsToRegionMap', async () => {
-    it('adds buckets to a region-sorted map', async () => {
-        const output = new Map<string, string[]>()
-        output.set('region1', [])
-        output.set('region2', [])
+describe('getBucketsForRegion', async () => {
 
+    const bucketsArray = [
+        { Name: 'bucket1a' },
+        { Name: 'bucket1b' },
+        { Name: 'bucket2a' },
+        { Name: 'bucket2b' },
+    ]
+
+    it ('adds buckets for a region into an array', async () => {
         const bucketsMap = new Map<string, string>()
         bucketsMap.set('bucket1a', 'region1')
         bucketsMap.set('bucket2a', 'region2')
         bucketsMap.set('bucket1b', 'region1')
         bucketsMap.set('bucket2b', 'region2')
 
-        const bucketsArray = [
-            { Name: 'bucket1a' },
-            { Name: 'bucket1b' },
-            { Name: 'bucket2a' },
-            { Name: 'bucket2b' },
-        ]
         const s3 = new MockS3Client(bucketsMap)
-        await addBucketsToRegionMap(bucketsArray, output, s3)
 
-        assert.strictEqual(output.size, 2)
-        assert.strictEqual(output.get('region1')!.length, 2)
-        assert.ok(output.get('region1')!.indexOf('bucket1a') > -1)
-        assert.ok(output.get('region1')!.indexOf('bucket1b') > -1)
-        assert.strictEqual(output.get('region2')!.length, 2)
-        assert.ok(output.get('region2')!.indexOf('bucket2a') > -1)
-        assert.ok(output.get('region2')!.indexOf('bucket2b') > -1)
+        const bucketsInRegion = await getBucketsForRegion(bucketsArray, 'region1', s3)
 
+        assert.ok (Array.isArray(bucketsInRegion))
+        assert.strictEqual(bucketsInRegion.length, 2)
+        assert.ok(bucketsInRegion.indexOf('bucket1a') > -1)
+        assert.ok(bucketsInRegion.indexOf('bucket1b') > -1)
+        assert.strictEqual(bucketsInRegion.indexOf('bucket2a'), -1)
+        assert.strictEqual(bucketsInRegion.indexOf('bucket2b'), -1)
+    })
+
+    it ('returns an array even if an error is thrown', async () => {
+        const s3 = new MockS3Client(new Map<string, string>(), true)
+
+        const bucketsInRegion = await getBucketsForRegion(bucketsArray, 'region1', s3)
+
+        assert.ok(Array.isArray(bucketsInRegion))
+        assert.strictEqual(bucketsInRegion.length, 0)
     })
 })
 
@@ -784,23 +789,6 @@ describe('normalizeLocation', () => {
 
     it ('does not modify non-special-case regions', () => {
         assert.strictEqual(normalizeLocation('us-west-2'), 'us-west-2')
-    })
-})
-
-describe('addBucketToRegionMap', () => {
-    it ('creates a map entry if one does not exist', () => {
-        const map = new Map<string, string[]>()
-        addBucketToRegionMap('bucket', map, 'region')
-        assert.ok(map.has('region'))
-        assert.deepStrictEqual(map.get('region'), ['bucket'])
-    })
-
-    it ('adds to the array for a preinitialized region', () => {
-        const map = new Map<string, string[]>()
-        map.set('region', ['bucket1', 'bucket2'])
-        addBucketToRegionMap('bucket3', map, 'region')
-        assert.ok(map.has('region'))
-        assert.deepStrictEqual(map.get('region'), ['bucket1', 'bucket2', 'bucket3'])
     })
 })
 
