@@ -45,7 +45,7 @@ class DefaultDockerInvokeContext implements DockerInvokeContext {
     public async run(args: string[]): Promise<void> {
         const process = new ChildProcess(
             'docker',
-            { windowsVerbatimArguments: true },
+            {},
             ...(args || [])
         )
 

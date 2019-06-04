@@ -491,7 +491,7 @@ async function _installDebugger(
                 command: 'bash',
                 args: [
                     '-c',
-                    '"curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg"'
+                    'curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg'
                 ]
             }
         })
