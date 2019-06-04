@@ -120,12 +120,3 @@ export class DefaultDockerClient implements DockerClient {
         await this.context.run(args)
     }
 }
-
-export class DockerError extends Error {
-    public constructor(
-        result: ChildProcessResult,
-        args: string[]
-    ) {
-        super(`Could not invoke docker with arguments: [${args.join(', ')}]. ${JSON.stringify(result, undefined, 4)}`)
-    }
-}
