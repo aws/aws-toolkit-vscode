@@ -12,23 +12,6 @@ import {
     DefaultDockerClient,
     DockerInvokeArguments
 } from '../../../shared/clients/dockerClient'
-import { ChildProcessResult } from '../../../shared/utilities/childProcess'
-
-function makeResult(
-    {
-        exitCode = 0,
-        error,
-        stdout = '',
-        stderr = ''
-    }: Partial<ChildProcessResult>
-): ChildProcessResult {
-    return {
-        exitCode,
-        error,
-        stdout,
-        stderr
-    }
-}
 
 describe('DefaultDockerClient', async () => {
     function makeInvokeArgs({
@@ -47,13 +30,11 @@ describe('DefaultDockerClient', async () => {
         it('uses the specified command', async () => {
             let spawnCount = 0
             const client = new DefaultDockerClient({
-                async run(args): Promise<ChildProcessResult> {
+                async run(args): Promise<void> {
                     spawnCount++
                     assert.ok(args)
                     assert.ok(args!.length)
                     assert.strictEqual(args![0], 'run')
-
-                    return makeResult({})
                 }
             })
 
@@ -65,11 +46,9 @@ describe('DefaultDockerClient', async () => {
         it('uses the specified image', async () => {
             let spawnCount = 0
             const client = new DefaultDockerClient({
-                async run(args): Promise<ChildProcessResult> {
+                async run(args): Promise<void> {
                     spawnCount++
                     assert.strictEqual(args && args.some(arg => arg === 'myimage'), true)
-
-                    return makeResult({})
                 }
 
             })
@@ -82,11 +61,9 @@ describe('DefaultDockerClient', async () => {
         it('includes the --rm flag if specified', async () => {
             let spawnCount = 0
             const client = new DefaultDockerClient({
-                async run(args): Promise<ChildProcessResult> {
+                async run(args): Promise<void> {
                     spawnCount++
                     assert.strictEqual(args && args.some(arg => arg === '--rm'), true)
-
-                    return makeResult({})
                 }
             })
 
@@ -103,7 +80,7 @@ describe('DefaultDockerClient', async () => {
 
             let spawnCount = 0
             const client = new DefaultDockerClient({
-                async run(args): Promise<ChildProcessResult> {
+                async run(args): Promise<void> {
                     spawnCount++
 
                     assert.ok(args)
@@ -117,8 +94,6 @@ describe('DefaultDockerClient', async () => {
                         args![flagValueIndex],
                         `type=bind,src=${source},dst=${destination}`
                     )
-
-                    return makeResult({})
                 }
             })
 
@@ -140,7 +115,7 @@ describe('DefaultDockerClient', async () => {
             ]
             let spawnCount = 0
             const client = new DefaultDockerClient({
-                async run(args): Promise<ChildProcessResult> {
+                async run(args): Promise<void> {
                     spawnCount++
 
                     assert.ok(args)
@@ -161,8 +136,6 @@ describe('DefaultDockerClient', async () => {
                         assert.ok(argIndex < args!.length)
                         assert.strictEqual(args![argIndex], value)
                     })
-
-                    return makeResult({})
                 }
             })
 

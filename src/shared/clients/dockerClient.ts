@@ -5,6 +5,7 @@
 
 'use strict'
 
+// import * as vscode from 'vscode'
 import { ChildProcess, ChildProcessResult } from '../utilities/childProcess'
 
 export interface DockerClient {
@@ -27,19 +28,22 @@ export interface DockerInvokeArguments {
 }
 
 export interface DockerInvokeContext {
-    run(args: string[]): Promise<ChildProcessResult>
+    run(args: string[]): Promise<void>
 }
 
 // TODO: Replace with a library such as https://www.npmjs.com/package/node-docker-api.
 class DefaultDockerInvokeContext implements DockerInvokeContext {
-    public async run(args: string[]): Promise<ChildProcessResult> {
+    public async run(args: string[]): Promise<void> {
         const process = new ChildProcess(
             'docker',
             { windowsVerbatimArguments: true },
             ...(args || [])
         )
 
-        return await process.run()
+        const result = await process.run()
+        if (result.exitCode) {
+            throw new DockerError(result, args)
+        }
     }
 }
 
@@ -54,7 +58,7 @@ export class DefaultDockerClient implements DockerClient {
         mount,
         entryPoint
     }: DockerInvokeArguments): Promise<void> {
-        const args: string[] = [ command ]
+        const args: string[] = [command]
 
         if (removeOnExit) {
             args.push('--rm')
@@ -74,10 +78,7 @@ export class DefaultDockerClient implements DockerClient {
             args.push(...entryPoint.args)
         }
 
-        const result = await this.context.run(args)
-        if (result.exitCode) {
-            throw new DockerError(result, args)
-        }
+        await this.context.run(args)
     }
 }
 
