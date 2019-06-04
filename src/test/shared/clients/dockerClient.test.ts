@@ -12,8 +12,11 @@ import {
     DefaultDockerClient,
     DockerInvokeArguments
 } from '../../../shared/clients/dockerClient'
+import { MockOutputChannel } from '../../mockOutputChannel'
 
 describe('DefaultDockerClient', async () => {
+    const outputChannel = new MockOutputChannel()
+
     function makeInvokeArgs({
         command = 'run',
         image = 'myimage',
@@ -29,14 +32,16 @@ describe('DefaultDockerClient', async () => {
     describe('invoke', async () => {
         it('uses the specified command', async () => {
             let spawnCount = 0
-            const client = new DefaultDockerClient({
-                async run(args): Promise<void> {
-                    spawnCount++
-                    assert.ok(args)
-                    assert.ok(args!.length)
-                    assert.strictEqual(args![0], 'run')
-                }
-            })
+            const client = new DefaultDockerClient(
+                outputChannel,
+                {
+                    async run(args): Promise<void> {
+                        spawnCount++
+                        assert.ok(args)
+                        assert.ok(args!.length)
+                        assert.strictEqual(args![0], 'run')
+                    }
+                })
 
             await client.invoke(makeInvokeArgs({}))
 
@@ -45,13 +50,15 @@ describe('DefaultDockerClient', async () => {
 
         it('uses the specified image', async () => {
             let spawnCount = 0
-            const client = new DefaultDockerClient({
-                async run(args): Promise<void> {
-                    spawnCount++
-                    assert.strictEqual(args && args.some(arg => arg === 'myimage'), true)
-                }
+            const client = new DefaultDockerClient(
+                outputChannel,
+                {
+                    async run(args): Promise<void> {
+                        spawnCount++
+                        assert.strictEqual(args && args.some(arg => arg === 'myimage'), true)
+                    }
 
-            })
+                })
 
             await client.invoke(makeInvokeArgs({}))
 
@@ -60,12 +67,14 @@ describe('DefaultDockerClient', async () => {
 
         it('includes the --rm flag if specified', async () => {
             let spawnCount = 0
-            const client = new DefaultDockerClient({
-                async run(args): Promise<void> {
-                    spawnCount++
-                    assert.strictEqual(args && args.some(arg => arg === '--rm'), true)
-                }
-            })
+            const client = new DefaultDockerClient(
+                outputChannel,
+                {
+                    async run(args): Promise<void> {
+                        spawnCount++
+                        assert.strictEqual(args && args.some(arg => arg === '--rm'), true)
+                    }
+                })
 
             await client.invoke(makeInvokeArgs({
                 removeOnExit: true
@@ -79,23 +88,25 @@ describe('DefaultDockerClient', async () => {
             const destination = path.join('my', 'dst')
 
             let spawnCount = 0
-            const client = new DefaultDockerClient({
-                async run(args): Promise<void> {
-                    spawnCount++
+            const client = new DefaultDockerClient(
+                outputChannel,
+                {
+                    async run(args): Promise<void> {
+                        spawnCount++
 
-                    assert.ok(args)
+                        assert.ok(args)
 
-                    const flagIndex = args!.findIndex(value => value === '--mount')
-                    assert.notStrictEqual(flagIndex, -1)
+                        const flagIndex = args!.findIndex(value => value === '--mount')
+                        assert.notStrictEqual(flagIndex, -1)
 
-                    const flagValueIndex = flagIndex + 1
-                    assert.ok(flagValueIndex < args!.length)
-                    assert.strictEqual(
-                        args![flagValueIndex],
-                        `type=bind,src=${source},dst=${destination}`
-                    )
-                }
-            })
+                        const flagValueIndex = flagIndex + 1
+                        assert.ok(flagValueIndex < args!.length)
+                        assert.strictEqual(
+                            args![flagValueIndex],
+                            `type=bind,src=${source},dst=${destination}`
+                        )
+                    }
+                })
 
             await client.invoke(makeInvokeArgs({
                 mount: {
@@ -114,30 +125,32 @@ describe('DefaultDockerClient', async () => {
                 'myArg2'
             ]
             let spawnCount = 0
-            const client = new DefaultDockerClient({
-                async run(args): Promise<void> {
-                    spawnCount++
+            const client = new DefaultDockerClient(
+                outputChannel,
+                {
+                    async run(args): Promise<void> {
+                        spawnCount++
 
-                    assert.ok(args)
+                        assert.ok(args)
 
-                    const flagIndex = args!.findIndex(value => value === '--entrypoint')
-                    assert.notStrictEqual(flagIndex, -1)
+                        const flagIndex = args!.findIndex(value => value === '--entrypoint')
+                        assert.notStrictEqual(flagIndex, -1)
 
-                    const flagCommandIndex = flagIndex + 1
-                    assert.ok(flagCommandIndex < args!.length)
-                    assert.strictEqual(
-                        args![flagCommandIndex],
-                        'mycommand'
-                    )
+                        const flagCommandIndex = flagIndex + 1
+                        assert.ok(flagCommandIndex < args!.length)
+                        assert.strictEqual(
+                            args![flagCommandIndex],
+                            'mycommand'
+                        )
 
-                    const endIndex = (args!.length - 1)
-                    entryPointArgs.reverse().forEach((value, index) => {
-                        const argIndex = endIndex - index
-                        assert.ok(argIndex < args!.length)
-                        assert.strictEqual(args![argIndex], value)
-                    })
-                }
-            })
+                        const endIndex = (args!.length - 1)
+                        entryPointArgs.reverse().forEach((value, index) => {
+                            const argIndex = endIndex - index
+                            assert.ok(argIndex < args!.length)
+                            assert.strictEqual(args![argIndex], value)
+                        })
+                    }
+                })
 
             await client.invoke(makeInvokeArgs({
                 entryPoint: {

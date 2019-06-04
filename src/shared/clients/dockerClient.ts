@@ -5,8 +5,9 @@
 
 'use strict'
 
-// import * as vscode from 'vscode'
+import * as vscode from 'vscode'
 import { ChildProcess, ChildProcessResult } from '../utilities/childProcess'
+import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 
 export interface DockerClient {
     invoke(args: DockerInvokeArguments): Promise<void>
@@ -33,6 +34,14 @@ export interface DockerInvokeContext {
 
 // TODO: Replace with a library such as https://www.npmjs.com/package/node-docker-api.
 class DefaultDockerInvokeContext implements DockerInvokeContext {
+    private readonly channelLogger: ChannelLogger
+
+    public constructor(
+        outputChannel: vscode.OutputChannel,
+    ) {
+        this.channelLogger = getChannelLogger(outputChannel)
+    }
+
     public async run(args: string[]): Promise<void> {
         const process = new ChildProcess(
             'docker',
@@ -49,7 +58,10 @@ class DefaultDockerInvokeContext implements DockerInvokeContext {
 
 export class DefaultDockerClient implements DockerClient {
 
-    public constructor(private readonly context: DockerInvokeContext = new DefaultDockerInvokeContext()) { }
+    public constructor(
+        outputChannel: vscode.OutputChannel,
+        private readonly context: DockerInvokeContext = new DefaultDockerInvokeContext(outputChannel)
+    ) { }
 
     public async invoke({
         command,

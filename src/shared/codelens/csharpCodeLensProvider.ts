@@ -95,7 +95,13 @@ export interface OnLocalInvokeCommandContext {
 }
 
 class DefaultOnLocalInvokeCommandContext implements OnLocalInvokeCommandContext {
-    private readonly dockerClient: DockerClient = new DefaultDockerClient()
+    private readonly dockerClient: DockerClient
+
+    public constructor(
+        outputChannel: vscode.OutputChannel,
+    ) {
+        this.dockerClient = new DefaultDockerClient(outputChannel)
+    }
 
     public async installDebugger(args: InstallDebuggerArgs): Promise<InstallDebuggerResult> {
         return await _installDebugger(args, { dockerClient: this.dockerClient })
@@ -147,7 +153,7 @@ async function onLocalInvokeCommand(
             handlerName: string
         }): Promise<CloudFormation.Resource>,
     },
-    context: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext()
+    context: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext(toolkitOutputChannel)
 ): Promise<{ datum: Datum }> {
 
     const channelLogger = getChannelLogger(toolkitOutputChannel)
