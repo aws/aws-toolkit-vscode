@@ -199,7 +199,7 @@ async function onLocalInvokeCommand(
             documentUri,
             originalHandlerName: handlerName,
             handlerName,
-            originalSamTemplatePath: inputTemplatePath,
+            originalSamTemplatePath: lambdaLocalInvokeParams.samTemplate.fsPath,
             samTemplatePath,
             runtime,
         }
