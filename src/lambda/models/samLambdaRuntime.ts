@@ -15,8 +15,7 @@ export type SamLambdaRuntime =
     'python2.7' |
     'nodejs6.10' |
     'nodejs8.10' |
-    'dotnetcore2.1' |
-    'dotnetcore2.0'
+    'dotnetcore2.1'
 
 export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set([
     'python3.7',
@@ -25,7 +24,6 @@ export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set(
     'nodejs6.10',
     'nodejs8.10',
     'dotnetcore2.1',
-    'dotnetcore2.0'
 ] as SamLambdaRuntime[])
 
 export enum SamLambdaRuntimeFamily {
@@ -46,12 +44,10 @@ export function getFamily(runtime: string | undefined): SamLambdaRuntimeFamily {
         case 'nodejs':
             return SamLambdaRuntimeFamily.NodeJS
         case 'dotnetcore2.1':
-        case 'dotnetcore2.0':
         case 'dotnetcore':
         case 'dotnet':
             return SamLambdaRuntimeFamily.DotNetCore
         default:
             throw new Error(`Unrecognized runtime: '${runtime}'`)
-
     }
 }

@@ -83,9 +83,6 @@ export async function activate(context: vscode.ExtensionContext) {
             }
         }
 
-        ext.awsContextCommands = new DefaultAWSContextCommands(awsContext, awsContextTrees, regionProvider)
-        ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
-        ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
         ext.statusBar = new DefaultAWSStatusBar(awsContext, context)
         ext.telemetry = new DefaultTelemetryService(context, awsContext)
         new AwsTelemetryOptOut(ext.telemetry, new DefaultSettingsConfiguration(extensionSettingsPrefix))
@@ -107,7 +104,7 @@ export async function activate(context: vscode.ExtensionContext) {
             callback: async () => await ext.awsContextCommands.onCommandLogin(),
             telemetryName: {
                 namespace: TelemetryNamespace.Aws,
-                name: 'credentialsLogin'
+                name: 'credentialslogin'
             }
         })
 
