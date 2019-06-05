@@ -5,8 +5,9 @@
 
 'use strict'
 
-import * as child_process from 'child_process'
-import * as crossSpawn from 'cross-spawn'
+import * as vscode from 'vscode'
+import { ChildProcess } from '../utilities/childProcess'
+import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 
 export interface DockerClient {
     invoke(args: DockerInvokeArguments): Promise<void>
@@ -27,41 +28,67 @@ export interface DockerInvokeArguments {
     }
 }
 
-export interface Closeable {
-    onClose(callback: (code: number, signal: string, args?: string[]) => void): void
-}
-
-class CloseableChildProcess implements Closeable {
-    public constructor(
-        private readonly process: child_process.ChildProcess,
-        private readonly args?: string[]
-    ) { }
-
-    public onClose(callback: (code: number, signal: string, args?: string[]) => void): void {
-        this.process.once('close', (_code, _signal) => callback(_code, _signal, this.args))
-    }
-}
-
 export interface DockerInvokeContext {
-    spawn(
-        command: string,
-        args?: string[],
-        options?: child_process.SpawnOptions
-    ): Closeable
+    run(args: string[]): Promise<void>
 }
 
 // TODO: Replace with a library such as https://www.npmjs.com/package/node-docker-api.
 class DefaultDockerInvokeContext implements DockerInvokeContext {
-    public spawn(command: string, args?: string[], options?: child_process.SpawnOptions): Closeable {
-        const process = crossSpawn('docker', args, { windowsVerbatimArguments: true })
+    private readonly channelLogger: ChannelLogger
 
-        return new CloseableChildProcess(process, args)
+    public constructor(
+        outputChannel: vscode.OutputChannel,
+    ) {
+        this.channelLogger = getChannelLogger(outputChannel)
+    }
+
+    public async run(args: string[]): Promise<void> {
+        const process = new ChildProcess(
+            'docker',
+            {},
+            ...(args || [])
+        )
+
+        return new Promise<void>(async (resolve, reject) => {
+            let stderr: string
+
+            await process.start({
+                onStdout: (text: string) => {
+                    this.channelLogger.channel.append(text)
+                },
+                onStderr: (text: string) => {
+                    stderr += text
+                },
+                onError: (error: Error) => {
+                    reject(error)
+                },
+                onClose: (code, signal) => {
+                    if (code) {
+                        const errorMessage: string = `Could not invoke docker with arguments: [${args.join(', ')}].`
+                            + `${JSON.stringify(
+                                {
+                                    exitCode: code,
+                                    stdErr: stderr,
+                                },
+                                undefined,
+                                4)}`
+
+                        reject(new Error(errorMessage))
+                    }
+
+                    resolve()
+                }
+            })
+        })
     }
 }
 
 export class DefaultDockerClient implements DockerClient {
 
-    public constructor(private readonly context: DockerInvokeContext = new DefaultDockerInvokeContext()) { }
+    public constructor(
+        outputChannel: vscode.OutputChannel,
+        private readonly context: DockerInvokeContext = new DefaultDockerInvokeContext(outputChannel)
+    ) { }
 
     public async invoke({
         command,
@@ -70,7 +97,7 @@ export class DefaultDockerClient implements DockerClient {
         mount,
         entryPoint
     }: DockerInvokeArguments): Promise<void> {
-        const args: string[] = [ command ]
+        const args: string[] = [command]
 
         if (removeOnExit) {
             args.push('--rm')
@@ -90,30 +117,6 @@ export class DefaultDockerClient implements DockerClient {
             args.push(...entryPoint.args)
         }
 
-        const process = this.context.spawn(
-            'docker',
-            args,
-            { windowsVerbatimArguments: true }
-        )
-
-        await new Promise<void>((resolve, reject) => {
-            process.onClose((code, signal) => {
-                if (code === 0) {
-                    resolve()
-                } else {
-                    reject(new DockerError(code, signal, args))
-                }
-            })
-        })
-    }
-}
-
-export class DockerError extends Error {
-    public constructor(
-        public readonly code: number,
-        public readonly signal: string,
-        args: string[]
-    ) {
-        super(`Could not invoke docker. Code: ${code}, Signal: ${signal}, Arguments: [${args.join(', ')}]`)
+        await this.context.run(args)
     }
 }

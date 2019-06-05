@@ -5,7 +5,6 @@
 
 'use strict'
 
-import * as del from 'del'
 import * as path from 'path'
 import * as vscode from 'vscode'
 
@@ -27,7 +26,7 @@ import { TelemetryService } from '../telemetry/telemetryService'
 import { Datum } from '../telemetry/telemetryTypes'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
-import { getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
+import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
 import {
     CodeLensProviderParams,
     getInvokeCmdKey,
@@ -96,7 +95,13 @@ export interface OnLocalInvokeCommandContext {
 }
 
 class DefaultOnLocalInvokeCommandContext implements OnLocalInvokeCommandContext {
-    private readonly dockerClient: DockerClient = new DefaultDockerClient()
+    private readonly dockerClient: DockerClient
+
+    public constructor(
+        outputChannel: vscode.OutputChannel,
+    ) {
+        this.dockerClient = new DefaultDockerClient(outputChannel)
+    }
 
     public async installDebugger(args: InstallDebuggerArgs): Promise<InstallDebuggerResult> {
         return await _installDebugger(args, { dockerClient: this.dockerClient })
@@ -148,7 +153,7 @@ async function onLocalInvokeCommand(
             handlerName: string
         }): Promise<CloudFormation.Resource>,
     },
-    context: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext()
+    context: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext(toolkitOutputChannel)
 ): Promise<{ datum: Datum }> {
 
     const channelLogger = getChannelLogger(toolkitOutputChannel)
@@ -219,7 +224,8 @@ async function onLocalInvokeCommand(
         } else {
             const { debuggerPath } = await context.installDebugger({
                 runtime,
-                targetFolder: codeUri
+                targetFolder: codeUri,
+                channelLogger
             })
             const port = await getDebugPort()
             const debugConfig = makeCoreCLRDebugConfiguration({
@@ -434,47 +440,70 @@ export function generateDotNetLambdaHandler(components: DotNetLambdaHandlerCompo
 interface InstallDebuggerArgs {
     runtime: string,
     targetFolder: string
+    channelLogger: ChannelLogger
 }
 
 interface InstallDebuggerResult {
     debuggerPath: string
 }
 
-async function _installDebugger(
-    { runtime, targetFolder }: InstallDebuggerArgs,
-    { dockerClient }: { dockerClient: DockerClient }
-): Promise<InstallDebuggerResult> {
-    const vsdbgPath = path.resolve(targetFolder, '.vsdbg')
+function getDebuggerPath(parentFolder: string): string {
+    return path.resolve(parentFolder, '.vsdbg')
+}
+
+async function ensureDebuggerPathExists(
+    parentFolder: string
+): Promise<void> {
+    const vsdbgPath = getDebuggerPath(parentFolder)
 
     try {
         await access(vsdbgPath)
     } catch {
-        // We could not access vsdbgPath, probably because it doesn't exist.
-        try {
-            await mkdir(vsdbgPath)
-            await dockerClient.invoke({
-                command: 'run',
-                image: `lambci/lambda:${runtime}`,
-                removeOnExit: true,
-                mount: {
-                    type: 'bind',
-                    source: vsdbgPath,
-                    destination: '/vsdbg'
-                },
-                entryPoint: {
-                    command: 'bash',
-                    args: [
-                        '-c',
-                        '"curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg"'
-                    ]
-                }
-            })
-        } catch (err) {
-            // Clean up to avoid leaving a bad installation in the user's workspace.
-            await del(vsdbgPath, { force: true })
-            throw err
-        }
+        await mkdir(vsdbgPath)
     }
+}
 
-    return { debuggerPath: vsdbgPath }
+async function _installDebugger(
+    { runtime, targetFolder, channelLogger }: InstallDebuggerArgs,
+    { dockerClient }: { dockerClient: DockerClient }
+): Promise<InstallDebuggerResult> {
+    await ensureDebuggerPathExists(targetFolder)
+
+    try {
+        const vsdbgPath = getDebuggerPath(targetFolder)
+
+        channelLogger.info(
+            'AWS.samcli.local.invoke.debugger.install',
+            'Installing .NET Core Debugger to {0}...',
+            vsdbgPath
+        )
+
+        await dockerClient.invoke({
+            command: 'run',
+            image: `lambci/lambda:${runtime}`,
+            removeOnExit: true,
+            mount: {
+                type: 'bind',
+                source: vsdbgPath,
+                destination: '/vsdbg'
+            },
+            entryPoint: {
+                command: 'bash',
+                args: [
+                    '-c',
+                    'curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg'
+                ]
+            }
+        })
+
+        return { debuggerPath: vsdbgPath }
+    } catch (err) {
+        channelLogger.info(
+            'AWS.samcli.local.invoke.debugger.install.failed',
+            'Error installing .NET Core Debugger: {0}',
+            err instanceof Error ? err as Error : String(err)
+        )
+
+        throw err
+    }
 }
