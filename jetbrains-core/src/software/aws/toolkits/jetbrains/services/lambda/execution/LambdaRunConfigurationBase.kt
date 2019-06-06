@@ -49,7 +49,7 @@ abstract class LambdaRunConfigurationBase<T : BaseLambdaOptions>(
 
     protected fun checkInput() {
         inputSource()?.let {
-            if (isUsingInputFile() && FileUtil.exists(it)) {
+            if (!isUsingInputFile() || FileUtil.exists(it)) {
                 return
             }
         }

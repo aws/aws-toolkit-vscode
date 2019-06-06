@@ -340,7 +340,21 @@ class LocalLambdaRunConfigurationTest {
         runInEdtAndWait {
             val runConfiguration = createHandlerBasedRunConfiguration(
                 project = projectRule.project,
-                credentialsProviderId = mockId
+                credentialsProviderId = mockId,
+                input = "{}"
+            )
+            assertThat(runConfiguration).isNotNull
+            runConfiguration.checkConfiguration()
+        }
+    }
+
+    @Test
+    fun inputTextIsNotSet() {
+        runInEdtAndWait {
+            val runConfiguration = createHandlerBasedRunConfiguration(
+                project = projectRule.project,
+                credentialsProviderId = mockId,
+                input = null
             )
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { runConfiguration.checkConfiguration() }
@@ -350,7 +364,7 @@ class LocalLambdaRunConfigurationTest {
     }
 
     @Test
-    fun inputFileExists() {
+    fun inputFileDoesNotExist() {
         runInEdtAndWait {
             val runConfiguration = createHandlerBasedRunConfiguration(
                 project = projectRule.project,
@@ -362,6 +376,22 @@ class LocalLambdaRunConfigurationTest {
             assertThatThrownBy { runConfiguration.checkConfiguration() }
                 .isInstanceOf(RuntimeConfigurationError::class.java)
                 .hasMessage(message("lambda.run_configuration.no_input_specified"))
+        }
+    }
+
+    @Test
+    fun inputFileDoeExist() {
+        val eventFile = projectRule.fixture.addFileToProject("event.json", "TestInputFile")
+
+        runInEdtAndWait {
+            val runConfiguration = createHandlerBasedRunConfiguration(
+                project = projectRule.project,
+                input = eventFile.virtualFile.path,
+                inputIsFile = true,
+                credentialsProviderId = mockId
+            )
+            assertThat(runConfiguration).isNotNull
+            runConfiguration.checkConfiguration()
         }
     }
 

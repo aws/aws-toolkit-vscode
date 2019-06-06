@@ -104,6 +104,18 @@ class RemoteLambdaRunConfigurationTest {
         runInEdtAndWait {
             val runConfiguration = createRunConfiguration(
                 project = projectRule.project,
+                input = "{}"
+            )
+            assertThat(runConfiguration).isNotNull
+            runConfiguration.checkConfiguration()
+        }
+    }
+
+    @Test
+    fun inputTextIsNotSet() {
+        runInEdtAndWait {
+            val runConfiguration = createRunConfiguration(
+                project = projectRule.project,
                 input = null
             )
             assertThat(runConfiguration).isNotNull
@@ -114,7 +126,7 @@ class RemoteLambdaRunConfigurationTest {
     }
 
     @Test
-    fun inputFileExists() {
+    fun inputFileDoesNotExist() {
         runInEdtAndWait {
             val runConfiguration = createRunConfiguration(
                 project = projectRule.project,
@@ -125,6 +137,21 @@ class RemoteLambdaRunConfigurationTest {
             assertThatThrownBy { runConfiguration.checkConfiguration() }
                 .isInstanceOf(RuntimeConfigurationError::class.java)
                 .hasMessage(message("lambda.run_configuration.no_input_specified"))
+        }
+    }
+
+    @Test
+    fun inputFileDoeExist() {
+        val eventFile = projectRule.fixture.addFileToProject("event.json", "TestInputFile")
+
+        runInEdtAndWait {
+            val runConfiguration = createRunConfiguration(
+                project = projectRule.project,
+                input = eventFile.virtualFile.path,
+                inputIsFile = true
+            )
+            assertThat(runConfiguration).isNotNull
+            runConfiguration.checkConfiguration()
         }
     }
 
