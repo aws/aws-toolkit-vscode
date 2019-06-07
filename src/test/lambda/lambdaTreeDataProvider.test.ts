@@ -40,7 +40,6 @@ describe('LambdaProvider', () => {
     })
 
     it('displays region nodes with user-friendly region names', async () => {
-
         const awsContext = new FakeAwsContext()
         const regionProvider = new FakeRegionProvider()
         const awsContextTreeCollection = new AwsContextTreeCollection()

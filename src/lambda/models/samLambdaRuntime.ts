@@ -13,50 +13,23 @@ export type SamLambdaRuntime =
     'python3.7' |
     'python3.6' |
     'python2.7' |
-    'python' |
     'nodejs6.10' |
     'nodejs8.10' |
-    'nodejs' |
-    'dotnetcore2.1' |
-    'dotnetcore2.0' |
-    'dotnetcore1.0' |
-    'dotnetcore' |
-    'dotnet' |
-    'go1.x' |
-    'go' |
-    'java8' |
-    'java' |
-    'ruby' |
-    'ruby2.5'
+    'dotnetcore2.1'
 
 export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set([
     'python3.7',
     'python3.6',
     'python2.7',
-    'python',
     'nodejs6.10',
     'nodejs8.10',
-    'nodejs',
     'dotnetcore2.1',
-    'dotnetcore2.0',
-    'dotnetcore1.0',
-    'dotnetcore',
-    'dotnet',
-    'go1.x',
-    'go',
-    'java8',
-    'java',
-    'ruby',
-    'ruby2.5'
 ] as SamLambdaRuntime[])
 
 export enum SamLambdaRuntimeFamily {
     Python,
     NodeJS,
-    DotNet,
-    Go,
-    Java,
-    Ruby
+    DotNetCore,
 }
 
 export function getFamily(runtime: string | undefined): SamLambdaRuntimeFamily {
@@ -71,22 +44,10 @@ export function getFamily(runtime: string | undefined): SamLambdaRuntimeFamily {
         case 'nodejs':
             return SamLambdaRuntimeFamily.NodeJS
         case 'dotnetcore2.1':
-        case 'dotnetcore2.0':
-        case 'dotnetcore1.0':
         case 'dotnetcore':
         case 'dotnet':
-            return SamLambdaRuntimeFamily.DotNet
-        case 'go1.x':
-        case 'go':
-            return SamLambdaRuntimeFamily.Go
-        case 'java8':
-        case 'java':
-            return SamLambdaRuntimeFamily.Java
-        case 'ruby2.5':
-        case 'ruby':
-            return SamLambdaRuntimeFamily.Ruby
+            return SamLambdaRuntimeFamily.DotNetCore
         default:
             throw new Error(`Unrecognized runtime: '${runtime}'`)
-
     }
 }

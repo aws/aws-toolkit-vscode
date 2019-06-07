@@ -12,14 +12,8 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { promisify } from 'util'
 
-import {
-    loadSharedConfigFiles,
-    SharedConfigFiles
-} from '../../../shared/credentials/credentialsFile'
-import {
-    CredentialsValidationResult,
-    UserCredentialsUtils,
-} from '../../../shared/credentials/userCredentialsUtils'
+import { loadSharedConfigFiles, SharedConfigFiles } from '../../../shared/credentials/credentialsFile'
+import { CredentialsValidationResult, UserCredentialsUtils } from '../../../shared/credentials/userCredentialsUtils'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { TestLogger } from '../../../shared/loggerUtils'
@@ -28,13 +22,12 @@ import { MockStsClient } from '../clients/mockClients'
 import { assertThrowsError } from '../utilities/assertUtils'
 
 describe('UserCredentialsUtils', () => {
-
     let tempFolder: string
     let logger: TestLogger
 
     const fakeCredentials = new AWS.Credentials('fakeaccess', 'fakesecret')
 
-    before( async () => {
+    before(async () => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
         logger = await TestLogger.createTestLogger()
@@ -164,14 +157,14 @@ describe('UserCredentialsUtils', () => {
             assert(typeof profiles === 'object', 'profiles should be an object')
             assert(profiles[profileName], 'profiles should be truthy')
             assert.strictEqual(
-              profiles[profileName].aws_access_key_id,
-              creds.accessKey,
-              `creds.accessKey: "${profiles[profileName].aws_access_key_id}" !== "${creds.accessKey}"`
+                profiles[profileName].aws_access_key_id,
+                creds.accessKey,
+                `creds.accessKey: "${profiles[profileName].aws_access_key_id}" !== "${creds.accessKey}"`
             )
             assert.strictEqual(
-              profiles[profileName].aws_secret_access_key,
-              creds.secretKey,
-              `creds.secretKey: "${profiles[profileName].aws_access_key_id}" !== "${creds.secretKey}"`
+                profiles[profileName].aws_secret_access_key,
+                creds.secretKey,
+                `creds.secretKey: "${profiles[profileName].aws_access_key_id}" !== "${creds.secretKey}"`
             )
             const access = promisify(fs.access)
             await access(credentialsFilename, fs.constants.R_OK).catch(err => assert(false, 'Should be readable'))
@@ -181,7 +174,6 @@ describe('UserCredentialsUtils', () => {
 
     describe('validateCredentials', () => {
         it('returns a valid result if getCallerIdentity resolves', async () => {
-
             let timesCalled: number = 0
 
             const mockResponse: AWS.STS.GetCallerIdentityResponse = {
@@ -196,7 +188,8 @@ describe('UserCredentialsUtils', () => {
 
                         return mockResponse
                     }
-                }))
+                })
+            )
 
             assert.strictEqual(timesCalled, 1)
             assert.strictEqual(result.isValid, true)
@@ -204,7 +197,6 @@ describe('UserCredentialsUtils', () => {
         })
 
         it('returns an invalid result if getCallerIdentity returns undefined', async () => {
-
             let timesCalled: number = 0
 
             const mockResponse: AWS.STS.GetCallerIdentityResponse = {
@@ -227,7 +219,6 @@ describe('UserCredentialsUtils', () => {
         })
 
         it('returns an invalid result if getCallerIdentity throws', async () => {
-
             let timesCalled: number = 0
 
             const result: CredentialsValidationResult = await UserCredentialsUtils.validateCredentials(
@@ -246,19 +237,13 @@ describe('UserCredentialsUtils', () => {
             assert.strictEqual(result.invalidMessage, 'Simulating error with explicit throw')
         })
 
-        it (
-            'throws an error if STS is not defined and ext.toolkitClientBuilder cannot create an STS client',
-            async () => {
-                await assertThrowsError(async () => await UserCredentialsUtils.validateCredentials(
-                    fakeCredentials
-                ))
-            }
-        )
+        it('throws an error if STS is not defined and toolkitClientBuilder cannot create an STS client', async () => {
+            await assertThrowsError(async () => await UserCredentialsUtils.validateCredentials(fakeCredentials))
+        })
     })
 
     describe('addUserDataToContext', async () => {
-        it ('adds profile data to the context if the profile is valid', async () => {
-
+        it('adds profile data to the context if the profile is valid', async () => {
             const testProfile = 'testprofile'
             const testAccount = 'testaccount'
             const mockSts = new MockStsClient({
@@ -270,11 +255,9 @@ describe('UserCredentialsUtils', () => {
                     }
                 }
             })
-            const mockAws = new FakeAwsContext(
-                {
-                    credentials: new AWS.Credentials('access', 'secret')
-                }
-            )
+            const mockAws = new FakeAwsContext({
+                credentials: new AWS.Credentials('access', 'secret')
+            })
 
             assert.strictEqual(mockAws.getCredentialProfileName(), DEFAULT_TEST_PROFILE_NAME)
             assert.strictEqual(mockAws.getCredentialAccountId(), DEFAULT_TEST_ACCOUNT_ID)
@@ -284,19 +267,16 @@ describe('UserCredentialsUtils', () => {
             assert.strictEqual(mockAws.getCredentialAccountId(), testAccount)
         })
 
-        it ('returns false if credentials are invalid', async () => {
-
+        it('returns false if credentials are invalid', async () => {
             const testProfile = 'testprofile'
             const mockSts = new MockStsClient({
                 getCallerIdentity: async () => {
                     throw new AWS.AWSError()
                 }
             })
-            const mockAws = new FakeAwsContext(
-                {
-                    credentials: new AWS.Credentials('access', 'secret')
-                }
-            )
+            const mockAws = new FakeAwsContext({
+                credentials: new AWS.Credentials('access', 'secret')
+            })
 
             const returnValue = await UserCredentialsUtils.addUserDataToContext(testProfile, mockAws, mockSts)
             assert.strictEqual(returnValue, false)
@@ -326,5 +306,4 @@ aws_secret_access_key = FAKESECRET
 
         fs.writeFileSync(filename, fileContents)
     }
-
 })

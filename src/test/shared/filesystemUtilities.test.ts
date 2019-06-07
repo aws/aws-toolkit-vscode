@@ -21,6 +21,7 @@ describe('filesystemUtilities', () => {
     let targetFilePath: string
     const nonExistingTargetFilename = 'doNotFindThisFile12345.txt'
     let tempFolder: string
+    const foldersToCleanUp: string[] = []
 
     beforeEach(async () => {
         // Make a temp folder for all these tests
@@ -28,10 +29,12 @@ describe('filesystemUtilities', () => {
         targetFilePath = path.join(tempFolder, targetFilename)
 
         await writeFile(targetFilePath, 'Hello, World!', 'utf8')
+
+        foldersToCleanUp.push(tempFolder)
     })
 
     afterEach(async () => {
-        await del([tempFolder], { force: true })
+        await del(foldersToCleanUp, { force: true })
     })
 
     describe('makeTemporaryToolkitFolder', () => {
@@ -54,6 +57,9 @@ describe('filesystemUtilities', () => {
 
         it('makes nested temp dirs', async () => {
             const nestedTempDirPath = await makeTemporaryToolkitFolder('nestedSubfolder', 'moreNestedSubfolder')
+
+            foldersToCleanUp.push(nestedTempDirPath)
+
             assert(
                 nestedTempDirPath.indexOf(tempDirPath) === 0,
                 `expected nestedTempDirPath ('${nestedTempDirPath}') to be in tempDirPath ('${tempDirPath}')`

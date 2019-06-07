@@ -25,13 +25,13 @@ export function registerCommand<T>({
         namespace: 'Command',
         name: command
     },
-    callback,
+    callback
 }: {
     command: string
     thisArg?: any
     register?: typeof vscode.commands.registerCommand
     telemetryName?: TelemetryName
-    callback(...args: any[]): (Promise<T & { datum?: Datum } | void>)
+    callback(...args: any[]): Promise<T & { datum?: Datum } | void>
 }): vscode.Disposable {
     return register(
         command,
@@ -54,7 +54,8 @@ export function registerCommand<T>({
                 setMetadataIfNotExists(
                     datum.metadata,
                     METADATA_FIELD_NAME.RESULT,
-                    hasException ? MetadataResult.Fail.toString() : MetadataResult.Pass.toString())
+                    hasException ? MetadataResult.Fail.toString() : MetadataResult.Pass.toString()
+                )
                 setMetadataIfNotExists(datum.metadata, 'duration', `${endTime.getTime() - startTime.getTime()}`)
 
                 ext.telemetry.record({
