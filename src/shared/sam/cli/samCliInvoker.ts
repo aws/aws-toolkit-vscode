@@ -11,7 +11,11 @@ import { getLogger, Logger } from '../../logger'
 import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
 import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliConfiguration, SamCliConfiguration } from './samCliConfiguration'
-import { SamCliProcessInvoker } from './samCliInvokerUtils'
+import {
+    makeRequiredSamCliProcessInvokeSettings,
+    SamCliProcessInvoker,
+    SamCliProcessInvokeSettings
+} from './samCliInvokerUtils'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
 
 export interface SamCliProcessInvokerContext {
@@ -50,7 +54,17 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
         const args = typeof first === 'string' ? [first, ...rest] : rest
         const options: SpawnOptions | undefined = typeof first === 'string' ? undefined : first
 
-        const childProcess: ChildProcess = new ChildProcess(this.samCliLocation, options, ...args)
+        return this.xinvoke({ spawnOptions: options, arguments: args })
+    }
+
+    public async xinvoke(settings?: SamCliProcessInvokeSettings): Promise<ChildProcessResult> {
+        const invokeSettings = makeRequiredSamCliProcessInvokeSettings(settings)
+
+        const childProcess: ChildProcess = new ChildProcess(
+            this.samCliLocation,
+            invokeSettings.spawnOptions,
+            ...invokeSettings.arguments
+        )
 
         return await childProcess.run()
     }

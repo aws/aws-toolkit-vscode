@@ -12,7 +12,11 @@ import {
     resolveSamCliProcessInvokerContext,
     SamCliProcessInvokerContext
 } from './samCliInvoker'
-import { SamCliProcessInvoker } from './samCliInvokerUtils'
+import {
+    makeRequiredSamCliProcessInvokeSettings,
+    SamCliProcessInvoker,
+    SamCliProcessInvokeSettings
+} from './samCliInvokerUtils'
 import { throwAndNotifyIfInvalid } from './samCliValidationUtils'
 import {
     DefaultSamCliValidator,
@@ -50,12 +54,18 @@ export class DefaultValidatingSamCliProcessInvoker implements SamCliProcessInvok
     public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
     public invoke(...args: string[]): Promise<ChildProcessResult>
     public async invoke(first: SpawnOptions | string, ...rest: string[]): Promise<ChildProcessResult> {
-        await this.validateSamCli()
-
         const args = typeof first === 'string' ? [first, ...rest] : rest
         const options: SpawnOptions = typeof first === 'string' ? {} : first
 
-        return await this.invoker.invoke(options, ...args)
+        return this.xinvoke({ spawnOptions: options, arguments: args })
+    }
+
+    public async xinvoke(settings?: SamCliProcessInvokeSettings): Promise<ChildProcessResult> {
+        await this.validateSamCli()
+
+        const invokeSettings = makeRequiredSamCliProcessInvokeSettings(settings)
+
+        return await this.invoker.invoke(invokeSettings.spawnOptions, ...invokeSettings.arguments)
     }
 
     private async validateSamCli(): Promise<void> {
