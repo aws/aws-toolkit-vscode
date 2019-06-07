@@ -64,7 +64,7 @@ async function detectLambdasFromTemplate(
     }
 
     return Object.getOwnPropertyNames(resources)
-        .filter(key => resources[key]!.Type === 'AWS::Serverless::Function')
+        .filter(key => resources[key]!.Type === CloudFormation.SERVERLESS_FUNCTION_TYPE)
         .map(key => ({
             lambda: key,
             workspaceFolder,
