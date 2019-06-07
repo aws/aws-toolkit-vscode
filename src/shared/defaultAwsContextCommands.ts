@@ -21,10 +21,7 @@ import {
     promptToDefineCredentialsProfile
 } from './credentials/defaultCredentialSelectionDataProvider'
 import { DefaultCredentialsFileReaderWriter } from './credentials/defaultCredentialsFileReaderWriter'
-import {
-    CredentialsValidationResult,
-    UserCredentialsUtils
-} from './credentials/userCredentialsUtils'
+import { CredentialsValidationResult, UserCredentialsUtils } from './credentials/userCredentialsUtils'
 import { ext } from './extensionGlobals'
 import { RegionInfo } from './regions/regionInfo'
 import { RegionProvider } from './regions/regionProvider'
@@ -47,7 +44,7 @@ enum OnDefaultRegionMissingOperation {
     /**
      * Do nothing
      */
-    Ignore = 'ignore',
+    Ignore = 'ignore'
 }
 
 class DefaultRegionMissingPromptItems {
@@ -64,7 +61,6 @@ class DefaultRegionMissingPromptItems {
 }
 
 export class DefaultAWSContextCommands {
-
     private readonly _awsContext: AwsContext
     private readonly _awsContextTrees: AwsContextTreeCollection
     private readonly _regionProvider: RegionProvider
@@ -96,7 +92,6 @@ export class DefaultAWSContextCommands {
     }
 
     public async onCommandCreateCredentialsProfile(): Promise<void> {
-
         const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
 
         if (credentialsFiles.length === 0) {
@@ -106,6 +101,7 @@ export class DefaultAWSContextCommands {
             if (profileName) {
                 const successfulLogin = await UserCredentialsUtils.addUserDataToContext(profileName, this._awsContext)
                 if (!successfulLogin) {
+                    // credentials are invalid. Prompt user and log out
                     await this.onCommandLogout()
                     await UserCredentialsUtils.notifyUserCredentialsAreBad(profileName)
                 }
@@ -134,7 +130,7 @@ export class DefaultAWSContextCommands {
     }
 
     public async onCommandHideRegion(regionCode?: string) {
-        const region = regionCode || await this.promptForRegion(await this._awsContext.getExplorerRegions())
+        const region = regionCode || (await this.promptForRegion(await this._awsContext.getExplorerRegions()))
         if (region) {
             await this._awsContext.removeExplorerRegion(region)
             this.refresh()
@@ -152,9 +148,7 @@ export class DefaultAWSContextCommands {
      * @returns The profile name, or undefined if user cancelled
      */
     private async promptAndCreateNewCredentialsFile(): Promise<string | undefined> {
-
         while (true) {
-
             const dataProvider = new DefaultCredentialSelectionDataProvider([], ext.context)
             const state: CredentialSelectionState = await promptToDefineCredentialsProfile(dataProvider)
 
@@ -168,13 +162,11 @@ export class DefaultAWSContextCommands {
 
             if (validationResult.isValid) {
                 await UserCredentialsUtils.generateCredentialDirectoryIfNonexistent()
-                await UserCredentialsUtils.generateCredentialsFile(
-                    ext.context.extensionPath,
-                    {
-                        profileName: state.profileName,
-                        accessKey: state.accesskey,
-                        secretKey: state.secretKey
-                    })
+                await UserCredentialsUtils.generateCredentialsFile(ext.context.extensionPath, {
+                    profileName: state.profileName,
+                    accessKey: state.accesskey,
+                    secretKey: state.secretKey
+                })
 
                 return state.profileName
             }
@@ -195,7 +187,6 @@ export class DefaultAWSContextCommands {
             if (!response || response !== responseYes) {
                 return undefined
             }
-
         } // Keep asking until cancel or valid credentials are entered
     }
 
@@ -208,7 +199,6 @@ export class DefaultAWSContextCommands {
      * editing their credentials file.
      */
     private async getProfileNameFromUser(): Promise<string | undefined> {
-
         await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
 
         const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
@@ -217,7 +207,6 @@ export class DefaultAWSContextCommands {
         const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
 
         if (credentialsFiles.length === 0) {
-
             const userResponse = await window.showInformationMessage(
                 localize(
                     'AWS.message.prompt.credentials.create',
@@ -227,11 +216,12 @@ export class DefaultAWSContextCommands {
                 responseNo
             )
 
-            if (userResponse !== responseYes) { return undefined }
+            if (userResponse !== responseYes) {
+                return undefined
+            }
 
             return await this.promptAndCreateNewCredentialsFile()
         } else {
-
             const credentialReaderWriter = new DefaultCredentialsFileReaderWriter()
             const profileNames = await credentialReaderWriter.getProfileNames()
 
@@ -271,19 +261,16 @@ export class DefaultAWSContextCommands {
      * @description Sets the user up to edit the credentials files.
      */
     private async editCredentials(): Promise<void> {
-
         const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
         let preserveFocus: boolean = false
         let viewColumn: ViewColumn = ViewColumn.Active
 
         for (const filename of credentialsFiles) {
-            await window.showTextDocument(
-                Uri.file(filename),
-                {
-                    preserveFocus: preserveFocus,
-                    preview: false,
-                    viewColumn: viewColumn
-                })
+            await window.showTextDocument(Uri.file(filename), {
+                preserveFocus: preserveFocus,
+                preview: false,
+                viewColumn: viewColumn
+            })
 
             preserveFocus = true
             viewColumn = ViewColumn.Beside
@@ -294,10 +281,11 @@ export class DefaultAWSContextCommands {
         const response = await window.showInformationMessage(
             localize(
                 'AWS.message.prompt.credentials.definition.help',
-                'Would you like some information related to defining credentials?',
+                'Would you like some information related to defining credentials?'
             ),
             responseYes,
-            responseNo)
+            responseNo
+        )
 
         if (response && response === responseYes) {
             await opn(extensionConstants.aboutCredentialsFileUrl)
@@ -326,19 +314,21 @@ export class DefaultAWSContextCommands {
      */
     private async promptForRegion(regions?: string[]): Promise<string | undefined> {
         const availableRegions = await this._regionProvider.getRegionData()
-        const regionsToShow = availableRegions.filter(r => {
-            if (regions) {
-                return regions.some(x => x === r.regionCode)
-            }
+        const regionsToShow = availableRegions
+            .filter(r => {
+                if (regions) {
+                    return regions.some(x => x === r.regionCode)
+                }
 
-            return true
-        }).map(r => ({
-            label: r.regionName,
-            detail: r.regionCode
-        }))
+                return true
+            })
+            .map(r => ({
+                label: r.regionName,
+                detail: r.regionCode
+            }))
         const input = await window.showQuickPick(regionsToShow, {
             placeHolder: localize('AWS.message.selectRegion', 'Select an AWS region'),
-            matchOnDetail: true,
+            matchOnDetail: true
         })
 
         return input ? input.detail : undefined
@@ -348,10 +338,14 @@ export class DefaultAWSContextCommands {
         const credentialReaderWriter = new DefaultCredentialsFileReaderWriter()
 
         const profileRegion = await credentialReaderWriter.getDefaultRegion(profileName)
-        if (!profileRegion) { return }
+        if (!profileRegion) {
+            return
+        }
 
         const explorerRegions = new Set(await this._awsContext.getExplorerRegions())
-        if (explorerRegions.has(profileRegion)) { return }
+        if (explorerRegions.has(profileRegion)) {
+            return
+        }
 
         // Explorer does not contain the default region. See if we should add it.
         const config = workspace.getConfiguration(extensionConstants.extensionSettingsPrefix)
@@ -382,14 +376,16 @@ export class DefaultAWSContextCommands {
                 placeHolder: localize(
                     'AWS.message.prompt.defaultRegionHidden',
                     "This profile's default region ({0}) is currently hidden. " +
-                    'Would you like to show it in the Explorer?',
+                        'Would you like to show it in the Explorer?',
                     profileRegion
-                ),
+                )
             }
         )
 
         // User Cancelled
-        if (!regionHiddenResponse) { return }
+        if (!regionHiddenResponse) {
+            return
+        }
 
         switch (regionHiddenResponse) {
             case DefaultRegionMissingPromptItems.add:
@@ -402,16 +398,19 @@ export class DefaultAWSContextCommands {
             case DefaultRegionMissingPromptItems.alwaysAdd:
             case DefaultRegionMissingPromptItems.alwaysIgnore:
                 // User does not want to be prompted anymore
-                const action = regionHiddenResponse === DefaultRegionMissingPromptItems.alwaysAdd ?
-                    OnDefaultRegionMissingOperation.Add :
-                    OnDefaultRegionMissingOperation.Ignore
+                const action =
+                    regionHiddenResponse === DefaultRegionMissingPromptItems.alwaysAdd
+                        ? OnDefaultRegionMissingOperation.Add
+                        : OnDefaultRegionMissingOperation.Ignore
                 await config.update('onDefaultRegionMissing', action, !workspace.name)
-                window.showInformationMessage(localize(
-                    'AWS.message.prompt.defaultRegionHidden.suppressed',
-                    "You will no longer be asked what to do when the current profile's default region is " +
-                    "hidden from the Explorer. This behavior can be changed by modifying the '{0}' setting.",
-                    'aws.onDefaultRegionMissing'
-                ))
+                window.showInformationMessage(
+                    localize(
+                        'AWS.message.prompt.defaultRegionHidden.suppressed',
+                        "You will no longer be asked what to do when the current profile's default region is " +
+                            "hidden from the Explorer. This behavior can be changed by modifying the '{0}' setting.",
+                        'aws.onDefaultRegionMissing'
+                    )
+                )
                 break
         }
     }

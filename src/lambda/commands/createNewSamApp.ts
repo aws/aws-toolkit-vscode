@@ -10,13 +10,13 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { fileExists } from '../../shared/filesystemUtilities'
 import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
 import { METADATA_FIELD_NAME, MetadataResult } from '../../shared/telemetry/telemetryTypes'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
-import { getMainSourceFileUri } from '../utilities/getMainSourceFile'
 import {
     CreateNewSamAppWizard,
     CreateNewSamAppWizardResponse,
@@ -25,7 +25,9 @@ import {
 
 export const URI_TO_OPEN_ON_INIT_KEY = 'URI_TO_OPEN_ON_INIT_KEY'
 
-export async function resumeCreateNewSamApp(context: Pick<vscode.ExtensionContext, 'globalState'>) {
+export async function resumeCreateNewSamApp(
+    context: Pick<vscode.ExtensionContext, 'asAbsolutePath' | 'globalState'>
+) {
     const rawUri = context.globalState.get<string>(URI_TO_OPEN_ON_INIT_KEY)
     if (!rawUri) {
         return
@@ -137,15 +139,14 @@ async function validateSamCli(samCliValidator: SamCliValidator): Promise<void> {
 async function getMainUri(
     config: Pick<CreateNewSamAppWizardResponse, 'location' | 'name'>
 ): Promise<vscode.Uri | undefined> {
-    try {
-        return await getMainSourceFileUri({
-            root: vscode.Uri.file(path.join(config.location.fsPath, config.name))
-        })
-    } catch (err) {
+    const samTemplatePath = path.resolve(config.location.fsPath, config.name, 'template.yaml')
+    if (await fileExists(samTemplatePath)) {
+        return vscode.Uri.file(samTemplatePath)
+    } else {
         vscode.window.showWarningMessage(localize(
             'AWS.samcli.initWizard.source.error.notFound',
             'Project created successfully, but main source code file not found: {0}',
-            err
+            samTemplatePath
         ))
     }
 }
