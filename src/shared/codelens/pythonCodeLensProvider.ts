@@ -60,14 +60,22 @@ async function getLambdaHandlerCandidates({
     pythonSettings: SettingsConfiguration
 }): Promise<LambdaHandlerCandidate[]> {
     const PYTHON_JEDI_ENABLED_KEY = 'jediEnabled'
+    const RETRY_INTERVAL_MS = 1000
+    const MAX_RETRIES = 10
 
     const logger = getLogger()
     const filename = uri.fsPath
 
-    const RETRY_INTERVAL_MS = 1000
-    const MAX_RETRIES = 10
     let symbols: vscode.DocumentSymbol[] =
         await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri) || []
+
+    // A recent regression in vscode-python stops codelenses from rendering if we first return an empty array
+    // (because symbols have not yet been loaded), then a non-empty array (when our codelens provider is re-invoked
+    // upon symbols loading). To work around this, we attempt to wait for symbols to load before returning. We cannot
+    // distinguish between "the document does not contain any symbols" and "the symbols have not yet been loaded", so
+    // we stop retrying if we are still getting an empty result after several retries.
+    //
+    // This issue only surfaces when the setting `python.jediEnabled` is not set to false.
     const jediEnabled = pythonSettings.readSetting<boolean>(PYTHON_JEDI_ENABLED_KEY, true)
     if (jediEnabled) {
         for (let i = 0; i < MAX_RETRIES && !symbols.length; i++) {
