@@ -178,7 +178,6 @@ describe('SamCliLocalInvokeInvocation', async () => {
 
     it('Passes docker network to sam cli', async () => {
         const expectedDockerNetwork = 'hello-world'
-
         const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
             (invokeArgs: SamLocalInvokeCommandArgs) => {
                 assertArgsContainArgument(invokeArgs.args, '--docker-network', expectedDockerNetwork)
@@ -260,6 +259,41 @@ describe('SamCliLocalInvokeInvocation', async () => {
             environmentVariablePath: nonRelevantArg,
             invoker: taskInvoker,
             skipPullImage: undefined,
+        }).execute()
+    })
+
+    it('Passes debuggerPath to sam cli', async () => {
+        const expectedDebuggerPath = path.join('foo', 'bar')
+
+        const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
+            (invokeArgs: SamLocalInvokeCommandArgs) => {
+                assertArgsContainArgument(invokeArgs.args, '--debugger-path', expectedDebuggerPath)
+            }
+        )
+
+        await new SamCliLocalInvokeInvocation({
+            templateResourceName: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            eventPath: placeholderEventFile,
+            environmentVariablePath: nonRelevantArg,
+            invoker: taskInvoker,
+            debuggerPath: expectedDebuggerPath
+        }).execute()
+    })
+
+    it('Does not pass debuggerPath to sam cli when undefined', async () => {
+        const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
+            (invokeArgs: SamLocalInvokeCommandArgs) => {
+                assertArgNotPresent(invokeArgs.args, '--debugger-path')
+            }
+        )
+
+        await new SamCliLocalInvokeInvocation({
+            templateResourceName: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            eventPath: placeholderEventFile,
+            environmentVariablePath: nonRelevantArg,
+            invoker: taskInvoker,
         }).execute()
     })
 })

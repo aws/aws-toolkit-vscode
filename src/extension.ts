@@ -16,6 +16,7 @@ import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
 import { CodeLensProviderParams } from './shared/codelens/codeLensUtils'
+import * as csLensProvider from './shared/codelens/csharpCodeLensProvider'
 import * as pyLensProvider from './shared/codelens/pythonCodeLensProvider'
 import * as tsLensProvider from './shared/codelens/typescriptCodeLensProvider'
 import { documentationUrl, extensionSettingsPrefix, githubUrl } from './shared/constants'
@@ -228,6 +229,12 @@ async function activateCodeLensProviders(
     disposables.push(vscode.languages.registerCodeLensProvider(
         pyLensProvider.PYTHON_ALLFILES,
         await pyLensProvider.makePythonCodeLensProvider()
+    ))
+
+    await csLensProvider.initialize(providerParams)
+    disposables.push(vscode.languages.registerCodeLensProvider(
+        csLensProvider.CSHARP_ALLFILES,
+        await csLensProvider.makeCSharpCodeLensProvider()
     ))
 
     return disposables

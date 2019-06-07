@@ -12,7 +12,6 @@ import { DefaultAWSClientBuilder } from '../../shared/awsClientBuilder'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
 
 describe('DefaultAwsClientBuilder', () => {
-
     describe('createAndConfigureSdkClient', () => {
         class FakeService extends Service {
             public constructor(config?: ServiceConfigurationOptions) {

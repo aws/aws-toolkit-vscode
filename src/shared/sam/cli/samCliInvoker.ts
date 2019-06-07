@@ -34,15 +34,12 @@ export function resolveSamCliProcessInvokerContext(
 
     return {
         cliConfig: params.cliConfig || defaults.cliConfig,
-        logger: params.logger || defaults.logger,
+        logger: params.logger || defaults.logger
     }
 }
 
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
-
-    public constructor(
-        private readonly context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()
-    ) { }
+    public constructor(private readonly context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()) {}
 
     public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
     public invoke(...args: string[]): Promise<ChildProcessResult>
