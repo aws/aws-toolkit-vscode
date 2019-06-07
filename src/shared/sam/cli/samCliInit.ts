@@ -18,11 +18,15 @@ export async function runSamCliInit(
     initArguments: SamCliInitArgs,
     invoker: SamCliProcessInvoker
 ): Promise<void> {
-    const childProcessResult = await invoker.invoke(
-        { cwd: initArguments.location },
-        'init',
-        '--name', initArguments.name,
-        '--runtime', initArguments.runtime
+    const childProcessResult = await invoker.xinvoke(
+        {
+            spawnOptions: { cwd: initArguments.location },
+            arguments: [
+                'init',
+                '--name', initArguments.name,
+                '--runtime', initArguments.runtime
+            ]
+        }
     )
 
     logAndThrowIfUnexpectedExitCode(childProcessResult, 0)

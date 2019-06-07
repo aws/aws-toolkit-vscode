@@ -26,8 +26,6 @@ export function makeRequiredSamCliProcessInvokeSettings(
 }
 
 export interface SamCliProcessInvoker {
-    invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
-    invoke(...args: string[]): Promise<ChildProcessResult>
     xinvoke(settings?: SamCliProcessInvokeSettings): Promise<ChildProcessResult>
 }
 

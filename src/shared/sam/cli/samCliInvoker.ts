@@ -5,7 +5,6 @@
 
 'use strict'
 
-import { SpawnOptions } from 'child_process'
 import { extensionSettingsPrefix } from '../../constants'
 import { getLogger, Logger } from '../../logger'
 import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
@@ -47,15 +46,6 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
     public constructor(
         private readonly context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()
     ) { }
-
-    public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
-    public invoke(...args: string[]): Promise<ChildProcessResult>
-    public async invoke(first: SpawnOptions | string, ...rest: string[]): Promise<ChildProcessResult> {
-        const args = typeof first === 'string' ? [first, ...rest] : rest
-        const options: SpawnOptions | undefined = typeof first === 'string' ? undefined : first
-
-        return this.xinvoke({ spawnOptions: options, arguments: args })
-    }
 
     public async xinvoke(settings?: SamCliProcessInvokeSettings): Promise<ChildProcessResult> {
         const invokeSettings = makeRequiredSamCliProcessInvokeSettings(settings)

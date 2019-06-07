@@ -6,7 +6,6 @@
 'use strict'
 
 import * as assert from 'assert'
-import { SpawnOptions } from 'child_process'
 import {
     makeRequiredSamCliProcessInvokeSettings,
     SamCliProcessInvoker,
@@ -18,14 +17,6 @@ export class MockSamCliProcessInvoker implements SamCliProcessInvoker {
     public constructor(
         private readonly validateArgs: (args: string[]) => void
     ) {
-    }
-
-    public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
-    public invoke(...args: string[]): Promise<ChildProcessResult>
-    public async invoke(first: SpawnOptions | string, ...rest: string[]): Promise<ChildProcessResult> {
-        const args: string[] = typeof first === 'string' ? [first, ...rest] : rest
-
-        return this.xinvoke({ arguments: args })
     }
 
     public async xinvoke(settings?: SamCliProcessInvokeSettings): Promise<ChildProcessResult> {

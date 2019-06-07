@@ -40,7 +40,7 @@ export async function runSamCliDeploy(
         args.push('--parameter-overrides', ...overrides)
     }
 
-    const childProcessResult = await invoker.invoke(...args)
+    const childProcessResult = await invoker.xinvoke({ arguments: args })
 
     logAndThrowIfUnexpectedExitCode(childProcessResult, 0, logger)
 }

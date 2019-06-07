@@ -23,7 +23,7 @@ export class SamCliInfoInvocation {
     }
 
     public async execute(): Promise<SamCliInfoResponse> {
-        const childProcessResult = await this.invoker.invoke('--info')
+        const childProcessResult = await this.invoker.xinvoke({ arguments: ['--info'] })
 
         logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
 
