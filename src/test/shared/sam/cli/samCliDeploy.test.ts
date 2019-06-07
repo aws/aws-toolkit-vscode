@@ -42,12 +42,10 @@ describe('runSamCliDeploy', async () => {
     })
 
     it('does not include --parameter-overrides if there are no overrides', async () => {
-        const invoker = new MockSamCliProcessInvoker(
-            args => {
-                invokeCount++
-                assertArgNotPresent(args, '--parameter-overrides')
-            }
-        )
+        const invoker = new MockSamCliProcessInvoker(args => {
+            invokeCount++
+            assertArgNotPresent(args, '--parameter-overrides')
+        })
 
         await runSamCliDeploy(
             {
@@ -55,7 +53,7 @@ describe('runSamCliDeploy', async () => {
                 parameterOverrides: new Map<string, string>(),
                 region: fakeRegion,
                 stackName: fakeStackName,
-                templateFile: fakeTemplateFile,
+                templateFile: fakeTemplateFile
             },
             invoker
         )
@@ -64,28 +62,23 @@ describe('runSamCliDeploy', async () => {
     })
 
     it('includes overrides as a string of key=value pairs', async () => {
-        const invoker = new MockSamCliProcessInvoker(
-            args => {
-                invokeCount++
-                assertArgIsPresent(args, '--parameter-overrides')
-                const overridesIndex = args.findIndex(arg => arg === '--parameter-overrides')
-                assert.strictEqual(overridesIndex > -1, true)
-                assert.strictEqual(args.length >= overridesIndex + 3, true)
-                assert.strictEqual(args[overridesIndex + 1], 'key1=value1')
-                assert.strictEqual(args[overridesIndex + 2], 'key2=value2')
-            }
-        )
+        const invoker = new MockSamCliProcessInvoker(args => {
+            invokeCount++
+            assertArgIsPresent(args, '--parameter-overrides')
+            const overridesIndex = args.findIndex(arg => arg === '--parameter-overrides')
+            assert.strictEqual(overridesIndex > -1, true)
+            assert.strictEqual(args.length >= overridesIndex + 3, true)
+            assert.strictEqual(args[overridesIndex + 1], 'key1=value1')
+            assert.strictEqual(args[overridesIndex + 2], 'key2=value2')
+        })
 
         await runSamCliDeploy(
             {
                 profile: fakeProfile,
-                parameterOverrides: new Map<string, string>([
-                    ['key1', 'value1'],
-                    ['key2', 'value2'],
-                ]),
+                parameterOverrides: new Map<string, string>([['key1', 'value1'], ['key2', 'value2']]),
                 region: fakeRegion,
                 stackName: fakeStackName,
-                templateFile: fakeTemplateFile,
+                templateFile: fakeTemplateFile
             },
             invoker
         )
@@ -94,15 +87,13 @@ describe('runSamCliDeploy', async () => {
     })
 
     it('includes a template, stack name, region, and profile ', async () => {
-        const invoker = new MockSamCliProcessInvoker(
-            args => {
-                invokeCount++
-                assertArgsContainArgument(args, '--template-file', fakeTemplateFile)
-                assertArgsContainArgument(args, '--stack-name', fakeStackName)
-                assertArgsContainArgument(args, '--region', fakeRegion)
-                assertArgsContainArgument(args, '--profile', fakeProfile)
-            }
-        )
+        const invoker = new MockSamCliProcessInvoker(args => {
+            invokeCount++
+            assertArgsContainArgument(args, '--template-file', fakeTemplateFile)
+            assertArgsContainArgument(args, '--stack-name', fakeStackName)
+            assertArgsContainArgument(args, '--region', fakeRegion)
+            assertArgsContainArgument(args, '--profile', fakeProfile)
+        })
 
         await runSamCliDeploy(
             {
@@ -110,7 +101,7 @@ describe('runSamCliDeploy', async () => {
                 parameterOverrides: new Map<string, string>(),
                 region: fakeRegion,
                 stackName: fakeStackName,
-                templateFile: fakeTemplateFile,
+                templateFile: fakeTemplateFile
             },
             invoker
         )
@@ -129,7 +120,7 @@ describe('runSamCliDeploy', async () => {
                         parameterOverrides: new Map<string, string>(),
                         region: fakeRegion,
                         stackName: fakeStackName,
-                        templateFile: fakeTemplateFile,
+                        templateFile: fakeTemplateFile
                     },
                     badExitCodeProcessInvoker
                 )
