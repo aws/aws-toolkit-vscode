@@ -19,7 +19,6 @@ const localize = nls.loadMessageBundle()
 // Wraps an AWS context in terms of credential profile and zero or more regions. The
 // context listens for configuration updates and resets the context accordingly.
 export class DefaultAwsContext implements AwsContext {
-
     public readonly onDidChangeContext: vscode.Event<ContextChangeEventsArgs>
     private readonly credentialsMru: CredentialsProfileMru
     private readonly _onDidChangeContext: vscode.EventEmitter<ContextChangeEventsArgs>
@@ -38,7 +37,6 @@ export class DefaultAwsContext implements AwsContext {
         public context: vscode.ExtensionContext,
         private readonly credentialsManager: CredentialsManager = new CredentialsManager()
     ) {
-
         this._onDidChangeContext = new vscode.EventEmitter<ContextChangeEventsArgs>()
         this.onDidChangeContext = this._onDidChangeContext.event
 
@@ -59,19 +57,23 @@ export class DefaultAwsContext implements AwsContext {
     public async getCredentials(profileName?: string): Promise<AWS.Credentials | undefined> {
         const profile = profileName || this.profileName
 
-        if (!profile) { return undefined }
+        if (!profile) {
+            return undefined
+        }
 
         try {
             return await this.credentialsManager.getCredentials(profile)
         } catch (err) {
             const error = err as Error
 
-            vscode.window.showErrorMessage(localize(
-                'AWS.message.credentials.error',
-                'There was an issue trying to use credentials profile {0}: {1}',
-                profile,
-                error.message
-            ))
+            vscode.window.showErrorMessage(
+                localize(
+                    'AWS.message.credentials.error',
+                    'There was an issue trying to use credentials profile {0}: {1}',
+                    profile,
+                    error.message
+                )
+            )
 
             throw error
         }
@@ -142,10 +144,8 @@ export class DefaultAwsContext implements AwsContext {
     }
 
     private emitEvent() {
-        this._onDidChangeContext.fire(new ContextChangeEventsArgs(
-            this.profileName,
-            this.accountId,
-            this.explorerRegions
-        ))
+        this._onDidChangeContext.fire(
+            new ContextChangeEventsArgs(this.profileName, this.accountId, this.explorerRegions)
+        )
     }
 }

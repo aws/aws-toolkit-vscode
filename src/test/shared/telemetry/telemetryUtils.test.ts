@@ -59,6 +59,7 @@ describe('telemetryUtils', () => {
                         )
                         assert.strictEqual(mockService.lastEvent!.namespace, 'Command')
                         assert.strictEqual(mockService.lastEvent!.data![0].name, 'command')
+
                         done()
                     }).catch(err => {
                         throw err

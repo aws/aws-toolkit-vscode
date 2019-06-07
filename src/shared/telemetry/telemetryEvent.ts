@@ -20,7 +20,6 @@ export interface TelemetryEvent {
 export function toMetricData(array: TelemetryEvent[]): MetricDatum[] {
     return ([] as MetricDatum[]).concat(
         ...array.map(metricEvent => {
-
             const namespace = metricEvent.namespace.replace(REMOVE_UNDERSCORES_REGEX, '')
 
             if (metricEvent.data !== undefined) {

@@ -18,33 +18,34 @@ import {
     DefaultSamCliValidator,
     DefaultSamCliValidatorContext,
     SamCliValidator,
-    SamCliValidatorResult,
+    SamCliValidatorResult
 } from './samCliValidator'
 
 /**
  * Validates the SAM CLI version before making calls to the SAM CLI.
  */
 export class DefaultValidatingSamCliProcessInvoker implements SamCliProcessInvoker {
-
     private readonly invoker: SamCliProcessInvoker
     private readonly invokerContext: SamCliProcessInvokerContext
     private readonly validator: SamCliValidator
 
     public constructor(params: {
-        invoker?: SamCliProcessInvoker,
-        invokerContext?: SamCliProcessInvokerContext,
-        validator?: SamCliValidator,
+        invoker?: SamCliProcessInvoker
+        invokerContext?: SamCliProcessInvokerContext
+        validator?: SamCliValidator
     }) {
         this.invokerContext = resolveSamCliProcessInvokerContext(params.invokerContext)
         this.invoker = params.invoker || new DefaultSamCliProcessInvoker(this.invokerContext)
 
         // Regardless of the sam cli invoker provided, the default validator will always use the standard invoker
-        this.validator = params.validator || new DefaultSamCliValidator(
-            new DefaultSamCliValidatorContext(
-                this.invokerContext.cliConfig,
-                new DefaultSamCliProcessInvoker(this.invokerContext),
+        this.validator =
+            params.validator ||
+            new DefaultSamCliValidator(
+                new DefaultSamCliValidatorContext(
+                    this.invokerContext.cliConfig,
+                    new DefaultSamCliProcessInvoker(this.invokerContext)
+                )
             )
-        )
     }
 
     public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
