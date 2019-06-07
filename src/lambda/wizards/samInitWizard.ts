@@ -72,7 +72,7 @@ export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizar
             ],
             items: this.lambdaRuntimes
                 .toArray()
-                .sort()
+                .sort(lambdaRuntime.compareSamLambdaRuntime)
                 .map(runtime => ({
                     label: runtime,
                     alwaysShow: runtime === currRuntime,
