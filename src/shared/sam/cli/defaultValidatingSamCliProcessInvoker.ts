@@ -49,10 +49,10 @@ export class DefaultValidatingSamCliProcessInvoker implements SamCliProcessInvok
         )
     }
 
-    public async xinvoke(settings?: SamCliProcessInvokeSettings): Promise<ChildProcessResult> {
+    public async invoke(settings?: SamCliProcessInvokeSettings): Promise<ChildProcessResult> {
         await this.validateSamCli()
 
-        return await this.invoker.xinvoke(settings)
+        return await this.invoker.invoke(settings)
     }
 
     private async validateSamCli(): Promise<void> {

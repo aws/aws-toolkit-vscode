@@ -27,7 +27,7 @@ export async function runSamCliPackage(
     invoker: SamCliProcessInvoker,
     logger: BasicLogger = getLogger(),
 ): Promise<void> {
-    const childProcessResult = await invoker.xinvoke({
+    const childProcessResult = await invoker.invoke({
         arguments: [
             'package',
             '--template-file', packageArguments.sourceTemplateFile,

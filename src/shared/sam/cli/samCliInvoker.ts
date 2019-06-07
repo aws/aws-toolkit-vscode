@@ -47,7 +47,7 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
         private readonly context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()
     ) { }
 
-    public async xinvoke(settings?: SamCliProcessInvokeSettings): Promise<ChildProcessResult> {
+    public async invoke(settings?: SamCliProcessInvokeSettings): Promise<ChildProcessResult> {
         const invokeSettings = makeRequiredSamCliProcessInvokeSettings(settings)
 
         const childProcess: ChildProcess = new ChildProcess(

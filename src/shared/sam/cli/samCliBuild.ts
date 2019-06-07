@@ -103,7 +103,7 @@ export class SamCliBuildInvocation {
         this.addArgumentIf(invokeArgs, !!this.skipPullImage, '--skip-pull-image')
         this.addArgumentIf(invokeArgs, !!this.manifestPath, '--manifest', this.manifestPath!)
 
-        const childProcessResult = await this.invoker.xinvoke({
+        const childProcessResult = await this.invoker.invoke({
             arguments: invokeArgs
         })
 

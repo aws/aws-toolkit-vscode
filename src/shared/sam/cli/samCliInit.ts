@@ -18,7 +18,7 @@ export async function runSamCliInit(
     initArguments: SamCliInitArgs,
     invoker: SamCliProcessInvoker
 ): Promise<void> {
-    const childProcessResult = await invoker.xinvoke(
+    const childProcessResult = await invoker.invoke(
         {
             spawnOptions: { cwd: initArguments.location },
             arguments: [

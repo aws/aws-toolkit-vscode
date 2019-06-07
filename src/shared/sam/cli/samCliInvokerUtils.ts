@@ -26,7 +26,7 @@ export function makeRequiredSamCliProcessInvokeSettings(
 }
 
 export interface SamCliProcessInvoker {
-    xinvoke(settings?: SamCliProcessInvokeSettings): Promise<ChildProcessResult>
+    invoke(settings?: SamCliProcessInvokeSettings): Promise<ChildProcessResult>
 }
 
 export function logAndThrowIfUnexpectedExitCode(

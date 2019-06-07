@@ -22,7 +22,7 @@ export class TestSamCliProcessInvoker implements SamCliProcessInvoker {
     ) {
     }
 
-    public async xinvoke(settings?: SamCliProcessInvokeSettings): Promise<ChildProcessResult> {
+    public async invoke(settings?: SamCliProcessInvokeSettings): Promise<ChildProcessResult> {
         const invokeSettings = makeRequiredSamCliProcessInvokeSettings(settings)
 
         return this.onInvoke(invokeSettings.spawnOptions, invokeSettings.arguments)

@@ -86,7 +86,7 @@ describe('DefaultValidatingSamCliProcessInvoker', async () => {
             })
 
             const error: Error = await assertThrowsError(
-                async () => await invoker.xinvoke(), 'Expected invoke to throw an error'
+                async () => await invoker.invoke(), 'Expected invoke to throw an error'
             )
 
             assert.ok(error instanceof InvalidSamCliVersionError, 'Unexpected error instance type')
@@ -116,7 +116,7 @@ describe('DefaultValidatingSamCliProcessInvoker', async () => {
         })
 
         const error: Error = await assertThrowsError(
-            async () => await invoker.xinvoke(), 'Expected invoke to throw an error'
+            async () => await invoker.invoke(), 'Expected invoke to throw an error'
         )
 
         assert.ok(error instanceof SamCliNotFoundError, 'Unexpected error instance type')
@@ -139,7 +139,7 @@ describe('DefaultValidatingSamCliProcessInvoker', async () => {
         })
 
         await assertThrowsError(
-            async () => await invoker.xinvoke(), 'Expected invoke to throw an error'
+            async () => await invoker.invoke(), 'Expected invoke to throw an error'
         )
     })
 
@@ -171,7 +171,7 @@ describe('DefaultValidatingSamCliProcessInvoker', async () => {
             validator,
         })
 
-        await invoker.xinvoke()
+        await invoker.invoke()
 
         assert.strictEqual(timesCalled, 1, 'Expected invoke to get called')
     })

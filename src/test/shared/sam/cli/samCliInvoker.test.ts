@@ -34,6 +34,6 @@ describe('DefaultSamCliProcessInvoker', async () => {
 
         const invoker = new DefaultSamCliProcessInvoker(context)
 
-        await assertRejects(async () => await invoker.xinvoke())
+        await assertRejects(async () => await invoker.invoke())
     })
 })
