@@ -38,15 +38,20 @@ describe('filesystemUtilities', () => {
     })
 
     describe('makeTemporaryToolkitFolder', () => {
-        it(`makes temp dirs under filesystemUtilities.tempDirPath ('${tempDirPath}')`, async () => {
-            assert(
-                tempFolder.indexOf(tempDirPath) === 0,
+        it(`makes temp dirs as children to filesystemUtilities.tempDirPath ('${tempDirPath}')`, async () => {
+            const parentFolder = path.dirname(tempFolder)
+
+            assert.strictEqual(
+                parentFolder,
+                tempDirPath,
                 `expected tempFolder ('${tempFolder}') to be in tempDirPath ('${tempDirPath}')`
             )
-            const tmpDirExists = await fileExists(tempFolder)
-            assert(
-                tmpDirExists,
-                `tempFolder should exist: '${tempFolder}'`
+        })
+
+        it('creates a folder', async () => {
+            assert.ok(
+                await fileExists(tempFolder),
+                `expected folder to exist: ${tempFolder}`
             )
         })
 
