@@ -367,6 +367,9 @@ class DefaultProjectAccountSettingsManagerTest {
     private fun waitForEvents(eventCount: Int) {
         for (i in 1..5) {
             if (queue.size >= eventCount) {
+                // We need clean queue since every changeCredentialProvider event add 2 events to the queue.
+                // If test calls changeCredentialProvider twice, this is likely to fail.
+                queue.clear()
                 return
             }
             Thread.sleep(200)
