@@ -1,3 +1,17 @@
+# _1.4_ (2019-06-10)
+- **(Feature)** Usability enhancements to the CloudFormation UI
+  - color coding status similar to the AWS Console
+  - preventing multiple tabs opening for the same stack ([#798](https://github.com/aws/aws-toolkit-jetbrains/issues/798))
+  - opening from AWS Explorer with right-click instead of double click ([#799](https://github.com/aws/aws-toolkit-jetbrains/issues/799))
+  - adding status reason to event view
+- **(Feature)** Open README.md file after creating a project
+- **(Feature)** Auto-create run configurations when using the New Project wizard
+- **(Feature)** Enable toolkit in 2019.2 EAP
+- **(Bug Fix)** Fix unable to map paths that have `.` or `..` in them
+- **(Bug Fix)** Do not load proxy settings from Java system properties since it conflicts with IDE setting
+- **(Bug Fix)** Make sure we commit all open documents if using a file-based event input ([#910](https://github.com/aws/aws-toolkit-jetbrains/issues/910))
+- **(Bug Fix)** Fix being unable to open an empty credentials/config file for editing
+
 # _1.3_ (2019-04-25)
 - **(Feature)** Respect IDE HTTP proxy settings when making calls to AWS services. Fixes [#685](https://github.com/aws/aws-toolkit-jetbrains/issues/685).
 - **(Feature)** Add Tooltips to the UI components

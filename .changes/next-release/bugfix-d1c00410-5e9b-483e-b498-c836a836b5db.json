@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix being unable to open an empty credentials/config file for editing"
-}
