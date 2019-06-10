@@ -174,8 +174,6 @@ For more information, see [Deploying a Serverless Application](https://docs.aws.
 
 ### <a id="get-help"></a>Get Help
 
-To ask questions or get help from the AWS solutions development community, see the AWS Discussion Forums for [Java](https://forums.aws.amazon.com/forum.jspa?forumID=70), [JavaScript](https://forums.aws.amazon.com/forum.jspa?forumID=148) (for Node.js), [.NET](https://forums.aws.amazon.com/forum.jspa?forumID=61), [Python](https://forums.aws.amazon.com/forum.jspa?forumID=132), [Go](https://forums.aws.amazon.com/forum.jspa?forumID=293), [AWS Lambda](https://forums.aws.amazon.com/forum.jspa?forumID=186), or [AWS CloudFormation](https://forums.aws.amazon.com/forum.jspa?forumID=92). (When you enter these forums, AWS might require you to sign in.) 
-
 To report issues with the AWS Toolkit for Visual Studio Code or to propose Toolkit code changes, see the [aws/aws-toolkit-vscode](https://github.com/aws/aws-toolkit-vscode) repository on GitHub.
 
 You can also [contact AWS](https://aws.amazon.com/contact-us/) directly.
