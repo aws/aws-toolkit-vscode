@@ -60,7 +60,7 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
         val outputDir: VirtualFile = contentEntry.file ?: throw Exception(message("sam.init.error.no.virtual.file"))
 
         val samTemplate = generator.settings.template
-        samTemplate.build(selectedRuntime, outputDir)
+        samTemplate.build(rootModel.project, selectedRuntime, outputDir)
 
         runPostModuleCreationStep(selectedRuntime, outputDir, rootModel, samTemplate)
     }

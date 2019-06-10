@@ -14,6 +14,7 @@
         </constraints>
         <properties>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.runtime.label"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.runtime.tooltip"/>
         </properties>
       </component>
       <component id="a8e7d" class="com.intellij.openapi.ui.ComboBox" binding="runtime">

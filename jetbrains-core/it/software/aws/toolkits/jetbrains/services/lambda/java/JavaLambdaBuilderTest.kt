@@ -150,6 +150,6 @@ class JavaLambdaBuilderTest : BaseLambdaBuilderTest() {
         assertThatThrownBy {
             buildLambda(projectRule.module, handlerPsi, Runtime.JAVA8, "com.example.SomeClass")
         }.isInstanceOf(IllegalStateException::class.java)
-            .hasMessageEndingWith(message("lambda.build.java.unsupported_build_system", projectRule.module))
+            .hasMessageEndingWith(message("lambda.build.java.unsupported_build_system", projectRule.module.name))
     }
 }

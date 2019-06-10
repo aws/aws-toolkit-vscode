@@ -3,8 +3,9 @@
 
 package software.aws.toolkits.ktlint.rules
 
-import com.github.shyiko.ktlint.core.RuleSet
-import com.github.shyiko.ktlint.core.RuleSetProvider
+import com.pinterest.ktlint.core.RuleSet
+import com.pinterest.ktlint.core.RuleSetProvider
+import com.pinterest.ktlint.ruleset.standard.NoWildcardImportsRule
 
 class CustomRuleSetProvider : RuleSetProvider {
     override fun get() = RuleSet(
@@ -13,6 +14,7 @@ class CustomRuleSetProvider : RuleSetProvider {
         BannedPatternRule(BannedPatternRule.DEFAULT_PATTERNS),
         ExpressionBodyRule(),
         LazyLogRule(),
-        DialogModalityRule()
+        DialogModalityRule(),
+        NoWildcardImportsRule() // Disabled by default, so including in our rule set
     )
 }

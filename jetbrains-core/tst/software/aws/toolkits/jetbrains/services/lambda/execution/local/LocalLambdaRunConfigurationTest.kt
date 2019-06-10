@@ -8,7 +8,9 @@ import com.intellij.execution.ExecutorRegistry
 import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.runners.ExecutionEnvironment
-import com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.application.WriteAction
+import com.intellij.openapi.vfs.VfsUtilCore
+import com.intellij.psi.PsiDocumentManager
 import com.intellij.testFramework.runInEdtAndWait
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
@@ -26,14 +28,16 @@ import software.aws.toolkits.core.rules.EnvironmentVariableHelper
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.settings.SamExecutableDetector
 import software.aws.toolkits.jetbrains.settings.SamSettings
-import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.addClass
+import software.aws.toolkits.jetbrains.utils.rules.addModule
 import software.aws.toolkits.jetbrains.utils.toElement
 import software.aws.toolkits.resources.message
 
 class LocalLambdaRunConfigurationTest {
     @Rule
     @JvmField
-    val projectRule = JavaCodeInsightTestFixtureRule()
+    val projectRule = HeavyJavaCodeInsightTestFixtureRule()
 
     @Rule
     @JvmField
@@ -51,7 +55,10 @@ class LocalLambdaRunConfigurationTest {
         SamSettings.getInstance().savedExecutablePath = "sam"
         MockCredentialsManager.getInstance().addCredentials(mockId, mockCreds)
 
-        projectRule.fixture.addClass(
+        val fixture = projectRule.fixture
+        val module = fixture.addModule("main")
+        fixture.addClass(
+            module,
             """
             package com.example;
 
@@ -88,7 +95,7 @@ class LocalLambdaRunConfigurationTest {
     }
 
     @Test
-    fun handlerIsNotSet() {
+    fun handlerNotSet() {
         runInEdtAndWait {
             val runConfiguration = createHandlerBasedRunConfiguration(
                 project = projectRule.project,
@@ -196,6 +203,37 @@ class LocalLambdaRunConfigurationTest {
     }
 
     @Test
+    fun runtimeNotSetInTemplate() {
+        runInEdtAndWait {
+            val template = tempDir.newFile("template.yaml").also {
+                it.writeText(
+                    """
+                Resources:
+                  SomeFunction:
+                    Type: AWS::Serverless::Function
+                    Properties:
+                      Handler: com.example.LambdaHandler::handleRequest
+                      CodeUri: /some/dummy/code/location
+                      Timeout: 900
+                """.trimIndent()
+                )
+            }.absolutePath
+            val logicalName = "SomeFunction"
+
+            val runConfiguration = createTemplateRunConfiguration(
+                project = projectRule.project,
+                templateFile = template,
+                logicalId = logicalName,
+                credentialsProviderId = mockId
+            )
+            assertThat(runConfiguration).isNotNull
+            assertThatThrownBy { getState(runConfiguration) }
+                .isInstanceOf(ExecutionException::class.java)
+                .hasMessage(message("lambda.run_configuration.no_runtime_specified", logicalName, template))
+        }
+    }
+
+    @Test
     fun unsupportedRuntime() {
         runInEdtAndWait {
             val template = tempDir.newFile("template.yaml").also {
@@ -224,6 +262,37 @@ class LocalLambdaRunConfigurationTest {
             assertThatThrownBy { getState(runConfiguration) }
                 .isInstanceOf(ExecutionException::class.java)
                 .hasMessage(message("lambda.run_configuration.no_runtime_specified", logicalName, template))
+        }
+    }
+
+    @Test
+    fun handlerNotSetInTemplate() {
+        runInEdtAndWait {
+            val template = tempDir.newFile("template.yaml").also {
+                it.writeText(
+                    """
+                Resources:
+                  SomeFunction:
+                    Type: AWS::Serverless::Function
+                    Properties:
+                      Runtime: java8
+                      CodeUri: /some/dummy/code/location
+                      Timeout: 900
+                """.trimIndent()
+                )
+            }.absolutePath
+            val logicalName = "SomeFunction"
+
+            val runConfiguration = createTemplateRunConfiguration(
+                project = projectRule.project,
+                templateFile = template,
+                logicalId = logicalName,
+                credentialsProviderId = mockId
+            )
+            assertThat(runConfiguration).isNotNull
+            assertThatThrownBy { getState(runConfiguration) }
+                .isInstanceOf(ExecutionException::class.java)
+                .hasMessage(message("lambda.run_configuration.no_handler_specified", logicalName, template))
         }
     }
 
@@ -286,18 +355,39 @@ class LocalLambdaRunConfigurationTest {
 
     @Test
     fun inputFileIsResolved() {
-        val tempFile = FileUtil.createTempFile("temp", ".json")
-        tempFile.writeText("TestInputFile")
+        val eventFile = projectRule.fixture.addFileToProject("event.json", "TestInputFile")
 
         runInEdtAndWait {
             val runConfiguration = createHandlerBasedRunConfiguration(
                 project = projectRule.project,
-                input = tempFile.absolutePath,
+                input = eventFile.virtualFile.path,
                 inputIsFile = true,
                 credentialsProviderId = mockId
             )
             assertThat(runConfiguration).isNotNull
             assertThat(getState(runConfiguration).settings.input).isEqualTo("TestInputFile")
+        }
+    }
+
+    @Test
+    fun inputFileIsSaved() {
+        val eventFile = projectRule.fixture.addFileToProject("event.json", "TestInputFile")
+
+        runInEdtAndWait {
+            WriteAction.run<Throwable> {
+                PsiDocumentManager.getInstance(projectRule.project).getDocument(eventFile)!!.setText("UpdatedTestInputFile")
+            }
+
+            assertThat(VfsUtilCore.loadText(eventFile.virtualFile)).isEqualTo("TestInputFile")
+
+            val runConfiguration = createHandlerBasedRunConfiguration(
+                project = projectRule.project,
+                input = eventFile.virtualFile.path,
+                inputIsFile = true,
+                credentialsProviderId = mockId
+            )
+            assertThat(runConfiguration).isNotNull
+            assertThat(getState(runConfiguration).settings.input).isEqualTo("UpdatedTestInputFile")
         }
     }
 

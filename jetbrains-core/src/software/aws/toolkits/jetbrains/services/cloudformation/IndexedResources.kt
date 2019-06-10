@@ -14,13 +14,21 @@ import java.io.DataOutput
  */
 open class IndexedResource protected constructor(val type: String, val indexedProperties: Map<String, String>) {
 
-    protected constructor(resource: Resource, indexProperties: List<String>)
-        : this(resource.type() ?: throw RuntimeException(message("cloudformation.template_index.missing_type")),
-            indexProperties
-                .asSequence()
-                .map { it to try { resource.getScalarProperty(it) } catch (e: Exception) { null } }
-                .mapNotNull { (key, value) -> value?.let { key to it } }
-                .toMap())
+    protected constructor(resource: Resource, indexProperties: List<String>) :
+            this(
+                resource.type() ?: throw RuntimeException(message("cloudformation.template_index.missing_type")),
+                indexProperties
+                    .asSequence()
+                    .map {
+                        it to try {
+                            resource.getScalarProperty(it)
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
+                    .mapNotNull { (key, value) -> value?.let { key to it } }
+                    .toMap()
+            )
 
     fun save(dataOutput: DataOutput) {
         dataOutput.writeUTF(type)

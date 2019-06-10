@@ -3,7 +3,7 @@
 
 package software.aws.toolkits.ktlint.rules
 
-import com.github.shyiko.ktlint.core.Rule
+import com.pinterest.ktlint.core.Rule
 import org.jetbrains.kotlin.com.intellij.lang.ASTNode
 import java.time.Clock
 import java.time.LocalDate

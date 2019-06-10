@@ -92,8 +92,8 @@ class Updater(
         } else {
             eventsFetcher.fetchEvents(client, pageToSwitchTo)
         }
-        app.invokeLater {
 
+        app.invokeLater {
             showData(
                 stackStatus = newStackStatus,
                 resources = resources.first,

@@ -114,7 +114,7 @@ abstract class SdkBasedRuntimeGroupInformation : RuntimeGroupInformation {
     override fun supportsSamBuild(): Boolean = false
 }
 
-val Runtime.validOrNull: Runtime? get() = this.takeUnless { it == Runtime.UNKNOWN_TO_SDK_VERSION }
+val Runtime?.validOrNull: Runtime? get() = this?.takeUnless { it == Runtime.UNKNOWN_TO_SDK_VERSION }
 
 val Runtime.runtimeGroup: RuntimeGroup? get() = RuntimeGroup.find { this in it.runtimes }
 

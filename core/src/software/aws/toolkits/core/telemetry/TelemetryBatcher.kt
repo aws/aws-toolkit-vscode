@@ -5,7 +5,10 @@ package software.aws.toolkits.core.telemetry
 
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
+import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingDeque
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 interface TelemetryBatcher {
@@ -23,18 +26,37 @@ interface TelemetryBatcher {
 open class DefaultTelemetryBatcher(
     private val publisher: TelemetryPublisher,
     private val maxBatchSize: Int = DEFAULT_MAX_BATCH_SIZE,
-    maxQueueSize: Int = DEFAULT_MAX_QUEUE_SIZE
+    maxQueueSize: Int = DEFAULT_MAX_QUEUE_SIZE,
+    private val executor: ScheduledExecutorService = createDefaultExecutor()
 ) : TelemetryBatcher {
 
     private val isTelemetryEnabled: AtomicBoolean = AtomicBoolean(false)
     protected val eventQueue: LinkedBlockingDeque<MetricEvent> = LinkedBlockingDeque(maxQueueSize)
     private val isShuttingDown: AtomicBoolean = AtomicBoolean(false)
 
+    init {
+        executor.scheduleWithFixedDelay(
+            {
+                if (!isShuttingDown.get()) {
+                    try {
+                        flush(true)
+                    } catch (e: Exception) {
+                        LOG.warn(e) { "Unexpected exception while publishing telemetry" }
+                    }
+                }
+            },
+            DEFAULT_PUBLISH_INTERVAL,
+            DEFAULT_PUBLISH_INTERVAL,
+            DEFAULT_PUBLISH_INTERVAL_UNIT
+        )
+    }
+
     override fun shutdown() {
         if (!isShuttingDown.compareAndSet(false, true)) {
             return
         }
 
+        executor.shutdown()
         flush(false)
     }
 
@@ -90,8 +112,17 @@ open class DefaultTelemetryBatcher(
         private val LOG = getLogger<DefaultTelemetryBatcher>()
         private const val DEFAULT_MAX_BATCH_SIZE = 20
         private const val DEFAULT_MAX_QUEUE_SIZE = 10000
+        private const val DEFAULT_PUBLISH_INTERVAL = 5L
+        private val DEFAULT_PUBLISH_INTERVAL_UNIT = TimeUnit.MINUTES
 
         private const val TELEMETRY_KEY = "aws.toolkits.enableTelemetry"
         val TELEMETRY_ENABLED = System.getProperty(TELEMETRY_KEY)?.toBoolean() ?: true
+
+        private fun createDefaultExecutor() = Executors.newSingleThreadScheduledExecutor {
+            val daemonThread = Thread(it)
+            daemonThread.isDaemon = true
+            daemonThread.name = "AWS-Toolkit-Metrics-Publisher"
+            daemonThread
+        }
     }
 }

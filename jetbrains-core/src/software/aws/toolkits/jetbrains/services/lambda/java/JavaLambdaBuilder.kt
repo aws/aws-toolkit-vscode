@@ -33,7 +33,7 @@ class JavaLambdaBuilder : LambdaBuilder() {
         val baseDir = when {
             isGradle(module) -> getGradleProjectLocation(module)
             isMaven(module) -> getPomLocation(module)
-            else -> throw IllegalStateException(message("lambda.build.java.unsupported_build_system", module))
+            else -> throw IllegalStateException(message("lambda.build.java.unsupported_build_system", module.name))
         }
         val customTemplate = FileUtil.createTempFile("template", ".yaml", true)
         val logicalId = "Function"

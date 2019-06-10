@@ -81,8 +81,6 @@ subprojects {
         compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
         compile "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
         compile "org.jetbrains.kotlin:kotlin-script-runtime:$kotlinVersion"
-        // TODO: Replace assertk with assertj
-        testCompile("com.willowtreeapps.assertk:assertk:0.9")
         testCompile "com.nhaarman.mockitokotlin2:mockito-kotlin:2.0.0"
         testCompile "org.assertj:assertj-core:$assertjVersion"
         testCompile "junit:junit:$junitVersion"
@@ -209,8 +207,11 @@ generateChangeLog {
 task ktlint(type: JavaExec, group: "verification") {
     description = "Check Kotlin code style."
     classpath = configurations.ktlint
-    main = "com.github.shyiko.ktlint.Main"
+    main = "com.pinterest.ktlint.Main"
     args "-v", project.rootDir.absolutePath + "/**/*.kt"
+
+    inputs.files(project.fileTree(dir: "src", include: "**/*.kt"))
+    outputs.dir("${project.buildDir}/reports/ktlint/")
 }
 check.dependsOn ktlint
 check.dependsOn verifyPlugin
@@ -260,6 +261,6 @@ task guiTest(type: Test) {
 dependencies {
     compile project(':jetbrains-core') 
 
-    ktlint "com.github.shyiko:ktlint:$ktlintVersion"
+    ktlint "com.pinterest:ktlint:$ktlintVersion"
     ktlint project(":ktlint-rules")
 }

@@ -7,6 +7,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
@@ -17,7 +18,8 @@ import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
-import software.aws.toolkits.jetbrains.core.stack.openStack
+import software.aws.toolkits.jetbrains.core.stack.StackWindowManager
+import software.aws.toolkits.jetbrains.services.cloudformation.describeStack
 import software.aws.toolkits.jetbrains.services.cloudformation.executeChangeSetAndWait
 import software.aws.toolkits.jetbrains.services.cloudformation.validateSamTemplateLambdaRuntimes
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationDialog
@@ -87,7 +89,14 @@ class DeployServerlessApplicationAction : AnActionWrapper(
         if (!deployDialog.isOK) return
 
         val cfnClient = project.awsClient<CloudFormationClient>()
-        openStack(project, stackName)
+
+        cfnClient.describeStack(stackName) {
+            it?.run {
+                runInEdt {
+                    StackWindowManager.getInstance(project).openStack(stackName(), stackId())
+                }
+            }
+        }
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
                 cfnClient.executeChangeSetAndWait(stackName, deployDialog.changeSetName)

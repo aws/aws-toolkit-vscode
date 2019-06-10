@@ -9,7 +9,9 @@ import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.command.CommandProcessor
 import com.intellij.ui.ClickListener
 import com.intellij.ui.EditorTextField
+import com.intellij.ui.JBColor
 import software.aws.toolkits.jetbrains.utils.formatText
+import java.awt.Color
 import java.awt.event.MouseEvent
 import javax.swing.AbstractButton
 import javax.swing.JComboBox
@@ -61,3 +63,5 @@ fun <T> ListModel<T>.find(predicate: (T) -> Boolean): T? {
     }
     return null
 }
+
+val BETTER_GREEN = JBColor(Color(104, 197, 116), JBColor.GREEN.darker())

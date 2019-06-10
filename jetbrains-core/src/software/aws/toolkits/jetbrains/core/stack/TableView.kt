@@ -8,9 +8,7 @@ import com.intellij.ui.table.JBTable
 import software.amazon.awssdk.services.cloudformation.model.StackEvent
 import software.aws.toolkits.resources.message
 import javax.swing.JComponent
-import javax.swing.JLabel
 import javax.swing.JTable
-import javax.swing.SwingConstants
 import javax.swing.SwingUtilities
 import javax.swing.table.DefaultTableCellRenderer
 import javax.swing.table.DefaultTableModel
@@ -39,14 +37,17 @@ private enum class Fields(val readableName: String, val getData: (StackEvent) ->
     STATUS(message("cloudformation.stack.status"), { e -> e.resourceStatusAsString() }),
     TYPE(message("cloudformation.stack.type"), { e -> e.resourceType() }),
     LOGICAL_ID(message("cloudformation.stack.logical_id"), { e -> e.logicalResourceId() }),
-    PHYSICAL_ID(message("cloudformation.stack.physical_id"), { e -> e.physicalResourceId() });
+    PHYSICAL_ID(message("cloudformation.stack.physical_id"), { e -> e.physicalResourceId() + e }),
+    REASON(message("cloudformation.stack.reason"), { e -> e.resourceStatusReason() ?: "" });
 
     override fun toString() = readableName
 }
 
 private class StatusCellRenderer : DefaultTableCellRenderer() {
     override fun getTableCellRendererComponent(table: JTable, value: Any, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int) =
-        (value as String).run { JLabel(this, StatusType.fromStatusValue(this).icon, SwingConstants.LEFT) }
+        super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column).also {
+            it.foreground = StatusType.fromStatusValue(value as String).color
+        }
 }
 
 private class StackTableModel : DefaultTableModel(Fields.values().map(Fields::readableName).toTypedArray(), 0) {

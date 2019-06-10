@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Usability enhancements to the CloudFormation UI \n - color coding status similar to the AWS Console\n - preventing multiple tabs opening for the same stack (#798)\n - opening from AWS Explorer with right-click instead of double click (#799)\n - adding status reason to event view"
+}

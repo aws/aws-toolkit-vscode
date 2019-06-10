@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains
+package software.aws.toolkits.jetbrains.fixtures
 
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.testGuiFramework.fixtures.WelcomeFrameFixture

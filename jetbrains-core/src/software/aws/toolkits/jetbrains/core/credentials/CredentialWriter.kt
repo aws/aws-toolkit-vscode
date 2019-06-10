@@ -6,8 +6,11 @@ package software.aws.toolkits.jetbrains.core.credentials
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
+import com.intellij.openapi.fileTypes.FileTypes
+import com.intellij.openapi.fileTypes.ex.FileTypeManagerEx
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
@@ -55,6 +58,15 @@ class CreateOrUpdateCredentialProfilesAction @TestOnly constructor(
 
         localFileSystem.refreshFiles(virtualFiles, false, false) {
             virtualFiles.forEach {
+                if (it.fileType == FileTypes.UNKNOWN) {
+                    ApplicationManager.getApplication().runWriteAction {
+                        FileTypeManagerEx.getInstanceEx().associatePattern(
+                            FileTypes.PLAIN_TEXT,
+                            it.name
+                        )
+                    }
+                }
+
                 fileEditorManager.openTextEditor(OpenFileDescriptor(project, it), true)
                     ?: throw RuntimeException(message("credentials.could_not_open", it))
             }

@@ -94,7 +94,7 @@ class CloudFormationServiceNodeTest {
         whenever(describeStacks(any<DescribeStacksRequest>()))
             .thenReturn(
                 DescribeStacksResponse.builder().stacks(names.map {
-                    Stack.builder().stackName(it.first).stackStatus(it.second).build()
+                    Stack.builder().stackName(it.first).stackId(it.first).stackStatus(it.second).build()
                 }).nextToken(nextToken).build()
             )
     }

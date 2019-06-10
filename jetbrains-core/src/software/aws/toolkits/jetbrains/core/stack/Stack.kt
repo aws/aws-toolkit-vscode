@@ -4,25 +4,50 @@ package software.aws.toolkits.jetbrains.core.stack
 
 import com.intellij.notification.NotificationGroup
 import com.intellij.notification.NotificationType
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.LangDataKeys
+import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import com.intellij.ui.OnePixelSplitter
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
 import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.explorer.SingleResourceNodeAction
+import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationStackNode
+import software.aws.toolkits.resources.message
 import javax.swing.BoxLayout
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 
-private const val STACK_TOOLWINDOW_ID = "AWS.CloudFormation"
 private const val UPDATE_STACK_STATUS_INTERVAL = 5000
 private const val REDRAW_ANIMATED_ICON_INTERVAL = 70
 private const val TREE_TABLE_INITIAL_PROPORTION = 0.25f
-/**
- * Package entry point
- * Opens stack UI ToolWindow. Window is registered on this call and unregistered when closed.
- */
-fun openStack(project: Project, stackName: String) {
-    assert(SwingUtilities.isEventDispatchThread())
-    StackUI(project, stackName).start()
+
+class StackWindowManager(private val project: Project) {
+
+    private val stackTabs = mutableMapOf<String, ToolWindowTab>()
+
+    fun openStack(stackName: String, stackId: String) {
+        assert(SwingUtilities.isEventDispatchThread())
+        val tab = stackTabs[stackId]
+        when {
+            tab?.isDisposed() == false -> tab.show()
+            else -> {
+                val stackUI = StackUI(project, stackName)
+                stackTabs[stackId] = stackUI.toolWindowTab
+                stackUI.start()
+            }
+        }
+    }
+
+    companion object {
+        fun getInstance(project: Project): StackWindowManager = ServiceManager.getService(project, StackWindowManager::class.java)
+    }
+}
+
+class OpenStackUiAction : SingleResourceNodeAction<CloudFormationStackNode>(message("cloudformation.stack.view")) {
+    override fun actionPerformed(selected: CloudFormationStackNode, e: AnActionEvent) {
+        StackWindowManager.getInstance(e.getRequiredData(LangDataKeys.PROJECT)).openStack(selected.stackName, selected.stackId)
+    }
 }
 
 private class StackUI(
@@ -30,7 +55,7 @@ private class StackUI(
     private val stackName: String
 ) : UpdateListener {
 
-    private val toolWindowTab: ToolWindowTab
+    internal val toolWindowTab: ToolWindowTab
     private val animator: IconAnimator
     private val updater: Updater
     private val notificationGroup: NotificationGroup
@@ -56,7 +81,8 @@ private class StackUI(
             }
         }
 
-        updater = Updater(tree,
+        updater = Updater(
+            tree,
             eventsTableView = table,
             stackName = stackName,
             updateEveryMs = UPDATE_STACK_STATUS_INTERVAL,
@@ -68,8 +94,8 @@ private class StackUI(
             component = mainPanel,
             project = project,
             stackName = stackName,
-            toolWindowId = STACK_TOOLWINDOW_ID,
-            disposables = *arrayOf(tree, updater, animator, table, pageButtons))
+            disposables = *arrayOf(tree, updater, animator, table, pageButtons)
+        )
     }
 
     fun start() {
