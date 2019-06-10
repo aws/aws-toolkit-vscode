@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Do not load proxy settings from Java system properties since it conflicts with IDE setting"
-}

@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Make sure we commit all open documents if using a file-based event input (#910)"
-}
