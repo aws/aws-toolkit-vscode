@@ -10,6 +10,7 @@ All notable changes to the "aws-vscode-tools" extension will be documented in th
 * Local Run/Debug of SAM Lambda Functions now outputs to the Output and Debug Console, and reduces timing issues for attaching the debugger
 * Removed Lambda view that showed the Lambda Policy
 * Removed Lambda view that showed the Lambda Configuration
+* Removed unsupported Lambda runtimes from the 'Create New SAM Application' wizard.
 * The AWS Explorer menu items no longer appear on other VS Code panel menus
 * When creating a new SAM Application, the toolkit now checks for a valid SAM CLI version before prompting the user for inputs
 * When deploying a SAM Application, the toolkit now checks for a valid SAM CLI version before prompting the user for inputs
