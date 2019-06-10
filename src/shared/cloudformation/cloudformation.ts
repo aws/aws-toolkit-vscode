@@ -269,6 +269,9 @@ export namespace CloudFormation {
         return resource &&
             resource.Type === SERVERLESS_FUNCTION_TYPE &&
             resource.Properties &&
+            // TODO: resource.Properties.Handler is relative to CodeUri,
+            // but handlerName is relative to the source file.
+            // Normalize before comparing.
             resource.Properties.Handler === handlerName
     }
 }
