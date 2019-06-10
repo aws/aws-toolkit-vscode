@@ -76,6 +76,9 @@ async function getLambdaHandlerCandidates({
     // we stop retrying if we are still getting an empty result after several retries.
     //
     // This issue only surfaces when the setting `python.jediEnabled` is not set to false.
+    // TODO: When the above issue is resolved, remove this workaround AND bump the minimum
+    //       required VS Code version and/or add a minimum supported version for the Python
+    //       extension.
     const jediEnabled = pythonSettings.readSetting<boolean>(PYTHON_JEDI_ENABLED_KEY, true)
     if (jediEnabled) {
         for (let i = 0; i < MAX_RETRIES && !symbols.length; i++) {
