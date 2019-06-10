@@ -269,9 +269,11 @@ export namespace CloudFormation {
         return resource &&
             resource.Type === SERVERLESS_FUNCTION_TYPE &&
             resource.Properties &&
-            // TODO: resource.Properties.Handler is relative to CodeUri,
-            // but handlerName is relative to the source file.
-            // Normalize before comparing.
+            // TODO: `resource.Properties.Handler` is relative to `CodeUri`, but
+            //       `handlerName` is relative to the directory containing the source
+            //       file. To fix, update lambda handler candidate searches for
+            //       interpreted languages to return a handler name relative to the
+            //       `CodeUri`, rather than to the directory containing the source file.
             resource.Properties.Handler === handlerName
     }
 }
