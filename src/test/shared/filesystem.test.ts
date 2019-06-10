@@ -6,10 +6,13 @@
 'use strict'
 
 import * as assert from 'assert'
+import * as del from 'del'
 import * as fs from 'fs'
+import * as path from 'path'
 import { CustomPromisify, promisify } from 'util'
 
 import * as filesystem from '../../shared/filesystem'
+import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { getPropAs } from '../../shared/utilities/tsUtils'
 
 const functionsToTest = [
@@ -18,7 +21,6 @@ const functionsToTest = [
     'readdir',
     'rename',
     'stat',
-    'mkdir',
     'mkdtemp',
     'unlink',
     'writeFile',
@@ -35,6 +37,40 @@ describe('filesystem', () => {
                 `filesystem.${fxName} should be a "function" but is "${actualType}"`
             )
             assert.strictEqual(String(filesystemFunction), String(promisify(fsFunction)))
+        })
+    })
+
+    describe('mkdir', async () => {
+        let tempFolder: string
+
+        beforeEach(async () => {
+            // Make a temp folder for all these tests
+            tempFolder = await makeTemporaryToolkitFolder()
+        })
+
+        afterEach(async () => {
+            await del([tempFolder], { force: true })
+        })
+
+        it('makes subfolder to existing folder', async () => {
+            const dstFolder = path.join(tempFolder, 'level1')
+            await filesystem.mkdir(dstFolder, { recursive: true })
+
+            assert.ok(fileExists(dstFolder), 'expected folder to exist')
+        })
+
+        it('makes two levels of subfolders', async () => {
+            const dstFolder = path.join(tempFolder, 'level1', 'level2')
+            await filesystem.mkdir(dstFolder, { recursive: true })
+
+            assert.ok(fileExists(dstFolder), 'expected folder to exist')
+        })
+
+        it('makes many levels of subfolders', async () => {
+            const dstFolder = path.join(tempFolder, 'level1', 'level2', 'level3', 'level4', 'level5')
+            await filesystem.mkdir(dstFolder, { recursive: true })
+
+            assert.ok(fileExists(dstFolder), 'expected folder to exist')
         })
     })
 })

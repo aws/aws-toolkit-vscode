@@ -5,45 +5,36 @@
 
 'use strict'
 
-import { getLogger, Logger } from '../../logger'
-import { ChildProcessResult } from '../../utilities/childProcess'
-import { DefaultSamCliProcessInvoker } from './samCliInvoker'
-import { SamCliProcessInvoker } from './samCliInvokerUtils'
+import { BasicLogger, getLogger } from '../../logger'
+import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 
-export class SamCliPackageInvocation {
-    public constructor(
-        private readonly templateFile: string,
-        private readonly outputTemplateFile: string,
-        private readonly s3Bucket: string,
-        private readonly invoker: SamCliProcessInvoker =
-        new DefaultSamCliProcessInvoker(),
-        private readonly region: string
-    ) {
-    }
+export interface SamCliPackageParameters {
+    /**
+     * The SAM Template to package
+     */
+    sourceTemplateFile: string
+    /**
+     * The SAM Template produced by SAM CLI's packaging
+     */
+    destinationTemplateFile: string
+    profile: string
+    region: string
+    s3Bucket: string
+}
 
-    public async execute(): Promise<void> {
-        const logger: Logger = getLogger()
-        const { exitCode, error, stderr, stdout }: ChildProcessResult = await this.invoker.invoke(
-            'package',
-            '--template-file', this.templateFile,
-            '--s3-bucket', this.s3Bucket,
-            '--output-template-file', this.outputTemplateFile,
-            '--region', this.region
-        )
+export async function runSamCliPackage(
+    packageArguments: SamCliPackageParameters,
+    invoker: SamCliProcessInvoker,
+    logger: BasicLogger = getLogger(),
+): Promise<void> {
+    const childProcessResult = await invoker.invoke(
+        'package',
+        '--template-file', packageArguments.sourceTemplateFile,
+        '--s3-bucket', packageArguments.s3Bucket,
+        '--output-template-file', packageArguments.destinationTemplateFile,
+        '--region', packageArguments.region,
+        '--profile', packageArguments.profile
+    )
 
-        if (exitCode === 0) {
-            return
-        }
-
-        console.error('SAM package error')
-        console.error(`Exit code: ${exitCode}`)
-        console.error(`Error: ${error}`)
-        console.error(`stderr: ${stderr}`)
-        console.error(`stdout: ${stdout}`)
-
-        const message = error && error.message ? error.message : stderr || stdout
-        const err = new Error(`sam package encountered an error: ${message}`)
-        logger.error(err)
-        throw err
-    }
+    logAndThrowIfUnexpectedExitCode(childProcessResult, 0, logger)
 }

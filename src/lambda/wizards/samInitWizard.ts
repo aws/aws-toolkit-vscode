@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -12,11 +12,13 @@ import * as immutable from 'immutable'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
+import { samInitDocUrl } from '../../shared/constants'
+import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import * as lambdaRuntime from '../models/samLambdaRuntime'
 import { MultiStepWizard, WizardStep } from '../wizards/multiStepWizard'
+
 export interface CreateNewSamAppWizardContext {
     readonly lambdaRuntimes: immutable.Set<lambdaRuntime.SamLambdaRuntime>
     readonly workspaceFolders: vscode.WorkspaceFolder[] | undefined
@@ -34,9 +36,19 @@ export interface CreateNewSamAppWizardContext {
     ): Thenable<vscode.Uri[] | undefined>
 }
 
-class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
+export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
     public readonly lambdaRuntimes = lambdaRuntime.samLambdaRuntimes
     public readonly showOpenDialog = vscode.window.showOpenDialog
+    private readonly helpButton = createHelpButton(
+        this.extContext,
+        localize(
+            'AWS.command.help',
+            'View Documentation'
+        )
+    )
+
+    public constructor(private readonly extContext: Pick<vscode.ExtensionContext, 'asAbsolutePath'>) {
+    }
 
     public get workspaceFolders(): vscode.WorkspaceFolder[] | undefined {
         return vscode.workspace.workspaceFolders
@@ -54,9 +66,13 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
                 ),
                 value: currRuntime ? currRuntime : ''
             },
+            buttons: [
+                this.helpButton,
+                vscode.QuickInputButtons.Back
+            ],
             items: this.lambdaRuntimes
                 .toArray()
-                .sort()
+                .sort(lambdaRuntime.compareSamLambdaRuntime)
                 .map(runtime => ({
                     label: runtime,
                     alwaysShow: runtime === currRuntime,
@@ -66,7 +82,14 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
         })
 
         const choices = await picker.promptUser({
-            picker: quickPick
+            picker: quickPick,
+            onDidTriggerButton: (button, resolve, reject) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve(undefined)
+                } else if (button === this.helpButton) {
+                    vscode.env.openExternal(vscode.Uri.parse(samInitDocUrl))
+                }
+            }
         })
         const val = picker.verifySinglePickerOutput(choices)
 
@@ -88,6 +111,7 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
             },
             items: items,
             buttons: [
+                this.helpButton,
                 vscode.QuickInputButtons.Back
             ]
         })
@@ -97,6 +121,8 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
             onDidTriggerButton: (button, resolve, reject) => {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
+                } else if (button === this.helpButton) {
+                    vscode.env.openExternal(vscode.Uri.parse(samInitDocUrl))
                 }
             }
         })
@@ -115,6 +141,7 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
                 ignoreFocusOut: true,
             },
             buttons: [
+                this.helpButton,
                 vscode.QuickInputButtons.Back
             ]
         })
@@ -142,19 +169,27 @@ class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContex
             onDidTriggerButton: (button, resolve, reject) => {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
+                } else if (button === this.helpButton) {
+                    vscode.env.openExternal(vscode.Uri.parse(samInitDocUrl))
                 }
             }
         })
     }
 }
 
-export class CreateNewSamAppWizard extends MultiStepWizard<SamCliInitArgs> {
+export interface CreateNewSamAppWizardResponse {
+    runtime: lambdaRuntime.SamLambdaRuntime
+    location: vscode.Uri
+    name: string
+}
+
+export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizardResponse> {
     private runtime?: lambdaRuntime.SamLambdaRuntime
     private location?: vscode.Uri
     private name?: string
 
     public constructor(
-        private readonly context: CreateNewSamAppWizardContext = new DefaultCreateNewSamAppWizardContext()
+        private readonly context: CreateNewSamAppWizardContext
     ) {
         super()
     }
@@ -163,7 +198,7 @@ export class CreateNewSamAppWizard extends MultiStepWizard<SamCliInitArgs> {
         return this.RUNTIME
     }
 
-    protected getResult(): SamCliInitArgs | undefined {
+    protected getResult(): CreateNewSamAppWizardResponse | undefined {
         if (!this.runtime || !this.location || !this.name) {
             return undefined
         }

@@ -1,30 +1,33 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 'use strict'
 
+import * as path from 'path'
 import * as vscode from 'vscode'
 
-import { dirname } from 'path'
 import { detectLocalTemplates } from '../../lambda/local/detectLocalTemplates'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
-import { SamCliProcessInvoker, SamCliTaskInvoker } from '../sam/cli/samCliInvokerUtils'
+import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
+import { SamLocalInvokeCommand } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import { Datum } from '../telemetry/telemetryEvent'
+import { TelemetryService } from '../telemetry/telemetryService'
+import { Datum } from '../telemetry/telemetryTypes'
 import { defaultMetricDatum } from '../telemetry/telemetryUtils'
 import { toArrayAsync } from '../utilities/collectionUtils'
 import { localize } from '../utilities/vsCodeUtils'
 
-export type Language = 'python' | 'javascript'
+export type Language = 'python' | 'javascript' | 'csharp'
 
 export interface CodeLensProviderParams {
     configuration: SettingsConfiguration,
-    toolkitOutputChannel: vscode.OutputChannel, // TODO: Rename this lambdaOuputChannel? ouputChannel? Provide both?
+    outputChannel: vscode.OutputChannel,
     processInvoker?: SamCliProcessInvoker,
-    taskInvoker?: SamCliTaskInvoker
+    localInvokeCommand?: SamLocalInvokeCommand,
+    telemetryService: TelemetryService,
 }
 
 interface MakeConfigureCodeLensParams {
@@ -35,6 +38,8 @@ interface MakeConfigureCodeLensParams {
     samTemplate: vscode.Uri,
     language: Language
 }
+
+export const DRIVE_LETTER_REGEX = /^\w\:/
 
 export async function makeCodeLenses({ document, token, handlers, language }: {
     document: vscode.TextDocument,
@@ -68,10 +73,7 @@ export async function makeCodeLenses({ document, token, handlers, language }: {
             language
         }
         lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: false }))
-        if (language !== 'python') {
-            // TODO: Add debugging support for Python and make this run unconditionally
-            lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: true }))
-        }
+        lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: true }))
 
         try {
             lenses.push(makeConfigureCodeLens(baseParams))
@@ -113,11 +115,10 @@ function makeConfigureCodeLens({
     workspaceFolder,
     samTemplate
 }: MakeConfigureCodeLensParams): vscode.CodeLens {
-    // Handler will be the fully-qualified name, so we also allow '.' despite it being forbidden in handler names.
-    if (/[^\w\-\.]/.test(handlerName)) {
+    // Handler will be the fully-qualified name, so we also allow '.' & ':' despite it being forbidden in handler names.
+    if (/[^\w\-\.\:]/.test(handlerName)) {
         throw new Error(
-            `Invalid handler name: '${handlerName}'. ` +
-            'Handler names can contain only letters, numbers, hyphens, and underscores.'
+            `Invalid handler name: '${handlerName}'`
         )
     }
     const command = {
@@ -159,7 +160,7 @@ async function getAssociatedSamTemplate(
     const templates = await toArrayAsync(templatesAsync)
     const candidateTemplates = templates
         .filter(template => {
-            const folder = dirname(template.fsPath)
+            const folder = path.dirname(template.fsPath)
 
             return documentUri.fsPath.indexOf(folder) === 0
         })

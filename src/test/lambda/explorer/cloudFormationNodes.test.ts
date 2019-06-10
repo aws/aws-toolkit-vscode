@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -20,6 +20,7 @@ import { ErrorNode } from '../../../lambda/explorer/errorNode'
 import { PlaceholderNode } from '../../../lambda/explorer/placeholderNode'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
+import { StsClient } from '../../../shared/clients/stsClient'
 import { ext } from '../../../shared/extensionGlobals'
 import { TestLogger } from '../../../shared/loggerUtils'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
@@ -35,7 +36,7 @@ describe('DefaultCloudFormationStackNode', () => {
     const fakeIconPathPrefix: string = 'DefaultCloudFormationStackNode'
     let logger: TestLogger
 
-    before( async () => {
+    before(async () => {
         logger = await TestLogger.createTestLogger()
         fakeStackSummary = {
             CreationTime: new Date(),
@@ -90,6 +91,10 @@ describe('DefaultCloudFormationStackNode', () => {
 
             createLambdaClient(regionCode: string): LambdaClient {
                 return lambdaClient
+            },
+
+            createStsClient(regionCode: string): StsClient {
+                throw new Error('sts client unused')
             }
         }
         const testNode = generateTestNode()
@@ -138,16 +143,8 @@ describe('DefaultCloudFormationStackNode', () => {
 
             }
 
-            public async getFunctionConfiguration(name: string): Promise<Lambda.FunctionConfiguration> {
-                return this.lambdas.find(l => l.FunctionName === name) || {} as any as Lambda.FunctionConfiguration
-            }
-
             public async invoke(name: string, payload?: Lambda._Blob): Promise<Lambda.InvocationResponse> {
                 return {} as any as Lambda.InvocationResponse
-            }
-
-            public async getPolicy(name: string): Promise<Lambda.GetPolicyResponse> {
-                return {} as any as Lambda.GetPolicyResponse
             }
 
             public async *listFunctions(): AsyncIterableIterator<Lambda.FunctionConfiguration> {
@@ -181,6 +178,10 @@ describe('DefaultCloudFormationStackNode', () => {
 
             createLambdaClient(regionCode: string): LambdaClient {
                 return lambdaClient
+            },
+
+            createStsClient(regionCode: string): StsClient {
+                throw new Error('sts client unused')
             }
         }
 
@@ -256,11 +257,11 @@ describe('DefaultCloudFormationNode', () => {
 
     let logger: TestLogger
 
-    before ( async () => {
+    before(async () => {
         logger = await TestLogger.createTestLogger()
     })
 
-    after (async () => {
+    after(async () => {
         await logger.cleanupLogger()
     })
 
@@ -307,6 +308,10 @@ describe('DefaultCloudFormationNode', () => {
 
             createLambdaClient(regionCode: string): LambdaClient {
                 throw new Error('lambda client unused')
+            },
+
+            createStsClient(regionCode: string): StsClient {
+                throw new Error('sts client unused')
             }
         }
 
