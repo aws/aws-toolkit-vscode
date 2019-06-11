@@ -33,7 +33,7 @@ public class DeployServerlessApplicationPanel {
     private EnvVariablesTable environmentVariablesTable;
     @NotNull JPanel content;
     @NotNull ResourceSelector<String> s3Bucket;
-    @NotNull ResourceSelector<String> stacks;
+    @NotNull ResourceSelector<Stack> stacks;
     @NotNull Wrapper stackParameters;
     @NotNull JRadioButton updateStack;
     @NotNull JRadioButton createStack;

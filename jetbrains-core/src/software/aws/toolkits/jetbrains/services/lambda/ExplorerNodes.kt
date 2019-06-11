@@ -51,6 +51,8 @@ open class LambdaFunctionNode(
 ) : AwsExplorerResourceNode<LambdaFunction>(project, LambdaClient.SERVICE_NAME, function, AwsIcons.Resources.LAMBDA_FUNCTION, immutable) {
     override fun resourceType() = "function"
 
+    override fun resourceArn() = function.arn
+
     override fun toString(): String = functionName()
 
     override fun displayName() = functionName()

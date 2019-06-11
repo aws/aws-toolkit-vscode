@@ -22,6 +22,7 @@ import software.aws.toolkits.jetbrains.core.explorer.AwsNodeAlwaysExpandable
 import software.aws.toolkits.jetbrains.core.explorer.AwsTruncatedResultNode
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
+import software.aws.toolkits.jetbrains.utils.TaggingResourceType
 import software.aws.toolkits.jetbrains.utils.toHumanReadable
 import software.aws.toolkits.resources.message
 
@@ -58,6 +59,10 @@ class CloudFormationStackNode(project: Project, val stackName: String, private v
     AwsExplorerResourceNode<String>(project, CloudFormationClient.SERVICE_NAME, stackName, AwsIcons.Resources.CLOUDFORMATION_STACK),
     AwsNodeAlwaysExpandable {
     override fun resourceType() = "stack"
+
+    override fun resourceArn() = stackId
+
+    override fun displayName() = stackName
 
     private val cfnClient: CloudFormationClient = project.awsClient()
 
@@ -137,7 +142,7 @@ class CloudFormationStackNode(project: Project, val stackName: String, private v
     }
 }
 
-class DeleteCloudFormationStackAction : DeleteResourceAction<CloudFormationStackNode>(message("cloudformation.stack.delete.action")) {
+class DeleteCloudFormationStackAction : DeleteResourceAction<CloudFormationStackNode>(message("cloudformation.stack.delete.action"), TaggingResourceType.CLOUDFORMATION_STACK) {
     override fun performDelete(selected: CloudFormationStackNode) {
         val client: CloudFormationClient = AwsClientManager.getInstance(selected.nodeProject).getClient()
         client.deleteStack { it.stackName(selected.stackName) }
