@@ -12,10 +12,6 @@ intellij {
     plugins = idePlugins("IC")
 }
 
-runIde {
-    systemProperty("aws.toolkits.enableTelemetry", false)
-}
-
 publishPlugin.enabled = false
 buildSearchableOptions.enabled = false
 

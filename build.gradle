@@ -32,6 +32,15 @@ allprojects {
 
     apply plugin: "com.adarshr.test-logger"
     apply plugin: 'jacoco'
+
+    tasks.withType(org.jetbrains.intellij.tasks.RunIdeTask) {
+        systemProperty("aws.toolkits.enableTelemetry", false)
+        intellij {
+            if (System.env.ALTERNATIVE_IDE) {
+                alternativeIdePath = System.env.ALTERNATIVE_IDE
+            }
+        }
+    }
 }
 
 // Kotlin plugin seems to be bugging out when there are no kotlin sources
@@ -180,9 +189,6 @@ intellij {
     pluginName 'aws-jetbrains-toolkit'
     updateSinceUntilBuild false
     downloadSources = System.getenv("CI") == null
-    if (System.env.ALTERNATIVE_IDE) {
-        alternativeIdePath = System.env.ALTERNATIVE_IDE
-    }
 }
 
 publishPlugin {
