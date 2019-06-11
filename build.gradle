@@ -4,7 +4,6 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
-
     repositories {
         maven {
             url "https://plugins.gradle.org/m2/"
@@ -15,6 +14,7 @@ buildscript {
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
         classpath "gradle.plugin.org.jetbrains.intellij.plugins:gradle-intellij-plugin:$ideaPluginVersion"
+        classpath "com.adarshr:gradle-test-logger-plugin:1.7.0"
     }
 }
 
@@ -30,6 +30,7 @@ allprojects {
         jcenter()
     }
 
+    apply plugin: "com.adarshr.test-logger"
     apply plugin: 'jacoco'
 }
 
@@ -88,10 +89,6 @@ subprojects {
     }
 
     test {
-        testLogging {
-            showStandardStreams = true
-            exceptionFormat = 'full'
-        }
         jacoco {
             // don't instrument sdk, icons, ktlint, etc.
             includes = ["software.aws.toolkits.*"]
@@ -129,11 +126,6 @@ subprojects {
         reports {
             html.destination file("$buildDir/reports/integration-test")
             junitXml.destination file("$buildDir/integration-test-results")
-        }
-
-        testLogging {
-            showStandardStreams = true
-            exceptionFormat = 'full'
         }
 
         jacoco {

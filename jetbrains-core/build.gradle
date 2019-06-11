@@ -16,6 +16,9 @@ runIde {
     systemProperty("aws.toolkits.enableTelemetry", false)
 }
 
+publishPlugin.enabled = false
+buildSearchableOptions.enabled = false
+
 configurations {
     testArtifacts
 }
