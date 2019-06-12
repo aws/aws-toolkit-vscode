@@ -7,7 +7,7 @@
 
 import * as _path from 'path'
 import * as vscode from 'vscode'
-import { DefaultSettingsConfiguration } from '../settingsConfiguration'
+import { getTabSizeSetting } from './editorUtilities'
 
 /**
  * If the specified document is currently open, and marked as dirty, it is saved.
@@ -45,7 +45,6 @@ export function getTabSize(editor?: vscode.TextEditor): number {
         case 'string':
             return Number.parseInt(tabSize, 10)
         default:
-            // If we couldn't determine the tabSize at the document, workspace, or user level, default to 4.
-            return new DefaultSettingsConfiguration('editor').readSetting<number>('tabSize') || 4
+            return getTabSizeSetting()
     }
 }
