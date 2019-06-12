@@ -228,7 +228,7 @@ async function activateCodeLensProviders(
     await pyLensProvider.initialize(providerParams)
     disposables.push(vscode.languages.registerCodeLensProvider(
         pyLensProvider.PYTHON_ALLFILES,
-        await pyLensProvider.makePythonCodeLensProvider()
+        await pyLensProvider.makePythonCodeLensProvider(new DefaultSettingsConfiguration('python'))
     ))
 
     await csLensProvider.initialize(providerParams)
