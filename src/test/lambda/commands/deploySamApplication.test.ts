@@ -158,9 +158,9 @@ describe('deploySamApplication', async () => {
         runningDeployProcess = undefined
     })
 
-    after(async () => {
-        await del([tempToolkitFolder], { force: true })
+    afterEach(async () => {
         await logger.cleanupLogger()
+        await del([tempToolkitFolder], { force: true })
     })
 
     it('deploys with the happy path', async () => {
