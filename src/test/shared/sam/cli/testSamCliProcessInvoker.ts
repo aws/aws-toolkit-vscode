@@ -10,9 +10,9 @@ import { SpawnOptions } from 'child_process'
 
 import { TestLogger } from '../../../../shared/loggerUtils'
 import {
-    makeRequiredSamCliProcessInvokeSettings,
-    SamCliProcessInvoker,
-    SamCliProcessInvokeSettings
+    makeRequiredSamCliProcessInvokeOptions,
+    SamCliProcessInvokeOptions,
+    SamCliProcessInvoker
 } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 
@@ -22,10 +22,10 @@ export class TestSamCliProcessInvoker implements SamCliProcessInvoker {
     ) {
     }
 
-    public async invoke(settings?: SamCliProcessInvokeSettings): Promise<ChildProcessResult> {
-        const invokeSettings = makeRequiredSamCliProcessInvokeSettings(settings)
+    public async invoke(options?: SamCliProcessInvokeOptions): Promise<ChildProcessResult> {
+        const invokeOptions = makeRequiredSamCliProcessInvokeOptions(options)
 
-        return this.onInvoke(invokeSettings.spawnOptions, invokeSettings.arguments)
+        return this.onInvoke(invokeOptions.spawnOptions, invokeOptions.arguments)
     }
 }
 

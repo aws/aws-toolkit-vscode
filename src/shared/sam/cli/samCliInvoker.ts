@@ -11,9 +11,9 @@ import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
 import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliConfiguration, SamCliConfiguration } from './samCliConfiguration'
 import {
-    makeRequiredSamCliProcessInvokeSettings,
-    SamCliProcessInvoker,
-    SamCliProcessInvokeSettings
+    makeRequiredSamCliProcessInvokeOptions,
+    SamCliProcessInvokeOptions,
+    SamCliProcessInvoker
 } from './samCliInvokerUtils'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
 
@@ -42,15 +42,15 @@ export function resolveSamCliProcessInvokerContext(
 }
 
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
-    public constructor(private readonly context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()) {}
+    public constructor(private readonly context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()) { }
 
-    public async invoke(settings?: SamCliProcessInvokeSettings): Promise<ChildProcessResult> {
-        const invokeSettings = makeRequiredSamCliProcessInvokeSettings(settings)
+    public async invoke(options?: SamCliProcessInvokeOptions): Promise<ChildProcessResult> {
+        const invokeOptions = makeRequiredSamCliProcessInvokeOptions(options)
 
         const childProcess: ChildProcess = new ChildProcess(
             this.samCliLocation,
-            invokeSettings.spawnOptions,
-            ...invokeSettings.arguments
+            invokeOptions.spawnOptions,
+            ...invokeOptions.arguments
         )
 
         return await childProcess.run()

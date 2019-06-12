@@ -12,8 +12,8 @@ import {
     SamCliProcessInvokerContext
 } from './samCliInvoker'
 import {
-    SamCliProcessInvoker,
-    SamCliProcessInvokeSettings
+    SamCliProcessInvokeOptions,
+    SamCliProcessInvoker
 } from './samCliInvokerUtils'
 import { throwAndNotifyIfInvalid } from './samCliValidationUtils'
 import {
@@ -50,10 +50,10 @@ export class DefaultValidatingSamCliProcessInvoker implements SamCliProcessInvok
             )
     }
 
-    public async invoke(settings?: SamCliProcessInvokeSettings): Promise<ChildProcessResult> {
+    public async invoke(options?: SamCliProcessInvokeOptions): Promise<ChildProcessResult> {
         await this.validateSamCli()
 
-        return await this.invoker.invoke(settings)
+        return await this.invoker.invoke(options)
     }
 
     private async validateSamCli(): Promise<void> {

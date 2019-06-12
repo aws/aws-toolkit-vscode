@@ -9,24 +9,24 @@ import { SpawnOptions } from 'child_process'
 import { BasicLogger, getLogger } from '../../logger'
 import { ChildProcessResult } from '../../utilities/childProcess'
 
-export interface SamCliProcessInvokeSettings {
+export interface SamCliProcessInvokeOptions {
     spawnOptions?: SpawnOptions,
     arguments?: string[]
 }
 
-export function makeRequiredSamCliProcessInvokeSettings(
-    settings?: SamCliProcessInvokeSettings
-): Required<SamCliProcessInvokeSettings> {
-    settings = settings || {}
+export function makeRequiredSamCliProcessInvokeOptions(
+    options?: SamCliProcessInvokeOptions
+): Required<SamCliProcessInvokeOptions> {
+    options = options || {}
 
     return {
-        spawnOptions: settings.spawnOptions || {},
-        arguments: settings.arguments || [],
+        spawnOptions: options.spawnOptions || {},
+        arguments: options.arguments || [],
     }
 }
 
 export interface SamCliProcessInvoker {
-    invoke(settings?: SamCliProcessInvokeSettings): Promise<ChildProcessResult>
+    invoke(options?: SamCliProcessInvokeOptions): Promise<ChildProcessResult>
 }
 
 export function logAndThrowIfUnexpectedExitCode(

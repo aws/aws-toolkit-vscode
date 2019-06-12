@@ -7,17 +7,17 @@
 
 import * as assert from 'assert'
 import {
-    makeRequiredSamCliProcessInvokeSettings,
-    SamCliProcessInvoker,
-    SamCliProcessInvokeSettings
+    makeRequiredSamCliProcessInvokeOptions,
+    SamCliProcessInvokeOptions,
+    SamCliProcessInvoker
 } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 
 export class MockSamCliProcessInvoker implements SamCliProcessInvoker {
-    public constructor(private readonly validateArgs: (args: string[]) => void) {}
+    public constructor(private readonly validateArgs: (args: string[]) => void) { }
 
-    public async invoke(settings?: SamCliProcessInvokeSettings): Promise<ChildProcessResult> {
-        const invokeSettings = makeRequiredSamCliProcessInvokeSettings(settings)
+    public async invoke(options?: SamCliProcessInvokeOptions): Promise<ChildProcessResult> {
+        const invokeSettings = makeRequiredSamCliProcessInvokeOptions(options)
 
         this.validateArgs(invokeSettings.arguments)
 
