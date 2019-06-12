@@ -82,7 +82,7 @@ export interface ChannelLogger {
  * Wrapper around normal logger that writes to output channel and normal logs.
  * Avoids making two log statements when writing to output channel and improves consistency
  */
-export function getChannelLogger(channel: vscode.OutputChannel, logger: BasicLogger = getLogger()) {
+export function getChannelLogger(channel: vscode.OutputChannel, logger: BasicLogger = getLogger()): ChannelLogger {
     return Object.freeze({
         channel,
         logger,

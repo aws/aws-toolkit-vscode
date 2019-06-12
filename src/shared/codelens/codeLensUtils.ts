@@ -7,8 +7,8 @@
 
 import * as vscode from 'vscode'
 
-import { dirname } from 'path'
 import { detectLocalTemplates } from '../../lambda/local/detectLocalTemplates'
+import { CloudFormation } from '../cloudformation/cloudformation'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
 import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
@@ -17,10 +17,9 @@ import { SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { Datum } from '../telemetry/telemetryTypes'
 import { defaultMetricDatum } from '../telemetry/telemetryUtils'
-import { toArrayAsync } from '../utilities/collectionUtils'
 import { localize } from '../utilities/vsCodeUtils'
 
-export type Language = 'python' | 'javascript'
+export type Language = 'python' | 'javascript' | 'csharp'
 
 export interface CodeLensProviderParams {
     configuration: SettingsConfiguration,
@@ -39,6 +38,8 @@ interface MakeConfigureCodeLensParams {
     language: Language
 }
 
+export const DRIVE_LETTER_REGEX = /^\w\:/
+
 export async function makeCodeLenses({ document, token, handlers, language }: {
     document: vscode.TextDocument,
     token: vscode.CancellationToken,
@@ -52,28 +53,31 @@ export async function makeCodeLenses({ document, token, handlers, language }: {
         throw new Error(`Source file ${document.uri} is external to the current workspace.`)
     }
 
-    const associatedTemplate: vscode.Uri = await getAssociatedSamTemplate(document.uri, workspaceFolder.uri)
     const lenses: vscode.CodeLens[] = []
-
-    handlers.forEach(handler => {
+    for (const handler of handlers) {
         // handler.range is a RangeOrCharOffset union type. Extract vscode.Range.
         const range = (handler.range instanceof vscode.Range) ? handler.range : new vscode.Range(
             document.positionAt(handler.range.positionStart),
             document.positionAt(handler.range.positionEnd),
         )
 
-        const baseParams: MakeConfigureCodeLensParams = {
-            document,
-            handlerName: handler.handlerName,
-            range,
-            workspaceFolder,
-            samTemplate: associatedTemplate,
-            language
-        }
-        lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: false }))
-        lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: true }))
-
         try {
+            const associatedTemplate = await getAssociatedSamTemplate(
+                document.uri,
+                workspaceFolder.uri,
+                handler.handlerName
+            )
+            const baseParams: MakeConfigureCodeLensParams = {
+                document,
+                handlerName: handler.handlerName,
+                range,
+                workspaceFolder,
+                samTemplate: associatedTemplate,
+                language
+            }
+            lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: false }))
+            lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: true }))
+
             lenses.push(makeConfigureCodeLens(baseParams))
         } catch (err) {
             getLogger().error(
@@ -81,7 +85,7 @@ export async function makeCodeLenses({ document, token, handlers, language }: {
                 err as Error
             )
         }
-    })
+    }
 
     return lenses
 }
@@ -113,11 +117,10 @@ function makeConfigureCodeLens({
     workspaceFolder,
     samTemplate
 }: MakeConfigureCodeLensParams): vscode.CodeLens {
-    // Handler will be the fully-qualified name, so we also allow '.' despite it being forbidden in handler names.
-    if (/[^\w\-\.]/.test(handlerName)) {
+    // Handler will be the fully-qualified name, so we also allow '.' & ':' despite it being forbidden in handler names.
+    if (/[^\w\-\.\:]/.test(handlerName)) {
         throw new Error(
-            `Invalid handler name: '${handlerName}'. ` +
-            'Handler names can contain only letters, numbers, hyphens, and underscores.'
+            `Invalid handler name: '${handlerName}'`
         )
     }
     const command = {
@@ -147,33 +150,27 @@ export function getMetricDatum({ command, isDebug, runtime }: {
 
 async function getAssociatedSamTemplate(
     documentUri: vscode.Uri,
-    workspaceFolderUri: vscode.Uri
+    workspaceFolderUri: vscode.Uri,
+    handlerName: string
 ): Promise<vscode.Uri> {
-
-    // Get Template files in Workspace
-    const templatesAsync: AsyncIterableIterator<vscode.Uri> = detectLocalTemplates({
+    const templates = detectLocalTemplates({
         workspaceUris: [workspaceFolderUri]
     })
 
-    // See which templates (if any) are in a folder, or parent folder, of the document of interest
-    const templates = await toArrayAsync(templatesAsync)
-    const candidateTemplates = templates
-        .filter(template => {
-            const folder = dirname(template.fsPath)
+    for await (const template of templates) {
+        try {
+            // Throws if template does not contain a resource for this handler.
+            await CloudFormation.getResourceFromTemplate({
+                templatePath: template.fsPath,
+                handlerName
+            })
+        } catch {
+            continue
+        }
 
-            return documentUri.fsPath.indexOf(folder) === 0
-        })
-
-    if (candidateTemplates.length === 0) {
-        throw new Error(
-            `Unable to find a sam template associated with ${documentUri.fsPath}. Skipping CodeLens generation.`
-        )
-    } else if (candidateTemplates.length > 1) {
-        throw new Error(
-            `More than one sam template associated with ${documentUri.fsPath}. Skipping CodeLens generation.`
-            + ` Templates detected: ${candidateTemplates.map(t => t.fsPath).join(', ')}`
-        )
+        // If there are multiple matching templates, use the first one.
+        return template
     }
 
-    return candidateTemplates[0]
+    throw new Error(`Unable to find a sam template associated with handler '${handlerName}' in ${documentUri.fsPath}.`)
 }

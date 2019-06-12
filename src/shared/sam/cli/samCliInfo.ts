@@ -26,7 +26,6 @@ export class SamCliInfoInvocation {
         const childProcessResult = await this.invoker.invoke({ arguments: ['--info'] })
 
         logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
-
         const response = this.convertOutput(childProcessResult.stdout)
 
         if (!response) {

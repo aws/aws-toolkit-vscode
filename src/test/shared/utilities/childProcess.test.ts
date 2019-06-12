@@ -14,7 +14,6 @@ import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { ChildProcess, ChildProcessResult } from '../../../shared/utilities/childProcess'
 
 describe('ChildProcess', async () => {
-
     let tempFolder: string
 
     beforeEach(async () => {
@@ -33,9 +32,7 @@ describe('ChildProcess', async () => {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFile(batchFile)
 
-                const childProcess = new ChildProcess(
-                    batchFile
-                )
+                const childProcess = new ChildProcess(batchFile)
 
                 const result = await childProcess.run()
 
@@ -54,9 +51,7 @@ describe('ChildProcess', async () => {
 
                 writeWindowsCommandFile(command)
 
-                const childProcess = new ChildProcess(
-                    command
-                )
+                const childProcess = new ChildProcess(command)
 
                 const result = await childProcess.run()
 
@@ -71,9 +66,7 @@ describe('ChildProcess', async () => {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFile(batchFile)
 
-                const childProcess = new ChildProcess(
-                    batchFile
-                )
+                const childProcess = new ChildProcess(batchFile)
 
                 // We want to verify that the error is thrown even if the first
                 // invocation is still in progress, so we don't await the promise.
@@ -88,16 +81,12 @@ describe('ChildProcess', async () => {
 
                 assert.fail('Expected exception, but none was thrown.')
             })
-        } // END Windows only tests
-
-        if (process.platform !== 'win32') {
+        } else {
             it('runs and captures stdout - unix', async () => {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFile(scriptFile)
 
-                const childProcess = new ChildProcess(
-                    scriptFile
-                )
+                const childProcess = new ChildProcess(scriptFile)
 
                 const result = await childProcess.run()
 
@@ -112,9 +101,7 @@ describe('ChildProcess', async () => {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFile(scriptFile)
 
-                const childProcess = new ChildProcess(
-                    scriptFile
-                )
+                const childProcess = new ChildProcess(scriptFile)
 
                 // We want to verify that the error is thrown even if the first
                 // invocation is still in progress, so we don't await the promise.
@@ -145,9 +132,7 @@ describe('ChildProcess', async () => {
                 writeShellFile(command)
             }
 
-            const childProcess = new ChildProcess(
-                command
-            )
+            const childProcess = new ChildProcess(command)
 
             const result = await childProcess.run()
 
@@ -161,9 +146,7 @@ describe('ChildProcess', async () => {
         it('reports error for missing executable', async () => {
             const batchFile = path.join(tempFolder, 'nonExistentScript')
 
-            const childProcess = new ChildProcess(
-                batchFile
-            )
+            const childProcess = new ChildProcess(batchFile)
 
             const result = await childProcess.run()
 
@@ -176,8 +159,8 @@ describe('ChildProcess', async () => {
             expectedExitCode,
             expectedOutput
         }: {
-            childProcessResult: ChildProcessResult,
-            expectedExitCode: number,
+            childProcessResult: ChildProcessResult
+            expectedExitCode: number
             expectedOutput: string
         }) {
             assert.strictEqual(
@@ -204,7 +187,7 @@ describe('ChildProcess', async () => {
                     onClose: (code, signal) => {
                         assert.strictEqual(code, 0, 'Unexpected close code')
                         resolve()
-                    },
+                    }
                 })
             })
         }
@@ -313,7 +296,7 @@ describe('ChildProcess', async () => {
                     onClose: (code, signal) => {
                         assert.notStrictEqual(code, 0, 'Expected an error close code')
                         resolve()
-                    },
+                    }
                 })
             })
         })
@@ -322,13 +305,11 @@ describe('ChildProcess', async () => {
     describe('kill & killed', async () => {
         if (process.platform === 'win32') {
             // tslint:disable-next-line:max-line-length
-            it ('detects running processes and successfully sends a kill signal to a running process - Windows', async () => {
+            it('detects running processes and successfully sends a kill signal to a running process - Windows', async () => {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFileWithDelays(batchFile)
 
-                const childProcess = new ChildProcess(
-                    batchFile
-                )
+                const childProcess = new ChildProcess(batchFile)
 
                 // awaiting this means that the script finishes before it can be killed
                 // worst case scenario, this script will take 2 seconds to run its course
@@ -336,7 +317,7 @@ describe('ChildProcess', async () => {
                 childProcess.run()
                 assert.strictEqual(childProcess.killed, false)
                 childProcess.kill()
-                await new Promise<void>((resolve) => {
+                await new Promise<void>(resolve => {
                     setTimeout(
                         () => {
                             assert.strictEqual(childProcess.killed, true)
@@ -347,20 +328,18 @@ describe('ChildProcess', async () => {
                 })
             })
 
-            it ('can not kill previously killed processes - Windows', async () => {
+            it('can not kill previously killed processes - Windows', async () => {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFileWithDelays(batchFile)
 
-                const childProcess = new ChildProcess(
-                    batchFile
-                )
+                const childProcess = new ChildProcess(batchFile)
 
                 // awaiting this means that the script finishes before it can be killed
                 // worst case scenario, this script will take 2 seconds to run its course
                 // tslint:disable-next-line: no-floating-promises
                 childProcess.run()
                 childProcess.kill()
-                await new Promise<void>( (resolve) => {
+                await new Promise<void>(resolve => {
                     setTimeout(
                         () => {
                             assert.strictEqual(childProcess.killed, true)
@@ -369,10 +348,12 @@ describe('ChildProcess', async () => {
                         100
                     )
                 })
-                await new Promise<void>( (resolve) => {
+                await new Promise<void>(resolve => {
                     setTimeout(
                         () => {
-                            assert.throws( () => { childProcess.kill() })
+                            assert.throws(() => {
+                                childProcess.kill()
+                            })
                             resolve()
                         },
                         100
@@ -383,13 +364,11 @@ describe('ChildProcess', async () => {
 
         if (process.platform !== 'win32') {
             // tslint:disable-next-line:max-line-length
-            it ('detects running processes and successfully sends a kill signal to a running process - Unix', async () => {
+            it('detects running processes and successfully sends a kill signal to a running process - Unix', async () => {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFileWithDelays(scriptFile)
 
-                const childProcess = new ChildProcess(
-                    scriptFile
-                )
+                const childProcess = new ChildProcess(scriptFile)
 
                 // awaiting this means that the script finishes before it can be killed
                 // worst case scenario, this script will take 2 seconds to run its course
@@ -397,7 +376,7 @@ describe('ChildProcess', async () => {
                 childProcess.run()
                 assert.strictEqual(childProcess.killed, false)
                 childProcess.kill()
-                await new Promise<void>((resolve) => {
+                await new Promise<void>(resolve => {
                     setTimeout(
                         () => {
                             assert.strictEqual(childProcess.killed, true)
@@ -408,20 +387,18 @@ describe('ChildProcess', async () => {
                 })
             })
 
-            it ('can not kill previously killed processes - Unix', async () => {
+            it('can not kill previously killed processes - Unix', async () => {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFileWithDelays(scriptFile)
 
-                const childProcess = new ChildProcess(
-                    scriptFile
-                )
+                const childProcess = new ChildProcess(scriptFile)
 
                 // awaiting this means that the script finishes before it can be killed
                 // worst case scenario, this script will take 2 seconds to run its course
                 // tslint:disable-next-line: no-floating-promises
                 childProcess.run()
                 childProcess.kill()
-                await new Promise<void>( (resolve) => {
+                await new Promise<void>(resolve => {
                     setTimeout(
                         () => {
                             assert.strictEqual(childProcess.killed, true)
@@ -430,10 +407,12 @@ describe('ChildProcess', async () => {
                         100
                     )
                 })
-                await new Promise<void>( (resolve) => {
+                await new Promise<void>(resolve => {
                     setTimeout(
                         () => {
-                            assert.throws( () => { childProcess.kill() })
+                            assert.throws(() => {
+                                childProcess.kill()
+                            })
                             resolve()
                         },
                         100

@@ -7,17 +7,17 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-
 import { NodejsDebugConfiguration } from '../../lambda/local/debugConfiguration'
+import { CloudFormation } from '../cloudformation/cloudformation'
 import { findFileInParentPaths } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
+import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import { Datum, TelemetryNamespace } from '../telemetry/telemetryTypes'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { getChannelLogger, getDebugPort, localize } from '../utilities/vsCodeUtils'
 
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
-import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import {
     CodeLensProviderParams,
     getInvokeCmdKey,
@@ -25,13 +25,12 @@ import {
     makeCodeLenses,
 } from './codeLensUtils'
 import {
-    getRuntimeForLambda,
     LambdaLocalInvokeParams,
     LocalLambdaRunner,
 } from './localLambdaRunner'
 
 const unsupportedNodeJsRuntimes: Set<string> = new Set<string>([
-    'nodejs4.3',
+    'nodejs4.3'
 ])
 
 async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
@@ -109,11 +108,11 @@ export function initialize({
     registerCommand({
         command: command,
         callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
-
-            const runtime = await getRuntimeForLambda({
+            const resource = await CloudFormation.getResourceFromTemplate({
                 handlerName: params.handlerName,
                 templatePath: params.samTemplate.fsPath
             })
+            const runtime = CloudFormation.getRuntime(resource)
 
             if (params.isDebug && unsupportedNodeJsRuntimes.has(runtime)) {
                 vscode.window.showErrorMessage(
@@ -144,7 +143,7 @@ export function initialize({
 }
 
 export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
-    return { // CodeLensProvider
+    return {
         provideCodeLenses: async (
             document: vscode.TextDocument,
             token: vscode.CancellationToken
