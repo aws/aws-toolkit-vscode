@@ -6,45 +6,37 @@
 'use strict'
 
 import { SpawnOptions } from 'child_process'
-import { Stats } from 'fs'
-import * as vscode from 'vscode'
-import { stat } from '../../filesystem'
+import { BasicLogger, getLogger } from '../../logger'
 import { ChildProcessResult } from '../../utilities/childProcess'
-import { SamCliVersionValidatorResult } from './samCliVersionValidator'
-
-/**
- * Maps out the response text from the sam cli command `sam --info`
- */
-export interface SamCliInfoResponse {
-    version: string
-}
 
 export interface SamCliProcessInvoker {
     invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
     invoke(...args: string[]): Promise<ChildProcessResult>
 }
 
-export interface SamCliTaskInvoker {
-    invoke(task: vscode.Task): Promise<vscode.TaskExecution>
-}
+export function logAndThrowIfUnexpectedExitCode(
+    processResult: ChildProcessResult,
+    expectedExitCode: number,
+    logger: BasicLogger = getLogger(),
+): void {
+    if (processResult.exitCode === expectedExitCode) { return }
 
-export interface SamCliProcessInfo {
-    info?: SamCliInfoResponse
-    lastModified?: Date
-}
+    logger.error(`Unexpected exitcode (${processResult.exitCode}), expecting (${expectedExitCode})`)
+    logger.error(`Error: ${processResult.error}`)
+    logger.error(`stderr: ${processResult.stderr}`)
+    logger.error(`stdout: ${processResult.stdout}`)
 
-export interface SamCliUtils {
-    stat(samCliLocation: string): Promise<Stats>
-}
+    let message: string | undefined
 
-export class DefaultSamCliUtils {
-    public async stat(samCliLocation: string): Promise<Stats> {
-        return await stat(samCliLocation)
+    if (processResult.error instanceof Error) {
+        if (processResult.error.message) {
+            message = processResult.error.message
+        }
     }
-}
 
-export class InvalidSamError extends Error {
-    public constructor (public versionValidation: SamCliVersionValidatorResult) {
-        super()
+    if (!message) {
+        message = processResult.stderr || processResult.stdout || 'No message available'
     }
+
+    throw new Error(`Error with child process: ${message}`)
 }

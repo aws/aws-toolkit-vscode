@@ -141,19 +141,6 @@ describe('detectLocalLambdas', () => {
         assert.strictEqual(lambda.protocol, 'legacy')
     })
 
-    it('uses the legacy protocol for nodejs4.3', async () => {
-        const templatePath = path.join(workspaceFolders[0].uri.fsPath, 'template.yaml')
-        await saveTemplate(templatePath, 'nodejs4.3', 'MyFunction')
-        const actual = await detectLocalLambdas(workspaceFolders)
-
-        assert.ok(actual)
-        assert.strictEqual(actual.length, 1)
-
-        const lambda = actual[0]
-        assert.ok(lambda)
-        assert.strictEqual(lambda.protocol, 'legacy')
-    })
-
     it('defaults to the inspector protocol when the runtime version cannot be determined', async () => {
         const templatePath = path.join(workspaceFolders[0].uri.fsPath, 'template.yaml')
         await saveTemplate(templatePath, 'nodejsX.Y', 'MyFunction')

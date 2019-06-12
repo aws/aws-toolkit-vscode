@@ -6,73 +6,129 @@
 'use strict'
 
 import * as assert from 'assert'
-import { SpawnOptions } from 'child_process'
-import { SamCliDeployInvocation } from '../../../../shared/sam/cli/samCliDeploy'
-import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
-import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
+import { TestLogger } from '../../../../shared/loggerUtils'
+import { runSamCliDeploy } from '../../../../shared/sam/cli/samCliDeploy'
+import { assertThrowsError } from '../../utilities/assertUtils'
+import {
+    assertArgIsPresent,
+    assertArgNotPresent,
+    assertArgsContainArgument,
+    MockSamCliProcessInvoker
+} from './samCliTestUtils'
+import {
+    assertErrorContainsBadExitMessage,
+    assertLogContainsBadExitInformation,
+    BadExitCodeSamCliProcessInvoker
+} from './testSamCliProcessInvoker'
 
-class MockSamCliProcessInvoker implements SamCliProcessInvoker {
-    public constructor(
-        private readonly validateArgs: (args: string[]) => void
-    ) {
-    }
+describe('runSamCliDeploy', async () => {
+    let logger: TestLogger
+    const fakeProfile = 'profile'
+    const fakeRegion = 'region'
+    const fakeStackName = 'stackName'
+    const fakeTemplateFile = 'template'
+    let invokeCount: number
 
-    public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
-    public invoke(...args: string[]): Promise<ChildProcessResult>
-    public async invoke(first: SpawnOptions | string, ...rest: string[]): Promise<ChildProcessResult> {
-        const args: string[] = typeof first === 'string' ? [first, ...rest] : rest
-        this.validateArgs(args)
+    before(async () => {
+        logger = await TestLogger.createTestLogger()
+    })
 
-        return {
-            exitCode: 0
-        } as any as ChildProcessResult
-    }
+    beforeEach(() => {
+        invokeCount = 0
+    })
 
-}
+    after(async () => {
+        await logger.cleanupLogger()
+    })
 
-describe('SamCliDeployInvocation', async () => {
     it('does not include --parameter-overrides if there are no overrides', async () => {
-        const invoker = new MockSamCliProcessInvoker(
-            args => {
-                assert.strictEqual(args.some(arg => arg === '--parameter-overrides'), false)
-            }
-        )
+        const invoker = new MockSamCliProcessInvoker(args => {
+            invokeCount++
+            assertArgNotPresent(args, '--parameter-overrides')
+        })
 
-        const invocation = new SamCliDeployInvocation(
-            'template',
-            'stackName',
-            'region',
-            new Map<string, string>(),
+        await runSamCliDeploy(
+            {
+                profile: fakeProfile,
+                parameterOverrides: new Map<string, string>(),
+                region: fakeRegion,
+                stackName: fakeStackName,
+                templateFile: fakeTemplateFile
+            },
             invoker
         )
 
-        await invocation.execute()
+        assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
     })
 
     it('includes overrides as a string of key=value pairs', async () => {
-        const invoker = new MockSamCliProcessInvoker(
-            args => {
-                const overridesIndex = args.findIndex(arg => arg === '--parameter-overrides')
-                assert.strictEqual(overridesIndex > -1, true)
-                assert.strictEqual(args.length >= overridesIndex + 3, true)
-                assert.strictEqual(args[overridesIndex + 1], 'key1=value1')
-                assert.strictEqual(args[overridesIndex + 2], 'key2=value2')
-            }
-        )
+        const invoker = new MockSamCliProcessInvoker(args => {
+            invokeCount++
+            assertArgIsPresent(args, '--parameter-overrides')
+            const overridesIndex = args.findIndex(arg => arg === '--parameter-overrides')
+            assert.strictEqual(overridesIndex > -1, true)
+            assert.strictEqual(args.length >= overridesIndex + 3, true)
+            assert.strictEqual(args[overridesIndex + 1], 'key1=value1')
+            assert.strictEqual(args[overridesIndex + 2], 'key2=value2')
+        })
 
-        const invocation = new SamCliDeployInvocation(
-            'template',
-            'stackName',
-            'region',
-            new Map<string, string>([
-                ['key1', 'value1'],
-                ['key2', 'value2'],
-            ]),
+        await runSamCliDeploy(
+            {
+                profile: fakeProfile,
+                parameterOverrides: new Map<string, string>([['key1', 'value1'], ['key2', 'value2']]),
+                region: fakeRegion,
+                stackName: fakeStackName,
+                templateFile: fakeTemplateFile
+            },
             invoker
         )
 
-        await invocation.execute()
+        assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
     })
 
-    // TODO: Add tests for template, stackName, and region.
+    it('includes a template, stack name, region, and profile ', async () => {
+        const invoker = new MockSamCliProcessInvoker(args => {
+            invokeCount++
+            assertArgsContainArgument(args, '--template-file', fakeTemplateFile)
+            assertArgsContainArgument(args, '--stack-name', fakeStackName)
+            assertArgsContainArgument(args, '--region', fakeRegion)
+            assertArgsContainArgument(args, '--profile', fakeProfile)
+        })
+
+        await runSamCliDeploy(
+            {
+                profile: fakeProfile,
+                parameterOverrides: new Map<string, string>(),
+                region: fakeRegion,
+                stackName: fakeStackName,
+                templateFile: fakeTemplateFile
+            },
+            invoker
+        )
+
+        assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
+    })
+
+    it('throws on unexpected exit code', async () => {
+        const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
+
+        const error = await assertThrowsError(
+            async () => {
+                await runSamCliDeploy(
+                    {
+                        profile: fakeProfile,
+                        parameterOverrides: new Map<string, string>(),
+                        region: fakeRegion,
+                        stackName: fakeStackName,
+                        templateFile: fakeTemplateFile
+                    },
+                    badExitCodeProcessInvoker
+                )
+            },
+            'Expected an error to be thrown'
+        )
+
+        assertErrorContainsBadExitMessage(error, badExitCodeProcessInvoker.error.message)
+        await assertLogContainsBadExitInformation(logger, badExitCodeProcessInvoker.makeChildProcessResult(), 0)
+    })
 })

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -8,13 +8,21 @@
 import * as handlebars from 'handlebars'
 import * as path from 'path'
 
-import { STS } from 'aws-sdk'
+import { Credentials } from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
+import { AwsContext } from '../awsContext'
+import { StsClient } from '../clients/stsClient'
+import { credentialHelpUrl } from '../constants'
 import { EnvironmentVariables } from '../environmentVariables'
+import { ext } from '../extensionGlobals'
 import { mkdir, writeFile } from '../filesystem'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { getLogger, Logger } from '../logger'
 import { SystemUtilities } from '../systemUtilities'
+
+const localize = nls.loadMessageBundle()
 
 /**
  * The payload used to fill in the handlebars template
@@ -28,6 +36,7 @@ export interface CredentialsTemplateContext {
 
 export interface CredentialsValidationResult {
     isValid: boolean,
+    account?: string,
     invalidMessage?: string
 }
 
@@ -119,33 +128,41 @@ export class UserCredentialsUtils {
      * @param secretKey secret key of credentials to validate
      * @param sts (Optional) STS Service Client
      *
-     * @returns a validation result, indicating whether or not credentials are valid, and if not,
-     * an error message.
+     * @returns a validation result, indicating whether or not credentials are valid
+     *      if valid: result includes active account
+     *      if invalid: result includes message with reason
      */
     public static async validateCredentials(
-        accessKey: string,
-        secretKey: string,
-        sts?: STS
+        credentials: Credentials,
+        sts?: StsClient
     ): Promise<CredentialsValidationResult> {
         const logger: Logger = getLogger()
-        try {
-            if (!sts) {
-                const awsServiceOpts: ServiceConfigurationOptions = {
-                    accessKeyId: accessKey,
-                    secretAccessKey: secretKey
+
+        if (!sts) {
+            const transformedCredentials: ServiceConfigurationOptions = {
+                credentials: {
+                    accessKeyId: credentials.accessKeyId,
+                    secretAccessKey: credentials.secretAccessKey
                 }
-
-                sts = new STS(awsServiceOpts)
             }
+            try {
+                // Past iteration did not include a set region. Should we change this?
+                // We can also use the set region if/when we migrate to a single-region experience:
+                // https://github.com/aws/aws-toolkit-vscode/issues/549
+                sts = ext.toolkitClientBuilder.createStsClient('us-east-1', transformedCredentials)
+            } catch (err) {
+                const error = err as Error
+                logger.error(error)
+                throw error
+            }
+        }
 
-            await sts.getCallerIdentity().promise()
+        try {
+            const response = await sts.getCallerIdentity()
 
-            return { isValid: true }
-
+            return { isValid: !!response.Account, account: response.Account }
         } catch (err) {
-
             let reason: string
-
             if (err instanceof Error) {
                 const error = err as Error
                 reason = error.message
@@ -155,6 +172,67 @@ export class UserCredentialsUtils {
             }
 
             return { isValid: false, invalidMessage: reason }
+        }
+    }
+
+    /**
+     * Adds valid profiles to the AWS context and settings.
+     *
+     * @param profileName Profile name to add to AWS Context/AWS settings
+     * @param awsContext Current AWS Context
+     * @param sts (Optional) STS Service Client
+     *
+     * @returns true if the profile was valid and added to the context
+     *          false if the profile was not valid and thus not added.
+     */
+    public static async addUserDataToContext(
+        profileName: string,
+        awsContext: AwsContext,
+        sts?: StsClient
+    ): Promise<boolean> {
+        let credentials: Credentials | undefined
+        try {
+            credentials = await awsContext.getCredentials(profileName)
+            const account = credentials ? await this.validateCredentials(credentials, sts) : undefined
+            if (account && account.isValid) {
+                await awsContext.setCredentialProfileName(profileName)
+                await awsContext.setCredentialAccountId(account.account)
+
+                return true
+            }
+        } catch (err) {
+            // swallow any errors--anything that isn't a success should be handled as a failure by the caller
+        }
+
+        return false
+    }
+
+    /**
+     * Removes user's profile and account from AWS context
+     *
+     * @param awsContext Current AWS Context
+     */
+    public static async removeUserDataFromContext(awsContext: AwsContext) {
+        await awsContext.setCredentialProfileName()
+        await awsContext.setCredentialAccountId()
+    }
+
+    public static async notifyUserCredentialsAreBad(profileName: string) {
+        const getHelp = localize(
+            'AWS.message.credentials.invalidProfile.help',
+            'Get Help...'
+        )
+        const selection = await vscode.window.showErrorMessage(
+            localize(
+                'AWS.message.credentials.invalidProfile',
+                'Credentials profile {0} is invalid',
+                profileName
+            ),
+            getHelp
+        )
+
+        if (selection === getHelp) {
+            vscode.env.openExternal(vscode.Uri.parse(credentialHelpUrl))
         }
     }
 }

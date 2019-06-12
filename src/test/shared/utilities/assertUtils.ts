@@ -23,3 +23,28 @@ export async function assertRejects(action: () => Promise<any>) {
         })
     }
 }
+
+export async function assertThrowsError(
+    action: () => Promise<any>,
+    message?: string | Error | undefined
+): Promise<Error> {
+    let error: Error | undefined
+    try {
+        await action()
+    } catch (err) {
+        assert.ok(err instanceof Error, 'caught error was not an instance of Error')
+        error = err as Error
+    } finally {
+        // Test that an error was caught
+        assert.throws(
+            () => {
+                if (!!error) {
+                    throw error
+                }
+            },
+            message
+        )
+    }
+
+    return error!
+}
