@@ -127,6 +127,72 @@ export async function promptUser<T extends vscode.QuickPickItem>(
     }
 }
 
+/**
+ * Convenience method to allow the QuickPick to be treated more like a dialog.
+ * Unlike promptUser, this accepts an externally-generated Promise that will fill the QuickPick
+ *
+ * NB: an externally-generated Promise is used because this function only needs to know when it's done.
+ * This function should populate the picker externally.
+ * That way, the function has access to functionality from its own class/file.
+ * If this promise should fail, it is the function's responsibility to populate the quick pick with an error message.
+ *
+ * This method shows a busy sign, then shows the picker with loaded values,
+ * and returns after the picker is either accepted or cancelled.
+ * (Accepted = the user accepted selected values, Cancelled = hide() is called or Esc is pressed)
+ *
+ * @param picker The picker to prompt the user with
+ * @param populator A Promise resolved externally that is tied to a function that will fill the QuickPick's items
+ *  Should resolve upon successfully filling the QuickPick.
+ * @param onDidTriggerButton Optional event to trigger when the picker encounters a "Button Pressed" event.
+ *  Buttons do not automatically cancel/accept the picker, caller must explicitly do this if intended.
+ *
+ * @returns If the picker was cancelled, undefined is returned. Otherwise, an array of the selected items is returned.
+ */
+export async function promptUserWithBusyMessage<T extends vscode.QuickPickItem>(
+    {
+        picker,
+        populator,
+        onDidTriggerButton,
+    }: {
+        picker: vscode.QuickPick<T>,
+        populator: Promise<void>,
+        onDidTriggerButton?(
+            button: vscode.QuickInputButton,
+            resolve: (value: T[] | PromiseLike<T[] | undefined> | undefined) => void,
+            reject: (reason?: any) => void,
+        ): void,
+    }
+): Promise<T[] | undefined> {
+    const disposables: vscode.Disposable[] = []
+
+    return await new Promise<boolean>(async (resolve, reject) => {
+        picker.onDidHide(
+            () => {
+                resolve(false)
+            },
+            picker,
+            disposables)
+
+        makeQuickPickBusy(picker)
+        picker.show()
+
+        await populator
+        resolve(true)
+    }).then((didComplete) => {
+        // promise completed, external function finished list handling
+        if (didComplete) {
+            makeQuickPickNotBusy(picker)
+
+            return promptUser({ picker, onDidTriggerButton })
+        // picker.hide() was called one way or another--implies user cancelled the quick pick
+        } else {
+            disposables.forEach(d => d.dispose() as void)
+
+            return undefined
+        }
+    })
+}
+
 export function verifySinglePickerOutput<T extends vscode.QuickPickItem>(
     choices: T[] | undefined
 ): T | undefined {

@@ -122,7 +122,7 @@
     "AWS.samcli.deploy.s3Bucket.error": "S3 bucket cannot be empty",
     "AWS.samcli.deploy.s3bucket.loading": "Loading S3 buckets...",
     "AWS.samcli.deploy.s3bucket.error": "There was a problem accessing S3 in region {0}",
-    "AWS.samcli.deploy.s3bucket.error.none": "You do not have access to any S3 buckets in {0}",
+    "AWS.samcli.deploy.s3bucket.error.none": "No buckets found in {0}",
     "AWS.samcli.deploy.s3bucket.error.none.description": "Go back to region selection...",
     "AWS.samcli.deploy.stackName.prompt": "Enter the name to use for the deployed stack",
     "AWS.samcli.deploy.stackName.error.invalidCharacters": "A stack name may contain only alphanumeric characters (case sensitive) and hyphens",

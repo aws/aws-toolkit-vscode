@@ -33,6 +33,8 @@ export interface SamDeployWizardResponse {
     stackName: string
 }
 
+export type QuickPickBucket = vscode.QuickPickItem & { isBucket: boolean }
+
 export const enum ParameterPromptResult {
     Cancel,
     Continue
@@ -88,7 +90,9 @@ export interface SamDeployWizardContext {
 
     /**
      * Retrieves an S3 Bucket to deploy to from the user.
+     * User is prompted with a list of buckets for a specific region
      *
+     * @param selectedRegion The region to search for S3 buckets in
      * @param initialValue Optional, Initial value to prompt with
      *
      * @returns S3 Bucket name. Undefined represents cancel.
@@ -356,32 +360,16 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public async promptUserForS3Bucket(
         selectedRegion: string,
         initialValue?: string,
-        s3Client: S3Client = new DefaultS3Client(selectedRegion)
     ): Promise<string | undefined> {
 
-        const loadingBuckets = localize(
+        const s3Client: S3Client = new DefaultS3Client(selectedRegion)
+
+        const loadingBuckets: string = localize(
             'AWS.samcli.deploy.s3bucket.loading',
             'Loading S3 buckets...',
         )
 
-        const s3ErrorLabel = localize(
-            'AWS.samcli.deploy.s3bucket.error',
-            'There was a problem accessing S3 in region {0}',
-            selectedRegion
-        )
-
-        const s3NoBucketsLabel = localize(
-            'AWS.samcli.deploy.s3bucket.error.none',
-            'You do not have access to any S3 buckets in {0}',
-            selectedRegion
-        )
-
-        const s3GoBack = localize(
-            'AWS.samcli.deploy.s3bucket.error.none.description',
-            'Go back to region selection...'
-        )
-
-        const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
+        const quickPick = picker.createQuickPick<QuickPickBucket>({
             buttons: [
                 this.helpButton,
                 vscode.QuickInputButtons.Back
@@ -396,60 +384,15 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 ignoreFocusOut: true,
             },
             // preloaded "busy screen" message
-            // using a const in case we want to make this clickable as a way to abort the lookup.
             items: [
                 {
-                    label: loadingBuckets
+                    label: loadingBuckets,
+                    isBucket: false
                 }
             ],
         })
 
-        // throw up a busy screen while the S3 buckets are loading
-        picker.makeQuickPickBusy(quickPick)
-        quickPick.show()
-
-        try {
-            const listBucketsResponse = await s3Client.listBuckets()
-
-            // sort through buckets and add to cache if you had to run a listBuckets
-            if (listBucketsResponse && listBucketsResponse.Buckets) {
-                // listBuckets lists all buckets tied to an account regardless of region
-                // we need to filter the list ourselves since we do care about the region
-                const bucketsForRegion = await getBucketsForRegion(
-                    listBucketsResponse.Buckets,
-                    selectedRegion,
-                    s3Client
-                )
-                quickPick.items = createBucketQuickPickItems(bucketsForRegion, initialValue)
-            }
-
-            // no buckets found for region
-            if (quickPick.items.length === 0) {
-                quickPick.items = [
-                    {
-                        label: s3NoBucketsLabel,
-                        description: s3GoBack
-                    }
-                ]
-            }
-        } catch (err) {
-            // user doesn't have access to region for some reason
-            const error = err as Error
-            const logger = getLogger()
-            logger.warn(error)
-            quickPick.items = [
-                {
-                    label: s3ErrorLabel,
-                    description: s3GoBack,
-                    detail: error.message
-                }
-            ]
-        }
-
-        // loading is done, restore to a selectable state
-        picker.makeQuickPickNotBusy(quickPick)
-
-        const pickedItem =  await picker.promptUser<vscode.QuickPickItem>({
+        const pickedItem = await picker.promptUserWithBusyMessage<QuickPickBucket>({
             picker: quickPick,
             onDidTriggerButton: (button, resolve, reject) => {
                 if (button === vscode.QuickInputButtons.Back) {
@@ -457,12 +400,13 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 } else if (button === this.helpButton) {
                     vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
                 }
-            }
+            },
+            populator: populatePickerWithS3Buckets(quickPick, s3Client, selectedRegion, initialValue)
         })
 
         const val = picker.verifySinglePickerOutput(pickedItem)
 
-        return (val && val.label !== s3ErrorLabel && val.label !== s3NoBucketsLabel) ? val.label : undefined
+        return (val && val.isBucket) ? val.label : undefined
     }
 
     /**
@@ -741,6 +685,67 @@ async function getTemplateChoices(
         .sort((a, b) => a.compareTo(b))
 }
 
+async function populatePickerWithS3Buckets(
+    quickPick: vscode.QuickPick<QuickPickBucket>,
+    s3Client: S3Client,
+    selectedRegion: string,
+    initialValue?: string
+): Promise<void> {
+
+    const s3GoBack = localize(
+        'AWS.samcli.deploy.s3bucket.error.none.description',
+        'Go back to region selection...'
+    )
+
+    try {
+        const listBucketsResponse = await s3Client.listBuckets()
+
+        // sort through buckets and add to cache if you had to run a listBuckets
+        if (listBucketsResponse && listBucketsResponse.Buckets) {
+            // listBuckets lists all buckets tied to an account regardless of region
+            // we need to filter the list ourselves since we do care about the region
+            const bucketsForRegion = await getBucketsForRegion(
+                listBucketsResponse.Buckets,
+                selectedRegion,
+                s3Client
+            )
+            quickPick.items = createBucketQuickPickItems(bucketsForRegion, initialValue)
+        }
+
+        // no buckets found for region
+        if (quickPick.items.length === 0) {
+            quickPick.items = [
+                {
+                    label: localize(
+                        'AWS.samcli.deploy.s3bucket.error.none',
+                        'No buckets found in {0}',
+                        selectedRegion
+                    ),
+                    description: s3GoBack,
+                    isBucket: false
+                }
+            ]
+        }
+    } catch (err) {
+        // user doesn't have access to region for some reason
+        const error = err as Error
+        const logger = getLogger()
+        logger.warn(error)
+        quickPick.items = [
+            {
+                label:  localize(
+                    'AWS.samcli.deploy.s3bucket.error',
+                    'There was a problem accessing S3 in region {0}',
+                    selectedRegion
+                ),
+                description: s3GoBack,
+                detail: error.message,
+                isBucket: false
+            }
+        ]
+    }
+}
+
 export async function getBucketsForRegion(
     buckets: Pick<S3.Bucket, 'Name'>[],
     region: string,
@@ -787,7 +792,7 @@ export function normalizeLocation(location?: string): string {
 export function createBucketQuickPickItems(
     buckets: string[],
     initialValue?: string
-): vscode.QuickPickItem[] {
+): QuickPickBucket[] {
     // turn these into quick pick items
     const output = buckets.map(b => (
         {
@@ -796,7 +801,8 @@ export function createBucketQuickPickItems(
             // this will make it so it always shows even when searching for something else
             alwaysShow: b === initialValue,
             description: b === initialValue ?
-                localize('AWS.samcli.wizard.selectedPreviously', 'Selected Previously') : ''
+                localize('AWS.samcli.wizard.selectedPreviously', 'Selected Previously') : '',
+            isBucket: true
         }
     ))
 
