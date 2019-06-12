@@ -137,6 +137,7 @@ export class UserCredentialsUtils {
         sts?: StsClient
     ): Promise<CredentialsValidationResult> {
         const logger: Logger = getLogger()
+
         if (!sts) {
             const transformedCredentials: ServiceConfigurationOptions = {
                 credentials: {
