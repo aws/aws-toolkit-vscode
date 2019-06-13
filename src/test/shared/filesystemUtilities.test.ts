@@ -59,6 +59,7 @@ describe('filesystemUtilities', () => {
             const nestedTempDirPath = await makeTemporaryToolkitFolder('nestedSubfolder', 'moreNestedSubfolder')
 
             foldersToCleanUp.push(nestedTempDirPath)
+            foldersToCleanUp.push(path.join(tempDirPath, 'nestedSubfolder'))
 
             assert(
                 nestedTempDirPath.indexOf(tempDirPath) === 0,
