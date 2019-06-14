@@ -12,20 +12,18 @@ These instructions outline how you can debug a lambda handler locally using the 
 
 4. Open a terminal in the folder containing `template.yaml` and set up the debugger by running the following commands:
 
-    * Replace `path/to/project` with the relative path to the directory containing the `.csproj` project that you want to debug.
-    * Replace `/absolute/path/to/project` with the absolute path to the directory containing the `csproj` project that you want to debug.
-    * Replace `dotnetcore2.0` with the framework identifier for the runtime that you are targetting.
+    * replace `<CODE_URI>` with the *absolute* path matching the `CodeUri` property from `template.yaml` for the resource that you wish to debug.
+    * Replace `dotnetcore2.1` with the framework identifier for the runtime that you are targetting.
 
     ```bash
-    mkdir path/to/project/.vsdbg
-    docker run --rm --mount type=bind,src=/absolute/path/to/project/.vsdbg,dst=/vsdbg --entrypoint bash lambci/lambda:dotnetcore2.0 -c "curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg"
+    mkdir <CODE_URI>/.vsdbg
+    docker run --rm --mount type=bind,src=<CODE_URI>/.vsdbg,dst=/vsdbg --entrypoint bash lambci/lambda:dotnetcore2.1 -c "curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg"
     ```
 
 ## Configure your debugger
 
 1. Open `<workspace folder root>/.vscode/launch.json` (create a new file if it does not already exist), and add the following contents:
 
-    * Due to a bug in how Visual Studio Code handles path mappings, Windows users must replace `${workspaceFolder}` with the absolute path to the folder containing `template.yaml`.
     * If desired, replace `5679` with the port that you wish to use for debugging.
 
     ```jsonc
@@ -33,7 +31,7 @@ These instructions outline how you can debug a lambda handler locally using the 
         "version": "0.2.0",
         "configurations": [
             {
-                "name": ".NET Core Docker Attach",
+                "name": "SamLocalDebug",
                 "type": "coreclr",
                 "request": "attach",
                 "processId": "1",
@@ -44,9 +42,8 @@ These instructions outline how you can debug a lambda handler locally using the 
                         "docker exec -i $(docker ps -q -f publish=5679) ${debuggerCommand}"
                     ],
                     "debuggerPath": "/tmp/lambci_debug_files/vsdbg",
-                    "pipeCwd": "${workspaceFolder}/path/to/project",
+                    "pipeCwd": "<CODE_URI>"
                 },
-
                 "windows": {
                     "pipeTransport": {
                         "pipeProgram": "powershell",
@@ -55,12 +52,11 @@ These instructions outline how you can debug a lambda handler locally using the 
                             "docker exec -i $(docker ps -q -f publish=5679) ${debuggerCommand}"
                         ],
                         "debuggerPath": "/tmp/lambci_debug_files/vsdbg",
-                        "pipeCwd": "${workspaceFolder}/path/to/project",
+                        "pipeCwd": "<CODE_URI>"
                     }
                 },
-
                 "sourceFileMap": {
-                    "/var/task": "${workspaceFolder}/path/to/project"
+                    "/var/task": "<CODE_URI>"
                 }
             }
         ]
@@ -83,8 +79,17 @@ These instructions outline how you can debug a lambda handler locally using the 
     * Replace `5679` with the port that you specified in `launch.json`.
 
     ```bash
-    sam build # TODO: First set the environment variable that enables building the Debug configuration.
-    sam local invoke HelloWorldFunction -d 5679 --debugger-path path/to/project/.vsdbg --no-event
+    # Bash
+    export SAM_BUILD_MODE=debug
+    sam build
+    sam local invoke HelloWorldFunction -d 5679 --debugger-path <CODE_URI>/.vsdbg --no-event
+    ```
+
+    ```powershell
+    # Powershell
+    $env:SAM_BUILD_MODE = 'debug'
+    sam build
+    sam local invoke HelloWorldFunction -d 5679 --debugger-path <CODE_URI>/.vsdbg --no-event
     ```
 
 3. When you see `Waiting for debugger to attach...`, go back to Visual Studio Code and press F5 to attach the debugger to the handler that you invoked in the previous step.
@@ -97,7 +102,6 @@ With the above steps, you need to manually invoke SAM CLI from the command line,
 2. Add the following contents to `tasks.json`:
 
     * Replace `HelloWorldFunction` with the function that you wish to debug.
-    * Replace `path/to/project` with the relative path to the directory containing the `.csproj` project that you wish to debug.
 
     ```jsonc
     {
@@ -114,7 +118,7 @@ With the above steps, you need to manually invoke SAM CLI from the command line,
                     "-d",
                     "5679",
                     "--debugger-path",
-                    "path/to/project/.vsdbg",
+                    "<CODE_URI>/.vsdbg",
                     "--no-event"
                 ],
                 "isBackground": true,
@@ -146,4 +150,4 @@ With the above steps, you need to manually invoke SAM CLI from the command line,
     "preLaunchTask": "Debug .NET Core Lambda Function",
     ```
 
-Now you can just press `F5`, and Visual Studio Code will invoke SAM CLI and wait for the `Waiting for debugger to attach...` message before attaching the debugger.
+Now you can just press `F5`, and Visual Studio Code will invoke SAM CLI and wait for the `Waiting for debugger to attach...` message before attaching the debugger. When you make changes to your app, you must rebuild using the `sam build` command with the environment variable `SAM_DEBUG_MODE` set to `"debug"` before you press `F5`.
