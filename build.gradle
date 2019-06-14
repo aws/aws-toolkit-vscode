@@ -97,6 +97,10 @@ subprojects {
         testCompile "org.hamcrest:hamcrest-all:1.3"
     }
 
+    testlogger {
+        showFullStackTraces true
+    }
+
     test {
         jacoco {
             // don't instrument sdk, icons, ktlint, etc.
