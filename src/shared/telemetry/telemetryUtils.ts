@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,7 +7,7 @@
 
 import * as vscode from 'vscode'
 import { ext } from '../extensionGlobals'
-import { Datum } from './telemetryEvent'
+import { Datum, METADATA_FIELD_NAME, MetadataResult, TelemetryName } from './telemetryTypes'
 
 export function defaultMetricDatum(name: string): Datum {
     return {
@@ -21,12 +21,17 @@ export function registerCommand<T>({
     command,
     thisArg,
     register = vscode.commands.registerCommand,
+    telemetryName = {
+        namespace: 'Command',
+        name: command
+    },
     callback
 }: {
     command: string
     thisArg?: any
     register?: typeof vscode.commands.registerCommand
-    callback(...args: any[]): (Promise<T & { datum?: Datum } | void>)
+    telemetryName?: TelemetryName
+    callback(...args: any[]): Promise<T & { datum?: Datum } | void>
 }): vscode.Disposable {
     return register(
         command,
@@ -42,15 +47,19 @@ export function registerCommand<T>({
                 throw e
             } finally {
                 const endTime = new Date()
-                const datum = result && result.datum ? result.datum : defaultMetricDatum(command)
+                const datum = result && result.datum ? result.datum : defaultMetricDatum(telemetryName.name)
                 if (!datum.metadata) {
                     datum.metadata = new Map()
                 }
-                datum.metadata.set('hasException', `${hasException}`)
-                datum.metadata.set('duration', `${endTime.getTime() - startTime.getTime()}`)
+                setMetadataIfNotExists(
+                    datum.metadata,
+                    METADATA_FIELD_NAME.RESULT,
+                    hasException ? MetadataResult.Fail.toString() : MetadataResult.Pass.toString()
+                )
+                setMetadataIfNotExists(datum.metadata, 'duration', `${endTime.getTime() - startTime.getTime()}`)
 
                 ext.telemetry.record({
-                    namespace: 'Command',
+                    namespace: telemetryName.namespace,
                     createTime: startTime,
                     data: [datum]
                 })
@@ -64,4 +73,10 @@ export function registerCommand<T>({
         },
         thisArg
     )
+}
+
+function setMetadataIfNotExists(metadata: Map<string, string>, key: string, value: string) {
+    if (!metadata.has(key)) {
+        metadata.set(key, value)
+    }
 }

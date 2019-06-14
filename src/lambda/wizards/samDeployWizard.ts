@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -10,8 +10,10 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { samDeployDocUrl } from '../../shared/constants'
 import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
+import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { difference, filter, toArrayAsync } from '../../shared/utilities/collectionUtils'
@@ -121,10 +123,20 @@ function getSingleResponse(responses: vscode.QuickPickItem[] | undefined): strin
     return responses[0].label
 }
 
-class DefaultSamDeployWizardContext implements SamDeployWizardContext {
+export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public readonly onDetectLocalTemplates = detectLocalTemplates
     public readonly getParameters = getParameters
     public readonly getOverriddenParameters = getOverriddenParameters
+    private readonly helpButton = createHelpButton(
+        this.extContext,
+        localize(
+            'AWS.command.help',
+            'View Documentation'
+        )
+    )
+
+    public constructor(private readonly extContext: Pick<vscode.ExtensionContext, 'asAbsolutePath'>) {
+    }
 
     public get workspaceFolders(): vscode.Uri[] | undefined {
         return (vscode.workspace.workspaceFolders || []).map(f => f.uri)
@@ -140,16 +152,28 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
         const quickPick = picker.createQuickPick<SamTemplateQuickPickItem>({
             options: {
+                ignoreFocusOut: true,
                 title: localize(
                     'AWS.samcli.deploy.template.prompt',
                     'Which SAM Template would you like to deploy to AWS?'
                 )
             },
+            buttons: [
+                this.helpButton,
+                vscode.QuickInputButtons.Back
+            ],
             items: await getTemplateChoices(this.onDetectLocalTemplates, ...workspaceFolders)
         })
 
-        const choices = await picker.promptUser<SamTemplateQuickPickItem>({
+        const choices = await picker.promptUser({
             picker: quickPick,
+            onDidTriggerButton: (button, resolve, reject) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve(undefined)
+                } else if (button === this.helpButton) {
+                    vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
+                }
+            }
         })
         const val = picker.verifySinglePickerOutput<SamTemplateQuickPickItem>(choices)
 
@@ -183,14 +207,28 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
             const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
                 options: {
+                    ignoreFocusOut: true,
                     title: prompt
                 },
+                buttons: [
+                    this.helpButton,
+                    vscode.QuickInputButtons.Back
+                ],
                 items: [
                     { label: responseYes },
                     { label: responseNo }
                 ]
             })
-            const response = getSingleResponse(await picker.promptUser({ picker: quickPick }))
+            const response = getSingleResponse(await picker.promptUser({
+                picker: quickPick,
+                onDidTriggerButton: (button, resolve, reject) => {
+                    if (button === vscode.QuickInputButtons.Back) {
+                        resolve(undefined)
+                    } else if (button === this.helpButton) {
+                        vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
+                    }
+                }
+            }))
             if (response !== responseYes) {
                 return ParameterPromptResult.Continue
             }
@@ -220,14 +258,28 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
             const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
                 options: {
+                    ignoreFocusOut: true,
                     title: prompt
                 },
+                buttons: [
+                    this.helpButton,
+                    vscode.QuickInputButtons.Back
+                ],
                 items: [
                     { label: responseConfigure },
                     { label: responseCancel }
                 ]
             })
-            const response = getSingleResponse(await picker.promptUser({ picker: quickPick }))
+            const response = getSingleResponse(await picker.promptUser({
+                picker: quickPick,
+                onDidTriggerButton: (button, resolve, reject) => {
+                    if (button === vscode.QuickInputButtons.Back) {
+                        resolve(undefined)
+                    } else if (button === this.helpButton) {
+                        vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
+                    }
+                }
+            }))
             if (response === responseConfigure) {
                 await configureParameterOverrides({
                     templateUri,
@@ -267,6 +319,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 }
             )),
             buttons: [
+                this.helpButton,
                 vscode.QuickInputButtons.Back
             ],
         })
@@ -276,6 +329,8 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             onDidTriggerButton: (button, resolve, reject) => {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
+                } else if (button === this.helpButton) {
+                    vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
                 }
             }
         })
@@ -294,6 +349,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public async promptUserForS3Bucket(selectedRegion: string, initialValue?: string): Promise<string | undefined> {
         const inputBox = input.createInputBox({
             buttons: [
+                this.helpButton,
                 vscode.QuickInputButtons.Back
             ],
             options: {
@@ -321,6 +377,8 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             onDidTriggerButton: (button, resolve, reject) => {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
+                } else if (button === this.helpButton) {
+                    vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
                 }
             }
         })
@@ -345,6 +403,7 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     ): Promise<string | undefined> {
         const inputBox = input.createInputBox({
             buttons: [
+                this.helpButton,
                 vscode.QuickInputButtons.Back
             ],
             options: {
@@ -367,6 +426,8 @@ class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             onDidTriggerButton: (button, resolve, reject) => {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
+                } else if (button === this.helpButton) {
+                    vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
                 }
             }
         })
@@ -378,7 +439,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
 
     public constructor(
         private readonly regionProvider: RegionProvider,
-        private readonly context: SamDeployWizardContext = new DefaultSamDeployWizardContext()
+        private readonly context: SamDeployWizardContext
     ) {
         super()
     }

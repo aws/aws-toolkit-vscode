@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,19 +7,17 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-
 import { NodejsDebugConfiguration } from '../../lambda/local/debugConfiguration'
+import { CloudFormation } from '../cloudformation/cloudformation'
 import { findFileInParentPaths } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
-import {
-    DefaultSamCliProcessInvoker,
-    DefaultSamCliTaskInvoker,
-} from '../sam/cli/samCliInvoker'
-import { Datum } from '../telemetry/telemetryEvent'
+import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
+import { Datum, TelemetryNamespace } from '../telemetry/telemetryTypes'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
-import { getDebugPort, localize } from '../utilities/vsCodeUtils'
+import { getChannelLogger, getDebugPort, localize } from '../utilities/vsCodeUtils'
 
+import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import {
     CodeLensProviderParams,
     getInvokeCmdKey,
@@ -27,14 +25,12 @@ import {
     makeCodeLenses,
 } from './codeLensUtils'
 import {
-    getRuntimeForLambda,
     LambdaLocalInvokeParams,
     LocalLambdaRunner,
 } from './localLambdaRunner'
 
 const unsupportedNodeJsRuntimes: Set<string> = new Set<string>([
-    'nodejs4.3',
-    'nodejs6.10',
+    'nodejs4.3'
 ])
 
 async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
@@ -58,9 +54,12 @@ async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
 export function initialize({
     configuration,
     outputChannel: toolkitOutputChannel,
-    processInvoker = new DefaultSamCliProcessInvoker(),
-    taskInvoker = new DefaultSamCliTaskInvoker(),
-    telemetryService
+    processInvoker = new DefaultValidatingSamCliProcessInvoker({}),
+    localInvokeCommand = new DefaultSamLocalInvokeCommand(
+        getChannelLogger(toolkitOutputChannel),
+        [WAIT_FOR_DEBUGGER_MESSAGES.NODEJS]
+    ),
+    telemetryService,
 }: CodeLensProviderParams): void {
 
     const invokeLambda = async (params: LambdaLocalInvokeParams & { runtime: string }) => {
@@ -71,6 +70,8 @@ export function initialize({
             debugPort = await getDebugPort()
         }
 
+        const protocol = params.runtime === 'nodejs6.10' ? 'legacy' : 'inspector'
+
         const debugConfig: NodejsDebugConfiguration = {
             type: 'node',
             request: 'attach',
@@ -80,7 +81,7 @@ export function initialize({
             port: debugPort!,
             localRoot: samProjectCodeRoot,
             remoteRoot: '/var/task',
-            protocol: 'inspector',
+            protocol,
             skipFiles: [
                 '/var/runtime/node_modules/**/*.js',
                 '<node_internals>/**/*.js'
@@ -94,7 +95,7 @@ export function initialize({
             params.runtime,
             toolkitOutputChannel,
             processInvoker,
-            taskInvoker,
+            localInvokeCommand,
             debugConfig,
             samProjectCodeRoot,
             telemetryService
@@ -107,11 +108,11 @@ export function initialize({
     registerCommand({
         command: command,
         callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
-
-            const runtime = await getRuntimeForLambda({
+            const resource = await CloudFormation.getResourceFromTemplate({
                 handlerName: params.handlerName,
                 templatePath: params.samTemplate.fsPath
             })
+            const runtime = CloudFormation.getRuntime(resource)
 
             if (params.isDebug && unsupportedNodeJsRuntimes.has(runtime)) {
                 vscode.window.showErrorMessage(
@@ -133,12 +134,16 @@ export function initialize({
                 command,
                 runtime,
             })
+        },
+        telemetryName: {
+            namespace: TelemetryNamespace.Lambda,
+            name: 'invokelocal'
         }
     })
 }
 
 export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
-    return { // CodeLensProvider
+    return {
         provideCodeLenses: async (
             document: vscode.TextDocument,
             token: vscode.CancellationToken

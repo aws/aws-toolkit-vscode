@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -19,6 +19,14 @@ export const samAboutInstallUrl: string = 'https://aws.amazon.com/serverless/sam
 export const vscodeMarketplaceUrl: string = 'https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode'
 export const githubUrl: string = 'https://github.com/aws/aws-toolkit-vscode'
 export const documentationUrl: string = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html'
+// tslint:disable-next-line:max-line-length
+export const credentialHelpUrl: string = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-credentials.html'
+
+// URLs for samInitWizard
+export const samInitDocUrl: string = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/create-sam.html'
+// URLs for samDeployWizard
+// tslint:disable-next-line:max-line-length
+export const samDeployDocUrl: string = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/deploy-serverless-app.html'
 
 const npmPackage = () => require('../../../package.json') as NpmPackage
 export const pluginVersion = npmPackage().version

@@ -72,8 +72,12 @@ export async function findFileInParentPaths(searchFolder: string, fileToFind: st
 }
 
 const mkdtemp = promisify(fs.mkdtemp)
-export const  makeTemporaryToolkitFolder = async (...relativePathParts: string[]) => {
-    const _relativePathParts = relativePathParts || ['vsctk']
+export const makeTemporaryToolkitFolder = async (...relativePathParts: string[]) => {
+    const _relativePathParts = relativePathParts || []
+    if (_relativePathParts.length === 0) {
+        _relativePathParts.push('vsctk')
+    }
+
     const tmpPath = path.join(tempDirPath, ..._relativePathParts)
     const tmpPathParent = path.dirname(tmpPath)
     // fs.makeTemporaryToolkitFolder fails on OSX if prefix contains path separator

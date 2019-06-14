@@ -7,9 +7,8 @@
 
 import { fileExists } from '../../filesystemUtilities'
 import { getLogger, Logger } from '../../logger'
-import { ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliProcessInvoker } from './samCliInvoker'
-import { SamCliProcessInvoker } from './samCliInvokerUtils'
+import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 
 export interface SamCliBuildInvocationArguments {
     /**
@@ -25,6 +24,10 @@ export interface SamCliBuildInvocationArguments {
      * Location of the SAM Template to build
      */
     templatePath: string
+    /**
+     * Environment variables to set on the child process.
+     */
+    environmentVariables?: NodeJS.ProcessEnv
     /**
      * Manages the sam cli execution.
      */
@@ -50,9 +53,14 @@ export interface SamCliBuildInvocationArguments {
     manifestPath?: string
 }
 
+export interface FileFunctions {
+    fileExists: typeof fileExists
+}
+
 export class SamCliBuildInvocation {
     private readonly buildDir: string
     private readonly baseDir?: string
+    private readonly environmentVariables?: NodeJS.ProcessEnv
     private readonly templatePath: string
     private readonly invoker: SamCliProcessInvoker
     private readonly useContainer: boolean
@@ -73,10 +81,12 @@ export class SamCliBuildInvocation {
             skipPullImage = false,
             ...params
         }: SamCliBuildInvocationArguments,
+        private readonly context: { file: FileFunctions } = { file: getDefaultFileFunctions() },
     ) {
         this.buildDir = params.buildDir
         this.baseDir = params.baseDir
         this.templatePath = params.templatePath
+        this.environmentVariables = params.environmentVariables
         this.invoker = invoker
         this.useContainer = useContainer
         this.dockerNetwork = params.dockerNetwork
@@ -85,7 +95,6 @@ export class SamCliBuildInvocation {
     }
 
     public async execute(): Promise<void> {
-        const logger: Logger = getLogger()
         await this.validate()
 
         const invokeArgs: string[] = [
@@ -100,24 +109,17 @@ export class SamCliBuildInvocation {
         this.addArgumentIf(invokeArgs, !!this.skipPullImage, '--skip-pull-image')
         this.addArgumentIf(invokeArgs, !!this.manifestPath, '--manifest', this.manifestPath!)
 
-        const { exitCode, error, stderr, stdout }: ChildProcessResult = await this.invoker.invoke(
-            ...invokeArgs
-        )
-
-        if (exitCode === 0) {
-            return
+        const env: NodeJS.ProcessEnv = {
+            ...process.env,
+            ...this.environmentVariables
         }
 
-        console.error('SAM CLI error')
-        console.error(`Exit code: ${exitCode}`)
-        console.error(`Error: ${error}`)
-        console.error(`stderr: ${stderr}`)
-        console.error(`stdout: ${stdout}`)
+        const childProcessResult = await this.invoker.invoke({
+            spawnOptions: { env },
+            arguments: invokeArgs,
+        })
 
-        const err =
-            new Error(`sam build encountered an error: ${error && error.message ? error.message : stderr || stdout}`)
-        logger.error(err)
-        throw err
+        logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
     }
 
     private addArgumentIf(args: string[], addIfConditional: boolean, ...argsToAdd: string[]) {
@@ -127,11 +129,18 @@ export class SamCliBuildInvocation {
     }
 
     private async validate(): Promise<void> {
-        const logger: Logger = getLogger()
-        if (!await fileExists(this.templatePath)) {
+        if (!await this.context.file.fileExists(this.templatePath)) {
+            const logger: Logger = getLogger()
+
             const err = new Error(`template path does not exist: ${this.templatePath}`)
             logger.error(err)
             throw err
         }
+    }
+}
+
+function getDefaultFileFunctions(): FileFunctions {
+    return {
+        fileExists
     }
 }

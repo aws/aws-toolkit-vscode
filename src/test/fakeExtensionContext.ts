@@ -35,7 +35,7 @@ export class FakeExtensionContext implements ExtensionContext {
     }
 
     public asAbsolutePath(relativePath: string): string {
-        throw new Error('Method not implemented.')
+        return relativePath
     }
 }
 

@@ -12,6 +12,8 @@ import * as filesystemUtilities from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 
 export namespace CloudFormation {
+    export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function'
+
     export function validateProperties(
         {
             Handler,
@@ -49,7 +51,7 @@ export namespace CloudFormation {
     }
 
     export interface Resource {
-        Type: 'AWS::Serverless::Function',
+        Type: typeof SERVERLESS_FUNCTION_TYPE,
         Properties?: ResourceProperties
     }
 
@@ -175,7 +177,7 @@ export namespace CloudFormation {
 
         const lambdaResources = Object.getOwnPropertyNames(template.Resources)
             .map(key => template.Resources![key]!)
-            .filter(resource => resource.Type === 'AWS::Serverless::Function')
+            .filter(resource => resource.Type === SERVERLESS_FUNCTION_TYPE)
             .map(resource => resource as Resource)
 
         if (lambdaResources.length <= 0) {
@@ -214,4 +216,64 @@ export namespace CloudFormation {
         }
     }
 
+    export function getRuntime(resource: Pick<Resource, 'Properties'>): string {
+        const properties = resource.Properties
+        if (!properties || !properties.Runtime) {
+            throw new Error('Resource does not specify a Runtime')
+        }
+
+        return properties.Runtime
+    }
+
+    export function getCodeUri(resource: Pick<Resource, 'Properties'>): string {
+        const properties = resource.Properties
+        if (!properties || !properties.CodeUri) {
+            throw new Error('Resource does not specify a CodeUri')
+        }
+
+        return properties.CodeUri
+    }
+
+    export async function getResourceFromTemplate(
+        { templatePath, handlerName }: {
+            templatePath: string,
+            handlerName: string
+        },
+        context: { loadTemplate: typeof load } = { loadTemplate: load }
+    ): Promise<Resource> {
+        const template = await context.loadTemplate(templatePath)
+        const resources = template.Resources || {}
+
+        const matches = Object.keys(resources)
+            .filter(key => matchesHandler({
+                resource: resources[key],
+                handlerName
+            })).map(key => resources[key]!)
+
+        if (matches.length < 1) {
+            throw new Error(`Could not find a SAM resource for handler ${handlerName}`)
+        }
+
+        if (matches.length > 1) {
+            // TODO: Is this a valid scenario?
+            throw new Error(`Found more than one SAM resource for handler ${handlerName}`)
+        }
+
+        return matches[0]
+    }
+
+    function matchesHandler({ resource, handlerName }: {
+        resource?: Resource
+        handlerName: string
+    }) {
+        return resource &&
+            resource.Type === SERVERLESS_FUNCTION_TYPE &&
+            resource.Properties &&
+            // TODO: `resource.Properties.Handler` is relative to `CodeUri`, but
+            //       `handlerName` is relative to the directory containing the source
+            //       file. To fix, update lambda handler candidate searches for
+            //       interpreted languages to return a handler name relative to the
+            //       `CodeUri`, rather than to the directory containing the source file.
+            resource.Properties.Handler === handlerName
+    }
 }

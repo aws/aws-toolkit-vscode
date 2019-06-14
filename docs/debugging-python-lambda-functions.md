@@ -1,6 +1,6 @@
 # Debugging Python lambda functions
 
-These instructions outline how you can debug a lambda handler locally using the SAM CLI, and attach the VS Code debugger to it.
+You can debug your Serverless Application's Lambda Function locally using the CodeLens links above the lambda handler. If you would like to use the Debug Panel to launch the debugger instead, use the following steps to configure your project's Debug Configuration.
 
 ## Install and configure prerequisites
 
@@ -14,25 +14,30 @@ These instructions outline how you can debug a lambda handler locally using the 
 
 ## Instrument your code
 
-In the instructions below, replace `<sam app root>` and `<python source root>` with the appropriate names for your project. For example, if you just created a new SAM application called `my-sam-app`, then replace `<sam app root>` with `my-sam-app` and `<python source root>` with `hello_world`.
+Throughout these instructions, replace the following:
 
-1. Add the line `ptvsd==4.2.4` to `<sam app root>/<python source root>/requirements.txt`
+|Name|Replace With|
+|-|-|
+|`<sam app root>`|The root of your SAM app (typically this is the directory containing `template.yaml`)|
+|`<python project root>`|The root of your Python source code (typically this is the directory containing `requirements.txt`)|
+
+1. Add the line `ptvsd==4.2.4` to `<python project root>/requirements.txt`
 2. Open a terminal in `<sam app root>`, then run:
 
     ```bash
     # Bash
     . ./.venv/Scripts/activate
-    python -m pip install -r <python source root>/requirements.txt
+    python -m pip install -r <python project root>/requirements.txt
     ```
 
     ```powershell
     # PowerShell
     .\.venv\Scripts\Activate.ps1
-    python -m pip install -r <python source root>/requirements.txt
+    python -m pip install -r <python project root>/requirements.txt
     ```
 
 3. Select a port to use for debugging. In this example, we will use port `5678`.
-4. Add the following code to the beginning of `<python source root>/app.py`:
+4. Add the following code to the beginning of `<python project root>/app.py`:
 
     ```python
     import ptvsd
@@ -45,7 +50,10 @@ In the instructions below, replace `<sam app root>` and `<python source root>` w
 
 ## Configure your debugger
 
-1. Open `<app root>/.vscode/launch.json` (create a new file if it does not already exist), and add the following contents:
+1. Open `<sam app root>/.vscode/launch.json` (create a new file if it does not already exist), and add the following contents.
+
+    * Due to a bug in how VS Code handles path mappings, Windows users must provide an absolute path for `localRoot`. If you use a path relative to `${workspaceFolder}`, the path mappings will not work.
+    * If desired, replace `5678` with the port that you wish to use for debugging.
 
     ```jsonc
     {
@@ -59,7 +67,7 @@ In the instructions below, replace `<sam app root>` and `<python source root>` w
                 "host": "localhost",
                 "pathMappings": [
                     {
-                        "localRoot": "${workspaceFolder}/<python source root>",
+                        "localRoot": "${workspaceFolder}/<python project root>",
                         "remoteRoot": "/var/task"
                     }
                 ]

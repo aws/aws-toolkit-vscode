@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -16,24 +16,28 @@ import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
 import { CodeLensProviderParams } from './shared/codelens/codeLensUtils'
+import * as csLensProvider from './shared/codelens/csharpCodeLensProvider'
 import * as pyLensProvider from './shared/codelens/pythonCodeLensProvider'
 import * as tsLensProvider from './shared/codelens/typescriptCodeLensProvider'
 import { documentationUrl, extensionSettingsPrefix, githubUrl } from './shared/constants'
 import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
+import { UserCredentialsUtils } from './shared/credentials/userCredentialsUtils'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
 import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
+import { DefaultAWSStatusBar } from './shared/defaultStatusBar'
 import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
 import { safeGet } from './shared/extensionUtilities'
 import * as logFactory from './shared/logger'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
+import * as SamCliContext from './shared/sam/cli/samCliContext'
 import * as SamCliDetection from './shared/sam/cli/samCliDetection'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from './shared/settingsConfiguration'
-import { AWSStatusBar } from './shared/statusBar'
 import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
 import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryService'
 import { TelemetryService } from './shared/telemetry/telemetryService'
+import { TelemetryNamespace } from './shared/telemetry/telemetryTypes'
 import { registerCommand } from './shared/telemetry/telemetryUtils'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { PromiseSharer } from './shared/utilities/promiseUtilities'
@@ -67,8 +71,20 @@ export async function activate(context: vscode.ExtensionContext) {
         ext.awsContextCommands = new DefaultAWSContextCommands(awsContext, awsContextTrees, regionProvider)
         ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
-        ext.statusBar = new AWSStatusBar(awsContext, context)
-        ext.telemetry = new DefaultTelemetryService(context)
+
+        // check to see if current user is valid
+        const currentProfile = awsContext.getCredentialProfileName()
+        if (currentProfile) {
+            const successfulLogin = await UserCredentialsUtils.addUserDataToContext(currentProfile, awsContext)
+            if (!successfulLogin) {
+                await UserCredentialsUtils.removeUserDataFromContext(awsContext)
+                // tslint:disable-next-line: no-floating-promises
+                UserCredentialsUtils.notifyUserCredentialsAreBad(currentProfile)
+            }
+        }
+
+        ext.statusBar = new DefaultAWSStatusBar(awsContext, context)
+        ext.telemetry = new DefaultTelemetryService(context, awsContext)
         new AwsTelemetryOptOut(ext.telemetry, new DefaultSettingsConfiguration(extensionSettingsPrefix))
             .ensureUserNotified()
             .catch((err) => {
@@ -85,17 +101,29 @@ export async function activate(context: vscode.ExtensionContext) {
 
         registerCommand({
             command: 'aws.login',
-            callback: async () => await ext.awsContextCommands.onCommandLogin()
+            callback: async () => await ext.awsContextCommands.onCommandLogin(),
+            telemetryName: {
+                namespace: TelemetryNamespace.Aws,
+                name: 'credentialslogin'
+            }
         })
 
         registerCommand({
             command: 'aws.credential.profile.create',
-            callback: async () => await ext.awsContextCommands.onCommandCreateCredentialsProfile()
+            callback: async () => await ext.awsContextCommands.onCommandCreateCredentialsProfile(),
+            telemetryName: {
+                namespace: TelemetryNamespace.Aws,
+                name: 'credentialscreate'
+            }
         })
 
         registerCommand({
             command: 'aws.logout',
-            callback: async () => await ext.awsContextCommands.onCommandLogout()
+            callback: async () => await ext.awsContextCommands.onCommandLogout(),
+            telemetryName: {
+                namespace: TelemetryNamespace.Aws,
+                name: 'credentialslogout'
+            }
         })
 
         registerCommand({
@@ -126,6 +154,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 awsContextTrees,
                 regionProvider,
                 resourceFetcher,
+                getChannelLogger(toolkitOutputChannel),
                 (relativeExtensionPath) => getExtensionAbsolutePath(context, relativeExtensionPath)
             )
         ]
@@ -137,7 +166,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await ext.statusBar.updateContext(undefined)
 
-        await initializeSamCli()
+        await initializeSamCli(
+            new DefaultSettingsConfiguration(extensionSettingsPrefix),
+            logFactory.getLogger()
+        )
 
         await ExtensionDisposableFiles.initialize(context)
 
@@ -196,7 +228,13 @@ async function activateCodeLensProviders(
     await pyLensProvider.initialize(providerParams)
     disposables.push(vscode.languages.registerCodeLensProvider(
         pyLensProvider.PYTHON_ALLFILES,
-        await pyLensProvider.makePythonCodeLensProvider()
+        await pyLensProvider.makePythonCodeLensProvider(new DefaultSettingsConfiguration('python'))
+    ))
+
+    await csLensProvider.initialize(providerParams)
+    disposables.push(vscode.languages.registerCodeLensProvider(
+        csLensProvider.CSHARP_ALLFILES,
+        await csLensProvider.makeCSharpCodeLensProvider()
     ))
 
     return disposables
@@ -205,7 +243,12 @@ async function activateCodeLensProviders(
 /**
  * Performs SAM CLI relevant extension initialization
  */
-async function initializeSamCli(): Promise<void> {
+async function initializeSamCli(
+    settingsConfiguration: SettingsConfiguration,
+    logger: logFactory.Logger,
+): Promise<void> {
+    SamCliContext.initialize({ settingsConfiguration, logger })
+
     registerCommand({
         command: 'aws.samcli.detect',
         callback: async () => await PromiseSharer.getExistingPromiseOrCreate(

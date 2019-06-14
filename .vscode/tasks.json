@@ -26,6 +26,11 @@
         },
         {
             "type": "npm",
+            "script": "lintfix",
+            "problemMatcher": "$tslint5"
+        },
+        {
+            "type": "npm",
             "script": "compile",
             "problemMatcher": "$tsc"
         },
