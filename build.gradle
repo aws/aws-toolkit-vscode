@@ -182,7 +182,7 @@ def removeTask(tasks, taskName) {
 
 wrapper {
     distributionType = Wrapper.DistributionType.ALL
-    gradleVersion '5.3'
+    gradleVersion '5.4.1'
 }
 
 apply plugin: 'org.jetbrains.intellij'
@@ -261,7 +261,7 @@ task guiTest(type: Test) {
 }
 
 dependencies {
-    compile project(':jetbrains-core') 
+    compile project(':jetbrains-core')
 
     ktlint "com.pinterest:ktlint:$ktlintVersion"
     ktlint project(":ktlint-rules")
