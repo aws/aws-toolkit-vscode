@@ -46,12 +46,15 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
         // Requires SamDebugSupport too
         if (DefaultDebugExecutor.EXECUTOR_ID == executorId) {
             val runtimeValue = if (profile.isUsingTemplate()) {
-                SamTemplateUtils.findFunctionsFromTemplate(profile.project, File(profile.templateFile()))
-                    .find { it.logicalName == profile.logicalId() }
-                    ?.runtime()
-                    ?.let {
-                        Runtime.fromValue(it)?.validOrNull
-                    }
+                if (profile.templateFile() == null) null
+                else {
+                    SamTemplateUtils.findFunctionsFromTemplate(profile.project, File(profile.templateFile()))
+                            .find { it.logicalName == profile.logicalId() }
+                            ?.runtime()
+                            ?.let {
+                                Runtime.fromValue(it)?.validOrNull
+                            }
+                }
             } else {
                 profile.runtime()
             }

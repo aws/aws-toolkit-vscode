@@ -20,6 +20,11 @@ object Lambda {
         val resolver = runtime.runtimeGroup?.let { LambdaHandlerResolver.getInstance(it) } ?: return emptyArray()
         return resolver.findPsiElements(project, handler, GlobalSearchScope.allScope(project))
     }
+
+    fun isHandlerValid(project: Project, runtime: Runtime, handler: String): Boolean {
+        val resolver = runtime.runtimeGroup?.let { LambdaHandlerResolver.getInstance(it) } ?: return false
+        return resolver.isHandlerValid(project, handler)
+    }
 }
 
 data class LambdaFunction(

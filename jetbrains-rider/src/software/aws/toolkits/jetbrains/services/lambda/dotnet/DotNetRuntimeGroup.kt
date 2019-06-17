@@ -4,6 +4,8 @@
 package software.aws.toolkits.jetbrains.services.lambda.dotnet
 
 import com.intellij.openapi.projectRoots.Sdk
+import com.jetbrains.rider.ideaInterop.fileTypes.csharp.CSharpLanguage
+import com.jetbrains.rider.ideaInterop.fileTypes.vb.VbLanguage
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.SdkBasedRuntimeGroupInformation
 
@@ -16,7 +18,7 @@ class DotNetRuntimeGroup : SdkBasedRuntimeGroupInformation() {
         )
 
     override val languageIds: Set<String>
-        get() = setOf()
+        get() = setOf(CSharpLanguage.id, VbLanguage.id)
 
     override fun runtimeForSdk(sdk: Sdk): Runtime? = null
 }

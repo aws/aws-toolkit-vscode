@@ -16,6 +16,7 @@ import software.aws.toolkits.jetbrains.services.lambda.BuiltLambda
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
+import software.aws.toolkits.resources.message
 import java.util.concurrent.CompletionStage
 
 class PythonLambdaBuilder : LambdaBuilder() {
@@ -45,6 +46,6 @@ class PythonLambdaBuilder : LambdaBuilder() {
         val fileIndex = ProjectFileIndex.getInstance(project)
         return fileIndex.getSourceRootForFile(virtualFile)
             ?: fileIndex.getContentRootForFile(virtualFile)
-            ?: throw IllegalStateException("Failed to locate the root of the handler")
+            ?: throw IllegalStateException(message("lambda.run.configuration.handler_root_not_found"))
     }
 }

@@ -54,7 +54,7 @@ class CloudFormationTemplateIndex : FileBasedIndexExtension<String, MutableList<
     override fun getIndexer(): DataIndexer<String, MutableList<IndexedResource>, FileContent> = DataIndexer { fileContent ->
         val indexedResources = mutableMapOf<String, MutableList<IndexedResource>>()
 
-        (fileContent as FileContentImpl).psiFileForPsiDependentIndex.acceptNode(object : PsiElementVisitor() {
+        (fileContent as FileContentImpl).psiFile.acceptNode(object : PsiElementVisitor() {
             override fun visitElement(element: PsiElement?) {
                 super.visitElement(element)
                 element?.run {

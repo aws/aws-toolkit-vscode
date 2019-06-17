@@ -23,5 +23,5 @@ class FunctionOptions : BaseState() {
     var logicalId by string()
     var runtime by string()
     var handler by string()
-    var environmentVariables by map<String, String>()
+    var environmentVariables by linkedMap<String, String>()
 }

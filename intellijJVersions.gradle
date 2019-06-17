@@ -14,6 +14,7 @@ static def ideProfiles() {
                     "RD": [
                             version: "RD-2018.3.4",
                             plugins: [
+                                    "yaml"
                             ]
                     ]
             ],
@@ -31,15 +32,16 @@ static def ideProfiles() {
                     "RD": [
                             version: "RD-2019.1",
                             plugins: [
+                                    "yaml"
                             ]
                     ]
             ],
             "2019.2": [
                     "IC": [
-                            version: "192-EAP-SNAPSHOT",
+                            version: "192.4488.21-EAP-SNAPSHOT",
                             plugins: [
                                     "yaml",
-                                    "PythonCore:2019.2.192.4205.45",
+                                    "PythonCore:2019.2.192.4488.21",
                                     "gradle",
                                     "maven",
                                     "properties" // Used by Maven
@@ -48,6 +50,7 @@ static def ideProfiles() {
                     "RD": [
                             version: "RD-2019.2-SNAPSHOT",
                             plugins: [
+                                    "yaml"
                             ]
                     ]
             ]
@@ -95,4 +98,3 @@ ext {
     ideProfile = this.&ideProfile
     resolveIdeProfileName = this.&resolveIdeProfileName
 }
-

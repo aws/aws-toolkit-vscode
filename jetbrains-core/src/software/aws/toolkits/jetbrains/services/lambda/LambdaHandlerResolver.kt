@@ -67,5 +67,13 @@ interface LambdaHandlerResolver {
      */
     fun shouldShowLineMarker(handler: String): Boolean = false
 
+    /**
+     * Given a handler string, return whether specified structure exists in PSI or not
+     *
+     * @param handler - handler string value
+     */
+    fun isHandlerValid(project: Project, handler: String): Boolean =
+        findPsiElements(project, handler, GlobalSearchScope.allScope(project)).isNotEmpty()
+
     companion object : RuntimeGroupExtensionPointObject<LambdaHandlerResolver>(ExtensionPointName.create("aws.toolkit.lambda.handlerResolver"))
 }

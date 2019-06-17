@@ -23,6 +23,7 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
+import software.aws.toolkits.jetbrains.services.lambda.Lambda.isHandlerValid
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
@@ -67,7 +68,9 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         resolveCredentials()
 
         val (handler, runtime) = resolveLambdaInfo()
-        handlerPsiElement(handler, runtime) ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
+        if (!isHandlerValid(project, runtime, handler))
+            throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
+
         regionId() ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
         resolveInput()
     }

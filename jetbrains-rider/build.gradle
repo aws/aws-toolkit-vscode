@@ -13,18 +13,20 @@ intellij {
     version ideVersion("RD")
     pluginName parentIntellijTask.pluginName
     updateSinceUntilBuild parentIntellijTask.updateSinceUntilBuild
+
+    // Workaround for https://youtrack.jetbrains.com/issue/IDEA-179607
+    def extraPlugins = [ "rider-plugins-appender" ]
+    plugins = idePlugins("RD") + extraPlugins
+
     // Disable downloading source to avoid issues related to Rider SDK naming that is missed in Idea
     // snapshots repository. The task is failed due to unable to find related IC sources.
     downloadSources = false
-    plugins = idePlugins("RD")
+    instrumentCode = false
 }
 
-instrumentCode {
-    // javac2 is required to compile .form files from IntelliJ IDEA UI Designer
-    // Since Rider distribution does not contain it, take it from IDEA
-    javac2 {
-        "${project(":jetbrains-core").extensions.getByName("intellij").ideaDependency.classes}/lib/javac2.jar"
-    }
+test {
+    useTestNG()
+    ignoreFailures = true
 }
 
 runIde {
