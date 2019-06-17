@@ -36,6 +36,8 @@
     "AWS.command.samcli.detect": "Detect SAM CLI",
     "AWS.command.deleteCloudFormation": "Delete CloudFormation Stack",
     "AWS.command.viewLogs": "View AWS Toolkit Logs",
+    "AWS.command.welcome": "View Welcome Page",
+    "AWS.command.welcome.title": "AWS Toolkit - Welcome",
     "AWS.error.during.sam.local": "An error occurred trying to run SAM Application locally: {0}",
     "AWS.command.showErrorDetails": "Show error details",
     "AWS.error.mfa.userCancelled": "User cancelled entering authentication code",

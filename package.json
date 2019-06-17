@@ -170,14 +170,19 @@
                     "group": "2_region@2"
                 },
                 {
+                    "command": "aws.welcome",
+                    "when": "view == aws.explorer",
+                    "group": "y_welcome@1"
+                },
+                {
                     "command": "aws.help",
                     "when": "view == aws.explorer",
-                    "group": "z_help@1"
+                    "group": "z_externalLinks@1"
                 },
                 {
                     "command": "aws.github",
                     "when": "view == aws.explorer",
-                    "group": "z_help@2"
+                    "group": "z_externalLinks@2"
                 }
             ],
             "view/item/context": [
@@ -292,6 +297,11 @@
                 "command": "aws.github",
                 "title": "%AWS.command.github%",
                 "category": "AWS"
+            },
+            {
+                "command": "aws.welcome",
+                "title": "%AWS.command.welcome%",
+                "category": "AWS"
             }
         ],
         "jsonValidation": [
@@ -305,9 +315,10 @@
         "vscode:prepublish": "npm run recompile",
         "bundleDeps": "node ./build-scripts/bundleDeps.js",
         "clean": "node ./build-scripts/clean.js out",
+        "createWelcomePage": "node ./build-scripts/createWelcomePage.js",
         "reset": "node ./build-scripts/clean.js out node_modules && npm install",
         "copyNonCodeFiles": "node ./build-scripts/copyNonCodeFiles.js",
-        "compile": "tsc -p ./ && npm run lint && npm run bundleDeps && npm run copyNonCodeFiles",
+        "compile": "tsc -p ./ && npm run lint && npm run bundleDeps && npm run copyNonCodeFiles && npm run createWelcomePage",
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run copyNonCodeFiles && tsc -watch -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
@@ -361,6 +372,7 @@
         "js-yaml": "^3.13.1",
         "jsonc-parser": "^2.0.2",
         "lodash": "^4.17.11",
+        "marked": "^0.6.2",
         "opn": "^5.4.0",
         "request": "^2.88.0",
         "semver": "^5.6.0",
