@@ -75,13 +75,13 @@ export function safeGet<O, T>(obj: O | undefined, getFn: (x: O) => T): T | undef
  * Useful for converting HTML images to webview-usable images
  *
  * @param basePath Extension path (from extension context)
- * @param fileText Text of the file to scan
+ * @param text Text to scan
  * @param pattern Regex to search for (default: `/!!EXTENSIONROOT!!/g`)
  */
 export function convertPathTokensToPath(
     basePath: string,
-    fileText: string,
+    text: string,
     pattern: RegExp = /!!EXTENSIONROOT!!/g
 ): string {
-    return fileText.replace(pattern, `vscode-resource:${basePath}`)
+    return text.replace(pattern, `vscode-resource:${basePath}`)
 }
