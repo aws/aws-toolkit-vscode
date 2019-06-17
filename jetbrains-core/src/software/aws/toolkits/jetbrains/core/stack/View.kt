@@ -5,10 +5,12 @@ package software.aws.toolkits.jetbrains.core.stack
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
 import com.intellij.ui.AnimatedIcon
+import com.intellij.ui.JBColor
 import com.intellij.util.Alarm
 import com.intellij.util.AlarmFactory
 import software.amazon.awssdk.services.cloudformation.model.ResourceStatus
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
+import software.aws.toolkits.jetbrains.utils.ui.BETTER_GREEN
 import javax.swing.Icon
 import javax.swing.JComponent
 import javax.swing.SwingUtilities
@@ -25,12 +27,12 @@ enum class Page(val icon: Icon) {
     NEXT(AllIcons.Actions.Forward)
 }
 
-enum class StatusType(val icon: Icon, private val animatedIconStrategy: (() -> AnimatedIcon)? = null) {
-    UNKNOWN(AllIcons.RunConfigurations.TestUnknown),
-    PROGRESS(AllIcons.Process.ProgressResume, { AnimatedIcon.FS() }),
-    COMPLETED(AllIcons.RunConfigurations.ToolbarPassed),
-    DELETED(AllIcons.RunConfigurations.ToolbarSkipped),
-    FAILED(AllIcons.RunConfigurations.ToolbarFailed);
+enum class StatusType(val icon: Icon, val color: JBColor, private val animatedIconStrategy: (() -> AnimatedIcon)? = null) {
+    UNKNOWN(AllIcons.RunConfigurations.TestUnknown, JBColor.BLACK),
+    PROGRESS(AllIcons.Process.ProgressResume, JBColor.ORANGE, { AnimatedIcon.FS() }),
+    COMPLETED(AllIcons.RunConfigurations.ToolbarPassed, BETTER_GREEN),
+    DELETED(AllIcons.RunConfigurations.ToolbarSkipped, JBColor.GRAY),
+    FAILED(AllIcons.RunConfigurations.ToolbarFailed, JBColor.RED);
 
     val animatedIconIfPossible: Icon get() = animatedIconStrategy?.let { it() } ?: icon
 

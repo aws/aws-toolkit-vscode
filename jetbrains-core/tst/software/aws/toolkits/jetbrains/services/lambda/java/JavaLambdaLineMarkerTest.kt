@@ -3,20 +3,18 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.java
 
-import assertk.Assert
-import assertk.assert
-import assertk.assertions.hasSize
-import assertk.assertions.isEmpty
-import assertk.assertions.isEqualTo
-import assertk.assertions.isInstanceOf
-import assertk.assertions.isNotNull
-import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiIdentifier
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
 import com.intellij.testFramework.runInEdtAndWait
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.services.iam.IamRole
+import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker
 import software.aws.toolkits.jetbrains.settings.LambdaSettings
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
@@ -86,8 +84,7 @@ class JavaLambdaLineMarkerTest {
         )
 
         findAndAssertMarks(fixture) { marks ->
-            assert(marks).hasSize(1)
-            assert(marks.first().lineMarkerInfo.element).isIdentifierWithName("upperCase")
+            assertLineMarkerIs(marks, "upperCase")
         }
     }
 
@@ -112,7 +109,7 @@ class JavaLambdaLineMarkerTest {
         )
 
         findAndAssertMarks(fixture) { marks ->
-            assert(marks).isEmpty()
+            assertThat(marks).isEmpty()
         }
     }
 
@@ -149,8 +146,7 @@ Resources:
         )
 
         findAndAssertMarks(fixture) { marks ->
-            assert(marks).hasSize(1)
-            assert(marks.first().lineMarkerInfo.element).isIdentifierWithName("upperCase")
+            assertLineMarkerIs(marks, "upperCase")
         }
     }
 
@@ -176,8 +172,7 @@ Resources:
         )
 
         findAndAssertMarks(fixture) { marks ->
-            assert(marks).hasSize(1)
-            assert(marks.first().lineMarkerInfo.element).isIdentifierWithName("upperCase")
+            assertLineMarkerIs(marks, "upperCase")
         }
     }
 
@@ -201,8 +196,7 @@ Resources:
         )
 
         findAndAssertMarks(fixture) { marks ->
-            assert(marks).hasSize(1)
-            assert(marks.first().lineMarkerInfo.element).isIdentifierWithName("upperCase")
+            assertLineMarkerIs(marks, "upperCase")
         }
     }
 
@@ -224,8 +218,7 @@ Resources:
         )
 
         findAndAssertMarks(fixture) { marks ->
-            assert(marks).hasSize(1)
-            assert(marks.first().lineMarkerInfo.element).isIdentifierWithName("upperCase")
+            assertLineMarkerIs(marks, "upperCase")
         }
     }
 
@@ -246,7 +239,9 @@ Resources:
              """
         )
 
-        findAndAssertMarks(fixture) { assert(it).isEmpty() }
+        findAndAssertMarks(fixture) { marks ->
+            assertThat(marks).isEmpty()
+        }
     }
 
     @Test
@@ -272,7 +267,9 @@ Resources:
              """
         )
 
-        findAndAssertMarks(fixture) { assert(it).isEmpty() }
+        findAndAssertMarks(fixture) { marks ->
+            assertThat(marks).isEmpty()
+        }
     }
 
     @Test
@@ -291,7 +288,9 @@ Resources:
              """
         )
 
-        findAndAssertMarks(fixture) { assert(it).isEmpty() }
+        findAndAssertMarks(fixture) { marks ->
+            assertThat(marks).isEmpty()
+        }
     }
 
     @Test
@@ -311,7 +310,9 @@ Resources:
             """
         )
 
-        findAndAssertMarks(fixture) { assert(it).isEmpty() }
+        findAndAssertMarks(fixture) { marks ->
+            assertThat(marks).isEmpty()
+        }
     }
 
     @Test
@@ -333,7 +334,9 @@ Resources:
              """
         )
 
-        findAndAssertMarks(fixture) { assert(it).hasSize(0) }
+        findAndAssertMarks(fixture) { marks ->
+            assertThat(marks).isEmpty()
+        }
     }
 
     @Test
@@ -364,9 +367,8 @@ Resources:
             """
         )
 
-        findAndAssertMarks(fixture) {
-            assert(it).hasSize(1)
-            assert(it.first().lineMarkerInfo.element).isIdentifierWithName("ConcreteHandler")
+        findAndAssertMarks(fixture) { marks ->
+            assertLineMarkerIs(marks, "ConcreteHandler")
         }
     }
 
@@ -398,7 +400,9 @@ Resources:
             """
         )
 
-        findAndAssertMarks(fixture) { assert(it).hasSize(0) }
+        findAndAssertMarks(fixture) { marks ->
+            assertThat(marks).isEmpty()
+        }
     }
 
     @Test
@@ -430,9 +434,54 @@ Resources:
             """
         )
 
-        findAndAssertMarks(fixture) {
-            assert(it).hasSize(1)
-            assert(it.first().lineMarkerInfo.element).isIdentifierWithName("ConcreteHandler")
+        findAndAssertMarks(fixture) { marks ->
+            assertLineMarkerIs(marks, "ConcreteHandler")
+        }
+    }
+
+    @Test
+    fun remoteLambdasGetMarked() {
+        LambdaSettings.getInstance(projectRule.project).showAllHandlerGutterIcons = false
+
+        val fixture = projectRule.fixture
+
+        fixture.openClass(
+            """
+             package com.example;
+
+             public class UsefulUtils {
+
+                 public String upperCase(String input) {
+                     return input.toUpperCase();
+                 }
+             }
+             """
+        )
+
+        findAndAssertMarks(fixture) { marks ->
+            assertThat(marks).isEmpty()
+        }
+
+        val lambdaFunction = LambdaFunction(
+            name = "upperCase",
+            arn = "arn",
+            description = null,
+            lastModified = "someDate",
+            handler = "com.example.UsefulUtils::upperCase",
+            runtime = Runtime.JAVA8,
+            role = IamRole("DummyRoleArn"),
+            envVariables = emptyMap(),
+            timeout = 60,
+            credentialProviderId = "",
+            region = MockRegionProvider.US_EAST_1,
+            memorySize = 128,
+            xrayEnabled = false
+        )
+
+        MockResourceCache.getInstance(fixture.project).lambdaFuture.complete(listOf(lambdaFunction))
+
+        findAndAssertMarks(fixture) { marks ->
+            assertLineMarkerIs(marks, "upperCase")
         }
     }
 
@@ -446,10 +495,11 @@ Resources:
         }
     }
 
-    private fun Assert<PsiElement?>.isIdentifierWithName(name: String) {
-        this.isNotNull {
-            it.isInstanceOf(PsiIdentifier::class)
-            assert(it.actual.text).isEqualTo(name)
-        }
+    private fun assertLineMarkerIs(marks: List<LambdaLineMarker.LambdaGutterIcon>, elementName: String) {
+        assertThat(marks).hasSize(1)
+        assertThat(marks.first().lineMarkerInfo.element)
+            .isInstanceOf(PsiIdentifier::class.java)
+            .extracting { it?.text }
+            .isEqualTo(elementName)
     }
 }

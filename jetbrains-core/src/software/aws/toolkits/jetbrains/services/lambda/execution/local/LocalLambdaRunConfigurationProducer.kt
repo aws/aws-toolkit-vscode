@@ -95,7 +95,8 @@ class LocalLambdaRunConfigurationProducer : RunConfigurationProducer<LocalLambda
     }
 
     companion object {
-        private fun getFactory() = LambdaRunConfiguration.getInstance().configurationFactories.first { it is LocalLambdaRunConfigurationFactory }
+        fun getFactory() = LambdaRunConfiguration.getInstance().configurationFactories.first { it is LocalLambdaRunConfigurationFactory }
+
         private fun accountSettings(project: Project): Pair<String?, AwsRegion?> {
             val settingsManager = ProjectAccountSettingsManager.getInstance(project)
             val region = try {

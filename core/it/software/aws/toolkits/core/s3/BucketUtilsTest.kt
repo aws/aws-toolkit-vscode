@@ -3,8 +3,7 @@
 
 package software.aws.toolkits.core.s3
 
-import assertk.assert
-import assertk.assertions.doesNotContain
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.core.sync.RequestBody
@@ -45,6 +44,6 @@ class BucketUtilsTest {
         val bucket = temporaryBucketRule.createBucket()
         populateBucket(bucket)
         s3Client.deleteBucketAndContents(bucket)
-        assert(s3Client.listBuckets().buckets().map { it.name() }).doesNotContain(bucket)
+        assertThat(s3Client.listBuckets().buckets().map { it.name() }).doesNotContain(bucket)
     }
 }

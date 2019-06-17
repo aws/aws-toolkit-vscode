@@ -47,6 +47,7 @@
         </constraints>
         <properties>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.sam.docker_network"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.sam.dockerNetwork.tooltip"/>
         </properties>
       </component>
     </children>

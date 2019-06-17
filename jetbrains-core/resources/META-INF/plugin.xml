@@ -14,7 +14,7 @@
 <br/>
 <p>
     See <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/install">Installing the AWS Toolkit for
-    JetBrains</a>in the AWS Toolkit for JetBrains User Guide.
+    JetBrains</a> in the AWS Toolkit for JetBrains User Guide.
 </p>
 <br/>
 <p>To use this AWS Toolkit, you will first need an AWS account, a user within that account, and an access key for that
@@ -131,6 +131,10 @@
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.settings.AwsSettings"
                             serviceImplementation="software.aws.toolkits.jetbrains.settings.DefaultAwsSettings"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.SamSettings"/>
+        <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.AwsAccountCache"
+                            serviceImplementation="software.aws.toolkits.jetbrains.core.DefaultAwsAccountCache"
+                            testServiceImplementation="software.aws.toolkits.jetbrains.core.MockAwsAccountCache"/>
+
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.settings.LambdaSettings"/>
 
         <moduleService serviceImplementation="software.aws.toolkits.jetbrains.settings.DeploySettings"/>
@@ -154,6 +158,7 @@
         <projectService serviceInterface="software.aws.toolkits.jetbrains.core.AwsResourceCache"
                         serviceImplementation="software.aws.toolkits.jetbrains.core.DefaultAwsResourceCache"
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.MockResourceCache"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.stack.StackWindowManager"/>
         <toolWindow id="aws.explorer" anchor="left" secondary="true"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
                     icon="AwsIcons.Logos.AWS"/>
@@ -209,6 +214,8 @@
         </group>
 
         <group id="aws.toolkit.explorer.cloudformation.stack" popup="true" compact="false">
+            <action id="cloudformation.stack.view"
+                    class="software.aws.toolkits.jetbrains.core.stack.OpenStackUiAction"/>
             <action id="cloudformation.stack.delete"
                     class="software.aws.toolkits.jetbrains.services.cloudformation.DeleteCloudFormationStackAction"/>
         </group>

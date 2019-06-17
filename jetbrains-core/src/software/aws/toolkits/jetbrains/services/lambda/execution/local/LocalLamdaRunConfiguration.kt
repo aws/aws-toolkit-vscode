@@ -22,6 +22,7 @@ import com.intellij.refactoring.listeners.RefactoringElementListener
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.isHandlerValid
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
@@ -72,7 +73,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
             throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
 
         regionId() ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
-        resolveInput()
+        checkInput()
     }
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): SamRunningState {
@@ -220,10 +221,12 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
                     )
                 )
 
-            val runtime = function.runtime().let { Runtime.fromValue(it).validOrNull }
+            val handler = tryOrNull { function.handler() }
+                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
+            val runtime = tryOrNull { Runtime.fromValue(function.runtime()).validOrNull }
                 ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
 
-            Triple(function.handler(), runtime, SamTemplateDetails(templateFile.toPath(), functionName))
+            Triple(handler, runtime, SamTemplateDetails(templateFile.toPath(), functionName))
         } else {
             val handler = handler()
                 ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))

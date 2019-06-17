@@ -12,6 +12,8 @@ import icons.AwsIcons
 import software.aws.toolkits.resources.message
 import javax.swing.JComponent
 
+internal const val STACK_TOOLWINDOW_ID = "AWS.CloudFormation"
+
 /**
  * Tab in tool window
  * [disposables] to be disposed when window is closed
@@ -20,19 +22,21 @@ internal class ToolWindowTab(
     component: JComponent,
     private val project: Project,
     stackName: String,
-    private val toolWindowId: String,
     private vararg val disposables: Disposable
 ) {
 
     private val content = ContentImpl(component, stackName, true)
 
-    fun show() {
+    init {
         val contentManager = window.contentManager
         contentManager.addContent(content)
         disposables.forEach { Disposer.register(content, it) }
         Disposer.register(content, Disposable { closeWindowIfEmpty() })
+    }
+
+    fun show() {
         window.activate(null, true)
-        contentManager.setSelectedContent(content)
+        window.contentManager.setSelectedContent(content)
     }
 
     fun destroy() {
@@ -41,21 +45,20 @@ internal class ToolWindowTab(
         }
     }
 
+    fun isDisposed() = Disposer.isDisposed(content)
+
     private fun closeWindowIfEmpty() {
         if (window.contentManager.contentCount == 0) {
-            windowManager.unregisterToolWindow(toolWindowId)
+            windowManager.unregisterToolWindow(STACK_TOOLWINDOW_ID)
         }
     }
 
     private val windowManager
         get() = ToolWindowManager.getInstance(project)
     private val window
-        get() = getWindow(project, toolWindowId, windowManager)
+        get() = windowManager.getToolWindow(STACK_TOOLWINDOW_ID)
+            ?: windowManager.registerToolWindow(STACK_TOOLWINDOW_ID, true, ToolWindowAnchor.BOTTOM, project, true).also {
+                it.icon = AwsIcons.Logos.CLOUD_FORMATION_TOOL
+                it.stripeTitle = message("cloudformation.toolwindow.label")
+            }
 }
-
-private fun getWindow(project: Project, toolWindowId: String, manager: ToolWindowManager) =
-    manager.getToolWindow(toolWindowId)
-        ?: manager.registerToolWindow(toolWindowId, true, ToolWindowAnchor.BOTTOM, project, true).also {
-            it.icon = AwsIcons.Logos.CLOUD_FORMATION_TOOL
-            it.stripeTitle = message("cloudformation.toolwindow.label")
-        }

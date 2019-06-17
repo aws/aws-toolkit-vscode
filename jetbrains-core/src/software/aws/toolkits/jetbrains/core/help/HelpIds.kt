@@ -13,6 +13,8 @@ enum class HelpIds(shortId: String, val url: String) {
     NEW_SERVERLESS_PROJECT_DIALOG("newServerlessProjectDialog", "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/new-project-dialog.html"),
     RUN_DEBUG_CONFIGURATIONS_DIALOG("runDebugConfigurationsDialog", "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/run-debug-configurations-dialog.html"),
     DEPLOY_SERVERLESS_APPLICATION_DIALOG("deployServerlessApplicationDialog", "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/deploy-serverless-application-dialog.html"),
+    // Others
+    SETUP_CREDENTIALS("setupCredentials", "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/setup-credentials.html"),
     ;
 
     val id = "aws.toolkit.$shortId"

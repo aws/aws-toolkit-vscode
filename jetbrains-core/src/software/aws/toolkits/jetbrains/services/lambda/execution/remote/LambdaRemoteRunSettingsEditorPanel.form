@@ -22,6 +22,7 @@
         </constraints>
         <properties>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.region.label"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.region.tooltip"/>
         </properties>
       </component>
       <component id="e0920" class="software.aws.toolkits.jetbrains.ui.CredentialProviderSelector" binding="credentialSelector">
@@ -38,6 +39,7 @@
         </constraints>
         <properties>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.credentials.label"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.credentials.tooltip"/>
         </properties>
       </component>
       <component id="45df9" class="javax.swing.JLabel">
@@ -46,6 +48,7 @@
         </constraints>
         <properties>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.label"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.remote.function.tooltip"/>
         </properties>
       </component>
       <component id="36042" class="com.intellij.openapi.ui.ComboBox" binding="functionNames" custom-create="true">

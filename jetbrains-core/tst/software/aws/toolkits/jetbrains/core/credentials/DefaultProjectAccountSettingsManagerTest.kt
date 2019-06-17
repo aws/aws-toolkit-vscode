@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.core.credentials
 import com.intellij.configurationStore.deserialize
 import com.intellij.configurationStore.serialize
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.testFramework.ProjectRule
 import com.intellij.util.messages.MessageBusConnection
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -24,12 +23,13 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.utils.delegateMock
+import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.toElement
 
 class DefaultProjectAccountSettingsManagerTest {
     @Rule
     @JvmField
-    val projectRule = ProjectRule()
+    val projectRule = HeavyJavaCodeInsightTestFixtureRule()
 
     private lateinit var mockRegionManager: MockRegionProvider
     private lateinit var mockCredentialManager: MockCredentialsManager
@@ -41,8 +41,8 @@ class DefaultProjectAccountSettingsManagerTest {
     fun setUp() {
         queue = mutableListOf()
 
-        mockRegionManager = AwsRegionProvider.getInstance() as MockRegionProvider
-        mockCredentialManager = CredentialManager.getInstance() as MockCredentialsManager
+        mockRegionManager = MockRegionProvider.getInstance()
+        mockCredentialManager = MockCredentialsManager.getInstance()
         manager = DefaultProjectAccountSettingsManager(projectRule.project, delegateMock<StsClient>())
         messageBusConnection = projectRule.project.messageBus.connect()
         messageBusConnection.subscribe(ProjectAccountSettingsManager.ACCOUNT_SETTINGS_CHANGED, object :
@@ -71,6 +71,7 @@ class DefaultProjectAccountSettingsManagerTest {
         assertThat(manager.recentlyUsedCredentials()).isEmpty()
         assertThatThrownBy { manager.activeCredentialProvider }
             .isInstanceOf(CredentialProviderNotFound::class.java)
+        assertThat(manager.activeAwsAccount).isNull()
     }
 
     @Test
@@ -79,22 +80,26 @@ class DefaultProjectAccountSettingsManagerTest {
 
         val credentials = mockCredentialManager.addCredentials(
             "Mock1",
-            AwsBasicCredentials.create("Access", "Secret")
+            AwsBasicCredentials.create("Access", "Secret"),
+            awsAccountId = "111111111111"
         )
         changeCredentialProvider(credentials)
 
         assertThat(manager.hasActiveCredentials()).isTrue()
         assertThat(manager.activeCredentialProvider).isEqualTo(credentials)
         assertThat(manager.recentlyUsedCredentials()).element(0).isEqualTo(credentials)
+        assertThat(manager.activeAwsAccount).isEqualTo("111111111111")
 
         val credentials2 = mockCredentialManager.addCredentials(
             "Mock2",
-            AwsBasicCredentials.create("Access", "Secret")
+            AwsBasicCredentials.create("Access", "Secret"),
+            awsAccountId = "222222222222"
         )
         changeCredentialProvider(credentials2)
 
         assertThat(manager.recentlyUsedCredentials()).element(0).isEqualTo(credentials2)
         assertThat(manager.recentlyUsedCredentials()).element(1).isEqualTo(credentials)
+        assertThat(manager.activeAwsAccount).isEqualTo("222222222222")
     }
 
     @Test
@@ -307,7 +312,7 @@ class DefaultProjectAccountSettingsManagerTest {
 
     @Test
     fun testLoadingDefaultProfileIfNoPrevious() {
-        mockCredentialManager.addCredentials("profile:default", AwsBasicCredentials.create("Access", "Secret"))
+        mockCredentialManager.addCredentials("profile:default", AwsBasicCredentials.create("Access", "Secret"), awsAccountId = "111111111111")
 
         val element = """
             <AccountState/>
@@ -315,15 +320,19 @@ class DefaultProjectAccountSettingsManagerTest {
 
         manager.loadState(element.deserialize(AccountState::class.java))
 
+        waitForEvents(2)
+
         assertThat(manager.hasActiveCredentials()).isTrue()
         assertThat(manager.recentlyUsedCredentials()).hasOnlyOneElementSatisfying { assertThat(it.id).isEqualTo("profile:default") }
         assertThat(manager.activeCredentialProvider.id).isEqualTo("profile:default")
+        assertThat(manager.activeAwsAccount).isEqualTo("111111111111")
     }
 
     @Test
     fun testInvalidDefaultProfileCredentialNotSelected() {
         mockCredentialManager.addCredentials("profile:default", AwsBasicCredentials.create("Access", "Secret"), false)
         assertThat(manager.hasActiveCredentials()).isFalse()
+        assertThat(manager.activeAwsAccount).isNull()
     }
 
     @Test
@@ -342,6 +351,7 @@ class DefaultProjectAccountSettingsManagerTest {
         ApplicationManager.getApplication().messageBus.syncPublisher(CredentialManager.CREDENTIALS_CHANGED)
             .providerRemoved("profile:admin")
         assertThat(manager.hasActiveCredentials()).isFalse()
+        assertThat(manager.activeAwsAccount).isNull()
     }
 
     private fun changeCredentialProvider(credentialsProvider: ToolkitCredentialsProvider) {
@@ -357,6 +367,8 @@ class DefaultProjectAccountSettingsManagerTest {
     private fun waitForEvents(eventCount: Int) {
         for (i in 1..5) {
             if (queue.size >= eventCount) {
+                // We need clean queue since every changeCredentialProvider event add 2 events to the queue.
+                // If test calls changeCredentialProvider twice, this is likely to fail.
                 queue.clear()
                 return
             }

@@ -3,8 +3,7 @@
 
 package software.aws.toolkits.core.s3
 
-import assertk.assert
-import assertk.assertions.isEqualTo
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.regions.Region
@@ -27,13 +26,13 @@ class RegionalBucketsTest {
     fun canGetRegionBucketWithRegionNotSameAsClient() {
         val bucket = euWest2TempBucket.createBucket()
 
-        assert(usEast2Client.regionForBucket(bucket)).isEqualTo("eu-west-2")
+        assertThat(usEast2Client.regionForBucket(bucket)).isEqualTo("eu-west-2")
     }
 
     @Test
     fun canGetRegionInSameRegionAsClient() {
         val bucket = usEast2TempBucket.createBucket()
 
-        assert(usEast2Client.regionForBucket(bucket)).isEqualTo("us-east-2")
+        assertThat(usEast2Client.regionForBucket(bucket)).isEqualTo("us-east-2")
     }
 }

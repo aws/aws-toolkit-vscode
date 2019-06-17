@@ -3,20 +3,18 @@
 
 package software.aws.toolkits.core.telemetry
 
-import assertk.assert
-import assertk.assertions.hasSize
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.stub
 import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.stub
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.mockito.ArgumentMatchers.anyCollection
 import org.mockito.stubbing.Answer
-import java.lang.RuntimeException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -52,7 +50,7 @@ class TelemetryBatcherTest {
 
         verify(publisher).publish(anyCollection())
 
-        assert(publishCaptor.firstValue).hasSize(1)
+        assertThat(publishCaptor.firstValue).hasSize(1)
     }
 
     @Test
@@ -77,9 +75,9 @@ class TelemetryBatcherTest {
 
         verify(publisher, times(2)).publish(anyCollection())
 
-        assert(publishCaptor.allValues).hasSize(2)
-        assert(publishCaptor.allValues[0]).hasSize(MAX_BATCH_SIZE)
-        assert(publishCaptor.allValues[1]).hasSize(1)
+        assertThat(publishCaptor.allValues).hasSize(2)
+        assertThat(publishCaptor.allValues[0]).hasSize(MAX_BATCH_SIZE)
+        assertThat(publishCaptor.allValues[1]).hasSize(1)
     }
 
     @Test
@@ -98,8 +96,8 @@ class TelemetryBatcherTest {
 
         verify(publisher, times(1)).publish(anyCollection())
 
-        assert(publishCaptor.allValues).hasSize(1)
-        assert(batcher.eventQueue()).hasSize(1)
+        assertThat(publishCaptor.allValues).hasSize(1)
+        assertThat(batcher.eventQueue()).hasSize(1)
     }
 
     @Test
@@ -120,8 +118,8 @@ class TelemetryBatcherTest {
 
         verify(publisher, times(1)).publish(anyCollection())
 
-        assert(publishCaptor.allValues).hasSize(1)
-        assert(batcher.eventQueue()).hasSize(1)
+        assertThat(publishCaptor.allValues).hasSize(1)
+        assertThat(batcher.eventQueue()).hasSize(1)
     }
 
     @Test
@@ -140,12 +138,11 @@ class TelemetryBatcherTest {
 
         verify(publisher).publish(anyCollection())
 
-        assert(publishCaptor.allValues).hasSize(1)
-        assert(publishCaptor.firstValue.toList()).hasSize(1)
+        assertThat(publishCaptor.allValues).hasSize(1)
+        assertThat(publishCaptor.firstValue.toList()).hasSize(1)
     }
 
-    private fun createEmptyMetricEvent(): MetricEvent = DefaultMetricEvent.builder(EVENT_NAME)
-        .build()
+    private fun createEmptyMetricEvent(): MetricEvent = DefaultMetricEvent.builder(EVENT_NAME).build()
 
     private fun waitForPublish(publishCountDown: CountDownLatch) {
         // Wait for maximum of 5 secs before thread continues, may not reach final count though

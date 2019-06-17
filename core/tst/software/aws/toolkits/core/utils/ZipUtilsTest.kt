@@ -3,10 +3,8 @@
 
 package software.aws.toolkits.core.utils
 
-import assertk.assert
-import assertk.assertions.isEqualTo
-import assertk.assertions.isNotNull
-import assertk.fail
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.fail
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
@@ -34,6 +32,7 @@ class ZipUtilsTest {
         val fileToAdd = tmpFolder.newFile()
         fileToAdd.writeText("hello world", StandardCharsets.UTF_8)
         val zipFile = tmpFolder.newFile("blah.zip")?.toPath() ?: return fail("Couldn't create new file")
+
         ZipOutputStream(Files.newOutputStream(zipFile)).use {
             it.putNextEntry("file.txt", fileToAdd.toPath())
         }
@@ -62,9 +61,9 @@ class ZipUtilsTest {
         ZipFile(zipFile.toFile()).use { actualZip ->
             val actualEntry = actualZip.entries().toList().find { it.name == "file.txt" }
 
-            assert(actualEntry).isNotNull()
+            assertThat(actualEntry).isNotNull
             val contents = actualZip.getInputStream(actualEntry).bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-            assert(contents).isEqualTo("hello world")
+            assertThat(contents).isEqualTo("hello world")
         }
     }
 }
