@@ -39,7 +39,7 @@ describe('extensionUtilities', () => {
             const token = 'hi-de-ho'
             const text = baseText + token
             const path = '/my/path'
-            const replacedText = convertPathTokensToPath(path, text, token)
+            const replacedText = convertPathTokensToPath(path, text, new RegExp(token, 'g'))
 
             assert.strictEqual(replacedText, `${baseText}vscode-resource:${path}`)
         })

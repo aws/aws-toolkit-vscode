@@ -74,18 +74,14 @@ export function safeGet<O, T>(obj: O | undefined, getFn: (x: O) => T): T | undef
  * Utility function to search for tokens in a string and convert them to relative paths parseable by VS Code
  * Useful for converting HTML images to webview-usable images
  *
- * @param extPath Extension path (from extension context)
+ * @param basePath Extension path (from extension context)
  * @param fileText Text of the file to scan
- * @param token Token (string or regex) to search for (default: `/!!EXTENSIONROOT!!/g`)
+ * @param pattern Regex to search for (default: `/!!EXTENSIONROOT!!/g`)
  */
 export function convertPathTokensToPath(
-    extPath: string,
+    basePath: string,
     fileText: string,
-    token: RegExp | string = /!!EXTENSIONROOT!!/g
+    pattern: RegExp = /!!EXTENSIONROOT!!/g
 ): string {
-    if (typeof token === 'string') {
-        token = new RegExp(token, 'g')
-    }
-
-    return fileText.replace(token, `vscode-resource:${extPath}`)
+    return fileText.replace(pattern, `vscode-resource:${basePath}`)
 }
