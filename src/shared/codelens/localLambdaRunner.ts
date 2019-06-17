@@ -167,10 +167,15 @@ export class LocalLambdaRunner {
 
         if (
             existingTemplateResource &&
-            existingTemplateResource.Properties &&
-            existingTemplateResource.Properties.Environment
+            existingTemplateResource.Properties
         ) {
-            newTemplate = newTemplate.withEnvironment(existingTemplateResource.Properties.Environment)
+            if (existingTemplateResource.Properties.Environment) {
+                newTemplate = newTemplate.withEnvironment(existingTemplateResource.Properties.Environment)
+            }
+
+            if (existingTemplateResource.Properties.MemorySize) {
+                newTemplate = newTemplate.withMemorySize(existingTemplateResource.Properties.MemorySize)
+            }
         }
 
         await newTemplate.generate(inputTemplatePath)
