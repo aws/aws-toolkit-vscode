@@ -68,7 +68,7 @@ These instructions outline how you can debug a lambda handler locally using the 
 
     ![Debug Icon](./images/view_debug.png)
 
-4. Select `.NET Core: Remote Attach` from the drop-down menu at the top of the viewlet. Do not start debugging yet, just select the configuration from the list. Follow the steps below to build and launch your application before launching the debugger.
+4. Select `SamLocalDebug` from the drop-down menu at the top of the viewlet. Do not start debugging yet, just select the configuration from the list. Follow the steps below to build and launch your application before launching the debugger.
 
 ## Start debugging
 
@@ -108,7 +108,7 @@ With the above steps, you need to manually invoke SAM CLI from the command line,
         "version": "2.0.0",
         "tasks": [
             {
-                "label": "SamLocalDebug",
+                "label": "Debug .NET Core Lambda Function",
                 "type": "shell",
                 "command": "sam",
                 "args": [
@@ -121,6 +121,9 @@ With the above steps, you need to manually invoke SAM CLI from the command line,
                     "<CODE_URI>/.vsdbg",
                     "--no-event"
                 ],
+                "options": {
+                    "cwd": "/absolute/path/to/folder/containing/template.yaml"
+                },
                 "isBackground": true,
                 "problemMatcher": {
                     "pattern": [
