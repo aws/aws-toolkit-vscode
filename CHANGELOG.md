@@ -2,6 +2,10 @@
 
 All notable changes to the "aws-vscode-tools" extension will be documented in this file.
 
+## NEXT (Developer Preview)
+
+* Fixed MFA login (https://github.com/aws/aws-toolkit-vscode/issues/620)
+
 ## 0.2.0 (Developer Preview)
 
 * Local Run/Debug is now available for .NET Core 2.1 functions within SAM Applications
