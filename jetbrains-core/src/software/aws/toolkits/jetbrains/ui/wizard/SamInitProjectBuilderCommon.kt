@@ -73,7 +73,7 @@ abstract class SamProjectTemplate {
 
     fun getIcon() = AwsIcons.Resources.SERVERLESS_APP
 
-    fun build(project: Project, runtime: Runtime, outputDir: VirtualFile) {
+    fun build(project: Project?, runtime: Runtime, outputDir: VirtualFile) {
         var hasException = false
         try {
             doBuild(runtime, outputDir)
