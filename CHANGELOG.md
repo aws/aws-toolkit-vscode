@@ -4,7 +4,7 @@ All notable changes to the "aws-vscode-tools" extension will be documented in th
 
 ## NEXT (Developer Preview)
 
-* Fixed MFA login (https://github.com/aws/aws-toolkit-vscode/issues/620)
+* Fixed issue preventing users from connecting with assumed roles (#620)
 
 ## 0.2.0 (Developer Preview)
 
