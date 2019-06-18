@@ -2,6 +2,10 @@
 
 All notable changes to the "aws-vscode-tools" extension will be documented in this file.
 
+## NEXT (Developer Preview)
+
+* A Welcome Page greets the user upon launching the toolkit for the first time. This can be re-accessed through the explorer's context menu.
+
 ## 0.2.0 (Developer Preview)
 
 * Local Run/Debug is now available for .NET Core 2.1 functions within SAM Applications
