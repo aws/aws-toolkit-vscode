@@ -2,7 +2,7 @@
 
 All notable changes to the "aws-vscode-tools" extension will be documented in this file.
 
-## NEXT (Developer Preview)
+## 0.2.1 (Developer Preview)
 
 * Fixed issue preventing users from connecting with assumed roles (#620)
 
