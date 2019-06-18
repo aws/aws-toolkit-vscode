@@ -5,9 +5,11 @@
 
 import * as _ from 'lodash'
 import * as path from 'path'
+import * as semver from 'semver'
 import * as vscode from 'vscode'
 import { ScriptResource } from '../lambda/models/scriptResource'
 import { ext } from '../shared/extensionGlobals'
+import { mostRecentVersionKey, pluginVersion } from './constants'
 
 export class ExtensionUtilities {
     public static getLibrariesForHtml(names: string[]): ScriptResource[] {
@@ -84,4 +86,34 @@ export function convertPathTokensToPath(
     pattern: RegExp = /!!EXTENSIONROOT!!/g
 ): string {
     return text.replace(pattern, `vscode-resource:${basePath}`)
+}
+
+/**
+ * Utility function to determine if the extension version has changed between activations
+ * False (versions are identical) if version key exists in global state, is a semver, and matches the current version
+ * True (versions are different) if any of the above aren't true
+ *
+ * TODO: Change the threshold on which we display the welcome page?
+ * For instance, if we start building nightlies, only show page for significant updates?
+ *
+ * @param context VS Code Extension Context
+ * @param currVersion Current version to compare stored most recent version against (useful for tests)
+ */
+export function isDifferentVersion(context: vscode.ExtensionContext, currVersion: string = pluginVersion): boolean {
+    const mostRecentVersion = context.globalState.get<string>(mostRecentVersionKey)
+    if (mostRecentVersion && semver.valid(mostRecentVersion) && mostRecentVersion === currVersion) {
+        return false
+    }
+
+    return true
+}
+
+/**
+ * Utility function to update the most recently used extension version
+ * Pulls from package.json
+ *
+ * @param context VS Code Extension Context
+ */
+export function setMostRecentVersion(context: vscode.ExtensionContext): void {
+    context.globalState.update(mostRecentVersionKey, pluginVersion)
 }

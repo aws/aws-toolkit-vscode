@@ -29,7 +29,7 @@ import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
 import { DefaultAWSStatusBar } from './shared/defaultStatusBar'
 import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
-import { convertPathTokensToPath, safeGet } from './shared/extensionUtilities'
+import { convertPathTokensToPath, isDifferentVersion, safeGet, setMostRecentVersion } from './shared/extensionUtilities'
 import { readFileAsString } from './shared/filesystemUtilities'
 import * as logFactory from './shared/logger'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
@@ -201,6 +201,11 @@ export async function activate(context: vscode.ExtensionContext) {
             new SamParameterCompletionItemProvider(),
             '"'
         )
+
+        if (isDifferentVersion(context)) {
+            vscode.commands.executeCommand('aws.welcome')
+            setMostRecentVersion(context)
+        }
 
         await resumeCreateNewSamApp(context)
     } catch (error) {
