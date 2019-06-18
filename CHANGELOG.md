@@ -5,6 +5,7 @@ All notable changes to the "aws-vscode-tools" extension will be documented in th
 ## NEXT (Developer Preview)
 
 * A Welcome Page greets the user upon launching the toolkit for the first time. This can be re-accessed through the explorer's context menu.
+* Fixed issue preventing users from connecting with assumed roles (#620)
 
 ## 0.2.0 (Developer Preview)
 
