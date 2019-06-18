@@ -37,7 +37,6 @@
     "AWS.command.deleteCloudFormation": "Delete CloudFormation Stack",
     "AWS.command.viewLogs": "View AWS Toolkit Logs",
     "AWS.error.during.sam.local": "An error occurred trying to run SAM Application locally: {0}",
-    "AWS.command.showErrorDetails": "Show error details",
     "AWS.error.mfa.userCancelled": "User cancelled entering authentication code",
     "AWS.error.no.error.code": "No error code",
     "AWS.error.sam.local.package_json_not_found": "Unable to find package.json related to {0}",
@@ -164,9 +163,5 @@
     "AWS.samcli.initWizard.source.error.notInWorkspace": "Could not open file '{0}'. If this file exists on disk, try adding it to your workspace.",
     "AWS.samcli.wizard.selectedPreviously": "Selected Previously",
     "AWS.generic.response.no": "No",
-    "AWS.generic.response.yes": "Yes",
-    "AWS.template.error.showErrorDetails.title": "Error details for",
-    "AWS.template.error.showErrorDetails.errorCode": "Error code",
-    "AWS.template.error.showErrorDetails.errorMessage": "Error message",
-    "AWS.template.error.showErrorDetails.stackTrace": "Stack trace"
+    "AWS.generic.response.yes": "Yes"
 }
