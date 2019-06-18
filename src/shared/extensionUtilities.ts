@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as nls from 'vscode-nls'
+
 import * as _ from 'lodash'
 import * as path from 'path'
 import * as semver from 'semver'
@@ -10,6 +12,8 @@ import * as vscode from 'vscode'
 import { ScriptResource } from '../lambda/models/scriptResource'
 import { ext } from '../shared/extensionGlobals'
 import { mostRecentVersionKey, pluginVersion } from './constants'
+
+const localize = nls.loadMessageBundle()
 
 export class ExtensionUtilities {
     public static getLibrariesForHtml(names: string[]): ScriptResource[] {
@@ -116,4 +120,29 @@ export function isDifferentVersion(context: vscode.ExtensionContext, currVersion
  */
 export function setMostRecentVersion(context: vscode.ExtensionContext): void {
     context.globalState.update(mostRecentVersionKey, pluginVersion)
+}
+
+/**
+ * Publishes a toast with a link to the welcome page
+ */
+export async function promptWelcome(): Promise<void> {
+    const view = localize(
+        'AWS.message.prompt.welcome.openPage',
+        'View the Welcome Page'
+    )
+    const prompt = await vscode.window.showInformationMessage(
+        localize(
+            'AWS.message.prompt.welcome.toastMessage',
+            'You are now using the AWS Toolkit for Visual Studio Code, version {0}',
+            pluginVersion
+        ),
+        view,
+        localize(
+            'AWS.message.prompt.welcome.dismiss',
+            'Dismiss'
+        ),
+    )
+    if (prompt === view) {
+        vscode.commands.executeCommand('aws.welcome')
+    }
 }

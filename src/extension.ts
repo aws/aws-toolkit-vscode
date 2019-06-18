@@ -29,7 +29,13 @@ import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
 import { DefaultAWSStatusBar } from './shared/defaultStatusBar'
 import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
-import { convertPathTokensToPath, isDifferentVersion, safeGet, setMostRecentVersion } from './shared/extensionUtilities'
+import {
+    convertPathTokensToPath,
+    isDifferentVersion,
+    promptWelcome,
+    safeGet,
+    setMostRecentVersion
+} from './shared/extensionUtilities'
 import { readFileAsString } from './shared/filesystemUtilities'
 import * as logFactory from './shared/logger'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
@@ -203,8 +209,10 @@ export async function activate(context: vscode.ExtensionContext) {
         )
 
         if (isDifferentVersion(context)) {
-            vscode.commands.executeCommand('aws.welcome')
             setMostRecentVersion(context)
+            // the welcome toast should be nonblocking.
+            // tslint:disable-next-line: no-floating-promises
+            promptWelcome()
         }
 
         await resumeCreateNewSamApp(context)
