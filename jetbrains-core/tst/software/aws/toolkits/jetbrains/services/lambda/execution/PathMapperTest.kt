@@ -107,6 +107,17 @@ class PathMapperTest {
         assertThat(convertToLocal("foo")).isNull()
     }
 
+    @Test
+    fun canonicalizeInput() {
+        initMapper {
+            addMapping("local/./", "remote/")
+            addMapping("local2/../local3/", "remote2")
+        }
+
+        assertBidirectionalMapping("local/foo", "remote/foo")
+        assertBidirectionalMapping("local3/foo", "remote2/foo")
+    }
+
     private fun assertBidirectionalMapping(local: String, remote: String) {
         assertThat(mapper.convertToRemote(createLocalFile(local))).isEqualTo(remote)
         assertThat(convertToLocal(remote)).isEqualTo(local)

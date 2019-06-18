@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.fileTypes.FileTypes
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.TestDialog
 import com.intellij.testFramework.ProjectRule
@@ -116,6 +117,27 @@ class CreateOrUpdateCredentialProfilesActionTest {
         verifyZeroInteractions(writer)
 
         assertThat(fileEditorManager.openFiles).hasOnlyOneElementSatisfying { assertThat(it.name).isEqualTo("credentials") }
+    }
+
+    @Test
+    fun emptyFileCanBeOpenedAsPlainText() {
+        val writer = mock<ConfigFileWriter>()
+
+        val configFile = File(folderRule.newFolder(), "config")
+        val credFile = folderRule.newFile("credentials")
+
+        val sut = CreateOrUpdateCredentialProfilesAction(writer, configFile, credFile)
+        Messages.setTestDialog(TestDialog.OK)
+
+        sut.actionPerformed(TestActionEvent(DataContext { projectRule.project }))
+
+        verifyZeroInteractions(writer)
+
+        assertThat(fileEditorManager.openFiles).hasSize(1)
+            .allSatisfy() {
+                assertThat(it.name).isEqualTo("credentials")
+                assertThat(it.fileType).isEqualTo(FileTypes.PLAIN_TEXT)
+            }
     }
 
     @Test

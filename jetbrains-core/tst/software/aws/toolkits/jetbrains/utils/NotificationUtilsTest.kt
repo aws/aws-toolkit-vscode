@@ -3,13 +3,10 @@
 
 package software.aws.toolkits.jetbrains.utils
 
-import assertk.assert
-import assertk.assertions.contains
-import assertk.assertions.isNotNull
-import assertk.assertions.startsWith
 import com.intellij.notification.Notification
 import com.intellij.notification.Notifications
 import com.intellij.testFramework.ProjectRule
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 
@@ -32,11 +29,9 @@ class NotificationUtilsTest {
 
         NullPointerException().notifyError("ooops", project = project)
 
-        assert(notification).isNotNull {
-            assert(it.actual.content) {
-                startsWith("java.lang.NullPointerException")
-                contains("NotificationUtilsTest.kt")
-            }
-        }
+        assertThat(notification).isNotNull
+        assertThat(notification?.content)
+            .startsWith("java.lang.NullPointerException")
+            .contains("NotificationUtilsTest.kt")
     }
 }

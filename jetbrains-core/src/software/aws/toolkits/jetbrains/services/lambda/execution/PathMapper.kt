@@ -52,13 +52,13 @@ class PathMapper(private val mappings: List<PathMapping>) {
                 localPath
             }
 
-            return FileUtil.normalize(updatedPath)
+            return FileUtil.toCanonicalPath(updatedPath, true)
         }
     }
 }
 
 class PathMapping(localPath: String, remotePath: String) {
-    internal val localRoot = normalizeLocal("$localPath/")
+    internal val localRoot = normalizeLocal(localPath) + "/"
     internal val remoteRoot = FileUtil.normalize("$remotePath/")
 
     override fun toString() = "PathMapping(localRoot='$localRoot', remoteRoot='$remoteRoot')"

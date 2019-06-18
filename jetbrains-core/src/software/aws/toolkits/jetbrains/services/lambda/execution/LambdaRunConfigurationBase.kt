@@ -10,7 +10,9 @@ import com.intellij.execution.configurations.RunConfigurationWithSuppressedDefau
 import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.execution.runners.RunConfigurationWithSuppressedDefaultRunAction
 import com.intellij.openapi.components.BaseState
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.util.xmlb.annotations.Property
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
@@ -45,8 +47,18 @@ abstract class LambdaRunConfigurationBase<T : BaseLambdaOptions>(
 
     fun inputSource() = options.inputOptions.input
 
+    protected fun checkInput() {
+        inputSource()?.let {
+            if (!isUsingInputFile() || FileUtil.exists(it)) {
+                return
+            }
+        }
+        throw RuntimeConfigurationError(message("lambda.run_configuration.no_input_specified"))
+    }
+
     protected fun resolveInput() = inputSource()?.let {
-        if (isUsingInputFile() && inputSource()?.isNotEmpty() == true) {
+        if (isUsingInputFile() && it.isNotEmpty()) {
+            FileDocumentManager.getInstance().saveAllDocuments()
             try {
                 LocalFileSystem.getInstance().refreshAndFindFileByPath(it)
                     ?.contentsToByteArray(false)

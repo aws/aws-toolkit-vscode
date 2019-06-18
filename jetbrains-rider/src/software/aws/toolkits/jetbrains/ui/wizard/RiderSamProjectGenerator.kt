@@ -136,7 +136,7 @@ class RiderSamProjectGenerator(
                 val outDirVf = solutionDirectory.toVirtualFile() ?: throw Exception(message("sam.init.error.no.virtual.file"))
 
                 val samTemplate = samSettings.template
-                samTemplate.build(selectedRuntime, outDirVf)
+                samTemplate.build(context.project, selectedRuntime, outDirVf)
 
                 // Create solution file
                 val projectFiles =

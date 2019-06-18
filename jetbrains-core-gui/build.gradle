@@ -14,7 +14,7 @@ intellij {
     pluginName rootIntelliJTask.pluginName
     updateSinceUntilBuild rootIntelliJTask.updateSinceUntilBuild
     downloadSources = rootIntelliJTask.downloadSources
-    plugins = rootIntelliJTask.plugins + ['com.intellij.testGuiFramework:183.6156.8']
+    plugins = rootIntelliJTask.plugins + ['com.intellij.testGuiFramework:0.9.44.1@nightly']
 }
 
 jacoco.applyTo(runIde)
@@ -28,6 +28,9 @@ runIde {
         includes = ["software.aws.toolkits.*"]
     }
 }
+
+publishPlugin.enabled = false
+buildSearchableOptions.enabled = false
 
 // don't run gui tests as part of check
 test.enabled = false

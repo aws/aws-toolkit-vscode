@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.lambda.execution.remote
 import com.intellij.execution.ExecutionException
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.ConfigurationFactory
-import com.intellij.execution.configurations.RunProfileState
 import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.application.ApplicationManager
@@ -48,10 +47,11 @@ class LambdaRemoteRunConfiguration(project: Project, factory: ConfigurationFacto
         functionName() ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_function_specified"))
 
         resolveCredentials()
-        resolveInput()
+        regionId() ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
+        checkInput()
     }
 
-    override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState {
+    override fun getState(executor: Executor, environment: ExecutionEnvironment): RemoteLambdaState {
         try {
             val functionName = functionName()
                 ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_function_specified"))

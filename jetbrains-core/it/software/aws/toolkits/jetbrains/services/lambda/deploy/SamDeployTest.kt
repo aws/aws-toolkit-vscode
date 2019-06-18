@@ -60,10 +60,11 @@ class SamDeployTest {
     fun deployAppUsingSam() {
         val stackName = "SamDeployTest-${UUID.randomUUID()}"
         val templateFile = setUpProject()
-        val changeSetArn = createChangeSet(templateFile, stackName)
+        runAssertsAndClean(stackName) {
+            val changeSetArn = createChangeSet(templateFile, stackName)
 
-        assertThat(changeSetArn).isNotNull()
-        runAssertsAndClean(changeSetArn!!) {
+            assertThat(changeSetArn).isNotNull()
+
             val describeChangeSetResponse = cfnClient.describeChangeSet {
                 it.stackName(stackName)
                 it.changeSetName(changeSetArn)
@@ -83,10 +84,11 @@ class SamDeployTest {
     fun deployAppUsingSamWithParameters() {
         val stackName = "SamDeployTest-${UUID.randomUUID()}"
         val templateFile = setUpProject()
-        val changeSetArn = createChangeSet(templateFile, stackName, mapOf("TestParameter" to "FooBar"))
+        runAssertsAndClean(stackName) {
+            val changeSetArn = createChangeSet(templateFile, stackName, mapOf("TestParameter" to "FooBar"))
 
-        assertThat(changeSetArn).isNotNull()
-        runAssertsAndClean(changeSetArn!!) {
+            assertThat(changeSetArn).isNotNull()
+
             val describeChangeSetResponse = cfnClient.describeChangeSet {
                 it.stackName(stackName)
                 it.changeSetName(changeSetArn)
@@ -171,16 +173,16 @@ class SamDeployTest {
         return deployDialog.deployFuture.get(5, TimeUnit.MINUTES)
     }
 
-    private fun runAssertsAndClean(changeSetArn: String, asserts: () -> Unit) {
+    private fun runAssertsAndClean(stackName: String, asserts: () -> Unit) {
         try {
             asserts.invoke()
         } finally {
             try {
-                cfnClient.deleteChangeSet {
-                    it.changeSetName(changeSetArn)
+                cfnClient.deleteStack {
+                    it.stackName(stackName)
                 }
             } catch (e: Exception) {
-                println("Failed to delete change set $changeSetArn: ${ExceptionUtil.getMessage(e)}")
+                println("Failed to delete stack $stackName: ${ExceptionUtil.getMessage(e)}")
             }
         }
     }

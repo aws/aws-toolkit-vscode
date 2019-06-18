@@ -39,6 +39,7 @@
         </constraints>
         <properties>
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="serverless.application.deploy.label.bucket"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="serverless.application.deploy.tooltip.s3Bucket"/>
         </properties>
       </component>
       <vspacer id="54e5f">
