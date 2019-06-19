@@ -12,7 +12,6 @@ import { detectLocalTemplates } from './detectLocalTemplates'
 
 export interface LocalLambda {
     lambda: string
-    protocol: 'inspector' | 'legacy'
     workspaceFolder: vscode.WorkspaceFolder
     resource: CloudFormation.Resource
     templatePath: string
@@ -69,28 +68,9 @@ async function detectLambdasFromTemplate(
             lambda: key,
             workspaceFolder,
             templatePath,
-            protocol: getDebugProtocol(resources[key]!),
             handler: getHandler(resources[key]!),
             resource: resources[key]!
         }))
-}
-
-function getDebugProtocol(resource: CloudFormation.Resource): 'inspector' | 'legacy' {
-    if (!resource.Properties || !resource.Properties.Runtime) {
-        return 'inspector'
-    }
-
-    const matches = resource.Properties.Runtime.match(/^nodejs(\d+)/)
-    if (!matches || matches.length !== 2) {
-        return 'inspector'
-    }
-
-    const majorVersion: number = parseInt(matches[1], 10)
-
-    // Officially, both 'inspector' and 'legacy' are supported on [6.3, 7) (*nix) and [6.9, 7) (windows)
-    // But in practice, 'inspector' seems to be unstable and cause connection timeouts for 6.*. So we
-    // use 'legacy' when both protocols are available.
-    return isNaN(majorVersion) || majorVersion > 6 ? 'inspector' : 'legacy'
 }
 
 function getHandler(resource: CloudFormation.Resource): string | undefined {

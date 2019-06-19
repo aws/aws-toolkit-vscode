@@ -6,6 +6,7 @@ All notable changes to the "aws-vscode-tools" extension will be documented in th
 
 * A toast greets the user upon launching a new version of the toolkit for the first time which provides a link to a quick start page. This quick start page can be re-accessed through the explorer's context menu. (#610-612)
 * Local Run/Debug now honors MemorySize values from SAM Template file (#509)
+* Local Run/Debug now honors Timeout values from SAM Template file (#510)
 * Fixed issue preventing users from connecting with assumed roles (#620)
 
 ## 0.2.0 (Developer Preview)
