@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Support Globals configuration in SAM template for serverless functions."
+}

@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.cloudformation
 
+import software.aws.toolkits.resources.message
+
 interface Function : Resource {
     fun codeLocation(): String
     fun setCodeLocation(location: String)
@@ -27,6 +29,14 @@ class LambdaFunction(private val delegate: Resource) : Resource by delegate, Fun
 
 const val SERVERLESS_FUNCTION_TYPE = "AWS::Serverless::Function"
 class SamFunction(private val delegate: Resource) : Resource by delegate, Function {
+    private val globals = cloudFormationTemplate.globals()
+
+    override fun getScalarProperty(key: String): String = getOptionalScalarProperty(key)
+        ?: throw IllegalStateException(message("cloudformation.missing_property", key, logicalName))
+
+    override fun getOptionalScalarProperty(key: String): String? =
+        delegate.getOptionalScalarProperty(key) ?: globals["Function"]?.getOptionalScalarProperty(key)
+
     override fun setCodeLocation(location: String) {
         setScalarProperty("CodeUri", location)
     }

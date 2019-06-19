@@ -151,6 +151,45 @@ Resources:
     }
 
     @Test
+    fun singleArgumentStaticMethodsMarkedWhenDisablingLambdaSettingButDefinedInTemplateGlobals() {
+
+        val fixture = projectRule.fixture
+        LambdaSettings.getInstance(projectRule.project).showAllHandlerGutterIcons = false
+
+        fixture.openFile("template.yaml",
+            """
+Globals:
+  Function:
+    Handler: com.example.UsefulUtils::upperCase
+    Runtime: java8
+Resources:
+  UpperCase:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: foo
+""")
+
+        fixture.openClass(
+            """
+            package com.example;
+
+            public class UsefulUtils {
+
+                private UsefulUtils() { }
+
+                public static String upperCase(String input) {
+                    return input.toUpperCase();
+                }
+            }
+            """
+        )
+
+        findAndAssertMarks(fixture) { marks ->
+            assertLineMarkerIs(marks, "upperCase")
+        }
+    }
+
+    @Test
     fun dualArgumentStaticMethodsAreMarkedIfSecondArgIsContext() {
         val fixture = projectRule.fixture
 
