@@ -18,6 +18,7 @@ describe('SamTemplateGenerator', () => {
     const sampleFunctionHandlerValue: string = 'sampleFunctionHandler'
     const sampleResourceNameValue: string = 'sampleResourceName'
     const sampleMemorySize: number = 256
+    const sampleTimeout: number = 321
     const sampleRuntimeValue: string = 'sampleRuntime'
     const sampleEnvironment: CloudFormation.Environment = {
         Variables: {
@@ -43,6 +44,7 @@ describe('SamTemplateGenerator', () => {
             .withRuntime(sampleRuntimeValue)
             .withResourceName(sampleResourceNameValue)
             .withMemorySize(sampleMemorySize)
+            .withTimeout(sampleTimeout)
             .withEnvironment(sampleEnvironment)
             .generate(templateFilename)
 
@@ -57,6 +59,7 @@ describe('SamTemplateGenerator', () => {
         assert.strictEqual(resource!.Properties!.CodeUri, sampleCodeUriValue)
         assert.strictEqual(resource!.Properties!.Handler, sampleFunctionHandlerValue)
         assert.strictEqual(resource!.Properties!.MemorySize, sampleMemorySize)
+        assert.strictEqual(resource!.Properties!.Timeout, sampleTimeout)
         assert.strictEqual(resource!.Properties!.Runtime, sampleRuntimeValue)
         assert.deepStrictEqual(resource!.Properties!.Environment, sampleEnvironment)
     })
