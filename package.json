@@ -170,9 +170,9 @@
                     "group": "2_region@2"
                 },
                 {
-                    "command": "aws.welcome",
+                    "command": "aws.quickStart",
                     "when": "view == aws.explorer",
-                    "group": "y_welcome@1"
+                    "group": "y_quickStart@1"
                 },
                 {
                     "command": "aws.help",
@@ -299,8 +299,7 @@
                 "category": "AWS"
             },
             {
-                "command": "aws.welcome",
-                "title": "%AWS.command.welcome%",
+                "title": "%AWS.command.quickStart%",
                 "category": "AWS"
             }
         ],
@@ -315,10 +314,10 @@
         "vscode:prepublish": "npm run recompile",
         "bundleDeps": "node ./build-scripts/bundleDeps.js",
         "clean": "node ./build-scripts/clean.js out",
-        "createWelcomePage": "node ./build-scripts/createWelcomePage.js",
+        "createQuickStart": "node ./build-scripts/createQuickStart.js",
         "reset": "node ./build-scripts/clean.js out node_modules && npm install",
         "copyNonCodeFiles": "node ./build-scripts/copyNonCodeFiles.js",
-        "buildScripts": "npm run bundleDeps && npm run copyNonCodeFiles && npm run createWelcomePage",
+        "buildScripts": "npm run bundleDeps && npm run copyNonCodeFiles && npm run createQuickStart",
         "compile": "tsc -p ./ && npm run lint && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && tsc -watch -p ./",

@@ -29,11 +29,11 @@ import { DefaultAWSStatusBar } from './shared/defaultStatusBar'
 import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
 import {
-    createWelcomeWebview,
     isDifferentVersion,
     promptWelcome,
     safeGet,
-    setMostRecentVersion
+    setMostRecentVersion,
+    showQuickStartWebview
 } from './shared/extensionUtilities'
 import * as logFactory from './shared/logger'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
@@ -154,14 +154,11 @@ export async function activate(context: vscode.ExtensionContext) {
             () => { vscode.env.openExternal(vscode.Uri.parse(githubUrl)) }
         )
 
+        // TODO: Move to Telemetry registerCommand and add a metric:
+        // https://github.com/aws/aws-toolkit-vscode/issues/625
         vscode.commands.registerCommand(
-            'aws.welcome',
-            async () => {
-                const view = await createWelcomeWebview(context)
-                if (view) {
-                    view.reveal()
-                }
-            }
+            'aws.quickStart',
+            async () => { await showQuickStartWebview(context) }
         )
 
         const providers = [
