@@ -5,7 +5,6 @@
 
 import * as _ from 'lodash'
 import * as path from 'path'
-import * as semver from 'semver'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { ScriptResource } from '../lambda/models/scriptResource'
@@ -148,7 +147,7 @@ function convertExtensionRootTokensToPath(
  */
 export function isDifferentVersion(context: vscode.ExtensionContext, currVersion: string = pluginVersion): boolean {
     const mostRecentVersion = context.globalState.get<string>(mostRecentVersionKey)
-    if (mostRecentVersion && semver.valid(mostRecentVersion) && mostRecentVersion === currVersion) {
+    if (mostRecentVersion && mostRecentVersion === currVersion) {
         return false
     }
 
@@ -168,24 +167,35 @@ export function setMostRecentVersion(context: vscode.ExtensionContext): void {
 /**
  * Publishes a toast with a link to the welcome page
  */
-export async function promptWelcome(): Promise<void> {
+async function promptQuickStart(): Promise<void> {
     const view = localize(
-        'AWS.message.prompt.welcome.openPage',
+        'AWS.command.quickStart',
         'View Welcome Page'
     )
     const prompt = await vscode.window.showInformationMessage(
         localize(
-            'AWS.message.prompt.welcome.toastMessage',
+            'AWS.message.prompt.quickStart.toastMessage',
             'You are now using the AWS Toolkit for Visual Studio Code, version {0}',
             pluginVersion
         ),
-        view,
-        localize(
-            'AWS.message.prompt.welcome.dismiss',
-            'Dismiss'
-        ),
+        view
     )
     if (prompt === view) {
-        vscode.commands.executeCommand('aws.welcome')
+        vscode.commands.executeCommand('aws.quickStart')
+    }
+}
+
+/**
+ * Checks if a user is new to this version
+ * If so, pops a toast with a link to a quick start page
+ *
+ * @param context VS Code Extension Context
+ */
+export function toastNewUser(context: vscode.ExtensionContext): void {
+    if (isDifferentVersion(context)) {
+        setMostRecentVersion(context)
+        // the welcome toast should be nonblocking.
+        // tslint:disable-next-line: no-floating-promises
+        promptQuickStart()
     }
 }

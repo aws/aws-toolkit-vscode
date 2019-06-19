@@ -98,14 +98,6 @@ describe('extensionUtilities', () => {
             assert.ok(isDifferentVersion(extContext))
         })
 
-        it ('returns true if a most recent version isn\'t a valid semver', () => {
-            const badVersion = 'this.isnt.right'
-            const extContext = new FakeExtensionContext()
-            extContext.globalState.update(mostRecentVersionKey, badVersion)
-
-            assert.ok(isDifferentVersion(extContext))
-        })
-
         it ('returns true if a most recent version doesn\'t match the current version', () => {
             const oldVersion = '1.2.3'
             const newVersion = '4.5.6'

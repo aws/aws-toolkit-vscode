@@ -299,6 +299,7 @@
                 "category": "AWS"
             },
             {
+                "command": "aws.quickStart",
                 "title": "%AWS.command.quickStart%",
                 "category": "AWS"
             }
