@@ -73,36 +73,44 @@ export function safeGet<O, T>(obj: O | undefined, getFn: (x: O) => T): T | undef
 
     return undefined
 }
-
 /**
- * Helper function to create a webview containing the welcome page
- * Returns an unfocused vscode.WebviewPanel if the welcome page is renderable.
- * Returns void if the welcomePage.html file is unrenderable
+ * Helper function to show a webview containing the quick start page
  *
  * @param context VS Code Extension Context
- * @param page Page to load (use for testing); default: `welcomePage.html`
  */
-export async function createWelcomeWebview(
-    context: vscode.ExtensionContext,
-    page: string = 'welcomePage.html'
-): Promise<vscode.WebviewPanel | void> {
-    let html: string | undefined
+export async function showQuickStartWebview(context: vscode.ExtensionContext): Promise<void> {
     try {
-        html = convertExtensionRootTokensToPath(
-            await readFileAsString(path.join(context.extensionPath, page)),
-            context.extensionPath
-        )
-        if (!html) {
-            throw new Error()
-        }
+        const view = await createQuickStartWebview(context)
+        view.reveal()
     } catch {
-        return
+        vscode.window.showErrorMessage(
+            localize(
+                'AWS.command.quickStart.error',
+                'There was an error retrieving the Quick Start page'
+            )
+        )
     }
+}
 
+/**
+ * Helper function to create a webview containing the quick start page
+ * Returns an unfocused vscode.WebviewPanel if the quick start page is renderable.
+ *
+ * @param context VS Code Extension Context
+ * @param page Page to load (use for testing); default: `quickStart.html`
+ */
+export async function createQuickStartWebview(
+    context: vscode.ExtensionContext,
+    page: string = 'quickStart.html'
+): Promise<vscode.WebviewPanel> {
+    const html = convertExtensionRootTokensToPath(
+        await readFileAsString(path.join(context.extensionPath, page)),
+        context.extensionPath
+    )
     // create hidden webview, leave it up to the caller to show
     const view = vscode.window.createWebviewPanel(
         'html',
-        localize('AWS.command.welcome.title', 'AWS Toolkit - Welcome'),
+        localize('AWS.command.quickStart.title', 'AWS Toolkit - Quick Start'),
         { viewColumn: vscode.ViewColumn.Active, preserveFocus: true }
     )
     view.webview.html = html

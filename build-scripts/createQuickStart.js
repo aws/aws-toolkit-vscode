@@ -2,7 +2,7 @@
 
 /*
     This script is called from npm run compile.
-    It creates an HTML version of the marketplace page to be used as a welcome page.
+    It creates an HTML version of the marketplace page to be used as a quick start page.
     It replaces relative paths with an `!!EXTENSIONROOT!!` token.
     This makes it easier to swap in relative links when the extension loads.
 */
@@ -22,6 +22,6 @@ const repoRoot = path.dirname(__dirname);
     const transformedText = fileText.replace(relativePathRegex, '](!!EXTENSIONROOT!!/');
 
     marked(transformedText, (err, result) => {
-        fs.writeFileSync(path.join(repoRoot, './welcomePage.html'), result);
+        fs.writeFileSync(path.join(repoRoot, './quickStart.html'), result);
     })
 })();
