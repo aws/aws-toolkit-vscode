@@ -136,12 +136,14 @@ export namespace CloudFormation {
 
         Globals?: TemplateGlobals
 
-        Resources?: {
-            [key: string]: Resource | undefined
-        }
+        Resources?: TemplateResources
     }
 
     export type TemplateGlobals = any
+
+    export interface TemplateResources {
+        [key: string]: Resource | undefined
+    }
 
     export interface Environment {
         Variables?: {
@@ -247,21 +249,34 @@ export namespace CloudFormation {
         context: { loadTemplate: typeof load } = { loadTemplate: load }
     ): Promise<Resource> {
         const template = await context.loadTemplate(templatePath)
-        const resources = template.Resources || {}
+
+        return getResourceFromTemplateResources({
+            templateResources: template.Resources,
+            handlerName
+        })
+    }
+
+    export async function getResourceFromTemplateResources(
+        params: {
+            templateResources?: TemplateResources,
+            handlerName: string,
+        }
+    ): Promise<Resource> {
+        const resources = params.templateResources || {}
 
         const matches = Object.keys(resources)
             .filter(key => matchesHandler({
                 resource: resources[key],
-                handlerName
+                handlerName: params.handlerName
             })).map(key => resources[key]!)
 
         if (matches.length < 1) {
-            throw new Error(`Could not find a SAM resource for handler ${handlerName}`)
+            throw new Error(`Could not find a SAM resource for handler ${params.handlerName}`)
         }
 
         if (matches.length > 1) {
             // TODO: Is this a valid scenario?
-            throw new Error(`Found more than one SAM resource for handler ${handlerName}`)
+            throw new Error(`Found more than one SAM resource for handler ${params.handlerName}`)
         }
 
         return matches[0]

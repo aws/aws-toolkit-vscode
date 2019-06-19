@@ -223,63 +223,108 @@ describe('CloudFormation', () => {
         })
     })
 
-    describe('getResourceFromTemplate', async () => {
-        const testData = [
-            {
-                title: 'existing lambda, single runtime',
-                handlerName: 'app.lambda_handler',
-                templateFileName: 'template_python2.7.yaml',
-                expectedRuntime: 'python2.7'
-            },
-            {
-                title: 'non-existing lambda, single runtime',
-                handlerName: 'app.handler_that_does_not_exist',
-                templateFileName: 'template_python2.7.yaml',
-                expectedRuntime: undefined
-            },
-            {
-                title: '2nd existing lambda, multiple runtimes',
-                handlerName: 'app.lambda_handler2',
-                templateFileName: 'template_python_mixed.yaml',
-                expectedRuntime: 'python2.7'
-            },
-            {
-                title: '1st existing lambda, multiple runtimes',
-                handlerName: 'app.lambda_handler3',
-                templateFileName: 'template_python_mixed.yaml',
-                expectedRuntime: 'python3.6'
-            },
-            {
-                title: 'non-existing lambda, multiple runtimes',
-                handlerName: 'app.handler_that_does_not_exist',
-                templateFileName: 'template_python_mixed.yaml',
-                expectedRuntime: undefined
-            },
-        ]
+    const templateWithExistingHandlerScenarios = [
+        {
+            title: 'existing lambda, single runtime',
+            handlerName: 'app.lambda_handler',
+            templateFileName: 'template_python2.7.yaml',
+            expectedRuntime: 'python2.7'
+        },
+        {
+            title: '2nd existing lambda, multiple runtimes',
+            handlerName: 'app.lambda_handler2',
+            templateFileName: 'template_python_mixed.yaml',
+            expectedRuntime: 'python2.7'
+        },
+        {
+            title: '1st existing lambda, multiple runtimes',
+            handlerName: 'app.lambda_handler3',
+            templateFileName: 'template_python_mixed.yaml',
+            expectedRuntime: 'python3.6'
+        },
+    ]
 
-        for (const data of testData) {
-            it(`should ${data.expectedRuntime ? 'resolve runtime' : 'throw'} for ${data.title}`, async () => {
-                const templatePath = path.join(path.dirname(__filename), 'yaml', data.templateFileName)
-                const expectedRuntime = data.expectedRuntime
-                if (data.expectedRuntime === undefined) {
-                    await assertRejects(async () => {
-                        const resource = await CloudFormation.getResourceFromTemplate({
-                            templatePath,
-                            handlerName: data.handlerName
-                        })
-                        CloudFormation.getRuntime(resource)
-                    })
-                } else {
-                    const resource = await CloudFormation.getResourceFromTemplate({
+    const templateWithNonExistingHandlerScenarios = [
+        {
+            title: 'non-existing lambda, single runtime',
+            handlerName: 'app.handler_that_does_not_exist',
+            templateFileName: 'template_python2.7.yaml',
+            expectedRuntime: undefined
+        },
+        {
+            title: 'non-existing lambda, multiple runtimes',
+            handlerName: 'app.handler_that_does_not_exist',
+            templateFileName: 'template_python_mixed.yaml',
+            expectedRuntime: undefined
+        },
+    ]
+
+    const makeTemplatePath = (templateFileName: string): string => {
+        return path.join(path.dirname(__filename), 'yaml', templateFileName)
+    }
+
+    describe('getResourceFromTemplate', async () => {
+        for (const scenario of templateWithExistingHandlerScenarios) {
+            it(`should retrieve resource for ${scenario.title}`, async () => {
+                const templatePath = makeTemplatePath(scenario.templateFileName)
+
+                const resource = await CloudFormation.getResourceFromTemplate({
+                    templatePath,
+                    handlerName: scenario.handlerName
+                })
+
+                assert.ok(resource)
+                // Verify runtimes as a way of seeing if we got the correct resource when there is more
+                // than one entry with the same handler.
+                const runtime = CloudFormation.getRuntime(resource)
+                assert.strictEqual(runtime, scenario.expectedRuntime, 'Unexpected runtime resolved from SAM Template')
+            })
+        }
+
+        for (const scenario of templateWithNonExistingHandlerScenarios) {
+            it(`should throw for ${scenario.title}`, async () => {
+                const templatePath = makeTemplatePath(scenario.templateFileName)
+
+                await assertRejects(async () => {
+                    await CloudFormation.getResourceFromTemplate({
                         templatePath,
-                        handlerName: data.handlerName
+                        handlerName: scenario.handlerName
                     })
-                    const runtime = CloudFormation.getRuntime(resource)
-                    assert(
-                        expectedRuntime === runtime,
-                        JSON.stringify({ expectedRuntime, runtime })
-                    )
-                }
+                })
+            })
+        }
+    })
+
+    describe('getResourceFromTemplateResources', async () => {
+        for (const scenario of templateWithExistingHandlerScenarios) {
+            it(`should retrieve resource for ${scenario.title}`, async () => {
+                const templatePath = makeTemplatePath(scenario.templateFileName)
+                const template = await CloudFormation.load(templatePath)
+
+                const resource = await CloudFormation.getResourceFromTemplateResources({
+                    templateResources: template.Resources,
+                    handlerName: scenario.handlerName
+                })
+
+                assert.ok(resource)
+                // Verify runtimes as a way of seeing if we got the correct resource when there is more
+                // than one entry with the same handler.
+                const runtime = CloudFormation.getRuntime(resource)
+                assert.strictEqual(runtime, scenario.expectedRuntime, 'Unexpected runtime resolved from SAM Template')
+            })
+        }
+
+        for (const scenario of templateWithNonExistingHandlerScenarios) {
+            it(`should throw for ${scenario.title}`, async () => {
+                const templatePath = makeTemplatePath(scenario.templateFileName)
+                const template = await CloudFormation.load(templatePath)
+
+                await assertRejects(async () => {
+                    await CloudFormation.getResourceFromTemplateResources({
+                        templateResources: template.Resources,
+                        handlerName: scenario.handlerName
+                    })
+                })
             })
         }
     })
