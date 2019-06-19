@@ -6,13 +6,13 @@ package software.aws.toolkits.jetbrains.ui.wizard
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.ui.ColorUtil
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTabbedPane
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import com.intellij.xml.util.XmlUtil
-import com.jetbrains.rdclient.util.idea.toVirtualFile
 import com.jetbrains.rider.ideaInterop.fileTypes.msbuild.CsprojFileType
 import com.jetbrains.rider.ideaInterop.fileTypes.sln.SolutionFileType
 import com.jetbrains.rider.projectView.SolutionManager
@@ -22,10 +22,13 @@ import com.jetbrains.rider.projectView.actions.projectTemplating.impl.ProjectTem
 import com.jetbrains.rider.projectView.actions.projectTemplating.impl.ProjectTemplateTransferableModel
 import com.jetbrains.rider.ui.themes.RiderTheme
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.lambda.validOrNull
 import software.aws.toolkits.resources.message
 import java.awt.Dimension
 import java.io.File
+import java.io.IOException
 import javax.swing.JScrollPane
 import javax.swing.JTabbedPane
 import javax.swing.JTextPane
@@ -42,6 +45,8 @@ class RiderSamProjectGenerator(
     item = context.item) {
 
     companion object {
+        private val logger = getLogger<RiderSamProjectGenerator>()
+
         private const val SAM_HELLO_WORLD_PROJECT_NAME = "HelloWorld"
         private val defaultNetCoreRuntime = Runtime.DOTNETCORE2_1
     }
@@ -126,14 +131,18 @@ class RiderSamProjectGenerator(
 
     override fun expand() {
         val selectedRuntime = samSettings.runtime
-        val solutionDirectory = getSolutionDirectory() ?: throw Exception(message("sam.init.error.no.virtual.file"))
+        val solutionDirectory = getSolutionDirectory()
+                ?: throw Exception(message("sam.init.error.no.solution.basepath"))
 
         runInEdt {
             runWriteAction {
-                if (!solutionDirectory.exists())
+                val fileSystem = LocalFileSystem.getInstance()
+                if (!solutionDirectory.exists()) {
                     FileUtil.createDirectory(solutionDirectory)
+                }
 
-                val outDirVf = solutionDirectory.toVirtualFile() ?: throw Exception(message("sam.init.error.no.virtual.file"))
+                val outDirVf = fileSystem.refreshAndFindFileByIoFile(solutionDirectory)
+                        ?: throw Exception(message("sam.init.error.no.virtual.file"))
 
                 val samTemplate = samSettings.template
                 samTemplate.build(context.project, selectedRuntime, outDirVf)
@@ -152,7 +161,7 @@ class RiderSamProjectGenerator(
                         projectFiles = projectFiles.toList(),
                         protocolHost = context.protocolHost,
                         solutionFiles = solutionFiles
-                ) ?: throw Exception(message("sam.init.error.no.virtual.file"))
+                ) ?: throw Exception(message("sam.init.error.solution.create.fail"))
 
                 val project = SolutionManager.openExistingSolution(context.project, false, solutionFile)
 
@@ -188,7 +197,13 @@ class RiderSamProjectGenerator(
         "<font color=#${ColorUtil.toHex(UIUtil.getLabelDisabledForeground())} >...$baseDir</font>$relativePath<br>"
 
     private fun getCurrentDotNetCoreRuntime(): Runtime {
-        val runtimeList = java.lang.Runtime.getRuntime().exec("dotnet --list-runtimes").inputStream.bufferedReader().readLines()
+        val runtimeList = try {
+            java.lang.Runtime.getRuntime().exec("dotnet --list-runtimes").inputStream.bufferedReader().readLines()
+        } catch (e: IOException) {
+            logger.warn { "Error getting current runtime version: $e" }
+            return defaultNetCoreRuntime
+        }
+
         val versionRegex = Regex("(\\d+.\\d+.\\d+)")
         val versions = runtimeList
                 .filter { it.startsWith("Microsoft.NETCore.App") }
