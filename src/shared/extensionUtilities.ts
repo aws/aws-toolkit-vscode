@@ -3,15 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as nls from 'vscode-nls'
-
 import * as _ from 'lodash'
 import * as path from 'path'
 import * as semver from 'semver'
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import { ScriptResource } from '../lambda/models/scriptResource'
 import { ext } from '../shared/extensionGlobals'
 import { mostRecentVersionKey, pluginVersion } from './constants'
+import { readFileAsString } from './filesystemUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -77,19 +77,53 @@ export function safeGet<O, T>(obj: O | undefined, getFn: (x: O) => T): T | undef
 }
 
 /**
+ * Helper function to create a webview containing the welcome page
+ * Returns an unfocused vscode.WebviewPanel if the welcome page is renderable.
+ * Returns void if the welcomePage.html file is unrenderable
+ *
+ * @param context VS Code Extension Context
+ * @param page Page to load (use for testing); default: `welcomePage.html`
+ */
+export async function createWelcomeWebview(
+    context: vscode.ExtensionContext,
+    page: string = 'welcomePage.html'
+): Promise<vscode.WebviewPanel | void> {
+    let html: string | undefined
+    try {
+        html = convertExtensionRootTokensToPath(
+            await readFileAsString(path.join(context.extensionPath, page)),
+            context.extensionPath
+        )
+        if (!html) {
+            throw new Error()
+        }
+    } catch {
+        return
+    }
+
+    // create hidden webview, leave it up to the caller to show
+    const view = vscode.window.createWebviewPanel(
+        'html',
+        localize('AWS.command.welcome.title', 'AWS Toolkit - Welcome'),
+        { viewColumn: vscode.ViewColumn.Active, preserveFocus: true }
+    )
+    view.webview.html = html
+
+    return view
+}
+
+/**
  * Utility function to search for tokens in a string and convert them to relative paths parseable by VS Code
  * Useful for converting HTML images to webview-usable images
  *
- * @param basePath Extension path (from extension context)
  * @param text Text to scan
- * @param pattern Regex to search for (default: `/!!EXTENSIONROOT!!/g`)
+ * @param basePath Extension path (from extension context)
  */
-export function convertPathTokensToPath(
-    basePath: string,
+function convertExtensionRootTokensToPath(
     text: string,
-    pattern: RegExp = /!!EXTENSIONROOT!!/g
+    basePath: string
 ): string {
-    return text.replace(pattern, `vscode-resource:${basePath}`)
+    return text.replace(/!!EXTENSIONROOT!!/g, `vscode-resource:${basePath}`)
 }
 
 /**

@@ -4,13 +4,19 @@
  */
 
 import * as assert from 'assert'
+
+import * as del from 'del'
+import * as path from 'path'
+import * as vscode from 'vscode'
 import { mostRecentVersionKey, pluginVersion } from '../../shared/constants'
 import {
-    convertPathTokensToPath,
+    createWelcomeWebview,
     isDifferentVersion,
     safeGet,
     setMostRecentVersion
 } from '../../shared/extensionUtilities'
+import { writeFile } from '../../shared/filesystem'
+import * as filesystemUtilities from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 
 describe('extensionUtilities', () => {
@@ -31,24 +37,53 @@ describe('extensionUtilities', () => {
         })
     })
 
-    describe('convertPathTokensToPath', () => {
-        it ('converts default `!!EXTENSIONROOT!!` tokens to a VS Code-styled path', () => {
-            const baseText = 'Here is my path: '
-            const text = baseText + '!!EXTENSIONROOT!!'
-            const path = '/my/path'
-            const replacedText = convertPathTokensToPath(path, text)
+    describe('createWelcomeWebview', async () => {
 
-            assert.strictEqual(replacedText, `${baseText}vscode-resource:${path}`)
+        const context = new FakeExtensionContext()
+        let filepath: string | undefined
+
+        before(async () => {
+            const tempDir = await filesystemUtilities.makeTemporaryToolkitFolder()
+            context.extensionPath = tempDir
         })
 
-        it ('converts arbitrary tokens to a relative path', () => {
-            const baseText = 'Here is my path: '
-            const token = 'hi-de-ho'
-            const text = baseText + token
-            const path = '/my/path'
-            const replacedText = convertPathTokensToPath(path, text, new RegExp(token, 'g'))
+        afterEach(async () => {
+            if (filepath && await filesystemUtilities.fileExists(filepath)) {
+                await del(filepath, { force: true })
+            }
+        })
 
-            assert.strictEqual(replacedText, `${baseText}vscode-resource:${path}`)
+        after(async () => {
+            await del(context.extensionPath, { force: true })
+        })
+
+        it ('returns void if a welcome page doesn\' exist', async () => {
+            const webview = await createWelcomeWebview(context, 'irresponsibly-named-file')
+            assert.ok(typeof webview !== 'object')
+        })
+
+        it ('returns a webview with unaltered text if a valid file is passed without tokens', async () => {
+            const filetext = 'this temp welcome page does not have any tokens'
+            filepath = 'tokenless'
+            await writeFile(path.join(context.extensionPath, filepath), filetext)
+            const webview = await createWelcomeWebview(context, filepath)
+
+            assert.ok(typeof webview === 'object')
+            const forcedWebview = webview as vscode.WebviewPanel
+            assert.strictEqual(forcedWebview.webview.html, filetext)
+        })
+
+        it ('returns a webview with tokens replaced', async () => {
+            const token = '!!EXTENSIONROOT!!'
+            const basetext = 'this temp welcome page has tokens: '
+            const filetext = basetext + token
+            filepath = 'tokenless'
+            await writeFile(path.join(context.extensionPath, filepath), filetext)
+            const webview = await createWelcomeWebview(context, filepath)
+
+            assert.ok(typeof webview === 'object')
+            const forcedWebview = webview as vscode.WebviewPanel
+            assert.strictEqual(forcedWebview.webview.html, `${basetext}vscode-resource:${context.extensionPath}`)
         })
     })
 
