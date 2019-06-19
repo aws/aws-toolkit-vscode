@@ -356,6 +356,10 @@ export async function makeInputTemplate(params: {
         if (params.properties.MemorySize) {
             newTemplate.withMemorySize(params.properties.MemorySize)
         }
+
+        if (params.properties.Timeout) {
+            newTemplate.withTimeout(params.properties.Timeout)
+        }
     }
 
     const inputTemplatePath: string = path.join(params.baseBuildDir, 'input', 'input-template.yaml')
