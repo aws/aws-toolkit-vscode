@@ -162,7 +162,7 @@ export function setMostRecentVersion(context: vscode.ExtensionContext): void {
 export async function promptWelcome(): Promise<void> {
     const view = localize(
         'AWS.message.prompt.welcome.openPage',
-        'View the Welcome Page'
+        'View Welcome Page'
     )
     const prompt = await vscode.window.showInformationMessage(
         localize(
