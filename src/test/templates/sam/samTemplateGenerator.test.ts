@@ -47,9 +47,6 @@ describe('SamTemplateGenerator', () => {
 
     it('Produces a minimal template', async () => {
         await makeMinimalTemplate()
-            .withMemorySize(sampleMemorySize)
-            .withTimeout(sampleTimeout)
-            .withEnvironment(sampleEnvironment)
             .generate(templateFilename)
 
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
@@ -62,9 +59,54 @@ describe('SamTemplateGenerator', () => {
         assert.ok(resource)
         assert.strictEqual(resource!.Properties!.CodeUri, sampleCodeUriValue)
         assert.strictEqual(resource!.Properties!.Handler, sampleFunctionHandlerValue)
-        assert.strictEqual(resource!.Properties!.MemorySize, sampleMemorySize)
-        assert.strictEqual(resource!.Properties!.Timeout, sampleTimeout)
         assert.strictEqual(resource!.Properties!.Runtime, sampleRuntimeValue)
+    })
+
+    it('Produces a template containing MemorySize', async () => {
+        await makeMinimalTemplate()
+            .withMemorySize(sampleMemorySize)
+            .generate(templateFilename)
+
+        assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
+
+        const template: CloudFormation.Template = await CloudFormation.load(templateFilename)
+        assert.ok(template.Resources)
+        assert.notStrictEqual(Object.keys(template.Resources!).length, 0)
+
+        const resource = template.Resources![sampleResourceNameValue]
+        assert.ok(resource)
+        assert.strictEqual(resource!.Properties!.MemorySize, sampleMemorySize)
+    })
+
+    it('Produces a template containing Timeout', async () => {
+        await makeMinimalTemplate()
+            .withTimeout(sampleTimeout)
+            .generate(templateFilename)
+
+        assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
+
+        const template: CloudFormation.Template = await CloudFormation.load(templateFilename)
+        assert.ok(template.Resources)
+        assert.notStrictEqual(Object.keys(template.Resources!).length, 0)
+
+        const resource = template.Resources![sampleResourceNameValue]
+        assert.ok(resource)
+        assert.strictEqual(resource!.Properties!.Timeout, sampleTimeout)
+    })
+
+    it('Produces a template containing Environment', async () => {
+        await makeMinimalTemplate()
+            .withEnvironment(sampleEnvironment)
+            .generate(templateFilename)
+
+        assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
+
+        const template: CloudFormation.Template = await CloudFormation.load(templateFilename)
+        assert.ok(template.Resources)
+        assert.notStrictEqual(Object.keys(template.Resources!).length, 0)
+
+        const resource = template.Resources![sampleResourceNameValue]
+        assert.ok(resource)
         assert.deepStrictEqual(resource!.Properties!.Environment, sampleEnvironment)
     })
 
