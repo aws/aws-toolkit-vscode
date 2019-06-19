@@ -27,14 +27,16 @@ export async function runSamCliPackage(
     invoker: SamCliProcessInvoker,
     logger: BasicLogger = getLogger(),
 ): Promise<void> {
-    const childProcessResult = await invoker.invoke(
-        'package',
-        '--template-file', packageArguments.sourceTemplateFile,
-        '--s3-bucket', packageArguments.s3Bucket,
-        '--output-template-file', packageArguments.destinationTemplateFile,
-        '--region', packageArguments.region,
-        '--profile', packageArguments.profile
-    )
+    const childProcessResult = await invoker.invoke({
+        arguments: [
+            'package',
+            '--template-file', packageArguments.sourceTemplateFile,
+            '--s3-bucket', packageArguments.s3Bucket,
+            '--output-template-file', packageArguments.destinationTemplateFile,
+            '--region', packageArguments.region,
+            '--profile', packageArguments.profile
+        ]
+    })
 
     logAndThrowIfUnexpectedExitCode(childProcessResult, 0, logger)
 }

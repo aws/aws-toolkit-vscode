@@ -72,6 +72,7 @@ Available commands include:
 * **AWS: Show region in the Explorer** - Displays the list of available AWS resources for the specified AWS Region in the **AWS: Explorer** Side Bar.
 * **AWS: Sign out** - Disconnects the Toolkit from the currently connected AWS account.
 * **AWS: View AWS Toolkit Logs** - Displays log files that contain general Toolkit diagnosis information.
+* **AWS: View Quick Start** - Displays this page.
 
 [Return to Top](#top)
 

@@ -46,6 +46,7 @@ export namespace CloudFormation {
         Handler: string,
         CodeUri: string,
         Runtime?: string,
+        MemorySize?: number,
         Timeout?: number,
         Environment?: Environment
     }
