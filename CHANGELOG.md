@@ -2,6 +2,11 @@
 
 All notable changes to the "aws-vscode-tools" extension will be documented in this file.
 
+## NEXT (Developer Preview)
+
+* Local Run/Debug now honors MemorySize values from SAM Template file (#509)
+* Fixed issue preventing users from connecting with assumed roles (#620)
+
 ## 0.2.0 (Developer Preview)
 
 * Local Run/Debug is now available for .NET Core 2.1 functions within SAM Applications
