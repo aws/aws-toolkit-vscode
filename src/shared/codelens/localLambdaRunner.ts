@@ -365,6 +365,10 @@ export async function makeInputTemplate(params: {
         if (params.properties.MemorySize) {
             newTemplate = newTemplate.withMemorySize(params.properties.MemorySize)
         }
+
+        if (params.properties.Timeout) {
+            newTemplate = newTemplate.withTimeout(params.properties.Timeout)
+        }
     }
 
     if (params.globals) {

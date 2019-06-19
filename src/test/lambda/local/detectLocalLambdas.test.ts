@@ -71,7 +71,6 @@ describe('detectLocalLambdas', () => {
         const lambda = actual[0]
         assert.ok(lambda)
         assert.strictEqual(lambda.lambda, 'MyFunction')
-        assert.strictEqual(lambda.protocol, 'inspector')
         assert.strictEqual(lambda.workspaceFolder.uri.fsPath, workspaceFolders[0].uri.fsPath)
         assert.strictEqual(lambda.templatePath, templatePath)
         assert.ok(lambda.templateGlobals, 'Expected to have a template globals object')
@@ -117,44 +116,5 @@ describe('detectLocalLambdas', () => {
         assert.strictEqual(actual[1].lambda, 'MyFunction2')
         assert.strictEqual(actual[1].templatePath, templatePath2)
         assert.ok(actual[1].templateGlobals, 'Expected to have a template globals object')
-    })
-
-    it('uses the inspector protocol for nodejs8.10', async () => {
-        const templatePath = path.join(workspaceFolders[0].uri.fsPath, 'template.yaml')
-        await saveTemplate(templatePath, 'nodejs8.10', 'MyFunction')
-        const actual = await detectLocalLambdas(workspaceFolders)
-
-        assert.ok(actual)
-        assert.strictEqual(actual.length, 1)
-
-        const lambda = actual[0]
-        assert.ok(lambda)
-        assert.strictEqual(lambda.protocol, 'inspector')
-    })
-
-    it('uses the legacy protocol for nodejs6.10', async () => {
-        const templatePath = path.join(workspaceFolders[0].uri.fsPath, 'template.yaml')
-        await saveTemplate(templatePath, 'nodejs6.10', 'MyFunction')
-        const actual = await detectLocalLambdas(workspaceFolders)
-
-        assert.ok(actual)
-        assert.strictEqual(actual.length, 1)
-
-        const lambda = actual[0]
-        assert.ok(lambda)
-        assert.strictEqual(lambda.protocol, 'legacy')
-    })
-
-    it('defaults to the inspector protocol when the runtime version cannot be determined', async () => {
-        const templatePath = path.join(workspaceFolders[0].uri.fsPath, 'template.yaml')
-        await saveTemplate(templatePath, 'nodejsX.Y', 'MyFunction')
-        const actual = await detectLocalLambdas(workspaceFolders)
-
-        assert.ok(actual)
-        assert.strictEqual(actual.length, 1)
-
-        const lambda = actual[0]
-        assert.ok(lambda)
-        assert.strictEqual(lambda.protocol, 'inspector')
     })
 })
