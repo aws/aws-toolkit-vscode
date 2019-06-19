@@ -19,7 +19,7 @@ import { CodeLensProviderParams } from './shared/codelens/codeLensUtils'
 import * as csLensProvider from './shared/codelens/csharpCodeLensProvider'
 import * as pyLensProvider from './shared/codelens/pythonCodeLensProvider'
 import * as tsLensProvider from './shared/codelens/typescriptCodeLensProvider'
-import { documentationUrl, extensionSettingsPrefix, githubUrl } from './shared/constants'
+import { documentationUrl, extensionSettingsPrefix, githubUrl, reportIssueUrl } from './shared/constants'
 import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
 import { UserCredentialsUtils } from './shared/credentials/userCredentialsUtils'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
@@ -146,6 +146,10 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand(
             'aws.github',
             () => { vscode.env.openExternal(vscode.Uri.parse(githubUrl)) }
+        )
+        vscode.commands.registerCommand(
+            'aws.reportIssue',
+            () => { vscode.env.openExternal(vscode.Uri.parse(reportIssueUrl)) }
         )
 
         // TODO: Move to Telemetry registerCommand and add a metric:

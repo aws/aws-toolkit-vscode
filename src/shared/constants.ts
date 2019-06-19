@@ -18,6 +18,7 @@ export const samAboutInstallUrl: string = 'https://aws.amazon.com/serverless/sam
 // tslint:disable-next-line:max-line-length
 export const vscodeMarketplaceUrl: string = 'https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode'
 export const githubUrl: string = 'https://github.com/aws/aws-toolkit-vscode'
+export const reportIssueUrl = `${githubUrl}/issues/new`
 export const documentationUrl: string = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html'
 // tslint:disable-next-line:max-line-length
 export const credentialHelpUrl: string = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-credentials.html'
