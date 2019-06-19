@@ -15,7 +15,7 @@ import { fileExists, makeTemporaryToolkitFolder } from '../../../shared/filesyst
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import { assertRejects } from '../utilities/assertUtils'
 
-describe ('CloudFormation', () => {
+describe('CloudFormation', () => {
 
     let tempFolder: string
     let filename: string
@@ -35,6 +35,11 @@ describe ('CloudFormation', () => {
 
     function createBaseTemplate(): CloudFormation.Template {
         return {
+            Globals: {
+                Function: {
+                    Timeout: 5
+                }
+            },
             Resources: {
                 TestResource: createBaseResource()
             }
@@ -63,9 +68,14 @@ describe ('CloudFormation', () => {
     }
 
     describe('load', async () => {
-        it ('can successfully load a file', async () => {
-            const yamlStr: string =
-`Resources:
+        const makeSampleSamTemplateYaml = (addGlobalsSection: boolean): string => {
+            const globalsYaml = `Globals:
+    Function:
+        Timeout: 5
+
+`
+
+            return `${addGlobalsSection ? globalsYaml : ''}Resources:
     TestResource:
         Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
         Properties:
@@ -76,15 +86,31 @@ describe ('CloudFormation', () => {
             Environment:
                 Variables:
                     ENVVAR: envvar`
+        }
+
+        it('can successfully load a file', async () => {
+            const yamlStr = makeSampleSamTemplateYaml(true)
 
             await strToYamlFile(yamlStr, filename)
             const loadedTemplate = await CloudFormation.load(filename)
             assert.deepStrictEqual(loadedTemplate, createBaseTemplate())
         })
 
-        it ('can successfully load a file with parameters', async () => {
+        it('can successfully load a file without globals', async () => {
+            const yamlStr = makeSampleSamTemplateYaml(false)
+
+            await strToYamlFile(yamlStr, filename)
+            const loadedTemplate = await CloudFormation.load(filename)
+
+            const expectedTemplate = createBaseTemplate()
+            delete expectedTemplate.Globals
+
+            assert.deepStrictEqual(loadedTemplate, expectedTemplate)
+        })
+
+        it('can successfully load a file with parameters', async () => {
             const yamlStr: string =
-`Parameters:
+                `Parameters:
     MyParam1:
         Type: String
     MyParam2:
@@ -114,10 +140,10 @@ describe ('CloudFormation', () => {
             assert.deepStrictEqual(loadedTemplate, expectedTemplate)
         })
 
-        it ('only loads YAML with valid types', async () => {
+        it('only loads YAML with valid types', async () => {
             // timeout is not a number
             const badYamlStr: string =
-`Resources:
+                `Resources:
     TestResource:
         Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
         Properties:
@@ -132,10 +158,10 @@ describe ('CloudFormation', () => {
             await assertRejects(async () => await CloudFormation.load(filename))
         })
 
-        it ('only loads valid YAML', async () => {
+        it('only loads valid YAML', async () => {
             // same as above, minus the handler
             const badYamlStr: string =
-`Resources:
+                `Resources:
     TestResource:
         Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
         Properties:
@@ -151,12 +177,12 @@ describe ('CloudFormation', () => {
     })
 
     describe('save', async () => {
-        it ('can successfully save a file', async() => {
+        it('can successfully save a file', async () => {
             await CloudFormation.save(createBaseTemplate(), filename)
             assert.strictEqual(await SystemUtilities.fileExists(filename), true)
         })
 
-        it ('can successfully save a file to YAML and load the file as a CloudFormation.Template', async () => {
+        it('can successfully save a file to YAML and load the file as a CloudFormation.Template', async () => {
             const baseTemplate = createBaseTemplate()
             await CloudFormation.save(baseTemplate, filename)
             assert.strictEqual(await SystemUtilities.fileExists(filename), true)
@@ -166,11 +192,11 @@ describe ('CloudFormation', () => {
     })
 
     describe('validateTemplate', async () => {
-        it ('can successfully validate a valid template', () => {
+        it('can successfully validate a valid template', () => {
             assert.doesNotThrow(() => CloudFormation.validateTemplate(createBaseTemplate()))
         })
 
-        it ('can detect an invalid template', () => {
+        it('can detect an invalid template', () => {
             const badTemplate = createBaseTemplate()
             delete badTemplate.Resources!.TestResource!.Type
             assert.throws(
@@ -182,11 +208,11 @@ describe ('CloudFormation', () => {
     })
 
     describe('validateResource', async () => {
-        it ('can successfully validate a valid resource', () => {
+        it('can successfully validate a valid resource', () => {
             assert.doesNotThrow(() => CloudFormation.validateResource(createBaseResource()))
         })
 
-        it ('can detect an invalid resource', () => {
+        it('can detect an invalid resource', () => {
             const badResource = createBaseResource()
             delete badResource.Properties!.CodeUri
             assert.throws(

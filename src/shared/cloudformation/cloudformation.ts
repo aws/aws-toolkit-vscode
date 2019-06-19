@@ -134,10 +134,14 @@ export namespace CloudFormation {
             [key: string]: Parameter | undefined
         }
 
+        Globals?: TemplateGlobals
+
         Resources?: {
             [key: string]: Resource | undefined
         }
     }
+
+    export type TemplateGlobals = any
 
     export interface Environment {
         Variables?: {

@@ -14,6 +14,7 @@ import { CloudFormation } from '../../cloudformation/cloudformation'
 export class SamTemplateGenerator {
     private resourceName?: string
     private readonly properties: Partial<CloudFormation.ResourceProperties> = {}
+    private globals: CloudFormation.TemplateGlobals | undefined
 
     public withResourceName(resourceName: string): SamTemplateGenerator {
         this.resourceName = resourceName
@@ -51,6 +52,12 @@ export class SamTemplateGenerator {
         return this
     }
 
+    public withGlobals(globals: CloudFormation.TemplateGlobals): SamTemplateGenerator {
+        this.globals = globals
+
+        return this
+    }
+
     public async generate(filename: string): Promise<void> {
         if (!this.resourceName) {
             throw new Error('Missing value: ResourceName')
@@ -64,6 +71,11 @@ export class SamTemplateGenerator {
                 }
             }
         }
+
+        if (this.globals) {
+            template.Globals = this.globals
+        }
+
         const templateAsYaml: string = yaml.safeDump(template, { skipInvalid: true })
 
         const parentDirectory: string = path.dirname(filename)
