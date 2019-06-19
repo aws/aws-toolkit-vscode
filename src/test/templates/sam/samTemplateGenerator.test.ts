@@ -78,14 +78,16 @@ describe('SamTemplateGenerator', () => {
 
         const template: CloudFormation.Template = await CloudFormation.load(templateFilename)
         assert.ok(template.Globals, 'Expected loaded template to have a Globals section')
-        assert.notStrictEqual(Object.keys(template.Globals!).length, 0, 'Expected Template Globals to be not empty')
+        // tslint:disable:no-unsafe-any -- we don't care about the schema of globals for the test
+        const globals = template.Globals!
+        assert.notStrictEqual(Object.keys(globals).length, 0, 'Expected Template Globals to be not empty')
 
-        const globals = template.Globals
         const functionKey = 'Function'
         const timeoutKey = 'Timeout'
         assert.ok(globals[functionKey], 'Expected Globals to contain Function')
         assert.ok(globals[functionKey][timeoutKey], 'Expected Globals.Function to contain Timeout')
         assert.strictEqual(globals[functionKey][timeoutKey], 5, 'Unexpected Globals.Function.Timeout value')
+        // tslint:enable:no-unsafe-any
     })
 
     it('errs if resource name is missing', async () => {
