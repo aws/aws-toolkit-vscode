@@ -14,16 +14,14 @@ import com.intellij.openapi.options.ConfigurationException
 import com.intellij.openapi.roots.ContentEntry
 import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.roots.ModuleRootManager
-import com.intellij.openapi.roots.ProjectRootManager
-import com.intellij.openapi.roots.ui.configuration.ModulesProvider
 import com.intellij.openapi.startup.StartupManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.ProjectTemplatesFactory
 import com.intellij.util.DisposeAwareRunnable
 import icons.AwsIcons
-import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.services.lambda.SamNewProjectSettings
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.resources.message
 
@@ -43,33 +41,28 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
 
     // IntelliJ create commit step
     override fun setupRootModel(rootModel: ModifiableRootModel) {
-        // sdk config deviates here since we're not storing information in the module builder like other standard
-        // IntelliJ project wizards
-        val sdk = generator.settings.sdk
-        // project sdk
-        ProjectRootManager.getInstance(rootModel.project).projectSdk = sdk
-        // module sdk
-        rootModel.inheritSdk()
+        val settings = generator.peer.settings
+        val samTemplate = settings.template
 
-        val selectedRuntime = generator.settings.runtime
+        samTemplate.setupSdk(rootModel, settings)
+
+        // Set module type
+        val selectedRuntime = settings.runtime
         val moduleType = selectedRuntime.runtimeGroup?.getModuleType() ?: ModuleType.EMPTY
-
         rootModel.module.setModuleType(moduleType.id)
 
         val contentEntry: ContentEntry = doAddContentEntry(rootModel) ?: throw Exception(message("sam.init.error.no.project.basepath"))
         val outputDir: VirtualFile = contentEntry.file ?: throw Exception(message("sam.init.error.no.virtual.file"))
 
-        val samTemplate = generator.settings.template
         samTemplate.build(rootModel.project, selectedRuntime, outputDir)
 
-        runPostModuleCreationStep(selectedRuntime, outputDir, rootModel, samTemplate)
+        runPostModuleCreationStep(settings, outputDir, rootModel)
     }
 
     private fun runPostModuleCreationStep(
-        runtime: Runtime,
+        settings: SamNewProjectSettings,
         contentRoot: VirtualFile,
-        rootModel: ModifiableRootModel,
-        template: SamProjectTemplate
+        rootModel: ModifiableRootModel
     ) {
         val project = rootModel.project
         if (project.isDisposed) return
@@ -81,7 +74,7 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
                         // Since we will be running later, we will need to make a new ModifiableRootModel
                         val postStartRootModel = ModuleRootManager.getInstance(rootModel.module).modifiableModel
                         try {
-                            template.postCreationAction(runtime, contentRoot, postStartRootModel)
+                            settings.template.postCreationAction(settings, contentRoot, postStartRootModel)
                             WriteAction.run<Exception> {
                                 postStartRootModel.commit()
                             }
@@ -94,25 +87,19 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
                 )
             )
         } else {
-            template.postCreationAction(runtime, contentRoot, rootModel)
+            settings.template.postCreationAction(settings, contentRoot, rootModel)
         }
     }
 
-    // IntelliJ wizard steps would go here. We will have to build a custom wizard in SamProjectRuntimeSelectionStep
-    override fun createFinishingSteps(wizardContext: WizardContext, modulesProvider: ModulesProvider): Array<ModuleWizardStep> =
-        super.createFinishingSteps(wizardContext, modulesProvider)
-
     // add things
     override fun modifySettingsStep(settingsStep: SettingsStep): ModuleWizardStep? {
-        generator.createPeer().buildUI(settingsStep)
+        generator.peer.buildUI(settingsStep)
 
         // need to return an object with validate() implemented for validation
         return object : ModuleWizardStep() {
             override fun getComponent() = null
 
-            override fun updateDataModel() {
-                generator.peer.sdkPanel.ensureSdk()
-            }
+            override fun updateDataModel() {}
 
             @Throws(ConfigurationException::class)
             override fun validate(): Boolean {
@@ -129,7 +116,7 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
     }
 
     private companion object {
-        val LOG = getLogger<SamHelloWorldMaven>()
+        val LOG = getLogger<SamProjectBuilder>()
     }
 }
 

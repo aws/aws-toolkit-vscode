@@ -7,5 +7,6 @@
         <builder runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.java.JavaLambdaBuilder"/>
         <sam.debugSupport runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.java.JavaSamDebugSupport"/>
         <handlerResolver runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.java.JavaLambdaHandlerResolver"/>
+        <sam.projectWizard runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.java.JavaSamProjectWizard"/>
     </extensions>
 </idea-plugin>
