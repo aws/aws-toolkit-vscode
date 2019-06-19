@@ -170,7 +170,7 @@ export function setMostRecentVersion(context: vscode.ExtensionContext): void {
 async function promptQuickStart(): Promise<void> {
     const view = localize(
         'AWS.command.quickStart',
-        'View Welcome Page'
+        'View Quick Start'
     )
     const prompt = await vscode.window.showInformationMessage(
         localize(
