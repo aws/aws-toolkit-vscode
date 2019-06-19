@@ -22,16 +22,24 @@ export class FakeExtensionContext implements ExtensionContext {
     }[] = []
     public workspaceState: Memento = new FakeMemento()
     public globalState: Memento = new FakeMemento()
-    public extensionPath: string = ''
     public storagePath: string | undefined
     public globalStoragePath: string = '.'
     public logPath: string = ''
+    private _extensionPath: string = ''
 
     public constructor(preload?: FakeExtensionState) {
         if (preload) {
             this.globalState = new FakeMemento(preload.globalState)
             this.workspaceState = new FakeMemento(preload.workspaceState)
         }
+    }
+
+    public get extensionPath(): string {
+        return this._extensionPath
+    }
+
+    public set extensionPath(path: string) {
+        this._extensionPath = path
     }
 
     public asAbsolutePath(relativePath: string): string {

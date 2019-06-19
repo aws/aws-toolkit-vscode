@@ -8,7 +8,6 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import * as path from 'path'
 import { resumeCreateNewSamApp } from './lambda/commands/createNewSamApp'
 import { SamParameterCompletionItemProvider } from './lambda/config/samParameterCompletionItemProvider'
 import { RegionNode } from './lambda/explorer/regionNode'
@@ -29,8 +28,7 @@ import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
 import { DefaultAWSStatusBar } from './shared/defaultStatusBar'
 import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
-import { convertPathTokensToPath, safeGet } from './shared/extensionUtilities'
-import { readFileAsString } from './shared/filesystemUtilities'
+import { createWelcomeWebview, safeGet } from './shared/extensionUtilities'
 import * as logFactory from './shared/logger'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import * as SamCliContext from './shared/sam/cli/samCliContext'
@@ -153,17 +151,10 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand(
             'aws.welcome',
             async () => {
-                const view = vscode.window.createWebviewPanel(
-                    'html',
-                    localize('AWS.command.welcome.title', 'AWS Toolkit - Welcome'),
-                    vscode.ViewColumn.Active
-                )
-
-                const fileText = convertPathTokensToPath(
-                    context.extensionPath,
-                    await readFileAsString(path.join(context.extensionPath, 'welcomePage.html'))
-                )
-                view.webview.html = fileText
+                const view = await createWelcomeWebview(context)
+                if (view) {
+                    view.reveal()
+                }
             }
         )
 
