@@ -351,7 +351,7 @@ export async function makeInputTemplate(params: {
     properties?: CloudFormation.ResourceProperties
     runtime: string
 }): Promise<string> {
-    const newTemplate = new SamTemplateGenerator()
+    let newTemplate = new SamTemplateGenerator()
         .withFunctionHandler(params.relativeFunctionHandler)
         .withResourceName(TEMPLATE_RESOURCE_NAME)
         .withRuntime(params.runtime)
@@ -359,16 +359,16 @@ export async function makeInputTemplate(params: {
 
     if (params.properties) {
         if (params.properties.Environment) {
-            newTemplate.withEnvironment(params.properties.Environment)
+            newTemplate = newTemplate.withEnvironment(params.properties.Environment)
         }
 
         if (params.properties.MemorySize) {
-            newTemplate.withMemorySize(params.properties.MemorySize)
+            newTemplate = newTemplate.withMemorySize(params.properties.MemorySize)
         }
     }
 
     if (params.globals) {
-        newTemplate.withGlobals(params.globals)
+        newTemplate = newTemplate.withGlobals(params.globals)
     }
 
     const inputTemplatePath: string = path.join(params.baseBuildDir, 'input', 'input-template.yaml')
