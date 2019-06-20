@@ -73,6 +73,7 @@ describe('detectLocalLambdas', () => {
         assert.strictEqual(lambda.lambda, 'MyFunction')
         assert.strictEqual(lambda.workspaceFolder.uri.fsPath, workspaceFolders[0].uri.fsPath)
         assert.strictEqual(lambda.templatePath, templatePath)
+        assert.ok(lambda.templateGlobals, 'Expected to have a template globals object')
     })
 
     it('detects lambdas when template.yaml exists', async () => {
@@ -85,6 +86,7 @@ describe('detectLocalLambdas', () => {
         assert.ok(actual[0])
         assert.strictEqual(actual[0].lambda, 'MyFunction')
         assert.strictEqual(actual[0].templatePath, templatePath)
+        assert.ok(actual[0].templateGlobals, 'Expected to have a template globals object')
     })
 
     it('detects lambdas in multi-folder workspace', async () => {
@@ -109,8 +111,10 @@ describe('detectLocalLambdas', () => {
         assert.ok(actual[0])
         assert.strictEqual(actual[0].lambda, 'MyFunction1')
         assert.strictEqual(actual[0].templatePath, templatePath1)
+        assert.ok(actual[0].templateGlobals, 'Expected to have a template globals object')
         assert.ok(actual[1])
         assert.strictEqual(actual[1].lambda, 'MyFunction2')
         assert.strictEqual(actual[1].templatePath, templatePath2)
+        assert.ok(actual[1].templateGlobals, 'Expected to have a template globals object')
     })
 })
