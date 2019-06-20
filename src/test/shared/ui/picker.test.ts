@@ -209,7 +209,7 @@ describe('promptUser', async () => {
 
         const promptPromise = picker.promptUser({
             picker: samplePicker,
-            onDidTriggerButton: (button, resolve, reject) => {
+            onDidTriggerButton: (sender, button, resolve, reject) => {
                 assert.strictEqual(
                     button,
                     buttonOfInterest,
@@ -217,7 +217,7 @@ describe('promptUser', async () => {
                     `but got button ${JSON.stringify(buttonOfInterest)}`
                 )
 
-                samplePicker.hide()
+                sender.hide()
             }
         })
 
@@ -238,7 +238,7 @@ describe('promptUser', async () => {
 
         const promptPromise = picker.promptUser({
             picker: samplePicker,
-            onDidTriggerButton: (button, resolve, reject) => {
+            onDidTriggerButton: (sender, button, resolve, reject) => {
                 assert.strictEqual(
                     button,
                     buttonOfInterest,
@@ -246,7 +246,9 @@ describe('promptUser', async () => {
                     `but got button ${JSON.stringify(buttonOfInterest)}`
                 )
 
-                samplePicker.accept(selectedItem)
+                assert.ok(sender instanceof TestQuickPick)
+                const testPicker = sender as TestQuickPick<vscode.QuickPickItem>
+                testPicker.accept(selectedItem)
             }
         })
 
@@ -267,7 +269,7 @@ describe('promptUser', async () => {
 
         const promptUserPromise = picker.promptUser({
             picker: samplePicker,
-            onDidTriggerButton: (button, resolve, reject) => {
+            onDidTriggerButton: (sender, button, resolve, reject) => {
                 assert.strictEqual(
                     button,
                     buttonOfInterest,

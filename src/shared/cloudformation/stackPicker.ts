@@ -30,9 +30,9 @@ export class CloudFormationStackPicker {
 
         const response = await promptUser({
             picker: this.picker,
-            onDidTriggerButton: (button, resolve, reject) => {
+            onDidTriggerButton: (sender, button, resolve, reject) => {
                 if (button === vscode.QuickInputButtons.Back) {
-                    this.picker.hide()
+                    sender.hide()
                     resolve(undefined)
                 }
             }

@@ -167,7 +167,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
         const choices = await picker.promptUser({
             picker: quickPick,
-            onDidTriggerButton: (button, resolve, reject) => {
+            onDidTriggerButton: (sender, button, resolve, reject) => {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
@@ -221,7 +221,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             })
             const response = getSingleResponse(await picker.promptUser({
                 picker: quickPick,
-                onDidTriggerButton: (button, resolve, reject) => {
+                onDidTriggerButton: (sender, button, resolve, reject) => {
                     if (button === vscode.QuickInputButtons.Back) {
                         resolve(undefined)
                     } else if (button === this.helpButton) {
@@ -272,7 +272,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             })
             const response = getSingleResponse(await picker.promptUser({
                 picker: quickPick,
-                onDidTriggerButton: (button, resolve, reject) => {
+                onDidTriggerButton: (sender, button, resolve, reject) => {
                     if (button === vscode.QuickInputButtons.Back) {
                         resolve(undefined)
                     } else if (button === this.helpButton) {
@@ -302,7 +302,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 title: localize(
                     'AWS.samcli.deploy.region.prompt',
                     'Which AWS Region would you like to deploy to?'
-                    ),
+                ),
                 value: initialRegionCode || '',
                 matchOnDetail: true,
                 ignoreFocusOut: true,
@@ -326,7 +326,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
         const choices = await picker.promptUser<vscode.QuickPickItem>({
             picker: quickPick,
-            onDidTriggerButton: (button, resolve, reject) => {
+            onDidTriggerButton: (sender, button, resolve, reject) => {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {

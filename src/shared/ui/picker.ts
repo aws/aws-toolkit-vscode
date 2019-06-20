@@ -83,6 +83,7 @@ export async function promptUser<T extends vscode.QuickPickItem>(
     }: {
         picker: vscode.QuickPick<T>,
         onDidTriggerButton?(
+            sender: vscode.QuickPick<T>,
             button: vscode.QuickInputButton,
             resolve: (value: T[] | PromiseLike<T[] | undefined> | undefined) => void,
             reject: (reason?: any) => void,
@@ -111,7 +112,7 @@ export async function promptUser<T extends vscode.QuickPickItem>(
 
             if (onDidTriggerButton) {
                 picker.onDidTriggerButton(
-                    (btn: vscode.QuickInputButton) => onDidTriggerButton(btn, resolve, reject),
+                    (btn: vscode.QuickInputButton) => onDidTriggerButton(picker, btn, resolve, reject),
                     picker,
                     disposables
                 )
