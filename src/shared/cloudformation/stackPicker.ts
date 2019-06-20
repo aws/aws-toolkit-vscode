@@ -8,40 +8,12 @@
 import { CloudFormation } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../ui/picker'
+import { ItemsLoader } from '../utilities/itemsLoader'
 
 export interface CloudFormationStackPickerResponse {
     cancelled: boolean,
     inputText?: string,
     createStackButtonPressed: boolean
-}
-
-// TODO : CC : Move CloudFormationStacksLoader somewhere more central
-export interface CloudFormationStacksLoader {
-    onLoadStart: vscode.Event<void>
-    onItem: vscode.Event<CloudFormation.StackSummary>
-    onLoadEnd: vscode.Event<void>
-    // TODO : CC : Error situations
-}
-
-// todo : CC : Move BaseCloudFormationStacksLoader somewhere more central
-export abstract class BaseCloudFormationStacksLoader implements CloudFormationStacksLoader {
-    protected readonly loadStartEmitter = new vscode.EventEmitter<void>()
-    protected readonly loadEndEmitter = new vscode.EventEmitter<void>()
-
-    protected readonly itemEmitter: vscode.EventEmitter<CloudFormation.StackSummary> =
-        new vscode.EventEmitter<CloudFormation.StackSummary>()
-
-    public get onLoadStart(): vscode.Event<void> {
-        return this.loadStartEmitter.event
-    }
-
-    public get onItem(): vscode.Event<CloudFormation.StackSummary> {
-        return this.itemEmitter.event
-    }
-
-    public get onLoadEnd(): vscode.Event<void> {
-        return this.loadEndEmitter.event
-    }
 }
 
 /**
@@ -59,16 +31,16 @@ export class CloudFormationStackPicker {
     private picker: vscode.QuickPick<vscode.QuickPickItem> | undefined
 
     public constructor(parameters: {
-        emitter: CloudFormationStacksLoader,
+        stacksLoader: ItemsLoader<CloudFormation.StackSummary>,
         extensionContext: vscode.ExtensionContext,
     }) {
         this.extensionContext = parameters.extensionContext
 
         this.createNewStackButton = makeCreateNewStackButton(this.extensionContext)
 
-        parameters.emitter.onLoadStart(() => this.onLoadStart(), undefined, this.disposables)
-        parameters.emitter.onItem((itm) => this.onNewStack(itm), undefined, this.disposables)
-        parameters.emitter.onLoadEnd(() => this.onLoadEnd(), undefined, this.disposables)
+        parameters.stacksLoader.onLoadStart(() => this.onLoadStart(), undefined, this.disposables)
+        parameters.stacksLoader.onItem((itm) => this.onNewStack(itm), undefined, this.disposables)
+        parameters.stacksLoader.onLoadEnd(() => this.onLoadEnd(), undefined, this.disposables)
     }
 
     public async prompt(): Promise<CloudFormationStackPickerResponse> {

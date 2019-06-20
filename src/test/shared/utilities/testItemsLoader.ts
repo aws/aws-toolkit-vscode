@@ -7,7 +7,7 @@
 
 import { BaseItemsLoader } from '../../../shared/utilities/itemsLoader'
 
-export class TestCloudFormationStacksLoader<T> extends BaseItemsLoader<T> {
+export class TestItemsLoader<T> extends BaseItemsLoader<T> {
     public startLoad() {
         this.loadStartEmitter.fire()
     }

@@ -8,25 +8,14 @@
 import * as assert from 'assert'
 import { CloudFormation } from 'aws-sdk'
 import * as vscode from 'vscode'
-import { BaseCloudFormationStacksLoader, CloudFormationStackPicker, } from '../../../shared/cloudformation/stackPicker'
+import { CloudFormationStackPicker, } from '../../../shared/cloudformation/stackPicker'
 import { TestLogger } from '../../../shared/loggerUtils'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { MockQuickPick } from '../ui/mockQuickPick'
+import { TestItemsLoader } from '../utilities/testItemsLoader'
 
 describe('CloudFormationStackPicker', async () => {
-    class TestCloudFormationStacksLoader extends BaseCloudFormationStacksLoader {
-        public startLoad() {
-            this.loadStartEmitter.fire()
-        }
-
-        public endLoad() {
-            this.loadEndEmitter.fire()
-        }
-
-        public emitItems(...items: CloudFormation.StackSummary[]) {
-            items.forEach(item => this.itemEmitter.fire(item))
-        }
-
+    class TestCloudFormationStacksLoader extends TestItemsLoader<CloudFormation.StackSummary> {
         public loadItems(items: CloudFormation.StackSummary[]) {
             this.startLoad()
             this.emitItems(...items)
@@ -40,7 +29,7 @@ describe('CloudFormationStackPicker', async () => {
             public readonly mockPicker: MockQuickPick<vscode.QuickPickItem>
         ) {
             super({
-                emitter: loader,
+                stacksLoader: loader,
                 extensionContext: new FakeExtensionContext(),
             })
         }

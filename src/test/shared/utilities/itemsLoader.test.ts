@@ -6,14 +6,14 @@
 'use strict'
 
 import assert = require('assert')
-import { TestCloudFormationStacksLoader } from './testItemsLoader'
+import { TestItemsLoader } from './testItemsLoader'
 
 describe('BaseItemsLoader', async () => {
 
-    let itemsLoader: TestCloudFormationStacksLoader<number>
+    let itemsLoader: TestItemsLoader<number>
 
     beforeEach(async () => {
-        itemsLoader = new TestCloudFormationStacksLoader()
+        itemsLoader = new TestItemsLoader()
     })
 
     it('onLoadStart fires', async () => {
