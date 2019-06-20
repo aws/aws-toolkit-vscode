@@ -14,6 +14,7 @@ export interface LocalLambda {
     lambda: string
     workspaceFolder: vscode.WorkspaceFolder
     resource: CloudFormation.Resource
+    templateGlobals: CloudFormation.TemplateGlobals
     templatePath: string
     handler?: string
 }
@@ -68,6 +69,7 @@ async function detectLambdasFromTemplate(
             lambda: key,
             workspaceFolder,
             templatePath,
+            templateGlobals: template.Globals,
             handler: getHandler(resources[key]!),
             resource: resources[key]!
         }))

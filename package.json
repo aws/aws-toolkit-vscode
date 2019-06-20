@@ -40,10 +40,12 @@
         "onView:aws.explorer",
         "onCommand:aws.deploySamApplication",
         "onCommand:aws.samcli.detect",
-        "onCommand:aws.samcli.validate.version",
         "onCommand:aws.lambda.createNewSamApp",
         "onDebugInitialConfigurations",
-        "onCommand:aws.viewLogs"
+        "onCommand:aws.viewLogs",
+        "onCommand:aws.quickStart",
+        "onCommand:aws.help",
+        "onCommand:aws.github"
     ],
     "main": "./out/src/extension",
     "contributes": {
