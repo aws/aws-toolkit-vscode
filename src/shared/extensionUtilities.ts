@@ -11,10 +11,9 @@ import { ScriptResource } from '../lambda/models/scriptResource'
 import { ext } from '../shared/extensionGlobals'
 import { mostRecentVersionKey, pluginVersion } from './constants'
 import { readFileAsString } from './filesystemUtilities'
-import { getLogger } from './logger'
+import { Logger } from './logger'
 
 const localize = nls.loadMessageBundle()
-const logger = getLogger()
 
 export class ExtensionUtilities {
     public static getLibrariesForHtml(names: string[]): ScriptResource[] {
@@ -193,7 +192,7 @@ async function promptQuickStart(): Promise<void> {
  *
  * @param context VS Code Extension Context
  */
-export function toastNewUser(context: vscode.ExtensionContext): void {
+export function toastNewUser(context: vscode.ExtensionContext, logger: Logger): void {
     try {
         if (isDifferentVersion(context)) {
             setMostRecentVersion(context)

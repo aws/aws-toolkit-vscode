@@ -194,7 +194,7 @@ export async function activate(context: vscode.ExtensionContext) {
             '"'
         )
 
-        toastNewUser(context)
+        toastNewUser(context, logFactory.getLogger())
 
         await resumeCreateNewSamApp(context)
     } catch (error) {
