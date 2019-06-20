@@ -84,4 +84,20 @@ describe('CloudFormationStackPrompt', async () => {
         const prompt = new TestCloudFormationStackPrompt(stackNames, inputBox)
         await prompt.prompt()
     })
+
+    it('validates against invalid stack name', async () => {
+        const inputBox = new MockInputBox({
+            onShow: (sender) => {
+                assert.strictEqual(sender.validationMessage, undefined)
+                sender.setValue('stack-with$invalid-character')
+                assert.notStrictEqual(sender.validationMessage, undefined)
+
+                // Close up the picker
+                sender.hide()
+            }
+        })
+
+        const prompt = new TestCloudFormationStackPrompt(stackNames, inputBox)
+        await prompt.prompt()
+    })
 })

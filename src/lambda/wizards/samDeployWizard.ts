@@ -10,6 +10,7 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { CloudFormation } from '../../shared/cloudformation/cloudformation'
 import { samDeployDocUrl } from '../../shared/constants'
 import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
@@ -543,7 +544,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     private readonly STACK_NAME: WizardStep = async () => {
         this.response.stackName = await this.context.promptUserForStackName({
             initialValue: this.response.stackName,
-            validateInput: validateStackName,
+            validateInput: CloudFormation.validateStackName,
         })
 
         return this.response.stackName ? undefined : this.S3_BUCKET
@@ -654,36 +655,6 @@ function validateS3Bucket(value: string): string | undefined {
             'Each label in an S3 bucket name must begin with a number or a lower-case character'
         )
     }
-
-    return undefined
-}
-
-// https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html
-// A stack name can contain only alphanumeric characters (case sensitive) and hyphens.
-// It must start with an alphabetic character and cannot be longer than 128 characters.
-function validateStackName(value: string): string | undefined {
-    if (!/^[a-zA-Z\d\-]+$/.test(value)) {
-        return localize(
-            'AWS.samcli.deploy.stackName.error.invalidCharacters',
-            'A stack name may contain only alphanumeric characters (case sensitive) and hyphens'
-        )
-    }
-
-    if (!/^[a-zA-Z]/.test(value)) {
-        return localize(
-            'AWS.samcli.deploy.stackName.error.firstCharacter',
-            'A stack name must begin with an alphabetic character'
-        )
-    }
-
-    if (value.length > 128) {
-        return localize(
-            'AWS.samcli.deploy.stackName.error.length',
-            'A stack name must not be longer than 128 characters'
-        )
-    }
-
-    // TODO: Validate that a stack with this name does not already exist.
 
     return undefined
 }

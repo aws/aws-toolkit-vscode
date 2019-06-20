@@ -5,6 +5,9 @@
 
 'use strict'
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import * as schema from 'cloudformation-schema-js-yaml'
 import * as yaml from 'js-yaml'
 import * as filesystem from '../filesystem'
@@ -276,5 +279,37 @@ export namespace CloudFormation {
             //       interpreted languages to return a handler name relative to the
             //       `CodeUri`, rather than to the directory containing the source file.
             resource.Properties.Handler === handlerName
+    }
+
+    // https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html
+    // A stack name can contain only alphanumeric characters (case sensitive) and hyphens.
+    // It must start with an alphabetic character and cannot be longer than 128 characters.
+    //
+    // Returns a validation message, undefined if string passes validation checks
+    export function validateStackName(value: string): string | undefined {
+        if (!/^[a-zA-Z\d\-]+$/.test(value)) {
+            return localize(
+                'AWS.samcli.deploy.stackName.error.invalidCharacters',
+                'A stack name may contain only alphanumeric characters (case sensitive) and hyphens'
+            )
+        }
+
+        if (!/^[a-zA-Z]/.test(value)) {
+            return localize(
+                'AWS.samcli.deploy.stackName.error.firstCharacter',
+                'A stack name must begin with an alphabetic character'
+            )
+        }
+
+        if (value.length > 128) {
+            return localize(
+                'AWS.samcli.deploy.stackName.error.length',
+                'A stack name must not be longer than 128 characters'
+            )
+        }
+
+        // TODO: Validate that a stack with this name does not already exist.
+
+        return undefined
     }
 }

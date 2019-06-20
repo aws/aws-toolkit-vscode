@@ -7,6 +7,7 @@
 
 import * as vscode from 'vscode'
 import { createInputBox, promptUser } from '../ui/input'
+import { CloudFormation } from './cloudformation'
 
 /**
  * Prompts user for a CloudFormation Stack name.
@@ -64,9 +65,6 @@ export class CloudFormationStackPrompt {
             return `Stack exists: ${text}`
         }
 
-        // todo : CC : validate stack names
-        // move validateStackName from samDeployWizard.ts to somewhere cloudformation central
-
-        return undefined
+        return CloudFormation.validateStackName(text)
     }
 }
