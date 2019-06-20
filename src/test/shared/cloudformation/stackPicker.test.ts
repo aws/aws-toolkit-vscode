@@ -8,18 +8,37 @@
 import * as assert from 'assert'
 import { CloudFormation } from 'aws-sdk'
 import * as vscode from 'vscode'
-import { CloudFormationStackPicker } from '../../../shared/cloudformation/stackPicker'
+import { BaseCloudFormationStacksLoader, CloudFormationStackPicker, } from '../../../shared/cloudformation/stackPicker'
 import { TestLogger } from '../../../shared/loggerUtils'
-import { asyncGenerator } from '../../utilities/asyncGenerator'
 import { MockQuickPick } from '../ui/mockQuickPick'
 
 describe('CloudFormationStackPicker', async () => {
+    class TestCloudFormationStacksLoader extends BaseCloudFormationStacksLoader {
+        public startLoad() {
+            this.loadStartEmitter.fire()
+        }
+
+        public endLoad() {
+            this.loadEndEmitter.fire()
+        }
+
+        public emitItems(...items: CloudFormation.StackSummary[]) {
+            items.forEach(item => this.itemEmitter.fire(item))
+        }
+
+        public loadItems(items: CloudFormation.StackSummary[]) {
+            this.startLoad()
+            this.emitItems(...items)
+            this.endLoad()
+        }
+    }
+
     class TestCloudFormationStackPicker extends CloudFormationStackPicker {
         public constructor(
-            existingStacks: AsyncIterableIterator<CloudFormation.StackSummary>,
+            loader: TestCloudFormationStacksLoader,
             public readonly mockPicker: MockQuickPick<vscode.QuickPickItem>
         ) {
-            super(existingStacks)
+            super(loader)
         }
 
         protected createQuickPick(): vscode.QuickPick<vscode.QuickPickItem> {
@@ -32,13 +51,12 @@ describe('CloudFormationStackPicker', async () => {
         'stackB',
         'stackC'
     ].map(makePlaceholderStackSummary)
-    let stacks: AsyncIterableIterator<CloudFormation.StackSummary>
+    let stackLoader: TestCloudFormationStacksLoader
     let logger: TestLogger
 
     beforeEach(async () => {
         logger = await TestLogger.createTestLogger()
-        stacks = asyncGenerator(sampleStacks)
-        releaseSecondStack = false
+        stackLoader = new TestCloudFormationStacksLoader()
     })
 
     afterEach(async () => {
@@ -57,53 +75,45 @@ describe('CloudFormationStackPicker', async () => {
             }
         })
 
-        const picker = new TestCloudFormationStackPicker(stacks, quickPick)
+        const picker = new TestCloudFormationStackPicker(stackLoader, quickPick)
+        stackLoader.loadItems(sampleStacks)
+
         const result = await picker.prompt()
 
-        assert.strictEqual(result, 'stackA', 'Unexpected stack name returned from picker')
+        assert.strictEqual(result.cancelled, false, 'Expected result to be not cancelled')
+        assert.strictEqual(result.createStackButtonPressed, false, 'Did not expect stack button to be pressed')
+        assert.strictEqual(result.inputText, 'stackA', 'Unexpected stack name returned from picker')
     })
 
-    it('returns PICKER_CANCELLED on cancel', async () => {
+    it('returns cancelled state on cancel', async () => {
         const quickPick = new MockQuickPick({
             onShow: (sender) => { sender.hide() }
         })
-        const picker = new TestCloudFormationStackPicker(stacks, quickPick)
+        const picker = new TestCloudFormationStackPicker(stackLoader, quickPick)
+        stackLoader.loadItems(sampleStacks)
+
         const result = await picker.prompt()
 
-        assert.strictEqual(
-            result,
-            CloudFormationStackPicker.PICKER_CANCELLED,
-            'Expected "Cancelled" result from picker'
-        )
+        assert.strictEqual(result.cancelled, true, 'Expected result to be cancelled')
+        assert.strictEqual(result.createStackButtonPressed, false, 'Did not expect stack button to be pressed')
+        assert.strictEqual(result.inputText, undefined, 'Expected undefined inputText in result')
     })
 
-    it('returns PICKER_CANCELLED on Back Button press', async () => {
+    it('returns cancelled state on Back Button press', async () => {
         const quickPick = new MockQuickPick({
             onShow: (sender) => {
                 sender.pressButton(vscode.QuickInputButtons.Back)
             }
         })
-        const picker = new TestCloudFormationStackPicker(stacks, quickPick)
+        const picker = new TestCloudFormationStackPicker(stackLoader, quickPick)
+        stackLoader.loadItems(sampleStacks)
+
         const result = await picker.prompt()
 
-        assert.strictEqual(
-            result,
-            CloudFormationStackPicker.PICKER_CANCELLED,
-            'Expected "Cancelled" result from picker'
-        )
+        assert.strictEqual(result.cancelled, true, 'Expected result to be cancelled')
+        assert.strictEqual(result.createStackButtonPressed, false, 'Did not expect stack button to be pressed')
+        assert.strictEqual(result.inputText, undefined, 'Expected undefined inputText in result')
     })
-
-    let releaseSecondStack: boolean = false
-    async function* delayedStackList(): AsyncIterableIterator<CloudFormation.StackSummary> {
-        yield* [makePlaceholderStackSummary('firstStack')]
-
-        // Wait for signal to send second stack
-        while (!releaseSecondStack) {
-            await new Promise<any>(resolve => setTimeout(resolve, 1))
-        }
-
-        yield* [makePlaceholderStackSummary('secondStack')]
-    }
 
     it('has a busy notification while retrieving stacks', async () => {
         // Test has two stacks, we simulate retrieving the second stack
@@ -112,7 +122,12 @@ describe('CloudFormationStackPicker', async () => {
 
                 assert.strictEqual(sender.busy, true, 'expected picker to have busy state')
 
-                releaseSecondStack = true
+                stackLoader.emitItems(sampleStacks[0])
+                stackLoader.emitItems(sampleStacks[1])
+
+                assert.strictEqual(sender.busy, true, 'expected picker to have busy state')
+
+                stackLoader.endLoad()
 
                 // wait for picker to have both entries
                 while (sender.items.length !== 2) {
@@ -124,7 +139,8 @@ describe('CloudFormationStackPicker', async () => {
             }
         })
 
-        const picker = new TestCloudFormationStackPicker(delayedStackList(), quickPick)
+        const picker = new TestCloudFormationStackPicker(stackLoader, quickPick)
+        stackLoader.startLoad()
         await picker.prompt()
     })
 })

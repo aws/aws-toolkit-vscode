@@ -41,7 +41,7 @@ export class MockQuickPick<T extends vscode.QuickPickItem> implements vscode.Qui
         new vscode.EventEmitter()
 
     public constructor(params: {
-        onShow?(inputBox: MockQuickPick<T>): void
+        onShow?(sender: MockQuickPick<T>): void
     }) {
         this.onDidHide = this.onDidHideEmitter.event
         this.onDidAccept = this.onDidAcceptEmitter.event
