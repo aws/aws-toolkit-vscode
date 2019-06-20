@@ -23,7 +23,7 @@ import {
 } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
-import { Datum } from '../telemetry/telemetryTypes'
+import { Datum, TelemetryNamespace } from '../telemetry/telemetryTypes'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
@@ -87,6 +87,10 @@ export async function initialize({
                 telemetryService
             })
         },
+        telemetryName: {
+            namespace: TelemetryNamespace.Lambda,
+            name: 'invokelocal'
+        }
     })
 }
 
