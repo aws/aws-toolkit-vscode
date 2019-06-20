@@ -6,6 +6,7 @@ All notable changes to the "aws-vscode-tools" extension will be documented in th
 
 * Local Run/Debug now honors MemorySize values from SAM Template file (#509)
 * Local Run/Debug now honors Timeout values from SAM Template file (#510)
+* Local Run/Debug now honors the Globals section from SAM Template file
 * Fixed issue preventing users from connecting with assumed roles (#620)
 
 ## 0.2.0 (Developer Preview)
