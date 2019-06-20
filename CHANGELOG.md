@@ -7,7 +7,6 @@ All notable changes to the "aws-vscode-tools" extension will be documented in th
 * Local Run/Debug now honors MemorySize values from SAM Template file (#509)
 * Local Run/Debug now honors Timeout values from SAM Template file (#510)
 * Fixed issue preventing users from connecting with assumed roles (#620)
-* Removed error webviews from AWS Explorer. Errors can still be viewed by tooltip with full stack errors available in the AWS Toolkit Logs output channel.
 
 ## 0.2.0 (Developer Preview)
 
