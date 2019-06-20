@@ -10,6 +10,7 @@ import { CloudFormation } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { BaseCloudFormationStacksLoader, CloudFormationStackPicker, } from '../../../shared/cloudformation/stackPicker'
 import { TestLogger } from '../../../shared/loggerUtils'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { MockQuickPick } from '../ui/mockQuickPick'
 
 describe('CloudFormationStackPicker', async () => {
@@ -38,7 +39,10 @@ describe('CloudFormationStackPicker', async () => {
             loader: TestCloudFormationStacksLoader,
             public readonly mockPicker: MockQuickPick<vscode.QuickPickItem>
         ) {
-            super(loader)
+            super({
+                emitter: loader,
+                extensionContext: new FakeExtensionContext(),
+            })
         }
 
         protected createQuickPick(): vscode.QuickPick<vscode.QuickPickItem> {

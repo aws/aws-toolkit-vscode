@@ -49,17 +49,26 @@ export abstract class BaseCloudFormationStacksLoader implements CloudFormationSt
  * Callers should call dispose() when they are finished using the object.
  */
 export class CloudFormationStackPicker {
+    private readonly extensionContext: vscode.ExtensionContext
+
     private readonly pickerItems: vscode.QuickPickItem[] = []
-    private readonly createNewStackButton: vscode.QuickInputButton = makeCreateNewStackButton()
+    private readonly createNewStackButton: vscode.QuickInputButton
     private readonly disposables: vscode.Disposable[] = []
 
     private loading: boolean = false
     private picker: vscode.QuickPick<vscode.QuickPickItem> | undefined
 
-    public constructor(emitter: CloudFormationStacksLoader) {
-        emitter.onLoadStart(() => this.onLoadStart(), undefined, this.disposables)
-        emitter.onItem((itm) => this.onNewStack(itm), undefined, this.disposables)
-        emitter.onLoadEnd(() => this.onLoadEnd(), undefined, this.disposables)
+    public constructor(parameters: {
+        emitter: CloudFormationStacksLoader,
+        extensionContext: vscode.ExtensionContext,
+    }) {
+        this.extensionContext = parameters.extensionContext
+
+        this.createNewStackButton = makeCreateNewStackButton(this.extensionContext)
+
+        parameters.emitter.onLoadStart(() => this.onLoadStart(), undefined, this.disposables)
+        parameters.emitter.onItem((itm) => this.onNewStack(itm), undefined, this.disposables)
+        parameters.emitter.onLoadEnd(() => this.onLoadEnd(), undefined, this.disposables)
     }
 
     public async prompt(): Promise<CloudFormationStackPickerResponse> {
@@ -212,13 +221,11 @@ function makeSelectedItemCloudFormationStackPickerResponse(
     }
 }
 
-function makeCreateNewStackButton(): vscode.QuickInputButton {
+function makeCreateNewStackButton(extensionContext: vscode.ExtensionContext): vscode.QuickInputButton {
     return {
         iconPath: {
-            // todo : CC : bring in button images
-            // todo : CC : proper button pathing
-            dark: vscode.Uri.file('resources/dark/add.svg'),
-            light: vscode.Uri.file('resources/light/add.svg'),
+            dark: vscode.Uri.file(extensionContext.asAbsolutePath('third-party/resources/from-vscode/dark/add.svg')),
+            light: vscode.Uri.file(extensionContext.asAbsolutePath('third-party/resources/from-vscode/light/add.svg')),
         },
         // TODO : CC : loc
         tooltip: 'add the new stack',
