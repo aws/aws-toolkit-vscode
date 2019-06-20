@@ -4,10 +4,17 @@
  */
 
 import * as assert from 'assert'
+
 import * as del from 'del'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { createQuickStartWebview, safeGet } from '../../shared/extensionUtilities'
+import { mostRecentVersionKey, pluginVersion } from '../../shared/constants'
+import {
+    createQuickStartWebview,
+    isDifferentVersion,
+    safeGet,
+    setMostRecentVersion
+} from '../../shared/extensionUtilities'
 import { writeFile } from '../../shared/filesystem'
 import * as filesystemUtilities from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
@@ -73,6 +80,40 @@ describe('extensionUtilities', () => {
             assert.strictEqual(typeof webview, 'object')
             const forcedWebview = webview as vscode.WebviewPanel
             assert.strictEqual(forcedWebview.webview.html, `${basetext}vscode-resource:${context.extensionPath}`)
+        })
+    })
+
+    describe('isDifferentVersion', () => {
+        it ('returns false if the version exists and matches the existing version exactly', () => {
+            const goodVersion = '1.2.3'
+            const extContext = new FakeExtensionContext()
+            extContext.globalState.update(mostRecentVersionKey, goodVersion)
+
+            assert.strictEqual(isDifferentVersion(extContext, goodVersion), false)
+        })
+
+        it ('returns true if a most recent version isn\'t set', () => {
+            const extContext = new FakeExtensionContext()
+
+            assert.ok(isDifferentVersion(extContext))
+        })
+
+        it ('returns true if a most recent version doesn\'t match the current version', () => {
+            const oldVersion = '1.2.3'
+            const newVersion = '4.5.6'
+            const extContext = new FakeExtensionContext()
+            extContext.globalState.update(mostRecentVersionKey, oldVersion)
+
+            assert.ok(isDifferentVersion(extContext, newVersion))
+        })
+    })
+
+    describe('setMostRecentVersion', () => {
+        it ('sets the most recent version', () => {
+            const extContext = new FakeExtensionContext()
+            setMostRecentVersion(extContext)
+
+            assert.strictEqual(extContext.globalState.get<string>(mostRecentVersionKey), pluginVersion)
         })
     })
 })
