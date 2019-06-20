@@ -293,6 +293,7 @@ export async function initialize({
                 baseBuildDir,
                 codeDir: samProjectCodeRoot,
                 relativeFunctionHandler,
+                globals: lambdaInfo && lambdaInfo.templateGlobals ? lambdaInfo.templateGlobals : undefined,
                 properties: lambdaInfo && lambdaInfo.resource.Properties ? lambdaInfo.resource.Properties : undefined,
                 runtime: args.runtime
             })

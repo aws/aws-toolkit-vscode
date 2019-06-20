@@ -9,7 +9,9 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { ScriptResource } from '../lambda/models/scriptResource'
 import { ext } from '../shared/extensionGlobals'
+import { mostRecentVersionKey, pluginVersion } from './constants'
 import { readFileAsString } from './filesystemUtilities'
+import { Logger } from './logger'
 
 const localize = nls.loadMessageBundle()
 
@@ -73,6 +75,7 @@ export function safeGet<O, T>(obj: O | undefined, getFn: (x: O) => T): T | undef
 
     return undefined
 }
+
 /**
  * Helper function to show a webview containing the quick start page
  *
@@ -130,4 +133,75 @@ function convertExtensionRootTokensToPath(
     basePath: string
 ): string {
     return text.replace(/!!EXTENSIONROOT!!/g, `vscode-resource:${basePath}`)
+}
+
+/**
+ * Utility function to determine if the extension version has changed between activations
+ * False (versions are identical) if version key exists in global state and matches the current version
+ * True (versions are different) if any of the above aren't true
+ *
+ * TODO: Change the threshold on which we display the welcome page?
+ * For instance, if we start building nightlies, only show page for significant updates?
+ *
+ * @param context VS Code Extension Context
+ * @param currVersion Current version to compare stored most recent version against (useful for tests)
+ */
+export function isDifferentVersion(context: vscode.ExtensionContext, currVersion: string = pluginVersion): boolean {
+    const mostRecentVersion = context.globalState.get<string>(mostRecentVersionKey)
+    if (mostRecentVersion && mostRecentVersion === currVersion) {
+        return false
+    }
+
+    return true
+}
+
+/**
+ * Utility function to update the most recently used extension version
+ * Pulls from package.json
+ *
+ * @param context VS Code Extension Context
+ */
+export function setMostRecentVersion(context: vscode.ExtensionContext): void {
+    context.globalState.update(mostRecentVersionKey, pluginVersion)
+}
+
+/**
+ * Publishes a toast with a link to the welcome page
+ */
+async function promptQuickStart(): Promise<void> {
+    const view = localize(
+        'AWS.command.quickStart',
+        'View Quick Start'
+    )
+    const prompt = await vscode.window.showInformationMessage(
+        localize(
+            'AWS.message.prompt.quickStart.toastMessage',
+            'You are now using the AWS Toolkit for Visual Studio Code, version {0}',
+            pluginVersion
+        ),
+        view
+    )
+    if (prompt === view) {
+        vscode.commands.executeCommand('aws.quickStart')
+    }
+}
+
+/**
+ * Checks if a user is new to this version
+ * If so, pops a toast with a link to a quick start page
+ *
+ * @param context VS Code Extension Context
+ */
+export function toastNewUser(context: vscode.ExtensionContext, logger: Logger): void {
+    try {
+        if (isDifferentVersion(context)) {
+            setMostRecentVersion(context)
+            // the welcome toast should be nonblocking.
+            // tslint:disable-next-line: no-floating-promises
+            promptQuickStart()
+        }
+    } catch (err) {
+        // swallow error and don't block extension load
+        logger.error(err as Error)
+    }
 }

@@ -54,6 +54,10 @@ Description: >
 
     Sample SAM Template for my-sam-app
 
+Globals:
+  Function:
+    Timeout: 3
+
 Resources:
 ${functionResources}
 

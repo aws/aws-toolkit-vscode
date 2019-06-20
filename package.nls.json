@@ -87,6 +87,7 @@
     "AWS.message.prompt.credentials.definition.help": "Would you like some information related to defining credentials?",
     "AWS.message.prompt.credentials.definition.tryAgain": "The credentials do not appear to be valid ({0}). Would you like to try again?",
     "AWS.message.prompt.selectLocalLambda.placeholder": "Select a lambda function",
+    "AWS.message.prompt.quickStart.toastMessage": "You are now using the AWS Toolkit for Visual Studio Code, version {0}",
     "AWS.output.building.sam.application": "Building SAM Application...",
     "AWS.output.building.sam.application.complete": "Build complete.",
     "AWS.output.sam.local.attaching": "Attaching debugger to SAM Application...",
@@ -171,6 +172,5 @@
     "AWS.generic.response.yes": "Yes",
     "AWS.template.error.showErrorDetails.title": "Error details for",
     "AWS.template.error.showErrorDetails.errorCode": "Error code",
-    "AWS.template.error.showErrorDetails.errorMessage": "Error message",
-    "AWS.template.error.showErrorDetails.stackTrace": "Stack trace"
+    "AWS.template.error.showErrorDetails.errorMessage": "Error message"
 }
