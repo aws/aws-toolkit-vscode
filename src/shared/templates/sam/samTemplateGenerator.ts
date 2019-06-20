@@ -39,6 +39,18 @@ export class SamTemplateGenerator {
         return this
     }
 
+    public withMemorySize(memorySize: number): SamTemplateGenerator {
+        this.properties.MemorySize = memorySize
+
+        return this
+    }
+
+    public withTimeout(timeout: number): SamTemplateGenerator {
+        this.properties.Timeout = timeout
+
+        return this
+    }
+
     public withEnvironment(env: CloudFormation.Environment): SamTemplateGenerator {
         this.properties.Environment = env
 
