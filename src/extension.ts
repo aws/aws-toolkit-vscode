@@ -28,7 +28,11 @@ import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
 import { DefaultAWSStatusBar } from './shared/defaultStatusBar'
 import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
-import { safeGet, showQuickStartWebview } from './shared/extensionUtilities'
+import {
+    safeGet,
+    showQuickStartWebview,
+    toastNewUser
+} from './shared/extensionUtilities'
 import * as logFactory from './shared/logger'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import * as SamCliContext from './shared/sam/cli/samCliContext'
@@ -189,6 +193,8 @@ export async function activate(context: vscode.ExtensionContext) {
             new SamParameterCompletionItemProvider(),
             '"'
         )
+
+        toastNewUser(context, logFactory.getLogger())
 
         await resumeCreateNewSamApp(context)
     } catch (error) {
