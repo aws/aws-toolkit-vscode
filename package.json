@@ -35,6 +35,7 @@
         "onCommand:aws.login",
         "onCommand:aws.credential.profile.create",
         "onCommand:aws.logout",
+        "onCommand:aws.reportIssue",
         "onCommand:aws.showRegion",
         "onCommand:aws.hideRegion",
         "onView:aws.explorer",
@@ -185,6 +186,11 @@
                     "command": "aws.github",
                     "when": "view == aws.explorer",
                     "group": "z_externalLinks@2"
+                },
+                {
+                    "command": "aws.reportIssue",
+                    "when": "view == aws.explorer",
+                    "group": "z_externalLinks@3"
                 }
             ],
             "view/item/context": [
@@ -234,6 +240,11 @@
             {
                 "command": "aws.logout",
                 "title": "%AWS.command.logout%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.reportIssue",
+                "title": "%AWS.command.reportIssue%",
                 "category": "AWS"
             },
             {
