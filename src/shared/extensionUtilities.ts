@@ -11,8 +11,10 @@ import { ScriptResource } from '../lambda/models/scriptResource'
 import { ext } from '../shared/extensionGlobals'
 import { mostRecentVersionKey, pluginVersion } from './constants'
 import { readFileAsString } from './filesystemUtilities'
+import { getLogger } from './logger'
 
 const localize = nls.loadMessageBundle()
+const logger = getLogger()
 
 export class ExtensionUtilities {
     public static getLibrariesForHtml(names: string[]): ScriptResource[] {
@@ -136,7 +138,7 @@ function convertExtensionRootTokensToPath(
 
 /**
  * Utility function to determine if the extension version has changed between activations
- * False (versions are identical) if version key exists in global state, is a semver, and matches the current version
+ * False (versions are identical) if version key exists in global state and matches the current version
  * True (versions are different) if any of the above aren't true
  *
  * TODO: Change the threshold on which we display the welcome page?
@@ -192,10 +194,15 @@ async function promptQuickStart(): Promise<void> {
  * @param context VS Code Extension Context
  */
 export function toastNewUser(context: vscode.ExtensionContext): void {
-    if (isDifferentVersion(context)) {
-        setMostRecentVersion(context)
-        // the welcome toast should be nonblocking.
-        // tslint:disable-next-line: no-floating-promises
-        promptQuickStart()
+    try {
+        if (isDifferentVersion(context)) {
+            setMostRecentVersion(context)
+            // the welcome toast should be nonblocking.
+            // tslint:disable-next-line: no-floating-promises
+            promptQuickStart()
+        }
+    } catch (err) {
+        // swallow error and don't block extension load
+        logger.error(err as Error)
     }
 }

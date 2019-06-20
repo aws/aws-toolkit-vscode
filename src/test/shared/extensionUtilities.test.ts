@@ -84,7 +84,7 @@ describe('extensionUtilities', () => {
     })
 
     describe('isDifferentVersion', () => {
-        it ('returns false if the version exists, is a semver, and matches the existing version exactly', () => {
+        it ('returns false if the version exists and matches the existing version exactly', () => {
             const goodVersion = '1.2.3'
             const extContext = new FakeExtensionContext()
             extContext.globalState.update(mostRecentVersionKey, goodVersion)
