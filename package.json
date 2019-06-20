@@ -142,6 +142,10 @@
                 {
                     "command": "aws.refreshAwsExplorer",
                     "when": "false"
+                },
+                {
+                    "command": "aws.showErrorDetails",
+                    "when": "false"
                 }
             ],
             "view/title": [
@@ -190,6 +194,11 @@
                 {
                     "command": "aws.deleteCloudFormation",
                     "when": "view == aws.explorer && viewItem == awsCloudFormationNode",
+                    "group": "0@5"
+                },
+                {
+                    "command": "aws.showErrorDetails",
+                    "when": "view == aws.explorer && viewItem == awsErrorNode",
                     "group": "0@5"
                 },
                 {
@@ -262,6 +271,11 @@
             {
                 "command": "aws.deleteCloudFormation",
                 "title": "%AWS.command.deleteCloudFormation%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.showErrorDetails",
+                "title": "%AWS.command.showErrorDetails%",
                 "category": "AWS"
             },
             {

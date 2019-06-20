@@ -27,8 +27,10 @@ import { deleteCloudFormation } from './commands/deleteCloudFormation'
 import { deleteLambda } from './commands/deleteLambda'
 import { deploySamApplication } from './commands/deploySamApplication'
 import { invokeLambda } from './commands/invokeLambda'
+import { showErrorDetails } from './commands/showErrorDetails'
 import { CloudFormationStackNode } from './explorer/cloudFormationNodes'
 import { DefaultRegionNode } from './explorer/defaultRegionNode'
+import { ErrorNode } from './explorer/errorNode'
 import { FunctionNodeBase } from './explorer/functionNode'
 import { RegionNode } from './explorer/regionNode'
 import { StandaloneFunctionNode } from './explorer/standaloneNodes'
@@ -124,6 +126,11 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
                 namespace: TelemetryNamespace.Lambda,
                 name: 'deploy'
             }
+        })
+
+        registerCommand({
+            command: 'aws.showErrorDetails',
+            callback: async (node: ErrorNode) => await showErrorDetails(node)
         })
 
         registerCommand({
