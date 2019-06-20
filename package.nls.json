@@ -167,6 +167,5 @@
     "AWS.generic.response.yes": "Yes",
     "AWS.template.error.showErrorDetails.title": "Error details for",
     "AWS.template.error.showErrorDetails.errorCode": "Error code",
-    "AWS.template.error.showErrorDetails.errorMessage": "Error message",
-    "AWS.template.error.showErrorDetails.stackTrace": "Stack trace"
+    "AWS.template.error.showErrorDetails.errorMessage": "Error message"
 }

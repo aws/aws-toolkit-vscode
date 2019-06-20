@@ -5,6 +5,7 @@ All notable changes to the "aws-vscode-tools" extension will be documented in th
 ## NEXT (Developer Preview)
 
 * Fixed issue preventing users from connecting with assumed roles (#620)
+* Removed error webviews from AWS Explorer. Errors can still be viewed by tooltip with full stack errors available in the AWS Toolkit Logs output channel.
 
 ## 0.2.0 (Developer Preview)
 
