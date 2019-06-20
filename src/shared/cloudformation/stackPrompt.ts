@@ -19,7 +19,7 @@ export class CloudFormationStackPrompt {
     private _inputBox: vscode.InputBox | undefined
 
     public constructor(existingStackNames: string[]) {
-        this.existingStackNames = [...existingStackNames]
+        this.existingStackNames = existingStackNames
     }
 
     public async prompt(): Promise<string> {
