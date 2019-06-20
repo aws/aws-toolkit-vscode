@@ -43,6 +43,9 @@ export class CloudFormationStackPicker {
         parameters.stacksLoader.onLoadEnd(() => this.onLoadEnd(), undefined, this.disposables)
     }
 
+    /**
+     * This function can be called several times over the lifetime of a CloudFormationStackPicker object.
+     */
     public async prompt(): Promise<CloudFormationStackPickerResponse> {
         try {
             this.initializePicker()
@@ -103,8 +106,7 @@ export class CloudFormationStackPicker {
     }
 
     private async promptUserToSelectStack(): Promise<CloudFormationStackPickerResponse> {
-        // TODO : CC : Error check
-        if (!this.picker) { throw new Error('qqqq') }
+        if (!this.picker) { throw new Error('promptUserToSelectStack was called prior to initializing a picker') }
 
         let selectedButton: vscode.QuickInputButton | undefined
         const promptResponse = await promptUser({
