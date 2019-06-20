@@ -23,7 +23,7 @@ import {
 } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
-import { Datum } from '../telemetry/telemetryTypes'
+import { Datum, TelemetryNamespace } from '../telemetry/telemetryTypes'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
@@ -87,6 +87,10 @@ export async function initialize({
                 telemetryService
             })
         },
+        telemetryName: {
+            namespace: TelemetryNamespace.Lambda,
+            name: 'invokelocal'
+        }
     })
 }
 
@@ -139,7 +143,8 @@ async function onLocalInvokeCommand(
         processInvoker,
         localInvokeCommand,
         telemetryService,
-        getResourceFromTemplate = async _args => await CloudFormation.getResourceFromTemplate(_args),
+        loadCloudFormationTemplate = async _args => await CloudFormation.load(_args),
+        getResourceFromTemplateResource = async _args => await CloudFormation.getResourceFromTemplateResources(_args)
     }: {
         configuration: SettingsConfiguration
         toolkitOutputChannel: vscode.OutputChannel,
@@ -148,17 +153,22 @@ async function onLocalInvokeCommand(
         processInvoker: SamCliProcessInvoker,
         localInvokeCommand: SamLocalInvokeCommand
         telemetryService: TelemetryService,
-        getResourceFromTemplate?(args: {
-            templatePath: string,
-            handlerName: string
+        loadCloudFormationTemplate?(
+            filename: string
+        ): Promise<CloudFormation.Template>,
+        getResourceFromTemplateResource?(args: {
+            templateResources?: CloudFormation.TemplateResources,
+            handlerName: string,
         }): Promise<CloudFormation.Resource>,
     },
     context: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext(toolkitOutputChannel)
 ): Promise<{ datum: Datum }> {
-
     const channelLogger = getChannelLogger(toolkitOutputChannel)
-    const resource = await getResourceFromTemplate({
-        templatePath: lambdaLocalInvokeParams.samTemplate.fsPath,
+    const template: CloudFormation.Template = await loadCloudFormationTemplate(
+        lambdaLocalInvokeParams.samTemplate.fsPath
+    )
+    const resource = await getResourceFromTemplateResource({
+        templateResources: template.Resources,
         handlerName: lambdaLocalInvokeParams.handlerName,
     })
     const runtime = CloudFormation.getRuntime(resource)
@@ -182,6 +192,7 @@ async function onLocalInvokeCommand(
             codeDir: codeUri,
             relativeFunctionHandler: handlerName,
             runtime,
+            globals: template.Globals,
             properties: resource.Properties
         })
 

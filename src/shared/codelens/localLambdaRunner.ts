@@ -152,12 +152,19 @@ export class LocalLambdaRunner {
 
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(this.localInvokeParams.workspaceFolder.uri)
         let properties: CloudFormation.ResourceProperties | undefined
+        let globals: CloudFormation.TemplateGlobals | undefined
         if (workspaceFolder) {
             const lambdas = await detectLocalLambdas([workspaceFolder])
             const existingLambda = lambdas.find(lambda => lambda.handler === relativeFunctionHandler)
 
-            if (existingLambda && existingLambda.resource && existingLambda.resource.Properties) {
-                properties = existingLambda.resource.Properties
+            if (existingLambda) {
+                if (existingLambda.resource && existingLambda.resource.Properties) {
+                    properties = existingLambda.resource.Properties
+                }
+
+                if (existingLambda.templateGlobals) {
+                    globals = existingLambda.templateGlobals
+                }
             }
         }
 
@@ -165,6 +172,7 @@ export class LocalLambdaRunner {
             baseBuildDir: buildFolder,
             codeDir: rootCodeFolder,
             relativeFunctionHandler,
+            globals,
             properties,
             runtime: this.runtime,
         })
@@ -339,6 +347,7 @@ export async function makeInputTemplate(params: {
     baseBuildDir: string
     codeDir: string
     relativeFunctionHandler: string
+    globals?: CloudFormation.TemplateGlobals,
     properties?: CloudFormation.ResourceProperties
     runtime: string
 }): Promise<string> {
@@ -360,6 +369,10 @@ export async function makeInputTemplate(params: {
         if (params.properties.Timeout) {
             newTemplate = newTemplate.withTimeout(params.properties.Timeout)
         }
+    }
+
+    if (params.globals) {
+        newTemplate = newTemplate.withGlobals(params.globals)
     }
 
     const inputTemplatePath: string = path.join(params.baseBuildDir, 'input', 'input-template.yaml')
