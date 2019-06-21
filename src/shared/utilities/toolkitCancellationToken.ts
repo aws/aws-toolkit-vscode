@@ -8,17 +8,23 @@
 import * as vscode from 'vscode'
 
 export class ToolkitCancellationToken implements vscode.CancellationToken {
-    public isCancellationRequested: boolean = false
     public onCancellationRequested: vscode.Event<any>
+    private _isCancellationRequested: boolean = false
 
     private readonly onCancellationRequestedEmitter = new vscode.EventEmitter<void>()
 
     public constructor() {
         this.onCancellationRequested = this.onCancellationRequestedEmitter.event
-        this.onCancellationRequested(() => { this.isCancellationRequested = true })
+        this.onCancellationRequested(() => { this._isCancellationRequested = true })
     }
 
     public requestCancellation(): void {
-        this.onCancellationRequestedEmitter.fire()
+        if (!this._isCancellationRequested) {
+            this.onCancellationRequestedEmitter.fire()
+        }
+    }
+
+    public get isCancellationRequested(): boolean {
+        return this._isCancellationRequested
     }
 }
