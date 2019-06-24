@@ -7,6 +7,7 @@ import { mkdirpSync, writeFileSync } from 'fs-extra'
 import { join } from 'path'
 import readlineSync = require('readline-sync')
 import { v4 as uuid } from 'uuid'
+import * as child_process from 'child_process'
 
 enum ChangeType {
     Test = 'test',
@@ -84,3 +85,5 @@ const path = join(directory, fileName)
 writeFileSync(path, JSON.stringify(contents, undefined, '\t'))
 
 console.log(`Change log written to ${path}`)
+child_process.execSync(`git add ${directory}`)
+console.log('Change log added to git working directory')
