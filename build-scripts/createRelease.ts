@@ -45,17 +45,15 @@ for (const changeFile of changeFiles) {
 // Write changelog file
 fs.writeFileSync(changesFile, JSON.stringify(changelog, undefined, '\t'))
 const changelogFile = fs.openSync('CHANGELOG.md', 'a+')
-const header = Buffer.from(`## ${releaseVersion} ${timestamp}\n\n`)
-fs.writeSync(changelogFile, header, 0, header.length, 0)
+const append = Buffer.from(`## ${releaseVersion} ${timestamp}\n\n`, 'utf8')
 for (const changeFile of changeFiles) {
     const file: any = JSON.parse(fs.readFileSync(path.join(nextReleaseDirectory, changeFile)).toString())
     // tslint:disable-next-line: no-unsafe-any
-    const contents = Buffer.from(`- **${file.type}** ${file.description}\n`)
-    fs.writeSync(changelogFile, header, 0, contents.length, 0)
+    Buffer.concat([append, Buffer.from(`- **${file.type}** ${file.description}\n`, 'utf8')])
 }
 
-const footer = Buffer.from('\n')
-fs.writeSync(changelogFile, footer, 0, footer.length, 0)
+Buffer.concat([append, Buffer.from('\n', 'utf8')])
+fs.writeSync(changelogFile, append, 0, append.length, 0)
 
 child_process.execSync(`git add ${changesDirectory}`)
 child_process.execSync(`git rm -rf ${nextReleaseDirectory}`)
