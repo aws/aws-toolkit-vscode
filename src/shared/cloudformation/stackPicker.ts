@@ -10,6 +10,11 @@ import * as vscode from 'vscode'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../ui/picker'
 import { ItemsLoader } from '../utilities/itemsLoader'
 
+export const noStacksPickerItem: vscode.QuickPickItem = {
+    label: 'No Stacks could be found in this region', // TODO : CC : Loc
+    description: 'Click here to enter a new Stack name', // TODO : CC : Loc
+}
+
 export interface CloudFormationStackPickerResponse {
     cancelled: boolean,
     inputText?: string,
@@ -30,6 +35,9 @@ export class CloudFormationStackPicker {
     private loading: boolean = false
     private picker: vscode.QuickPick<vscode.QuickPickItem> | undefined
 
+    // TODO : CC : Additional buttons (help button)
+    // todo : CC : no buckets found
+    // todo : CC : Error handling
     public constructor(parameters: {
         stacksLoader: ItemsLoader<CloudFormation.StackSummary>,
         extensionContext: vscode.ExtensionContext,
@@ -90,6 +98,10 @@ export class CloudFormationStackPicker {
     }
 
     private onLoadEnd(): void {
+        if (this.pickerItems.length === 0) {
+            this.pickerItems.push(noStacksPickerItem)
+        }
+
         this.loading = false
 
         this.updatePickerState()
@@ -127,6 +139,10 @@ export class CloudFormationStackPicker {
         if (!responseEntry) {
             // we don't expect this state, but we will treat it like a cancel
             return makeCancelledCloudFormationStackPickerResponse()
+        }
+
+        if (responseEntry === noStacksPickerItem) {
+            return this.makeButtonSelectionCloudFormationStackPickerResponse(this.createNewStackButton)
         }
 
         return makeSelectedItemCloudFormationStackPickerResponse(responseEntry)

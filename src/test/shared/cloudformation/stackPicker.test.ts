@@ -8,7 +8,7 @@
 import * as assert from 'assert'
 import { CloudFormation } from 'aws-sdk'
 import * as vscode from 'vscode'
-import { CloudFormationStackPicker, } from '../../../shared/cloudformation/stackPicker'
+import { CloudFormationStackPicker, noStacksPickerItem, } from '../../../shared/cloudformation/stackPicker'
 import { TestLogger } from '../../../shared/loggerUtils'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { MockQuickPick } from '../ui/mockQuickPick'
@@ -135,6 +135,31 @@ describe('CloudFormationStackPicker', async () => {
         const picker = new TestCloudFormationStackPicker(stackLoader, quickPick)
         stackLoader.startLoad()
         await picker.prompt()
+    })
+
+    it('picker gets placeholder picker item when there are no stacks', async () => {
+        const quickPick = new MockQuickPick({
+            onShow: async (sender) => {
+                // wait for picker to have an entry
+                while (sender.items.length === 0) {
+                    await new Promise<any>(resolve => setTimeout(resolve, 10))
+                }
+
+                // expect the entry representing 'no stacks'
+                assert.strictEqual(sender.items[0], noStacksPickerItem, 'Expected the picker item signalling no stacks')
+                sender.accept([sender.items[0]])
+            }
+        })
+
+        const picker = new TestCloudFormationStackPicker(stackLoader, quickPick)
+        stackLoader.loadItems([])
+
+        const result = await picker.prompt()
+
+        // Item is treated like the "Create new Stack" button
+        assert.strictEqual(result.cancelled, false, 'Expected result to be not cancelled')
+        assert.strictEqual(result.createStackButtonPressed, true, 'Expected stack button to be pressed')
+        assert.strictEqual(result.inputText, undefined, 'Unexpected stack name returned from picker')
     })
 })
 
