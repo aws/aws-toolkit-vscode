@@ -6,6 +6,7 @@
 import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
 import { join } from 'path'
+// tslint:disable-next-line:no-implicit-dependencies
 import readlineSync = require('readline-sync')
 import { v4 as uuid } from 'uuid'
 
