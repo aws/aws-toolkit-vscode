@@ -5,6 +5,9 @@
 
 'use strict'
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import { CloudFormation } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../ui/picker'
@@ -16,8 +19,11 @@ export interface CloudFormationStackPickerItem extends vscode.QuickPickItem {
 
 export const noStacksPickerItem: CloudFormationStackPickerItem = {
     isError: false,
-    label: 'No Stacks could be found in this region', // TODO : CC : Loc
-    description: 'Click here to enter a new Stack name', // TODO : CC : Loc
+    label: localize('AWS.cloudformation.picker.no.stacks.found', 'No Stacks could be found in this region'),
+    description: localize(
+        'AWS.cloudformation.picker.no.stacks.found.description',
+        'Click here to enter a new Stack name'
+    ),
 }
 
 export interface CloudFormationStackPickerResponse {
@@ -81,7 +87,10 @@ export class CloudFormationStackPicker {
             {
                 options: {
                     ignoreFocusOut: true,
-                    title: 'Select a CloudFormation Stack to deploy to', // TODO : CC : loc
+                    title: localize(
+                        'AWS.cloudformation.picker.select.stack',
+                        'Select a CloudFormation Stack to deploy to'
+                    ),
                 },
                 items: this.pickerItems,
                 buttons: [
@@ -108,7 +117,10 @@ export class CloudFormationStackPicker {
         } else if (event.error) {
             this.pickerItems.push({
                 isError: true,
-                label: 'There was an issue trying to load CloudFormation Stacks', // TODO : CC : loc
+                label: localize(
+                    'AWS.cloudformation.picker.error',
+                    'There was an issue trying to load CloudFormation Stacks'
+                ),
                 detail: event.error.message,
             })
         }
@@ -229,7 +241,6 @@ function makeCreateNewStackButton(extensionContext: vscode.ExtensionContext): vs
             dark: vscode.Uri.file(extensionContext.asAbsolutePath('third-party/resources/from-vscode/dark/add.svg')),
             light: vscode.Uri.file(extensionContext.asAbsolutePath('third-party/resources/from-vscode/light/add.svg')),
         },
-        // TODO : CC : loc
-        tooltip: 'add the new stack',
+        tooltip: localize('AWS.cloudformation.picker.button.new.stack', 'Add new CloudFormation Stack'),
     }
 }
