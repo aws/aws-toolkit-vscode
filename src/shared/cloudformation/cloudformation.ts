@@ -327,8 +327,6 @@ export namespace CloudFormation {
             )
         }
 
-        // TODO: Validate that a stack with this name does not already exist.
-
         return undefined
     }
 }
