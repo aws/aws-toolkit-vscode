@@ -132,18 +132,41 @@ function makeConfigureCodeLens({
     return new vscode.CodeLens(range, command)
 }
 
-export function getMetricDatum({ command, isDebug, runtime }: {
+export function getMetricDatum({
+    command,
+    isDebug,
+    runtime,
+    samVersion,
+    duration,
+    attempts
+}: {
     command: string,
     isDebug: boolean,
     runtime: string,
+    samVersion?: string,
+    duration?: number,
+    attempts?: number
+
 }): { datum: Datum } {
+    const metadata = new Map([
+        ['runtime', runtime],
+        ['debug', `${isDebug}`]
+    ])
+    // TODO: Capture this information (Jetbrains captures this)
+    if (samVersion) {
+        metadata.set('samVersion', samVersion)
+    }
+    if (duration) {
+        metadata.set('duration', duration.toString())
+    }
+    if (attempts) {
+        metadata.set('attempts', attempts.toString())
+    }
+
     return {
         datum: {
             ...defaultMetricDatum(command),
-            metadata: new Map([
-                ['runtime', runtime],
-                ['debug', `${isDebug}`]
-            ])
+            metadata
         }
     }
 }

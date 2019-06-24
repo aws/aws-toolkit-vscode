@@ -34,6 +34,7 @@ import {
     makeCodeLenses,
 } from './codeLensUtils'
 import {
+    DebuggerMetadata,
     executeSamBuild,
     ExecuteSamBuildArguments,
     invokeLambdaFunction,
@@ -172,6 +173,7 @@ async function onLocalInvokeCommand(
         handlerName: lambdaLocalInvokeParams.handlerName,
     })
     const runtime = CloudFormation.getRuntime(resource)
+    let debugMetadata: DebuggerMetadata | undefined
 
     try {
         // Switch over to the output channel so the user has feedback that we're getting things ready
@@ -244,7 +246,7 @@ async function onLocalInvokeCommand(
                 codeUri
             })
 
-            await invokeLambdaFunction(
+            debugMetadata = await invokeLambdaFunction(
                 {
                     ...invokeArgs,
                     debugArgs: {
@@ -274,6 +276,8 @@ async function onLocalInvokeCommand(
         isDebug: lambdaLocalInvokeParams.isDebug,
         command: commandName,
         runtime,
+        attempts: debugMetadata ? debugMetadata.attempts : undefined,
+        duration: debugMetadata ? debugMetadata.duration : undefined,
     })
 }
 

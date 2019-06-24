@@ -55,6 +55,12 @@ export interface OnDidSamBuildParams {
     isDebug: boolean
 }
 
+export interface DebuggerMetadata {
+    success: boolean
+    duration?: number
+    attempts?: number
+}
+
 const TEMPLATE_RESOURCE_NAME = 'awsToolkitSamLocalResource'
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
 const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
@@ -88,7 +94,7 @@ export class LocalLambdaRunner {
         this._debugPort = debugPort
     }
 
-    public async run(): Promise<void> {
+    public async run(): Promise<DebuggerMetadata | undefined> {
         try {
             // Switch over to the output channel so the user has feedback that we're getting things ready
             this.channelLogger.channel.show(true)
@@ -102,7 +108,7 @@ export class LocalLambdaRunner {
             const inputTemplate: string = await this.generateInputTemplate(this.codeRootDirectoryPath)
             const samBuildTemplate: string = await this.executeSamBuild(this.codeRootDirectoryPath, inputTemplate)
 
-            await this.invokeLambdaFunction(samBuildTemplate)
+            return await this.invokeLambdaFunction(samBuildTemplate)
         } catch (err) {
             const error = err as Error
             this.channelLogger.error(
@@ -111,7 +117,7 @@ export class LocalLambdaRunner {
                 error
             )
 
-            return
+            return undefined
         }
     }
 
@@ -210,7 +216,7 @@ export class LocalLambdaRunner {
      * Runs `sam local invoke` against the provided template file
      * @param samTemplatePath sam template to run locally
      */
-    private async invokeLambdaFunction(samTemplatePath: string): Promise<void> {
+    private async invokeLambdaFunction(samTemplatePath: string): Promise<DebuggerMetadata | undefined> {
         this.channelLogger.info(
             'AWS.output.starting.sam.app.locally',
             'Starting the SAM Application locally (see Terminal for output)'
@@ -257,8 +263,11 @@ export class LocalLambdaRunner {
                 maxRetries,
                 retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
                 channelLogger: this.channelLogger,
-                onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number): void => {
-                    recordAttachDebuggerMetric({
+                onProvideDebuggerMetadata: (
+                    attachResult: boolean | undefined,
+                    attempts: number
+                ): DebuggerMetadata => {
+                    return provideDebuggerMetadata({
                         telemetryService: this.telemetryService,
                         result: attachResult,
                         attempts,
@@ -273,7 +282,11 @@ export class LocalLambdaRunner {
                     logger: this.channelLogger.logger
                 })
             }
+
+            return attachResults
         }
+
+        return undefined
     }
 
     private async getConfig(): Promise<HandlerConfig> {
@@ -448,7 +461,7 @@ export interface InvokeLambdaFunctionContext {
 export async function invokeLambdaFunction(
     invokeArgs: InvokeLambdaFunctionArguments,
     { channelLogger, configuration, samLocalInvokeCommand, telemetryService }: InvokeLambdaFunctionContext
-): Promise<void> {
+): Promise<DebuggerMetadata | undefined> {
     channelLogger.info(
         'AWS.output.starting.sam.app.locally',
         'Starting the SAM Application locally (see Terminal for output)'
@@ -506,8 +519,8 @@ export async function invokeLambdaFunction(
             maxRetries,
             retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
             channelLogger,
-            onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number): void => {
-                recordAttachDebuggerMetric({
+            onProvideDebuggerMetadata: (attachResult: boolean | undefined, attempts: number): DebuggerMetadata => {
+                return provideDebuggerMetadata({
                     telemetryService: telemetryService,
                     result: attachResult,
                     attempts,
@@ -522,7 +535,12 @@ export async function invokeLambdaFunction(
                 logger: channelLogger.logger
             })
         }
+
+        return attachResults
     }
+
+    // not debug, don't return debug args
+    return undefined
 }
 
 const getConfig = async (params: {
@@ -562,7 +580,7 @@ export interface AttachDebuggerContext {
     retryDelayMillis?: number
     channelLogger: Pick<ChannelLogger, 'info' | 'error' | 'logger'>
     onStartDebugging?: typeof vscode.debug.startDebugging
-    onRecordAttachDebuggerMetric?(attachResult: boolean | undefined, attempts: number): void
+    onProvideDebuggerMetadata?(attachResult: boolean | undefined, attempts: number): DebuggerMetadata
     onWillRetry?(): Promise<void>
 }
 
@@ -575,7 +593,7 @@ export async function attachDebugger({
         })
     },
     ...params
-}: AttachDebuggerContext): Promise<{ success: boolean }> {
+}: AttachDebuggerContext): Promise<DebuggerMetadata> {
     const channelLogger = params.channelLogger
     const logger = params.channelLogger.logger
     logger.debug(
@@ -588,6 +606,7 @@ export async function attachDebugger({
 
     let isDebuggerAttached: boolean | undefined
     let retries = 0
+    let debuggerMetadata: DebuggerMetadata
 
     channelLogger.info('AWS.output.sam.local.attaching', 'Attaching debugger to SAM Application...')
 
@@ -611,8 +630,10 @@ export async function attachDebugger({
         }
     } while (isDebuggerAttached === undefined)
 
-    if (params.onRecordAttachDebuggerMetric) {
-        params.onRecordAttachDebuggerMetric(isDebuggerAttached, retries + 1)
+    if (params.onProvideDebuggerMetadata) {
+        debuggerMetadata = params.onProvideDebuggerMetadata(isDebuggerAttached, retries + 1)
+    } else {
+        debuggerMetadata = { success: isDebuggerAttached }
     }
 
     if (isDebuggerAttached) {
@@ -625,9 +646,7 @@ export async function attachDebugger({
         )
     }
 
-    return {
-        success: isDebuggerAttached
-    }
+    return debuggerMetadata
 }
 
 async function waitForDebugPort({
@@ -661,7 +680,7 @@ async function waitForDebugPort({
     }
 }
 
-export interface RecordAttachDebuggerMetricContext {
+export interface ProvideDebuggerMetadataContext {
     telemetryService: Pick<TelemetryService, 'record'>
     runtime: string
     result: boolean | undefined
@@ -669,30 +688,12 @@ export interface RecordAttachDebuggerMetricContext {
     durationMillis: number
 }
 
-function recordAttachDebuggerMetric(params: RecordAttachDebuggerMetricContext) {
-    const currTime = new Date()
-    const namespace = params.result ? 'DebugAttachSuccess' : 'DebugAttachFailure'
-
-    const metadata = new Map([['runtime', params.runtime]])
-
-    params.telemetryService.record({
-        namespace: namespace,
-        createTime: currTime,
-        data: [
-            {
-                name: 'attempts',
-                value: params.attempts,
-                unit: 'Count',
-                metadata
-            },
-            {
-                name: 'duration',
-                value: params.durationMillis,
-                unit: 'Milliseconds',
-                metadata
-            }
-        ]
-    })
+function provideDebuggerMetadata(params: ProvideDebuggerMetadataContext): DebuggerMetadata {
+    return {
+        success: params.result ? true : false,
+        attempts: params.attempts,
+        duration: params.durationMillis
+    }
 }
 
 function getAttachDebuggerMaxRetryLimit(configuration: SettingsConfiguration, defaultValue: number): number {

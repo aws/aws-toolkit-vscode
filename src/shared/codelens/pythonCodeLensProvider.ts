@@ -28,6 +28,7 @@ import {
     makeCodeLenses
 } from './codeLensUtils'
 import {
+    DebuggerMetadata,
     executeSamBuild,
     getHandlerRelativePath,
     getLambdaInfoFromExistingTemplate,
@@ -236,13 +237,16 @@ export async function initialize({
         localInvokeCommand = new DefaultSamLocalInvokeCommand(channelLogger, [WAIT_FOR_DEBUGGER_MESSAGES.PYTHON])
     }
 
-    const invokeLambda = async (args: LambdaLocalInvokeParams & { runtime: string }) => {
+    const invokeLambda = async (
+        args: LambdaLocalInvokeParams & { runtime: string }
+    ): Promise<DebuggerMetadata | undefined> => {
         // Switch over to the output channel so the user has feedback that we're getting things ready
         channelLogger.channel.show(true)
 
         channelLogger.info('AWS.output.sam.local.start', 'Preparing to run {0} locally...', args.handlerName)
 
         let lambdaDebugFilePath: string | undefined
+        let debugMetadata: DebuggerMetadata | undefined
 
         try {
             const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
@@ -334,7 +338,7 @@ export async function initialize({
                 }
             }
 
-            await invokeLambdaFunction(invokeArgs, {
+            debugMetadata = await invokeLambdaFunction(invokeArgs, {
                 channelLogger,
                 configuration,
                 samLocalInvokeCommand: localInvokeCommand!,
@@ -352,6 +356,8 @@ export async function initialize({
                 await deleteFile(lambdaDebugFilePath)
             }
         }
+
+        return debugMetadata
     }
 
     const command = getInvokeCmdKey('python')
@@ -364,7 +370,7 @@ export async function initialize({
             })
             const runtime = CloudFormation.getRuntime(resource)
 
-            await invokeLambda({
+            const debugMetadata: DebuggerMetadata | undefined = await invokeLambda({
                 runtime,
                 ...params
             })
@@ -372,7 +378,9 @@ export async function initialize({
             return getMetricDatum({
                 isDebug: params.isDebug,
                 command,
-                runtime
+                runtime,
+                attempts: debugMetadata ? debugMetadata.attempts : undefined,
+                duration: debugMetadata ? debugMetadata.duration : undefined,
             })
         },
         telemetryName: {

@@ -25,6 +25,7 @@ import {
     makeCodeLenses,
 } from './codeLensUtils'
 import {
+    DebuggerMetadata,
     LambdaLocalInvokeParams,
     LocalLambdaRunner,
 } from './localLambdaRunner'
@@ -62,7 +63,9 @@ export function initialize({
     telemetryService,
 }: CodeLensProviderParams): void {
 
-    const invokeLambda = async (params: LambdaLocalInvokeParams & { runtime: string }) => {
+    const invokeLambda = async (
+        params: LambdaLocalInvokeParams & { runtime: string }
+    ): Promise<DebuggerMetadata | undefined> => {
         const samProjectCodeRoot = await getSamProjectDirPathForFile(params.document.uri.fsPath)
         let debugPort: number | undefined
 
@@ -101,7 +104,7 @@ export function initialize({
             telemetryService
         )
 
-        await localLambdaRunner.run()
+        return await localLambdaRunner.run()
     }
 
     const command = getInvokeCmdKey('javascript')
@@ -113,6 +116,7 @@ export function initialize({
                 templatePath: params.samTemplate.fsPath
             })
             const runtime = CloudFormation.getRuntime(resource)
+            let debugMetadata: DebuggerMetadata | undefined
 
             if (params.isDebug && unsupportedNodeJsRuntimes.has(runtime)) {
                 vscode.window.showErrorMessage(
@@ -123,7 +127,7 @@ export function initialize({
                     )
                 )
             } else {
-                await invokeLambda({
+                debugMetadata = await invokeLambda({
                     runtime,
                     ...params,
                 })
@@ -133,6 +137,8 @@ export function initialize({
                 isDebug: params.isDebug,
                 command,
                 runtime,
+                attempts: debugMetadata ? debugMetadata.attempts : undefined,
+                duration: debugMetadata ? debugMetadata.duration : undefined,
             })
         },
         telemetryName: {

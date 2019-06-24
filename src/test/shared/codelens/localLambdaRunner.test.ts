@@ -140,12 +140,14 @@ describe('localLambdaRunner', async () => {
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
                 onWillRetry,
-                onRecordAttachDebuggerMetric: (
+                onProvideDebuggerMetadata: (
                     attachResult: boolean | undefined,
                     attempts: number
                 ) => {
                     assert.ok(attachResult, 'Expected to be logging an attach success metric')
                     assert.strictEqual(attempts, 1, 'Unexpected Attempt count')
+
+                    return {success: true}
                 }
             })
         })
@@ -199,11 +201,13 @@ describe('localLambdaRunner', async () => {
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
                 onWillRetry,
-                onRecordAttachDebuggerMetric: (
+                onProvideDebuggerMetadata: (
                     attachResult: boolean | undefined,
                     attempts: number
                 ) => {
                     assert.strictEqual(attachResult, false, 'Expected to be logging an attach failure metric')
+
+                    return {success: false}
                 }
             })
         })
@@ -261,11 +265,13 @@ describe('localLambdaRunner', async () => {
                 channelLogger,
                 maxRetries: 2,
                 onStartDebugging: startDebuggingReturnsUndefined,
-                onRecordAttachDebuggerMetric: (
+                onProvideDebuggerMetadata: (
                     attachResult: boolean | undefined, attempts: number
-                ): void => {
+                ) => {
                     assert.strictEqual(actualRetries, 2, 'Metrics should only be recorded once')
                     assert.notStrictEqual(attachResult, undefined, 'attachResult should not be undefined')
+
+                    return { success: false }
                 },
                 onWillRetry,
             })
