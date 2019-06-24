@@ -3,11 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { mkdirpSync, writeFileSync } from 'fs-extra'
+import * as child_process from 'child_process'
+import * as fs from 'fs-extra'
 import { join } from 'path'
 import readlineSync = require('readline-sync')
 import { v4 as uuid } from 'uuid'
-import * as child_process from 'child_process'
+
+const directory = '.changes/next-release'
 
 enum ChangeType {
     Test = 'test',
@@ -70,9 +72,7 @@ function promptForChange(): string {
     return readlineSync.question('Change message: ')
 }
 
-const directory = '.changes/next-release'
-
-mkdirpSync(directory)
+fs.mkdirpSync(directory)
 
 const type = promptForType()
 const description = promptForChange()
@@ -82,7 +82,7 @@ const contents: NewChange = {
 }
 const fileName = `${type}-${uuid()}.json`
 const path = join(directory, fileName)
-writeFileSync(path, JSON.stringify(contents, undefined, '\t'))
+fs.writeFileSync(path, JSON.stringify(contents, undefined, '\t'))
 
 console.log(`Change log written to ${path}`)
 child_process.execSync(`git add ${directory}`)
