@@ -5,15 +5,15 @@
 
 'use strict'
 
-import { BaseItemsLoader } from '../../../shared/utilities/itemsLoader'
+import { BaseItemsLoader, ItemsLoaderEndEvent } from '../../../shared/utilities/itemsLoader'
 
 export class TestItemsLoader<T> extends BaseItemsLoader<T> {
     public startLoad() {
         this.loadStartEmitter.fire()
     }
 
-    public endLoad() {
-        this.loadEndEmitter.fire()
+    public endLoad(event: ItemsLoaderEndEvent) {
+        this.loadEndEmitter.fire(event)
     }
 
     public emitItems(...items: T[]) {

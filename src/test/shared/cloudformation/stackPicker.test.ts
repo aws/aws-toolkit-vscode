@@ -8,8 +8,13 @@
 import * as assert from 'assert'
 import { CloudFormation } from 'aws-sdk'
 import * as vscode from 'vscode'
-import { CloudFormationStackPicker, noStacksPickerItem, } from '../../../shared/cloudformation/stackPicker'
+import {
+    CloudFormationStackPicker,
+    CloudFormationStackPickerItem,
+    noStacksPickerItem,
+} from '../../../shared/cloudformation/stackPicker'
 import { TestLogger } from '../../../shared/loggerUtils'
+import { SUCCESS_ITEMSLOADER_END_EVENT } from '../../../shared/utilities/itemsLoader'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { MockQuickPick } from '../ui/mockQuickPick'
 import { TestItemsLoader } from '../utilities/testItemsLoader'
@@ -19,14 +24,14 @@ describe('CloudFormationStackPicker', async () => {
         public loadItems(items: CloudFormation.StackSummary[]) {
             this.startLoad()
             this.emitItems(...items)
-            this.endLoad()
+            this.endLoad(SUCCESS_ITEMSLOADER_END_EVENT)
         }
     }
 
     class TestCloudFormationStackPicker extends CloudFormationStackPicker {
         public constructor(
             loader: TestCloudFormationStacksLoader,
-            public readonly mockPicker: MockQuickPick<vscode.QuickPickItem>
+            public readonly mockPicker: MockQuickPick<CloudFormationStackPickerItem>
         ) {
             super({
                 stacksLoader: loader,
@@ -34,7 +39,7 @@ describe('CloudFormationStackPicker', async () => {
             })
         }
 
-        protected createQuickPick(): vscode.QuickPick<vscode.QuickPickItem> {
+        protected createQuickPick(): vscode.QuickPick<CloudFormationStackPickerItem> {
             return this.mockPicker
         }
     }
@@ -57,7 +62,7 @@ describe('CloudFormationStackPicker', async () => {
     })
 
     it('returns expected value from picker', async () => {
-        const quickPick = new MockQuickPick({
+        const quickPick = new MockQuickPick<CloudFormationStackPickerItem>({
             onShow: async (sender) => {
                 // wait for picker to have at least one entry
                 while (sender.items.length === 0) {
@@ -79,7 +84,7 @@ describe('CloudFormationStackPicker', async () => {
     })
 
     it('returns cancelled state on cancel', async () => {
-        const quickPick = new MockQuickPick({
+        const quickPick = new MockQuickPick<CloudFormationStackPickerItem>({
             onShow: (sender) => { sender.hide() }
         })
         const picker = new TestCloudFormationStackPicker(stackLoader, quickPick)
@@ -93,7 +98,7 @@ describe('CloudFormationStackPicker', async () => {
     })
 
     it('returns cancelled state on Back Button press', async () => {
-        const quickPick = new MockQuickPick({
+        const quickPick = new MockQuickPick<CloudFormationStackPickerItem>({
             onShow: (sender) => {
                 sender.pressButton(vscode.QuickInputButtons.Back)
             }
@@ -110,7 +115,7 @@ describe('CloudFormationStackPicker', async () => {
 
     it('has a busy notification while retrieving stacks', async () => {
         // Test has two stacks, we simulate retrieving the second stack
-        const quickPick = new MockQuickPick({
+        const quickPick = new MockQuickPick<CloudFormationStackPickerItem>({
             onShow: async (sender) => {
 
                 assert.strictEqual(sender.busy, true, 'expected picker to have busy state')
@@ -120,7 +125,7 @@ describe('CloudFormationStackPicker', async () => {
 
                 assert.strictEqual(sender.busy, true, 'expected picker to have busy state')
 
-                stackLoader.endLoad()
+                stackLoader.endLoad(SUCCESS_ITEMSLOADER_END_EVENT)
 
                 // wait for picker to have both entries
                 while (sender.items.length !== 2) {
@@ -138,7 +143,7 @@ describe('CloudFormationStackPicker', async () => {
     })
 
     it('picker gets placeholder picker item when there are no stacks', async () => {
-        const quickPick = new MockQuickPick({
+        const quickPick = new MockQuickPick<CloudFormationStackPickerItem>({
             onShow: async (sender) => {
                 // wait for picker to have an entry
                 while (sender.items.length === 0) {

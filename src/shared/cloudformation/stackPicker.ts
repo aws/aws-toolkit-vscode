@@ -8,9 +8,14 @@
 import { CloudFormation } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../ui/picker'
-import { ItemsLoader } from '../utilities/itemsLoader'
+import { ItemsLoader, ItemsLoaderEndEvent } from '../utilities/itemsLoader'
 
-export const noStacksPickerItem: vscode.QuickPickItem = {
+export interface CloudFormationStackPickerItem extends vscode.QuickPickItem {
+    isError: boolean
+}
+
+export const noStacksPickerItem: CloudFormationStackPickerItem = {
+    isError: false,
     label: 'No Stacks could be found in this region', // TODO : CC : Loc
     description: 'Click here to enter a new Stack name', // TODO : CC : Loc
 }
@@ -28,16 +33,14 @@ export interface CloudFormationStackPickerResponse {
 export class CloudFormationStackPicker {
     private readonly extensionContext: vscode.ExtensionContext
 
-    private readonly pickerItems: vscode.QuickPickItem[] = []
+    private readonly pickerItems: CloudFormationStackPickerItem[] = []
     private readonly createNewStackButton: vscode.QuickInputButton
     private readonly disposables: vscode.Disposable[] = []
 
     private loading: boolean = false
-    private picker: vscode.QuickPick<vscode.QuickPickItem> | undefined
+    private picker: vscode.QuickPick<CloudFormationStackPickerItem> | undefined
 
     // TODO : CC : Additional buttons (help button)
-    // todo : CC : no buckets found
-    // todo : CC : Error handling
     public constructor(parameters: {
         stacksLoader: ItemsLoader<CloudFormation.StackSummary>,
         extensionContext: vscode.ExtensionContext,
@@ -48,7 +51,7 @@ export class CloudFormationStackPicker {
 
         parameters.stacksLoader.onLoadStart(() => this.onLoadStart(), undefined, this.disposables)
         parameters.stacksLoader.onItem((itm) => this.onNewStack(itm), undefined, this.disposables)
-        parameters.stacksLoader.onLoadEnd(() => this.onLoadEnd(), undefined, this.disposables)
+        parameters.stacksLoader.onLoadEnd((event) => this.onLoadEnd(event), undefined, this.disposables)
     }
 
     /**
@@ -73,7 +76,7 @@ export class CloudFormationStackPicker {
         this.disposePicker()
     }
 
-    protected createQuickPick(): vscode.QuickPick<vscode.QuickPickItem> {
+    protected createQuickPick(): vscode.QuickPick<CloudFormationStackPickerItem> {
         const picker = createQuickPick(
             {
                 options: {
@@ -97,9 +100,17 @@ export class CloudFormationStackPicker {
         this.updatePickerState()
     }
 
-    private onLoadEnd(): void {
-        if (this.pickerItems.length === 0) {
-            this.pickerItems.push(noStacksPickerItem)
+    private onLoadEnd(event: ItemsLoaderEndEvent): void {
+        if (event.success) {
+            if (this.pickerItems.length === 0) {
+                this.pickerItems.push(noStacksPickerItem)
+            }
+        } else if (event.error) {
+            this.pickerItems.push({
+                isError: true,
+                label: 'There was an issue trying to load CloudFormation Stacks', // TODO : CC : loc
+                detail: event.error.message,
+            })
         }
 
         this.loading = false
@@ -109,6 +120,7 @@ export class CloudFormationStackPicker {
 
     private onNewStack(stackSummary: CloudFormation.StackSummary): void {
         this.pickerItems.push({
+            isError: false,
             label: stackSummary.StackName,
         })
 
@@ -121,7 +133,7 @@ export class CloudFormationStackPicker {
         if (!this.picker) { throw new Error('promptUserToSelectStack was called prior to initializing a picker') }
 
         let selectedButton: vscode.QuickInputButton | undefined
-        const promptResponse = await promptUser({
+        const promptResponse = await promptUser<CloudFormationStackPickerItem>({
             picker: this.picker,
             onDidTriggerButton: async (sender, button, resolve, reject) => {
                 selectedButton = button
@@ -136,8 +148,8 @@ export class CloudFormationStackPicker {
 
         const responseEntry = verifySinglePickerOutput(promptResponse)
 
-        if (!responseEntry) {
-            // we don't expect this state, but we will treat it like a cancel
+        if (!responseEntry || responseEntry.isError) {
+            // Treat these cases like a cancel
             return makeCancelledCloudFormationStackPickerResponse()
         }
 

@@ -9,7 +9,12 @@ import { CloudFormation } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { CloudFormationClient } from '../clients/cloudFormationClient'
 import { ext } from '../extensionGlobals'
-import { BaseItemsLoader } from '../utilities/itemsLoader'
+import {
+    BaseItemsLoader,
+    CANCELLED_ITEMSLOADER_END_EVENT,
+    ItemsLoaderEndEvent,
+    SUCCESS_ITEMSLOADER_END_EVENT,
+} from '../utilities/itemsLoader'
 import { ToolkitCancellationToken } from '../utilities/toolkitCancellationToken'
 
 /**
@@ -31,19 +36,27 @@ export class CloudFormationStackLoader extends BaseItemsLoader<CloudFormation.St
         this.loadStarted = true
         this.loadStartEmitter.fire()
 
-        const stacksIter = this.loadCloudFormationStacks()
+        try {
+            const stacksIter = this.loadCloudFormationStacks()
 
-        for await (const stack of stacksIter) {
-            if (this.cancellationToken.isCancellationRequested) {
-                // todo : CC : fire with cancelled information
-                break
+            for await (const stack of stacksIter) {
+                if (this.cancellationToken.isCancellationRequested) {
+                    this.loadEndEmitter.fire(CANCELLED_ITEMSLOADER_END_EVENT)
+
+                    return
+                }
+
+                this.itemEmitter.fire(stack)
             }
 
-            this.itemEmitter.fire(stack)
+            this.loadEndEmitter.fire(SUCCESS_ITEMSLOADER_END_EVENT)
+        } catch (err) {
+            this.loadEndEmitter.fire({
+                success: false,
+                error: err as Error,
+                cancelled: false,
+            })
         }
-
-        this.loadEndEmitter.fire()
-        // todo : CC : failure handling
     }
 
     public get onItem(): vscode.Event<CloudFormation.StackSummary> {
@@ -58,7 +71,7 @@ export class CloudFormationStackLoader extends BaseItemsLoader<CloudFormation.St
         return super.onLoadStart
     }
 
-    public get onLoadEnd(): vscode.Event<void> {
+    public get onLoadEnd(): vscode.Event<ItemsLoaderEndEvent> {
         this.verifyLoadNotStarted()
 
         return super.onLoadEnd

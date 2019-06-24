@@ -7,19 +7,36 @@
 
 import * as vscode from 'vscode'
 
+export interface ItemsLoaderEndEvent {
+    success: boolean,
+    error?: Error,
+    cancelled: boolean,
+}
+
+export const CANCELLED_ITEMSLOADER_END_EVENT: ItemsLoaderEndEvent = {
+    success: false,
+    error: undefined,
+    cancelled: true,
+}
+
+export const SUCCESS_ITEMSLOADER_END_EVENT: ItemsLoaderEndEvent = {
+    success: true,
+    error: undefined,
+    cancelled: false,
+}
+
 /**
  * Loads items in an event driven fashion.
  */
 export interface ItemsLoader<T> {
     onLoadStart: vscode.Event<void>
     onItem: vscode.Event<T>
-    onLoadEnd: vscode.Event<void>
-    // TODO : CC : Error situations
+    onLoadEnd: vscode.Event<ItemsLoaderEndEvent>
 }
 
 export abstract class BaseItemsLoader<T> implements ItemsLoader<T> {
     protected readonly loadStartEmitter = new vscode.EventEmitter<void>()
-    protected readonly loadEndEmitter = new vscode.EventEmitter<void>()
+    protected readonly loadEndEmitter = new vscode.EventEmitter<ItemsLoaderEndEvent>()
 
     protected readonly itemEmitter: vscode.EventEmitter<T> =
         new vscode.EventEmitter<T>()
@@ -32,7 +49,7 @@ export abstract class BaseItemsLoader<T> implements ItemsLoader<T> {
         return this.itemEmitter.event
     }
 
-    public get onLoadEnd(): vscode.Event<void> {
+    public get onLoadEnd(): vscode.Event<ItemsLoaderEndEvent> {
         return this.loadEndEmitter.event
     }
 }

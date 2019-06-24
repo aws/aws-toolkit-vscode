@@ -6,6 +6,7 @@
 'use strict'
 
 import assert = require('assert')
+import { SUCCESS_ITEMSLOADER_END_EVENT } from '../../../shared/utilities/itemsLoader'
 import { TestItemsLoader } from './testItemsLoader'
 
 describe('BaseItemsLoader', async () => {
@@ -28,11 +29,12 @@ describe('BaseItemsLoader', async () => {
 
     it('onLoadEnd fires', async () => {
         await new Promise<void>(resolve => {
-            itemsLoader.onLoadEnd(() => {
+            itemsLoader.onLoadEnd((event) => {
+                assert.strictEqual(event, SUCCESS_ITEMSLOADER_END_EVENT)
                 resolve()
             })
 
-            itemsLoader.endLoad()
+            itemsLoader.endLoad(SUCCESS_ITEMSLOADER_END_EVENT)
         })
     })
 

@@ -9,6 +9,7 @@ import * as assert from 'assert'
 import { CloudFormation } from 'aws-sdk'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { CloudFormationStackLoader } from '../../../shared/cloudformation/cloudformationStackLoader'
+import { CANCELLED_ITEMSLOADER_END_EVENT, SUCCESS_ITEMSLOADER_END_EVENT } from '../../../shared/utilities/itemsLoader'
 import { asyncGenerator } from '../../utilities/asyncGenerator'
 import { MockCloudFormationClient } from '../clients/mockClients'
 import { assertThrowsError } from '../utilities/assertUtils'
@@ -54,7 +55,8 @@ describe('CloudFormationStackLoader', async () => {
             stackLoader.onItem(itm => {
                 itemCount++
             })
-            stackLoader.onLoadEnd(() => {
+            stackLoader.onLoadEnd((event) => {
+                assert.strictEqual(event, SUCCESS_ITEMSLOADER_END_EVENT, 'Expected successful load')
                 assert.strictEqual(itemCount, 2, 'unexpected amount of items loaded')
                 resolve()
             })
@@ -64,6 +66,34 @@ describe('CloudFormationStackLoader', async () => {
                     makePlaceholderStackSummary('stack1'),
                     makePlaceholderStackSummary('stack2'),
                 ])
+            }
+
+            await stackLoader.load()
+        })
+    })
+
+    const loadAsyncError = new Error('error during async iter load')
+    async function* loadAsyncIterWithError(): AsyncIterableIterator<CloudFormation.StackSummary> {
+        yield* [makePlaceholderStackSummary('stack1')]
+
+        throw loadAsyncError
+    }
+
+    it('surfaces errors', async () => {
+        await new Promise<void>(async (resolve) => {
+            let itemCount = 0
+            stackLoader.onItem(itm => {
+                itemCount++
+            })
+            stackLoader.onLoadEnd((event) => {
+                assert.strictEqual(event.error, loadAsyncError, 'Expected event error')
+                assert.strictEqual(event.success, false, 'Expected failure result')
+                assert.strictEqual(itemCount, 1, 'unexpected amount of items loaded')
+                resolve()
+            })
+
+            stackLoader.cloudFormationClient.listStacks = (filter) => {
+                return loadAsyncIterWithError()
             }
 
             await stackLoader.load()
@@ -110,7 +140,7 @@ describe('CloudFormationStackLoader', async () => {
         const loadPromise = stackLoader.load()
         await assertThrowsError(
             async () => {
-                stackLoader.onLoadEnd(() => {
+                stackLoader.onLoadEnd((event) => {
                     // irrelevant
                 })
             },
@@ -127,7 +157,8 @@ describe('CloudFormationStackLoader', async () => {
                 itemCount++
                 stackLoader.cancellationToken.requestCancellation()
             })
-            stackLoader.onLoadEnd(() => {
+            stackLoader.onLoadEnd((event) => {
+                assert.strictEqual(event, CANCELLED_ITEMSLOADER_END_EVENT, 'Expected cancelled load')
                 assert.strictEqual(itemCount, 1, 'unexpected amount of items loaded')
                 resolve()
             })
