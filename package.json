@@ -350,7 +350,8 @@
         "lint": "tslint --project .",
         "lintfix": "tslint --project . --fix",
         "package": "vsce package",
-        "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix"
+        "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
+        "newChange": "ts-node ./build-scripts/newChange.ts"
     },
     "devDependencies": {
         "@types/async-lock": "^1.1.0",
@@ -363,6 +364,7 @@
         "@types/mocha": "^5.2.0",
         "@types/node": "^10.12.12",
         "@types/opn": "^5.1.0",
+        "@types/readline-sync": "^1.4.3",
         "@types/request": "^2.47.1",
         "@types/semver": "^5.5.0",
         "@types/tcp-port-used": "^1.0.0",
@@ -376,8 +378,10 @@
         "mocha": "^5.2.0",
         "prettier": "^1.17.1",
         "pretty-quick": "^1.10.0",
+        "readline-sync": "^1.4.9",
         "remap-istanbul": "^0.12.0",
         "semver-regex": "^2.0.0",
+        "ts-node": "^8.3.0",
         "tslint": "^5.11.0",
         "tslint-eslint-rules": "^5.4.0",
         "tslint-no-circular-imports": "^0.6.1",
