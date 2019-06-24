@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import { TreeItemCollapsibleState } from 'vscode'
 import { ErrorNode } from '../../lambda/explorer/errorNode'
 import { getLogger, Logger } from '../logger'

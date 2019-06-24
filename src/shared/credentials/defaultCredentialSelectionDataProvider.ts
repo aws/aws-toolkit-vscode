@@ -11,8 +11,6 @@
 //
 // Based on the multiStepInput code in the QuickInput VSCode extension sample.
 
-'use strict'
-
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 

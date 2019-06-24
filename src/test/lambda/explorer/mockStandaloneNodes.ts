@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import { Lambda } from 'aws-sdk'
 import { RegionNode } from '../../../lambda/explorer/regionNode'
 import {

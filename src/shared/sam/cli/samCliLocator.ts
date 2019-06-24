@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as path from 'path'
 import { EnvironmentVariables } from '../../environmentVariables'
 import * as filesystemUtilities from '../../filesystemUtilities'

@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as os from 'os'
 import * as vscode from 'vscode'
 import { DRIVE_LETTER_REGEX } from '../../shared/codelens/codeLensUtils'

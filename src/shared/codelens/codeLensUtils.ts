@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as vscode from 'vscode'
 
 import { detectLocalTemplates } from '../../lambda/local/detectLocalTemplates'

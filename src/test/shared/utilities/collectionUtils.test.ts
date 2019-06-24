@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import '../../../shared/utilities/asyncIteratorShim'
 
 import * as assert from 'assert'

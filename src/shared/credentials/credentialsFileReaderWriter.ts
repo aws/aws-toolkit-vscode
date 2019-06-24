@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 export interface CredentialsFileReaderWriter {
     // returns the list of available profile names
     getProfileNames(): Promise<string[]>

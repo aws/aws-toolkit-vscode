@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as assert from 'assert'
 import { CredentialsProfileMru } from '../../../shared/credentials/credentialsProfileMru'
 import { FakeExtensionContext } from '../../fakeExtensionContext'

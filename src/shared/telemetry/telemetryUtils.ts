@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as vscode from 'vscode'
 import { ext } from '../extensionGlobals'
 import { Datum, METADATA_FIELD_NAME, MetadataResult, TelemetryName } from './telemetryTypes'

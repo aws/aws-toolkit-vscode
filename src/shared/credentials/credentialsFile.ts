@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 // ***************************************************************************
 // Note: Supplied by the AWS Javascript SDK team, from their upcoming v3 SDK.
 // Once that release is GA and we switch over, we can remove this copy and use

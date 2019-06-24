@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 /**
  * Timeout that can handle both cancellation token-style and time limit-style timeout situations.
  * @param timeoutLength Length of timeout duration (in ms)

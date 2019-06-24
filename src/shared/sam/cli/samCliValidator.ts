@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as semver from 'semver'
 import { stat } from '../../filesystem'
 import { SamCliConfiguration } from './samCliConfiguration'
