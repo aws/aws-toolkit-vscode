@@ -14,6 +14,7 @@ import {
     ParameterPromptResult,
     SamDeployWizard,
     SamDeployWizardContext,
+    validateS3Bucket,
 } from '../../../lambda/wizards/samDeployWizard'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { RegionProvider } from '../../../shared/regions/regionProvider'
@@ -564,71 +565,6 @@ describe('SamDeployWizard', async () => {
             assert.ok(result)
             assert.strictEqual(result!.s3Bucket, 'mys3bucketname')
         })
-
-        // In product code, failed validation will prevent the user from submitting the invalid reponse
-        // In test code, failed validation throws an exception instead.
-        describe('validation', async () => {
-            async function assertValidationFails(bucketName: string | undefined): Promise<void> {
-                const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
-                const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
-
-                try {
-                    await new SamDeployWizard(
-                        new MockRegionProvider(),
-                        new MockSamDeployWizardContext(
-                            // tslint:disable-next-line:space-before-function-paren
-                            async function* () { yield vscode.Uri.file(templatePath) },
-                            [[vscode.Uri.file(workspaceFolderPath)]],
-                            [
-                                createQuickPickUriResponseItem(vscode.Uri.file(templatePath)),
-                            ],
-                            [
-                                createQuickPickRegionResponseItem('asdf')
-                            ],
-                            [bucketName],
-                            [],
-                        )
-                    ).run()
-                } catch (err) {
-                    return
-                }
-
-                assert.fail(`Expected validation for bucket name '${bucketName}' to fail, but it passed.`)
-            }
-
-            it('validates that bucket name has a valid length', async () => {
-                await assertValidationFails('aa')
-                await assertValidationFails('aaaaaaaabbbbbbbbccccccccddddddddeeeeeeeeffffffffgggggggghhhhhhhh')
-            })
-
-            it('validates that bucket name does not contain invalid characters', async () => {
-                await assertValidationFails('aaA')
-                await assertValidationFails('aa_')
-                await assertValidationFails('aa$')
-            })
-
-            it('validates that bucket name is not formatted as an ip address', async () => {
-                await assertValidationFails('198.51.100.24')
-            })
-
-            it('validates that bucket name does not end with a dash', async () => {
-                await assertValidationFails('aa-')
-            })
-
-            it('validates that bucket name does not contain consecutive periods', async () => {
-                await assertValidationFails('a..a')
-            })
-
-            it('validates that bucket name does not contain a period adjacent to a dash', async () => {
-                await assertValidationFails('a.-a')
-                await assertValidationFails('a-.a')
-            })
-
-            it('validates that each label in bucket name begins with a number or a lower-case character', async () => {
-                await assertValidationFails('Aaa')
-                await assertValidationFails('aaa.Bbb')
-            })
-        })
     })
 
     describe('STACK_NAME', async () => {
@@ -741,5 +677,56 @@ describe('SamDeployWizard', async () => {
                 await assertValidationFails(parts.join(''))
             })
         })
+    })
+})
+
+describe('validateS3Bucket', async () => {
+    function assertS3BucketValidationFails(bucketName: string) {
+        assert.notStrictEqual(
+            validateS3Bucket(bucketName),
+            undefined,
+            `Expected validation for S3 bucket name '${bucketName}' to fail, but it passed.`
+        )
+    }
+
+    it('validates a valid bucket name', async () => {
+        assert.strictEqual(
+            validateS3Bucket('validbucketname'),
+            undefined,
+            'failed to validate valid bucket name'
+        )
+    })
+
+    it('validates that bucket name has a valid length', async () => {
+        assertS3BucketValidationFails('aa')
+        assertS3BucketValidationFails('aaaaaaaabbbbbbbbccccccccddddddddeeeeeeeeffffffffgggggggghhhhhhhh')
+    })
+
+    it('validates that bucket name does not contain invalid characters', async () => {
+        assertS3BucketValidationFails('aaA')
+        assertS3BucketValidationFails('aa_')
+        assertS3BucketValidationFails('aa$')
+    })
+
+    it('validates that bucket name is not formatted as an ip address', async () => {
+        assertS3BucketValidationFails('198.51.100.24')
+    })
+
+    it('validates that bucket name does not end with a dash', async () => {
+        assertS3BucketValidationFails('aa-')
+    })
+
+    it('validates that bucket name does not contain consecutive periods', async () => {
+        assertS3BucketValidationFails('a..a')
+    })
+
+    it('validates that bucket name does not contain a period adjacent to a dash', async () => {
+        assertS3BucketValidationFails('a.-a')
+        assertS3BucketValidationFails('a-.a')
+    })
+
+    it('validates that each label in bucket name begins with a number or a lower-case character', async () => {
+        assertS3BucketValidationFails('Aaa')
+        assertS3BucketValidationFails('aaa.Bbb')
     })
 })
