@@ -16,6 +16,7 @@ import {
     SamDeployWizardContext,
     validateS3Bucket,
 } from '../../../lambda/wizards/samDeployWizard'
+import { CloudFormationStackPickerResponse } from '../../../shared/cloudformation/stackPicker'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { RegionProvider } from '../../../shared/regions/regionProvider'
 
@@ -55,6 +56,12 @@ class MockRegionProvider implements RegionProvider {
 }
 
 class MockSamDeployWizardContext implements SamDeployWizardContext {
+    public static readonly sampleExistingStackName: string = 'sampleExistingStack'
+    public static readonly sampleNewStackName: string = 'sampleNewStack'
+
+    private readonly existingStackResponse: (region: string) => CloudFormationStackPickerResponse
+    private readonly newStackResponse: () => string | undefined
+
     public get workspaceFolders(): vscode.Uri[] | undefined {
         if (this.workspaceFoldersResponses.length <= 0) {
             throw new Error('workspaceFolders was called more times than expected')
@@ -69,13 +76,24 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         private readonly promptForSamTemplateResponses: (QuickPickUriResponseItem | undefined)[] = [],
         private readonly promptForRegionResponses: (QuickPickRegionResponseItem | undefined)[] = [],
         private readonly promptForS3BucketResponses: (string | undefined)[] = [],
-        private readonly promptForStackNameResponses: (string | undefined)[] = [],
+        // todo : convert all of the remaining constructor inputs to be callback driven
+        {
+            existingStackResponse = (region: string) => makeInputTextCloudFormationStackPickerResponse(
+                MockSamDeployWizardContext.sampleExistingStackName
+            ),
+            newStackResponse = () => undefined
+        }: {
+            existingStackResponse?(region: string): CloudFormationStackPickerResponse,
+            newStackResponse?(): string | undefined
+        }
     ) {
         this.workspaceFoldersResponses = workspaceFoldersResponses.reverse()
         this.promptForSamTemplateResponses = promptForSamTemplateResponses.reverse()
         this.promptForRegionResponses = promptForRegionResponses.reverse()
         this.promptForS3BucketResponses = promptForS3BucketResponses.reverse()
-        this.promptForStackNameResponses = promptForStackNameResponses.reverse()
+
+        this.existingStackResponse = existingStackResponse
+        this.newStackResponse = newStackResponse
     }
 
     public readonly getOverriddenParameters: typeof paramUtils.getOverriddenParameters = async () => undefined
@@ -121,27 +139,12 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         return response.detail
     }
 
-    public async promptUserForStackName(
-        {
-            validateInput,
-        }: {
-            validateInput(value: string): string | undefined
-        }
-    ): Promise<string | undefined> {
-        if (this.promptForStackNameResponses.length <= 0) {
-            throw new Error('promptUserForStackName was called more times than expected')
-        }
+    public async promptUserForExistingStackName(region: string): Promise<CloudFormationStackPickerResponse> {
+        return this.existingStackResponse(region)
+    }
 
-        const response = this.promptForStackNameResponses.pop()
-
-        if (response && validateInput) {
-            const validationResult = validateInput(response)
-            if (validationResult) {
-                throw new Error(`Validation error: ${validationResult}`)
-            }
-        }
-
-        return response
+    public async promptUserForNewStackName(): Promise<string | undefined> {
+        return this.newStackResponse()
     }
 }
 
@@ -161,6 +164,7 @@ describe('SamDeployWizard', async () => {
                     [undefined],
                     [],
                     [],
+                    {}
                 )
             )
             const result = await wizard.run()
@@ -180,6 +184,7 @@ describe('SamDeployWizard', async () => {
                     [undefined],
                     [],
                     [],
+                    {}
                 )
             )
             const result = await wizard.run()
@@ -203,7 +208,7 @@ describe('SamDeployWizard', async () => {
                         createQuickPickRegionResponseItem('asdf')
                     ],
                     ['mys3bucketname'],
-                    ['myStackName'],
+                    {}
                 )
             )
             const result = await wizard.run()
@@ -242,7 +247,8 @@ describe('SamDeployWizard', async () => {
                 promptUserForSamTemplate: async () => vscode.Uri.file(templatePath),
                 promptUserForRegion: async () => region,
                 promptUserForS3Bucket: async () => s3Bucket,
-                promptUserForStackName: async () => stackName,
+                promptUserForExistingStackName: async () => makeInputTextCloudFormationStackPickerResponse(stackName),
+                promptUserForNewStackName: async () => { throw new Error('new stackname not used in this test') },
             }
         }
 
@@ -443,9 +449,7 @@ describe('SamDeployWizard', async () => {
                     [
                         'mys3bucketname'
                     ],
-                    [
-                        'myStackName'
-                    ],
+                    {}
                 )
             )
             const result = await wizard.run()
@@ -484,9 +488,7 @@ describe('SamDeployWizard', async () => {
                     [
                         'mys3bucketname'
                     ],
-                    [
-                        'myStackName'
-                    ],
+                    {}
                 )
             )
             const result = await wizard.run()
@@ -529,9 +531,7 @@ describe('SamDeployWizard', async () => {
                         undefined, // First time we ask about the S3 Bucket, cancel back to the region step
                         'mys3bucketname'
                     ],
-                    [
-                        'myStackName'
-                    ],
+                    {}
                 )
             )
             const result = await wizard.run()
@@ -557,7 +557,7 @@ describe('SamDeployWizard', async () => {
                         createQuickPickRegionResponseItem('asdf')
                     ],
                     ['mys3bucketname'],
-                    ['myStackName'],
+                    {}
                 )
             )
             const result = await wizard.run()
@@ -567,10 +567,11 @@ describe('SamDeployWizard', async () => {
         })
     })
 
-    describe('STACK_NAME', async () => {
+    describe('STACK_PICK_EXISTING', async () => {
         it('goes back when cancelled', async () => {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
+            let existingStackResponseCallCount: number = 0
             const wizard = new SamDeployWizard(
                 new MockRegionProvider(),
                 new MockSamDeployWizardContext(
@@ -587,10 +588,20 @@ describe('SamDeployWizard', async () => {
                         'mys3bucketname1',
                         'mys3bucketname2',
                     ],
-                    [
-                        undefined,
-                        'myStackName'
-                    ],
+                    {
+                        existingStackResponse: (region) => {
+                            existingStackResponseCallCount++
+                            switch (existingStackResponseCallCount) {
+                                case 1:
+                                    return makeCancelledCloudFormationStackPickerResponse()
+                                case 2:
+                                    return makeInputTextCloudFormationStackPickerResponse('irrelevant')
+                                default:
+                                    assert.fail('existing stack name was called too many times')
+                                    throw new Error('bad test')
+                            }
+                        }
+                    }
                 )
             )
             const result = await wizard.run()
@@ -617,65 +628,128 @@ describe('SamDeployWizard', async () => {
                     [
                         'mys3bucketname',
                     ],
-                    [
-                        'myStackName'
-                    ],
+                    {}
                 )
             )
             const result = await wizard.run()
 
             assert.ok(result)
-            assert.strictEqual(result!.stackName, 'myStackName')
+            assert.strictEqual(result!.stackName, MockSamDeployWizardContext.sampleExistingStackName)
         })
 
-        describe('validation', async () => {
-            async function assertValidationFails(stackName: string | undefined): Promise<void> {
-                const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
-                const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
+        it('advances to STACK_INPUT_NEW if "create new stack" is requested', async () => {
+            const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
+            const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
+            let newStackResponseRequested: boolean = false
+            const wizard = new SamDeployWizard(
+                new MockRegionProvider(),
+                new MockSamDeployWizardContext(
+                    // tslint:disable-next-line:space-before-function-paren
+                    async function* () { yield vscode.Uri.file(templatePath) },
+                    [[vscode.Uri.file(workspaceFolderPath)]],
+                    [
+                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath)),
+                    ],
+                    [
+                        createQuickPickRegionResponseItem('asdf')
+                    ],
+                    [
+                        'mys3bucketname1',
+                    ],
+                    {
+                        existingStackResponse: (region) => makeCreateStackCloudFormationStackPickerResponse(),
+                        newStackResponse: () => {
+                            newStackResponseRequested = true
 
-                try {
-                    await new SamDeployWizard(
-                        new MockRegionProvider(),
-                        new MockSamDeployWizardContext(
-                            // tslint:disable-next-line:space-before-function-paren
-                            async function* () { yield vscode.Uri.file(templatePath) },
-                            [[vscode.Uri.file(workspaceFolderPath)]],
-                            [
-                                createQuickPickUriResponseItem(vscode.Uri.file(templatePath)),
-                            ],
-                            [
-                                createQuickPickRegionResponseItem('asdf')
-                            ],
-                            ['myBucketName'],
-                            [stackName],
-                        )
-                    ).run()
-                } catch (err) {
-                    return
-                }
+                            return 'someNewStackName'
+                        }
+                    }
+                )
+            )
+            const result = await wizard.run()
 
-                assert.fail(`Expected validation for stack name '${stackName}' to fail, but it passed.`)
-            }
+            assert.ok(result)
+            assert.strictEqual(newStackResponseRequested, true, 'Expected new stack response to get called')
+        })
+    })
 
-            it('validates that stackName does not contain invalid charcters', async () => {
-                await assertValidationFails('ab_c')
-                await assertValidationFails('ab$c')
-                await assertValidationFails('ab.c')
-            })
+    describe('STACK_INPUT_NEW', async () => {
+        it('goes back to STACK_PICK_EXISTING when cancelled', async () => {
+            const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
+            const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
+            let existingStackResponseCallCount: number = 0
+            let newStackResponseCallCount: number = 0
+            const wizard = new SamDeployWizard(
+                new MockRegionProvider(),
+                new MockSamDeployWizardContext(
+                    // tslint:disable-next-line:space-before-function-paren
+                    async function* () { yield vscode.Uri.file(templatePath) },
+                    [[vscode.Uri.file(workspaceFolderPath)]],
+                    [
+                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath)),
+                    ],
+                    [
+                        createQuickPickRegionResponseItem('asdf')
+                    ],
+                    [
+                        'mys3bucketname1',
+                    ],
+                    {
+                        existingStackResponse: (region) => {
+                            existingStackResponseCallCount++
+                            switch (existingStackResponseCallCount) {
+                                case 1:
+                                    return makeCreateStackCloudFormationStackPickerResponse()
+                                case 2:
+                                    return makeInputTextCloudFormationStackPickerResponse('irrelevant')
+                                default:
+                                    assert.fail('existing stack name was called too many times')
+                                    throw new Error('bad test')
+                            }
+                        },
+                        newStackResponse: () => {
+                            newStackResponseCallCount++
 
-            it('validates that stackName begins with an alphabetic character', async () => {
-                await assertValidationFails('1abc')
-                await assertValidationFails('-abc')
-            })
+                            return undefined
+                        }
+                    }
+                )
+            )
+            await wizard.run()
 
-            it('validates that stackName is not longer than 128 characters', async () => {
-                const parts = []
-                for (let i = 0; i < 129; i++) {
-                    parts.push('a')
-                }
+            assert.strictEqual(existingStackResponseCallCount, 2, 'Expected to enter the existing stack selection 2x')
+            assert.strictEqual(newStackResponseCallCount, 1, 'Expected to enter the new stack input 1x')
+        })
 
-                await assertValidationFails(parts.join(''))
-            })
+        it('uses user response as stackName', async () => {
+            const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
+            const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
+            const newStackName = 'someNewStackName'
+            const wizard = new SamDeployWizard(
+                new MockRegionProvider(),
+                new MockSamDeployWizardContext(
+                    // tslint:disable-next-line:space-before-function-paren
+                    async function* () { yield vscode.Uri.file(templatePath) },
+                    [[vscode.Uri.file(workspaceFolderPath)]],
+                    [
+                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath)),
+                    ],
+                    [
+                        createQuickPickRegionResponseItem('asdf')
+                    ],
+                    [
+                        'mys3bucketname',
+                    ],
+                    {
+                        existingStackResponse: (region) => makeCreateStackCloudFormationStackPickerResponse(),
+                        newStackResponse: () => newStackName
+                    }
+                )
+            )
+            const result = await wizard.run()
+
+            assert.ok(result)
+            assert.strictEqual(result!.stackName, newStackName)
         })
     })
 })
@@ -730,3 +804,25 @@ describe('validateS3Bucket', async () => {
         assertS3BucketValidationFails('aaa.Bbb')
     })
 })
+
+function makeInputTextCloudFormationStackPickerResponse(inputText: string): CloudFormationStackPickerResponse {
+    return {
+        cancelled: false,
+        createStackButtonPressed: false,
+        inputText,
+    }
+}
+
+function makeCancelledCloudFormationStackPickerResponse(): CloudFormationStackPickerResponse {
+    return {
+        cancelled: true,
+        createStackButtonPressed: false,
+    }
+}
+
+function makeCreateStackCloudFormationStackPickerResponse(): CloudFormationStackPickerResponse {
+    return {
+        cancelled: false,
+        createStackButtonPressed: true,
+    }
+}

@@ -56,7 +56,7 @@ export async function deploySamApplication(
         channelLogger: ChannelLogger
         regionProvider: RegionProvider
         samDeployWizard?: SamDeployWizardResponseProvider
-        extensionContext: Pick<vscode.ExtensionContext, 'asAbsolutePath'>
+        extensionContext: vscode.ExtensionContext
     },
     {
         awsContext,
@@ -297,7 +297,7 @@ function getDefaultWindowFunctions(): WindowFunctions {
 
 function getDefaultSamDeployWizardResponseProvider(
     regionProvider: RegionProvider,
-    context: Pick<vscode.ExtensionContext, 'asAbsolutePath'>
+    context: vscode.ExtensionContext,
 ): SamDeployWizardResponseProvider {
     return {
         getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {

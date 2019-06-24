@@ -10,7 +10,9 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { CloudFormation } from '../../shared/cloudformation/cloudformation'
+import { CloudFormationStackLoader } from '../../shared/cloudformation/cloudformationStackLoader'
+import { CloudFormationStackPicker, CloudFormationStackPickerResponse } from '../../shared/cloudformation/stackPicker'
+import { CloudFormationStackPrompt } from '../../shared/cloudformation/stackPrompt'
 import { samDeployDocUrl } from '../../shared/constants'
 import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
@@ -94,22 +96,20 @@ export interface SamDeployWizardContext {
     promptUserForS3Bucket(selectedRegion?: string, initialValue?: string): Promise<string | undefined>
 
     /**
-     * Retrieves a Stack Name to deploy to from the user.
+     * Retrieves an existing stack name from the user
      *
-     * @param initialValue Optional, Initial value to prompt with
-     * @param validateInput Optional, validates input as it is entered
+     * @param region Region to choose stack from
      *
-     * @returns Stack name. Undefined represents cancel.
+     * @returns a Picker response indicating the next course of action (back, next, next-to-promptUserForNewStackName)
      */
-    promptUserForStackName(
-        {
-            initialValue,
-            validateInput,
-        }: {
-            initialValue?: string
-            validateInput(value: string): string | undefined
-        }
-    ): Promise<string | undefined>
+    promptUserForExistingStackName(region: string): Promise<CloudFormationStackPickerResponse>
+
+    /**
+     * Retrieves a stack name from the user representing a new/yet-to-be-created stack
+     *
+     * @returns undefined = go back to promptUserForExistingStackName, bucket name otherwise
+     */
+    promptUserForNewStackName(): Promise<string | undefined>
 }
 
 function getSingleResponse(responses: vscode.QuickPickItem[] | undefined): string | undefined {
@@ -135,8 +135,12 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             'View Documentation'
         )
     )
+    private loadedStackNames: string[] = []
+    private pickerRegion?: string
+    private stackPicker?: CloudFormationStackPicker
+    private stackLoader?: CloudFormationStackLoader
 
-    public constructor(private readonly extContext: Pick<vscode.ExtensionContext, 'asAbsolutePath'>) {
+    public constructor(private readonly extContext: vscode.ExtensionContext) {
     }
 
     public get workspaceFolders(): vscode.Uri[] | undefined {
@@ -385,53 +389,88 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         })
     }
 
-    /**
-     * Retrieves a Stack Name to deploy to from the user.
-     *
-     * @param initialValue Optional, Initial value to prompt with
-     * @param validateInput Optional, validates input as it is entered
-     *
-     * @returns Stack name. Undefined represents cancel.
-     */
-    public async promptUserForStackName(
-        {
-            initialValue,
-            validateInput,
-        }: {
-            initialValue?: string
-            validateInput(value: string): string | undefined
-        }
-    ): Promise<string | undefined> {
-        const inputBox = input.createInputBox({
-            buttons: [
-                this.helpButton,
-                vscode.QuickInputButtons.Back
-            ],
-            options: {
-                title: localize(
-                    'AWS.samcli.deploy.stackName.prompt',
-                    'Enter the name to use for the deployed stack'
-                ),
-                ignoreFocusOut: true,
-            }
-        })
+    public async promptUserForExistingStackName(region: string): Promise<CloudFormationStackPickerResponse> {
+        this.prepareStackPicker(region)
 
-        // Pre-populate the value if it was already set
-        if (initialValue) {
-            inputBox.value = initialValue
+        if (!this.stackPicker) {
+            throw new Error('Stack picker is missing')
         }
 
-        return await input.promptUser({
-            inputBox: inputBox,
-            onValidateInput: validateInput,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
-                }
+        return await this.stackPicker.prompt()
+    }
+
+    // undefined represents a cancel/back action
+    public async promptUserForNewStackName(): Promise<string | undefined> {
+        const prompt = new CloudFormationStackPrompt(this.loadedStackNames)
+        const promptResult = await prompt.prompt()
+
+        if (promptResult !== CloudFormationStackPrompt.PROMPT_CANCELLED) {
+            if (this.stackPicker) {
+                this.stackPicker.dispose()
+                this.stackPicker = undefined
             }
-        })
+        }
+
+        return promptResult === CloudFormationStackPrompt.PROMPT_CANCELLED ? undefined : promptResult
+    }
+
+    private prepareStackPicker(region: string) {
+        if (region === this.pickerRegion && this.stackLoader && this.stackPicker) {
+            return
+        }
+
+        this.initializeStackLoader(region, true)
+
+        if (!this.stackLoader) {
+            throw new Error('Stack loader has not been set up')
+        }
+
+        this.initializeStackPicker(this.stackLoader, true)
+
+        // tslint:disable-next-line: no-floating-promises -- events are fired as items are loaded
+        this.stackLoader.load()
+
+        this.pickerRegion = region
+    }
+
+    private initializeStackLoader(region: string, overwriteExisting: boolean) {
+        if (this.stackLoader && overwriteExisting) {
+            this.removeStackLoader()
+        }
+
+        if (!this.stackLoader) {
+            this.stackLoader = new CloudFormationStackLoader(region)
+
+            this.loadedStackNames = []
+            this.stackLoader.onItem(stack => { this.loadedStackNames.push(stack.StackName) })
+        }
+    }
+
+    private removeStackLoader() {
+        if (this.stackLoader) {
+            this.stackLoader.cancellationToken.requestCancellation()
+            this.stackLoader = undefined
+        }
+    }
+
+    private initializeStackPicker(stacksLoader: CloudFormationStackLoader, overwriteExisting: boolean) {
+        if (this.stackPicker && overwriteExisting) {
+            this.removeStackPicker()
+        }
+
+        if (!this.stackPicker) {
+            this.stackPicker = new CloudFormationStackPicker({
+                stacksLoader,
+                extensionContext: this.extContext,
+            })
+        }
+    }
+
+    private removeStackPicker() {
+        if (this.stackPicker) {
+            this.stackPicker.dispose()
+            this.stackPicker = undefined
+        }
     }
 }
 
@@ -538,16 +577,48 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     private readonly S3_BUCKET: WizardStep = async () => {
         this.response.s3Bucket = await this.context.promptUserForS3Bucket(this.response.region, this.response.s3Bucket)
 
-        return this.response.s3Bucket ? this.STACK_NAME : this.REGION
+        return this.response.s3Bucket ? this.STACK_PICK_EXISTING : this.REGION
     }
 
-    private readonly STACK_NAME: WizardStep = async () => {
-        this.response.stackName = await this.context.promptUserForStackName({
-            initialValue: this.response.stackName,
-            validateInput: CloudFormation.validateStackName,
-        })
+    private readonly STACK_PICK_EXISTING: WizardStep = async () => {
+        if (!this.response.region) {
+            // Unexpected state. Go back to Region step.
+            return this.REGION
+        }
 
-        return this.response.stackName ? undefined : this.S3_BUCKET
+        const pickerResult: CloudFormationStackPickerResponse = await this.context.promptUserForExistingStackName(
+            this.response.region
+        )
+
+        if (pickerResult.cancelled) {
+            // Go back to S3 Bucket Selection
+            return this.S3_BUCKET
+        } else if (pickerResult.createStackButtonPressed) {
+            // Advance to New Stack Entry
+            return this.STACK_INPUT_NEW
+        } else if (pickerResult.inputText) {
+            // Advance to End of Wizard
+            this.response.stackName = pickerResult.inputText
+
+            return undefined
+        } else {
+            // Programmer has not updated the logic handling
+            throw new Error('Unexpected state')
+        }
+    }
+
+    private readonly STACK_INPUT_NEW: WizardStep = async () => {
+        const inputResult = await this.context.promptUserForNewStackName()
+
+        if (!inputResult) {
+            // Go back to Stack Selection
+            return this.STACK_PICK_EXISTING
+        } else {
+            // Advance to End of Wizard
+            this.response.stackName = inputResult
+
+            return undefined
+        }
     }
 }
 

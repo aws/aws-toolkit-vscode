@@ -56,7 +56,7 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         this.regionNodes = new Map<string, RegionNode>()
     }
 
-    public initialize(context: Pick<vscode.ExtensionContext, 'asAbsolutePath' | 'globalState'>): void {
+    public initialize(context: vscode.ExtensionContext): void {
         registerCommand({
             command: 'aws.refreshAwsExplorer',
             callback: async () => this.refresh()
