@@ -8,10 +8,15 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
+import { CloudFormation } from 'aws-sdk'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { CloudFormationStackLoader } from '../../shared/cloudformation/cloudformationStackLoader'
-import { CloudFormationStackPicker, CloudFormationStackPickerResponse } from '../../shared/cloudformation/stackPicker'
+import {
+    CloudFormationStackPicker,
+    CloudFormationStackPickerItem,
+    CloudFormationStackPickerResponse
+} from '../../shared/cloudformation/stackPicker'
 import { CloudFormationStackPrompt } from '../../shared/cloudformation/stackPrompt'
 import { samDeployDocUrl } from '../../shared/constants'
 import { getLogger } from '../../shared/logger'
@@ -20,6 +25,7 @@ import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { difference, filter, toArrayAsync } from '../../shared/utilities/collectionUtils'
+import { ItemsLoader } from '../../shared/utilities/itemsLoader'
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
 import { detectLocalTemplates } from '../local/detectLocalTemplates'
 import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
@@ -459,10 +465,11 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         }
 
         if (!this.stackPicker) {
-            this.stackPicker = new CloudFormationStackPicker({
+            this.stackPicker = new SamDeployWizardCloudFormationStackPicker(
                 stacksLoader,
-                extensionContext: this.extContext,
-            })
+                this.extContext,
+                this.helpButton,
+            )
         }
     }
 
@@ -470,6 +477,46 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         if (this.stackPicker) {
             this.stackPicker.dispose()
             this.stackPicker = undefined
+        }
+    }
+}
+
+/**
+ * Extended picker that adds support for a help button
+ */
+class SamDeployWizardCloudFormationStackPicker extends CloudFormationStackPicker {
+    public constructor(
+        stacksLoader: ItemsLoader<CloudFormation.StackSummary>,
+        extensionContext: vscode.ExtensionContext,
+        private readonly helpButton: vscode.QuickInputButton,
+    ) {
+        super({
+            stacksLoader,
+            extensionContext
+        })
+    }
+
+    protected getPickerButtons(): vscode.QuickInputButton[] {
+        const buttons = super.getPickerButtons()
+        buttons.push(this.helpButton)
+
+        return buttons
+    }
+
+    protected async onDidTriggerButton(
+        sender: vscode.QuickPick<CloudFormationStackPickerItem>,
+        button: vscode.QuickInputButton,
+        resolve: (
+            value: CloudFormationStackPickerItem[] |
+                PromiseLike<CloudFormationStackPickerItem[] | undefined>
+                | undefined
+        ) => void,
+        reject: (reason?: any) => void,
+    ): Promise<void> {
+        if (button === this.helpButton) {
+            vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
+        } else {
+            await super.onDidTriggerButton(sender, button, resolve, reject)
         }
     }
 }

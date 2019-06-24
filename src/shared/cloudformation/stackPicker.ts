@@ -37,6 +37,8 @@ export interface CloudFormationStackPickerResponse {
  * Callers should call dispose() when they are finished using the object.
  */
 export class CloudFormationStackPicker {
+    protected lastButtonPressed?: vscode.QuickInputButton
+
     private readonly extensionContext: vscode.ExtensionContext
 
     private readonly pickerItems: CloudFormationStackPickerItem[] = []
@@ -46,7 +48,6 @@ export class CloudFormationStackPicker {
     private loading: boolean = false
     private picker: vscode.QuickPick<CloudFormationStackPickerItem> | undefined
 
-    // TODO : CC : Additional buttons (help button)
     public constructor(parameters: {
         stacksLoader: ItemsLoader<CloudFormation.StackSummary>,
         extensionContext: vscode.ExtensionContext,
@@ -93,14 +94,36 @@ export class CloudFormationStackPicker {
                     ),
                 },
                 items: this.pickerItems,
-                buttons: [
-                    vscode.QuickInputButtons.Back,
-                    this.createNewStackButton,
-                ]
+                buttons: this.getPickerButtons()
             }
         )
 
         return picker
+    }
+
+    protected getPickerButtons(): vscode.QuickInputButton[] {
+        return [
+            vscode.QuickInputButtons.Back,
+            this.createNewStackButton,
+        ]
+    }
+
+    protected async onDidTriggerButton(
+        sender: vscode.QuickPick<CloudFormationStackPickerItem>,
+        button: vscode.QuickInputButton,
+        resolve: (
+            value: CloudFormationStackPickerItem[] |
+                PromiseLike<CloudFormationStackPickerItem[] | undefined>
+                | undefined
+        ) => void,
+        reject: (reason?: any) => void,
+    ): Promise<void> {
+        this.lastButtonPressed = button
+
+        if (button === vscode.QuickInputButtons.Back || button === this.createNewStackButton) {
+            sender.hide()
+            resolve(undefined)
+        }
     }
 
     private onLoadStart(): void {
@@ -144,18 +167,16 @@ export class CloudFormationStackPicker {
     private async promptUserToSelectStack(): Promise<CloudFormationStackPickerResponse> {
         if (!this.picker) { throw new Error('promptUserToSelectStack was called prior to initializing a picker') }
 
-        let selectedButton: vscode.QuickInputButton | undefined
+        this.lastButtonPressed = undefined
         const promptResponse = await promptUser<CloudFormationStackPickerItem>({
             picker: this.picker,
             onDidTriggerButton: async (sender, button, resolve, reject) => {
-                selectedButton = button
-                sender.hide()
-                resolve(undefined)
+                await this.onDidTriggerButton(sender, button, resolve, reject)
             }
         })
 
-        if (selectedButton) {
-            return this.makeButtonSelectionCloudFormationStackPickerResponse(selectedButton)
+        if (this.lastButtonPressed) {
+            return this.makeButtonSelectionCloudFormationStackPickerResponse(this.lastButtonPressed)
         }
 
         const responseEntry = verifySinglePickerOutput(promptResponse)
