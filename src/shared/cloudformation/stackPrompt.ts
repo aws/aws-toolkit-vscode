@@ -5,6 +5,9 @@
 
 'use strict'
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import * as vscode from 'vscode'
 import { createInputBox, promptUser } from '../ui/input'
 import { CloudFormation } from './cloudformation'
@@ -43,7 +46,10 @@ export class CloudFormationStackPrompt {
             {
                 options: {
                     ignoreFocusOut: true,
-                    title: 'Enter a new CloudFormation Stack name', // TODO : CC : loc
+                    title: localize(
+                        'AWS.samcli.deploy.stackName.prompt',
+                        'Enter the name to use for the deployed stack'
+                    )
                 },
                 buttons: [
                     vscode.QuickInputButtons.Back,
