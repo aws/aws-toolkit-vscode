@@ -17,6 +17,7 @@ task downloadResources(type: Download) {
     ])
 
     onlyIfModified true
+    useETag true
 
     doFirst {
         mkdir "$buildDir/downloaded-resources/software/aws/toolkits/resources/"
