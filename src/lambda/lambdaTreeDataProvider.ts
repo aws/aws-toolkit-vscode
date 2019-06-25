@@ -70,7 +70,7 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
                     this.channelLogger,
                     context
                 )
-                const datum = defaultMetricDatum(createNewSamAppCommand)
+                const datum = defaultMetricDatum('new')
                 datum.metadata = new Map()
                 applyResultsToMetadata(createNewSamApplicationResults, datum.metadata)
 
