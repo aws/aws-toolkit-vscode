@@ -132,14 +132,13 @@ function makeConfigureCodeLens({
     return new vscode.CodeLens(range, command)
 }
 
-export function getMetricDatum({ command, isDebug, runtime }: {
-    command: string,
+export function getMetricDatum({ isDebug, runtime }: {
     isDebug: boolean,
     runtime: string,
 }): { datum: Datum } {
     return {
         datum: {
-            ...defaultMetricDatum(command),
+            ...defaultMetricDatum('invokelocal'),
             metadata: new Map([
                 ['runtime', runtime],
                 ['debug', `${isDebug}`]
