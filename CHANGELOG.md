@@ -13,6 +13,10 @@ All notable changes to the "aws-vscode-tools" extension will be documented in th
 * Added SAM Application-related commands to the AWS Explorer menu
 * Removed support for nodejs6.10 SAM Applications
 
+## 0.2.1 (Developer Preview)
+
+* Fixed issue preventing users from connecting with assumed roles (#620)
+
 ## 0.2.0 (Developer Preview)
 
 * Local Run/Debug is now available for .NET Core 2.1 functions within SAM Applications
