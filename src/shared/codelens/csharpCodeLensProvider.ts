@@ -79,7 +79,6 @@ export async function initialize({
         command,
         callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
             return await onLocalInvokeCommand({
-                commandName: command,
                 lambdaLocalInvokeParams: params,
                 configuration,
                 toolkitOutputChannel,
@@ -139,7 +138,6 @@ async function onLocalInvokeCommand(
     {
         configuration,
         toolkitOutputChannel,
-        commandName,
         lambdaLocalInvokeParams,
         processInvoker,
         localInvokeCommand,
@@ -149,7 +147,6 @@ async function onLocalInvokeCommand(
     }: {
         configuration: SettingsConfiguration
         toolkitOutputChannel: vscode.OutputChannel,
-        commandName: string,
         lambdaLocalInvokeParams: LambdaLocalInvokeParams,
         processInvoker: SamCliProcessInvoker,
         localInvokeCommand: SamLocalInvokeCommand
