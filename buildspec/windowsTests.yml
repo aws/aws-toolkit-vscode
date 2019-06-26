@@ -1,6 +1,10 @@
 version: 0.2
 
+env:
+  variables:
+    CI: true
+
 phases:
   build:
     commands:
-      - ./gradlew check --info --full-stacktrace
+      - ./gradlew check --info --full-stacktrace --console plain
