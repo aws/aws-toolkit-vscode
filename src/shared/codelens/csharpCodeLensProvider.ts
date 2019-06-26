@@ -40,9 +40,9 @@ import {
     InvokeLambdaFunctionArguments,
     InvokeLambdaFunctionContext,
     LambdaLocalInvokeParams,
+    LocalLambdaStatistics,
     makeBuildDir,
-    makeInputTemplate,
-    SamInvokeStatistics
+    makeInputTemplate
 } from './localLambdaRunner'
 
 export const CSHARP_LANGUAGE = 'csharp'
@@ -173,7 +173,7 @@ async function onLocalInvokeCommand(
         handlerName: lambdaLocalInvokeParams.handlerName,
     })
     const runtime = CloudFormation.getRuntime(resource)
-    let samInvokeStats: SamInvokeStatistics | undefined
+    let stats: LocalLambdaStatistics | undefined
 
     try {
         // Switch over to the output channel so the user has feedback that we're getting things ready
@@ -230,7 +230,7 @@ async function onLocalInvokeCommand(
         }
 
         if (!lambdaLocalInvokeParams.isDebug) {
-            samInvokeStats = await invokeLambdaFunction(
+            stats = await invokeLambdaFunction(
                 invokeArgs,
                 invokeContext
             )
@@ -246,7 +246,7 @@ async function onLocalInvokeCommand(
                 codeUri
             })
 
-            samInvokeStats = await invokeLambdaFunction(
+            stats = await invokeLambdaFunction(
                 {
                     ...invokeArgs,
                     debugArgs: {
@@ -275,9 +275,9 @@ async function onLocalInvokeCommand(
     return getMetricDatum({
         debug: lambdaLocalInvokeParams.isDebug,
         runtime,
-        debugAttachAttempts: samInvokeStats && samInvokeStats.debug ? samInvokeStats.debug.attempts : undefined,
-        debugAttachDuration: samInvokeStats && samInvokeStats.debug ? samInvokeStats.debug.duration : undefined,
-        debugAttachSuccess: samInvokeStats && samInvokeStats.debug ? samInvokeStats.debug.success : undefined,
+        debugAttachAttempts: stats && stats.debug ? stats.debug.attempts : undefined,
+        debugAttachDuration: stats && stats.debug ? stats.debug.duration : undefined,
+        debugAttachSuccess: stats && stats.debug ? stats.debug.success : undefined,
     })
 }
 

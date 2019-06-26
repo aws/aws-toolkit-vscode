@@ -55,18 +55,14 @@ export interface OnDidSamBuildParams {
     isDebug: boolean
 }
 
-export interface RunStatistics {
+export interface DebugStatistics {
     success: boolean
     duration: number
-}
-
-export interface DebugStatistics extends RunStatistics {
     attempts: number
 }
 
-export interface SamInvokeStatistics {
-    // TODO: add run metrics (and make parameter mandatory)
-    run?: RunStatistics
+// container for any metrics created by the LocalLambdaRunner.
+export interface LocalLambdaStatistics {
     debug?: DebugStatistics
 }
 
@@ -102,7 +98,7 @@ export class LocalLambdaRunner {
         this._debugPort = debugPort
     }
 
-    public async run(): Promise<SamInvokeStatistics | undefined> {
+    public async run(): Promise<LocalLambdaStatistics | undefined> {
         try {
             // Switch over to the output channel so the user has feedback that we're getting things ready
             this.channelLogger.channel.show(true)
@@ -224,7 +220,7 @@ export class LocalLambdaRunner {
      * Runs `sam local invoke` against the provided template file
      * @param samTemplatePath sam template to run locally
      */
-    private async invokeLambdaFunction(samTemplatePath: string): Promise<SamInvokeStatistics | undefined> {
+    private async invokeLambdaFunction(samTemplatePath: string): Promise<LocalLambdaStatistics | undefined> {
         this.channelLogger.info(
             'AWS.output.starting.sam.app.locally',
             'Starting the SAM Application locally (see Terminal for output)'
@@ -469,7 +465,7 @@ export interface InvokeLambdaFunctionContext {
 export async function invokeLambdaFunction(
     invokeArgs: InvokeLambdaFunctionArguments,
     { channelLogger, configuration, samLocalInvokeCommand, telemetryService }: InvokeLambdaFunctionContext
-): Promise<SamInvokeStatistics | undefined> {
+): Promise<LocalLambdaStatistics | undefined> {
     channelLogger.info(
         'AWS.output.starting.sam.app.locally',
         'Starting the SAM Application locally (see Terminal for output)'

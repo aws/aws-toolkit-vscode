@@ -27,7 +27,7 @@ import {
 import {
     LambdaLocalInvokeParams,
     LocalLambdaRunner,
-    SamInvokeStatistics,
+    LocalLambdaStatistics,
 } from './localLambdaRunner'
 
 const unsupportedNodeJsRuntimes: Set<string> = new Set<string>([
@@ -65,7 +65,7 @@ export function initialize({
 
     const invokeLambda = async (
         params: LambdaLocalInvokeParams & { runtime: string }
-    ): Promise<SamInvokeStatistics | undefined> => {
+    ): Promise<LocalLambdaStatistics | undefined> => {
         const samProjectCodeRoot = await getSamProjectDirPathForFile(params.document.uri.fsPath)
         let debugPort: number | undefined
 
@@ -115,7 +115,7 @@ export function initialize({
                 templatePath: params.samTemplate.fsPath
             })
             const runtime = CloudFormation.getRuntime(resource)
-            let samInvokeStats: SamInvokeStatistics | undefined
+            let stats: LocalLambdaStatistics | undefined
 
             if (params.isDebug && unsupportedNodeJsRuntimes.has(runtime)) {
                 vscode.window.showErrorMessage(
@@ -126,7 +126,7 @@ export function initialize({
                     )
                 )
             } else {
-                samInvokeStats = await invokeLambda({
+                stats = await invokeLambda({
                     runtime,
                     ...params,
                 })
@@ -135,9 +135,9 @@ export function initialize({
             return getMetricDatum({
                 debug: params.isDebug,
                 runtime,
-                debugAttachAttempts: samInvokeStats && samInvokeStats.debug ? samInvokeStats.debug.attempts : undefined,
-                debugAttachDuration: samInvokeStats && samInvokeStats.debug ? samInvokeStats.debug.duration : undefined,
-                debugAttachSuccess: samInvokeStats && samInvokeStats.debug ? samInvokeStats.debug.success : undefined,
+                debugAttachAttempts: stats && stats.debug ? stats.debug.attempts : undefined,
+                debugAttachDuration: stats && stats.debug ? stats.debug.duration : undefined,
+                debugAttachSuccess: stats && stats.debug ? stats.debug.success : undefined,
             })
         },
         telemetryName: {

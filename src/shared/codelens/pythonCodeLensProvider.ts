@@ -35,9 +35,9 @@ import {
     invokeLambdaFunction,
     InvokeLambdaFunctionArguments,
     LambdaLocalInvokeParams,
+    LocalLambdaStatistics,
     makeBuildDir,
-    makeInputTemplate,
-    SamInvokeStatistics
+    makeInputTemplate
 } from './localLambdaRunner'
 
 export const PYTHON_LANGUAGE = 'python'
@@ -239,14 +239,14 @@ export async function initialize({
 
     const invokeLambda = async (
         args: LambdaLocalInvokeParams & { runtime: string }
-    ): Promise<SamInvokeStatistics | undefined> => {
+    ): Promise<LocalLambdaStatistics | undefined> => {
         // Switch over to the output channel so the user has feedback that we're getting things ready
         channelLogger.channel.show(true)
 
         channelLogger.info('AWS.output.sam.local.start', 'Preparing to run {0} locally...', args.handlerName)
 
         let lambdaDebugFilePath: string | undefined
-        let debugMetadata: SamInvokeStatistics | undefined
+        let stats: LocalLambdaStatistics | undefined
 
         try {
             const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
@@ -338,7 +338,7 @@ export async function initialize({
                 }
             }
 
-            debugMetadata = await invokeLambdaFunction(invokeArgs, {
+            stats = await invokeLambdaFunction(invokeArgs, {
                 channelLogger,
                 configuration,
                 samLocalInvokeCommand: localInvokeCommand!,
@@ -357,7 +357,7 @@ export async function initialize({
             }
         }
 
-        return debugMetadata
+        return stats
     }
 
     const command = getInvokeCmdKey('python')
@@ -370,7 +370,7 @@ export async function initialize({
             })
             const runtime = CloudFormation.getRuntime(resource)
 
-            const samInvokeStats: SamInvokeStatistics | undefined = await invokeLambda({
+            const stats: LocalLambdaStatistics | undefined = await invokeLambda({
                 runtime,
                 ...params
             })
@@ -378,9 +378,9 @@ export async function initialize({
             return getMetricDatum({
                 debug: params.isDebug,
                 runtime,
-                debugAttachAttempts: samInvokeStats && samInvokeStats.debug ? samInvokeStats.debug.attempts : undefined,
-                debugAttachDuration: samInvokeStats && samInvokeStats.debug ? samInvokeStats.debug.duration : undefined,
-                debugAttachSuccess: samInvokeStats && samInvokeStats.debug ? samInvokeStats.debug.success : undefined,
+                debugAttachAttempts: stats && stats.debug ? stats.debug.attempts : undefined,
+                debugAttachDuration: stats && stats.debug ? stats.debug.duration : undefined,
+                debugAttachSuccess: stats && stats.debug ? stats.debug.success : undefined,
             })
         },
         telemetryName: {
