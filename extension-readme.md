@@ -2,14 +2,12 @@
 
 The AWS Toolkit for Visual Studio Code is an extension that enables you to interact with [Amazon Web Services (AWS)](https://aws.amazon.com/what-is-aws/) from within Visual Studio Code.
 
-*This is pre-release software and we recommend against using it in a production environment.*
-
 ![Overview](./resources/marketplace/overview.png)
 
 ## Contents
 
 * [Features](#features)
-* [Additional Setup Steps](#additional-setup-steps)
+* [Setup](#additional-setup-steps)
 * [Usage](#usage)
 * [Get Help](#get-help)
 
@@ -17,29 +15,29 @@ The AWS Toolkit for Visual Studio Code is an extension that enables you to inter
 
 You can use the AWS Toolkit for Visual Studio Code to:
 
-* [Manage supported AWS resources in an AWS account](#managing-aws-resources). For example, you can:
+* [Develop serverless applications locally, and then deploy them to an AWS account](#developing-serverless-applications)
+* [Manage supported AWS resources in an AWS account](#managing-aws-resources)
   
-  * List available AWS CloudFormation stacks that contain AWS serverless applications.
-  * List available AWS Lambda functions.
-  * Invoke available Lambda functions.
+  * List AWS CloudFormation stacks.
+  * List AWS Lambda functions.
+  * Invoke Lambda functions.
 
   ![AWS Explorer](./resources/marketplace/aws-explorer.png)
 
-* [Develop serverless applications locally, and then deploy them to an AWS account](#developing-serverless-applications).
-
 [Return to Top](#top)
 
-## <a id="additional-setup-steps"></a>Additional Setup Steps
+## <a id="additional-setup-steps"></a>Setup
 
 After you install the AWS Toolkit for Visual Studio Code, you must complete these additional steps to access most of its features:
 
-1. [Create an AWS account](https://aws.amazon.com/premiumsupport/knowledge-center/create-and-activate-aws-account/) and an [access key](https://aws.amazon.com/premiumsupport/knowledge-center/create-access-key/).
+1. [Create an AWS account](https://aws.amazon.com/premiumsupport/knowledge-center/create-and-activate-aws-account/).
+1. [Create an access key](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-credentials.html).
 1. Connect the Toolkit to AWS by using [AWS credentials](#managing-aws-resources).
 
 To use this Toolkit to develop [serverless applications with AWS](https://aws.amazon.com/serverless/), you must also do the following on the local machine where the Toolkit is installed:
 
 1. Install the [AWS Command Line Interface (AWS CLI)](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html).
-1. Install and then run [Docker](https://docs.docker.com/install/).
+1. Install and start [Docker](https://docs.docker.com/install/).
 1. Install the [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html).
 
 For complete setup instructions, see [Setting Up the AWS Toolkit for Visual Studio Code](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/getting-started.html) in the _AWS Toolkit for Visual Studio Code User Guide_.
