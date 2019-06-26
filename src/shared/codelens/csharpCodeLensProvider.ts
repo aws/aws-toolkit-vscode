@@ -34,7 +34,6 @@ import {
     makeCodeLenses,
 } from './codeLensUtils'
 import {
-    DebuggerMetadata,
     executeSamBuild,
     ExecuteSamBuildArguments,
     invokeLambdaFunction,
@@ -43,6 +42,7 @@ import {
     LambdaLocalInvokeParams,
     makeBuildDir,
     makeInputTemplate,
+    SamInvokeStatistics
 } from './localLambdaRunner'
 
 export const CSHARP_LANGUAGE = 'csharp'
@@ -173,7 +173,7 @@ async function onLocalInvokeCommand(
         handlerName: lambdaLocalInvokeParams.handlerName,
     })
     const runtime = CloudFormation.getRuntime(resource)
-    let debugMetadata: DebuggerMetadata | undefined
+    let samInvokeStats: SamInvokeStatistics | undefined
 
     try {
         // Switch over to the output channel so the user has feedback that we're getting things ready
@@ -230,7 +230,7 @@ async function onLocalInvokeCommand(
         }
 
         if (!lambdaLocalInvokeParams.isDebug) {
-            await invokeLambdaFunction(
+            samInvokeStats = await invokeLambdaFunction(
                 invokeArgs,
                 invokeContext
             )
@@ -246,7 +246,7 @@ async function onLocalInvokeCommand(
                 codeUri
             })
 
-            debugMetadata = await invokeLambdaFunction(
+            samInvokeStats = await invokeLambdaFunction(
                 {
                     ...invokeArgs,
                     debugArgs: {
@@ -273,11 +273,11 @@ async function onLocalInvokeCommand(
     }
 
     return getMetricDatum({
-        isDebug: lambdaLocalInvokeParams.isDebug,
-        command: commandName,
+        debug: lambdaLocalInvokeParams.isDebug,
         runtime,
-        attempts: debugMetadata ? debugMetadata.attempts : undefined,
-        duration: debugMetadata ? debugMetadata.duration : undefined,
+        debugAttachAttempts: samInvokeStats && samInvokeStats.debug ? samInvokeStats.debug.attempts : undefined,
+        debugAttachDuration: samInvokeStats && samInvokeStats.debug ? samInvokeStats.debug.duration : undefined,
+        debugAttachSuccess: samInvokeStats && samInvokeStats.debug ? samInvokeStats.debug.success : undefined,
     })
 }
 

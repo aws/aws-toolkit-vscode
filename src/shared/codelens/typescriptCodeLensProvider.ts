@@ -25,9 +25,9 @@ import {
     makeCodeLenses,
 } from './codeLensUtils'
 import {
-    DebuggerMetadata,
     LambdaLocalInvokeParams,
     LocalLambdaRunner,
+    SamInvokeStatistics,
 } from './localLambdaRunner'
 
 const unsupportedNodeJsRuntimes: Set<string> = new Set<string>([
@@ -65,7 +65,7 @@ export function initialize({
 
     const invokeLambda = async (
         params: LambdaLocalInvokeParams & { runtime: string }
-    ): Promise<DebuggerMetadata | undefined> => {
+    ): Promise<SamInvokeStatistics | undefined> => {
         const samProjectCodeRoot = await getSamProjectDirPathForFile(params.document.uri.fsPath)
         let debugPort: number | undefined
 
@@ -100,8 +100,7 @@ export function initialize({
             processInvoker,
             localInvokeCommand,
             debugConfig,
-            samProjectCodeRoot,
-            telemetryService
+            samProjectCodeRoot
         )
 
         return await localLambdaRunner.run()
@@ -116,7 +115,7 @@ export function initialize({
                 templatePath: params.samTemplate.fsPath
             })
             const runtime = CloudFormation.getRuntime(resource)
-            let debugMetadata: DebuggerMetadata | undefined
+            let samInvokeStats: SamInvokeStatistics | undefined
 
             if (params.isDebug && unsupportedNodeJsRuntimes.has(runtime)) {
                 vscode.window.showErrorMessage(
@@ -127,18 +126,18 @@ export function initialize({
                     )
                 )
             } else {
-                debugMetadata = await invokeLambda({
+                samInvokeStats = await invokeLambda({
                     runtime,
                     ...params,
                 })
             }
 
             return getMetricDatum({
-                isDebug: params.isDebug,
-                command,
+                debug: params.isDebug,
                 runtime,
-                attempts: debugMetadata ? debugMetadata.attempts : undefined,
-                duration: debugMetadata ? debugMetadata.duration : undefined,
+                debugAttachAttempts: samInvokeStats && samInvokeStats.debug ? samInvokeStats.debug.attempts : undefined,
+                debugAttachDuration: samInvokeStats && samInvokeStats.debug ? samInvokeStats.debug.duration : undefined,
+                debugAttachSuccess: samInvokeStats && samInvokeStats.debug ? samInvokeStats.debug.success : undefined,
             })
         },
         telemetryName: {

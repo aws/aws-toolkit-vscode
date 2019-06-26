@@ -28,7 +28,6 @@ import {
     makeCodeLenses
 } from './codeLensUtils'
 import {
-    DebuggerMetadata,
     executeSamBuild,
     getHandlerRelativePath,
     getLambdaInfoFromExistingTemplate,
@@ -37,7 +36,8 @@ import {
     InvokeLambdaFunctionArguments,
     LambdaLocalInvokeParams,
     makeBuildDir,
-    makeInputTemplate
+    makeInputTemplate,
+    SamInvokeStatistics
 } from './localLambdaRunner'
 
 export const PYTHON_LANGUAGE = 'python'
@@ -239,14 +239,14 @@ export async function initialize({
 
     const invokeLambda = async (
         args: LambdaLocalInvokeParams & { runtime: string }
-    ): Promise<DebuggerMetadata | undefined> => {
+    ): Promise<SamInvokeStatistics | undefined> => {
         // Switch over to the output channel so the user has feedback that we're getting things ready
         channelLogger.channel.show(true)
 
         channelLogger.info('AWS.output.sam.local.start', 'Preparing to run {0} locally...', args.handlerName)
 
         let lambdaDebugFilePath: string | undefined
-        let debugMetadata: DebuggerMetadata | undefined
+        let debugMetadata: SamInvokeStatistics | undefined
 
         try {
             const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
@@ -370,17 +370,17 @@ export async function initialize({
             })
             const runtime = CloudFormation.getRuntime(resource)
 
-            const debugMetadata: DebuggerMetadata | undefined = await invokeLambda({
+            const samInvokeStats: SamInvokeStatistics | undefined = await invokeLambda({
                 runtime,
                 ...params
             })
 
             return getMetricDatum({
-                isDebug: params.isDebug,
-                command,
+                debug: params.isDebug,
                 runtime,
-                attempts: debugMetadata ? debugMetadata.attempts : undefined,
-                duration: debugMetadata ? debugMetadata.duration : undefined,
+                debugAttachAttempts: samInvokeStats && samInvokeStats.debug ? samInvokeStats.debug.attempts : undefined,
+                debugAttachDuration: samInvokeStats && samInvokeStats.debug ? samInvokeStats.debug.duration : undefined,
+                debugAttachSuccess: samInvokeStats && samInvokeStats.debug ? samInvokeStats.debug.success : undefined,
             })
         },
         telemetryName: {

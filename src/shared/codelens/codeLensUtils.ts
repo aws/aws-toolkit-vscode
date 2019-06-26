@@ -29,6 +29,14 @@ export interface CodeLensProviderParams {
     telemetryService: TelemetryService,
 }
 
+export interface MetricFields {
+    debug: boolean,
+    runtime: string,
+    debugAttachDuration?: number,
+    debugAttachAttempts?: number,
+    debugAttachSuccess?: boolean,
+}
+
 interface MakeConfigureCodeLensParams {
     document: vscode.TextDocument,
     handlerName: string,
@@ -132,40 +140,24 @@ function makeConfigureCodeLens({
     return new vscode.CodeLens(range, command)
 }
 
-export function getMetricDatum({
-    command,
-    isDebug,
-    runtime,
-    samVersion,
-    duration,
-    attempts
-}: {
-    command: string,
-    isDebug: boolean,
-    runtime: string,
-    samVersion?: string,
-    duration?: number,
-    attempts?: number
-
-}): { datum: Datum } {
+export function getMetricDatum(fields: MetricFields): { datum: Datum } {
     const metadata = new Map([
-        ['runtime', runtime],
-        ['debug', `${isDebug}`]
+        ['runtime', fields.runtime],
+        ['debug', `${fields.debug}`]
     ])
-    // TODO: Capture this information (Jetbrains captures this)
-    if (samVersion) {
-        metadata.set('samVersion', samVersion)
+    if (fields.debugAttachDuration) {
+        metadata.set('debugAttachDuration', fields.debugAttachDuration.toString())
     }
-    if (duration) {
-        metadata.set('duration', duration.toString())
+    if (fields.debugAttachAttempts) {
+        metadata.set('debugAttachAttempts', fields.debugAttachAttempts.toString())
     }
-    if (attempts) {
-        metadata.set('attempts', attempts.toString())
+    if (fields.debugAttachSuccess) {
+        metadata.set('debugAttachSuccess', `${fields.debugAttachSuccess}`)
     }
 
     return {
         datum: {
-            ...defaultMetricDatum(command),
+            ...defaultMetricDatum('invokelocal'),
             metadata
         }
     }

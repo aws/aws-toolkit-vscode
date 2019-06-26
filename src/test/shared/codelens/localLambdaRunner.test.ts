@@ -20,6 +20,12 @@ import { ChannelLogger } from '../../../shared/utilities/vsCodeUtils'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { assertRejects } from '../utilities/assertUtils'
 
+const dummyDebugStatistics: localLambdaRunner.DebugStatistics = {
+    success: true,
+    duration: 12345,
+    attempts: 1
+}
+
 class FakeChannelLogger implements Pick<ChannelLogger, 'info' | 'error' | 'logger'> {
     public readonly loggedInfoKeys: Set<string> = new Set<string>()
     public readonly loggedErrorKeys: Set<string> = new Set<string>()
@@ -113,6 +119,7 @@ describe('localLambdaRunner', async () => {
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
                 onWillRetry,
+                onProvideDebuggerMetadata: () => dummyDebugStatistics
             })
 
             assert.strictEqual(actualRetries, 0, 'Did not expect any retries when attaching debugger succeeds')
@@ -125,6 +132,7 @@ describe('localLambdaRunner', async () => {
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
                 onWillRetry,
+                onProvideDebuggerMetadata: () => dummyDebugStatistics
             })
 
             assert.ok(
@@ -147,7 +155,7 @@ describe('localLambdaRunner', async () => {
                     assert.ok(attachResult, 'Expected to be logging an attach success metric')
                     assert.strictEqual(attempts, 1, 'Unexpected Attempt count')
 
-                    return {success: true}
+                    return {success: true, attempts, duration: 1}
                 }
             })
         })
@@ -159,6 +167,7 @@ describe('localLambdaRunner', async () => {
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
                 onWillRetry,
+                onProvideDebuggerMetadata: () => dummyDebugStatistics
             })
 
             assert.ok(
@@ -174,6 +183,7 @@ describe('localLambdaRunner', async () => {
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
                 onWillRetry,
+                onProvideDebuggerMetadata: () => dummyDebugStatistics
             })
 
             assert.strictEqual(actualRetries, 0, 'Did not expect any retries when attaching debugger fails')
@@ -186,6 +196,7 @@ describe('localLambdaRunner', async () => {
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
                 onWillRetry,
+                onProvideDebuggerMetadata: () => dummyDebugStatistics
             })
 
             assert.ok(
@@ -207,7 +218,7 @@ describe('localLambdaRunner', async () => {
                 ) => {
                     assert.strictEqual(attachResult, false, 'Expected to be logging an attach failure metric')
 
-                    return {success: false}
+                    return {success: false, attempts, duration: 99999}
                 }
             })
         })
@@ -219,6 +230,11 @@ describe('localLambdaRunner', async () => {
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
                 onWillRetry,
+                onProvideDebuggerMetadata: () => { return {
+                    success: false,
+                    attempts: 10,
+                    duration: 9999
+                }}
             })
 
             assert.strictEqual(
@@ -237,6 +253,7 @@ describe('localLambdaRunner', async () => {
                 maxRetries: maxRetries,
                 onStartDebugging: startDebuggingReturnsUndefined,
                 onWillRetry,
+                onProvideDebuggerMetadata: () => dummyDebugStatistics
             })
 
             assert.strictEqual(actualRetries, maxRetries, 'Unexpected Retry count')
@@ -251,6 +268,7 @@ describe('localLambdaRunner', async () => {
                 maxRetries,
                 onStartDebugging: startDebuggingReturnsUndefined,
                 onWillRetry,
+                onProvideDebuggerMetadata: () => dummyDebugStatistics
             })
 
             assert.ok(
@@ -271,7 +289,7 @@ describe('localLambdaRunner', async () => {
                     assert.strictEqual(actualRetries, 2, 'Metrics should only be recorded once')
                     assert.notStrictEqual(attachResult, undefined, 'attachResult should not be undefined')
 
-                    return { success: false }
+                    return { success: false, attempts: 10, duration: 999999 }
                 },
                 onWillRetry,
             })
@@ -292,6 +310,7 @@ describe('localLambdaRunner', async () => {
                     return retVal!
                 },
                 onWillRetry,
+                onProvideDebuggerMetadata: () => dummyDebugStatistics
             })
 
             assert.ok(
@@ -315,6 +334,11 @@ describe('localLambdaRunner', async () => {
                     return retVal!
                 },
                 onWillRetry,
+                onProvideDebuggerMetadata: () => { return {
+                    success: false,
+                    attempts: 10,
+                    duration: 9999
+                }}
             })
 
             assert.strictEqual(
@@ -332,6 +356,11 @@ describe('localLambdaRunner', async () => {
                 maxRetries,
                 onStartDebugging: startDebuggingReturnsUndefined,
                 onWillRetry,
+                onProvideDebuggerMetadata: () => { return {
+                    success: false,
+                    attempts: 9999,
+                    duration: 9999
+                }}
             })
 
             assert.strictEqual(
