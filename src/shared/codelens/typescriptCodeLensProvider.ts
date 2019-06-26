@@ -29,9 +29,9 @@ import {
     LocalLambdaRunner,
 } from './localLambdaRunner'
 
-const unsupportedNodeJsRuntimes: Set<string> = new Set<string>([
-    'nodejs4.3',
-    'nodejs6.10',
+const supportedNodeJsRuntimes: Set<string> = new Set<string>([
+    'nodejs8.10',
+    'nodejs10.x',
 ])
 
 async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
@@ -113,7 +113,7 @@ export function initialize({
             })
             const runtime = CloudFormation.getRuntime(resource)
 
-            if (unsupportedNodeJsRuntimes.has(runtime)) {
+            if (!supportedNodeJsRuntimes.has(runtime)) {
                 vscode.window.showErrorMessage(
                     localize(
                         'AWS.samcli.local.invoke.runtime.unsupported',
