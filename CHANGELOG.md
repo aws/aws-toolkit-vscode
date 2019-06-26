@@ -10,6 +10,7 @@ All notable changes to the "aws-vscode-tools" extension will be documented in th
 * Local Run/Debug now honors the Globals section from SAM Template file
 * Fixed issue preventing users from connecting with assumed roles (#620)
 * Added ability to report an issue from the AWS Explorer menu (#613)
+* Added SAM Application-related commands to the AWS Explorer menu
 
 ## 0.2.0 (Developer Preview)
 
