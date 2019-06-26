@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.services.lambda.sam
 
+import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
@@ -25,13 +27,18 @@ object SamTemplateUtils {
             return emptyList()
         }
 
-        val virtualFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(file) ?: throw RuntimeException(
-            message("lambda.sam.template_not_found", file)
-        )
-        return findFunctionsFromTemplate(
-            project,
-            virtualFile
-        )
+        val virtualFile = WriteAction.computeAndWait<VirtualFile, Throwable> {
+            LocalFileSystem.getInstance().refreshAndFindFileByIoFile(file) ?: throw RuntimeException(
+                message("lambda.sam.template_not_found", file)
+            )
+        }
+
+        return ReadAction.compute<List<Function>, Throwable> {
+            findFunctionsFromTemplate(
+                project,
+                virtualFile
+            )
+        }
     }
 
     @JvmStatic
