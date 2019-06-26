@@ -180,7 +180,7 @@
                 {
                     "command": "aws.deploySamApplication",
                     "when": "view == aws.explorer",
-                    "group": "3_lambda@1"
+                    "group": "3_lambda@2"
                 },
                 {
                     "command": "aws.quickStart",
