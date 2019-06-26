@@ -64,7 +64,7 @@ export function initialize({
     telemetryService,
 }: CodeLensProviderParams): void {
 
-    async function invokeLambda (
+    async function invokeLambda(
         params: LambdaLocalInvokeParams & { runtime: string }
     ): Promise<LocalLambdaStatistics | undefined> {
         const samProjectCodeRoot = await getSamProjectDirPathForFile(params.document.uri.fsPath)
