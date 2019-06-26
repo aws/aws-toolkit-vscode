@@ -5,13 +5,16 @@
 
 'use strict'
 
-import { SpawnOptions } from 'child_process'
 import { extensionSettingsPrefix } from '../../constants'
 import { getLogger, Logger } from '../../logger'
 import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
 import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliConfiguration, SamCliConfiguration } from './samCliConfiguration'
-import { SamCliProcessInvoker } from './samCliInvokerUtils'
+import {
+    makeRequiredSamCliProcessInvokeOptions,
+    SamCliProcessInvokeOptions,
+    SamCliProcessInvoker
+} from './samCliInvokerUtils'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
 
 export interface SamCliProcessInvokerContext {
@@ -39,15 +42,16 @@ export function resolveSamCliProcessInvokerContext(
 }
 
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
-    public constructor(private readonly context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()) {}
+    public constructor(private readonly context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()) { }
 
-    public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
-    public invoke(...args: string[]): Promise<ChildProcessResult>
-    public async invoke(first: SpawnOptions | string, ...rest: string[]): Promise<ChildProcessResult> {
-        const args = typeof first === 'string' ? [first, ...rest] : rest
-        const options: SpawnOptions | undefined = typeof first === 'string' ? undefined : first
+    public async invoke(options?: SamCliProcessInvokeOptions): Promise<ChildProcessResult> {
+        const invokeOptions = makeRequiredSamCliProcessInvokeOptions(options)
 
-        const childProcess: ChildProcess = new ChildProcess(this.samCliLocation, options, ...args)
+        const childProcess: ChildProcess = new ChildProcess(
+            this.samCliLocation,
+            invokeOptions.spawnOptions,
+            ...invokeOptions.arguments
+        )
 
         return await childProcess.run()
     }

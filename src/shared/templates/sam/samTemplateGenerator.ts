@@ -14,6 +14,7 @@ import { CloudFormation } from '../../cloudformation/cloudformation'
 export class SamTemplateGenerator {
     private resourceName?: string
     private readonly properties: Partial<CloudFormation.ResourceProperties> = {}
+    private globals: CloudFormation.TemplateGlobals | undefined
 
     public withResourceName(resourceName: string): SamTemplateGenerator {
         this.resourceName = resourceName
@@ -39,8 +40,26 @@ export class SamTemplateGenerator {
         return this
     }
 
+    public withMemorySize(memorySize: number): SamTemplateGenerator {
+        this.properties.MemorySize = memorySize
+
+        return this
+    }
+
+    public withTimeout(timeout: number): SamTemplateGenerator {
+        this.properties.Timeout = timeout
+
+        return this
+    }
+
     public withEnvironment(env: CloudFormation.Environment): SamTemplateGenerator {
         this.properties.Environment = env
+
+        return this
+    }
+
+    public withGlobals(globals: CloudFormation.TemplateGlobals): SamTemplateGenerator {
+        this.globals = globals
 
         return this
     }
@@ -58,6 +77,11 @@ export class SamTemplateGenerator {
                 }
             }
         }
+
+        if (this.globals) {
+            template.Globals = this.globals
+        }
+
         const templateAsYaml: string = yaml.safeDump(template, { skipInvalid: true })
 
         const parentDirectory: string = path.dirname(filename)

@@ -106,7 +106,7 @@ export function initialize({
 
     const command = getInvokeCmdKey('javascript')
     registerCommand({
-        command: command,
+        command,
         callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
             const resource = await CloudFormation.getResourceFromTemplate({
                 handlerName: params.handlerName,
@@ -131,7 +131,6 @@ export function initialize({
 
             return getMetricDatum({
                 isDebug: params.isDebug,
-                command,
                 runtime,
             })
         },

@@ -114,10 +114,10 @@ export class SamCliBuildInvocation {
             ...this.environmentVariables
         }
 
-        const childProcessResult  = await this.invoker.invoke(
-            { env },
-            ...invokeArgs
-        )
+        const childProcessResult = await this.invoker.invoke({
+            spawnOptions: { env },
+            arguments: invokeArgs,
+        })
 
         logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
     }

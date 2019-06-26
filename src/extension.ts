@@ -19,7 +19,7 @@ import { CodeLensProviderParams } from './shared/codelens/codeLensUtils'
 import * as csLensProvider from './shared/codelens/csharpCodeLensProvider'
 import * as pyLensProvider from './shared/codelens/pythonCodeLensProvider'
 import * as tsLensProvider from './shared/codelens/typescriptCodeLensProvider'
-import { documentationUrl, extensionSettingsPrefix, githubUrl } from './shared/constants'
+import { documentationUrl, extensionSettingsPrefix, githubUrl, reportIssueUrl } from './shared/constants'
 import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
 import { UserCredentialsUtils } from './shared/credentials/userCredentialsUtils'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
@@ -28,7 +28,11 @@ import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
 import { DefaultAWSStatusBar } from './shared/defaultStatusBar'
 import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
-import { safeGet } from './shared/extensionUtilities'
+import {
+    safeGet,
+    showQuickStartWebview,
+    toastNewUser
+} from './shared/extensionUtilities'
 import * as logFactory from './shared/logger'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import * as SamCliContext from './shared/sam/cli/samCliContext'
@@ -139,14 +143,22 @@ export async function activate(context: vscode.ExtensionContext) {
         })
 
         // register URLs in extension menu
-        vscode.commands.registerCommand(
-            'aws.help',
-            () => { vscode.env.openExternal(vscode.Uri.parse(documentationUrl)) }
-        )
-        vscode.commands.registerCommand(
-            'aws.github',
-            () => { vscode.env.openExternal(vscode.Uri.parse(githubUrl)) }
-        )
+        registerCommand({
+            command: 'aws.help',
+            callback: async () => { vscode.env.openExternal(vscode.Uri.parse(documentationUrl)) }
+        })
+        registerCommand({
+            command: 'aws.github',
+            callback: async () => { vscode.env.openExternal(vscode.Uri.parse(githubUrl)) }
+        })
+        registerCommand({
+            command: 'aws.reportIssue',
+            callback: async () => { vscode.env.openExternal(vscode.Uri.parse(reportIssueUrl)) }
+        })
+        registerCommand({
+            command: 'aws.quickStart',
+            callback: async () => { await showQuickStartWebview(context) }
+        })
 
         const providers = [
             new LambdaTreeDataProvider(
@@ -182,6 +194,8 @@ export async function activate(context: vscode.ExtensionContext) {
             new SamParameterCompletionItemProvider(),
             '"'
         )
+
+        toastNewUser(context, logFactory.getLogger())
 
         await resumeCreateNewSamApp(context)
     } catch (error) {

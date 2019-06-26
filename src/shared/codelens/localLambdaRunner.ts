@@ -139,7 +139,6 @@ export class LocalLambdaRunner {
      */
     private async generateInputTemplate(rootCodeFolder: string): Promise<string> {
         const buildFolder: string = await this.getBaseBuildFolder()
-        const inputTemplatePath: string = path.join(buildFolder, 'input', 'input-template.yaml')
 
         // Make function handler relative to baseDir
         const handlerFileRelativePath = path.relative(
@@ -152,30 +151,31 @@ export class LocalLambdaRunner {
             .replace('\\', '/')
 
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(this.localInvokeParams.workspaceFolder.uri)
-        let existingTemplateResource: CloudFormation.Resource | undefined
+        let properties: CloudFormation.ResourceProperties | undefined
+        let globals: CloudFormation.TemplateGlobals | undefined
         if (workspaceFolder) {
             const lambdas = await detectLocalLambdas([workspaceFolder])
             const existingLambda = lambdas.find(lambda => lambda.handler === relativeFunctionHandler)
-            existingTemplateResource = existingLambda ? existingLambda.resource : undefined
+
+            if (existingLambda) {
+                if (existingLambda.resource && existingLambda.resource.Properties) {
+                    properties = existingLambda.resource.Properties
+                }
+
+                if (existingLambda.templateGlobals) {
+                    globals = existingLambda.templateGlobals
+                }
+            }
         }
 
-        let newTemplate = new SamTemplateGenerator()
-            .withCodeUri(rootCodeFolder)
-            .withFunctionHandler(relativeFunctionHandler)
-            .withResourceName(TEMPLATE_RESOURCE_NAME)
-            .withRuntime(this.runtime)
-
-        if (
-            existingTemplateResource &&
-            existingTemplateResource.Properties &&
-            existingTemplateResource.Properties.Environment
-        ) {
-            newTemplate = newTemplate.withEnvironment(existingTemplateResource.Properties.Environment)
-        }
-
-        await newTemplate.generate(inputTemplatePath)
-
-        return inputTemplatePath
+        return await makeInputTemplate({
+            baseBuildDir: buildFolder,
+            codeDir: rootCodeFolder,
+            relativeFunctionHandler,
+            globals,
+            properties,
+            runtime: this.runtime,
+        })
     }
 
     private async executeSamBuild(rootCodeFolder: string, inputTemplatePath: string): Promise<string> {
@@ -347,16 +347,32 @@ export async function makeInputTemplate(params: {
     baseBuildDir: string
     codeDir: string
     relativeFunctionHandler: string
+    globals?: CloudFormation.TemplateGlobals,
     properties?: CloudFormation.ResourceProperties
     runtime: string
 }): Promise<string> {
-    const newTemplate = new SamTemplateGenerator()
+    let newTemplate = new SamTemplateGenerator()
         .withFunctionHandler(params.relativeFunctionHandler)
         .withResourceName(TEMPLATE_RESOURCE_NAME)
         .withRuntime(params.runtime)
         .withCodeUri(params.codeDir)
-    if (params.properties && params.properties.Environment) {
-        newTemplate.withEnvironment(params.properties.Environment)
+
+    if (params.properties) {
+        if (params.properties.Environment) {
+            newTemplate = newTemplate.withEnvironment(params.properties.Environment)
+        }
+
+        if (params.properties.MemorySize) {
+            newTemplate = newTemplate.withMemorySize(params.properties.MemorySize)
+        }
+
+        if (params.properties.Timeout) {
+            newTemplate = newTemplate.withTimeout(params.properties.Timeout)
+        }
+    }
+
+    if (params.globals) {
+        newTemplate = newTemplate.withGlobals(params.globals)
     }
 
     const inputTemplatePath: string = path.join(params.baseBuildDir, 'input', 'input-template.yaml')
