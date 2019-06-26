@@ -39,7 +39,6 @@ export function getFamily(runtime: string | undefined): SamLambdaRuntimeFamily {
         case 'python2.7':
         case 'python':
             return SamLambdaRuntimeFamily.Python
-        case 'nodejs6.10':
         case 'nodejs8.10':
         case 'nodejs10.x':
         case 'nodejs':
