@@ -25,7 +25,8 @@ import {
     DRIVE_LETTER_REGEX,
     getInvokeCmdKey,
     getMetricDatum,
-    makeCodeLenses
+    makeCodeLenses,
+    MetricFields
 } from './codeLensUtils'
 import {
     executeSamBuild,
@@ -237,9 +238,9 @@ export async function initialize({
         localInvokeCommand = new DefaultSamLocalInvokeCommand(channelLogger, [WAIT_FOR_DEBUGGER_MESSAGES.PYTHON])
     }
 
-    const invokeLambda = async (
+    async function invokeLambda(
         args: LambdaLocalInvokeParams & { runtime: string }
-    ): Promise<LocalLambdaStatistics | undefined> => {
+    ): Promise<LocalLambdaStatistics | undefined> {
         // Switch over to the output channel so the user has feedback that we're getting things ready
         channelLogger.channel.show(true)
 
@@ -375,13 +376,18 @@ export async function initialize({
                 ...params
             })
 
-            return getMetricDatum({
+            const args: MetricFields = {
                 debug: params.isDebug,
                 runtime,
-                debugAttachAttempts: stats && stats.debug ? stats.debug.attempts : undefined,
-                debugAttachDuration: stats && stats.debug ? stats.debug.duration : undefined,
-                debugAttachSuccess: stats && stats.debug ? stats.debug.success : undefined,
-            })
+            }
+        
+            if (stats && stats.debug) {
+                args.debugAttachAttempts = stats.debug.attempts
+                args.debugAttachDuration = stats.debug.duration
+                args.debugAttachSuccess = stats.debug.success
+            }
+        
+            return getMetricDatum(args)
         },
         telemetryName: {
             namespace: TelemetryNamespace.Lambda,

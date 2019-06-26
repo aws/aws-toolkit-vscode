@@ -23,6 +23,7 @@ import {
     getInvokeCmdKey,
     getMetricDatum,
     makeCodeLenses,
+    MetricFields,
 } from './codeLensUtils'
 import {
     LambdaLocalInvokeParams,
@@ -63,9 +64,9 @@ export function initialize({
     telemetryService,
 }: CodeLensProviderParams): void {
 
-    const invokeLambda = async (
+    async function invokeLambda (
         params: LambdaLocalInvokeParams & { runtime: string }
-    ): Promise<LocalLambdaStatistics | undefined> => {
+    ): Promise<LocalLambdaStatistics | undefined> {
         const samProjectCodeRoot = await getSamProjectDirPathForFile(params.document.uri.fsPath)
         let debugPort: number | undefined
 
@@ -132,13 +133,18 @@ export function initialize({
                 })
             }
 
-            return getMetricDatum({
+            const args: MetricFields = {
                 debug: params.isDebug,
                 runtime,
-                debugAttachAttempts: stats && stats.debug ? stats.debug.attempts : undefined,
-                debugAttachDuration: stats && stats.debug ? stats.debug.duration : undefined,
-                debugAttachSuccess: stats && stats.debug ? stats.debug.success : undefined,
-            })
+            }
+
+            if (stats && stats.debug) {
+                args.debugAttachAttempts = stats.debug.attempts
+                args.debugAttachDuration = stats.debug.duration
+                args.debugAttachSuccess = stats.debug.success
+            }
+
+            return getMetricDatum(args)
         },
         telemetryName: {
             namespace: TelemetryNamespace.Lambda,
