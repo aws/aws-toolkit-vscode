@@ -29,7 +29,7 @@ import software.aws.toolkits.resources.message
 import java.io.File
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionStage
+import java.util.concurrent.ExecutionException
 
 abstract class LambdaBuilder {
 
@@ -49,7 +49,7 @@ abstract class LambdaBuilder {
         envVars: Map<String, String>,
         samOptions: SamOptions,
         onStart: (ProcessHandler) -> Unit = {}
-    ): CompletionStage<BuiltLambda> {
+    ): BuiltLambda {
         val baseDir = baseDirectory(module, handlerElement)
 
         val customTemplate = File(getOrCreateBuildDirectory(module), "template.yaml")
@@ -67,7 +67,7 @@ abstract class LambdaBuilder {
         logicalId: String,
         samOptions: SamOptions,
         onStart: (ProcessHandler) -> Unit = {}
-    ): CompletionStage<BuiltLambda> {
+    ): BuiltLambda {
         val future = CompletableFuture<BuiltLambda>()
 
         val functions = SamTemplateUtils.findFunctionsFromTemplate(
@@ -154,7 +154,11 @@ abstract class LambdaBuilder {
             processHandler.startNotify()
         }
 
-        return future
+        return try {
+            future.get()
+        } catch (e: ExecutionException) {
+            throw e.cause ?: e
+        }
     }
 
     open fun packageLambda(
@@ -164,14 +168,14 @@ abstract class LambdaBuilder {
         runtime: Runtime,
         samOptions: SamOptions,
         onStart: (ProcessHandler) -> Unit = {}
-    ): CompletionStage<Path> = buildLambda(module, handlerElement, handler, runtime, emptyMap(), samOptions, onStart)
-        .thenApply { lambdaLocation ->
-            val zipLocation = FileUtil.createTempFile("builtLambda", "zip", true)
-            Compressor.Zip(zipLocation).use {
-                it.addDirectory(lambdaLocation.codeLocation.toFile())
-            }
-            zipLocation.toPath()
+    ): Path {
+        val builtLambda = buildLambda(module, handlerElement, handler, runtime, emptyMap(), samOptions, onStart)
+        val zipLocation = FileUtil.createTempFile("builtLambda", "zip", true)
+        Compressor.Zip(zipLocation).use {
+            it.addDirectory(builtLambda.codeLocation.toFile())
         }
+        return zipLocation.toPath()
+    }
 
     /**
      * Returns the build directory of the project. Create this if it doesn't exist yet.

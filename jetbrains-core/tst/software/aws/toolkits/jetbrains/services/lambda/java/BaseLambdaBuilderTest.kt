@@ -7,7 +7,6 @@ import com.intellij.openapi.module.Module
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.psi.PsiElement
-import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.util.io.isFile
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
@@ -21,7 +20,6 @@ import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.concurrent.TimeUnit
 import kotlin.streams.toList
 
 abstract class BaseLambdaBuilderTest {
@@ -41,12 +39,8 @@ abstract class BaseLambdaBuilderTest {
     ): BuiltLambda {
         val samOptions = SamOptions()
         samOptions.buildInContainer = useContainer
-        val completableFuture = runInEdtAndGet {
-            lambdaBuilder.buildLambda(module, handlerElement, handler, runtime, emptyMap(), samOptions)
-                .toCompletableFuture()
-        }
 
-        return completableFuture.get(3, TimeUnit.MINUTES)
+        return lambdaBuilder.buildLambda(module, handlerElement, handler, runtime, emptyMap(), samOptions)
     }
 
     protected fun buildLambdaFromTemplate(
@@ -57,11 +51,8 @@ abstract class BaseLambdaBuilderTest {
     ): BuiltLambda {
         val samOptions = SamOptions()
         samOptions.buildInContainer = useContainer
-        val completableFuture = runInEdtAndGet {
-            lambdaBuilder.buildLambdaFromTemplate(module, template, logicalId, samOptions).toCompletableFuture()
-        }
 
-        return completableFuture.get(3, TimeUnit.MINUTES)
+        return lambdaBuilder.buildLambdaFromTemplate(module, template, logicalId, samOptions)
     }
 
     protected fun packageLambda(
@@ -73,11 +64,8 @@ abstract class BaseLambdaBuilderTest {
     ): Path {
         val samOptions = SamOptions()
         samOptions.buildInContainer = useContainer
-        val completableFuture = runInEdtAndGet {
-            lambdaBuilder.packageLambda(module, handlerElement, handler, runtime, samOptions).toCompletableFuture()
-        }
 
-        return completableFuture.get(3, TimeUnit.MINUTES)
+        return lambdaBuilder.packageLambda(module, handlerElement, handler, runtime, samOptions)
     }
 
     protected fun verifyEntries(builtLambda: BuiltLambda, vararg entries: String) {
