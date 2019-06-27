@@ -31,8 +31,9 @@ import {
     LocalLambdaStatistics,
 } from './localLambdaRunner'
 
-const unsupportedNodeJsRuntimes: Set<string> = new Set<string>([
-    'nodejs4.3'
+const supportedNodeJsRuntimes: Set<string> = new Set<string>([
+    'nodejs8.10',
+    'nodejs10.x',
 ])
 
 async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
@@ -74,8 +75,6 @@ export function initialize({
             debugPort = await getDebugPort()
         }
 
-        const protocol = params.runtime === 'nodejs6.10' ? 'legacy' : 'inspector'
-
         const debugConfig: NodejsDebugConfiguration = {
             type: 'node',
             request: 'attach',
@@ -85,7 +84,7 @@ export function initialize({
             port: debugPort!,
             localRoot: samProjectCodeRoot,
             remoteRoot: '/var/task',
-            protocol,
+            protocol: 'inspector',
             skipFiles: [
                 '/var/runtime/node_modules/**/*.js',
                 '<node_internals>/**/*.js'
@@ -118,11 +117,11 @@ export function initialize({
             const runtime = CloudFormation.getRuntime(resource)
             let stats: LocalLambdaStatistics | undefined
 
-            if (params.isDebug && unsupportedNodeJsRuntimes.has(runtime)) {
+            if (!supportedNodeJsRuntimes.has(runtime)) {
                 vscode.window.showErrorMessage(
                     localize(
-                        'AWS.lambda.debug.runtime.unsupported',
-                        'Debug support for {0} is currently not supported',
+                        'AWS.samcli.local.invoke.runtime.unsupported',
+                        'Local invoke with {0} is not supported',
                         runtime
                     )
                 )
