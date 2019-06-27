@@ -15,7 +15,7 @@ const changesFile = path.join(changesDirectory, `${releaseVersion}.json`)
 
 fs.mkdirpSync(nextReleaseDirectory)
 
-const changeFiles = fs.readdirSync(nextReleaseDirectory)
+const changeFiles = fs.readdirSync(nextReleaseDirectory).sort()
 if (changeFiles.length === 0) {
     console.log('Error! no changes to release!')
     process.exit(-1)
@@ -28,8 +28,7 @@ try {
     // This is what we want to happen, the file should not exist
 }
 
-const now = new Date()
-const timestamp = `${now.getFullYear()}-${now.getMonth()}-${now.getDay()}`
+const timestamp = new Date().toISOString().split('T')[0]
 const changelog: any = {
     date: timestamp,
     version: releaseVersion,
@@ -46,8 +45,8 @@ for (const changeFile of changeFiles) {
 fs.writeFileSync(changesFile, JSON.stringify(changelog, undefined, '\t'))
 const fileData = fs.readFileSync('CHANGELOG.md')
 let append = `## ${releaseVersion} ${timestamp}\n\n`
-for (const changeFile of changeFiles) {
-    const file: any = JSON.parse(fs.readFileSync(path.join(nextReleaseDirectory, changeFile)).toString())
+// tslint:disable-next-line: no-unsafe-any
+for (const file of changelog.entries) {
     // tslint:disable-next-line: no-unsafe-any
     append += `- **${file.type}** ${file.description}\n`
 }

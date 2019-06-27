@@ -7,19 +7,19 @@ import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
 import { join } from 'path'
 // tslint:disable-next-line:no-implicit-dependencies
-import readlineSync = require('readline-sync')
+import * as readlineSync from 'readline-sync'
 import { v4 as uuid } from 'uuid'
 
 const directory = '.changes/next-release'
 
-enum ChangeType {
-    Test = 'test',
-    BreakingChange = 'Breaking Change',
-    Feature = 'Feature',
-    Bugfix = 'Bug Fix',
-    Deprecation = 'Deprecation',
-    Removal = 'Removal'
-}
+const changeTypes = [
+    'Breaking Change',
+    'Feature',
+    'Bug Fix',
+    'Deprecation',
+    'Removal',
+    'Test'
+]
 
 interface NewChange {
     type: string,
@@ -27,50 +27,26 @@ interface NewChange {
 }
 
 function promptForType(): string {
-    const message = `
-    Please enter the type of change:
-    0. Test
-    1. Breaking Change
-    2. Feature
-    3. Bug Fix
-    4. Deprecation
-    5. Removal
-    `
-
-    let changeType = ''
-    do {
-        const response = +readlineSync.question(message)
-        switch (response) {
-            case 0:
-                changeType = ChangeType.Test
-                break
-            case 1:
-                changeType = ChangeType.BreakingChange
-                break
-            case 2:
-                changeType = ChangeType.Feature
-                break
-            case 3:
-                changeType = ChangeType.Bugfix
-                break
-            case 4:
-                changeType = ChangeType.Deprecation
-                break
-            case 5:
-                changeType = ChangeType.Removal
-                break
-            default:
-                console.log('Invalid change type, change type must be between 0 and 5')
-                break
+    while (true) {
+        const response = readlineSync.keyInSelect(changeTypes, 'Please enter the type of change')
+        if (response === -1) {
+            console.log('Cancelling change')
+            process.exit(0)
         }
-
-    } while (changeType === '')
-
-    return changeType
+        if (response >= 0 && response < changeTypes.length) {
+            return changeTypes[response]
+        }
+        console.log('Invalid change type, change type must be between 0 and 5')
+    }
 }
 
 function promptForChange(): string {
-    return readlineSync.question('Change message: ')
+    while (true) {
+        const response = readlineSync.question('Change message: ').trim()
+        if (response) {
+            return response
+        }
+    }
 }
 
 fs.mkdirpSync(directory)
