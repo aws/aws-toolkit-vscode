@@ -101,7 +101,7 @@ export class LocalLambdaRunner {
         this._debugPort = debugPort
     }
 
-    public async run(): Promise<LocalLambdaStatistics | undefined> {
+    public async run(): Promise<LocalLambdaStatistics> {
         try {
             // Switch over to the output channel so the user has feedback that we're getting things ready
             this.channelLogger.channel.show(true)
@@ -124,7 +124,7 @@ export class LocalLambdaRunner {
                 error
             )
 
-            return undefined
+            return {}
         }
     }
 
