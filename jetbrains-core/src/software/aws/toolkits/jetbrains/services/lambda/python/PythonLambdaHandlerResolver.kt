@@ -42,7 +42,7 @@ class PythonLambdaHandlerResolver : LambdaHandlerResolver {
         val moduleFolders = fullyQualifiedModule.take(fullyQualifiedModule.size - 1)
 
         // Find the module by the name
-        PyModuleNameIndex.find(moduleFile, project, true).forEach { pyModule ->
+        PyModuleNameIndex.find(moduleFile, project, false).forEach { pyModule ->
             val lambdaFunctionCandidate = pyModule.findTopLevelFunction(functionName) ?: return@forEach
 
             val module = ModuleUtilCore.findModuleForFile(lambdaFunctionCandidate.containingFile)
@@ -90,10 +90,12 @@ class PythonLambdaHandlerResolver : LambdaHandlerResolver {
                 return true
             }
 
-            return false
+            if (rootVirtualFile.findChild("requirements.txt") != null) {
+                return true
+            }
         }
 
-        return true
+        return false
     }
 
     private fun directoryHasInitPy(psiDirectory: PsiDirectory) = psiDirectory.findFile("__init__.py") != null
