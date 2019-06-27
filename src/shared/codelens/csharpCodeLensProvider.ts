@@ -270,18 +270,18 @@ async function onLocalInvokeCommand(
         )
     }
 
-    const args: MetricFields = {
+    const metric: MetricFields = {
         debug: lambdaLocalInvokeParams.isDebug,
         runtime,
     }
 
     if (stats && stats.debug) {
-        args.debugAttachAttempts = stats.debug.attempts
-        args.debugAttachDuration = stats.debug.duration
-        args.debugAttachSuccess = stats.debug.success
+        metric.debugAttachAttempts = stats.debug.attempts
+        metric.debugAttachDuration = stats.debug.duration
+        metric.debugAttachSuccess = stats.debug.success
     }
 
-    return getMetricDatum(args)
+    return getMetricDatum(metric)
 }
 
 export async function makeCSharpCodeLensProvider(): Promise<vscode.CodeLensProvider> {

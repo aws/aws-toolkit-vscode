@@ -22,7 +22,6 @@ import { assertRejects } from '../utilities/assertUtils'
 
 const dummyDebugStatistics: localLambdaRunner.DebugStatistics = {
     success: true,
-    duration: 12345,
     attempts: 1
 }
 
