@@ -39,11 +39,7 @@ class SamCommon {
 
         private val versionCache = object : FileInfoCache<SemVer>() {
             override fun getFileInfo(path: String): SemVer {
-                val commandLine = getSamCommandLine(
-                    path
-                )
-                    .withParameters("--info")
-
+                val commandLine = getSamCommandLine(path).withParameters("--info")
                 val process = CapturingProcessHandler(commandLine).runProcess()
 
                 if (process.exitCode != 0) {

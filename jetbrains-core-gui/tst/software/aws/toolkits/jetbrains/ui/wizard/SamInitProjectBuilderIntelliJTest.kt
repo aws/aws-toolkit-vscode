@@ -116,6 +116,12 @@ class SamInitProjectBuilderIntelliJTest(private val testParameters: TestParamete
                 templateName = "AWS SAM Hello World",
                 sdk = "Python",
                 runConfigNames = setOf("[Local] HelloWorldFunction")
+            ),
+            TestParameters(
+                runtime = "python3.6",
+                templateName = "AWS SAM DynamoDB Event Example",
+                sdk = "Python",
+                runConfigNames = setOf("[Local] ReadDynamoDBEvent")
             )
         )
     }

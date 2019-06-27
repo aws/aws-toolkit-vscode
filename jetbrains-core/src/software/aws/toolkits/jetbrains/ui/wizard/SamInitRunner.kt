@@ -48,6 +48,13 @@ object SamInitRunner {
             throw RuntimeException("${message("sam.init.execution_error")}: ${process.stderrLines.last()}")
         }
 
-        FileUtil.copyDirContent(tempDir.resolve(name), VfsUtil.virtualToIoFile(outputDir))
+        val subFolders = tempDir.listFiles()
+
+        assert(subFolders != null && subFolders.size == 1 && subFolders[0].isDirectory) {
+            message("sam.init.error.subfolder_not_one", tempDir.name)
+        }
+
+        FileUtil.copyDirContent(subFolders[0], VfsUtil.virtualToIoFile(outputDir))
+        FileUtil.delete(tempDir)
     }
 }
