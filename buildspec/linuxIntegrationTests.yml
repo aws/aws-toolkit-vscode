@@ -1,32 +1,20 @@
 version: 0.2
 
+env:
+  variables:
+    CI: true
+
 phases:
   install:
+    runtime-versions:
+      java: openjdk8
+
     commands:
       - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay&
       - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
-      - aws sts assume-role --role-arn $ASSUME_ROLE_ARN --role-session-name integ-test > creds.json
       - apt-get update
-      - apt-get install jq
-      - PYTHON_VERSION=3.6.8
-      - cd /tmp
-      - wget https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz
-      - tar -xvf Python-$PYTHON_VERSION.tgz
-      - cd Python-$PYTHON_VERSION
-      - ./configure --enable-loadable-sqlite-extensions --enable-shared
-      - make -j8
-      - make altinstall
-      - ldconfig
-      - PYTHON_VERSION=3.7.2
-      - cd /tmp
-      - wget https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz
-      - tar -xvf Python-$PYTHON_VERSION.tgz
-      - cd Python-$PYTHON_VERSION
-      - ./configure --enable-loadable-sqlite-extensions --enable-shared
-      - make -j8
-      - make altinstall
-      - ldconfig
-      - cd $CODEBUILD_SRC_DIR
+      - apt-get install jq python2.7 python3.6 python3.7
+      - aws sts assume-role --role-arn $ASSUME_ROLE_ARN --role-session-name integ-test > creds.json
       - export KEY_ID=`jq -r '.Credentials.AccessKeyId' creds.json`
       - export SECRET=`jq -r '.Credentials.SecretAccessKey' creds.json`
       - export TOKEN=`jq -r '.Credentials.SessionToken' creds.json`
@@ -36,7 +24,7 @@ phases:
   build:
     commands:
       - chmod +x gradlew
-      - env AWS_ACCESS_KEY_ID=$KEY_ID AWS_SECRET_ACCESS_KEY=$SECRET AWS_SESSION_TOKEN=$TOKEN SAM_CLI_EXEC=$(python -m site --user-base)/bin/sam ./gradlew integrationTest coverageReport --info --full-stacktrace
+      - env AWS_ACCESS_KEY_ID=$KEY_ID AWS_SECRET_ACCESS_KEY=$SECRET AWS_SESSION_TOKEN=$TOKEN SAM_CLI_EXEC=$(python -m site --user-base)/bin/sam ./gradlew integrationTest coverageReport --info --full-stacktrace --console plain
       - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
       - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
       - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"

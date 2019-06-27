@@ -1,5 +1,10 @@
 version: 0.2
 
+cache:
+  paths:
+    - '/root/.gradle/caches/**/*'
+    - '/root/.gradle/wrapper/**/*'
+
 env:
   variables:
     CI: true
@@ -9,6 +14,7 @@ phases:
   install:
     runtime-versions:
       java: openjdk8
+
     commands:
       - apt-get update
       - apt-get install -y xvfb icewm procps ffmpeg libswt-gtk-3-java
@@ -21,12 +27,12 @@ phases:
       - icewm &
       - export SAM_CLI_EXEC=$(python -m site --user-base)/bin/sam
       - chmod +x gradlew
-      - ./gradlew buildPlugin
+      - ./gradlew buildPlugin --console plain
       - >
         if [ "$RECORD_UI" ]; then
         ffmpeg -f x11grab -video_size 1920x1080 -i :99 -codec:v libx264 -r 12 /tmp/screen_recording.mp4 &
         fi
-      - ./gradlew guiTest coverageReport --info
+      - ./gradlew guiTest coverageReport --info --console plain
   post_build:
     commands:
       - if [ "$RECORD_UI" ]; then pkill -2 ffmpeg; while pgrep ffmpeg > /dev/null; do sleep 1; done; fi
