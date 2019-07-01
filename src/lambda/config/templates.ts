@@ -15,7 +15,7 @@ import * as nls from 'vscode-nls'
 import { access, mkdir, writeFile } from '../../shared/filesystem'
 import * as fsUtils from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
-import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
+import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { saveDocumentIfDirty } from '../../shared/utilities/textDocumentUtilities'
 
 const localize = nls.loadMessageBundle()
@@ -231,7 +231,7 @@ export class TemplatesConfigPopulator {
         private readonly modificationOptions: jsonParser.ModificationOptions = {
             formattingOptions: {
                 insertSpaces: true,
-                tabSize: new DefaultSettingsConfiguration('editor').readSetting<number>('tabSize') || 4,
+                tabSize: getTabSizeSetting(),
             },
         }
     ) {
@@ -284,7 +284,7 @@ export class TemplatesConfigPopulator {
     public ensureTemplateParameterOverrideExists(
         templateRelativePath: string,
         parameterName: string
-     ): TemplatesConfigPopulator {
+    ): TemplatesConfigPopulator {
         this.ensureTemplateParameterOverridesSectionExists(templateRelativePath)
 
         this.ensureJsonPropertyExists(
@@ -294,7 +294,7 @@ export class TemplatesConfigPopulator {
         )
 
         return this
-     }
+    }
 
     public getResults(): {
         isDirty: boolean,

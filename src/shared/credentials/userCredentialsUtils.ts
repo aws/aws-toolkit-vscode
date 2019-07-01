@@ -142,7 +142,8 @@ export class UserCredentialsUtils {
             const transformedCredentials: ServiceConfigurationOptions = {
                 credentials: {
                     accessKeyId: credentials.accessKeyId,
-                    secretAccessKey: credentials.secretAccessKey
+                    secretAccessKey: credentials.secretAccessKey,
+                    sessionToken: credentials.sessionToken
                 }
             }
             try {

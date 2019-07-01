@@ -29,13 +29,5 @@ export class ErrorTemplates {
     <pre>
         <%= error.message %>
     </pre>
-
-    <h2>
-        ${localize('AWS.template.error.showErrorDetails.stackTrace',
-                   'Stack trace')}
-    </h2>
-    <pre>
-        <%= error.stack %>
-    </pre>
     `
 }

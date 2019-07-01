@@ -6,18 +6,20 @@
 'use strict'
 
 import * as assert from 'assert'
-import { SpawnOptions } from 'child_process'
-import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
+import {
+    makeRequiredSamCliProcessInvokeOptions,
+    SamCliProcessInvokeOptions,
+    SamCliProcessInvoker
+} from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 
 export class MockSamCliProcessInvoker implements SamCliProcessInvoker {
-    public constructor(private readonly validateArgs: (args: string[]) => void) {}
+    public constructor(private readonly validateArgs: (args: string[]) => void) { }
 
-    public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
-    public invoke(...args: string[]): Promise<ChildProcessResult>
-    public async invoke(first: SpawnOptions | string, ...rest: string[]): Promise<ChildProcessResult> {
-        const args: string[] = typeof first === 'string' ? [first, ...rest] : rest
-        this.validateArgs(args)
+    public async invoke(options?: SamCliProcessInvokeOptions): Promise<ChildProcessResult> {
+        const invokeSettings = makeRequiredSamCliProcessInvokeOptions(options)
+
+        this.validateArgs(invokeSettings.arguments)
 
         return ({
             exitCode: 0

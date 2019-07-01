@@ -9,7 +9,11 @@ import * as assert from 'assert'
 import { SpawnOptions } from 'child_process'
 
 import { TestLogger } from '../../../../shared/loggerUtils'
-import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
+import {
+    makeRequiredSamCliProcessInvokeOptions,
+    SamCliProcessInvokeOptions,
+    SamCliProcessInvoker
+} from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 
 export class TestSamCliProcessInvoker implements SamCliProcessInvoker {
@@ -18,13 +22,10 @@ export class TestSamCliProcessInvoker implements SamCliProcessInvoker {
     ) {
     }
 
-    public invoke(options: SpawnOptions, ...args: string[]): Promise<ChildProcessResult>
-    public invoke(...args: string[]): Promise<ChildProcessResult>
-    public async invoke(first: SpawnOptions | string, ...rest: string[]): Promise<ChildProcessResult> {
-        const args = typeof first === 'string' ? [first, ...rest] : rest
-        const spawnOptions: SpawnOptions = typeof first === 'string' ? {} : first
+    public async invoke(options?: SamCliProcessInvokeOptions): Promise<ChildProcessResult> {
+        const invokeOptions = makeRequiredSamCliProcessInvokeOptions(options)
 
-        return this.onInvoke(spawnOptions, args)
+        return this.onInvoke(invokeOptions.spawnOptions, invokeOptions.arguments)
     }
 }
 

@@ -293,6 +293,7 @@ export async function initialize({
                 baseBuildDir,
                 codeDir: samProjectCodeRoot,
                 relativeFunctionHandler,
+                globals: lambdaInfo && lambdaInfo.templateGlobals ? lambdaInfo.templateGlobals : undefined,
                 properties: lambdaInfo && lambdaInfo.resource.Properties ? lambdaInfo.resource.Properties : undefined,
                 runtime: args.runtime
             })
@@ -355,7 +356,7 @@ export async function initialize({
 
     const command = getInvokeCmdKey('python')
     registerCommand({
-        command: command,
+        command,
         callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
             const resource = await CloudFormation.getResourceFromTemplate({
                 handlerName: params.handlerName,
@@ -370,7 +371,6 @@ export async function initialize({
 
             return getMetricDatum({
                 isDebug: params.isDebug,
-                command,
                 runtime
             })
         },

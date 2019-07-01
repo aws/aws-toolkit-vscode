@@ -2,6 +2,21 @@
 
 All notable changes to the "aws-vscode-tools" extension will be documented in this file.
 
+## NEXT (Developer Preview)
+
+* A toast greets the user upon launching a new version of the toolkit for the first time which provides a link to a quick start page. This quick start page can be re-accessed through the explorer's context menu. (#610-612)
+* Local Run/Debug now honors MemorySize values from SAM Template file (#509)
+* Local Run/Debug now honors Timeout values from SAM Template file (#510)
+* Local Run/Debug now honors the Globals section from SAM Template file
+* Fixed issue preventing users from connecting with assumed roles (#620)
+* Added ability to report an issue from the AWS Explorer menu (#613)
+* Added SAM Application-related commands to the AWS Explorer menu
+* Removed support for nodejs6.10 SAM Applications
+
+## 0.2.1 (Developer Preview)
+
+* Fixed issue preventing users from connecting with assumed roles (#620)
+
 ## 0.2.0 (Developer Preview)
 
 * Local Run/Debug is now available for .NET Core 2.1 functions within SAM Applications

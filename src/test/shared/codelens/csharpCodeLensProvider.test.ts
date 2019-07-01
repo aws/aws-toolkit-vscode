@@ -6,6 +6,7 @@
 'use strict'
 
 import * as assert from 'assert'
+import * as del from 'del'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -76,9 +77,19 @@ describe('findParentProjectFile', async () => {
 })
 
 describe('getLambdaHandlerComponents', async () => {
+    let tempFolder: string
+
+    beforeEach(async () => {
+        // Make a temp folder for all these tests
+        tempFolder = await makeTemporaryToolkitFolder()
+    })
+
+    afterEach(async () => {
+        await del(tempFolder, { force: true })
+    })
+
     it('Detects a public function symbol', async () => {
-        const folder = await makeTemporaryToolkitFolder()
-        const programFile = path.join(folder, 'program.cs')
+        const programFile = path.join(tempFolder, 'program.cs')
         await writeFile(programFile, sampleDotNetSamProgram.getFunctionText())
 
         const textDoc = await vscode.workspace.openTextDocument(programFile)
