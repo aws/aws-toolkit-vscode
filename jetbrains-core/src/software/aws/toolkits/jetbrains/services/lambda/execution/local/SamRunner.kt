@@ -7,13 +7,14 @@ import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.RunContentBuilder
 import com.intellij.execution.ui.RunContentDescriptor
+import org.jetbrains.concurrency.Promise
+import org.jetbrains.concurrency.resolvedPromise
 
 open class SamRunner {
     open fun patchCommandLine(state: SamRunningState, commandLine: GeneralCommandLine) {}
 
-    open fun run(environment: ExecutionEnvironment, state: SamRunningState): RunContentDescriptor {
+    open fun run(environment: ExecutionEnvironment, state: SamRunningState): Promise<RunContentDescriptor> {
         val executionResult = state.execute(environment.executor, environment.runner)
-
-        return RunContentBuilder(executionResult, environment).showRunContent(environment.contentToReuse)
+        return resolvedPromise(RunContentBuilder(executionResult, environment).showRunContent(environment.contentToReuse))
     }
 }
