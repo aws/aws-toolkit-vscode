@@ -15,7 +15,7 @@ const changesFile = path.join(changesDirectory, `${releaseVersion}.json`)
 
 fs.mkdirpSync(nextReleaseDirectory)
 
-const changeFiles = fs.readdirSync(nextReleaseDirectory).sort()
+const changeFiles = fs.readdirSync(nextReleaseDirectory)
 if (changeFiles.length === 0) {
     console.log('Error! no changes to release!')
     process.exit(-1)
@@ -40,6 +40,19 @@ for (const changeFile of changeFiles) {
     // tslint:disable-next-line: no-unsafe-any
     changelog.entries.push(file)
 }
+
+// tslint:disable-next-line: no-unsafe-any
+changelog.entries.sort((x: {type: string}, y: {type: string}) => {
+    if (x.type === y.type) {
+        return 0
+    }
+
+    if (x.type > y.type) {
+        return 1
+    }
+
+    return -1
+})
 
 // Write changelog file
 fs.writeFileSync(changesFile, JSON.stringify(changelog, undefined, '\t'))
