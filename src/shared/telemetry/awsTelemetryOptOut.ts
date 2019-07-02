@@ -97,7 +97,7 @@ export class AwsTelemetryOptOut {
     public async showNotification(): Promise<string | undefined> {
         const notificationMessage: string = localize(
             'AWS.telemetry.notificationMessage',
-            'Please help improve the AWS Toolkit by enabling anonymous usage data to be sent to AWS. '
+            'Please help improve the AWS Toolkit by enabling it to send usage data to AWS. '
             + 'You can always change your mind later by going to the "AWS Configuration" section in your user settings.'
         )
 
