@@ -147,7 +147,7 @@ export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizar
             options: {
                 title: localize(
                     'AWS.samcli.initWizard.name.prompt',
-                    'Choose a name for your new application'
+                    'Enter a name for your new application'
                 ),
                 ignoreFocusOut: true,
             },
