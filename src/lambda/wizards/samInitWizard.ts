@@ -251,6 +251,8 @@ class BrowseFolderQuickPickItem implements FolderQuickPickItem {
         'Choose a different folder...'
     )
 
+    public alwaysShow: boolean = true
+
     public constructor(
         private readonly context: CreateNewSamAppWizardContext
     ) {
