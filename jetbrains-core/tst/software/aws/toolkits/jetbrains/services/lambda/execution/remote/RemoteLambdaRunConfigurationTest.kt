@@ -203,6 +203,23 @@ class RemoteLambdaRunConfigurationTest {
         }
     }
 
+    @Test // https://github.com/aws/aws-toolkit-jetbrains/issues/1072
+    fun creatingACopyDoesNotAliasFields() {
+        runInEdtAndWait {
+            val runConfiguration = createRunConfiguration(
+                project = projectRule.project,
+                input = "{}"
+            )
+
+            val clonedConfiguration = runConfiguration.clone() as LambdaRemoteRunConfiguration
+            clonedConfiguration.name = "Cloned"
+
+            clonedConfiguration.useInputText("Changed input")
+
+            assertThat(clonedConfiguration.inputSource()).isNotEqualTo(runConfiguration.inputSource())
+        }
+    }
+
     private fun getState(runConfiguration: LambdaRemoteRunConfiguration): RemoteLambdaState {
         val executor = ExecutorRegistry.getInstance().getExecutorById(DefaultRunExecutor.EXECUTOR_ID)
         val environmentMock = mock<ExecutionEnvironment> {

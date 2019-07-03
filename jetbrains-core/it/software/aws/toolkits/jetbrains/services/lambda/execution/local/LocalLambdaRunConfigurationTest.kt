@@ -166,6 +166,22 @@ class LocalLambdaRunConfigurationTest {
     }
 
     @Test
+    fun templateFileDoesNotExist() {
+        runInEdtAndWait {
+            val runConfiguration = createTemplateRunConfiguration(
+                project = projectRule.project,
+                templateFile = "IAmFake",
+                logicalId = "Function",
+                credentialsProviderId = mockId
+            )
+            assertThat(runConfiguration).isNotNull
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
+                .hasMessage(message("lambda.run_configuration.sam.template_file_not_found"))
+        }
+    }
+
+    @Test
     fun functionDoesNotExist() {
         runInEdtAndWait {
             val template = tempDir.newFile("template.yaml").also {
@@ -626,6 +642,24 @@ class LocalLambdaRunConfigurationTest {
             assertThat(runConfiguration.skipPullImage()).isTrue()
             assertThat(runConfiguration.buildInContainer()).isTrue()
             assertThat(runConfiguration.dockerNetwork()).isEqualTo("aws-lambda")
+        }
+    }
+
+    @Test // https://github.com/aws/aws-toolkit-jetbrains/issues/1072
+    fun creatingACopyDoesNotAliasFields() {
+        runInEdtAndWait {
+            val runConfiguration = createHandlerBasedRunConfiguration(
+                project = projectRule.project,
+                credentialsProviderId = mockId,
+                input = "{}"
+            )
+
+            val clonedConfiguration = runConfiguration.clone() as LocalLambdaRunConfiguration
+            clonedConfiguration.name = "Cloned"
+
+            clonedConfiguration.useInputText("Changed input")
+
+            assertThat(clonedConfiguration.inputSource()).isNotEqualTo(runConfiguration.inputSource())
         }
     }
 

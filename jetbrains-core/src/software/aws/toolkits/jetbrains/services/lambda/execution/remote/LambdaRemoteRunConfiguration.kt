@@ -32,16 +32,14 @@ class LambdaRemoteRunConfigurationFactory(configuration: LambdaRunConfiguration)
     override fun createTemplateConfiguration(project: Project) = LambdaRemoteRunConfiguration(project, this)
 
     override fun getName(): String = "Remote"
-
-    override fun getOptionsClass() = RemoteLambdaOptions::class.java
 }
 
 class LambdaRemoteRunConfiguration(project: Project, factory: ConfigurationFactory) :
     LambdaRunConfigurationBase<RemoteLambdaOptions>(project, factory, "Remote") {
 
-    override fun getConfigurationEditor() = RemoteLambdaRunSettingsEditor(project)
+    override val state = RemoteLambdaOptions()
 
-    override fun getOptions() = super.getOptions() as RemoteLambdaOptions
+    override fun getConfigurationEditor() = RemoteLambdaRunSettingsEditor(project)
 
     override fun checkConfiguration() {
         functionName() ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_function_specified"))
@@ -67,10 +65,10 @@ class LambdaRemoteRunConfiguration(project: Project, factory: ConfigurationFacto
 
     override fun suggestedName() = "[${message("lambda.run_configuration.remote")}] ${functionName()}"
 
-    fun functionName() = options.functionOptions.functionName
+    fun functionName(): String? = state.functionOptions.functionName
 
     fun functionName(name: String?) {
-        options.functionOptions.functionName = name
+        state.functionOptions.functionName = name
     }
 }
 

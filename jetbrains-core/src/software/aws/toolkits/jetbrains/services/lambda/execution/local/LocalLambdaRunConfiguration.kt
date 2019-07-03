@@ -14,6 +14,8 @@ import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.options.SettingsEditorGroup
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
@@ -35,21 +37,18 @@ import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.find
 import software.aws.toolkits.jetbrains.services.lambda.validOrNull
 import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
 import software.aws.toolkits.resources.message
-import java.io.File
 import java.nio.file.Path
 
 class LocalLambdaRunConfigurationFactory(configuration: LambdaRunConfiguration) : ConfigurationFactory(configuration) {
     override fun createTemplateConfiguration(project: Project) = LocalLambdaRunConfiguration(project, this)
 
     override fun getName(): String = "Local"
-
-    override fun getOptionsClass() = LocalLambdaOptions::class.java
 }
 
 class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactory) :
     LambdaRunConfigurationBase<LocalLambdaOptions>(project, factory, "SAM CLI"),
     RefactoringListenerProvider {
-    override fun getOptions() = super.getOptions() as LocalLambdaOptions
+    override val state = LocalLambdaOptions()
 
     override fun getConfigurationEditor(): SettingsEditor<LocalLambdaRunConfiguration> {
         val group = SettingsEditorGroup<LocalLambdaRunConfiguration>()
@@ -79,9 +78,6 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
             val psiElement = handlerPsiElement(handler, runtime)
                 ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
 
-            val samOptions = SamOptions()
-            samOptions.copyFrom(options.samOptions)
-
             val samRunSettings = LocalLambdaSettings(
                 runtime,
                 handler,
@@ -91,7 +87,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
                 resolveRegion(),
                 psiElement,
                 templateDetails,
-                samOptions
+                state.samOptions.copy()
             )
 
             return SamRunningState(environment, samRunSettings)
@@ -110,16 +106,16 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
 
             if (PsiTreeUtil.isAncestor(element, handlerPsi, false)) {
                 return object : RefactoringElementAdapter() {
-                    private val originalHandler = options.functionOptions.handler
+                    private val originalHandler = state.functionOptions.handler
 
                     override fun elementRenamedOrMoved(newElement: PsiElement) {
                         handlerResolver.determineHandler(handlerPsi)?.let { newHandler ->
-                            options.functionOptions.handler = newHandler
+                            state.functionOptions.handler = newHandler
                         }
                     }
 
                     override fun undoElementMovedOrRenamed(newElement: PsiElement, oldQualifiedName: String) {
-                        options.functionOptions.handler = originalHandler
+                        state.functionOptions.handler = originalHandler
                     }
                 }
             }
@@ -128,7 +124,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
     }
 
     fun useTemplate(templateLocation: String?, logicalId: String?) {
-        val functionOptions = options.functionOptions
+        val functionOptions = state.functionOptions
         functionOptions.useTemplate = true
 
         functionOptions.templateFile = templateLocation
@@ -139,7 +135,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
     }
 
     fun useHandler(runtime: Runtime?, handler: String?) {
-        val functionOptions = options.functionOptions
+        val functionOptions = state.functionOptions
         functionOptions.useTemplate = false
 
         functionOptions.templateFile = null
@@ -149,47 +145,47 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         functionOptions.runtime = runtime.toString()
     }
 
-    fun isUsingTemplate() = options.functionOptions.useTemplate
+    fun isUsingTemplate() = state.functionOptions.useTemplate
 
-    fun templateFile() = options.functionOptions.templateFile
+    fun templateFile() = state.functionOptions.templateFile
 
-    fun logicalId() = options.functionOptions.logicalId
+    fun logicalId() = state.functionOptions.logicalId
 
-    fun handler() = options.functionOptions.handler
+    fun handler() = state.functionOptions.handler
 
-    fun runtime(): Runtime? = Runtime.fromValue(options.functionOptions.runtime)?.validOrNull
+    fun runtime(): Runtime? = Runtime.fromValue(state.functionOptions.runtime)?.validOrNull
 
-    fun environmentVariables() = options.functionOptions.environmentVariables
+    fun environmentVariables() = state.functionOptions.environmentVariables
 
     fun environmentVariables(envVars: Map<String, String>) {
-        options.functionOptions.environmentVariables = envVars.toMutableMap()
+        state.functionOptions.environmentVariables = envVars
     }
 
-    fun dockerNetwork(): String? = options.samOptions.dockerNetwork
+    fun dockerNetwork(): String? = state.samOptions.dockerNetwork
 
     fun dockerNetwork(network: String?) {
-        options.samOptions.dockerNetwork = network
+        state.samOptions.dockerNetwork = network
     }
 
-    fun skipPullImage(): Boolean = options.samOptions.skipImagePull
+    fun skipPullImage(): Boolean = state.samOptions.skipImagePull
 
     fun skipPullImage(skip: Boolean) {
-        options.samOptions.skipImagePull = skip
+        state.samOptions.skipImagePull = skip
     }
 
-    fun buildInContainer(): Boolean = options.samOptions.buildInContainer
+    fun buildInContainer(): Boolean = state.samOptions.buildInContainer
 
     fun buildInContainer(useContainer: Boolean) {
-        options.samOptions.buildInContainer = useContainer
+        state.samOptions.buildInContainer = useContainer
     }
 
     override fun suggestedName(): String? {
-        val subName = options.functionOptions.logicalId ?: handlerDisplayName()
+        val subName = state.functionOptions.logicalId ?: handlerDisplayName()
         return "[${message("lambda.run_configuration.local")}] $subName"
     }
 
     private fun handlerDisplayName(): String? {
-        val handler = options.functionOptions.handler ?: return null
+        val handler = state.functionOptions.handler ?: return null
         return runtime()
             ?.runtimeGroup
             ?.let { LambdaHandlerResolver.getInstance(it) }
@@ -197,41 +193,43 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
     }
 
     private fun resolveLambdaInfo() = if (isUsingTemplate()) {
-            val template = templateFile()?.takeUnless { it.isEmpty() }
-                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.sam.no_template_specified"))
+        val templatePath = templateFile()
+            ?.takeUnless { it.isEmpty() }
+            ?: throw RuntimeConfigurationError(message("lambda.run_configuration.sam.no_template_specified"))
 
-            val functionName = logicalId() ?: throw RuntimeConfigurationError(
-                message("lambda.run_configuration.sam.no_function_specified")
+        val functionName = logicalId() ?: throw RuntimeConfigurationError(
+            message("lambda.run_configuration.sam.no_function_specified")
+        )
+
+        val templateFile = LocalFileSystem.getInstance().findFileByPath(templatePath)
+            ?: throw RuntimeConfigurationError(message("lambda.run_configuration.sam.template_file_not_found"))
+
+        val function = findFunctionsFromTemplate(
+            project,
+            templateFile
+        ).find { it.logicalName == functionName }
+            ?: throw RuntimeConfigurationError(
+                message(
+                    "lambda.run_configuration.sam.no_such_function",
+                    functionName,
+                    templateFile.path
+                )
             )
 
-            val templateFile = File(template)
+        val handler = tryOrNull { function.handler() }
+            ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
+        val runtime = tryOrNull { Runtime.fromValue(function.runtime()).validOrNull }
+            ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
 
-            val function = findFunctionsFromTemplate(
-                project,
-                templateFile
-            ).find { it.logicalName == functionName }
-                ?: throw RuntimeConfigurationError(
-                    message(
-                        "lambda.run_configuration.sam.no_such_function",
-                        functionName,
-                        template
-                    )
-                )
+        Triple(handler, runtime, SamTemplateDetails(VfsUtil.virtualToIoFile(templateFile).toPath(), functionName))
+    } else {
+        val handler = handler()
+            ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
+        val runtime = runtime()
+            ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
 
-            val handler = tryOrNull { function.handler() }
-                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
-            val runtime = tryOrNull { Runtime.fromValue(function.runtime()).validOrNull }
-                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
-
-            Triple(handler, runtime, SamTemplateDetails(templateFile.toPath(), functionName))
-        } else {
-            val handler = handler()
-                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
-            val runtime = runtime()
-                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
-
-            Triple(handler, runtime, null)
-        }
+        Triple(handler, runtime, null)
+    }
 
     private fun handlerPsiElement(handler: String? = handler(), runtime: Runtime? = runtime()) = try {
         runtime?.let {
