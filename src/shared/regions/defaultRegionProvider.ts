@@ -19,8 +19,9 @@ interface RawRegion {
 }
 
 interface RawPartition {
+    partition: string
     regions: {
-        [ regionKey: string ]: RawRegion
+        [regionKey: string]: RawRegion
     }
 }
 
@@ -59,16 +60,19 @@ export class DefaultRegionProvider implements RegionProvider {
             ])
             const allEndpoints = JSON.parse(endpointsSource) as RawEndpoints
 
-            availableRegions = allEndpoints.partitions.reduce(
-                (accumulator: RegionInfo[], partition: RawPartition) => {
-                    accumulator.push(...Object.keys(partition.regions).map(
-                        regionKey => new RegionInfo(regionKey, `${partition.regions[regionKey].description}`)
-                    ))
+            availableRegions = allEndpoints.partitions
+                // TODO : Support other Partition regions : https://github.com/aws/aws-toolkit-vscode/issues/188
+                .filter(partition => partition.partition && partition.partition === 'aws')
+                .reduce(
+                    (accumulator: RegionInfo[], partition: RawPartition) => {
+                        accumulator.push(...Object.keys(partition.regions).map(
+                            regionKey => new RegionInfo(regionKey, `${partition.regions[regionKey].description}`)
+                        ))
 
-                    return accumulator
-                },
-                []
-            )
+                        return accumulator
+                    },
+                    []
+                )
 
             this._areRegionsLoaded = true
             this._loadedRegions = availableRegions
