@@ -12,7 +12,7 @@ export function makeCheckLogsMessage(): string {
     const commandName = localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
     const message = localize(
         'AWS.error.check.logs',
-        'Check the logs for more information by running the {0} command from the Command Palette.',
+        'Check the logs for more information by running the "{0}" command from the Command Palette.',
         commandName
     )
 
