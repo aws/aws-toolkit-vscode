@@ -144,7 +144,7 @@
     "AWS.samcli.local.invoke.ended": "Local invoke of SAM Application has ended.",
     "AWS.samcli.local.invoke.error": "Error encountered running local SAM Application",
     "AWS.samcli.local.invoke.port.not.open": "The debug port doesn't appear to be open. The debugger might not succeed when attaching to your SAM Application.",
-    "AWS.samcli.local.invoke.runtime.unsupported": "Local invoke with {0} is not supported",
+    "AWS.samcli.local.invoke.runtime.unsupported": "Unsupported {0} runtime: {1}",
     "AWS.samcli.local.invoke.debugger.install": "Installing .NET Core Debugger to {0}...",
     "AWS.samcli.local.invoke.debugger.install.failed": "Error installing .NET Core Debugger: {0}",
     "AWS.samcli.local.invoke.debugger.timeout": "The SAM process did not make the debugger available within the time limit",
