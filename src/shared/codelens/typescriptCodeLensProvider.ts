@@ -17,6 +17,7 @@ import { registerCommand } from '../telemetry/telemetryUtils'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { getChannelLogger, getDebugPort, localize } from '../utilities/vsCodeUtils'
 
+import { getLogger } from '../logger'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import {
     CodeLensProviderParams,
@@ -107,6 +108,8 @@ export function initialize({
     registerCommand({
         command,
         callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
+            const logger = getLogger()
+
             const resource = await CloudFormation.getResourceFromTemplate({
                 handlerName: params.handlerName,
                 templatePath: params.samTemplate.fsPath
@@ -114,11 +117,17 @@ export function initialize({
             const runtime = CloudFormation.getRuntime(resource)
 
             if (!supportedNodeJsRuntimes.has(runtime)) {
+                logger.error(
+                    `Javascript local invoke on ${params.document.uri.fsPath} encountered` +
+                    ` unsupported runtime ${runtime}`
+                )
+
                 vscode.window.showErrorMessage(
                     localize(
                         'AWS.samcli.local.invoke.runtime.unsupported',
-                        'Local invoke with {0} is not supported',
-                        runtime
+                        'Unsupported {0} runtime: {1}',
+                        'javascript',
+                        runtime,
                     )
                 )
             } else {
