@@ -4,7 +4,7 @@ The *AWS Toolkit for Visual Studio Code* is an extension that enables you to int
 
 The following screenshots show important parts of the Toolkit.
 
-### Fundamental UI Components
+### <a id="ui-components"></a>Fundamental UI Components
 
 ![Overview](./resources/marketplace/overview.png)
 
@@ -72,7 +72,7 @@ The AWS Toolkit for Visual Studio Code has several features that you can access 
 | **AWS: Create New SAM Application** | Generates a set of code files for a new AWS serverless application. For more information, see [Create a Serverless Application](#create-serverless-application). |
 | **AWS: Deploy SAM Application** | Deploys a local serverless application to an AWS account. For more information, see [Deploy a Serverless Application](#deploy-serverless-application). |
 | **AWS: Detect SAM CLI** | Checks whether the Toolkit can communicate correctly with the AWS SAM CLI that is installed. |
-| **AWS: Focus on Explorer View** | Opens the **AWS: Explorer** Side Bar, which we will simply call _the **AWS Explorer**_, and then moves the focus there. |
+| **AWS: Focus on Explorer View** | Opens the **AWS: Explorer** Side Bar, which we will simply call [_the **AWS Explorer**_](#ui-components), and then moves the focus there. |
 | **AWS: Hide region from the Explorer** | Hides an AWS Region from the **AWS Explorer**. |
 | **AWS: Show region in the Explorer** | Displays an AWS Region in the **AWS Explorer**. |
 | **AWS: Sign out** | Disconnects the Toolkit from the currently-connected AWS account. |
