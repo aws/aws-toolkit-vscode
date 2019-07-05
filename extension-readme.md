@@ -188,8 +188,8 @@ In summary:
 After you choose the **AWS** icon in the Activity Bar, CodeLenses appear in serverless-application code files above certain functions. The functions that have these Codelenses are those that use AWS Lambda-function handler syntax. A _handler_ is a function that Lambda calls to start execution of a Lambda function. These CodeLenses enable you to locally run or debug the corresponding serverless application. CodeLens actions in the Toolkit include:
 
 * **Configure**, for specifying function configurations such as an event payload and environment variables.
-* **Run Locally**, for running the function without debugging.
-* **Debug Locally**, for running the function with debugging.
+* **Run Locally**, for running the function _without_ debugging.
+* **Debug Locally**, for running the function _with_ debugging.
 
 (For general information about running and debugging in VS Code, see [Debugging](https://code.visualstudio.com/docs/editor/debugging) on the VS Code website.)
 
