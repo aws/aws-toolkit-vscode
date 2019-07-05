@@ -2,7 +2,7 @@
 
 The *AWS Toolkit for Visual Studio Code* is an extension that enables you to interact with [Amazon Web Services (AWS)](https://aws.amazon.com/what-is-aws/) from within the Visual Studio Code editor.
 
-The following screedshots show important parts of the Toolkit.
+The following screenshots show important parts of the Toolkit.
 
 ### Fundamental UI Components
 
@@ -73,7 +73,7 @@ The AWS Toolkit for Visual Studio Code has several features that you can access 
 | **AWS: Deploy SAM Application** | Deploys a local serverless application to an AWS account. For more information, see [Deploy a Serverless Application](#deploy-serverless-application). |
 | **AWS: Detect SAM CLI** | Checks whether the Toolkit can communicate correctly with the AWS SAM CLI that is installed. |
 | **AWS: Focus on Explorer View** | Opens the **AWS: Explorer** Side Bar, which we will simply call _the **AWS Explorer**_, and then moves the focus there. |
-| **AWS: Hide region from the Explorer** | Hides an AWS Region from the the **AWS Explorer**. |
+| **AWS: Hide region from the Explorer** | Hides an AWS Region from the **AWS Explorer**. |
 | **AWS: Show region in the Explorer** | Displays an AWS Region in the **AWS Explorer**. |
 | **AWS: Sign out** | Disconnects the Toolkit from the currently-connected AWS account. |
 | **AWS: View AWS Toolkit Logs** | Displays log files that contain general Toolkit diagnostic information. |
