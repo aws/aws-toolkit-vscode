@@ -21,7 +21,7 @@ ___
 * [Usage](#usage)
 * [Get Help](#get-help)
 
-| [Return to Top](#top) |
+{ [Return to Top](#top) }
 ___
 
 # <a id="features"></a>Features
@@ -39,7 +39,7 @@ You can use the AWS Toolkit for Visual Studio Code as follows:
 
   ![AWS Explorer](./resources/marketplace/aws-explorer.png)
 
-| [Return to Contents](#contents) | or | [Return to Top](#top) |
+{ [Return to Contents](#contents) } or { [Return to Top](#top) }
 ___
 
 # <a id="additional-setup-steps"></a>Setup
@@ -58,7 +58,7 @@ To use this Toolkit to develop [serverless applications with AWS](https://aws.am
 
 See [Installing the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html) for complete setup instructions for these three components.
 
-| [Return to Contents](#contents) | or | [Return to Top](#top) |
+{ [Return to Contents](#contents) } or { [Return to Top](#top) }
 ___
 
 # <a id="aws-commands"></a>AWS Commands
@@ -80,7 +80,7 @@ The AWS Toolkit for Visual Studio Code has several features that you can access 
 | **AWS: View Documentation** | Opens the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome) for the Toolkit. |
 | **AWS: View Source on GitHub** | Opens the [GitHub repository](https://github.com/aws/aws-toolkit-vscode) for the Toolkit. |
 
-| [Return to Contents](#contents) | or | [Return to Top](#top) |
+{ [Return to Contents](#contents) } or { [Return to Top](#top) }
 ___
 
 # <a id="usage"></a>Usage
@@ -88,7 +88,7 @@ ___
 * [Managing AWS Resources](#managing-aws-resources)
 * [Developing Serverless Applications](#developing-serverless-applications)
 
-| [Return to Contents](#contents) | or | [Return to Top](#top) |
+{ [Return to Contents](#contents) } or { [Return to Top](#top) }
 
 ## <a id="managing-aws-resources"></a>Usage: Managing AWS Resources
 ___
@@ -134,7 +134,7 @@ For complete information, see [Working with AWS Services](https://docs.aws.amazo
 
    (**Note**: Not all service actions are currently supported.)
 
-| [Return to Usage](#usage) |
+{ [Return to Usage](#usage) }
 
 ## <a id="developing-serverless-applications"></a>Usage: Developing Serverless Applications
 ___
