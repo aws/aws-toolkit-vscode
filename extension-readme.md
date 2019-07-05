@@ -222,8 +222,11 @@ In summary:
 
    ![Deploy SAM Application 1](./resources/marketplace/sam-deploy-still-2.png)
 
-#### Additional Information
-To work with the corresponding stack that the Toolkit creates in AWS CloudFormation, in the **AWS Explorer**, expand the AWS Region that contains the stack. Then expand **AWS CloudFormation**. Lastly, expand or right-click on the stack that you want to manage.
+1. In the **AWS Explorer**, expand the AWS Region that contains the stack, then expand **CloudFormation**. Expand the stack that you want to manage and open the context menu of its resources.
+
+   For example:
+
+   ![Deploy SAM Application 1](./resources/marketplace/cloudformation-stack-example.png)
 
 { [Return to Developing](#developing-serverless-applications) } or { [Return to Usage](#usage) }
 ___
