@@ -93,7 +93,7 @@ ___
 ## <a id="managing-aws-resources"></a>Usage: Managing AWS Resources
 
 ### **Step 1**: Set Up a Credentials Profile
-(*Note*: If you already have an AWS credentials profile, skip ahead to "**Step 2**: Connect to an AWS Account".)
+(*Note*: If you already have an AWS credentials profile, skip ahead to "**Step 2: Connect to an AWS Account**".)
 
 For complete instructions, see [Setting Up Your AWS Credentials](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-credentials) in the _AWS Toolkit for Visual Studio Code User Guide_.
 
