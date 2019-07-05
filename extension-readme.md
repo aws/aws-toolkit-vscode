@@ -232,4 +232,4 @@ To report issues with the AWS Toolkit for Visual Studio Code or to propose Toolk
 
 You can also [contact AWS](https://aws.amazon.com/contact-us/) directly.
 
-{ [Return to Top](#top) }
+{ [Return to Contents](#contents) } or { [Return to Top](#top) }
