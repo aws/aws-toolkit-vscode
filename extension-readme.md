@@ -91,7 +91,6 @@ ___
 { [Return to Contents](#contents) } or { [Return to Top](#top) }
 
 ## <a id="managing-aws-resources"></a>Usage: Managing AWS Resources
-___
 
 ### **Step 1**: Set Up a Credentials Profile
 (*Note*: If you already have an AWS credentials profile, skip ahead to "**Step 2**: Connect to an AWS Account".)
@@ -137,7 +136,6 @@ For complete information, see [Working with AWS Services](https://docs.aws.amazo
 { [Return to Usage](#usage) }
 
 ## <a id="developing-serverless-applications"></a>Usage: Developing Serverless Applications
-___
 
 You can use the AWS Toolkit for Visual Studio Code to create, run, debug, and deploy serverless applications.
 
