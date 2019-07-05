@@ -155,7 +155,11 @@ In summary:
 
    ![Create SAM App 1](./resources/marketplace/create-sam-app-still.png)
 
-1. Follow the on-screen instructions to finish creating the SAM application.
+1. Follow the on-screen instructions to finish creating the SAM application, including:
+
+   1. Choosing the application runtime.
+   1. Selecting or creating a workspace folder for the project.
+   1. Entering a name for the application
 
    The Toolkit produces the application code and files, adds them to the location you specified, and opens the `template.yaml` file in the editor.
 
