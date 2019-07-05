@@ -14,18 +14,18 @@ import { FileResourceLocation, WebResourceLocation } from '../resourceLocation'
 import { RegionInfo } from './regionInfo'
 import { RegionProvider } from './regionProvider'
 
-interface RawRegion {
+export interface RawRegion {
     description: string
 }
 
-interface RawPartition {
+export interface RawPartition {
     partition: string
     regions: {
         [regionKey: string]: RawRegion
     }
 }
 
-interface RawEndpoints {
+export interface RawEndpoints {
     partitions: RawPartition[]
 }
 
@@ -65,9 +65,7 @@ export class DefaultRegionProvider implements RegionProvider {
                 .filter(partition => partition.partition && partition.partition === 'aws')
                 .reduce(
                     (accumulator: RegionInfo[], partition: RawPartition) => {
-                        accumulator.push(...Object.keys(partition.regions).map(
-                            regionKey => new RegionInfo(regionKey, `${partition.regions[regionKey].description}`)
-                        ))
+                        accumulator.push(...getRegionsFromPartition(partition))
 
                         return accumulator
                     },
@@ -86,4 +84,10 @@ export class DefaultRegionProvider implements RegionProvider {
 
         return availableRegions
     }
+}
+
+export function getRegionsFromPartition(partition: RawPartition): RegionInfo[] {
+    return Object.keys(partition.regions).map(
+        regionKey => new RegionInfo(regionKey, `${partition.regions[regionKey].description}`)
+    )
 }
