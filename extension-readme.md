@@ -9,9 +9,6 @@ The following screedshots show important parts of the Toolkit.
 ![Overview](./resources/marketplace/overview.png)
 
 ### <a id="open-command-palette"></a>AWS Commands in the Command Palette
-<!--
-![AWS Commands](./resources/marketplace/open-command-palette.png)
--->
 
 ![Command Palette](./resources/marketplace/open-command-palette.gif)
 ___
@@ -66,7 +63,7 @@ ___
 
 # <a id="aws-commands"></a>AWS Commands
 
-The AWS Toolkit for Visual Studio Code has several features that you can access through the [Command Palette](#open-command-palette) (**View**, then **Command Palette**):
+The AWS Toolkit for Visual Studio Code has several features that you can access through the [Command Palette](#open-command-palette) (select **View**, then **Command Palette**):
 
 | AWS Command | Description |
 | :---------- | :---------- |
@@ -106,6 +103,8 @@ For complete instructions, see [Setting Up Your AWS Credentials](https://docs.aw
 1. Begin typing: "**AWS: Create Credentials Profile**" and choose that command when you see it.
 1. Follow the on-screen instructions to add an AWS credentials profile to your environment. 
 
+`________________`
+
 ### **Step 2**: Connect to an AWS Account
 
 For complete instructions, see [Connect to AWS](https://docs.aws.amazon.com/console/toolkit-for-vscode/connect) in the _AWS Toolkit for Visual Studio Code User Guide_ .
@@ -115,12 +114,13 @@ In summary:
 1. Begin typing "**AWS: Connect to AWS**" and choose that command when you see it.
 1. In the list of AWS credentials profiles, choose the profile that you want to use.
 
+`________________`
+
 ### **Step 3**: Work with Available AWS Resources
 
 For complete information, see [Working with AWS Services](https://docs.aws.amazon.com/console/toolkit-for-vscode/working-with-aws) in the _AWS Toolkit for Visual Studio Code User Guide_ .
 
 1. If the **AWS Explorer** isn't showing, open it by choosing the **AWS** icon in the Activity Bar:
-   
    ![AWS Explorer Icon](./resources/marketplace/aws-explorer-icon.png)
 2. If you have existing resources in your AWS account but they aren't being displayed in the **AWS Explorer** (and assuming that your credentials and a connection have been set up properly), choose the **Refresh** icon in the **AWS Explorer** to show them. 
 3. Expand the AWS Region that contains the resource that you want to manage.
@@ -145,7 +145,7 @@ You can use the AWS Toolkit for Visual Studio Code to create, run, debug, and de
 * [Run or Debug a Serverless Application](#run-debug-serverless-application)
 * [Deploy a Serverless Application](#deploy-serverless-application)
 
-| [Return to Usage](#usage) |
+{ [Return to Usage](#usage) }
 
 ### <a id="create-serverless-application"></a>**Step 1**: Create a Serverless Application
 
@@ -153,26 +153,37 @@ For complete instructions, see [Creating a Serverless Application](https://docs.
 
 In summary:
 1. On the menu bar, choose **View, Command Palette**.
-2. Begin typing "**AWS: Create new SAM Application**" and choose that command when you see it.
-3. Follow the on-screen instructions to finish creating the SAM application.
-   
-   For example:
+1. Begin typing "**AWS: Create new SAM Application**" and choose that command when you see it.
 
-   ![Create SAM App](./resources/marketplace/create-sam-app-still.png)
+   ![Create SAM App 1](./resources/marketplace/create-sam-app-still.png)
 
+1. Follow the on-screen instructions to finish creating the SAM application.
 
-The Toolkit produces the application code and files, adds them to the location you specified, and opens the `template.yaml` file in the editor.
+   The Toolkit produces the application code and files, adds them to the location you specified, and opens the `template.yaml` file in the editor.
 
+   ![Create SAM App 2](./resources/marketplace/create-sam-app-still-2.png)
 
-| [Return to Developing](#developing-serverless-applications) | or | [Return to Usage](#usage) |
+{ [Return to Developing](#developing-serverless-applications) } or { [Return to Usage](#usage) }
+
+`________________`
 
 ### <a id="run-debug-serverless-application"></a>**Step 2**: Run or Debug the Serverless Application
 
-![Configure and Run](./resources/marketplace/sam-configure-and-run.gif)
+For complete instructions, see [Run and Debug Your Serverless Application](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam#run-debug-sam-app) in the _AWS Toolkit for Visual Studio Code User Guide_.
 
-(_Clip is time lapsed_)
+In summary:
+1. Select the **AWS** icon in the Activity Bar, ![AWS Explorer Icon](./resources/marketplace/aws-explorer-icon.png), to ensure that the AWS Toolkit for Visual Studio Code is running.
+1. Select the Project icon in the Activity Bar, ![Project Explorer Icon](./resources/marketplace/project-explorer-icon.png), go to the `hello-world` directory, and open `app.js`.
+1. Select the **Run Locally** CodeLens. (Or, if needed, first select the **Configure** link from the Codelenses, enter event data in `templates.json`, save, and _then_ select the **Run Locally** CodeLens.)
 
-After you choose the **AWS** icon in the Activity Bar, CodeLenses display within open serverless application code files above functions that use AWS Lambda function handler syntax. (A _handler_ is a function that Lambda calls to start execution of a Lambda function.) These CodeLenses enable you to run or debug the corresponding serverless application locally. CodeLens actions here include:
+   ![Configure and Run 1](./resources/marketplace/sam-configure-and-run-still-1.png)
+
+1. Note the run status and results in the **OUTPUT** panel.
+
+   ![Configure and Run 1](./resources/marketplace/sam-configure-and-run-still-2.png)
+
+#### Additional Information
+After you choose the **AWS** icon in the Activity Bar, CodeLenses display within open serverless application code files above functions that use AWS Lambda function handler syntax. A _handler_ is a function that Lambda calls to start execution of a Lambda function. These CodeLenses enable you to run or debug the corresponding serverless application locally. CodeLens actions here include:
 
 * **Configure**, for specifying function configurations such as an event payload and environment variables.
 * **Run Locally**, for running the function without debugging.
@@ -180,32 +191,39 @@ After you choose the **AWS** icon in the Activity Bar, CodeLenses display within
 
 (For general information about running and debugging in VS Code, see [Debugging](https://code.visualstudio.com/docs/editor/debugging) on the VS Code website.)
 
-For information about how to work with remote versions of Lambda functions, see [Interacting with Remote Lambda Functions](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/remote-lambda.html) in the _AWS Toolkit for Visual Studio Code User Guide_.
+For information about how to work with remote versions of Lambda functions, see [Interacting with Remote Lambda Functions](https://docs.aws.amazon.com/console/toolkit-for-vscode/remote-lambda) in the _AWS Toolkit for Visual Studio Code User Guide_.
 
-| [Return to Developing](#developing-serverless-applications) | or | [Return to Usage](#usage) |
+{ [Return to Developing](#developing-serverless-applications) } or { [Return to Usage](#usage) }
+
+`________________`
 
 ### <a id="deploy-serverless-application"></a>**Step 3**: Deploy the Serverless Application
 
-![Deploy SAM Application](./resources/marketplace/sam-deploy.gif)
+(_Note_: This procedure uses an Amazon S3 bucket in your AWS account. You can create a bucket ahead of time (see [How Do I Create an S3 Bucket](https://docs.aws.amazon.com/AmazonS3/latest/user-guide/create-bucket.html) in the _Amazon Simple Storage Service Console User Guide_) or run an AWS CLI command that the Toolkit will give you during the procedure, then restart the procedure.)
 
-(_Clip is time lapsed_)
+For complete instructions, see [Deploying a Serverless Application](https://docs.aws.amazon.com/console/toolkit-for-vscode/deploy-serverless-app) in the _AWS Toolkit for Visual Studio Code User Guide_.
 
-Before you start this procedure, you must have an Amazon S3 bucket in the AWS account. The AWS Toolkit for Visual Studio Code will use this bucket when packaging and deploying the application. (To create a bucket, see [How Do I Create an S3 Bucket](https://docs.aws.amazon.com/AmazonS3/latest/user-guide/create-bucket.html) in the _Amazon Simple Storage Service Console User Guide_.)  
+In summary:
 
 1. On the menu bar, choose **View, Command Palette**.
-2. Begin typing: `AWS: Deploy SAM Application`. When you see the **AWS: Deploy SAM Application** command, choose it.
-3. Follow the on-screen instructions to finish deploying the serverless application, including:
+1. Begin typing "**AWS: Deploy SAM Application**" and choose that command when you see it.
+
+   ![Deploy SAM Application 1](./resources/marketplace/sam-deploy-still-1.png)
+1. Follow the on-screen instructions to finish deploying the serverless application, including:
     
    1. Choosing the SAM template file that corresponds with the serverless application you want to deploy.
-   2. Choosing the AWS Region you want to deploy to.
-   3. Specifying the name of an existing Amazon S3 bucket in the AWS account that the Toolkit will use for packaging and deploying the serverless application. (The Toolkit uses Amazon S3 as part of its process to deploy serverless applications.) The bucket must exist within the AWS Region that you chose earlier.
+   1. Choosing the AWS Region you want to deploy to.
+   1. Specifying the name of an Amazon S3 bucket in the AWS account that the Toolkit will use for packaging and deploying the serverless application. The bucket must exist within the AWS Region that you chose in the previous step.
+   1. Specifying a name for the AWS CloudFormation stack to which the serverless application will be deployed.
 
-4. The serverless application is deployed to an AWS CloudFormation stack. (The Toolkit uses AWS CloudFormation as part of its process to deploy serverless applications.) If the stack already exists, it is updated; otherwise, a new stack is created. Within a few minutes, the Toolkit displays a deployment success or failure message.
-5. To work with the corresponding stack that the Toolkit creates in AWS CloudFormation, in the **AWS Explorer**, expand the AWS Region that contains the stack. Then expand **AWS CloudFormation**. Lastly, expand or right-click on the stack that you want to manage.
+1. Note the status and results in the **OUTPUT** panel. The serverless application is deployed to an AWS CloudFormation stack. If the stack already exists, it is updated; otherwise, a new stack is created. Within a few minutes, the Toolkit displays a deployment success or failure message.
 
-For more information, see [Deploying a Serverless Application](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/deploy-serverless-app.html) in the _AWS Toolkit for Visual Studio Code User Guide_. 
+   ![Deploy SAM Application 1](./resources/marketplace/sam-deploy-still-2.png)
 
-| [Return to Developing](#developing-serverless-applications) | or | [Return to Usage](#usage) |
+#### Additional Information
+To work with the corresponding stack that the Toolkit creates in AWS CloudFormation, in the **AWS Explorer**, expand the AWS Region that contains the stack. Then expand **AWS CloudFormation**. Lastly, expand or right-click on the stack that you want to manage.
+
+{ [Return to Developing](#developing-serverless-applications) } or { [Return to Usage](#usage) }
 ___
 
 # <a id="get-help"></a>Get Help
@@ -216,4 +234,4 @@ To report issues with the AWS Toolkit for Visual Studio Code or to propose Toolk
 
 You can also [contact AWS](https://aws.amazon.com/contact-us/) directly.
 
-| [Return to Top](#top) |
+{ [Return to Top](#top) }
