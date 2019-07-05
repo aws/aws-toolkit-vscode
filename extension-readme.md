@@ -185,7 +185,7 @@ In summary:
    ![Configure and Run 1](./resources/marketplace/sam-configure-and-run-still-2.png)
 
 #### Additional Information
-After you choose the **AWS** icon in the Activity Bar, CodeLenses display within open serverless application code files above functions that use AWS Lambda function handler syntax. A _handler_ is a function that Lambda calls to start execution of a Lambda function. These CodeLenses enable you to run or debug the corresponding serverless application locally. CodeLens actions here include:
+After you choose the **AWS** icon in the Activity Bar, CodeLenses appear in serverless-application code files above certain functions. The functions that have these Codelenses are those that use AWS Lambda-function handler syntax. A _handler_ is a function that Lambda calls to start execution of a Lambda function. These CodeLenses enable you to locally run or debug the corresponding serverless application. CodeLens actions in the Toolkit include:
 
 * **Configure**, for specifying function configurations such as an event payload and environment variables.
 * **Run Locally**, for running the function without debugging.
