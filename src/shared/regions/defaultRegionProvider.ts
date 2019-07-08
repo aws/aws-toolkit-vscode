@@ -14,17 +14,18 @@ import { FileResourceLocation, WebResourceLocation } from '../resourceLocation'
 import { RegionInfo } from './regionInfo'
 import { RegionProvider } from './regionProvider'
 
-interface RawRegion {
+export interface RawRegion {
     description: string
 }
 
-interface RawPartition {
+export interface RawPartition {
+    partition: string
     regions: {
-        [ regionKey: string ]: RawRegion
+        [regionKey: string]: RawRegion
     }
 }
 
-interface RawEndpoints {
+export interface RawEndpoints {
     partitions: RawPartition[]
 }
 
@@ -59,16 +60,7 @@ export class DefaultRegionProvider implements RegionProvider {
             ])
             const allEndpoints = JSON.parse(endpointsSource) as RawEndpoints
 
-            availableRegions = allEndpoints.partitions.reduce(
-                (accumulator: RegionInfo[], partition: RawPartition) => {
-                    accumulator.push(...Object.keys(partition.regions).map(
-                        regionKey => new RegionInfo(regionKey, `${partition.regions[regionKey].description}`)
-                    ))
-
-                    return accumulator
-                },
-                []
-            )
+            availableRegions = getRegionsFromEndpoints(allEndpoints)
 
             this._areRegionsLoaded = true
             this._loadedRegions = availableRegions
@@ -82,4 +74,24 @@ export class DefaultRegionProvider implements RegionProvider {
 
         return availableRegions
     }
+}
+
+export function getRegionsFromPartition(partition: RawPartition): RegionInfo[] {
+    return Object.keys(partition.regions).map(
+        regionKey => new RegionInfo(regionKey, `${partition.regions[regionKey].description}`)
+    )
+}
+
+export function getRegionsFromEndpoints(endpoints: RawEndpoints): RegionInfo[] {
+    return endpoints.partitions
+        // TODO : Support other Partition regions : https://github.com/aws/aws-toolkit-vscode/issues/188
+        .filter(partition => partition.partition && partition.partition === 'aws')
+        .reduce(
+            (accumulator: RegionInfo[], partition: RawPartition) => {
+                accumulator.push(...getRegionsFromPartition(partition))
+
+                return accumulator
+            },
+            []
+        )
 }
