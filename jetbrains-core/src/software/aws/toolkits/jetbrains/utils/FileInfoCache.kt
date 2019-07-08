@@ -31,7 +31,7 @@ abstract class FileInfoCache<T> {
         return infoResult.result
     }
 
-    protected abstract fun getFileInfo(path: String): T
+    abstract fun getFileInfo(path: String): T
 
     private class InfoResult<T>(val result: T, val timestamp: Instant)
 }

@@ -4,13 +4,18 @@
 
 package software.aws.toolkits.jetbrains.ui.wizard
 
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.options.ShowSettingsUtil
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.DefaultProjectFactory
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.util.text.StringUtil
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
 import software.aws.toolkits.jetbrains.settings.SamSettings
+import software.aws.toolkits.resources.message
 import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JTextField
@@ -29,8 +34,16 @@ fun setupSamSelectionElements(samExecutableField: JTextField, editButton: JButto
         postEditCallback?.run()
     }
 
-    val validSamPath = (SamCommon.validate(StringUtil.nullize(samExecutableField.text)) == null)
-    samExecutableField.isVisible = !validSamPath
-    editButton.isVisible = !validSamPath
-    label.isVisible = !validSamPath
+    val samExe = samExecutableField.text
+
+    ProgressManager.getInstance().run(object : Task.Backgroundable(null, message("lambda.run_configuration.sam.validating"), false) {
+        override fun run(indicator: ProgressIndicator) {
+            val validSamPath = (SamCommon.validate(StringUtil.nullize(samExe)) == null)
+            runInEdt {
+                samExecutableField.isVisible = !validSamPath
+                editButton.isVisible = !validSamPath
+                label.isVisible = !validSamPath
+            }
+        }
+    })
 }

@@ -21,9 +21,12 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.refactoring.listeners.RefactoringElementAdapter
 import com.intellij.refactoring.listeners.RefactoringElementListener
+import org.jetbrains.concurrency.isPending
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
@@ -34,8 +37,10 @@ import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.findFunctionsFromTemplate
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamVersionCache
 import software.aws.toolkits.jetbrains.services.lambda.validOrNull
 import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
+import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.resources.message
 import java.nio.file.Path
 
@@ -48,6 +53,11 @@ class LocalLambdaRunConfigurationFactory(configuration: LambdaRunConfiguration) 
 class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactory) :
     LambdaRunConfigurationBase<LocalLambdaOptions>(project, factory, "SAM CLI"),
     RefactoringListenerProvider {
+
+    companion object {
+        private val logger = getLogger<LocalLambdaRunConfiguration>()
+    }
+
     override val state = LocalLambdaOptions()
 
     override fun getConfigurationEditor(): SettingsEditor<LocalLambdaRunConfiguration> {
@@ -58,7 +68,19 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
     }
 
     override fun checkConfiguration() {
-        SamCommon.validate()?.let {
+        val executablePath = SamSettings.getInstance().executablePath
+            ?: throw RuntimeConfigurationError(message("sam.cli_not_configured"))
+
+        val promise = SamVersionCache.evaluate(executablePath)
+
+        if (promise.isPending) {
+            logger.info { "Validation will proceed asynchronously for SAM CLI version" }
+            throw RuntimeConfigurationError(message("lambda.run_configuration.sam.validation.in_progress"))
+        }
+
+        val version = promise.blockingGet(0)!!
+
+        SamCommon.getInvalidVersionMessage(version)?.let {
             throw RuntimeConfigurationError(message("lambda.run_configuration.sam.invalid_executable", it)) {
                 ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsConfigurable::class.java)
             }
