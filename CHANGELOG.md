@@ -11,6 +11,8 @@ All notable changes to the "aws-vscode-tools" extension will be documented in th
 * Fixed issue preventing users from connecting with assumed roles (#620)
 * Added ability to report an issue from the AWS Explorer menu (#613)
 * Added SAM Application-related commands to the AWS Explorer menu
+* Removed support for nodejs6.10 SAM Applications
+* Regions that are not in the standard AWS partition have been removed from the UI until proper partition support can be added
 
 ## 0.2.1 (Developer Preview)
 
