@@ -1,6 +1,6 @@
 # <a id="top"></a>AWS Toolkit for Visual Studio Code
 
-The *AWS Toolkit for Visual Studio Code* is an extension that enables you to interact with [Amazon Web Services (AWS)](https://aws.amazon.com/what-is-aws/) from within the Visual Studio Code editor.
+The *AWS Toolkit for Visual Studio Code* is an extension that enables you to interact with certain services of [Amazon Web Services (AWS)](https://aws.amazon.com/what-is-aws/) from within the Visual Studio Code editor.
 
 The following screenshots show important parts of the Toolkit.
 
@@ -77,8 +77,10 @@ The AWS Toolkit for Visual Studio Code has several features that you can access 
 | **AWS: Show region in the Explorer** | Displays an AWS Region in the **AWS Explorer**. |
 | **AWS: Sign out** | Disconnects the Toolkit from the currently-connected AWS account. |
 | **AWS: View AWS Toolkit Logs** | Displays log files that contain general Toolkit diagnostic information. |
+| **AWS: View Quick Start** | Open this quick-start guide. |
 | **AWS: View Documentation** | Opens the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome) for the Toolkit. |
 | **AWS: View Source on GitHub** | Opens the [GitHub repository](https://github.com/aws/aws-toolkit-vscode) for the Toolkit. |
+| **AWS: Report an Issue** | In the [GitHub repository](https://github.com/aws/aws-toolkit-vscode) for the Toolkit, opens the page to [create a new issue](https://github.com/aws/aws-toolkit-vscode/issues/new/choose). |
 
 { [Return to Contents](#contents) } or { [Return to Top](#top) }
 ___
