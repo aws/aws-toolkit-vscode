@@ -19,6 +19,7 @@ import { runSamCliDeploy } from '../../shared/sam/cli/samCliDeploy'
 import { SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvokerUtils'
 import { runSamCliPackage } from '../../shared/sam/cli/samCliPackage'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
+import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { DefaultSamDeployWizardContext, SamDeployWizard, SamDeployWizardResponse } from '../wizards/samDeployWizard'
 
@@ -280,10 +281,13 @@ function outputDeployError(error: Error, channelLogger: ChannelLogger) {
         channelLogger.channel.appendLine(error.message)
     }
 
+    const checkLogsMessage = makeCheckLogsMessage()
+
     channelLogger.channel.show(true)
     channelLogger.error(
         'AWS.samcli.deploy.general.error',
-        'An error occurred while deploying a SAM Application. Check the logs for more information.'
+        'An error occurred while deploying a SAM Application. {0}',
+        checkLogsMessage
     )
 }
 
