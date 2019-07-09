@@ -29,7 +29,7 @@
         "Lambda",
         "Serverless"
     ],
-    "preview": true,
+    "preview": false,
     "qna": "https://github.com/aws/aws-toolkit-vscode/issues",
     "activationEvents": [
         "onCommand:aws.login",

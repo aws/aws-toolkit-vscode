@@ -2,7 +2,7 @@
 
 All notable changes to the "aws-vscode-tools" extension will be documented in this file.
 
-## NEXT (Developer Preview)
+## 1.0.0
 
 * A toast greets the user upon launching a new version of the toolkit for the first time which provides a link to a quick start page. This quick start page can be re-accessed through the explorer's context menu. (#610-612)
 * Local Run/Debug now honors MemorySize values from SAM Template file (#509)
@@ -12,6 +12,7 @@ All notable changes to the "aws-vscode-tools" extension will be documented in th
 * Added ability to report an issue from the AWS Explorer menu (#613)
 * Added SAM Application-related commands to the AWS Explorer menu
 * Removed support for nodejs6.10 SAM Applications
+* Regions that are not in the standard AWS partition have been removed from the UI until proper partition support can be added
 
 ## 0.2.1 (Developer Preview)
 
