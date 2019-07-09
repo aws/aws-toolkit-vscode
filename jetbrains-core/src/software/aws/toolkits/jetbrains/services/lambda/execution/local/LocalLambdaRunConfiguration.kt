@@ -21,6 +21,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.refactoring.listeners.RefactoringElementAdapter
 import com.intellij.refactoring.listeners.RefactoringElementListener
+import com.intellij.util.ExceptionUtil
 import org.jetbrains.concurrency.isPending
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
@@ -78,9 +79,14 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
             throw RuntimeConfigurationError(message("lambda.run_configuration.sam.validation.in_progress"))
         }
 
-        val version = promise.blockingGet(0)!!
+        val errorMessage = try {
+            val semVer = promise.blockingGet(0)!!
+            SamCommon.getInvalidVersionMessage(semVer)
+        } catch (e: Exception) {
+            ExceptionUtil.getRootCause(e).message ?: message("general.unknown_error")
+        }
 
-        SamCommon.getInvalidVersionMessage(version)?.let {
+        errorMessage?.let {
             throw RuntimeConfigurationError(message("lambda.run_configuration.sam.invalid_executable", it)) {
                 ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsConfigurable::class.java)
             }

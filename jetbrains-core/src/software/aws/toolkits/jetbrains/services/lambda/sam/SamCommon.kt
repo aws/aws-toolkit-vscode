@@ -95,7 +95,7 @@ class SamCommon {
 
             return try {
                 getInvalidVersionMessage(
-                    SamVersionCache.getResult(
+                    SamVersionCache.evaluateBlocking(
                         sanitizedPath
                     )
                 )
@@ -112,7 +112,7 @@ class SamCommon {
                 ?: return "UNKNOWN"
 
             return try {
-                SamVersionCache.getResult(sanitizedPath).rawVersion
+                SamVersionCache.evaluateBlocking(sanitizedPath).rawVersion
             } catch (e: Exception) {
                 logger.error(e) { "Error while getting SAM executable version." }
                 return "UNKNOWN"
