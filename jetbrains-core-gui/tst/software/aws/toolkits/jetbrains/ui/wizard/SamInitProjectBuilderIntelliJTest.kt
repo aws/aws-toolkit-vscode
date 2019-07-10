@@ -30,7 +30,7 @@ class SamInitProjectBuilderIntelliJTest(private val testParameters: TestParamete
     data class TestParameters(
         val runtime: String,
         val templateName: String,
-        val sdk: String,
+        val sdkRegex: Regex,
         val libraries: Set<String> = emptySet(),
         val runConfigNames: Set<String> = emptySet()
     ) : Serializable {
@@ -44,7 +44,7 @@ class SamInitProjectBuilderIntelliJTest(private val testParameters: TestParamete
             newProjectDialogModel.createServerlessProject(
                 projectFolder,
                 ServerlessProjectOptions(testParameters.runtime, testParameters.templateName),
-                testParameters.sdk
+                testParameters.sdkRegex
             )
         }
 
@@ -66,7 +66,7 @@ class SamInitProjectBuilderIntelliJTest(private val testParameters: TestParamete
 
                             step("check the project SDK is correct") {
                                 projectStructureDialogModel.checkProject {
-                                    sdkChooser().requireSelection("${testParameters.sdk}.*".toPattern())
+                                    sdkChooser().requireSelection(testParameters.sdkRegex.toPattern())
                                 }
                             }
                         }
@@ -83,6 +83,9 @@ class SamInitProjectBuilderIntelliJTest(private val testParameters: TestParamete
                     }
                 }
             }
+
+            // Double check that all background tasks are done
+            waitAMoment()
 
             step("check the run configuration is created") {
                 assertTrue(runConfigurationList.getRunConfigurationList().containsAll(testParameters.runConfigNames))
@@ -101,26 +104,26 @@ class SamInitProjectBuilderIntelliJTest(private val testParameters: TestParamete
             TestParameters(
                 runtime = "java8",
                 templateName = "AWS SAM Hello World (Maven)",
-                sdk = "1.8",
+                sdkRegex = Regex(".*java.*"),
                 libraries = setOf("Maven: com.amazonaws:aws-lambda-java-core:"),
                 runConfigNames = setOf("[Local] HelloWorldFunction")
             ),
             TestParameters(
                 runtime = "java8",
                 templateName = "AWS SAM Hello World (Gradle)",
-                sdk = "1.8",
+                sdkRegex = Regex(".*java.*"),
                 runConfigNames = setOf("[Local] HelloWorldFunction")
             ),
             TestParameters(
                 runtime = "python3.6",
                 templateName = "AWS SAM Hello World",
-                sdk = "Python",
+                sdkRegex = Regex("Python.*"),
                 runConfigNames = setOf("[Local] HelloWorldFunction")
             ),
             TestParameters(
                 runtime = "python3.6",
                 templateName = "AWS SAM DynamoDB Event Example",
-                sdk = "Python",
+                sdkRegex = Regex("Python.*"),
                 runConfigNames = setOf("[Local] ReadDynamoDBEvent")
             )
         )
