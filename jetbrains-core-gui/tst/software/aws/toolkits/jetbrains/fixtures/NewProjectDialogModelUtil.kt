@@ -16,6 +16,7 @@ import com.intellij.testGuiFramework.util.scenarios.selectSdk
 import com.intellij.testGuiFramework.util.scenarios.typeProjectNameAndLocation
 import com.intellij.testGuiFramework.util.scenarios.waitLoadingTemplates
 import com.intellij.testGuiFramework.util.step
+import java.util.Arrays
 import kotlin.test.assertNotNull
 
 private const val AWS_GROUP = "AWS"
@@ -59,7 +60,7 @@ fun NewProjectDialogModel.createServerlessProject(
 
                 val sdkCandidates = sdkChooser().contents()
                 val sdkChoice = sdkCandidates.firstOrNull { it.matches(sdkRegex) }
-                assertNotNull(sdkChoice, "No valid SDK found, choices are: $sdkCandidates")
+                assertNotNull(sdkChoice, "No valid SDK found, choices are: ${Arrays.toString(sdkCandidates)}")
                 selectSdk(sdkChoice)
 
                 step("close New Project dialog with Finish") {
