@@ -30,7 +30,7 @@
 - [ ] My code follows the code style of this project
 - [ ] I have added tests to cover my changes
 - [ ] All new and existing tests passed
-- [ ] A short description of the change has been added to the **CHANGELOG**
+- [ ] A short description of the change has been added to the changelog using the script `npm run newChange`
 
 ## License
 
