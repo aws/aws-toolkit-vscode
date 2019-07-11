@@ -60,15 +60,14 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
             callback: async () => this.refresh()
         })
 
-        const createNewSamAppCommand = 'aws.lambda.createNewSamApp'
         registerCommand({
-            command: createNewSamAppCommand,
+            command: 'aws.lambda.createNewSamApp',
             callback: async (): Promise<{ datum: Datum }> => {
                 const createNewSamApplicationResults: CreateNewSamApplicationResults = await createNewSamApplication(
                     this.channelLogger,
                     context
                 )
-                const datum = defaultMetricDatum(createNewSamAppCommand)
+                const datum = defaultMetricDatum('new')
                 datum.metadata = new Map()
                 applyResultsToMetadata(createNewSamApplicationResults, datum.metadata)
 

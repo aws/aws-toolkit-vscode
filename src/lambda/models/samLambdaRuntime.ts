@@ -11,7 +11,6 @@ export type SamLambdaRuntime =
     'python3.7' |
     'python3.6' |
     'python2.7' |
-    'nodejs6.10' |
     'nodejs8.10' |
     'nodejs10.x' |
     'dotnetcore2.1'
@@ -20,7 +19,6 @@ export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set(
     'python3.7',
     'python3.6',
     'python2.7',
-    'nodejs6.10',
     'nodejs8.10',
     'nodejs10.x',
     'dotnetcore2.1',
@@ -39,7 +37,6 @@ export function getFamily(runtime: string | undefined): SamLambdaRuntimeFamily {
         case 'python2.7':
         case 'python':
             return SamLambdaRuntimeFamily.Python
-        case 'nodejs6.10':
         case 'nodejs8.10':
         case 'nodejs10.x':
         case 'nodejs':
@@ -57,7 +54,6 @@ export function getFamily(runtime: string | undefined): SamLambdaRuntimeFamily {
 // Map Values are used for comparisons, not for display
 const runtimeCompareText: Map<SamLambdaRuntime, string> = new Map<SamLambdaRuntime, string>(
     [
-        ['nodejs6.10', 'nodejs06.10'],
         ['nodejs8.10', 'nodejs08.10'],
     ]
 )

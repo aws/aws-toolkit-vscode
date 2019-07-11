@@ -141,25 +141,22 @@ export async function activate(context: vscode.ExtensionContext) {
         })
 
         // register URLs in extension menu
-        vscode.commands.registerCommand(
-            'aws.help',
-            () => { vscode.env.openExternal(vscode.Uri.parse(documentationUrl)) }
-        )
-        vscode.commands.registerCommand(
-            'aws.github',
-            () => { vscode.env.openExternal(vscode.Uri.parse(githubUrl)) }
-        )
-        vscode.commands.registerCommand(
-            'aws.reportIssue',
-            () => { vscode.env.openExternal(vscode.Uri.parse(reportIssueUrl)) }
-        )
-
-        // TODO: Move to Telemetry registerCommand and add a metric:
-        // https://github.com/aws/aws-toolkit-vscode/issues/625
-        vscode.commands.registerCommand(
-            'aws.quickStart',
-            async () => { await showQuickStartWebview(context) }
-        )
+        registerCommand({
+            command: 'aws.help',
+            callback: async () => { vscode.env.openExternal(vscode.Uri.parse(documentationUrl)) }
+        })
+        registerCommand({
+            command: 'aws.github',
+            callback: async () => { vscode.env.openExternal(vscode.Uri.parse(githubUrl)) }
+        })
+        registerCommand({
+            command: 'aws.reportIssue',
+            callback: async () => { vscode.env.openExternal(vscode.Uri.parse(reportIssueUrl)) }
+        })
+        registerCommand({
+            command: 'aws.quickStart',
+            callback: async () => { await showQuickStartWebview(context) }
+        })
 
         const providers = [
             new LambdaTreeDataProvider(

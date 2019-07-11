@@ -13,6 +13,7 @@ import { extensionSettingsPrefix } from './constants'
 import { mkdir } from './filesystem'
 import { fileExists } from './filesystemUtilities'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from './settingsConfiguration'
+import { registerCommand } from './telemetry/telemetryUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -76,10 +77,10 @@ export async function initialize(params?: LoggerParams): Promise<Logger> {
                 return defaultLogger
             }
         }
-        vscode.commands.registerCommand(
-            'aws.viewLogs',
-            async () => await openLogFile()
-        )
+        registerCommand({
+            command: 'aws.viewLogs',
+            callback: async () => await openLogFile()
+        })
     } else {
         defaultLogger = createLogger(params)
     }
