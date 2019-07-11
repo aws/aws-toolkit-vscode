@@ -3,8 +3,7 @@
 
 package software.aws.toolkits.jetbrains.ui.wizard
 
-import com.intellij.openapi.application.runInEdt
-import com.intellij.openapi.application.runWriteAction
+import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.ui.ColorUtil
@@ -134,40 +133,37 @@ class RiderSamProjectGenerator(
         val solutionDirectory = getSolutionDirectory()
                 ?: throw Exception(message("sam.init.error.no.solution.basepath"))
 
-        runInEdt {
-            runWriteAction {
-                val fileSystem = LocalFileSystem.getInstance()
-                if (!solutionDirectory.exists()) {
-                    FileUtil.createDirectory(solutionDirectory)
-                }
-
-                val outDirVf = fileSystem.refreshAndFindFileByIoFile(solutionDirectory)
-                        ?: throw Exception(message("sam.init.error.no.virtual.file"))
-
-                val samTemplate = samSettings.template
-                samTemplate.build(context.project, selectedRuntime, outDirVf)
-
-                // Create solution file
-                val projectFiles =
-                        File(solutionDirectory, "src").walk().filter { it.extension == CsprojFileType.defaultExtension } +
-                                File(solutionDirectory, "test").walk().filter { it.extension == CsprojFileType.defaultExtension }
-
-                // Get the rest of generated files and copy to "SolutionItems" default folder in project structure
-                val solutionFiles = solutionDirectory.listFiles().filter { it.isFile }.toList()
-
-                val solutionFile = ReSharperTemplatesInteraction.createSolution(
-                        name = getSolutionName(),
-                        directory = solutionDirectory,
-                        projectFiles = projectFiles.toList(),
-                        protocolHost = context.protocolHost,
-                        solutionFiles = solutionFiles
-                ) ?: throw Exception(message("sam.init.error.solution.create.fail"))
-
-                val project = SolutionManager.openExistingSolution(context.project, false, solutionFile)
-
-                vcsPanel?.initRepository(project)
-            }
+        val fileSystem = LocalFileSystem.getInstance()
+        if (!solutionDirectory.exists()) {
+            FileUtil.createDirectory(solutionDirectory)
         }
+
+        val outDirVf = fileSystem.refreshAndFindFileByIoFile(solutionDirectory)
+                ?: throw Exception(message("sam.init.error.no.virtual.file"))
+
+        ProgressManager.getInstance().runProcessWithProgressSynchronously({
+            samSettings.template.build(context.project, selectedRuntime, outDirVf)
+        }, message("sam.init.generating.template"), false, null)
+
+        // Create solution file
+        val projectFiles =
+            File(solutionDirectory, "src").walk().filter { it.extension == CsprojFileType.defaultExtension } +
+                    File(solutionDirectory, "test").walk().filter { it.extension == CsprojFileType.defaultExtension }
+
+        // Get the rest of generated files and copy to "SolutionItems" default folder in project structure
+        val solutionFiles = solutionDirectory.listFiles()?.filter { it.isFile }?.toList() ?: emptyList()
+
+        val solutionFile = ReSharperTemplatesInteraction.createSolution(
+            name = getSolutionName(),
+            directory = solutionDirectory,
+            projectFiles = projectFiles.toList(),
+            protocolHost = context.protocolHost,
+            solutionFiles = solutionFiles
+        ) ?: throw Exception(message("sam.init.error.solution.create.fail"))
+
+        val project = SolutionManager.openExistingSolution(context.project, false, solutionFile)
+
+        vcsPanel?.initRepository(project)
     }
 
     override fun refreshUI() {
@@ -213,7 +209,7 @@ class RiderSamProjectGenerator(
                 }
                 .filterNotNull()
 
-        val version = versions.sortedBy { it }.lastOrNull() ?: return defaultNetCoreRuntime
+        val version = versions.maxBy { it } ?: return defaultNetCoreRuntime
 
         return Runtime.fromValue("dotnetcore${version.split('.').take(2).joinToString(".")}").validOrNull
                 ?: defaultNetCoreRuntime

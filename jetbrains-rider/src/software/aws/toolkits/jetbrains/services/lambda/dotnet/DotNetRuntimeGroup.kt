@@ -21,4 +21,6 @@ class DotNetRuntimeGroup : SdkBasedRuntimeGroupInformation() {
         get() = setOf(CSharpLanguage.id, VbLanguage.id)
 
     override fun runtimeForSdk(sdk: Sdk): Runtime? = null
+
+    override fun supportsSamBuild(): Boolean = true
 }
