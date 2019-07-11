@@ -84,9 +84,6 @@ class SamInitProjectBuilderIntelliJTest(private val testParameters: TestParamete
                 }
             }
 
-            // Double check that all background tasks are done
-            waitAMoment()
-
             step("check the run configuration is created") {
                 assertTrue(runConfigurationList.getRunConfigurationList().containsAll(testParameters.runConfigNames))
             }
@@ -104,26 +101,26 @@ class SamInitProjectBuilderIntelliJTest(private val testParameters: TestParamete
             TestParameters(
                 runtime = "java8",
                 templateName = "AWS SAM Hello World (Maven)",
-                sdkRegex = Regex(".*java.*"),
+                sdkRegex = """.*(1\.8|11).*""".toRegex(),
                 libraries = setOf("Maven: com.amazonaws:aws-lambda-java-core:"),
                 runConfigNames = setOf("[Local] HelloWorldFunction")
             ),
             TestParameters(
                 runtime = "java8",
                 templateName = "AWS SAM Hello World (Gradle)",
-                sdkRegex = Regex(".*java.*"),
+                sdkRegex = """.*(1\.8|11).*""".toRegex(),
                 runConfigNames = setOf("[Local] HelloWorldFunction")
             ),
             TestParameters(
                 runtime = "python3.6",
                 templateName = "AWS SAM Hello World",
-                sdkRegex = Regex("Python.*"),
+                sdkRegex = "Python.*".toRegex(),
                 runConfigNames = setOf("[Local] HelloWorldFunction")
             ),
             TestParameters(
                 runtime = "python3.6",
                 templateName = "AWS SAM DynamoDB Event Example",
-                sdkRegex = Regex("Python.*"),
+                sdkRegex = "Python.*".toRegex(),
                 runConfigNames = setOf("[Local] ReadDynamoDBEvent")
             )
         )
