@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import { _Blob } from 'aws-sdk/clients/lambda'
 import _ = require('lodash')
 import path = require('path')

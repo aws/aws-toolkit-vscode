@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import { SpawnOptions } from 'child_process'
 import { BasicLogger, getLogger } from '../../logger'
 import { ChildProcessResult } from '../../utilities/childProcess'

@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as assert from 'assert'
 import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
 import { RegionInfo } from '../../../shared/regions/regionInfo'

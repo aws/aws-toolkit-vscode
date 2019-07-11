@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as assert from 'assert'
 import { TestLogger } from '../../../../shared/loggerUtils'
 import { DefaultValidatingSamCliProcessInvoker } from '../../../../shared/sam/cli/defaultValidatingSamCliProcessInvoker'

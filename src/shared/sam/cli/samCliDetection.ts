@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as AsyncLock from 'async-lock'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'

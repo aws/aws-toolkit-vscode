@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as vscode from 'vscode'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
 import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'

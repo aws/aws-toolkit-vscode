@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import { ExtensionContext, OutputChannel } from 'vscode'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AWSContextCommands } from './awsContextCommands'

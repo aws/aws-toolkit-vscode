@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as assert from 'assert'
 import { Disposable } from 'vscode'
 import { ext } from '../../../shared/extensionGlobals'

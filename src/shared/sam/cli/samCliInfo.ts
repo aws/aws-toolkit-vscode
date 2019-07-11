@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import { getLogger, Logger } from '../../logger'
 import { DefaultSamCliProcessInvoker } from './samCliInvoker'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'

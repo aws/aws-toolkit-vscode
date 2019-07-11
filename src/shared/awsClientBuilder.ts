@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { env, version } from 'vscode'
 import { AwsContext } from './awsContext'

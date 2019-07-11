@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
 
 // Can be used to add a child node in an explorer when a region has no resources

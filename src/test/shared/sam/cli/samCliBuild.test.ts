@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as assert from 'assert'
 import { SpawnOptions } from 'child_process'
 import * as del from 'del'

@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 if (!Symbol.asyncIterator) {
     Object.defineProperty(
         Symbol,

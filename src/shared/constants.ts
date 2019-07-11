@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import { NpmPackage } from './npmPackage'
 
 export const extensionSettingsPrefix: string = 'aws'
