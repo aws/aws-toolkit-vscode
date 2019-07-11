@@ -1,14 +1,14 @@
-# Debugging .NET Core lambda functions
+# Debugging .NET Core Lambda functions
 
-These instructions outline how you can debug a lambda handler locally using the SAM CLI, and attach the VS Code debugger to it.
+These instructions describe how you can debug an AWS Lambda handler locally by using the SAM CLI, and attach the VS Code debugger to it.
 
 ## Install and configure prerequisites
 
-1. Install the [AWS Toolkit for Visual Studio Code](https://github.com/aws/aws-toolkit-vscode#getting-started).
+1. Install the [AWS Toolkit for Visual Studio Code (VS Code)](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode) (also see the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-toolkit)).
 2. Install the [C# extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp). This extension gives VS Code the ability to debug .NET Core applications.
-3. Launch Visual Studio Code and open a SAM application or create a new one. <!-- TODO: Link to separate doc with instructions. -->
+3. Launch Visual Studio Code and open a SAM application or [create a new one](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam).
 
-    Note: Open the folder that contains `template.yaml`.
+    **Note**: Open the folder that contains `template.yaml`.
 
 4. Open a terminal in the folder containing `template.yaml` and set up the debugger by running the following commands:
 
