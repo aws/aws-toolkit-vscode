@@ -387,8 +387,7 @@
         "tslint-eslint-rules": "^5.4.0",
         "tslint-no-circular-imports": "^0.6.1",
         "vsce": "^1.59.0",
-        "vscode": "^1.1.33",
-        "vscode-nls-dev": "^3.2.2"
+        "vscode": "^1.1.33"
     },
     "dependencies": {
         "async-lock": "^1.1.3",
