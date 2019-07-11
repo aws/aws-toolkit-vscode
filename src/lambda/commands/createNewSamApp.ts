@@ -14,6 +14,7 @@ import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
 import { METADATA_FIELD_NAME, MetadataResult } from '../../shared/telemetry/telemetryTypes'
+import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import {
     CreateNewSamAppWizard,
@@ -114,10 +115,13 @@ export async function createNewSamApplication(
 
         results.reason = 'complete'
     } catch (err) {
+        const checkLogsMessage = makeCheckLogsMessage()
+
         channelLogger.channel.show(true)
         channelLogger.error(
             'AWS.samcli.initWizard.general.error',
-            'An error occurred while creating a new SAM Application. Check the logs for more information.'
+            'An error occurred while creating a new SAM Application. {0}',
+            checkLogsMessage
         )
 
         const error = err as Error

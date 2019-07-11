@@ -124,9 +124,20 @@ export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizar
                 }
             }
         })
-        const val = picker.verifySinglePickerOutput<FolderQuickPickItem>(choices)
+        const pickerResponse = picker.verifySinglePickerOutput<FolderQuickPickItem>(choices)
 
-        return val ? val.getUri() : undefined
+        if (!pickerResponse) {
+            return undefined
+        }
+
+        if (pickerResponse instanceof BrowseFolderQuickPickItem) {
+            const browseFolderResult = await pickerResponse.getUri()
+
+            // If user cancels from Open Folder dialog, send them back to the folder picker.
+            return browseFolderResult ? browseFolderResult : this.promptUserForLocation()
+        }
+
+        return pickerResponse.getUri()
     }
 
     public async promptUserForName(): Promise<string | undefined> {
@@ -134,7 +145,7 @@ export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizar
             options: {
                 title: localize(
                     'AWS.samcli.initWizard.name.prompt',
-                    'Choose a name for your new application'
+                    'Enter a name for your new application'
                 ),
                 ignoreFocusOut: true,
             },
@@ -248,6 +259,8 @@ class BrowseFolderQuickPickItem implements FolderQuickPickItem {
         'AWS.samcli.initWizard.name.browse.label',
         'Choose a different folder...'
     )
+
+    public alwaysShow: boolean = true
 
     public constructor(
         private readonly context: CreateNewSamAppWizardContext

@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit for Visual Studio Code",
     "description": "An extension for working with Amazon Web Services in Visual Studio Code",
-    "version": "0.2.1",
+    "version": "1.0.0",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -29,7 +29,7 @@
         "Lambda",
         "Serverless"
     ],
-    "preview": true,
+    "preview": false,
     "qna": "https://github.com/aws/aws-toolkit-vscode/issues",
     "activationEvents": [
         "onCommand:aws.login",
