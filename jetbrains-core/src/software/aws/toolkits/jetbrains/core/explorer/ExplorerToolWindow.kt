@@ -1,6 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+@file:Suppress("DEPRECATION") // TODO: Investigate AsyncTreeModel FIX_WHEN_MIN_IS_192
 package software.aws.toolkits.jetbrains.core.explorer
 
 import com.intellij.execution.Location
@@ -92,6 +93,7 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
     private fun createTree(model: DefaultTreeModel): Tree {
         val awsTree = Tree()
         TreeUIHelper.getInstance().installTreeSpeedSearch(awsTree)
+        @Suppress("DEPRECATION") // TODO: Remove when we drop < 192 FIX_WHEN_MIN_IS_192
         UIUtil.setLineStyleAngled(awsTree)
         awsTree.isRootVisible = false
         awsTree.autoscrolls = true

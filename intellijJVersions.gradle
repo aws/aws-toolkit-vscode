@@ -12,12 +12,25 @@ static def ideProfiles() {
                             ]
                     ]
             ],
-            "2019.1": [
+            "2019.1": [ // TODO: Marker comment: FIX_WHEN_MIN_IS_192
                     "IC": [
                             version: "IC-2019.1",
                             plugins: [
                                     "yaml",
                                     "PythonCore:2019.1.191.6183.53",
+                                    "gradle",
+                                    "maven",
+                                    "properties" // Used by Maven
+                            ]
+                    ]
+            ],
+            "2019.2": [
+                    "IC": [
+                            version: "192-EAP-SNAPSHOT",
+                            plugins: [
+                                    "yaml",
+                                    "PythonCore:2019.2.192.5587.17",
+                                    "java",
                                     "gradle",
                                     "maven",
                                     "properties" // Used by Maven

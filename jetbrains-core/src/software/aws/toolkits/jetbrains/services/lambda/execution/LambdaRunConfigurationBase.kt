@@ -30,16 +30,16 @@ abstract class LambdaRunConfigurationBase<T : BaseLambdaOptions>(
     RunConfigurationWithSuppressedDefaultRunAction,
     RunConfigurationWithSuppressedDefaultDebugAction {
 
-    protected abstract val state: BaseLambdaOptions
+    protected abstract val lambdaOptions: BaseLambdaOptions
 
     final override fun readExternal(element: Element) {
         super.readExternal(element)
-        XmlSerializer.deserializeInto(state, element)
+        XmlSerializer.deserializeInto(lambdaOptions, element)
     }
 
     final override fun writeExternal(element: Element) {
         super.writeExternal(element)
-        XmlSerializer.serializeInto(state, element)
+        XmlSerializer.serializeInto(lambdaOptions, element)
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -55,20 +55,20 @@ abstract class LambdaRunConfigurationBase<T : BaseLambdaOptions>(
     }
 
     fun useInputFile(inputFile: String?) {
-        val inputOptions = state.inputOptions
+        val inputOptions = lambdaOptions.inputOptions
         inputOptions.inputIsFile = true
         inputOptions.input = inputFile
     }
 
     fun useInputText(input: String?) {
-        val inputOptions = state.inputOptions
+        val inputOptions = lambdaOptions.inputOptions
         inputOptions.inputIsFile = false
         inputOptions.input = input
     }
 
-    fun isUsingInputFile() = state.inputOptions.inputIsFile
+    fun isUsingInputFile() = lambdaOptions.inputOptions.inputIsFile
 
-    fun inputSource() = state.inputOptions.input
+    fun inputSource() = lambdaOptions.inputOptions.input
 
     protected fun checkInput() {
         inputSource()?.let {
@@ -100,10 +100,10 @@ abstract class LambdaRunConfigurationBase<T : BaseLambdaOptions>(
         }
     } ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_input_specified"))
 
-    fun credentialProviderId() = state.accountOptions.credentialProviderId
+    fun credentialProviderId() = lambdaOptions.accountOptions.credentialProviderId
 
     fun credentialProviderId(credentialsProviderId: String?) {
-        state.accountOptions.credentialProviderId = credentialsProviderId
+        lambdaOptions.accountOptions.credentialProviderId = credentialsProviderId
     }
 
     protected fun resolveCredentials() = credentialProviderId()?.let {
@@ -121,10 +121,10 @@ abstract class LambdaRunConfigurationBase<T : BaseLambdaOptions>(
         }
     } ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_credentials_specified"))
 
-    fun regionId() = state.accountOptions.regionId
+    fun regionId() = lambdaOptions.accountOptions.regionId
 
     fun regionId(regionId: String?) {
-        state.accountOptions.regionId = regionId
+        lambdaOptions.accountOptions.regionId = regionId
     }
 
     protected fun resolveRegion() = regionId()?.let {

@@ -37,7 +37,7 @@ class LambdaRemoteRunConfigurationFactory(configuration: LambdaRunConfiguration)
 class LambdaRemoteRunConfiguration(project: Project, factory: ConfigurationFactory) :
     LambdaRunConfigurationBase<RemoteLambdaOptions>(project, factory, "Remote") {
 
-    override val state = RemoteLambdaOptions()
+    override val lambdaOptions = RemoteLambdaOptions()
 
     override fun getConfigurationEditor() = RemoteLambdaRunSettingsEditor(project)
 
@@ -65,10 +65,10 @@ class LambdaRemoteRunConfiguration(project: Project, factory: ConfigurationFacto
 
     override fun suggestedName() = "[${message("lambda.run_configuration.remote")}] ${functionName()}"
 
-    fun functionName(): String? = state.functionOptions.functionName
+    fun functionName(): String? = lambdaOptions.functionOptions.functionName
 
     fun functionName(name: String?) {
-        state.functionOptions.functionName = name
+        lambdaOptions.functionOptions.functionName = name
     }
 }
 

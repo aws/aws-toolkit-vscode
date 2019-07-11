@@ -85,6 +85,7 @@ object LambdaBuilderUtils {
                 System.currentTimeMillis()
             )
 
+            @Suppress("DEPRECATION") // TODO: switch to BuildProgressListener(Object, Event)  FIX_WHEN_MIN_IS_192
             buildViewManager.onEvent(StartBuildEventImpl(descriptor, message("sam.build.title")))
 
             // TODO: Make cancellable
@@ -145,6 +146,7 @@ object LambdaBuilderUtils {
 
         override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
             val stdError = outputType == ProcessOutputTypes.STDERR
+            @Suppress("DEPRECATION") // TODO: switch to BuildProgressListener(Object, Event)  FIX_WHEN_MIN_IS_192
             progressListener.onEvent(OutputBuildEventImpl(request, event.text, !stdError))
         }
 
@@ -167,6 +169,7 @@ object LambdaBuilderUtils {
                 )
             }
 
+            @Suppress("DEPRECATION") // TODO: switch to BuildProgressListener(Object, Event)  FIX_WHEN_MIN_IS_192
             progressListener.onEvent(buildEvent)
         }
     }
