@@ -18,6 +18,7 @@ import com.intellij.openapi.roots.ContentEntry
 import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.openapi.startup.StartupManager
+import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.ProjectTemplatesFactory
 import icons.AwsIcons
@@ -60,6 +61,7 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
                     ModuleRootModificationUtil.updateModel(rootModel.module) { model ->
                         val samTemplate = settings.template
                         samTemplate.build(project, selectedRuntime, outputDir)
+                        VfsUtil.markDirtyAndRefresh(false, true, true, outputDir)
                         runInEdt {
                             try {
                                 samTemplate.postCreationAction(settings, outputDir, model)

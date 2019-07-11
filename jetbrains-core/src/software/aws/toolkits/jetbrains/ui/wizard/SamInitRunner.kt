@@ -4,8 +4,6 @@
 package software.aws.toolkits.jetbrains.ui.wizard
 
 import com.intellij.execution.process.CapturingProcessHandler
-import com.intellij.openapi.application.runInEdt
-import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
@@ -55,11 +53,7 @@ object SamInitRunner {
             message("sam.init.error.subfolder_not_one", tempDir.name)
         }
 
-        runInEdt {
-            runWriteAction {
-                FileUtil.copyDirContent(subFolders[0], VfsUtil.virtualToIoFile(outputDir))
-                FileUtil.delete(tempDir)
-            }
-        }
+        FileUtil.copyDirContent(subFolders[0], VfsUtil.virtualToIoFile(outputDir))
+        FileUtil.delete(tempDir)
     }
 }
