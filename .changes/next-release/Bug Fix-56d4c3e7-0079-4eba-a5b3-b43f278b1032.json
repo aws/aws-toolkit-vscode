@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Creating SAM Applications into a different folder than the current VS Code workspaces will now open an application file after app creation (#678)"
+}

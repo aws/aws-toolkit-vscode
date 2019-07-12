@@ -195,7 +195,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         toastNewUser(context, logFactory.getLogger())
 
-        await resumeCreateNewSamApp(context)
+        await resumeCreateNewSamApp()
     } catch (error) {
         const channelLogger = getChannelLogger(toolkitOutputChannel)
         channelLogger.error(
