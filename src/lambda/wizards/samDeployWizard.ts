@@ -300,7 +300,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 title: localize(
                     'AWS.samcli.deploy.region.prompt',
                     'Which AWS Region would you like to deploy to?'
-                    ),
+                ),
                 value: initialRegionCode || '',
                 matchOnDetail: true,
                 ignoreFocusOut: true,
@@ -603,7 +603,7 @@ class SamTemplateQuickPickItem implements vscode.QuickPickItem {
 }
 
 // https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-s3-bucket-naming-requirements.html
-function validateS3Bucket(value: string): string | undefined {
+export function validateS3Bucket(value: string): string | undefined {
     if (value.length < 3 || value.length > 63) {
         return localize(
             'AWS.samcli.deploy.s3Bucket.error.length',
