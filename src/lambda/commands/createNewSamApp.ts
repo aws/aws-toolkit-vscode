@@ -8,6 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { ActivationLaunchPath } from '../../shared/activationLaunchPath'
 import { fileExists } from '../../shared/filesystemUtilities'
 import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
@@ -16,26 +17,26 @@ import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
 import { METADATA_FIELD_NAME, MetadataResult } from '../../shared/telemetry/telemetryTypes'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
+import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
 import {
     CreateNewSamAppWizard,
     CreateNewSamAppWizardResponse,
     DefaultCreateNewSamAppWizardContext
 } from '../wizards/samInitWizard'
 
-export const URI_TO_OPEN_ON_INIT_KEY = 'URI_TO_OPEN_ON_INIT_KEY'
-
 export async function resumeCreateNewSamApp(
-    context: Pick<vscode.ExtensionContext, 'asAbsolutePath' | 'globalState'>
+    activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath()
 ) {
-    const rawUri = context.globalState.get<string>(URI_TO_OPEN_ON_INIT_KEY)
-    if (!rawUri) {
-        return
-    }
-
     try {
-        const uri = vscode.Uri.file(rawUri)
+        const pathToLaunch = activationLaunchPath.getLaunchPath()
+        if (!pathToLaunch) {
+            return
+        }
+
+        const uri = vscode.Uri.file(pathToLaunch)
         if (!vscode.workspace.getWorkspaceFolder(uri)) {
-            // This should never happen, as `rawUri` will only be set if `uri` is in the newly added workspace folder.
+            // This should never happen, as `pathToLaunch` will only be set if `uri` is in
+            // the newly added workspace folder.
             vscode.window.showErrorMessage(localize(
                 'AWS.samcli.initWizard.source.error.notInWorkspace',
                 'Could not open file \'{0}\'. If this file exists on disk, try adding it to your workspace.',
@@ -47,7 +48,7 @@ export async function resumeCreateNewSamApp(
 
         await vscode.window.showTextDocument(uri)
     } finally {
-        context.globalState.update(URI_TO_OPEN_ON_INIT_KEY, undefined)
+        activationLaunchPath.clearLaunchPath()
     }
 }
 
@@ -64,6 +65,7 @@ export async function createNewSamApplication(
     channelLogger: ChannelLogger,
     extensionContext: Pick<vscode.ExtensionContext, 'asAbsolutePath' | 'globalState'>,
     samCliContext: SamCliContext = getSamCliContext(),
+    activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath(),
 ): Promise<CreateNewSamApplicationResults> {
     const results: CreateNewSamApplicationResults = {
         reason: 'unknown',
@@ -101,17 +103,18 @@ export async function createNewSamApplication(
             return results
         }
 
-        if (await addWorkspaceFolder(
+        // In case adding the workspace folder triggers a VS Code restart, instruct extension to
+        // launch app file after activation.
+        activationLaunchPath.setLaunchPath(uri.fsPath)
+        await addWorkspaceFolder(
             {
                 uri: config.location,
                 name: path.basename(config.location.fsPath)
             },
-            uri
-        )) {
-            extensionContext.globalState.update(URI_TO_OPEN_ON_INIT_KEY, uri!.fsPath)
-        } else {
-            await vscode.window.showTextDocument(uri)
-        }
+        )
+
+        await vscode.window.showTextDocument(uri)
+        activationLaunchPath.clearLaunchPath()
 
         results.reason = 'complete'
     } catch (err) {
@@ -128,6 +131,9 @@ export async function createNewSamApplication(
         channelLogger.logger.error(error)
         results.result = 'fail'
         results.reason = 'error'
+
+        // An error occured, so do not try to open any files during the next extension activation
+        activationLaunchPath.clearLaunchPath()
     }
 
     return results
@@ -158,64 +164,13 @@ async function addWorkspaceFolder(
         uri: vscode.Uri,
         name?: string
     },
-    fileToOpen: vscode.Uri
-): Promise<boolean> {
-    const disposables: vscode.Disposable[] = []
-
+): Promise<void> {
     // No-op if the folder is already in the workspace.
     if (vscode.workspace.getWorkspaceFolder(folder.uri)) {
-        return false
+        return
     }
 
-    let updateExistingWorkspacePromise: Promise<void> | undefined
-    try {
-        if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
-            updateExistingWorkspacePromise = new Promise<void>((resolve, reject) => {
-                try {
-                    const watcher = vscode.workspace.createFileSystemWatcher(fileToOpen.fsPath)
-                    disposables.push(watcher)
-
-                    const listener = (uri: vscode.Uri) => {
-                        try {
-                            if (path.relative(uri.fsPath, fileToOpen.fsPath)) {
-                                resolve()
-                            }
-                        } catch (err) {
-                            reject(err)
-                        }
-                    }
-
-                    watcher.onDidCreate(listener, undefined, disposables)
-                    watcher.onDidChange(listener, undefined, disposables)
-                } catch (err) {
-                    reject(err)
-                }
-            })
-        }
-
-        if (!vscode.workspace.updateWorkspaceFolders(
-            // Add new folder to the end of the list rather than the beginning, to avoid VS Code
-            // terminating and reinitializing our extension.
-            (vscode.workspace.workspaceFolders || []).length,
-            0,
-            folder
-        )) {
-            console.error('Could not update workspace folders')
-
-            return false
-        }
-
-        if (updateExistingWorkspacePromise) {
-            await updateExistingWorkspacePromise
-        }
-    } finally {
-        for (const disposable of disposables) {
-            disposable.dispose()
-        }
-    }
-
-    // Return true if the current process will be terminated by VS Code (because the first workspaceFolder was changed)
-    return !updateExistingWorkspacePromise
+    await addFolderToWorkspace(folder)
 }
 
 export function applyResultsToMetadata(createResults: CreateNewSamApplicationResults, metadata: Map<string, string>) {
