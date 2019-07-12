@@ -1,13 +1,12 @@
 # Debugging NodeJS lambda functions
 
-You can debug your Serverless Application's Lambda Function locally using the CodeLens links above the lambda handler. If you would like to use the Debug Panel to launch the debugger instead, use the following steps to configure your project's Debug Configuration.
+You can debug your Serverless Application's AWS Lambda function locally using the CodeLens links above the lambda handler. If you would like to use the Debug Panel to launch the debugger instead, use the following steps to configure your project's Debug Configuration.
 
 ## Install and configure prerequisites
 
-1. Install the [AWS Toolkit for Visual Studio Code](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-toolkit.html).
-2. Launch Visual Studio Code and open a SAM application or create a new one. <!-- TODO: Link to separate doc with instructions. -->
-
-    Note: Open the folder that contains `template.yaml`.
+1. Install the [AWS Toolkit for Visual Studio Code (VS Code)](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode) (also see the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-toolkit)).
+1. Launch VS Code and open a SAM application or [create a new one](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam).
+1. Open the folder that contains `template.yaml`.
 
 ## Configure your debugger
 

@@ -1,19 +1,17 @@
 # Debugging .NET Core Lambda functions
 
-These instructions describe how you can debug an AWS Lambda handler locally by using the SAM CLI, and attach the VS Code debugger to it.
+These instructions describe how to debug an AWS Lambda handler locally by using the SAM CLI, and attach the VS Code debugger to it.
 
 ## Install and configure prerequisites
 
 1. Install the [AWS Toolkit for Visual Studio Code (VS Code)](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode) (also see the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-toolkit)).
-2. Install the [C# extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp). This extension gives VS Code the ability to debug .NET Core applications.
-3. Launch Visual Studio Code and open a SAM application or [create a new one](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam).
+1. Install the [C# extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp). This extension gives VS Code the ability to debug .NET Core applications.
+1. Launch Visual Studio Code and open a SAM application or [create a new one](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam).
+1. Open the folder that contains `template.yaml`.
+1. Open a terminal in the folder containing `template.yaml` and set up the debugger by running the following commands:
 
-    **Note**: Open the folder that contains `template.yaml`.
-
-4. Open a terminal in the folder containing `template.yaml` and set up the debugger by running the following commands:
-
-    * replace `<CODE_URI>` with the *absolute* path matching the `CodeUri` property from `template.yaml` for the resource that you wish to debug.
-    * Replace `dotnetcore2.1` with the framework identifier for the runtime that you are targetting.
+    * Replace `<CODE_URI>` (in two places) with the *absolute path that corresponds to* the `CodeUri` property (not the `CodeUri` property itself) from `template.yaml` for the resource that you wish to debug.
+    * If appropriate, replace `dotnetcore2.1` with the framework identifier for the runtime that you are targetting.
 
     ```bash
     mkdir <CODE_URI>/.vsdbg

@@ -4,13 +4,11 @@ You can debug your Serverless Application's Lambda Function locally using the Co
 
 ## Install and configure prerequisites
 
-1. Install the [AWS Toolkit for Visual Studio Code](https://github.com/aws/aws-toolkit-vscode#getting-started).
-2. Install the [Python extension for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-python.python). This extension gives VS Code the ability to debug Python applications.
-3. Launch Visual Studio Code and open a SAM application or create a new one. <!-- TODO: Link to separate doc with instructions. -->
-
-    Note: Open the folder that contains `template.yaml`.
-
-4. Open a terminal at the root of your application and configure `virtualenv` by running `python -m venv ./.venv`.
+1. Install the [AWS Toolkit for Visual Studio Code (VS Code)](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode) (also see the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-toolkit)).
+1. Install the [Python extension for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-python.python). This extension gives VS Code the ability to debug Python applications.
+1. Launch Visual Studio Code and open a SAM application or [create a new one](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam).
+1. Open the folder that contains `template.yaml`.
+1. Open a terminal at the root of your application and configure `virtualenv` by running `python -m venv ./.venv`.
 
 ## Instrument your code
 
