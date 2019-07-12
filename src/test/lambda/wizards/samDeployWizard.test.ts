@@ -105,8 +105,10 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         return this.promptForS3BucketResponses.pop()
     }
 
-    public async promptUserForRegion(regionProvider: RegionProvider,
-                                     initialValue?: string): Promise<string | undefined> {
+    public async promptUserForRegion(
+        regionProvider: RegionProvider,
+        initialValue?: string
+    ): Promise<string | undefined> {
         if (this.promptForRegionResponses.length <= 0) {
             throw new Error('promptUserForRegion was called more times than expected')
         }
@@ -151,7 +153,7 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(
                 new MockRegionProvider(),
                 new MockSamDeployWizardContext(
-                    async function*() { yield* [] },
+                    async function* () { yield* [] },
                     [[]],
                     [undefined],
                     [],
@@ -167,9 +169,9 @@ describe('SamDeployWizard', async () => {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(
-                    new MockRegionProvider(),
-                    new MockSamDeployWizardContext(
-                    async function*() { yield vscode.Uri.file(templatePath) },
+                new MockRegionProvider(),
+                new MockSamDeployWizardContext(
+                    async function* () { yield vscode.Uri.file(templatePath) },
                     [[vscode.Uri.file(workspaceFolderPath)]],
                     [undefined],
                     [],
@@ -187,7 +189,7 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(
                 new MockRegionProvider(),
                 new MockSamDeployWizardContext(
-                    async function*() { yield vscode.Uri.file(templatePath) },
+                    async function* () { yield vscode.Uri.file(templatePath) },
                     [[vscode.Uri.file(workspaceFolderPath)]],
                     [
                         createQuickPickUriResponseItem(vscode.Uri.file(templatePath))
@@ -420,7 +422,7 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(
                 new MockRegionProvider(),
                 new MockSamDeployWizardContext(
-                    async function*() {
+                    async function* () {
                         yield vscode.Uri.file(templatePath)
                     },
                     [
@@ -456,7 +458,7 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(
                 new MockRegionProvider(),
                 new MockSamDeployWizardContext(
-                    async function*() {
+                    async function* () {
                         yield vscode.Uri.file(templatePath1)
                         yield vscode.Uri.file(templatePath2)
                     },
@@ -499,7 +501,7 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(
                 new MockRegionProvider(),
                 new MockSamDeployWizardContext(
-                    async function*() {
+                    async function* () {
                         yield vscode.Uri.file(templatePath1)
                         yield vscode.Uri.file(templatePath2)
                     },
@@ -537,7 +539,7 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(
                 new MockRegionProvider(),
                 new MockSamDeployWizardContext(
-                    async function*() { yield vscode.Uri.file(templatePath) },
+                    async function* () { yield vscode.Uri.file(templatePath) },
                     [[vscode.Uri.file(workspaceFolderPath)]],
                     [
                         createQuickPickUriResponseItem(vscode.Uri.file(templatePath)),
@@ -566,7 +568,7 @@ describe('SamDeployWizard', async () => {
                     await new SamDeployWizard(
                         new MockRegionProvider(),
                         new MockSamDeployWizardContext(
-                            async function*() { yield vscode.Uri.file(templatePath) },
+                            async function* () { yield vscode.Uri.file(templatePath) },
                             [[vscode.Uri.file(workspaceFolderPath)]],
                             [
                                 createQuickPickUriResponseItem(vscode.Uri.file(templatePath)),
@@ -627,7 +629,7 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(
                 new MockRegionProvider(),
                 new MockSamDeployWizardContext(
-                    async function*() { yield vscode.Uri.file(templatePath) },
+                    async function* () { yield vscode.Uri.file(templatePath) },
                     [[vscode.Uri.file(workspaceFolderPath)]],
                     [
                         createQuickPickUriResponseItem(vscode.Uri.file(templatePath)),
@@ -657,7 +659,7 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(
                 new MockRegionProvider(),
                 new MockSamDeployWizardContext(
-                    async function*() { yield vscode.Uri.file(templatePath) },
+                    async function* () { yield vscode.Uri.file(templatePath) },
                     [[vscode.Uri.file(workspaceFolderPath)]],
                     [
                         createQuickPickUriResponseItem(vscode.Uri.file(templatePath)),
@@ -688,7 +690,7 @@ describe('SamDeployWizard', async () => {
                     await new SamDeployWizard(
                         new MockRegionProvider(),
                         new MockSamDeployWizardContext(
-                            async function*() { yield vscode.Uri.file(templatePath) },
+                            async function* () { yield vscode.Uri.file(templatePath) },
                             [[vscode.Uri.file(workspaceFolderPath)]],
                             [
                                 createQuickPickUriResponseItem(vscode.Uri.file(templatePath)),

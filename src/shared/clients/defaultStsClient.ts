@@ -10,7 +10,7 @@ import { StsClient } from './stsClient'
 
 export class DefaultStsClient implements StsClient {
 
-    public constructor (
+    public constructor(
         public readonly regionCode: string,
         private readonly credentials?: ServiceConfigurationOptions
     ) { }
