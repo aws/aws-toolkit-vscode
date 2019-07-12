@@ -109,7 +109,7 @@ const testData: TestData[] = [
     },
 ]
 
-describe('vsCodeUtils getChannelLogger', function() {
+describe('vsCodeUtils getChannelLogger', function () {
 
     let logger: MockLogger
     let outputChannel: MockOutputChannel

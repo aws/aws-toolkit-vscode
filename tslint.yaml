@@ -190,10 +190,11 @@ rules:
   space-before-function-paren:
     options:
       -
-        anonymous: never
+        anonymous: always
         named: never
         method: never
-        contructor: never
+        constructor: never
+        asyncArrow: always
   switch-final-break:
     options:
       - always

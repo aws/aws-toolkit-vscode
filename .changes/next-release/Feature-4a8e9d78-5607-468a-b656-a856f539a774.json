@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Improved the description of the selection item when picking a location for a new SAM Application (#673, #675)"
+}
