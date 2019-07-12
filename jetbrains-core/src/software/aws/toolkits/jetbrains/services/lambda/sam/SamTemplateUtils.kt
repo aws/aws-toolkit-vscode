@@ -3,11 +3,10 @@
 package software.aws.toolkits.jetbrains.services.lambda.sam
 
 import com.intellij.openapi.application.ReadAction
-import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
+import com.intellij.testFramework.LightVirtualFile
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
@@ -15,7 +14,6 @@ import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTem
 import software.aws.toolkits.jetbrains.services.cloudformation.Function
 import software.aws.toolkits.jetbrains.services.cloudformation.SERVERLESS_FUNCTION_TYPE
 import software.aws.toolkits.jetbrains.utils.yamlWriter
-import software.aws.toolkits.resources.message
 import java.io.File
 
 object SamTemplateUtils {
@@ -27,25 +25,20 @@ object SamTemplateUtils {
             return emptyList()
         }
 
-        val virtualFile = WriteAction.computeAndWait<VirtualFile, Throwable> {
-            LocalFileSystem.getInstance().refreshAndFindFileByIoFile(file) ?: throw RuntimeException(
-                message("lambda.sam.template_not_found", file)
-            )
-        }
+        // Use in-memory file since we can't refresh since we are most likely in a read action
+        val templateContent = file.readText()
+        val virtualFile = LightVirtualFile(file.name, templateContent)
 
-        return ReadAction.compute<List<Function>, Throwable> {
-            findFunctionsFromTemplate(
-                project,
-                virtualFile
-            )
-        }
+        return findFunctionsFromTemplate(project, virtualFile)
     }
 
     @JvmStatic
     fun findFunctionsFromTemplate(project: Project, file: VirtualFile): List<Function> = try {
-        CloudFormationTemplate.parse(project, file).resources()
-            .filterIsInstance<Function>()
-            .toList()
+        ReadAction.compute<List<Function>, Throwable> {
+            CloudFormationTemplate.parse(project, file).resources()
+                .filterIsInstance<Function>()
+                .toList()
+        }
     } catch (e: Exception) {
         LOG.warn(e) { "Failed to parse template: $file" }
         emptyList()
