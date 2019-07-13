@@ -8,7 +8,6 @@ import { RegionNode } from '../../lambda/explorer/regionNode'
 import { LambdaTreeDataProvider } from '../../lambda/lambdaTreeDataProvider'
 import { AwsContextTreeCollection } from '../../shared/awsContextTreeCollection'
 import { TestLogger } from '../../shared/loggerUtils'
-import { ChannelLogger, getChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { MockOutputChannel } from '../mockOutputChannel'
 import {
     DEFAULT_TEST_REGION_CODE,
@@ -21,16 +20,9 @@ import {
 describe('LambdaProvider', () => {
 
     let logger: TestLogger
-    const outputChannel: MockOutputChannel = new MockOutputChannel()
-    let channelLogger: ChannelLogger
 
     before(async () => {
         logger = await TestLogger.createTestLogger()
-    })
-
-    beforeEach(async () => {
-        outputChannel.clear()
-        channelLogger = getChannelLogger(outputChannel)
     })
 
     after(async () => {
@@ -49,7 +41,6 @@ describe('LambdaProvider', () => {
             awsContextTreeCollection,
             regionProvider,
             resourceFetcher,
-            channelLogger,
             (path) => { throw new Error('unused') },
             mockChannel
         )

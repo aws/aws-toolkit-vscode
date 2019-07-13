@@ -9,21 +9,15 @@ import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
 import { ext } from '../shared/extensionGlobals'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { ResourceFetcher } from '../shared/resourceFetcher'
-import { Datum, TelemetryNamespace } from '../shared/telemetry/telemetryTypes'
-import { defaultMetricDatum, registerCommand } from '../shared/telemetry/telemetryUtils'
+import { TelemetryNamespace } from '../shared/telemetry/telemetryTypes'
+import { registerCommand } from '../shared/telemetry/telemetryUtils'
 import { AWSCommandTreeNode } from '../shared/treeview/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/awsTreeNodeBase'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
 import { intersection, toMap, updateInPlace } from '../shared/utilities/collectionUtils'
-import { ChannelLogger, localize } from '../shared/utilities/vsCodeUtils'
-import {
-    applyResultsToMetadata,
-    createNewSamApplication,
-    CreateNewSamApplicationResults
-} from './commands/createNewSamApp'
+import { localize } from '../shared/utilities/vsCodeUtils'
 import { deleteCloudFormation } from './commands/deleteCloudFormation'
 import { deleteLambda } from './commands/deleteLambda'
-import { deploySamApplication } from './commands/deploySamApplication'
 import { invokeLambda } from './commands/invokeLambda'
 import { showErrorDetails } from './commands/showErrorDetails'
 import { CloudFormationStackNode } from './explorer/cloudFormationNodes'
@@ -45,7 +39,6 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         private readonly awsContextTrees: AwsContextTreeCollection,
         private readonly regionProvider: RegionProvider,
         private readonly resourceFetcher: ResourceFetcher,
-        private readonly channelLogger: ChannelLogger,
         private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string,
         private readonly lambdaOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda'),
     ) {
@@ -58,27 +51,6 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         registerCommand({
             command: 'aws.refreshAwsExplorer',
             callback: async () => this.refresh()
-        })
-
-        registerCommand({
-            command: 'aws.lambda.createNewSamApp',
-            callback: async (): Promise<{ datum: Datum }> => {
-                const createNewSamApplicationResults: CreateNewSamApplicationResults = await createNewSamApplication(
-                    this.channelLogger,
-                    context
-                )
-                const datum = defaultMetricDatum('new')
-                datum.metadata = new Map()
-                applyResultsToMetadata(createNewSamApplicationResults, datum.metadata)
-
-                return {
-                    datum
-                }
-            },
-            telemetryName: {
-                namespace: TelemetryNamespace.Project,
-                name: 'new'
-            }
         })
 
         registerCommand({
@@ -104,24 +76,6 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
             telemetryName: {
                 namespace: TelemetryNamespace.Cloudformation,
                 name: 'delete'
-            }
-        })
-
-        registerCommand({
-            command: 'aws.deploySamApplication',
-            callback: async () => await deploySamApplication(
-                {
-                    channelLogger: this.channelLogger,
-                    regionProvider: this.regionProvider,
-                    extensionContext: context
-                },
-                {
-                    awsContext: this.awsContext
-                }
-            ),
-            telemetryName: {
-                namespace: TelemetryNamespace.Lambda,
-                name: 'deploy'
             }
         })
 
