@@ -40,7 +40,13 @@ export async function activate(activateArguments: {
     telemetryService: TelemetryService,
 }): Promise<void> {
     // TODO : CC : rearrange everything in this file
-    const channelLogger = getChannelLogger(activateArguments.outputChannel)
+    const logger = getLogger()
+    const channelLogger = getChannelLogger(activateArguments.outputChannel, logger)
+
+    initializeSamCliContext({
+        settingsConfiguration: activateArguments.toolkitSettings,
+        logger
+    })
 
     activateArguments.extensionContext.subscriptions.push(
         ...await activateCodeLensProviders(
@@ -50,6 +56,14 @@ export async function activate(activateArguments: {
     )
 
     // TODO : CC : handle command disposables
+    registerCommand({
+        command: 'aws.samcli.detect',
+        callback: async () => await PromiseSharer.getExistingPromiseOrCreate(
+            'samcli.detect',
+            async () => await detectSamCli(true)
+        )
+    })
+
     registerCommand({
         command: 'aws.lambda.createNewSamApp',
         callback: async (): Promise<{ datum: Datum }> => {
@@ -75,7 +89,7 @@ export async function activate(activateArguments: {
         command: 'aws.deploySamApplication',
         callback: async () => await deploySamApplication(
             {
-                channelLogger: channelLogger,
+                channelLogger,
                 regionProvider: activateArguments.regionProvider,
                 extensionContext: activateArguments.extensionContext
             },
@@ -89,11 +103,6 @@ export async function activate(activateArguments: {
         }
     })
 
-    await initializeSamCli(
-        activateArguments.toolkitSettings,
-        getLogger()
-    )
-
     vscode.languages.registerCompletionItemProvider(
         {
             language: 'json',
@@ -103,6 +112,8 @@ export async function activate(activateArguments: {
         new SamParameterCompletionItemProvider(),
         '"'
     )
+
+    await detectSamCli(false)
 
     await resumeCreateNewSamApp()
 }
@@ -146,25 +157,4 @@ async function activateCodeLensProviders(
     ))
 
     return disposables
-}
-
-/**
- * Performs SAM CLI relevant extension initialization
- */
-async function initializeSamCli(
-    settingsConfiguration: SettingsConfiguration,
-    logger: Logger,
-): Promise<void> {
-    // TODO : CC : split out this method
-    initializeSamCliContext({ settingsConfiguration, logger })
-
-    registerCommand({
-        command: 'aws.samcli.detect',
-        callback: async () => await PromiseSharer.getExistingPromiseOrCreate(
-            'samcli.detect',
-            async () => await detectSamCli(true)
-        )
-    })
-
-    await detectSamCli(false)
 }
