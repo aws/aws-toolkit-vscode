@@ -1,22 +1,22 @@
-# Debugging NodeJS lambda functions
+# Debugging Node.js Lambda Functions
 
 You can debug your Serverless Application's AWS Lambda function locally using the CodeLens links above the lambda handler. If you would like to use the Debug Panel to launch the debugger instead, use the following steps to configure your project's Debug Configuration.
 
-## Install and configure prerequisites
+## Install and Configure Prerequisites
 
 1. Install the [AWS Toolkit for Visual Studio Code (VS Code)](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode) (also see the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-toolkit)).
-1. Relaunch VS Code if necessary and open a SAM application or [create a new one](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam).
+1. Re-launch VS Code if necessary and open a SAM application or [create a new one](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam).
 1. Open the folder that contains `template.yaml`.
 
-## Configure your debugger
+## Configure Your Debugger
 
 Throughout these instructions, replace the following:
 
 | Name                    | Replace With                                                                          |
 | ----------------------- | ------------------------------------------------------------------------------------- |
-| `<sam app root>`        | The root of your SAM app, which is typically the folder that is a sibling to `.vscode` and that contains the directory structure for your code and `template.yaml`.  |
-| `<nodejs project root>` | The root of your Node.js source code (the directory containing `package.json`)         |
-| `<protocol>`            | Either `inspector` (for NodeJS 6.3+) or `legacy` (for prior versions of NodeJS)       |
+| `<sam app root>`        | The root of your SAM app (typically this is the directory containing `template.yaml`) |
+| `<nodejs project root>` | The root of your Node.js source code (the directory containing `package.json`)        |
+| `<protocol>`            | Either `inspector` (for Node.js 6.3+) or `legacy` (for prior versions of Node.js)       |
 
 1. Open `<sam app root>/.vscode/launch.json` (create a new file if it does not already exist), and add the following contents.
 
@@ -51,7 +51,7 @@ Throughout these instructions, replace the following:
 
     ![Launch Configuration](./images/select_launch_config_node.png)
 
-## Start debugging
+## Start Debugging
 
 1. Set a breakpoint anywhere in your lambda handler.
 2. Open a terminal in `<sam app root>`, and run the following commands. The SAM CLI will invoke your lambda handler, and wait for a debugger to attach to it. Replace `HelloWorldFunction` with the name of the function that you want to invoke, which can be found in `template.yaml` under `Resources`.
@@ -63,7 +63,7 @@ Throughout these instructions, replace the following:
 
 3. When you see the message starting with `Debugger listening on`, go back to Visual Studio Code and press F5 to attach the debugger to the handler that you invoked in the previous step.
 
-## Optional: Automatically start debugging when ready
+## Optional: Automatically Start Debugging When Ready
 
 With the above steps, you need to manually invoke SAM CLI from the command line, wait for it to be ready, then attach the debugger. We can automate the process of invoking SAM CLI and waiting for it to be ready by using a `preLaunchTask`.
 
