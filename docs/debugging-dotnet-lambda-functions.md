@@ -1,6 +1,6 @@
 # Debugging .NET Core Lambda functions
 
-These instructions describe how to debug an AWS Lambda handler locally by using the SAM CLI, and attach the VS Code debugger to it.
+You can debug your Serverless Application's AWS Lambda function locally using the CodeLens links above the lambda handler. If you would like to use the Debug Panel to launch the debugger instead, use the following steps to configure your project's Debug Configuration.
 
 ## Install and configure prerequisites
 

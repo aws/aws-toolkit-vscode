@@ -5,7 +5,7 @@ You can debug your Serverless Application's AWS Lambda function locally using th
 ## Install and configure prerequisites
 
 1. Install the [AWS Toolkit for Visual Studio Code (VS Code)](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode) (also see the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-toolkit)).
-1. Launch VS Code and open a SAM application or [create a new one](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam).
+1. Relaunch VS Code if necessary and open a SAM application or [create a new one](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam).
 1. Open the folder that contains `template.yaml`.
 
 ## Configure your debugger
@@ -14,8 +14,8 @@ Throughout these instructions, replace the following:
 
 | Name                    | Replace With                                                                          |
 | ----------------------- | ------------------------------------------------------------------------------------- |
-| `<sam app root>`        | The root of your SAM app (typically this is the directory containing `template.yaml`) |
-| `<nodejs project root>` | The root of your NodeJS source code (the directory containing `package.json`)         |
+| `<sam app root>`        | The root of your SAM app, which is typically the folder that is a sibling to `.vscode` and that contains the directory structure for your code and `template.yaml`.  |
+| `<nodejs project root>` | The root of your Node.js source code (the directory containing `package.json`)         |
 | `<protocol>`            | Either `inspector` (for NodeJS 6.3+) or `legacy` (for prior versions of NodeJS)       |
 
 1. Open `<sam app root>/.vscode/launch.json` (create a new file if it does not already exist), and add the following contents.
@@ -49,12 +49,12 @@ Throughout these instructions, replace the following:
 
 4. Select `NodeJS: Remote Attach` from the drop-down menu at the top of the viewlet:
 
-    ![Launch Configuration](./images/select_launch_config.png)
+    ![Launch Configuration](./images/select_launch_config_node.png)
 
 ## Start debugging
 
 1. Set a breakpoint anywhere in your lambda handler.
-2. Open a terminal in `<sam app root>`, and run the following commands. The SAM CLI will invoke your lambda handler, and wait for a debugger to attach to it. Replace `HelloWorldFunction` with the name of the function that you want to invoke.
+2. Open a terminal in `<sam app root>`, and run the following commands. The SAM CLI will invoke your lambda handler, and wait for a debugger to attach to it. Replace `HelloWorldFunction` with the name of the function that you want to invoke, which can be found in `template.yaml` under `Resources`.
 
     ```bash
     sam build --use-container
