@@ -12,6 +12,7 @@
 
 import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
+// tslint:disable-next-line: no-implicit-dependencies
 import * as marked from 'marked'
 import * as path from 'path'
 
