@@ -39,7 +39,6 @@ export async function activate(activateArguments: {
     outputChannel: vscode.OutputChannel,
     telemetryService: TelemetryService,
 }): Promise<void> {
-    // TODO : CC : rearrange everything in this file
     const logger = getLogger()
     const channelLogger = getChannelLogger(activateArguments.outputChannel, logger)
 
@@ -139,6 +138,8 @@ async function registerServerlessCommands(
             }
         })
     )
+
+    // TODO : Register CodeLens commands from here instead of in xxxCodeLensProvider.ts::initialize
 }
 
 async function activateCodeLensProviders(
@@ -157,6 +158,7 @@ async function activateCodeLensProviders(
 
     disposables.push(
         vscode.languages.registerCodeLensProvider(
+            // TODO : Turn into a constant to be consistent with Python, C#
             [
                 {
                     language: 'javascript',
