@@ -46,13 +46,6 @@ export interface SAMTemplateEnvironmentVariables {
     }
 }
 
-export interface OnDidSamBuildParams {
-    buildDir: string
-    debugPort: number
-    handlerName: string
-    isDebug: boolean
-}
-
 const TEMPLATE_RESOURCE_NAME = 'awsToolkitSamLocalResource'
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
 const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
@@ -76,7 +69,6 @@ export class LocalLambdaRunner {
         private readonly debugConfig: DebugConfiguration,
         private readonly codeRootDirectoryPath: string,
         private readonly telemetryService: TelemetryService,
-        private readonly onDidSamBuild?: (params: OnDidSamBuildParams) => Promise<void>,
         private readonly channelLogger = getChannelLogger(outputChannel)
     ) {
         if (localInvokeParams.isDebug && !debugPort) {
@@ -190,16 +182,6 @@ export class LocalLambdaRunner {
         await new SamCliBuildInvocation(samCliArgs).execute()
 
         this.channelLogger.info('AWS.output.building.sam.application.complete', 'Build complete.')
-
-        if (this.onDidSamBuild) {
-            // Enable post build tasks if needed
-            await this.onDidSamBuild({
-                buildDir: samBuildOutputFolder,
-                debugPort: this._debugPort!, // onDidSamBuild will only be called for debug, _debugPort will be defined
-                handlerName: this.localInvokeParams.handlerName,
-                isDebug: this.localInvokeParams.isDebug
-            })
-        }
 
         return path.join(samBuildOutputFolder, 'template.yaml')
     }
