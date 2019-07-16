@@ -220,7 +220,7 @@ export class LocalLambdaRunner {
         const maxRetries: number = getAttachDebuggerMaxRetryLimit(this.configuration, MAX_DEBUGGER_RETRIES_DEFAULT)
 
         await writeFile(eventPath, JSON.stringify(config.event || {}))
-        await writeFile(environmentVariablePath, JSON.stringify(this.getEnvironmentVariables(config)))
+        await writeFile(environmentVariablePath, JSON.stringify(getEnvironmentVariables(config)))
 
         const command = new SamCliLocalInvokeInvocation({
             templateResourceName: TEMPLATE_RESOURCE_NAME,
@@ -287,16 +287,6 @@ export class LocalLambdaRunner {
         )
 
         return config
-    }
-
-    private getEnvironmentVariables(config: HandlerConfig): SAMTemplateEnvironmentVariables {
-        if (!!config.environmentVariables) {
-            return {
-                [TEMPLATE_RESOURCE_NAME]: config.environmentVariables
-            }
-        } else {
-            return {}
-        }
     }
 } // end class LocalLambdaRunner
 
