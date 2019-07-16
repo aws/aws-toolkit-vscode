@@ -5,7 +5,9 @@
 build-scripts/**
 buildspec/**
 out/src/test/**
+out/src/integrationTest/**
 out/test/**
+out/integrationTest/**
 out/third-party/test/**
 out/**/*.map
 src/**
