@@ -7,6 +7,8 @@ package software.aws.toolkits.jetbrains.core.explorer
 import com.intellij.ide.util.treeView.AbstractTreeBuilder
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.project.Project
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsNodeAlwaysExpandable
 import javax.swing.JTree
 import javax.swing.tree.DefaultTreeModel
 

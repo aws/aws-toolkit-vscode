@@ -10,11 +10,11 @@ import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.amazon.awssdk.services.lambda.model.ListFunctionsRequest
 import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerNode
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerResourceNode
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerServiceRootNode
-import software.aws.toolkits.jetbrains.core.explorer.AwsNodeAlwaysExpandable
-import software.aws.toolkits.jetbrains.core.explorer.AwsTruncatedResultNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsNodeAlwaysExpandable
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsTruncatedResultNode
 import software.aws.toolkits.resources.message
 
 class LambdaServiceNode(project: Project) : AwsExplorerServiceRootNode(project, message("explorer.node.lambda")),
