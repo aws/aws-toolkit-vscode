@@ -26,17 +26,16 @@ function translateReadmeToHtml(root: string) {
 /**
  * Do a best effort job of generating a git hash and putting it into the package
  */
-function generateFileHash(out: string) {
+function generateFileHash(root: string) {
     try {
         const response = child_process.execSync('git rev-parse HEAD')
-        fs.outputFileSync(path.join(out, '.gitcommit'), response)
+        fs.outputFileSync(path.join(root, '.gitcommit'), response)
     } catch (e) {
         console.log(`Getting commit hash failed ${e}`)
     }
 }
 
 const repoRoot = path.dirname(__dirname)
-const outRoot = path.join(repoRoot, 'out')
 
 translateReadmeToHtml(repoRoot)
-generateFileHash(outRoot)
+generateFileHash(repoRoot)
