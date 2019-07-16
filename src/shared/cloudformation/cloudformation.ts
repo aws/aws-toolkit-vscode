@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as schema from 'cloudformation-schema-js-yaml'
 import * as yaml from 'js-yaml'
 import * as filesystem from '../filesystem'

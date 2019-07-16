@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as assert from 'assert'
 import * as immutable from 'immutable'
 import * as path from 'path'

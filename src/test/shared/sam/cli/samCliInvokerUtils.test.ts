@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import { TestLogger } from '../../../../shared/loggerUtils'
 import { logAndThrowIfUnexpectedExitCode } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { assertThrowsError } from '../../utilities/assertUtils'

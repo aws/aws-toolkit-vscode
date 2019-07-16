@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as assert from 'assert'
 import * as del from 'del'
 import * as path from 'path'
@@ -14,6 +12,7 @@ import * as localLambdaRunner from '../../../shared/codelens/localLambdaRunner'
 import * as fs from '../../../shared/filesystem'
 import * as fsUtils from '../../../shared/filesystemUtilities'
 import { BasicLogger, ErrorOrString } from '../../../shared/logger'
+import { TestLogger } from '../../../shared/loggerUtils'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { ExtensionDisposableFiles } from '../../../shared/utilities/disposableFiles'
 import { ChannelLogger } from '../../../shared/utilities/vsCodeUtils'
@@ -60,14 +59,23 @@ class FakeBasicLogger implements BasicLogger {
 
 describe('localLambdaRunner', async () => {
 
+    let logger: TestLogger
     let tempDir: string
     before(async () => {
-        tempDir = await fsUtils.makeTemporaryToolkitFolder()
+        logger = await TestLogger.createTestLogger()
         await ExtensionDisposableFiles.initialize(new FakeExtensionContext())
     })
 
-    after(async () => {
+    beforeEach(async () => {
+        tempDir = await fsUtils.makeTemporaryToolkitFolder()
+    })
+
+    afterEach(async () => {
         await del(tempDir, { force: true })
+    })
+
+    after(async () => {
+        await logger.cleanupLogger()
     })
 
     describe('attachDebugger', async () => {
@@ -337,7 +345,7 @@ describe('localLambdaRunner', async () => {
     })
 
     describe('makeBuildDir', () => {
-        it ('creates a temp directory', async () => {
+        it('creates a temp directory', async () => {
             const dir = await localLambdaRunner.makeBuildDir()
             assert.ok(dir)
             assert.strictEqual(await fsUtils.fileExists(dir), true)
@@ -377,11 +385,11 @@ describe('localLambdaRunner', async () => {
             }
         }
 
-        it ('fails when the child process returns a nonzero exit code', async () => {
+        it('fails when the child process returns a nonzero exit code', async () => {
             await assertRejects(async () => localLambdaRunner.executeSamBuild(generateSamBuildParams(false)))
         })
 
-        it ('succeeds when the child process returns with an exit code of 0', async () => {
+        it('succeeds when the child process returns with an exit code of 0', async () => {
             const samBuildResult = await localLambdaRunner.executeSamBuild(generateSamBuildParams(true))
             assert.strictEqual(samBuildResult, path.join(tempDir, 'output', 'template.yaml'))
         })

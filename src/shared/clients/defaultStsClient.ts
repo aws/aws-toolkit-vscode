@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import { STS } from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { ext } from '../extensionGlobals'
@@ -12,7 +10,7 @@ import { StsClient } from './stsClient'
 
 export class DefaultStsClient implements StsClient {
 
-    public constructor (
+    public constructor(
         public readonly regionCode: string,
         private readonly credentials?: ServiceConfigurationOptions
     ) { }

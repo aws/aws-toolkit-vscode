@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 // Use jsonc-parser.parse instead of JSON.parse, as JSONC can handle comments. VS Code uses jsonc-parser
 // under the hood to provide symbols for JSON documents, so this will keep us consistent with VS code.
 import * as jsonParser from 'jsonc-parser'

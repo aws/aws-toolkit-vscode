@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import { CloudFormation } from 'aws-sdk'
 import { ext } from '../extensionGlobals'
 import '../utilities/asyncIteratorShim'

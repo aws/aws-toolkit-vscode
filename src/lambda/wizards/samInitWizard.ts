@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
@@ -257,16 +255,32 @@ class WorkspaceFolderQuickPickItem implements FolderQuickPickItem {
 }
 
 class BrowseFolderQuickPickItem implements FolderQuickPickItem {
-    public readonly label = localize(
-        'AWS.samcli.initWizard.name.browse.label',
-        'Choose a different folder...'
-    )
-
     public alwaysShow: boolean = true
 
     public constructor(
         private readonly context: CreateNewSamAppWizardContext
     ) {
+    }
+
+    public get label(): string {
+        if (this.context.workspaceFolders && this.context.workspaceFolders.length > 0) {
+            return localize(
+                'AWS.samcli.initWizard.location.select.folder',
+                'Select a different folder...'
+            )
+        }
+
+        return localize(
+            'AWS.samcli.initWizard.location.select.folder.empty.workspace',
+            'There are no workspace folders open. Select a folder...'
+        )
+    }
+
+    public get detail(): string {
+        return localize(
+            'AWS.samcli.initWizard.location.select.folder.detail',
+            'The folder you select will be added to your VS Code workspace.'
+        )
     }
 
     public async getUri(): Promise<vscode.Uri | undefined> {

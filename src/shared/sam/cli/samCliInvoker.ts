@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import { extensionSettingsPrefix } from '../../constants'
 import { getLogger, Logger } from '../../logger'
 import { DefaultSettingsConfiguration } from '../../settingsConfiguration'

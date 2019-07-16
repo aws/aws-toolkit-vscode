@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as fs from 'fs'
 import * as path from 'path'
 import uuidv4 = require('uuid/v4')

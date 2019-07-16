@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import { QuickPickItem } from 'vscode'
 
 export class QuickPickNode implements QuickPickItem {

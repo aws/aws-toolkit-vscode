@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { BasicLogger, ErrorOrString, initialize, LogLevel } from '../../../shared/logger'
@@ -111,7 +109,7 @@ const testData: TestData[] = [
     },
 ]
 
-describe('vsCodeUtils getChannelLogger', function() {
+describe('vsCodeUtils getChannelLogger', function () {
 
     let logger: MockLogger
     let outputChannel: MockOutputChannel

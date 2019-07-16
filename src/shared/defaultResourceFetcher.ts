@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as fse from 'fs-extra'
 import request = require('request')
 import { getLogger, Logger } from './logger'

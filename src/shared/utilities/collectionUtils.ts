@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import './asyncIteratorShim'
 
 export function union<T>(a: Iterable<T>, b: Iterable<T>): Set<T> {

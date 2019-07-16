@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
@@ -197,7 +195,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         toastNewUser(context, logFactory.getLogger())
 
-        await resumeCreateNewSamApp(context)
+        await resumeCreateNewSamApp()
     } catch (error) {
         const channelLogger = getChannelLogger(toolkitOutputChannel)
         channelLogger.error(

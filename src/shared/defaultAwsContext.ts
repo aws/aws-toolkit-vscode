@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as AWS from 'aws-sdk'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'

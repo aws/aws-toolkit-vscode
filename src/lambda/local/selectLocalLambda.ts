@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 

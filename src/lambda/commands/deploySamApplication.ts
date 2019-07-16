@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as del from 'del'
 import * as path from 'path'
 import * as vscode from 'vscode'
