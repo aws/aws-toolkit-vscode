@@ -1,23 +1,22 @@
-# Debugging NodeJS lambda functions
+# Debugging Node.js Lambda Functions
 
-You can debug your Serverless Application's Lambda Function locally using the CodeLens links above the lambda handler. If you would like to use the Debug Panel to launch the debugger instead, use the following steps to configure your project's Debug Configuration.
+You can debug your Serverless Application's AWS Lambda function locally using the CodeLens links above the lambda handler. If you would like to use the Debug Panel to launch the debugger instead, use the following steps to configure your project's Debug Configuration.
 
-## Install and configure prerequisites
+## Install and Configure Prerequisites
 
-1. Install the [AWS Toolkit for Visual Studio Code](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-toolkit.html).
-2. Launch Visual Studio Code and open a SAM application or create a new one. <!-- TODO: Link to separate doc with instructions. -->
+1. Install the [AWS Toolkit for Visual Studio Code (VS Code)](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode) (also see the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-toolkit)).
+1. Re-launch VS Code if necessary and open a SAM application or [create a new one](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam).
+1. Open the folder that contains `template.yaml`.
 
-    Note: Open the folder that contains `template.yaml`.
-
-## Configure your debugger
+## Configure Your Debugger
 
 Throughout these instructions, replace the following:
 
 | Name                    | Replace With                                                                          |
 | ----------------------- | ------------------------------------------------------------------------------------- |
 | `<sam app root>`        | The root of your SAM app (typically this is the directory containing `template.yaml`) |
-| `<nodejs project root>` | The root of your NodeJS source code (the directory containing `package.json`)         |
-| `<protocol>`            | Either `inspector` (for NodeJS 6.3+) or `legacy` (for prior versions of NodeJS)       |
+| `<nodejs project root>` | The root of your Node.js source code (the directory containing `package.json`)        |
+| `<protocol>`            | Either `inspector` (for Node.js 6.3+) or `legacy` (for prior versions of Node.js)       |
 
 1. Open `<sam app root>/.vscode/launch.json` (create a new file if it does not already exist), and add the following contents.
 
@@ -50,12 +49,12 @@ Throughout these instructions, replace the following:
 
 4. Select `NodeJS: Remote Attach` from the drop-down menu at the top of the viewlet:
 
-    ![Launch Configuration](./images/select_launch_config.png)
+    ![Launch Configuration](./images/select_launch_config_node.png)
 
-## Start debugging
+## Start Debugging
 
 1. Set a breakpoint anywhere in your lambda handler.
-2. Open a terminal in `<sam app root>`, and run the following commands. The SAM CLI will invoke your lambda handler, and wait for a debugger to attach to it. Replace `HelloWorldFunction` with the name of the function that you want to invoke.
+2. Open a terminal in `<sam app root>`, and run the following commands. The SAM CLI will invoke your lambda handler, and wait for a debugger to attach to it. Replace `HelloWorldFunction` with the name of the function that you want to invoke, which can be found in `template.yaml` under `Resources`.
 
     ```bash
     sam build --use-container
@@ -64,7 +63,7 @@ Throughout these instructions, replace the following:
 
 3. When you see the message starting with `Debugger listening on`, go back to Visual Studio Code and press F5 to attach the debugger to the handler that you invoked in the previous step.
 
-## Optional: Automatically start debugging when ready
+## Optional: Automatically Start Debugging When Ready
 
 With the above steps, you need to manually invoke SAM CLI from the command line, wait for it to be ready, then attach the debugger. We can automate the process of invoking SAM CLI and waiting for it to be ready by using a `preLaunchTask`.
 
