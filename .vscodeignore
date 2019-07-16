@@ -2,6 +2,7 @@
 .github/**
 .vscode/**
 .vscode-test/**
+.changes/**
 build-scripts/**
 buildspec/**
 out/src/test/**
@@ -10,8 +11,11 @@ out/third-party/test/**
 out/**/*.map
 src/**
 third-party/test/**
+test-scripts/**
 .gitignore
 coverconfig.json
 Dockerfile
 tsconfig.json
 tslint.json
+codebuild-image-buildspec.yml
+
