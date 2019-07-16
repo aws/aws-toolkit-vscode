@@ -90,7 +90,13 @@ export class LocalLambdaRunner {
             )
 
             const inputTemplate: string = await this.generateInputTemplate(this.codeRootDirectoryPath)
-            const samBuildTemplate: string = await this.executeSamBuild(this.codeRootDirectoryPath, inputTemplate)
+            const samBuildTemplate: string = await executeSamBuild({
+                baseBuildDir: await this.getBaseBuildFolder(),
+                channelLogger: this.channelLogger,
+                codeDir: this.codeRootDirectoryPath,
+                inputTemplatePath: inputTemplate,
+                samProcessInvoker: this.processInvoker,
+            })
 
             await this.invokeLambdaFunction(samBuildTemplate)
         } catch (err) {
@@ -166,24 +172,6 @@ export class LocalLambdaRunner {
             properties,
             runtime: this.runtime,
         })
-    }
-
-    private async executeSamBuild(rootCodeFolder: string, inputTemplatePath: string): Promise<string> {
-        this.channelLogger.info('AWS.output.building.sam.application', 'Building SAM Application...')
-
-        const samBuildOutputFolder = path.join(await this.getBaseBuildFolder(), 'output')
-
-        const samCliArgs: SamCliBuildInvocationArguments = {
-            buildDir: samBuildOutputFolder,
-            baseDir: rootCodeFolder,
-            templatePath: inputTemplatePath,
-            invoker: this.processInvoker
-        }
-        await new SamCliBuildInvocation(samCliArgs).execute()
-
-        this.channelLogger.info('AWS.output.building.sam.application.complete', 'Build complete.')
-
-        return path.join(samBuildOutputFolder, 'template.yaml')
     }
 
     /**
