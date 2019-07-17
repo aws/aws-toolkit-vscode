@@ -54,7 +54,9 @@ describe('CloudFormation', () => {
                 Timeout: 12345,
                 Environment: {
                     Variables: {
-                        ENVVAR: 'envvar'
+                        ENVVAR: 'envvar',
+                        NUMBER: 1,
+                        BOOL: true
                     }
                 }
             }
@@ -83,7 +85,9 @@ describe('CloudFormation', () => {
             Timeout: 12345
             Environment:
                 Variables:
-                    ENVVAR: envvar`
+                    ENVVAR: envvar
+                    NUMBER: 1
+                    BOOL: true`
         }
 
         it('can successfully load a file', async () => {

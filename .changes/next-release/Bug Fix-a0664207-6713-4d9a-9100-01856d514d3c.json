@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Added `boolean` and `number` as valid SAM template environment variable values. Fixes #683."
+}

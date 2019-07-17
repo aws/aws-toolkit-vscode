@@ -145,9 +145,11 @@ export namespace CloudFormation {
 
     export interface Environment {
         Variables?: {
-            [varName: string]: string
+            [varName: string]: string | number | boolean
         }
     }
+
+    const validVariableTypes = new Set(['string', 'number', 'boolean'])
 
     export async function load(
         filename: string
@@ -213,8 +215,10 @@ export namespace CloudFormation {
             }
             if (!!resource.Properties.Environment && !!resource.Properties.Environment.Variables) {
                 for (const variable in resource.Properties.Environment.Variables) {
-                    if (typeof resource.Properties.Environment.Variables[variable] !== 'string') {
-                        throw new Error(`Invalid value in Template for key: ${variable}: expected string`)
+                    if (!(validVariableTypes.has(typeof resource.Properties.Environment.Variables[variable]))) {
+                        throw new Error(`Invalid value in Template for key: ${variable}:` +
+                            `expected one of (${Array.from(validVariableTypes).join(', ')}) got: ` +
+                            `${typeof resource.Properties.Environment.Variables[variable]}`)
                     }
                 }
             }
