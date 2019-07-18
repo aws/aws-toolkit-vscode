@@ -4,12 +4,14 @@
 package software.aws.toolkits.jetbrains.core.explorer.nodes
 
 import com.intellij.openapi.project.Project
+import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
 
 /**
  * Top level node for any AWS service node
  */
-abstract class AwsExplorerServiceRootNode(project: Project, value: String) :
-    AwsExplorerPageableNode<String>(project, value, null) {
+abstract class AwsExplorerServiceRootNode(project: Project, private val service: AwsExplorerService) :
+    AwsExplorerPageableNode<String>(project, service.displayName, null), AwsNodeAlwaysExpandable {
 
-    abstract fun serviceName(): String
+    val serviceId: String
+        get() = service.serviceId
 }

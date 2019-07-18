@@ -14,7 +14,7 @@ import javax.swing.Icon
  */
 abstract class AwsExplorerResourceNode<T>(
     project: Project,
-    val serviceName: String,
+    val serviceId: String,
     value: T,
     awsIcon: Icon,
     val immutable: Boolean = false

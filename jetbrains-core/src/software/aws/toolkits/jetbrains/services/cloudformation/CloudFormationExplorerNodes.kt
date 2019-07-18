@@ -13,6 +13,7 @@ import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.DeleteResourceAction
 import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
@@ -26,8 +27,8 @@ import software.aws.toolkits.jetbrains.utils.TaggingResourceType
 import software.aws.toolkits.jetbrains.utils.toHumanReadable
 import software.aws.toolkits.resources.message
 
-class CloudFormationServiceNode(project: Project) : AwsExplorerServiceRootNode(project, message("explorer.node.cloudformation")) {
-    override fun serviceName() = CloudFormationClient.SERVICE_NAME
+class CloudFormationServiceNode(project: Project) :
+    AwsExplorerServiceRootNode(project, AwsExplorerService.CLOUDFORMATION) {
 
     private val client: CloudFormationClient = AwsClientManager.getInstance(project).getClient()
 
