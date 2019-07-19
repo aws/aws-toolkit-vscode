@@ -4,14 +4,17 @@
  */
 
 import * as assert from 'assert'
-import { mkdirpSync, readFileSync, rmdirSync } from 'fs-extra'
+import { mkdirpSync, readFileSync, removeSync } from 'fs-extra'
+import * as path from 'path'
 import * as vscode from 'vscode'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { TIMEOUT } from './integrationTestsUtilities'
 
 describe('SAM', async () => {
-    const projectFolder = `${__dirname}/python37sam`
+    const projectFolder = `${__dirname}/nodejs10x`
+    const projectSDK = 'nodejs10.x'
+
     before(async function () {
         // tslint:disable-next-line: no-invalid-this
         this.timeout(TIMEOUT)
@@ -23,28 +26,39 @@ describe('SAM', async () => {
 
         // this is really test 1, but since it has to run before everything it's in the before section
         try {
-            rmdirSync(projectFolder)
-        } catch (e) {}
+            removeSync(projectFolder)
+        } catch (e) { }
         mkdirpSync(projectFolder)
         const initArguments: SamCliInitArgs = {
             name: 'testProject',
             location: projectFolder,
-            runtime: 'python3.7'
+            runtime: projectSDK
         }
         console.log(initArguments.location)
         const samCliContext = getSamCliContext()
         await runSamCliInit(initArguments, samCliContext.invoker)
         const fileContents = readFileSync(`${projectFolder}/testProject/template.yaml`).toString()
-        assert.ok(fileContents.includes('Runtime: python3.7'))
+        assert.ok(fileContents.includes(`Runtime: ${projectSDK}`))
     })
 
-    it('Does something with that python app', async () => {
+    it('Fails to create template when it already exists', async () => {
 
+    })
+
+    it('Invokes the run codelense', async () => {
+        const documentPath = path.join(projectFolder, 'testProject', 'hello-world', 'app.js')
+        const documentUri = vscode.Uri.file(documentPath)
+        const document = await vscode.workspace.openTextDocument(documentUri)
+        const codeLensesPromise: Thenable<vscode.CodeLens[] | undefined> =
+        vscode.commands.executeCommand('vscode.executeCodeLensProvider', document.uri)
+        const codeLenses = await codeLensesPromise
+        assert.ok(codeLenses)
+        assert.strictEqual(codeLenses!.length, 3)
     }).timeout(TIMEOUT)
 
     after(async () => {
         try {
-            rmdirSync(projectFolder)
+            removeSync(projectFolder)
         } catch (e) {}
     })
 })
