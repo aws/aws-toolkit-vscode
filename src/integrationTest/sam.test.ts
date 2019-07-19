@@ -3,17 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
-import * as vscode from 'vscode'
+import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
+import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { TIMEOUT } from './integrationTestsUtilities'
 
 describe('SAM', async () => {
     it('Creates a NodeJs SAM app', async () => {
-        const extension = vscode.extensions.getExtension('amazonwebservices.aws-toolkit-vscode')
-        assert.ok(extension)
-        await extension!.activate()
-        const workspaceFolders = vscode.workspace.workspaceFolders
-        assert.ok(workspaceFolders)
-        const codeLensesPromise = await vscode.commands.executeCommand('vscode.executeCodeLensProvider', document.uri)
+        const initArguments: SamCliInitArgs = {
+            name: 'test',
+            location: './temp',
+            runtime: 'python3.7'
+        }
+        const samCliContext = getSamCliContext()
+        await runSamCliInit(initArguments, samCliContext.invoker)
+
     }).timeout(TIMEOUT)
 })
