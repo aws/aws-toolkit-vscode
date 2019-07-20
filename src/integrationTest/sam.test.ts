@@ -34,7 +34,6 @@ describe('SAM', async () => {
             location: projectFolder,
             runtime: projectSDK
         }
-        console.log(initArguments.location)
         const samCliContext = getSamCliContext()
         await runSamCliInit(initArguments, samCliContext.invoker)
         const fileContents = readFileSync(`${projectFolder}/testProject/template.yaml`).toString()
@@ -42,15 +41,25 @@ describe('SAM', async () => {
     })
 
     it('Fails to create template when it already exists', async () => {
-
+        const initArguments: SamCliInitArgs = {
+            name: 'testProject',
+            location: projectFolder,
+            runtime: projectSDK
+        }
+        console.log(initArguments.location)
+        const samCliContext = getSamCliContext()
+        await runSamCliInit(initArguments, samCliContext.invoker).catch((e: Error) => {
+            assert(e.message.includes('directory already exists'))
+        })
     })
 
     it('Invokes the run codelense', async () => {
         const documentPath = path.join(projectFolder, 'testProject', 'hello-world', 'app.js')
+        console.log(documentPath)
         const documentUri = vscode.Uri.file(documentPath)
         const document = await vscode.workspace.openTextDocument(documentUri)
         const codeLensesPromise: Thenable<vscode.CodeLens[] | undefined> =
-        vscode.commands.executeCommand('vscode.executeCodeLensProvider', document.uri)
+            vscode.commands.executeCommand('vscode.executeCodeLensProvider', document.uri)
         const codeLenses = await codeLensesPromise
         assert.ok(codeLenses)
         assert.strictEqual(codeLenses!.length, 3)
