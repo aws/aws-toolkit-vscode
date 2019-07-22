@@ -48,24 +48,6 @@ export function processTemplate<T extends TemplateParams>({
     }
 }
 
-function log({
-    nlsKey,
-    nlsTemplate,
-    templateTokens,
-    channel,
-    level,
-    logger
-}: TemplateParams & { channel: vscode.OutputChannel, level: LogLevel, logger: BasicLogger }): void {
-    if (level === 'error') {
-        channel.show(true)
-    }
-    const { prettyMessage, errors } = processTemplate({ nlsKey, nlsTemplate, templateTokens })
-    channel.appendLine(prettyMessage)
-    // TODO: Log in english if/when we get multi lang support
-    // Log pretty message then Error objects (so logger might show stack traces)
-    logger[level](...[prettyMessage, ...errors])
-}
-
 export interface ChannelLogger {
     readonly channel: vscode.OutputChannel,
     readonly logger: BasicLogger,
@@ -81,6 +63,22 @@ export interface ChannelLogger {
  * Avoids making two log statements when writing to output channel and improves consistency
  */
 export function getChannelLogger(channel: vscode.OutputChannel, logger: BasicLogger = getLogger()): ChannelLogger {
+    function log({
+        nlsKey,
+        nlsTemplate,
+        templateTokens,
+        level,
+    }: TemplateParams & { level: LogLevel }): void {
+        if (level === 'error') {
+            channel.show(true)
+        }
+        const { prettyMessage, errors } = processTemplate({ nlsKey, nlsTemplate, templateTokens })
+        channel.appendLine(prettyMessage)
+        // TODO: Log in english if/when we get multi lang support
+        // Log pretty message then Error objects (so logger might show stack traces)
+        logger[level](...[prettyMessage, ...errors])
+    }
+
     return Object.freeze({
         channel,
         logger,
@@ -89,40 +87,30 @@ export function getChannelLogger(channel: vscode.OutputChannel, logger: BasicLog
             nlsKey,
             nlsTemplate,
             templateTokens,
-            channel,
-            logger,
         }),
         debug: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) => log({
             level: 'debug',
             nlsKey,
             nlsTemplate,
             templateTokens,
-            channel,
-            logger,
         }),
         info: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) => log({
             level: 'info',
             nlsKey,
             nlsTemplate,
             templateTokens,
-            channel,
-            logger,
         }),
         warn: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) => log({
             level: 'warn',
             nlsKey,
             nlsTemplate,
             templateTokens,
-            channel,
-            logger,
         }),
         error: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) => log({
             level: 'error',
             nlsKey,
             nlsTemplate,
             templateTokens,
-            channel,
-            logger,
         })
     })
 }
