@@ -105,9 +105,17 @@ export function initialize({
     const command = getInvokeCmdKey('javascript')
     registerCommand({
         command,
-        callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
+        callback: async (paramArray: LambdaLocalInvokeParams[]): Promise<{ datum: Datum }> => {
             const logger = getLogger()
 
+            if (paramArray.length !== 1) {
+                logger.error(
+                    `Invliad number of parameters ${paramArray.length}`
+                )
+
+                return getMetricDatum({runtime: '', isDebug: false})
+            }
+            const params = paramArray[0]
             const resource = await CloudFormation.getResourceFromTemplate({
                 handlerName: params.handlerName,
                 templatePath: params.samTemplate.fsPath
