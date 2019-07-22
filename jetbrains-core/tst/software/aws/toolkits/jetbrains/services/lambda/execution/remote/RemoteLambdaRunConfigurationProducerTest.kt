@@ -19,7 +19,7 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 
-class LambdaRemoteRunConfigurationProducerTest {
+class RemoteLambdaRunConfigurationProducerTest {
     @Rule
     @JvmField
     val projectRule = ProjectRule()
@@ -49,7 +49,7 @@ class LambdaRemoteRunConfigurationProducerTest {
         runInEdtAndWait {
             val runConfiguration = createRunConfiguration(lambdaLocation)
             assertThat(runConfiguration).isNotNull
-            val configuration = runConfiguration?.configuration as LambdaRemoteRunConfiguration
+            val configuration = runConfiguration?.configuration as RemoteLambdaRunConfiguration
             assertThat(configuration.functionName()).isEqualTo(functionName)
             assertThat(configuration.credentialProviderId()).isEqualTo(credentialProviderId)
             assertThat(configuration.regionId()).isEqualTo(region.id)
@@ -60,7 +60,7 @@ class LambdaRemoteRunConfigurationProducerTest {
     private fun createRunConfiguration(function: LambdaFunction): ConfigurationFromContext? {
         val dataContext = MapDataContext()
         val context = createContext(function, dataContext)
-        val producer = RunConfigurationProducer.getInstance(LambdaRemoteRunConfigurationProducer::class.java)
+        val producer = RunConfigurationProducer.getInstance(RemoteLambdaRunConfigurationProducer::class.java)
         return producer.createConfigurationFromContext(context)
     }
 

@@ -3,11 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.remote
 
-import com.intellij.execution.ExecutionException
-import com.intellij.execution.Executor
-import com.intellij.execution.configurations.ConfigurationFactory
-import com.intellij.execution.configurations.RuntimeConfigurationError
-import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
@@ -15,71 +10,15 @@ import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
-import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
-import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
-import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
-import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationBase
-import software.aws.toolkits.resources.message
 import javax.swing.JPanel
 import kotlin.streams.toList
 
-class LambdaRemoteRunConfigurationFactory(configuration: LambdaRunConfiguration) : ConfigurationFactory(configuration) {
-    override fun createTemplateConfiguration(project: Project) = LambdaRemoteRunConfiguration(project, this)
-
-    override fun getName(): String = "Remote"
-}
-
-class LambdaRemoteRunConfiguration(project: Project, factory: ConfigurationFactory) :
-    LambdaRunConfigurationBase<RemoteLambdaOptions>(project, factory, "Remote") {
-
-    override val lambdaOptions = RemoteLambdaOptions()
-
-    override fun getConfigurationEditor() = RemoteLambdaRunSettingsEditor(project)
-
-    override fun checkConfiguration() {
-        functionName() ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_function_specified"))
-
-        resolveCredentials()
-        regionId() ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
-        checkInput()
-    }
-
-    override fun getState(executor: Executor, environment: ExecutionEnvironment): RemoteLambdaState {
-        try {
-            val functionName = functionName()
-                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_function_specified"))
-
-            return RemoteLambdaState(
-                environment,
-                LambdaRemoteRunSettings(resolveCredentials(), resolveRegion(), functionName, resolveInput())
-            )
-        } catch (e: Exception) {
-            throw ExecutionException(e.message, e)
-        }
-    }
-
-    override fun suggestedName() = "[${message("lambda.run_configuration.remote")}] ${functionName()}"
-
-    fun functionName(): String? = lambdaOptions.functionOptions.functionName
-
-    fun functionName(name: String?) {
-        lambdaOptions.functionOptions.functionName = name
-    }
-}
-
-class LambdaRemoteRunSettings(
-    val credentialProvider: ToolkitCredentialsProvider,
-    val region: AwsRegion,
-    val functionName: String,
-    val input: String
-)
-
-class RemoteLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaRemoteRunConfiguration>() {
+class RemoteLambdaRunSettingsEditor(project: Project) : SettingsEditor<RemoteLambdaRunConfiguration>() {
     private val view = LambdaRemoteRunSettingsEditorPanel(project)
     private val credentialManager = CredentialManager.getInstance()
     private val regionProvider = AwsRegionProvider.getInstance()
@@ -129,7 +68,7 @@ class RemoteLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaRem
 
     override fun createEditor(): JPanel = view.panel
 
-    override fun resetEditorFrom(configuration: LambdaRemoteRunConfiguration) {
+    override fun resetEditorFrom(configuration: RemoteLambdaRunConfiguration) {
         configuration.credentialProviderId()?.let {
             try {
                 view.credentialSelector.setSelectedCredentialsProvider(credentialManager.getCredentialProvider(it))
@@ -150,7 +89,7 @@ class RemoteLambdaRunSettingsEditor(project: Project) : SettingsEditor<LambdaRem
         }
     }
 
-    override fun applyEditorTo(configuration: LambdaRemoteRunConfiguration) {
+    override fun applyEditorTo(configuration: RemoteLambdaRunConfiguration) {
         configuration.credentialProviderId(view.credentialSelector.getSelectedCredentialsProvider())
         configuration.regionId(view.regionSelector.selectedRegion?.id)
         configuration.functionName(view.functionName)

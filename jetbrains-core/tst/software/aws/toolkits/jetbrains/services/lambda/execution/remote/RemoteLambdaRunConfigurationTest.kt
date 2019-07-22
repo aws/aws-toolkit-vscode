@@ -211,7 +211,7 @@ class RemoteLambdaRunConfigurationTest {
                 input = "{}"
             )
 
-            val clonedConfiguration = runConfiguration.clone() as LambdaRemoteRunConfiguration
+            val clonedConfiguration = runConfiguration.clone() as RemoteLambdaRunConfiguration
             clonedConfiguration.name = "Cloned"
 
             clonedConfiguration.useInputText("Changed input")
@@ -220,7 +220,7 @@ class RemoteLambdaRunConfigurationTest {
         }
     }
 
-    private fun getState(runConfiguration: LambdaRemoteRunConfiguration): RemoteLambdaState {
+    private fun getState(runConfiguration: RemoteLambdaRunConfiguration): RemoteLambdaState {
         val executor = ExecutorRegistry.getInstance().getExecutorById(DefaultRunExecutor.EXECUTOR_ID)
         val environmentMock = mock<ExecutionEnvironment> {
             on { project } doReturn projectRule.project
