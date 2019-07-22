@@ -9,10 +9,9 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
-import { Datum } from '../../src/shared/telemetry/telemetryTypes'
 import { TIMEOUT } from './integrationTestsUtilities'
 
-const projectFolder = `${__dirname}/nodejs10x`
+const projectFolder = `${__dirname}`
 const projectSDK = 'nodejs10.x'
 
 async function getCodeLenses(): Promise<vscode.CodeLens[]> {
@@ -28,8 +27,7 @@ async function getCodeLenses(): Promise<vscode.CodeLens[]> {
     return codeLenses as vscode.CodeLens[]
 }
 
-describe('SAM', async () => {
-
+describe(`SAM ${projectSDK}`, async () => {
     before(async function () {
         // tslint:disable-next-line: no-invalid-this
         this.timeout(TIMEOUT)
@@ -41,7 +39,7 @@ describe('SAM', async () => {
 
         // this is really test 1, but since it has to run before everything it's in the before section
         try {
-            removeSync(projectFolder)
+            removeSync(path.join(projectFolder, 'testProject'))
         } catch (e) { }
         mkdirpSync(projectFolder)
         const initArguments: SamCliInitArgs = {
@@ -51,6 +49,9 @@ describe('SAM', async () => {
         }
         const samCliContext = getSamCliContext()
         await runSamCliInit(initArguments, samCliContext.invoker)
+    })
+
+    it('Generates a teamplate with a proper runtime', async () => {
         const fileContents = readFileSync(`${projectFolder}/testProject/template.yaml`).toString()
         assert.ok(fileContents.includes(`Runtime: ${projectSDK}`))
     })
@@ -73,12 +74,12 @@ describe('SAM', async () => {
         assert.ok(runCodeLens.command)
         const command = runCodeLens.command!
         assert.ok(command.arguments)
-        const runResult: { datum: Datum } | undefined = await vscode.commands.executeCommand(
+        const runResult: any | undefined = await vscode.commands.executeCommand(
             command.command,
             command.arguments!
         )
         assert.ok(runResult)
-        const { datum } = runResult!
+        const datum = runResult!.datum
         assert.strictEqual(datum.name, 'invokelocal')
         assert.strictEqual(datum.value, 1)
         assert.strictEqual(datum.unit, 'Count')
@@ -94,12 +95,12 @@ describe('SAM', async () => {
         assert.ok(debugCodeLens.command)
         const command = debugCodeLens.command!
         assert.ok(command.arguments)
-        const runResult: { datum: Datum } | undefined = await vscode.commands.executeCommand(
+        const runResult: any | undefined = await vscode.commands.executeCommand(
             command.command,
             command.arguments!
         )
         assert.ok(runResult)
-        const { datum } = runResult!
+        const datum = runResult!.datum
         assert.strictEqual(datum.name, 'invokelocal')
         assert.strictEqual(datum.value, 1)
         assert.strictEqual(datum.unit, 'Count')
@@ -112,7 +113,7 @@ describe('SAM', async () => {
 
     after(async () => {
         try {
-            removeSync(projectFolder)
+            removeSync(path.join(projectFolder, 'testProject'))
         } catch (e) {}
     })
 })
