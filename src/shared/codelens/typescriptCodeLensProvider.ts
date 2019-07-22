@@ -110,11 +110,20 @@ export function initialize({
 
             if (paramArray.length !== 1) {
                 logger.error(
-                    `Invliad number of parameters ${paramArray.length}`
+                    `Invliad number of parameters: ${paramArray.length}`
+                )
+
+                vscode.window.showErrorMessage(
+                    localize(
+                        'AWS.error.during.sam.local',
+                        'An error occurred trying to run SAM Application locally: {0}',
+                        `invalid runtime parameters ${paramArray}`
+                    )
                 )
 
                 return getMetricDatum({runtime: '', isDebug: false})
             }
+
             const params = paramArray[0]
             const resource = await CloudFormation.getResourceFromTemplate({
                 handlerName: params.handlerName,
