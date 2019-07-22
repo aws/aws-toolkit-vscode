@@ -90,7 +90,7 @@ describe(`SAM ${projectSDK}`, async () => {
         assert.strictEqual(metadata.get('runtime'), 'nodejs10.x')
         assert.strictEqual(metadata.get('debug'), 'false')
     }).timeout(TIMEOUT)
-/*
+
     it('Invokes the debug codelense', async () => {
         const [, debugCodeLens ] = await getCodeLenses()
         assert.ok(debugCodeLens.command)
@@ -111,7 +111,7 @@ describe(`SAM ${projectSDK}`, async () => {
         assert.strictEqual(metadata.get('runtime'), 'nodejs10.x')
         assert.strictEqual(metadata.get('debug'), 'true')
     }).timeout(TIMEOUT)
-*/
+
     after(async () => {
         try {
             removeSync(path.join(projectFolder, 'testProject'))
