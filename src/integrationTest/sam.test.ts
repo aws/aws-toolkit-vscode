@@ -9,11 +9,26 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
+import { Datum } from '../../src/shared/telemetry/telemetryTypes'
 import { TIMEOUT } from './integrationTestsUtilities'
 
+const projectFolder = `${__dirname}/nodejs10x`
+const projectSDK = 'nodejs10.x'
+
+async function getCodeLenses(): Promise<vscode.CodeLens[]> {
+    const documentPath = path.join(projectFolder, 'testProject', 'hello-world', 'app.js')
+    await vscode.workspace.openTextDocument(documentPath)
+    const documentUri = vscode.Uri.file(documentPath)
+    const codeLensesPromise: Thenable<vscode.CodeLens[] | undefined> =
+        vscode.commands.executeCommand('vscode.executeCodeLensProvider', documentUri)
+    const codeLenses = await codeLensesPromise
+    assert.ok(codeLenses)
+    assert.strictEqual(codeLenses!.length, 3)
+
+    return codeLenses as vscode.CodeLens[]
+}
+
 describe('SAM', async () => {
-    const projectFolder = `${__dirname}/nodejs10x`
-    const projectSDK = 'nodejs10.x'
 
     before(async function () {
         // tslint:disable-next-line: no-invalid-this
@@ -51,18 +66,48 @@ describe('SAM', async () => {
         await runSamCliInit(initArguments, samCliContext.invoker).catch((e: Error) => {
             assert(e.message.includes('directory already exists'))
         })
-    })
+    }).timeout(TIMEOUT)
 
     it('Invokes the run codelense', async () => {
-        const documentPath = path.join(projectFolder, 'testProject', 'hello-world', 'app.js')
-        console.log(documentPath)
-        const documentUri = vscode.Uri.file(documentPath)
-        const document = await vscode.workspace.openTextDocument(documentUri)
-        const codeLensesPromise: Thenable<vscode.CodeLens[] | undefined> =
-            vscode.commands.executeCommand('vscode.executeCodeLensProvider', document.uri)
-        const codeLenses = await codeLensesPromise
-        assert.ok(codeLenses)
-        assert.strictEqual(codeLenses!.length, 3)
+        const [ runCodeLens ] = await getCodeLenses()
+        assert.ok(runCodeLens.command)
+        const command = runCodeLens.command!
+        assert.ok(command.arguments)
+        const runResult: { datum: Datum } | undefined = await vscode.commands.executeCommand(
+            command.command,
+            command.arguments!
+        )
+        assert.ok(runResult)
+        const { datum } = runResult!
+        assert.strictEqual(datum.name, 'invokelocal')
+        assert.strictEqual(datum.value, 1)
+        assert.strictEqual(datum.unit, 'Count')
+
+        assert.ok(datum.metadata)
+        const metadata = datum.metadata!
+        assert.strictEqual(metadata.get('runtime'), 'nodejs10.x')
+        assert.strictEqual(metadata.get('debug'), 'false')
+    }).timeout(TIMEOUT)
+
+    it('Invokes the debug codelense', async () => {
+        const [, debugCodeLens ] = await getCodeLenses()
+        assert.ok(debugCodeLens.command)
+        const command = debugCodeLens.command!
+        assert.ok(command.arguments)
+        const runResult: { datum: Datum } | undefined = await vscode.commands.executeCommand(
+            command.command,
+            command.arguments!
+        )
+        assert.ok(runResult)
+        const { datum } = runResult!
+        assert.strictEqual(datum.name, 'invokelocal')
+        assert.strictEqual(datum.value, 1)
+        assert.strictEqual(datum.unit, 'Count')
+
+        assert.ok(datum.metadata)
+        const metadata = datum.metadata!
+        assert.strictEqual(metadata.get('runtime'), 'nodejs10.x')
+        assert.strictEqual(metadata.get('debug'), 'true')
     }).timeout(TIMEOUT)
 
     after(async () => {
