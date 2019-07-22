@@ -76,7 +76,7 @@ describe(`SAM ${projectSDK}`, async () => {
         assert.ok(command.arguments)
         const runResult: any | undefined = await vscode.commands.executeCommand(
             command.command,
-            command.arguments!
+            command.arguments![0]
         )
         assert.ok(runResult)
         // tslint:disable: no-unsafe-any
@@ -98,7 +98,7 @@ describe(`SAM ${projectSDK}`, async () => {
         assert.ok(command.arguments)
         const runResult: any | undefined = await vscode.commands.executeCommand(
             command.command,
-            command.arguments!
+            command.arguments![0]
         )
         assert.ok(runResult)
         const datum = runResult!.datum
