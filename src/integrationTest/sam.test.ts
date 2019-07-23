@@ -50,7 +50,6 @@ describe(`SAM ${projectSDK}`, async () => {
             removeSync(path.join(projectFolder, 'testProject'))
         } catch (e) { }
         mkdirpSync(projectFolder)
-        await vscode.commands.executeCommand('aws.samcli.detect')
         const initArguments: SamCliInitArgs = {
             name: 'testProject',
             location: projectFolder,
