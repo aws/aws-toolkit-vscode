@@ -12,7 +12,7 @@ phases:
 
     commands:
       - apt-get update
-      - apt-get install -y tree python2.7 docker
+      - apt-get install -y python2.7 docker
       - apt-get install -y libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins
       - pip install --user aws-sam-cli
       - pip install --upgrade awscli
@@ -31,9 +31,8 @@ phases:
     commands:
       - npm install
       - env SAM_PROJECT_SDK='nodejs10.x' SAM_PROJECT_PATH='testProject/hello-world/app.js' xvfb-run npm run integrationTest
-      - ls -al ./.vscode-test/
-      - tree ./.vscode-test/
-      - code --install-extension
+      - VSCODE=$(ls -1 ./.vscode-test/vscode*/VSCode*/bin/code)
+      - $VSCODE --install-extension ms-python-release.vsix
       - env SAM_PROJECT_SDK='python2.7' SAM_PROJECT_PATH='testProject/hello_world/app.py' xvfb-run npm run integrationTest
       #- env SAM_PROJECT_SDK='python3.6' SAM_PROJECT_PATH='testProject/hello_world/app.py' xvfb-run npm run integrationTest
       #- env SAM_PROJECT_SDK='python3.7' SAM_PROJECT_PATH='testProject/hello_world/app.py' xvfb-run npm run integrationTest
