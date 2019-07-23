@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as testRunner from '../test/index'
+import * as testRunner from '../../third-party/test/index'
+
+
 
 module.exports = testRunner

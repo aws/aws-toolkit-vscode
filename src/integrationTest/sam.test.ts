@@ -7,15 +7,17 @@ import * as assert from 'assert'
 import { mkdirpSync, readFileSync, removeSync } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { SamLambdaRuntime } from '../../src/lambda/models/samLambdaRuntime'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { TIMEOUT } from './integrationTestsUtilities'
 
-const projectFolder = `${__dirname}`
 const projectSDK = 'nodejs10.x'
+const projectMain = 'app.js'
+const projectFolder = `${__dirname}`
 
 async function getCodeLenses(): Promise<vscode.CodeLens[]> {
-    const documentPath = path.join(projectFolder, 'testProject', 'hello-world', 'app.js')
+    const documentPath = path.join(projectFolder, 'testProject', 'hello-world', projectMain)
     await vscode.workspace.openTextDocument(documentPath)
     const documentUri = vscode.Uri.file(documentPath)
     const codeLensesPromise: Thenable<vscode.CodeLens[] | undefined> =
@@ -45,7 +47,7 @@ describe(`SAM ${projectSDK}`, async () => {
         const initArguments: SamCliInitArgs = {
             name: 'testProject',
             location: projectFolder,
-            runtime: projectSDK
+            runtime: projectSDK as SamLambdaRuntime
         }
         const samCliContext = getSamCliContext()
         await runSamCliInit(initArguments, samCliContext.invoker)
@@ -60,7 +62,7 @@ describe(`SAM ${projectSDK}`, async () => {
         const initArguments: SamCliInitArgs = {
             name: 'testProject',
             location: projectFolder,
-            runtime: projectSDK
+            runtime: projectSDK as SamLambdaRuntime
         }
         console.log(initArguments.location)
         const samCliContext = getSamCliContext()
@@ -87,7 +89,7 @@ describe(`SAM ${projectSDK}`, async () => {
 
         assert.ok(datum.metadata)
         const metadata = datum.metadata!
-        assert.strictEqual(metadata.get('runtime'), 'nodejs10.x')
+        assert.strictEqual(metadata.get('runtime'), projectSDK)
         assert.strictEqual(metadata.get('debug'), 'false')
     }).timeout(TIMEOUT)
 
@@ -108,7 +110,7 @@ describe(`SAM ${projectSDK}`, async () => {
 
         assert.ok(datum.metadata)
         const metadata = datum.metadata!
-        assert.strictEqual(metadata.get('runtime'), 'nodejs10.x')
+        assert.strictEqual(metadata.get('runtime'), projectSDK)
         assert.strictEqual(metadata.get('debug'), 'true')
     }).timeout(TIMEOUT)
 
