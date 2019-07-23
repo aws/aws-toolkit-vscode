@@ -19,16 +19,13 @@ phases:
   
   pre_build:
     commands:
-      # make sure that SAM is in the path
+      # make sure that SAM is in the path, is not automatically done on codebuild
       - USER_BASE_PATH=$(python -m site --user-base) && export PATH=$PATH:$USER_BASE_PATH/bin
-      - ls -al $USER_BASE_PATH/bin
 
   build:
     commands:
       - npm install
       - npm run compile
-      - which sam
-      - sam --version
       - env SAM_PROJECT_SDK='nodejs10.x' SAM_PROJECT_PATH='testProject/hello-world/app.js' xvfb-run npm run integrationTest
       #- env SAM_PROJECT_SDK='python2.7' SAM_PROJECT_PATH='testProject/hello_world/app.py' xvfb-run npm run integrationTest
       #- env SAM_PROJECT_SDK='python3.6' SAM_PROJECT_PATH='testProject/hello_world/app.py' xvfb-run npm run integrationTest
