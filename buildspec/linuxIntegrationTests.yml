@@ -1,0 +1,30 @@
+version: 0.2
+
+env:
+  variables:
+    CI: true
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 10
+      dotnet: 2.2
+
+    commands:
+      - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay&
+      - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+      - apt-get update
+      - apt-get install jq python2.7 python3.6 python3.7
+      - pip install --user aws-sam-cli
+      - pip install --upgrade awscli
+
+  build:
+    commands:
+      - npm install
+      - npm run compile
+      - env SAM_PROJECT_SDK='python2.7' SAM_PROJECT_MAIN='main.py' npm run integrationTest
+      - env SAM_PROJECT_SDK='python3.6' SAM_PROJECT_MAIN='main.py' npm run integrationTest
+      - env SAM_PROJECT_SDK='python3.7' SAM_PROJECT_MAIN='main.py' npm run integrationTest
+      - env SAM_PROJECT_SDK='nodejs10.x' SAM_PROJECT_MAIN='app.js' npm run integrationTest
+      - env SAM_PROJECT_SDK='dotnetcore2.1' SAM_PROJECT_MAIN='main.cs' npm run integrationTest
+    
