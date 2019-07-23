@@ -22,9 +22,9 @@ phases:
     commands:
       - npm install
       - npm run compile
-      - env SAM_PROJECT_SDK='python2.7' SAM_PROJECT_MAIN='main.py' npm run integrationTest
-      - env SAM_PROJECT_SDK='python3.6' SAM_PROJECT_MAIN='main.py' npm run integrationTest
-      - env SAM_PROJECT_SDK='python3.7' SAM_PROJECT_MAIN='main.py' npm run integrationTest
-      - env SAM_PROJECT_SDK='nodejs10.x' SAM_PROJECT_MAIN='app.js' npm run integrationTest
-      - env SAM_PROJECT_SDK='dotnetcore2.1' SAM_PROJECT_MAIN='main.cs' npm run integrationTest
+      - env SAM_PROJECT_SDK='python2.7' SAM_PROJECT_PATH='testProject/hello_world/app.py' npm run integrationTest
+      - env SAM_PROJECT_SDK='python3.6' SAM_PROJECT_PATH='testProject/hello_world/app.py' npm run integrationTest
+      - env SAM_PROJECT_SDK='python3.7' SAM_PROJECT_PATH='testProject/hello_world/app.py' npm run integrationTest
+      - env SAM_PROJECT_SDK='nodejs10.x' SAM_PROJECT_PATH='testProject/hello-world/app.js' npm run integrationTest
+      - env SAM_PROJECT_SDK='dotnetcore2.1' SAM_PROJECT_PATH='testProject/src/HelloWorld/Function.cs' npm run integrationTest
     

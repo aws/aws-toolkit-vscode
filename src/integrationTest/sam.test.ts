@@ -13,11 +13,11 @@ import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliIn
 import { activateExtension, TIMEOUT } from './integrationTestsUtilities'
 
 let projectSDK = 'nodejs10.x'
-let projectMain = 'app.js'
+let projectPath = 'testProject/hello-world/app.js'
 const projectFolder = `${__dirname}`
 
 async function getCodeLenses(): Promise<vscode.CodeLens[]> {
-    const documentPath = path.join(projectFolder, 'testProject', 'hello-world', projectMain)
+    const documentPath = path.join(projectFolder, projectPath)
     await vscode.workspace.openTextDocument(documentPath)
     const documentUri = vscode.Uri.file(documentPath)
     const codeLensesPromise: Thenable<vscode.CodeLens[] | undefined> =
@@ -42,8 +42,8 @@ describe(`SAM ${projectSDK}`, async () => {
         if (process.env.SAM_PROJECT_SDK) {
             projectSDK = process.env.SAM_PROJECT_SDK
         }
-        if (process.env.SAM_PROJECT_MAIN) {
-            projectMain = process.env.SAM_PROJECT_MAIN
+        if (process.env.SAM_PROJECT_PATH) {
+            projectPath = process.env.SAM_PROJECT_PATH
         }
         // this is really test 1, but since it has to run before everything it's in the before section
         try {
