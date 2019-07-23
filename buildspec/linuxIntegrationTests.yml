@@ -12,10 +12,8 @@ phases:
 
     commands:
       - apt-get update
-      - apt-get install jq python2.7 python3.6 python3.7
-      - apt-get install -y libgtk-3-dev libxss1 xvfb 
-      - apt-get install -y libnss3-dev libasound2
-      - apt-get install -y libasound2-plugins
+      - apt-get install python2.7
+      - apt-get install -y libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins
       - pip install --user aws-sam-cli
       - pip install --upgrade awscli
 
