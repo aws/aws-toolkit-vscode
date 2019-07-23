@@ -5,7 +5,6 @@
 
 import { join } from 'path'
 
-// Set up some environment variables so the VS Code Test script knows where the tests are located
 process.env.CODE_TESTS_PATH = join(process.cwd(), 'out', 'src', 'integrationTest')
 process.env.CODE_EXTENSIONS_PATH = process.cwd()
 

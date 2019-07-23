@@ -10,10 +10,10 @@ import * as vscode from 'vscode'
 import { SamLambdaRuntime } from '../../src/lambda/models/samLambdaRuntime'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
-import { TIMEOUT } from './integrationTestsUtilities'
+import { activateExtension, TIMEOUT } from './integrationTestsUtilities'
 
-const projectSDK = 'nodejs10.x'
-const projectMain = 'app.js'
+let projectSDK = 'nodejs10.x'
+let projectMain = 'app.js'
 const projectFolder = `${__dirname}`
 
 async function getCodeLenses(): Promise<vscode.CodeLens[]> {
@@ -33,12 +33,18 @@ describe(`SAM ${projectSDK}`, async () => {
     before(async function () {
         // tslint:disable-next-line: no-invalid-this
         this.timeout(TIMEOUT)
-        const extension: vscode.Extension<void> | undefined = vscode.extensions.getExtension(
-            'amazonwebservices.aws-toolkit-vscode'
-        )
-        assert.ok(extension)
-        await extension!.activate()
-
+        await activateExtension()
+        /* read in from the environment what to test.
+           This has to be done through environment variables or dynamically generating
+           test files. Using the test generation APIs of Mocha will not work and results in
+           promises timing out and other issues.
+        */
+        if (process.env.SAM_PROJECT_SDK) {
+            projectSDK = process.env.SAM_PROJECT_SDK
+        }
+        if (process.env.SAM_PROJECT_MAIN) {
+            projectMain = process.env.SAM_PROJECT_MAIN
+        }
         // this is really test 1, but since it has to run before everything it's in the before section
         try {
             removeSync(path.join(projectFolder, 'testProject'))

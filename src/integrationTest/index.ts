@@ -5,6 +5,4 @@
 
 import * as testRunner from '../../third-party/test/index'
 
-
-
 module.exports = testRunner
