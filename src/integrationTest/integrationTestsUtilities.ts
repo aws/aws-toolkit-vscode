@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 
 const SECOND = 1000
-export const TIMEOUT = 60 * SECOND
+export const TIMEOUT = 30 * SECOND
 
 export async function activateExtension(): Promise<vscode.Extension<void>> {
     const extension: vscode.Extension<void> | undefined = vscode.extensions.getExtension(
