@@ -16,6 +16,12 @@ phases:
       - apt-get install -y libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins
       - pip install --user aws-sam-cli
       - pip install --upgrade awscli
+  
+  pre_build:
+    commands:
+      # make sure that SAM is in the path
+      - USER_BASE_PATH=$(python -m site --user-base) && export PATH=$PATH:$USER_BASE_PATH/bin
+      - ls -al $USER_BASE_PATH/bin
 
   build:
     commands:
