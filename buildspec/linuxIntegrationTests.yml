@@ -12,7 +12,7 @@ phases:
 
     commands:
       - apt-get update
-      - apt-get install -y python2.7
+      - apt-get install -y python2.7 docker
       - apt-get install -y libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins
       - pip install --user aws-sam-cli
       - pip install --upgrade awscli
