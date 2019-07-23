@@ -15,6 +15,9 @@ phases:
       - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
       - apt-get update
       - apt-get install jq python2.7 python3.6 python3.7
+      - apt-get install -y libgtk-3-dev libxss1 xvfb 
+      - apt-get install -y libnss3-dev libasound2
+      - apt-get install -y libasound2-plugins
       - pip install --user aws-sam-cli
       - pip install --upgrade awscli
 
@@ -22,9 +25,9 @@ phases:
     commands:
       - npm install
       - npm run compile
-      - env SAM_PROJECT_SDK='python2.7' SAM_PROJECT_PATH='testProject/hello_world/app.py' npm run integrationTest
-      - env SAM_PROJECT_SDK='python3.6' SAM_PROJECT_PATH='testProject/hello_world/app.py' npm run integrationTest
-      - env SAM_PROJECT_SDK='python3.7' SAM_PROJECT_PATH='testProject/hello_world/app.py' npm run integrationTest
-      - env SAM_PROJECT_SDK='nodejs10.x' SAM_PROJECT_PATH='testProject/hello-world/app.js' npm run integrationTest
-      - env SAM_PROJECT_SDK='dotnetcore2.1' SAM_PROJECT_PATH='testProject/src/HelloWorld/Function.cs' npm run integrationTest
+      - env SAM_PROJECT_SDK='nodejs10.x' SAM_PROJECT_PATH='testProject/hello-world/app.js' xvfb-run npm run integrationTest
+      - env SAM_PROJECT_SDK='python2.7' SAM_PROJECT_PATH='testProject/hello_world/app.py' xvfb-run npm run integrationTest
+      - env SAM_PROJECT_SDK='python3.6' SAM_PROJECT_PATH='testProject/hello_world/app.py' xvfb-run npm run integrationTest
+      - env SAM_PROJECT_SDK='python3.7' SAM_PROJECT_PATH='testProject/hello_world/app.py' xvfb-run npm run integrationTest
+      - env SAM_PROJECT_SDK='dotnetcore2.1' SAM_PROJECT_PATH='testProject/src/HelloWorld/Function.cs' xvfb-run npm run integrationTest
     
