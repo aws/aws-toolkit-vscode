@@ -16,7 +16,7 @@ phases:
       - apt-get install -y libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins
       - pip3 install --user aws-sam-cli
       - pip3 install --upgrade awscli
-      - ls -al ${CODEBUILD_SRC_DIR_source2}
+      - ls -al ${CODEBUILD_SRC_DIR_s3source}
   
   pre_build:
     commands:
@@ -26,8 +26,8 @@ phases:
       - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay&
       - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
       # unzip the vs code extensions
-      - unzip ${CODEBUILD_SRC_DIR_source2}/VSCodeIntegrationTestPlugins.zip
-      - cp ${CODEBUILD_SRC_DIR_source2}/* .
+      - unzip ${CODEBUILD_SRC_DIR_s3source}/VSCodeIntegrationTestPlugins.zip
+      - cp ${CODEBUILD_SRC_DIR_s3source}/* .
 
   build:
     commands:
