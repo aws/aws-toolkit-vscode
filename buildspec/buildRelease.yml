@@ -1,0 +1,21 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - sudo apt-get update
+      - sudo apt-get install -y libgtk-3-dev libxss1 xvfb 
+      - sudo apt-get install -y libnss3-dev libasound2
+      - sudo apt-get install -y libasound2-plugins
+  build:
+    commands:
+      - npm install
+      - npm run compile
+      - xvfb-run npm run test
+      - cp ./extension-readme.md ./README.md
+      - npm run package
+artifacts:
+  files:
+    - aws-toolkit-vscode*
+    - package.json
+  discard-paths: true
