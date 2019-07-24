@@ -134,7 +134,8 @@ describe(`SAM ${projectSDK}`, async () => {
         const metadata = datum.metadata!
         assert.strictEqual(metadata.get('runtime'), projectSDK)
         assert.strictEqual(metadata.get('debug'), 'true')
-    }).timeout(TIMEOUT * 2)
+    // This timeout is significnaly longer, mostly to accomodate the long first time .net debugger install
+    }).timeout(TIMEOUT * 4)
 
     after(async () => {
         try {
