@@ -19,3 +19,7 @@ export async function activateExtension(): Promise<vscode.Extension<void>> {
 
     return extension as vscode.Extension<void>
 }
+
+export async function sleep(miliseconds: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, miliseconds))
+}

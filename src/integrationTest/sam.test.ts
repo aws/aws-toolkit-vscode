@@ -10,20 +10,27 @@ import * as vscode from 'vscode'
 import { SamLambdaRuntime } from '../../src/lambda/models/samLambdaRuntime'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
-import { activateExtension, TIMEOUT } from './integrationTestsUtilities'
+import { activateExtension, sleep, TIMEOUT } from './integrationTestsUtilities'
 
 let projectSDK = 'nodejs10.x'
 let projectPath = 'testProject/hello-world/app.js'
 const projectFolder = `${__dirname}`
 
-async function getCodeLenses(): Promise<vscode.CodeLens[]> {
+async function openSamProject(): Promise<vscode.Uri> {
     const documentPath = path.join(projectFolder, projectPath)
     await vscode.workspace.openTextDocument(documentPath)
-    const documentUri = vscode.Uri.file(documentPath)
+
+    return vscode.Uri.file(documentPath)
+}
+async function getCodeLenses(): Promise<vscode.CodeLens[]> {
+    const documentUri = await openSamProject()
     const codeLensesPromise: Thenable<vscode.CodeLens[] | undefined> =
         vscode.commands.executeCommand('vscode.executeCodeLensProvider', documentUri)
-    const codeLenses = await codeLensesPromise
+    let codeLenses = await codeLensesPromise
     assert.ok(codeLenses)
+    // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
+    // not shown to the user and do not affect how our extension is working
+    codeLenses = codeLenses!.filter(lens => lens !== undefined && lens.command !== undefined)
     assert.strictEqual(codeLenses!.length, 3)
 
     return codeLenses as vscode.CodeLens[]
@@ -57,6 +64,15 @@ describe(`SAM ${projectSDK}`, async () => {
         }
         const samCliContext = getSamCliContext()
         await runSamCliInit(initArguments, samCliContext.invoker)
+        // we have to restore dotnet projects before we do anything, so we need this step just for dotnet
+        if (projectSDK.includes('dotnet')) {
+            await openSamProject()
+            // to add to this we have to wait for the .net extension to active to restore
+            await sleep(5000)
+            await vscode.commands.executeCommand('dotnet.restore.all')
+            // then we have to sleep to wait for it to actually restore
+            await sleep(10000)
+        }
     })
 
     it('Generates a teamplate with a proper runtime', async () => {
@@ -118,7 +134,7 @@ describe(`SAM ${projectSDK}`, async () => {
         const metadata = datum.metadata!
         assert.strictEqual(metadata.get('runtime'), projectSDK)
         assert.strictEqual(metadata.get('debug'), 'true')
-    }).timeout(TIMEOUT)
+    }).timeout(TIMEOUT * 2)
 
     after(async () => {
         try {

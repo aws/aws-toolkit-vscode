@@ -12,6 +12,8 @@ phases:
     commands:
       - GITHUB_AUTH=aws-toolkit-automation:${GITHUB_TOKEN}
       - RELEASES=https://api.github.com/repos/aws/aws-toolkit-vscode/releases
+      - cp -r ${CODEBUILD_SRC_DIR_s3source_buildPipeline}/* .
+
   build:
     commands:
       - VERSION=$(node -e "console.log(require('./package.json').version);")
