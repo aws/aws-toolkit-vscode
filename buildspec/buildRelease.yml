@@ -2,6 +2,9 @@ version: 0.2
 
 phases:
   install:
+    runtime-versions:
+      nodejs: 10
+
     commands:
       - sudo apt-get update
       - sudo apt-get install -y libgtk-3-dev libxss1 xvfb 
