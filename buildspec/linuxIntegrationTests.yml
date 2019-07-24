@@ -25,8 +25,7 @@ phases:
       # start docker
       - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay&
       - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
-      # unzip the vs code extensions
-      - unzip ${CODEBUILD_SRC_DIR_s3source}/VSCodeIntegrationTestPlugins.zip
+      # move the vs code required files into this folder
       - cp ${CODEBUILD_SRC_DIR_s3source}/* .
 
   build:
