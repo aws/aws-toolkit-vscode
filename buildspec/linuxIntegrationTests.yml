@@ -22,15 +22,11 @@ phases:
       - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
       # move the vs code required files into this folder
       - cp -r ${CODEBUILD_SRC_DIR_s3source}/* .
-      # get the .git folder
-      - git clone https://github.com/aws/aws-toolkit-vscode aws-toolkit-vscode
-      - cd aws-toolkit-vscode && git checkout $CODEBUILD_RESOLVED_SOURCE_VERSION && cd ..
-      - cp -r ./aws-toolkit-vscode/.git .
 
   build:
     commands:
       - ls -al
-      - npm install
+      - npm install --unsafe-perm
       - env SAM_PROJECT_SDK='nodejs10.x' SAM_PROJECT_PATH='testProject/hello-world/app.js' xvfb-run npm run integrationTest
       - VSCODE=$(ls -1 ./.vscode-test/vscode*/VSCode*/bin/code)
       # install the python plugin (required for python testing) that we pulled from S3

@@ -12,7 +12,7 @@ phases:
       - apt-get install -y libasound2-plugins
   build:
     commands:
-      - npm install
+      - npm install --unsafe-perm
       - npm run compile
       - xvfb-run npm run test
       - cp ./extension-readme.md ./README.md
