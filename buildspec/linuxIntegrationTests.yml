@@ -25,7 +25,6 @@ phases:
 
   build:
     commands:
-      - ls -al
       - npm install --unsafe-perm
       - env SAM_PROJECT_SDK='nodejs10.x' SAM_PROJECT_PATH='testProject/hello-world/app.js' xvfb-run npm run integrationTest
       - VSCODE=$(ls -1 ./.vscode-test/vscode*/VSCode*/bin/code)
@@ -34,5 +33,7 @@ phases:
       - env SAM_PROJECT_SDK='python2.7' SAM_PROJECT_PATH='testProject/hello_world/app.py' xvfb-run npm run integrationTest
       - env SAM_PROJECT_SDK='python3.6' SAM_PROJECT_PATH='testProject/hello_world/app.py' xvfb-run npm run integrationTest
       - env SAM_PROJECT_SDK='python3.7' SAM_PROJECT_PATH='testProject/hello_world/app.py' xvfb-run npm run integrationTest
-      #- env SAM_PROJECT_SDK='dotnetcore2.1' SAM_PROJECT_PATH='testProject/src/HelloWorld/Function.cs' xvfb-run npm run integrationTest
+      # Install c# plugin (required for dotnetcore testing) that we pulled from s3
+      - $VSCODE --install-extension csharp.vsix --user-data-dir /tmp/
+      - env SAM_PROJECT_SDK='dotnetcore2.1' SAM_PROJECT_PATH='testProject/src/HelloWorld/Function.cs' xvfb-run npm run integrationTest
     
