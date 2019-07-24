@@ -32,7 +32,7 @@ phases:
       # install the python plugin (required for python testing) that we pulled from S3
       - $VSCODE --install-extension ms-python-release.vsix --user-data-dir /tmp/
       - env SAM_PROJECT_SDK='python2.7' SAM_PROJECT_PATH='testProject/hello_world/app.py' xvfb-run npm run integrationTest
-      #- env SAM_PROJECT_SDK='python3.6' SAM_PROJECT_PATH='testProject/hello_world/app.py' xvfb-run npm run integrationTest
-      #- env SAM_PROJECT_SDK='python3.7' SAM_PROJECT_PATH='testProject/hello_world/app.py' xvfb-run npm run integrationTest
+      - env SAM_PROJECT_SDK='python3.6' SAM_PROJECT_PATH='testProject/hello_world/app.py' xvfb-run npm run integrationTest
+      - env SAM_PROJECT_SDK='python3.7' SAM_PROJECT_PATH='testProject/hello_world/app.py' xvfb-run npm run integrationTest
       #- env SAM_PROJECT_SDK='dotnetcore2.1' SAM_PROJECT_PATH='testProject/src/HelloWorld/Function.cs' xvfb-run npm run integrationTest
     
