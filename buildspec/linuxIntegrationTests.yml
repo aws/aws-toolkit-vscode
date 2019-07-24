@@ -16,6 +16,7 @@ phases:
       - apt-get install -y libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins
       - pip3 install --user aws-sam-cli
       - pip3 install --upgrade awscli
+      - ls -al ${CODEBUILD_SRC_DIR_source2}
   
   pre_build:
     commands:
