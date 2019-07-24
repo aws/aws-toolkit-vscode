@@ -1,9 +1,5 @@
 version: 0.2
 
-env:
-  variables:
-    CI: true
-
 phases:
   install:
     runtime-versions:
@@ -27,7 +23,7 @@ phases:
       # move the vs code required files into this folder
       - cp -r ${CODEBUILD_SRC_DIR_s3source}/* .
       # get the .git folder
-      - git clone $REPO_URL aws-toolkit-vscode
+      - git clone https://github.com/aws/aws-toolkit-vscode aws-toolkit-vscode
       - cd aws-toolkit-vscode && git checkout $CODEBUILD_RESOLVED_SOURCE_VERSION && cd ..
       - cp -r ./aws-toolkit-vscode/.git .
 
