@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import { execSync } from 'child_process'
 import { mkdirpSync, readFileSync, removeSync } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -11,7 +12,6 @@ import { SamLambdaRuntime } from '../../src/lambda/models/samLambdaRuntime'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { activateExtension, sleep, TIMEOUT } from './integrationTestsUtilities'
-import { execSync } from 'child_process'
 
 let projectSDK = 'nodejs10.x'
 let projectPath = 'testProject/hello-world/app.js'
