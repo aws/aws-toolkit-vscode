@@ -140,7 +140,7 @@ describe('SAM Integration', async () => {
         assert.strictEqual(metadata.get('runtime'), projectSDK)
         assert.strictEqual(metadata.get('debug'), 'true')
     // This timeout is significnaly longer, mostly to accomodate the long first time .net debugger
-    }).timeout(TIMEOUT * 4)
+    }).timeout(TIMEOUT * 2)
 
     after(async () => {
         try {
