@@ -4,7 +4,6 @@
  */
 
 import * as assert from 'assert'
-import { execSync } from 'child_process'
 import { mkdirpSync, readFileSync, removeSync } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -18,10 +17,6 @@ let projectPath = 'testProject/hello-world/app.js'
 const projectFolder = `${__dirname}`
 
 async function openSamProject(): Promise<vscode.Uri> {
-    console.log('=================================================')
-    console.log(execSync('pwd').toString())
-    console.log(execSync('tree out').toString())
-    console.log('===========================================############3======')
     const documentPath = path.join(projectFolder, projectPath)
     await vscode.workspace.openTextDocument(documentPath)
 
@@ -76,7 +71,7 @@ describe('SAM Integration', async () => {
             console.log('Runtime under test is dotnet, will open and restore first')
             await openSamProject()
             // to add to this we have to wait for the .net extension to active to restore
-            await sleep(5000)
+            await sleep(10000)
             console.log('Restoring')
             await vscode.commands.executeCommand('dotnet.restore.all')
             // then we have to sleep to wait for it to actually restore
