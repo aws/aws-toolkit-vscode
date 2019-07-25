@@ -7,13 +7,13 @@ phases:
 
     commands:
       - apt-get update
-      - apt-get install -y python2.7 python3.6 python3.7 docker
+      - apt-get install -y python2.7 python3.7 docker
       - apt-get install -y libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins
       - pip3 install --user aws-sam-cli
       - pip3 install --upgrade awscli
       # install .net core 2.1
       - wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-      - sudo dpkg -i packages-microsoft-prod.deb
+      - dpkg -i packages-microsoft-prod.deb
       - add-apt-repository universe
       - apt-get install apt-transport-https
       - apt-get update
@@ -41,6 +41,6 @@ phases:
       # install the python plugin (required for python testing) that we pulled from S3
       - $VSCODE --install-extension ms-python-release.vsix --user-data-dir /tmp/
       - env SAM_PROJECT_SDK='python2.7' SAM_PROJECT_PATH='testProject/hello_world/app.py' xvfb-run npm run integrationTest
-      - env SAM_PROJECT_SDK='python3.6' SAM_PROJECT_PATH='testProject/hello_world/app.py' xvfb-run npm run integrationTest
       - env SAM_PROJECT_SDK='python3.7' SAM_PROJECT_PATH='testProject/hello_world/app.py' xvfb-run npm run integrationTest
+      - env SAM_PROJECT_SDK='python3.6' SAM_PROJECT_PATH='testProject/hello_world/app.py' xvfb-run npm run integrationTest
     
