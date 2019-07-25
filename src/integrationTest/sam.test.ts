@@ -12,8 +12,8 @@ import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { activateExtension, sleep, TIMEOUT } from './integrationTestsUtilities'
 
-let projectSDK = 'nodejs10.x'
-let projectPath = 'testProject/hello-world/app.js'
+let projectSDK = 'dotnetcore2.1'
+let projectPath = 'testProject/src/HelloWorld/Function.cs'
 const projectFolder = `${__dirname}`
 
 async function openSamProject(): Promise<vscode.Uri> {
@@ -22,6 +22,7 @@ async function openSamProject(): Promise<vscode.Uri> {
 
     return vscode.Uri.file(documentPath)
 }
+
 async function getCodeLenses(): Promise<vscode.CodeLens[]> {
     const documentUri = await openSamProject()
     const codeLensesPromise: Thenable<vscode.CodeLens[] | undefined> =
@@ -36,7 +37,7 @@ async function getCodeLenses(): Promise<vscode.CodeLens[]> {
     return codeLenses as vscode.CodeLens[]
 }
 
-describe(`SAM ${projectSDK}`, async () => {
+describe('SAM Integration', async () => {
     before(async function () {
         // tslint:disable-next-line: no-invalid-this
         this.timeout(TIMEOUT)
@@ -52,6 +53,7 @@ describe(`SAM ${projectSDK}`, async () => {
         if (process.env.SAM_PROJECT_PATH) {
             projectPath = process.env.SAM_PROJECT_PATH
         }
+        console.log(`Using SDK ${projectSDK} with project in path ${projectPath}`)
         // this is really test 1, but since it has to run before everything it's in the before section
         try {
             removeSync(path.join(projectFolder, 'testProject'))
@@ -134,7 +136,7 @@ describe(`SAM ${projectSDK}`, async () => {
         const metadata = datum.metadata!
         assert.strictEqual(metadata.get('runtime'), projectSDK)
         assert.strictEqual(metadata.get('debug'), 'true')
-    // This timeout is significnaly longer, mostly to accomodate the long first time .net debugger install
+    // This timeout is significnaly longer, mostly to accomodate the long first time .net debugger
     }).timeout(TIMEOUT * 4)
 
     after(async () => {
