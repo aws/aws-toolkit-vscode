@@ -15,7 +15,9 @@ phases:
 
   build:
     commands:
-      - ls -al $CODEBUILD_SRC_DIR_buildPipeline
+      # pull in the build artifact
+      - cp -r ${CODEBUILD_SRC_DIR_buildPipeline}/* 
+      - ls -al
       - VERSION=$(node -e "console.log(require('./package.json').version);")
       - |
         if [ $STAGE != "prod" ]; then
