@@ -19,8 +19,8 @@ const projectFolder = `${__dirname}`
 
 async function openSamProject(): Promise<vscode.Uri> {
     console.log('=================================================')
-    execSync('pwd')
-    execSync('tree .')
+    execSync('pwd', {stdio: 'inherit'})
+    execSync('tree', {stdio: 'inherit'})
     console.log('===========================================############3======')
     const documentPath = path.join(projectFolder, projectPath)
     await vscode.workspace.openTextDocument(documentPath)
