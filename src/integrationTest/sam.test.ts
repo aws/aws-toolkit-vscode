@@ -12,8 +12,8 @@ import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { activateExtension, sleep, TIMEOUT } from './integrationTestsUtilities'
 
-let projectSDK = 'dotnetcore2.1'
-let projectPath = 'testProject/src/HelloWorld/Function.cs'
+let projectSDK = 'nodejs10.x'
+let projectPath = 'testProject/hello-world/app.js'
 const projectFolder = `${__dirname}`
 
 async function openSamProject(): Promise<vscode.Uri> {
