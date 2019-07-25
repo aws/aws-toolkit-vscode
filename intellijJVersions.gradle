@@ -26,10 +26,10 @@ static def ideProfiles() {
             ],
             "2019.2": [
                     "IC": [
-                            version: "192-EAP-SNAPSHOT",
+                            version: "IC-2019.2",
                             plugins: [
                                     "yaml",
-                                    "PythonCore:2019.2.192.5587.17",
+                                    "PythonCore:2019.2.192.5728.98",
                                     "java",
                                     "gradle",
                                     "maven",
