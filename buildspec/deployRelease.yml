@@ -5,12 +5,9 @@ phases:
     runtime-versions:
       nodejs: 10
 
-  pre_build:
-    commands:
-      - cp -r ${CODEBUILD_SRC_DIR_s3source_buildPipeline}/* .
-
   build:
     commands:
+      - ls -al
       - |
         if [ $STAGE != "prod" ]; then
           echo "Stage is not production, skipping publish step"
