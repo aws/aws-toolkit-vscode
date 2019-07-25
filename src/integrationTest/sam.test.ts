@@ -11,12 +11,17 @@ import { SamLambdaRuntime } from '../../src/lambda/models/samLambdaRuntime'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { activateExtension, sleep, TIMEOUT } from './integrationTestsUtilities'
+import { execSync } from 'child_process'
 
 let projectSDK = 'nodejs10.x'
 let projectPath = 'testProject/hello-world/app.js'
 const projectFolder = `${__dirname}`
 
 async function openSamProject(): Promise<vscode.Uri> {
+    console.log('=================================================')
+    execSync('pwd')
+    execSync('tree .')
+    console.log('===========================================############3======')
     const documentPath = path.join(projectFolder, projectPath)
     await vscode.workspace.openTextDocument(documentPath)
 
