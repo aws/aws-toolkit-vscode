@@ -25,6 +25,7 @@ import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTem
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
+import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.settings.LambdaSettings
 import software.aws.toolkits.resources.message
@@ -97,10 +98,10 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
     // Handler defined in remote Lambda with the same runtime group is valid
     private fun handlerInRemote(psiFile: PsiFile, handler: String, runtimeGroup: RuntimeGroup): Boolean =
         try {
-            val result = AwsResourceCache.getInstance(psiFile.project).lambdaFunctions()
+            val result = AwsResourceCache.getInstance(psiFile.project).getResource(LambdaResources.LIST_FUNCTIONS).toCompletableFuture()
             if (result.isDone) {
                 result.getNow(null)?.any {
-                    it.handler == handler && it.runtime.runtimeGroup == runtimeGroup
+                    it.handler() == handler && it.runtime().runtimeGroup == runtimeGroup
                 } ?: false
             } else {
                 result.whenComplete { _, _ ->

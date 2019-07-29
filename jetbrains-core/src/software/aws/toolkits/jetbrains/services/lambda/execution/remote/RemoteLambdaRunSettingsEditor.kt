@@ -3,26 +3,24 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.remote
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
-import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
+import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
 import javax.swing.JPanel
-import kotlin.streams.toList
 
 class RemoteLambdaRunSettingsEditor(project: Project) : SettingsEditor<RemoteLambdaRunConfiguration>() {
     private val view = LambdaRemoteRunSettingsEditorPanel(project)
     private val credentialManager = CredentialManager.getInstance()
     private val regionProvider = AwsRegionProvider.getInstance()
-    private val clientManager = AwsClientManager.getInstance(project)
+    private val resourceCache = AwsResourceCache.getInstance(project)
 
     init {
         view.credentialSelector.setCredentialsProviders(credentialManager.getCredentialProviders())
@@ -47,20 +45,16 @@ class RemoteLambdaRunSettingsEditor(project: Project) : SettingsEditor<RemoteLam
 
         view.functionNames.isEnabled = false
 
-        ApplicationManager.getApplication().executeOnPooledThread {
-            val lambdaClient = clientManager.getClient<LambdaClient>(credProvider, region)
-
-            val functions = try {
-                lambdaClient.listFunctionsPaginator().stream()
-                    .flatMap { it.functions().stream().map { function -> function.functionName() } }
-                    .toList()
-            } catch (e: Exception) {
-                LOG.warn(e) { "Failed to load functions" }
-                emptyList<String>()
+        resourceCache.getResource(LambdaResources.LIST_FUNCTIONS, region, credProvider).whenComplete { functions, error ->
+            val functionNames = when (error) {
+                null -> functions.mapNotNull { it.functionName() }.toList()
+                else -> {
+                    LOG.warn(error) { "Failed to load functions" }
+                    emptyList()
+                }
             }
-
             runInEdt(ModalityState.any()) {
-                view.setFunctionNames(functions)
+                view.setFunctionNames(functionNames)
                 view.functionNames.isEnabled = true
             }
         }
