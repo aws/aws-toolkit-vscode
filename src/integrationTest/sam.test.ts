@@ -68,15 +68,10 @@ describe('SAM Integration', async () => {
         await runSamCliInit(initArguments, samCliContext.invoker)
         // we have to restore dotnet projects before we do anything, so we need this step just for dotnet
         if (projectSDK.includes('dotnet')) {
-            console.log('Runtime under test is dotnet, will open and restore first')
+            console.log('Runtime under test is dotnet, will wait for extension to activate first')
             await openSamProject()
             // to add to this we have to wait for the .net extension to active to restore
             await sleep(10000)
-            console.log('Restoring')
-            await vscode.commands.executeCommand('dotnet.restore.all')
-            // then we have to sleep to wait for it to actually restore
-            await sleep(10000)
-            console.log('Dotnet restore finished')
         }
     })
 
