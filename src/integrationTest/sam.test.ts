@@ -80,7 +80,7 @@ describe('SAM Integration', async () => {
         }
     })
 
-    it('Generates a teamplate with a proper runtime', async () => {
+    it('Generates a template with a proper runtime', async () => {
         const fileContents = readFileSync(`${projectFolder}/testProject/template.yaml`).toString()
         assert.ok(fileContents.includes(`Runtime: ${projectSDK}`))
     })
@@ -98,7 +98,7 @@ describe('SAM Integration', async () => {
         })
     }).timeout(TIMEOUT)
 
-    it('Invokes the run codelense', async () => {
+    it('Invokes the run codelens', async () => {
         const [ runCodeLens ] = await getCodeLenses()
         assert.ok(runCodeLens.command)
         const command = runCodeLens.command!
@@ -120,7 +120,7 @@ describe('SAM Integration', async () => {
         assert.strictEqual(metadata.get('debug'), 'false')
     }).timeout(TIMEOUT)
 
-    it('Invokes the debug codelense', async () => {
+    it('Invokes the debug codelens', async () => {
         const [, debugCodeLens ] = await getCodeLenses()
         assert.ok(debugCodeLens.command)
         const command = debugCodeLens.command!
@@ -139,7 +139,7 @@ describe('SAM Integration', async () => {
         const metadata = datum.metadata!
         assert.strictEqual(metadata.get('runtime'), projectSDK)
         assert.strictEqual(metadata.get('debug'), 'true')
-    // This timeout is significnaly longer, mostly to accomodate the long first time .net debugger
+    // This timeout is significantly longer, mostly to accommodate the long first time .net debugger
     }).timeout(TIMEOUT * 2)
 
     after(async () => {
