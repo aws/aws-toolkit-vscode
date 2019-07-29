@@ -60,6 +60,7 @@ class CreateLambdaFunction(
 
         val element: PsiElement? = elementPointer?.element
         if (handlerName == null || element == null || lambdaHandlerResolver == null) {
+            e.presentation.isVisible = true
             return
         }
 
