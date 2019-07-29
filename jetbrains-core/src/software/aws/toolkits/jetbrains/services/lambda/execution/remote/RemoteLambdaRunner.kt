@@ -13,5 +13,5 @@ class RemoteLambdaRunner : DefaultProgramRunner() {
     override fun canRun(
         executorId: String,
         profile: RunProfile
-    ): Boolean = DefaultRunExecutor.EXECUTOR_ID == executorId && profile is LambdaRemoteRunConfiguration
+    ): Boolean = DefaultRunExecutor.EXECUTOR_ID == executorId && profile is RemoteLambdaRunConfiguration
 }

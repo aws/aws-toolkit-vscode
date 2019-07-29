@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix DaemonCodeAnalyzer restart not happening in a read action (#1012)"
-}

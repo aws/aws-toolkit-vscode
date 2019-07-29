@@ -99,6 +99,10 @@ subprojects {
 
     testlogger {
         showFullStackTraces true
+        showStandardStreams true
+        showPassedStandardStreams false
+        showSkippedStandardStreams true
+        showFailedStandardStreams true
     }
 
     test {
@@ -106,6 +110,11 @@ subprojects {
             // don't instrument sdk, icons, ktlint, etc.
             includes = ["software.aws.toolkits.*"]
             excludes = ["software.aws.toolkits.ktlint"]
+        }
+
+        reports {
+            junitXml.enabled = false
+            html.enabled = true
         }
     }
 
@@ -133,13 +142,6 @@ subprojects {
         description = "Runs the integration tests."
         testClassesDirs = sourceSets.integrationTest.output.classesDirs
         classpath = sourceSets.integrationTest.runtimeClasspath
-
-        binResultsDir = file("$buildDir/integration-test-results/binary/integrationTest")
-
-        reports {
-            html.destination file("$buildDir/reports/integration-test")
-            junitXml.destination file("$buildDir/integration-test-results")
-        }
 
         jacoco {
             excludes = ["com.sun.*"] // See https://groups.google.com/forum/#!topic/jacoco/H0gDwxNuhK4

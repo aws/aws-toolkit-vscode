@@ -10,11 +10,10 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.amazon.awssdk.services.lambda.model.TracingMode
 import software.aws.toolkits.jetbrains.core.MockResourceCache
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
-import software.aws.toolkits.jetbrains.services.iam.IamRole
-import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker
 import software.aws.toolkits.jetbrains.settings.LambdaSettings
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
@@ -119,8 +118,9 @@ class JavaLambdaLineMarkerTest {
         val fixture = projectRule.fixture
         LambdaSettings.getInstance(projectRule.project).showAllHandlerGutterIcons = false
 
-        fixture.openFile("template.yaml",
-"""
+        fixture.openFile(
+            "template.yaml",
+            """
 Resources:
   UpperCase:
     Type: AWS::Serverless::Function
@@ -128,7 +128,8 @@ Resources:
       CodeUri: foo
       Handler: com.example.UsefulUtils::upperCase
       Runtime: java8
-""")
+"""
+        )
 
         fixture.openClass(
             """
@@ -156,7 +157,8 @@ Resources:
         val fixture = projectRule.fixture
         LambdaSettings.getInstance(projectRule.project).showAllHandlerGutterIcons = false
 
-        fixture.openFile("template.yaml",
+        fixture.openFile(
+            "template.yaml",
             """
 Globals:
   Function:
@@ -167,7 +169,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: foo
-""")
+"""
+        )
 
         fixture.openClass(
             """
@@ -288,7 +291,7 @@ Resources:
         val fixture = projectRule.fixture
 
         fixture.openClass(
-                """
+            """
              package com.example;
 
              public class UsefulUtils {
@@ -501,23 +504,21 @@ Resources:
             assertThat(marks).isEmpty()
         }
 
-        val lambdaFunction = LambdaFunction(
-            name = "upperCase",
-            arn = "arn",
-            description = null,
-            lastModified = "someDate",
-            handler = "com.example.UsefulUtils::upperCase",
-            runtime = Runtime.JAVA8,
-            role = IamRole("DummyRoleArn"),
-            envVariables = emptyMap(),
-            timeout = 60,
-            credentialProviderId = "",
-            region = MockRegionProvider.US_EAST_1,
-            memorySize = 128,
-            xrayEnabled = false
-        )
+        val lambdaFunction = FunctionConfiguration.builder()
+            .functionName("upperCase")
+            .functionArn("arn")
+            .description(null)
+            .lastModified("someDate")
+            .handler("com.example.UsefulUtils::upperCase")
+            .runtime(Runtime.JAVA8)
+            .role("DummyRoleArn")
+            .environment { it.variables(emptyMap()) }
+            .timeout(60)
+            .memorySize(128)
+            .tracingConfig { it.mode(TracingMode.PASS_THROUGH) }
+            .build()
 
-        MockResourceCache.getInstance(fixture.project).lambdaFuture.complete(listOf(lambdaFunction))
+        MockResourceCache.getInstance(fixture.project).resourceFuture.complete(listOf(lambdaFunction))
 
         findAndAssertMarks(fixture) { marks ->
             assertLineMarkerIs(marks, "upperCase")

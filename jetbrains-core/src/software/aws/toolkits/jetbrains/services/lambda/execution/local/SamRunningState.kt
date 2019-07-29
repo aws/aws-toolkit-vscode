@@ -15,7 +15,7 @@ import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 
 class SamRunningState(
     environment: ExecutionEnvironment,
-    val settings: LocalLambdaSettings
+    val settings: LocalLambdaRunSettings
 ) : CommandLineState(environment) {
     internal lateinit var builtLambda: BuiltLambda
 

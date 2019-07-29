@@ -13,13 +13,13 @@ import com.intellij.psi.PsiElement
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
 
 @Suppress("DEPRECATION") // LazyRunConfigurationProducer not added till 2019.1 FIX_WHEN_MIN_IS_192
-class LambdaRemoteRunConfigurationProducer : RunConfigurationProducer<LambdaRemoteRunConfiguration>(getFactory()) {
+class RemoteLambdaRunConfigurationProducer : RunConfigurationProducer<RemoteLambdaRunConfiguration>(getFactory()) {
     // Filter all Lambda run configurations down to only ones that are Lambda remote for this run producer
     override fun getConfigurationSettingsList(runManager: RunManager): List<RunnerAndConfigurationSettings> =
-        super.getConfigurationSettingsList(runManager).filter { it.configuration is LambdaRemoteRunConfiguration }
+        super.getConfigurationSettingsList(runManager).filter { it.configuration is RemoteLambdaRunConfiguration }
 
     override fun setupConfigurationFromContext(
-        configuration: LambdaRemoteRunConfiguration,
+        configuration: RemoteLambdaRunConfiguration,
         context: ConfigurationContext,
         sourceElement: Ref<PsiElement>
     ): Boolean {
@@ -35,7 +35,7 @@ class LambdaRemoteRunConfigurationProducer : RunConfigurationProducer<LambdaRemo
     }
 
     override fun isConfigurationFromContext(
-        configuration: LambdaRemoteRunConfiguration,
+        configuration: RemoteLambdaRunConfiguration,
         context: ConfigurationContext
     ): Boolean {
         val location = context.location as? RemoteLambdaLocation ?: return false
@@ -48,6 +48,6 @@ class LambdaRemoteRunConfigurationProducer : RunConfigurationProducer<LambdaRemo
     companion object {
         private fun getFactory(): ConfigurationFactory = LambdaRunConfiguration.getInstance()
             .configurationFactories
-            .first { it is LambdaRemoteRunConfigurationFactory }
+            .first { it is RemoteLambdaRunConfigurationFactory }
     }
 }

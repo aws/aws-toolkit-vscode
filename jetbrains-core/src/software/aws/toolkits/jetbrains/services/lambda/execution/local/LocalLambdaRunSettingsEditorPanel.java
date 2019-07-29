@@ -3,10 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.local;
 
-import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.addQuickSelect;
-import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.find;
-import static software.aws.toolkits.resources.Localization.message;
-
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
@@ -14,22 +10,11 @@ import com.intellij.openapi.ui.ComponentWithBrowseButton;
 import com.intellij.openapi.ui.TextComponentAccessor;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.ui.EditorTextField;
 import com.intellij.ui.IdeBorderFactory;
 import com.intellij.ui.SortedComboBoxModel;
-import com.intellij.util.textCompletion.TextCompletionProvider;
-import com.intellij.util.textCompletion.TextFieldWithCompletion;
+import com.intellij.ui.components.JBTextField;
 import com.intellij.util.ui.JBUI;
 import com.intellij.util.ui.UIUtil;
-import java.io.File;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.yaml.YAMLFileType;
@@ -43,9 +28,23 @@ import software.aws.toolkits.jetbrains.ui.CredentialProviderSelector;
 import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField;
 import software.aws.toolkits.jetbrains.ui.RegionSelector;
 
+import java.io.File;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+
+import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.addQuickSelect;
+import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.find;
+import static software.aws.toolkits.resources.Localization.message;
+
 public final class LocalLambdaRunSettingsEditorPanel {
     public JPanel panel;
-    public EditorTextField handler;
+    public JBTextField handler;
     public EnvironmentVariablesTextField environmentVariables;
     private SortedComboBoxModel<Runtime> runtimeModel;
     public JComboBox<Runtime> runtime;
@@ -59,11 +58,9 @@ public final class LocalLambdaRunSettingsEditorPanel {
     public JPanel lambdaInputPanel;
 
     private final Project project;
-    private final TextCompletionProvider handlerCompletionProvider;
 
-    public LocalLambdaRunSettingsEditorPanel(Project project, TextCompletionProvider handlerCompletionProvider) {
+    public LocalLambdaRunSettingsEditorPanel(Project project) {
         this.project = project;
-        this.handlerCompletionProvider = handlerCompletionProvider;
 
         lambdaInputPanel.setBorder(IdeBorderFactory.createTitledBorder(message("lambda.input.label"),
                                                                        false,
@@ -76,7 +73,6 @@ public final class LocalLambdaRunSettingsEditorPanel {
     }
 
     private void createUIComponents() {
-        handler = new TextFieldWithCompletion(project, handlerCompletionProvider, "", true, true, true, true);
         lambdaInput = new LambdaInputPanel(project);
 
         functionModels = new DefaultComboBoxModel<>();

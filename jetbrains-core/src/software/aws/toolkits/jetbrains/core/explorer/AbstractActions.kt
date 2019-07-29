@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.core.explorer
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
 import javax.swing.Icon
 
 /**

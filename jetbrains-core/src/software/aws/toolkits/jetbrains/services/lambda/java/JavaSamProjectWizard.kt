@@ -3,15 +3,21 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.java
 
+import com.intellij.openapi.externalSystem.importing.ImportSpecBuilder
+import com.intellij.openapi.externalSystem.service.execution.ProgressExecutionMode
+import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
+import com.intellij.openapi.externalSystem.util.ExternalSystemUtil
 import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import org.jetbrains.idea.maven.project.MavenProjectsManager
+import org.jetbrains.plugins.gradle.settings.GradleProjectSettings
+import org.jetbrains.plugins.gradle.util.GradleConstants
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.core.utils.logWhenNull
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.SamNewProjectSettings
 import software.aws.toolkits.jetbrains.services.lambda.SamProjectTemplate
@@ -33,6 +39,26 @@ class JavaSamProjectWizard : SamProjectWizard {
 
 abstract class JavaSamProjectTemplate : SamProjectTemplate() {
     override fun supportedRuntimes() = setOf(Runtime.JAVA8)
+
+    // Helper method to locate the build file, such as pom.xml in the project content root.
+    protected fun locateBuildFile(contentRoot: VirtualFile, buildFileName: String): VirtualFile? {
+        val contentRootFile = VfsUtil.virtualToIoFile(contentRoot)
+        val baseSearchPath = contentRootFile.absolutePath
+
+        val buildFile = LOG.logWhenNull("Failed to locate $buildFileName under $baseSearchPath") {
+            FileUtil.fileTraverser(contentRootFile).bfsTraversal().first { it.name == buildFileName }
+        }
+
+        return buildFile?.let {
+            LOG.logWhenNull("Failed to convert $it to VirtualFile") {
+                LocalFileSystem.getInstance().refreshAndFindFileByIoFile(it)
+            }
+        }
+    }
+
+    private companion object {
+        val LOG = getLogger<SamHelloWorldMaven>()
+    }
 }
 
 class SamHelloWorldMaven : JavaSamProjectTemplate() {
@@ -44,26 +70,9 @@ class SamHelloWorldMaven : JavaSamProjectTemplate() {
 
     override fun postCreationAction(settings: SamNewProjectSettings, contentRoot: VirtualFile, rootModel: ModifiableRootModel) {
         super.postCreationAction(settings, contentRoot, rootModel)
-
-        val contentRootFile = VfsUtil.virtualToIoFile(contentRoot)
-        val baseSearchPath = contentRootFile.absolutePath
-        val pomFile = FileUtil.fileTraverser(contentRootFile).bfsTraversal().first { it.name == "pom.xml" }
-        if (pomFile != null) {
-            val projectsManager = MavenProjectsManager.getInstance(rootModel.project)
-
-            val pomVirtualFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(pomFile)
-            if (pomVirtualFile != null) {
-                projectsManager.addManagedFilesOrUnignore(listOf(pomVirtualFile))
-            } else {
-                LOG.warn { "Failed to convert $pomFile to VirtualFile" }
-            }
-        } else {
-            LOG.warn { "Failed to locate pom.xml under $baseSearchPath" }
-        }
-    }
-
-    private companion object {
-        val LOG = getLogger<SamHelloWorldMaven>()
+        val pomFile = locateBuildFile(contentRoot, "pom.xml") ?: return
+        val projectsManager = MavenProjectsManager.getInstance(rootModel.project)
+        projectsManager.addManagedFilesOrUnignore(listOf(pomFile))
     }
 }
 
@@ -73,4 +82,24 @@ class SamHelloWorldGradle : JavaSamProjectTemplate() {
     override fun getDescription() = message("sam.init.template.hello_world.description")
 
     override fun dependencyManager(): String? = "gradle"
+
+    override fun postCreationAction(settings: SamNewProjectSettings, contentRoot: VirtualFile, rootModel: ModifiableRootModel) {
+        super.postCreationAction(settings, contentRoot, rootModel)
+        val buildFile = locateBuildFile(contentRoot, "build.gradle") ?: return
+
+        val gradleProjectSettings = GradleProjectSettings().apply {
+            withQualifiedModuleNames()
+            externalProjectPath = buildFile.path
+        }
+
+        val externalSystemSettings = ExternalSystemApiUtil.getSettings(rootModel.project, GradleConstants.SYSTEM_ID)
+        externalSystemSettings.setLinkedProjectsSettings(setOf(gradleProjectSettings))
+
+        val importSpecBuilder = ImportSpecBuilder(rootModel.project, GradleConstants.SYSTEM_ID)
+            .forceWhenUptodate()
+            .useDefaultCallback()
+            .use(ProgressExecutionMode.IN_BACKGROUND_ASYNC)
+
+        ExternalSystemUtil.refreshProjects(importSpecBuilder)
+    }
 }

@@ -105,7 +105,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
             val psiElement = handlerPsiElement(handler, runtime)
                 ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
 
-            val samRunSettings = LocalLambdaSettings(
+            val samRunSettings = LocalLambdaRunSettings(
                 runtime,
                 handler,
                 resolveInput(),
@@ -269,7 +269,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
     }
 }
 
-class LocalLambdaSettings(
+data class LocalLambdaRunSettings(
     val runtime: Runtime,
     val handler: String,
     val input: String,

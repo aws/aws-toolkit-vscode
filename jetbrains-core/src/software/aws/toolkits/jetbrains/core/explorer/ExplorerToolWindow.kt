@@ -29,6 +29,9 @@ import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsMa
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier.AccountSettingsEvent
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_SERVICE_NODE
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 import software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaLocation
 import software.aws.toolkits.resources.message
@@ -115,10 +118,10 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
                 val explorerNode = getSelectedNodesSameType<AwsExplorerNode<*>>()?.get(0) ?: return
                 val actionGroupName = when (explorerNode) {
                     is AwsExplorerServiceRootNode ->
-                        "aws.toolkit.explorer.${explorerNode.serviceName()}"
+                        "aws.toolkit.explorer.${explorerNode.serviceId}"
                     is AwsExplorerResourceNode<*> -> {
                         val suffix = if (explorerNode.immutable) ".immutable" else ""
-                        "aws.toolkit.explorer.${explorerNode.serviceName}.${explorerNode.resourceType()}$suffix"
+                        "aws.toolkit.explorer.${explorerNode.serviceId}.${explorerNode.resourceType()}$suffix"
                     }
                     else ->
                         return
