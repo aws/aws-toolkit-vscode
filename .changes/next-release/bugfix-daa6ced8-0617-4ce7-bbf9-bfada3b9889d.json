@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix read/write action issues when invoking a Lambda using SAM (#1081)"
-}

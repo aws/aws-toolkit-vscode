@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Upgraded AWS Java SDK to pull in latest model changes (#1099)"
-}
