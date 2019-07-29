@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Enable searching for `requirements.txt` when determining if a python method is a handler to match SAM build"
-}

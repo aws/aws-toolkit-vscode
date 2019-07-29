@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix runtime exceptions on project startup and run configuration validation"
-}

@@ -1,0 +1,44 @@
+{
+  "date" : "2019-07-29",
+  "version" : "1.5",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Support Globals configuration in SAM template for serverless functions."
+  }, {
+    "type" : "feature",
+    "description" : "Enable searching for `requirements.txt` when determining if a python method is a handler to match SAM build"
+  }, {
+    "type" : "feature",
+    "description" : "Enable toolkit in 2019.2 EAP"
+  }, {
+    "type" : "feature",
+    "description" : "Support building only the requested function when sam cli version is newer than 0.16"
+  }, {
+    "type" : "bugfix",
+    "description" : "Upgraded AWS Java SDK to pull in latest model changes (#1099)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix DynamoDB template for Python does not create correctly."
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix DaemonCodeAnalyzer restart not happening in a read action (#1012)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix the bug when project is in different drive than the temp folder drive for Windows. #950"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix invalid credentials file reporting an IDE error"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix issue where modifying a cloned run config results in mutation of the original"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix runtime exceptions on project startup and run configuration validation"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix read/write action issues when invoking a Lambda using SAM (#1081)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Make sure all STS assume role calls are not on the UI thread (#1024)"
+  } ]
+}
