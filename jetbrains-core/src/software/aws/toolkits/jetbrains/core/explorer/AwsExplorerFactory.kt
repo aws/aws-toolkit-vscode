@@ -47,6 +47,13 @@ class AwsExplorerFactory : ToolWindowFactory, DumbAware {
                             url = "https://github.com/aws/aws-toolkit-jetbrains"
                         )
                     )
+                    add(
+                        OpenBrowserAction(
+                            title = message("explorer.create_new_issue"),
+                            icon = AllIcons.Vcs.Vendors.Github,
+                            url = "https://github.com/aws/aws-toolkit-jetbrains/issues/new/choose"
+                        )
+                    )
                 }
             )
         }

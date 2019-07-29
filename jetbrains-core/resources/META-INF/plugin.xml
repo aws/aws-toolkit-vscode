@@ -14,7 +14,7 @@
 <br/>
 <p>
     See <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/install">Installing the AWS Toolkit for
-    JetBrains</a>in the AWS Toolkit for JetBrains User Guide.
+    JetBrains</a> in the AWS Toolkit for JetBrains User Guide.
 </p>
 <br/>
 <p>To use this AWS Toolkit, you will first need an AWS account, a user within that account, and an access key for that
@@ -91,8 +91,7 @@
     </application-components>
 
     <extensionPoints>
-        <extensionPoint qualifiedName="aws.toolkit.credentialProviderFactory"
-                        beanClass="software.aws.toolkits.jetbrains.core.credentials.CredentialProviderFactoryEP">
+        <extensionPoint qualifiedName="aws.toolkit.credentialProviderFactory" beanClass="software.aws.toolkits.jetbrains.core.credentials.CredentialProviderFactoryEP">
             <with attribute="implementation" implements="software.aws.toolkits.jetbrains.core.credentials.CredentialProviderFactory"/>
         </extensionPoint>
 
@@ -115,6 +114,12 @@
             <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver"/>
             <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
         </extensionPoint>
+
+        <extensionPoint qualifiedName="aws.toolkit.lambda.sam.projectWizard" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
+            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.SamProjectWizard"/>
+            <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
+        </extensionPoint>
+
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -168,14 +173,13 @@
 
         <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.local.SamInvokeRunner"/>
         <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaRunner"/>
-        <fileBasedIndex implementation="software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerIndex"/>
         <fileBasedIndex implementation="software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplateIndex"/>
 
         <codeInsight.lineMarkerProvider language="" implementationClass="software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker"/>
         <runLineMarkerContributor language="yaml" implementationClass="software.aws.toolkits.jetbrains.services.lambda.execution.template.YamlLambdaRunLineMarkerContributor"/>
         <configurationType implementation="software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration"/>
         <runConfigurationProducer implementation="software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfigurationProducer"/>
-        <runConfigurationProducer implementation="software.aws.toolkits.jetbrains.services.lambda.execution.remote.LambdaRemoteRunConfigurationProducer"/>
+        <runConfigurationProducer implementation="software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaRunConfigurationProducer"/>
 
         <!-- Project Wizard components -->
         <moduleType id="AWS" implementationClass="software.aws.toolkits.jetbrains.ui.wizard.AwsModuleType" />

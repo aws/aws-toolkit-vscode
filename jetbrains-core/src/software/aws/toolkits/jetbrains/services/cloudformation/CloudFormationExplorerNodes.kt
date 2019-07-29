@@ -13,20 +13,22 @@ import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.DeleteResourceAction
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerEmptyNode
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerErrorNode
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerNode
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerResourceNode
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerServiceRootNode
-import software.aws.toolkits.jetbrains.core.explorer.AwsNodeAlwaysExpandable
-import software.aws.toolkits.jetbrains.core.explorer.AwsTruncatedResultNode
+import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsNodeAlwaysExpandable
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsTruncatedResultNode
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
+import software.aws.toolkits.jetbrains.utils.TaggingResourceType
 import software.aws.toolkits.jetbrains.utils.toHumanReadable
 import software.aws.toolkits.resources.message
 
-class CloudFormationServiceNode(project: Project) : AwsExplorerServiceRootNode(project, message("explorer.node.cloudformation")) {
-    override fun serviceName() = CloudFormationClient.SERVICE_NAME
+class CloudFormationServiceNode(project: Project) :
+    AwsExplorerServiceRootNode(project, AwsExplorerService.CLOUDFORMATION) {
 
     private val client: CloudFormationClient = AwsClientManager.getInstance(project).getClient()
 
@@ -45,7 +47,12 @@ class CloudFormationServiceNode(project: Project) : AwsExplorerServiceRootNode(p
     }
 
     private fun paginationNodeIfRequired(nextToken: String?) = when {
-        nextToken != null -> listOf(AwsTruncatedResultNode(this, nextToken))
+        nextToken != null -> listOf(
+            AwsTruncatedResultNode(
+                this,
+                nextToken
+            )
+        )
         else -> emptyList()
     }
 
@@ -59,13 +66,22 @@ class CloudFormationStackNode(project: Project, val stackName: String, private v
     AwsNodeAlwaysExpandable {
     override fun resourceType() = "stack"
 
+    override fun resourceArn() = stackId
+
+    override fun displayName() = stackName
+
     private val cfnClient: CloudFormationClient = project.awsClient()
 
     /**
      * CloudFormation Stack Nodes do not immediately query for stack resources.
      * We wait until node will be expanded before querying, reducing risk of triggering TPS limits.
      */
-    private val noResourcesChildren: Collection<AbstractTreeNode<Any>> = listOf(AwsExplorerEmptyNode(project, message("explorer.stack.no.serverless.resources"))).filterIsInstance<AbstractTreeNode<Any>>()
+    private val noResourcesChildren: Collection<AbstractTreeNode<Any>> = listOf(
+        AwsExplorerEmptyNode(
+            project,
+            message("explorer.stack.no.serverless.resources")
+        )
+    ).filterIsInstance<AbstractTreeNode<Any>>()
     private var cachedChildren: Collection<AbstractTreeNode<Any>> = emptyList()
 
     var isChildCacheInInitialState: Boolean = true
@@ -137,7 +153,7 @@ class CloudFormationStackNode(project: Project, val stackName: String, private v
     }
 }
 
-class DeleteCloudFormationStackAction : DeleteResourceAction<CloudFormationStackNode>(message("cloudformation.stack.delete.action")) {
+class DeleteCloudFormationStackAction : DeleteResourceAction<CloudFormationStackNode>(message("cloudformation.stack.delete.action"), TaggingResourceType.CLOUDFORMATION_STACK) {
     override fun performDelete(selected: CloudFormationStackNode) {
         val client: CloudFormationClient = AwsClientManager.getInstance(selected.nodeProject).getClient()
         client.deleteStack { it.stackName(selected.stackName) }

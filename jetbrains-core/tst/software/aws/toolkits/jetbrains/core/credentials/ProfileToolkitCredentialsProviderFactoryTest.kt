@@ -112,6 +112,25 @@ class ProfileToolkitCredentialsProviderFactoryTest {
     }
 
     @Test
+    fun testLoadingWithIllegalFormat() {
+        profileFile.writeText("""
+            [profile bar]
+            aws_access_key_id BarAccessKey
+            aws_secret_access_key=BarSecretKey
+
+            [profile foo]
+            aws_access_key_id=FooAccessKey
+            aws_secret_access_key=FooSecretKey
+            aws_session_token=FooSessionToken
+        """.trimIndent())
+
+        val providerFactory = createProviderFactory()
+
+        assertThat(providerFactory.listCredentialProviders())
+            .isEmpty()
+    }
+
+    @Test
     fun testCreationOfBasicCredentials() {
         profileFile.writeText(TEST_PROFILE_FILE_CONTENTS)
 

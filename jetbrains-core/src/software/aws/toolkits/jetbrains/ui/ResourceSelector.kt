@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.ui
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.ValidationInfo
 import software.aws.toolkits.core.utils.getLogger
@@ -81,7 +82,7 @@ class ResourceSelector<T> : ComboBox<T>() {
                 null
             } ?: return@executeOnPooledThread
 
-            ApplicationManager.getApplication().invokeLater({
+            runInEdt(ModalityState.any()) {
                 values.forEach { model.addElement(it) }
                 this.selectedItem = if (forceSelectDefault || previouslySelected == null) default else previouslySelected
                 if (updateStatus) {
@@ -89,7 +90,7 @@ class ResourceSelector<T> : ComboBox<T>() {
                 } else {
                     this.isEnabled = shouldBeEnabled
                 }
-            }, ModalityState.any())
+            }
         }
     }
 
@@ -111,7 +112,7 @@ class ResourceSelector<T> : ComboBox<T>() {
                 null
             } ?: return@executeOnPooledThread
 
-            ApplicationManager.getApplication().invokeLater({
+            runInEdt(ModalityState.any()) {
                 val model = this.model as DefaultComboBoxModel<T>
                 model.addElement(value)
                 model.selectedItem = value
@@ -120,7 +121,7 @@ class ResourceSelector<T> : ComboBox<T>() {
                 } else {
                     this.isEnabled = shouldBeEnabled
                 }
-            }, ModalityState.any())
+            }
         }
     }
 
@@ -137,8 +138,6 @@ class ResourceSelector<T> : ComboBox<T>() {
             ResourceLoadingStatus.SUCCESSFUL -> ValidationInfo(notSelected, component)
         }
     }
-
-    fun values(): Set<T> = (0 until itemCount).map { getItemAt(it) }.toSet()
 
     enum class ResourceLoadingStatus {
         LOADING,

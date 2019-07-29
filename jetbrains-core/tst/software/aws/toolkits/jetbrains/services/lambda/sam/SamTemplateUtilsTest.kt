@@ -42,6 +42,17 @@ class SamTemplateUtilsTest {
     }
 
     @Test
+    fun canPullFunctionFromASamTemplateWithGlobal() {
+        val file = yamlFileWithGlobal().virtualFile
+        runInEdtAndWait {
+            val functions = findFunctionsFromTemplate(projectRule.project, file)
+            assertThat(functions).hasSize(2)
+            assertFunction(functions[0], "MySamFunction", "hello.zip", "helloworld.App::handleRequest", "java8")
+            assertFunction(functions[1], "MyLambdaFunction", "foo.zip", "foobar.App::handleRequest", "java8")
+        }
+    }
+
+    @Test
     fun canConvertAPsiElementFunction() {
         val file = yamlFile()
 
@@ -64,6 +75,29 @@ Resources:
             CodeUri: hello.zip
             Handler: helloworld.App::handleRequest
             Runtime: java8
+    MyLambdaFunction:
+        Type: AWS::Lambda::Function
+        Properties:
+            Code: foo.zip
+            Handler: foobar.App::handleRequest
+            Runtime: java8
+        """.trimIndent()
+        ) as YAMLFile
+    }
+
+    private fun yamlFileWithGlobal(): YAMLFile = runInEdtAndGet {
+        PsiFileFactory.getInstance(projectRule.project).createFileFromText(
+            YAMLLanguage.INSTANCE, """
+Globals:
+    Function:
+        Runtime: java8
+        Timeout: 180
+Resources:
+    MySamFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: hello.zip
+            Handler: helloworld.App::handleRequest
     MyLambdaFunction:
         Type: AWS::Lambda::Function
         Properties:

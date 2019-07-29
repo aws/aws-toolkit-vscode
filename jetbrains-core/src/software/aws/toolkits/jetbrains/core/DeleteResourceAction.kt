@@ -9,20 +9,25 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.ui.InputValidator
 import com.intellij.openapi.ui.Messages
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerResourceNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
+import software.aws.toolkits.jetbrains.utils.Operation
+import software.aws.toolkits.jetbrains.utils.TaggingResourceType
+import software.aws.toolkits.jetbrains.utils.warnResourceOperationAgainstCodePipeline
 import software.aws.toolkits.resources.message
 
-abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>>(text: String) : SingleResourceNodeAction<T>(text, icon = AllIcons.Actions.Cancel),
-    DumbAware {
+abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>>(text: String, private val taggingResourceType: TaggingResourceType) :
+    SingleResourceNodeAction<T>(text, icon = AllIcons.Actions.Cancel), DumbAware {
     final override fun actionPerformed(selected: T, e: AnActionEvent) {
-        val resourceName = selected.displayName()
-        ApplicationManager.getApplication().invokeLater {
+        warnResourceOperationAgainstCodePipeline(selected.nodeProject, selected.displayName(), selected.resourceArn(), taggingResourceType, Operation.DELETE) {
+            val resourceType = selected.resourceType()
+            val resourceName = selected.displayName()
+
             val response = Messages.showInputDialog(selected.project,
-                    message("delete_resource.message", selected.resourceType(), resourceName),
-                    message("delete_resource.title", selected.resourceType(), resourceName),
+                    message("delete_resource.message", resourceType, resourceName),
+                    message("delete_resource.title", resourceType, resourceName),
                     Messages.getWarningIcon(),
                     null,
                     object : InputValidator {
@@ -36,9 +41,9 @@ abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>>(text: Str
                 ApplicationManager.getApplication().executeOnPooledThread {
                     try {
                         performDelete(selected)
-                        notifyInfo(message("delete_resource.deleted", selected.resourceType(), resourceName))
+                        notifyInfo(message("delete_resource.deleted", resourceType, resourceName))
                     } catch (e: Exception) {
-                        e.notifyError(message("delete_resource.delete_failed", selected.resourceType(), resourceName), selected.project)
+                        e.notifyError(message("delete_resource.delete_failed", resourceType, resourceName), selected.project)
                     }
                 }
             }

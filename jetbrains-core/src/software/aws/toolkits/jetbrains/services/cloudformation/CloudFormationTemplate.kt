@@ -19,6 +19,7 @@ import java.io.File
 interface CloudFormationTemplate {
     fun resources(): Sequence<Resource>
     fun parameters(): Sequence<Parameter>
+    fun globals(): Map<String, NamedMap>
 
     fun getResourceByName(logicalName: String): Resource? = resources().firstOrNull { it.logicalName == logicalName }
 
@@ -56,6 +57,7 @@ interface NamedMap {
 }
 
 interface Resource : NamedMap {
+    val cloudFormationTemplate: CloudFormationTemplate
     fun isType(requestedType: String): Boolean
     fun type(): String?
 }

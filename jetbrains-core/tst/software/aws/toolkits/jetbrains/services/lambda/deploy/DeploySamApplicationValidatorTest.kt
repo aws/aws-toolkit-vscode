@@ -42,7 +42,7 @@ class DeploySamApplicationValidatorTest {
         view.withTemplateParameters(parameters)
 
         view.updateStack.isSelected = true
-        view.stacks.model = DefaultComboBoxModel(arrayOf("stack123"))
+        view.stacks.model = DefaultComboBoxModel(arrayOf(Stack("stack123")))
         view.stacks.selectedItem = "stack123"
 
         view.s3Bucket.model = DefaultComboBoxModel(arrayOf("bucket123"))
@@ -95,7 +95,7 @@ class DeploySamApplicationValidatorTest {
     fun invalidStackName_Duplicate() {
         view.createStack.isSelected = true
         view.newStackName.text = "bar"
-        view.stacks.model = DefaultComboBoxModel(arrayOf("foo", "bar", "baz"))
+        view.stacks.model = DefaultComboBoxModel(arrayOf(Stack("foo"), Stack("bar"), Stack("baz")))
         assertThat(sut.validateSettings()?.message).contains(message("serverless.application.deploy.validation.new.stack.name.duplicate"))
     }
 

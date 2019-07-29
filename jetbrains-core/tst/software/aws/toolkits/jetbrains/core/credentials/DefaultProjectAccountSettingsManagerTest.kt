@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.core.credentials
 import com.intellij.configurationStore.deserializeAndLoadState
 import com.intellij.configurationStore.serializeStateInto
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.testFramework.ProjectRule
 import com.intellij.util.messages.MessageBusConnection
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -24,12 +23,13 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.utils.delegateMock
+import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.toElement
 
 class DefaultProjectAccountSettingsManagerTest {
     @Rule
     @JvmField
-    val projectRule = ProjectRule()
+    val projectRule = HeavyJavaCodeInsightTestFixtureRule()
 
     private lateinit var mockRegionManager: MockRegionProvider
     private lateinit var mockCredentialManager: MockCredentialsManager
@@ -41,8 +41,8 @@ class DefaultProjectAccountSettingsManagerTest {
     fun setUp() {
         queue = mutableListOf()
 
-        mockRegionManager = AwsRegionProvider.getInstance() as MockRegionProvider
-        mockCredentialManager = CredentialManager.getInstance() as MockCredentialsManager
+        mockRegionManager = MockRegionProvider.getInstance()
+        mockCredentialManager = MockCredentialsManager.getInstance()
         manager = DefaultProjectAccountSettingsManager(projectRule.project, delegateMock<StsClient>())
         messageBusConnection = projectRule.project.messageBus.connect()
         messageBusConnection.subscribe(ProjectAccountSettingsManager.ACCOUNT_SETTINGS_CHANGED, object :
@@ -369,6 +369,8 @@ class DefaultProjectAccountSettingsManagerTest {
     private fun waitForEvents(eventCount: Int) {
         for (i in 1..5) {
             if (queue.size >= eventCount) {
+                // We need clean queue since every changeCredentialProvider event add 2 events to the queue.
+                // If test calls changeCredentialProvider twice, this is likely to fail.
                 queue.clear()
                 return
             }

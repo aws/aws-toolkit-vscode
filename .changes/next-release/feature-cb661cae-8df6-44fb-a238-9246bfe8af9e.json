@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Support building only the requested function when sam cli version is newer than 0.16"
+}

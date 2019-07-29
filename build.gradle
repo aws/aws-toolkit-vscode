@@ -4,7 +4,6 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
-
     repositories {
         maven {
             url "https://plugins.gradle.org/m2/"
@@ -15,6 +14,7 @@ buildscript {
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
         classpath "gradle.plugin.org.jetbrains.intellij.plugins:gradle-intellij-plugin:$ideaPluginVersion"
+        classpath "com.adarshr:gradle-test-logger-plugin:1.7.0"
     }
 }
 
@@ -30,7 +30,17 @@ allprojects {
         jcenter()
     }
 
+    apply plugin: "com.adarshr.test-logger"
     apply plugin: 'jacoco'
+
+    tasks.withType(org.jetbrains.intellij.tasks.RunIdeTask) {
+        systemProperty("aws.toolkits.enableTelemetry", false)
+        intellij {
+            if (System.env.ALTERNATIVE_IDE) {
+                alternativeIdePath = System.env.ALTERNATIVE_IDE
+            }
+        }
+    }
 }
 
 // Kotlin plugin seems to be bugging out when there are no kotlin sources
@@ -87,15 +97,24 @@ subprojects {
         testCompile "org.hamcrest:hamcrest-all:1.3"
     }
 
+    testlogger {
+        showFullStackTraces true
+        showStandardStreams true
+        showPassedStandardStreams false
+        showSkippedStandardStreams true
+        showFailedStandardStreams true
+    }
+
     test {
-        testLogging {
-            showStandardStreams = true
-            exceptionFormat = 'full'
-        }
         jacoco {
             // don't instrument sdk, icons, ktlint, etc.
             includes = ["software.aws.toolkits.*"]
             excludes = ["software.aws.toolkits.ktlint"]
+        }
+
+        reports {
+            junitXml.enabled = false
+            html.enabled = true
         }
     }
 
@@ -123,18 +142,6 @@ subprojects {
         description = "Runs the integration tests."
         testClassesDirs = sourceSets.integrationTest.output.classesDirs
         classpath = sourceSets.integrationTest.runtimeClasspath
-
-        binResultsDir = file("$buildDir/integration-test-results/binary/integrationTest")
-
-        reports {
-            html.destination file("$buildDir/reports/integration-test")
-            junitXml.destination file("$buildDir/integration-test-results")
-        }
-
-        testLogging {
-            showStandardStreams = true
-            exceptionFormat = 'full'
-        }
 
         jacoco {
             excludes = ["com.sun.*"] // See https://groups.google.com/forum/#!topic/jacoco/H0gDwxNuhK4
@@ -177,7 +184,7 @@ def removeTask(tasks, taskName) {
 
 wrapper {
     distributionType = Wrapper.DistributionType.ALL
-    gradleVersion '5.3'
+    gradleVersion '5.4.1'
 }
 
 apply plugin: 'org.jetbrains.intellij'
@@ -188,9 +195,6 @@ intellij {
     pluginName 'aws-jetbrains-toolkit'
     updateSinceUntilBuild false
     downloadSources = System.getenv("CI") == null
-    if (System.env.ALTERNATIVE_IDE) {
-        alternativeIdePath = System.env.ALTERNATIVE_IDE
-    }
 }
 
 publishPlugin {
@@ -259,7 +263,7 @@ task guiTest(type: Test) {
 }
 
 dependencies {
-    compile project(':jetbrains-core') 
+    compile project(':jetbrains-core')
 
     ktlint "com.pinterest:ktlint:$ktlintVersion"
     ktlint project(":ktlint-rules")

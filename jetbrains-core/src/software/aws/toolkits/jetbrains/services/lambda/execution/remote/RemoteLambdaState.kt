@@ -31,7 +31,7 @@ import java.util.Base64
 
 class RemoteLambdaState(
     private val environment: ExecutionEnvironment,
-    private val runSettings: LambdaRemoteRunSettings
+    val settings: RemoteLambdaRunSettings
 ) : RunProfileState {
     private val consoleBuilder: TextConsoleBuilder
 
@@ -67,18 +67,18 @@ class RemoteLambdaState(
 
     private fun invokeLambda(lambdaProcess: ProcessHandler) {
         val client = AwsClientManager.getInstance(environment.project)
-            .getClient<LambdaClient>(runSettings.credentialProvider, runSettings.region)
+            .getClient<LambdaClient>(settings.credentialProvider, settings.region)
 
         lambdaProcess.notifyTextAvailable(
-            message("lambda.execute.invoke", runSettings.functionName) + '\n',
+            message("lambda.execute.invoke", settings.functionName) + '\n',
             ProcessOutputTypes.SYSTEM
         )
 
         try {
             val response = client.invoke {
                 it.logType(LogType.TAIL)
-                it.payload(SdkBytes.fromUtf8String(runSettings.input))
-                it.functionName(runSettings.functionName)
+                it.payload(SdkBytes.fromUtf8String(settings.input))
+                it.functionName(settings.functionName)
             }
 
             val logs = Base64.getDecoder().decode(response.logResult()).toString(StandardCharsets.UTF_8)

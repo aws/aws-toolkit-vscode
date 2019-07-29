@@ -10,6 +10,11 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.services.iam.IamRole
+import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker
 import software.aws.toolkits.jetbrains.settings.LambdaSettings
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
@@ -123,6 +128,45 @@ Resources:
       CodeUri: foo
       Handler: com.example.UsefulUtils::upperCase
       Runtime: java8
+""")
+
+        fixture.openClass(
+            """
+            package com.example;
+
+            public class UsefulUtils {
+
+                private UsefulUtils() { }
+
+                public static String upperCase(String input) {
+                    return input.toUpperCase();
+                }
+            }
+            """
+        )
+
+        findAndAssertMarks(fixture) { marks ->
+            assertLineMarkerIs(marks, "upperCase")
+        }
+    }
+
+    @Test
+    fun singleArgumentStaticMethodsMarkedWhenDisablingLambdaSettingButDefinedInTemplateGlobals() {
+
+        val fixture = projectRule.fixture
+        LambdaSettings.getInstance(projectRule.project).showAllHandlerGutterIcons = false
+
+        fixture.openFile("template.yaml",
+            """
+Globals:
+  Function:
+    Handler: com.example.UsefulUtils::upperCase
+    Runtime: java8
+Resources:
+  UpperCase:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: foo
 """)
 
         fixture.openClass(
@@ -431,6 +475,52 @@ Resources:
 
         findAndAssertMarks(fixture) { marks ->
             assertLineMarkerIs(marks, "ConcreteHandler")
+        }
+    }
+
+    @Test
+    fun remoteLambdasGetMarked() {
+        LambdaSettings.getInstance(projectRule.project).showAllHandlerGutterIcons = false
+
+        val fixture = projectRule.fixture
+
+        fixture.openClass(
+            """
+             package com.example;
+
+             public class UsefulUtils {
+
+                 public String upperCase(String input) {
+                     return input.toUpperCase();
+                 }
+             }
+             """
+        )
+
+        findAndAssertMarks(fixture) { marks ->
+            assertThat(marks).isEmpty()
+        }
+
+        val lambdaFunction = LambdaFunction(
+            name = "upperCase",
+            arn = "arn",
+            description = null,
+            lastModified = "someDate",
+            handler = "com.example.UsefulUtils::upperCase",
+            runtime = Runtime.JAVA8,
+            role = IamRole("DummyRoleArn"),
+            envVariables = emptyMap(),
+            timeout = 60,
+            credentialProviderId = "",
+            region = MockRegionProvider.US_EAST_1,
+            memorySize = 128,
+            xrayEnabled = false
+        )
+
+        MockResourceCache.getInstance(fixture.project).lambdaFuture.complete(listOf(lambdaFunction))
+
+        findAndAssertMarks(fixture) { marks ->
+            assertLineMarkerIs(marks, "upperCase")
         }
     }
 

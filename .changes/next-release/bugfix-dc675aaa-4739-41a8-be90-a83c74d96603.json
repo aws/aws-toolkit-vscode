@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix the bug when project is in different drive than the temp folder drive for Windows. #950"
+}

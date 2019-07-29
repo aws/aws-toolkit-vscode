@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Make sure all STS assume role calls are not on the UI thread (#1024)"
+}

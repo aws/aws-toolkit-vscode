@@ -25,6 +25,7 @@ import software.aws.toolkits.jetbrains.services.cloudformation.mergeRemoteParame
 import software.aws.toolkits.jetbrains.services.s3.CreateS3BucketDialog
 import software.aws.toolkits.jetbrains.settings.DeploySettings
 import software.aws.toolkits.jetbrains.settings.relativeSamPath
+import software.aws.toolkits.jetbrains.utils.ui.find
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
 import javax.swing.JComponent
@@ -71,10 +72,12 @@ class DeployServerlessApplicationDialog(
             updateTemplateParameters()
         }
 
-        view.stacks.populateValues(default = settings?.samStackName(samPath), updateStatus = false) {
+        view.stacks.populateValues(default = settings?.samStackName(samPath)?.let { Stack(it) }, updateStatus = false) {
             cloudFormationClient.listStackSummariesFilter { it.stackStatus() != StackStatus.DELETE_COMPLETE }
-                    .mapNotNull { it.stackName() }
-                    .sortedWith(String.CASE_INSENSITIVE_ORDER)
+                    .filterNotNull()
+                    .filter { it.stackName() != null }
+                    .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.stackName() })
+                    .map { Stack(it.stackName(), it.stackId()) }
                     .toList()
         }
 
@@ -118,8 +121,20 @@ class DeployServerlessApplicationDialog(
         get() = if (view.createStack.isSelected) {
             view.newStackName.text.nullize()
         } else {
-            view.stacks.selected()
+            view.stacks.selected()?.name
         } ?: throw RuntimeException(message("serverless.application.deploy.validation.stack.missing"))
+
+    val stackId: String?
+        get() = if (view.createStack.isSelected) {
+            null
+        } else {
+            view.stacks.selected()?.let { stack ->
+                // selected stack id will be null in case it was restored from DeploySettings
+                // DeploySettings doesn't store stack id because it doesn't have access to stack id
+                // at times when deployment happens with createStack selected
+                stack.id ?: view.stacks.model.find { it.name == stack.name }?.id
+            }
+        }
 
     val bucket: String
         get() = view.s3Bucket.selected()
@@ -143,7 +158,7 @@ class DeployServerlessApplicationDialog(
         if (view.createStack.isSelected) {
             view.withTemplateParameters(templateParameters)
         } else if (view.updateStack.isSelected) {
-            val stackName = view.stacks.selected()
+            val stackName = view.stacks.selected()?.name
             if (stackName == null) {
                 view.withTemplateParameters(emptyList())
             } else {
@@ -222,7 +237,7 @@ class DeploySamApplicationValidator(private val view: DeployServerlessApplicatio
             return message("serverless.application.deploy.validation.new.stack.name.too.long", MAX_STACK_NAME_LENGTH)
         }
         // Check if the new stack name is same as an existing stack name
-        if (name in view.stacks.values()) {
+        view.stacks.model.find { it.name == name }?.let {
             return message("serverless.application.deploy.validation.new.stack.name.duplicate")
         }
         return null
@@ -234,4 +249,8 @@ class DeploySamApplicationValidator(private val view: DeployServerlessApplicatio
         private val STACK_NAME_PATTERN = "[a-zA-Z][a-zA-Z0-9-]*".toRegex()
         const val MAX_STACK_NAME_LENGTH = 128
     }
+}
+
+data class Stack(val name: String, val id: String? = null) {
+    override fun toString() = name
 }

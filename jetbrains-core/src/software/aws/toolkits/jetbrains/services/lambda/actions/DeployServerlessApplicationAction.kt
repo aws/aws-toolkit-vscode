@@ -31,6 +31,9 @@ import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.jetbrains.utils.notifyNoActiveCredentialsError
 import software.aws.toolkits.jetbrains.utils.notifySamCliNotValidError
+import software.aws.toolkits.jetbrains.utils.Operation
+import software.aws.toolkits.jetbrains.utils.TaggingResourceType
+import software.aws.toolkits.jetbrains.utils.warnResourceOperationAgainstCodePipeline
 import software.aws.toolkits.resources.message
 
 class DeployServerlessApplicationAction : AnActionWrapper(
@@ -75,6 +78,18 @@ class DeployServerlessApplicationAction : AnActionWrapper(
         saveSettings(project, templateFile, stackDialog)
 
         val stackName = stackDialog.stackName
+        val stackId = stackDialog.stackId
+
+        if (stackId == null) {
+            continueDeployment(project, stackName, templateFile, stackDialog)
+        } else {
+            warnResourceOperationAgainstCodePipeline(project, stackName, stackId, TaggingResourceType.CLOUDFORMATION_STACK, Operation.DEPLOY) {
+                continueDeployment(project, stackName, templateFile, stackDialog)
+            }
+        }
+    }
+
+    private fun continueDeployment(project: Project, stackName: String, templateFile: VirtualFile, stackDialog: DeployServerlessApplicationDialog) {
         val deployDialog = SamDeployDialog(
             project,
             stackName,

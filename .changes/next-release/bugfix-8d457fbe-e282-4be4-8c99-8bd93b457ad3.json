@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix DynamoDB template for Python does not create correctly."
+}

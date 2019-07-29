@@ -22,7 +22,7 @@ import software.aws.toolkits.resources.message
 import javax.swing.JLabel
 import javax.swing.JTextArea
 
-const val GROUP_DISPLAY_ID = "AWS Toolkit"
+private const val GROUP_DISPLAY_ID = "AWS Toolkit"
 
 fun Exception.notifyError(title: String = "", project: Project? = null) =
     notify(
@@ -34,7 +34,11 @@ fun Exception.notifyError(title: String = "", project: Project? = null) =
         ), project
     )
 
-fun notify(type: NotificationType, title: String, content: String = "", project: Project? = null, notificationActions: Collection<AnAction>) {
+private fun notify(type: NotificationType, title: String, content: String = "", project: Project? = null, notificationAction: AnAction) {
+    notify(type, title, content, project, listOf(notificationAction))
+}
+
+private fun notify(type: NotificationType, title: String, content: String = "", project: Project? = null, notificationActions: Collection<AnAction>) {
     val notification = Notification(GROUP_DISPLAY_ID, title, content, type)
 
     notificationActions.forEach {
@@ -57,7 +61,7 @@ fun notifyWarn(title: String, content: String = "", project: Project? = null, li
     notify(Notification(GROUP_DISPLAY_ID, title, content, NotificationType.WARNING, listener), project)
 
 fun notifyError(title: String, content: String = "", project: Project? = null, action: AnAction) =
-    notify(Notification(GROUP_DISPLAY_ID, title, content, NotificationType.ERROR).addAction(action), project)
+    notify(NotificationType.ERROR, title, content, project, action)
 
 fun notifyError(title: String = message("aws.notification.title"), content: String = "", project: Project? = null, listener: NotificationListener? = null) =
     notify(Notification(GROUP_DISPLAY_ID, title, content, NotificationType.ERROR, listener), project)

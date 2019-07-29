@@ -53,6 +53,9 @@ internal fun HeavyJavaCodeInsightTestFixtureRule.setUpGradleProject(): PsiClass 
             repositories {
                 mavenCentral()
             }
+            
+            sourceCompatibility = '1.8'
+            targetCompatibility = '1.8'
 
             dependencies {
                 compile 'com.amazonaws:aws-lambda-java-core:1.2.0'

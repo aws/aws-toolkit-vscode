@@ -29,6 +29,9 @@ runIde {
     }
 }
 
+publishPlugin.enabled = false
+buildSearchableOptions.enabled = false
+
 // don't run gui tests as part of check
 test.enabled = false
 
@@ -38,10 +41,6 @@ task guiTest(type: Test) {
     sysProps.put("idea.gui.tests.gradle.runner", true) //Use Gradle Launcher to run GUI tests
     systemProperties sysProps
     include '**/*TestSuite*'
-
-    testLogging {
-        exceptionFormat = 'full'
-    }
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {

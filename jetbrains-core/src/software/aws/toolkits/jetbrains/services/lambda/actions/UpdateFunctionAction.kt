@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.lambda.actions
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.runInEdt
 import software.aws.toolkits.jetbrains.core.explorer.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
@@ -14,6 +13,9 @@ import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionDialog
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode
+import software.aws.toolkits.jetbrains.utils.Operation
+import software.aws.toolkits.jetbrains.utils.TaggingResourceType
+import software.aws.toolkits.jetbrains.utils.warnResourceOperationAgainstCodePipeline
 import software.aws.toolkits.resources.message
 
 abstract class UpdateFunctionAction(private val mode: EditFunctionMode, title: String) : SingleResourceNodeAction<LambdaFunctionNode>(title) {
@@ -31,7 +33,7 @@ abstract class UpdateFunctionAction(private val mode: EditFunctionMode, title: S
                 selected.function.region
             )
 
-            runInEdt {
+            warnResourceOperationAgainstCodePipeline(project, selected.function.name, selected.function.arn, TaggingResourceType.LAMBDA_FUNCTION, Operation.UPDATE) {
                 EditFunctionDialog(project, lambdaFunction, mode = mode).show()
             }
         }

@@ -20,8 +20,8 @@ import software.amazon.awssdk.services.cloudformation.model.StackResource
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerEmptyNode
-import software.aws.toolkits.jetbrains.core.explorer.AwsTruncatedResultNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsTruncatedResultNode
 import software.aws.toolkits.jetbrains.utils.delegateMock
 
 class CloudFormationServiceNodeTest {

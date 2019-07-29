@@ -3,12 +3,12 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.local
 
-import com.intellij.execution.ExecutionException
 import com.intellij.execution.ExecutorRegistry
 import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.application.WriteAction
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.testFramework.runInEdtAndWait
@@ -17,7 +17,6 @@ import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.After
-import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -26,7 +25,8 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.rules.EnvironmentVariableHelper
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
-import software.aws.toolkits.jetbrains.settings.SamExecutableDetector
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommonTestUtils
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamVersionCache
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addClass
@@ -52,7 +52,12 @@ class LocalLambdaRunConfigurationTest {
 
     @Before
     fun setUp() {
-        SamSettings.getInstance().savedExecutablePath = "sam"
+        val validSam = SamCommonTestUtils.makeATestSam(SamCommonTestUtils.getMinVersionAsJson()).toString()
+        SamSettings.getInstance().savedExecutablePath = validSam
+
+        // Pre-warm the SAM validation cache
+        SamVersionCache.evaluateBlocking(validSam)
+
         MockCredentialsManager.getInstance().addCredentials(mockId, mockCreds)
 
         val fixture = projectRule.fixture
@@ -78,9 +83,14 @@ class LocalLambdaRunConfigurationTest {
 
     @Test
     fun samIsNotSet() {
-        SamSettings.getInstance().savedExecutablePath = null
-        envHelper.remove("PATH")
-        assumeTrue(SamExecutableDetector().detect() == null)
+        val fakeSamPath = "NotValid"
+        SamSettings.getInstance().savedExecutablePath = fakeSamPath
+        // Pre-warm the SAM validation cache
+        try {
+            SamVersionCache.evaluateBlocking(fakeSamPath)
+        } catch (e: Exception) {
+            // Do nothing
+        }
 
         runInEdtAndWait {
             val runConfiguration = createHandlerBasedRunConfiguration(
@@ -103,8 +113,8 @@ class LocalLambdaRunConfigurationTest {
                 credentialsProviderId = mockId
             )
             assertThat(runConfiguration).isNotNull
-            assertThatThrownBy { getState(runConfiguration) }
-                .isInstanceOf(ExecutionException::class.java)
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
                 .hasMessage(message("lambda.run_configuration.no_handler_specified"))
         }
     }
@@ -118,8 +128,8 @@ class LocalLambdaRunConfigurationTest {
                 credentialsProviderId = mockId
             )
             assertThat(runConfiguration).isNotNull
-            assertThatThrownBy { getState(runConfiguration) }
-                .isInstanceOf(ExecutionException::class.java)
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
                 .hasMessage(message("lambda.run_configuration.no_runtime_specified"))
         }
     }
@@ -133,8 +143,8 @@ class LocalLambdaRunConfigurationTest {
                 credentialsProviderId = mockId
             )
             assertThat(runConfiguration).isNotNull
-            assertThatThrownBy { getState(runConfiguration) }
-                .isInstanceOf(ExecutionException::class.java)
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
                 .hasMessage(message("lambda.run_configuration.handler_not_found", "Fake"))
         }
     }
@@ -148,8 +158,8 @@ class LocalLambdaRunConfigurationTest {
                 credentialsProviderId = mockId
             )
             assertThat(runConfiguration).isNotNull
-            assertThatThrownBy { getState(runConfiguration) }
-                .isInstanceOf(ExecutionException::class.java)
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
                 .hasMessage(message("lambda.run_configuration.sam.no_template_specified"))
         }
     }
@@ -164,9 +174,25 @@ class LocalLambdaRunConfigurationTest {
                 credentialsProviderId = mockId
             )
             assertThat(runConfiguration).isNotNull
-            assertThatThrownBy { getState(runConfiguration) }
-                .isInstanceOf(ExecutionException::class.java)
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
                 .hasMessage(message("lambda.run_configuration.sam.no_function_specified"))
+        }
+    }
+
+    @Test
+    fun templateFileDoesNotExist() {
+        runInEdtAndWait {
+            val runConfiguration = createTemplateRunConfiguration(
+                project = projectRule.project,
+                templateFile = "IAmFake",
+                logicalId = "Function",
+                credentialsProviderId = mockId
+            )
+            assertThat(runConfiguration).isNotNull
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
+                .hasMessage(message("lambda.run_configuration.sam.template_file_not_found"))
         }
     }
 
@@ -196,9 +222,9 @@ class LocalLambdaRunConfigurationTest {
                 credentialsProviderId = mockId
             )
             assertThat(runConfiguration).isNotNull
-            assertThatThrownBy { getState(runConfiguration) }
-                .isInstanceOf(ExecutionException::class.java)
-                .hasMessage(message("lambda.run_configuration.sam.no_such_function", logicalName, template))
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
+                .hasMessage(message("lambda.run_configuration.sam.no_such_function", logicalName, FileUtil.normalize(template)))
         }
     }
 
@@ -227,8 +253,8 @@ class LocalLambdaRunConfigurationTest {
                 credentialsProviderId = mockId
             )
             assertThat(runConfiguration).isNotNull
-            assertThatThrownBy { getState(runConfiguration) }
-                .isInstanceOf(ExecutionException::class.java)
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
                 .hasMessage(message("lambda.run_configuration.no_runtime_specified", logicalName, template))
         }
     }
@@ -259,8 +285,8 @@ class LocalLambdaRunConfigurationTest {
                 credentialsProviderId = mockId
             )
             assertThat(runConfiguration).isNotNull
-            assertThatThrownBy { getState(runConfiguration) }
-                .isInstanceOf(ExecutionException::class.java)
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
                 .hasMessage(message("lambda.run_configuration.no_runtime_specified", logicalName, template))
         }
     }
@@ -290,8 +316,8 @@ class LocalLambdaRunConfigurationTest {
                 credentialsProviderId = mockId
             )
             assertThat(runConfiguration).isNotNull
-            assertThatThrownBy { getState(runConfiguration) }
-                .isInstanceOf(ExecutionException::class.java)
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
                 .hasMessage(message("lambda.run_configuration.no_handler_specified", logicalName, template))
         }
     }
@@ -305,8 +331,8 @@ class LocalLambdaRunConfigurationTest {
                 credentialsProviderId = mockId
             )
             assertThat(runConfiguration).isNotNull
-            assertThatThrownBy { getState(runConfiguration) }
-                .isInstanceOf(ExecutionException::class.java)
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
                 .hasMessage(message("lambda.run_configuration.no_region_specified"))
         }
     }
@@ -319,8 +345,8 @@ class LocalLambdaRunConfigurationTest {
                 credentialsProviderId = null
             )
             assertThat(runConfiguration).isNotNull
-            assertThatThrownBy { getState(runConfiguration) }
-                .isInstanceOf(ExecutionException::class.java)
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
                 .hasMessage(message("lambda.run_configuration.no_credentials_specified"))
         }
     }
@@ -334,9 +360,69 @@ class LocalLambdaRunConfigurationTest {
                 credentialsProviderId = credentialName
             )
             assertThat(runConfiguration).isNotNull
-            assertThatThrownBy { getState(runConfiguration) }
-                .isInstanceOf(ExecutionException::class.java)
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
                 .hasMessage(message("lambda.run_configuration.credential_not_found_error", credentialName))
+        }
+    }
+
+    @Test
+    fun inputIsSet() {
+        runInEdtAndWait {
+            val runConfiguration = createHandlerBasedRunConfiguration(
+                project = projectRule.project,
+                credentialsProviderId = mockId,
+                input = "{}"
+            )
+            assertThat(runConfiguration).isNotNull
+            runConfiguration.checkConfiguration()
+        }
+    }
+
+    @Test
+    fun inputTextIsNotSet() {
+        runInEdtAndWait {
+            val runConfiguration = createHandlerBasedRunConfiguration(
+                project = projectRule.project,
+                credentialsProviderId = mockId,
+                input = null
+            )
+            assertThat(runConfiguration).isNotNull
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
+                .hasMessage(message("lambda.run_configuration.no_input_specified"))
+        }
+    }
+
+    @Test
+    fun inputFileDoesNotExist() {
+        runInEdtAndWait {
+            val runConfiguration = createHandlerBasedRunConfiguration(
+                project = projectRule.project,
+                input = "DoesNotExist",
+                inputIsFile = true,
+                credentialsProviderId = mockId
+            )
+            assertThat(runConfiguration).isNotNull
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
+                .hasMessage(message("lambda.run_configuration.no_input_specified"))
+        }
+    }
+
+    @Test
+    fun inputFileDoeExist() {
+        val eventFile = projectRule.fixture.addFileToProject("event.json", "TestInputFile")
+
+        runInEdtAndWait {
+            val runConfiguration = createHandlerBasedRunConfiguration(
+                project = projectRule.project,
+                input = eventFile.virtualFile.path,
+                inputIsFile = true,
+                credentialsProviderId = mockId
+            )
+            assertThat(runConfiguration).isNotNull
+            runConfiguration.checkConfiguration()
         }
     }
 
@@ -571,6 +657,24 @@ class LocalLambdaRunConfigurationTest {
             assertThat(runConfiguration.skipPullImage()).isTrue()
             assertThat(runConfiguration.buildInContainer()).isTrue()
             assertThat(runConfiguration.dockerNetwork()).isEqualTo("aws-lambda")
+        }
+    }
+
+    @Test // https://github.com/aws/aws-toolkit-jetbrains/issues/1072
+    fun creatingACopyDoesNotAliasFields() {
+        runInEdtAndWait {
+            val runConfiguration = createHandlerBasedRunConfiguration(
+                project = projectRule.project,
+                credentialsProviderId = mockId,
+                input = "{}"
+            )
+
+            val clonedConfiguration = runConfiguration.clone() as LocalLambdaRunConfiguration
+            clonedConfiguration.name = "Cloned"
+
+            clonedConfiguration.useInputText("Changed input")
+
+            assertThat(clonedConfiguration.inputSource()).isNotEqualTo(runConfiguration.inputSource())
         }
     }
 

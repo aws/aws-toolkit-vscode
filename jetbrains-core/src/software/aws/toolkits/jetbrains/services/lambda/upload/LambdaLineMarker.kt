@@ -12,6 +12,7 @@ import com.intellij.execution.lineMarker.LineMarkerActionWrapper
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
@@ -103,7 +104,9 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
                 } ?: false
             } else {
                 result.whenComplete { _, _ ->
-                    DaemonCodeAnalyzer.getInstance(psiFile.project).restart(psiFile)
+                    runReadAction {
+                        DaemonCodeAnalyzer.getInstance(psiFile.project).restart(psiFile)
+                    }
                 }
                 false
             }

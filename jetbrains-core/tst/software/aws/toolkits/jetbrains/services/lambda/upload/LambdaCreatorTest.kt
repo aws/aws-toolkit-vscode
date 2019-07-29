@@ -32,7 +32,6 @@ import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRul
 import java.nio.file.Path
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
 abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUploadDetails) {
@@ -81,7 +80,7 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
         val tempFile = FileUtil.createTempFile("lambda", ".zip")
 
         val lambdaBuilder = mock<LambdaBuilder> {
-            on { packageLambda(any(), any(), any(), any(), any(), any()) } doReturn CompletableFuture.completedFuture(tempFile.toPath())
+            on { packageLambda(any(), any(), any(), any(), any(), any()) } doReturn tempFile.toPath()
         }
 
         val psiFile = projectRule.fixture.addClass(
@@ -158,7 +157,7 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
         val tempFile = FileUtil.createTempFile("lambda", ".zip")
 
         val lambdaBuilder = mock<LambdaBuilder> {
-            on { packageLambda(any(), any(), any(), any(), any(), any()) } doReturn CompletableFuture.completedFuture(tempFile.toPath())
+            on { packageLambda(any(), any(), any(), any(), any(), any()) } doReturn tempFile.toPath()
         }
 
         val psiFile = projectRule.fixture.addClass(

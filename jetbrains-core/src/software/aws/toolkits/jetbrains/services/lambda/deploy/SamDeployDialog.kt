@@ -165,7 +165,7 @@ open class SamDeployDialog(
         val message = if (error.cause is ProcessCanceledException) {
             message("serverless.application.deploy.abort")
         } else {
-            ExceptionUtil.getMessage(error) ?: message("serverless.application.deploy.unknown_error")
+            ExceptionUtil.getMessage(error) ?: message("general.unknown_error")
         }
         setErrorText(message)
 

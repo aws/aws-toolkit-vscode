@@ -3,15 +3,14 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.remote
 
-import com.intellij.openapi.components.BaseState
 import com.intellij.util.xmlb.annotations.Property
 import software.aws.toolkits.jetbrains.services.lambda.execution.BaseLambdaOptions
 
 class RemoteLambdaOptions : BaseLambdaOptions() {
     @get:Property(flat = true) // flat for backwards compat
-    var functionOptions by property(FunctionOptions())
+    var functionOptions = FunctionOptions()
 }
 
-class FunctionOptions : BaseState() {
-    var functionName by string()
+class FunctionOptions {
+    var functionName: String? = null
 }

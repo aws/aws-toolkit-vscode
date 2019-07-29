@@ -10,17 +10,13 @@ import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.amazon.awssdk.services.lambda.model.ListFunctionsRequest
 import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerNode
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerResourceNode
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerServiceRootNode
-import software.aws.toolkits.jetbrains.core.explorer.AwsNodeAlwaysExpandable
-import software.aws.toolkits.jetbrains.core.explorer.AwsTruncatedResultNode
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsTruncatedResultNode
 
-class LambdaServiceNode(project: Project) : AwsExplorerServiceRootNode(project, message("explorer.node.lambda")),
-    AwsNodeAlwaysExpandable {
-    override fun serviceName() = LambdaClient.SERVICE_NAME
-
+class LambdaServiceNode(project: Project) : AwsExplorerServiceRootNode(project, AwsExplorerService.LAMBDA) {
     private val client: LambdaClient = AwsClientManager.getInstance(project).getClient()
 
     override fun loadResources(paginationToken: String?): Collection<AwsExplorerNode<*>> {
@@ -50,6 +46,8 @@ open class LambdaFunctionNode(
     immutable: Boolean = false
 ) : AwsExplorerResourceNode<LambdaFunction>(project, LambdaClient.SERVICE_NAME, function, AwsIcons.Resources.LAMBDA_FUNCTION, immutable) {
     override fun resourceType() = "function"
+
+    override fun resourceArn() = function.arn
 
     override fun toString(): String = functionName()
 

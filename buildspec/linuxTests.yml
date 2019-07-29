@@ -1,12 +1,37 @@
 version: 0.2
 
+cache:
+  paths:
+    - '/root/.gradle/caches/**/*'
+    - '/root/.gradle/wrapper/**/*'
+
+env:
+  variables:
+    CI: true
+
 phases:
+  install:
+    runtime-versions:
+      java: openjdk8
+
   build:
     commands:
       - chmod +x gradlew
-      - ./gradlew check coverageReport --info --full-stacktrace
+      - ./gradlew check coverageReport --info --full-stacktrace --console plain
       - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
       - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
       - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
       - curl -s https://codecov.io/bash > codecov.sh
       - if [ "$CODE_COV_TOKEN" ]; then bash ./codecov.sh -t $CODE_COV_TOKEN -F unittest || true; fi
+
+  post_build:
+    commands:
+      - TEST_ARTIFACTS="/tmp/testArtifacts"
+      - mkdir $TEST_ARTIFACTS
+      - rsync -rmv --include='*/' --include '**/build/idea-sandbox/system*/log/**' --exclude='*' . $TEST_ARTIFACTS/ || true
+      - rsync -rmv --include='*/' --include '**/build/reports/**' --exclude='*' . $TEST_ARTIFACTS/ || true
+
+artifacts:
+  files:
+    - "**/*"
+  base-directory: /tmp/testArtifacts

@@ -41,7 +41,7 @@ import java.awt.Component
 import java.awt.event.MouseEvent
 import javax.swing.JComponent
 
-class AwsSettingsPanelInstaller : StartupActivity {
+class AwsSettingsPanelInstaller : StartupActivity, DumbAware {
     override fun runActivity(project: Project) {
         WindowManager.getInstance().getStatusBar(project).addWidget(AwsSettingsPanel(project), project)
     }
