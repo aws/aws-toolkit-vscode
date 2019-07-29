@@ -100,7 +100,7 @@ describe('SAM Integration', async () => {
         assert.ok(command.arguments)
         const runResult: any | undefined = await vscode.commands.executeCommand(
             command.command,
-            command.arguments![0]
+            ...command.arguments!
         )
         assert.ok(runResult)
         // tslint:disable: no-unsafe-any
@@ -122,7 +122,7 @@ describe('SAM Integration', async () => {
         assert.ok(command.arguments)
         const runResult: any | undefined = await vscode.commands.executeCommand(
             command.command,
-            command.arguments![0]
+            ...command.arguments!
         )
         assert.ok(runResult)
         const datum = runResult!.datum
