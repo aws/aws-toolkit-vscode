@@ -37,6 +37,8 @@ async function getCodeLenses(): Promise<vscode.CodeLens[]> {
     let codeLenses: vscode.CodeLens[] | undefined
     while (true) {
         try {
+            // this works without a sleep locally, but not on CodeBuild
+            await sleep(200)
             const codeLensesPromise: Thenable<vscode.CodeLens[] | undefined> =
                 vscode.commands.executeCommand('vscode.executeCodeLensProvider', documentUri)
             codeLenses = await codeLensesPromise
@@ -45,8 +47,8 @@ async function getCodeLenses(): Promise<vscode.CodeLens[]> {
             }
             // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
             // not shown to the user and do not affect how our extension is working
-            codeLenses = codeLenses!.filter(lens => lens !== undefined && lens.command !== undefined)
-            if (codeLenses!.length === 3) {
+            codeLenses = codeLenses.filter(lens => lens !== undefined && lens.command !== undefined)
+            if (codeLenses.length === 3) {
                 return codeLenses as vscode.CodeLens[]
             }
         } catch (e) { }
