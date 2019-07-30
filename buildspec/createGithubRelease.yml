@@ -1,0 +1,40 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 10
+
+    Commands:
+      - apt-get update -y
+      - apt-get install -y jq curl
+  pre_build:
+    commands:
+      - GITHUB_AUTH=aws-toolkit-automation:${GITHUB_TOKEN}
+      - RELEASES=https://api.github.com/repos/aws/aws-toolkit-vscode/releases
+
+  build:
+    commands:
+      # pull in the build artifacts
+      - cp -r ${CODEBUILD_SRC_DIR_buildPipeline}/* .
+      - VERSION=$(node -e "console.log(require('./package.json').version);")
+      - |
+        if [ $STAGE != "prod" ]; then
+          echo "Stage is not production, skipping github release step"
+          exit 0
+        fi
+        # Create the Github release
+        curl -u $GITHUB_AUTH -X POST $RELEASES -d \
+          "{\"tag_name\":\"v$VERSION\"}" > resp.json
+        # Grab the upload url and target file
+        UPLOAD_URL=$(jq -r .upload_url resp.json | cut -d\{ -f1)
+        if [ $UPLOAD_URL = "null" ]; then
+          echo "Upload URL was null, release already exists or call failed, check Github after the build is done"
+          exit 0
+        fi
+        UPLOAD_TARGET=$(ls aws-toolkit-vscode*.vsix)
+        echo "Uploading $UPLOAD_TARGET to $UPLOAD_URL"
+        curl -u $GITHUB_AUTH -X POST \
+          -H "Content-Type: application/zip" \
+          --data-binary @${UPLOAD_TARGET} \
+          ${UPLOAD_URL}?name=${UPLOAD_TARGET}
