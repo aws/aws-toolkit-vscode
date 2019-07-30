@@ -1,0 +1,18 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 10
+      
+  pre_build:
+    commands:
+      - REPO_URL="https://$GITHUB_TOKEN@github.com/aws/aws-toolkit-vscode.git"
+  build:
+    commands:
+    - git clone $REPO_URL aws-toolkit-vscode
+    - cd aws-toolkit-vscode && git checkout $CODEBUILD_RESOLVED_SOURCE_VERSION
+artifacts:
+  base-directory: aws-toolkit-vscode
+  files:
+    - '**/*'
