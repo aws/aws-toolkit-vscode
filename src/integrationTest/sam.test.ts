@@ -18,10 +18,10 @@ let projectPath = ''
 
 const runtimes = [
     {name: 'nodejs10.x', path: 'testProject/hello-world/app.js'},
-    {name: 'dotnetcore2.1', path: 'testProject/src/HelloWorld/Function.cs'},
     {name: 'python2.7', path: 'testProject/hello_world/app.py'},
     {name: 'python3.6', path: 'testProject/hello_world/app.py'},
-    // {name: 'python3.7', path: 'testProject/hello_world/app.py'}
+    {name: 'python3.7', path: 'testProject/hello_world/app.py'},
+    {name: 'dotnetcore2.1', path: 'testProject/src/HelloWorld/Function.cs'}
 ]
 
 async function openSamProject(): Promise<vscode.Uri> {
@@ -45,6 +45,16 @@ async function getCodeLenses(): Promise<vscode.CodeLens[]> {
     return codeLenses as vscode.CodeLens[]
 }
 
+async function onDebugChanged(e: vscode.DebugSession | undefined) {
+    if (!e) {
+        return
+    }
+    assert.strictEqual(e.configuration.name, 'SamLocalDebug')
+    // wait for it to actually start (which we do not get an event for)
+    await sleep(800)
+    await vscode.commands.executeCommand('workbench.action.debug.continue')
+}
+
 // Iterate through and test all runtimes
 for (const runtime of runtimes) {
     describe(`SAM Integration tests ${runtime.name}`, async () => {
@@ -53,6 +63,8 @@ for (const runtime of runtimes) {
             this.timeout(TIMEOUT)
             projectSDK = runtime.name
             projectPath = runtime.path
+            // set up debug config
+            vscode.debug.onDidChangeActiveDebugSession(onDebugChanged)
             await activateExtension()
             console.log(`Using SDK ${projectSDK} with project in path ${projectPath}`)
             // this is really test 1, but since it has to run before everything it's in the before section
