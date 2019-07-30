@@ -19,6 +19,7 @@ let debuggerType = ''
 let documentUri: vscode.Uri
 
 const runtimes = [
+    { name: 'nodejs8.10', path: 'testProject/hello-world/app.js', debuggerType: 'node2' },
     { name: 'nodejs10.x', path: 'testProject/hello-world/app.js', debuggerType: 'node2' },
     { name: 'python2.7', path: 'testProject/hello_world/app.py', debuggerType: 'python' },
     { name: 'python3.6', path: 'testProject/hello_world/app.py', debuggerType: 'python' },
