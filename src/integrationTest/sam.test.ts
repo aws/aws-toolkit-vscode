@@ -20,7 +20,7 @@ const runtimes = [
     {name: 'nodejs10.x', path: 'testProject/hello-world/app.js'},
     {name: 'dotnetcore2.1', path: 'testProject/src/HelloWorld/Function.cs'},
     {name: 'python2.7', path: 'testProject/hello_world/app.py'},
-    // {name: 'python3.6', path: 'testProject/hello_world/app.py'},
+    {name: 'python3.6', path: 'testProject/hello_world/app.py'},
     // {name: 'python3.7', path: 'testProject/hello_world/app.py'}
 ]
 
@@ -142,8 +142,6 @@ for (const runtime of runtimes) {
             try {
                 removeSync(path.join(projectFolder, 'testProject'))
             } catch (e) {}
-            // Sleep between tests to reduce the chances of SAM not working
-            await sleep(5000)
         })
     })
 }
