@@ -15,14 +15,15 @@ import { activateExtension, sleep, TIMEOUT } from './integrationTestsUtilities'
 const projectFolder = `${__dirname}`
 let projectSDK = ''
 let projectPath = ''
+let debuggerType = ''
 let documentUri: vscode.Uri
 
 const runtimes = [
-    { name: 'nodejs10.x', path: 'testProject/hello-world/app.js' },
-    { name: 'python2.7', path: 'testProject/hello_world/app.py' },
-    { name: 'python3.6', path: 'testProject/hello_world/app.py' },
-    { name: 'python3.7', path: 'testProject/hello_world/app.py' },
-    { name: 'dotnetcore2.1', path: 'testProject/src/HelloWorld/Function.cs' }
+    { name: 'nodejs10.x', path: 'testProject/hello-world/app.js', debuggerType: 'node2' },
+    { name: 'python2.7', path: 'testProject/hello_world/app.py', debuggerType: 'python' },
+    { name: 'python3.6', path: 'testProject/hello_world/app.py', debuggerType: 'python' },
+    { name: 'python3.7', path: 'testProject/hello_world/app.py', debuggerType: 'python' },
+    { name: 'dotnetcore2.1', path: 'testProject/src/HelloWorld/Function.cs', debuggerType: 'coreclr' }
 ]
 
 async function openSamProject(): Promise<vscode.Uri> {
@@ -36,7 +37,6 @@ async function getCodeLenses(): Promise<vscode.CodeLens[]> {
     let codeLenses: vscode.CodeLens[] | undefined
     while (true) {
         try {
-            await sleep(200)
             const codeLensesPromise: Thenable<vscode.CodeLens[] | undefined> =
                 vscode.commands.executeCommand('vscode.executeCodeLensProvider', documentUri)
             codeLenses = await codeLensesPromise
@@ -49,13 +49,13 @@ async function getCodeLenses(): Promise<vscode.CodeLens[]> {
             if (codeLenses!.length === 3) {
                 return codeLenses as vscode.CodeLens[]
             }
-        } catch (e) {}
+        } catch (e) { }
     }
 }
 
 async function getCodeLensesOrTimeout(): Promise<vscode.CodeLens[]> {
     const codeLensPromise = getCodeLenses()
-    const timeout = new Promise((resolve) => { setTimeout(resolve, 10000, undefined)})
+    const timeout = new Promise((resolve) => { setTimeout(resolve, 10000, undefined) })
     const result = await Promise.race([codeLensPromise, timeout])
 
     if (result) {
@@ -69,6 +69,7 @@ async function onDebugChanged(e: vscode.DebugSession | undefined) {
         return
     }
     assert.strictEqual(e.configuration.name, 'SamLocalDebug')
+    assert.strictEqual(e.configuration.type, debuggerType)
     // wait for it to actually start (which we do not get an event for)
     await sleep(800)
     await vscode.commands.executeCommand('workbench.action.debug.continue')
@@ -82,6 +83,7 @@ for (const runtime of runtimes) {
             this.timeout(TIMEOUT)
             projectSDK = runtime.name
             projectPath = runtime.path
+            debuggerType = runtime.debuggerType
             // set up debug config
             vscode.debug.onDidChangeActiveDebugSession(onDebugChanged)
             await activateExtension('amazonwebservices.aws-toolkit-vscode')
