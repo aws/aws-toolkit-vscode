@@ -36,7 +36,7 @@ async function openSamProject(): Promise<vscode.Uri> {
 function tryRemoveProjectFolder() {
     try {
         removeSync(path.join(projectFolder, 'testProject'))
-    } catch (e) { }
+    } catch (e) {}
 }
 
 async function getCodeLenses(): Promise<vscode.CodeLens[]> {
@@ -45,8 +45,10 @@ async function getCodeLenses(): Promise<vscode.CodeLens[]> {
         try {
             // this works without a sleep locally, but not on CodeBuild
             await sleep(200)
-            const codeLensesPromise: Thenable<vscode.CodeLens[] | undefined> =
-                vscode.commands.executeCommand('vscode.executeCodeLensProvider', documentUri)
+            const codeLensesPromise: Thenable<vscode.CodeLens[] | undefined> = vscode.commands.executeCommand(
+                'vscode.executeCodeLensProvider',
+                documentUri
+            )
             codeLenses = await codeLensesPromise
             if (!codeLenses) {
                 continue
@@ -57,13 +59,15 @@ async function getCodeLenses(): Promise<vscode.CodeLens[]> {
             if (codeLenses.length === 3) {
                 return codeLenses as vscode.CodeLens[]
             }
-        } catch (e) { }
+        } catch (e) {}
     }
 }
 
 async function getCodeLensesOrTimeout(): Promise<vscode.CodeLens[]> {
     const codeLensPromise = getCodeLenses()
-    const timeout = new Promise((resolve) => { setTimeout(resolve, 10000, undefined) })
+    const timeout = new Promise(resolve => {
+        setTimeout(resolve, 10000, undefined)
+    })
     const result = await Promise.race([codeLensPromise, timeout])
 
     if (result) {
@@ -88,7 +92,7 @@ async function onDebugChanged(e: vscode.DebugSession | undefined) {
 // Iterate through and test all runtimes
 for (const runtime of runtimes) {
     describe(`SAM Integration tests ${runtime.name}`, async () => {
-        before(async function () {
+        before(async function() {
             // tslint:disable-next-line: no-invalid-this
             this.timeout(TIMEOUT)
             projectSDK = runtime.name
