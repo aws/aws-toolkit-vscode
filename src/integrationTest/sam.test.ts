@@ -17,11 +17,11 @@ let projectSDK = ''
 let projectPath = ''
 
 const runtimes = [
-    {name: 'nodejs10.x', path: 'testProject/hello-world/app.js'},
-    {name: 'python2.7', path: 'testProject/hello_world/app.py'},
-    {name: 'python3.6', path: 'testProject/hello_world/app.py'},
-    {name: 'python3.7', path: 'testProject/hello_world/app.py'},
-    {name: 'dotnetcore2.1', path: 'testProject/src/HelloWorld/Function.cs'}
+    { name: 'nodejs10.x', path: 'testProject/hello-world/app.js' },
+    { name: 'python2.7', path: 'testProject/hello_world/app.py' },
+    { name: 'python3.6', path: 'testProject/hello_world/app.py' },
+    { name: 'python3.7', path: 'testProject/hello_world/app.py' },
+    { name: 'dotnetcore2.1', path: 'testProject/src/HelloWorld/Function.cs' }
 ]
 
 async function openSamProject(): Promise<vscode.Uri> {
@@ -80,8 +80,9 @@ for (const runtime of runtimes) {
             const samCliContext = getSamCliContext()
             await runSamCliInit(initArguments, samCliContext.invoker)
             // we have to restore dotnet projects before we do anything, so we need this step just for dotnet
-            if (projectSDK.includes('dotnet')) {
-                console.log('Runtime under test is dotnet, will wait for extension to activate first')
+            if (projectSDK.includes('dotnet') || projectSDK.includes('python')) {
+                console.log(`Runtime ${projectSDK} relies on an extension to work properly. `
+                         + 'Will open the project then wait for the extension to activate before continuing to test')
                 await openSamProject()
                 // to add to this we have to wait for the .net extension to active to restore
                 await sleep(10000)
@@ -107,7 +108,7 @@ for (const runtime of runtimes) {
         }).timeout(TIMEOUT)
 
         it('Invokes the run codelens', async () => {
-            const [ runCodeLens ] = await getCodeLenses()
+            const [runCodeLens] = await getCodeLenses()
             assert.ok(runCodeLens.command)
             const command = runCodeLens.command!
             assert.ok(command.arguments)
@@ -129,7 +130,7 @@ for (const runtime of runtimes) {
         }).timeout(TIMEOUT)
 
         it('Invokes the debug codelens', async () => {
-            const [, debugCodeLens ] = await getCodeLenses()
+            const [, debugCodeLens] = await getCodeLenses()
             assert.ok(debugCodeLens.command)
             const command = debugCodeLens.command!
             assert.ok(command.arguments)
@@ -147,13 +148,13 @@ for (const runtime of runtimes) {
             const metadata = datum.metadata!
             assert.strictEqual(metadata.get('runtime'), projectSDK)
             assert.strictEqual(metadata.get('debug'), 'true')
-        // This timeout is significantly longer, mostly to accommodate the long first time .net debugger
+            // This timeout is significantly longer, mostly to accommodate the long first time .net debugger
         }).timeout(TIMEOUT * 2)
 
         after(async () => {
             try {
                 removeSync(path.join(projectFolder, 'testProject'))
-            } catch (e) {}
+            } catch (e) { }
         })
     })
 }
