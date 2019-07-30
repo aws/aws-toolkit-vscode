@@ -15,6 +15,7 @@ import { activateExtension, sleep, TIMEOUT } from './integrationTestsUtilities'
 const projectFolder = `${__dirname}`
 let projectSDK = ''
 let projectPath = ''
+let documentUri: vscode.Uri
 
 const runtimes = [
     { name: 'nodejs10.x', path: 'testProject/hello-world/app.js' },
@@ -32,17 +33,35 @@ async function openSamProject(): Promise<vscode.Uri> {
 }
 
 async function getCodeLenses(): Promise<vscode.CodeLens[]> {
-    const documentUri = await openSamProject()
-    const codeLensesPromise: Thenable<vscode.CodeLens[] | undefined> =
-        vscode.commands.executeCommand('vscode.executeCodeLensProvider', documentUri)
-    let codeLenses = await codeLensesPromise
-    assert.ok(codeLenses)
-    // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
-    // not shown to the user and do not affect how our extension is working
-    codeLenses = codeLenses!.filter(lens => lens !== undefined && lens.command !== undefined)
-    assert.strictEqual(codeLenses!.length, 3)
+    let codeLenses: vscode.CodeLens[] | undefined
+    while (true) {
+        try {
+            await sleep(200)
+            const codeLensesPromise: Thenable<vscode.CodeLens[] | undefined> =
+                vscode.commands.executeCommand('vscode.executeCodeLensProvider', documentUri)
+            codeLenses = await codeLensesPromise
+            if (!codeLenses) {
+                continue
+            }
+            // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
+            // not shown to the user and do not affect how our extension is working
+            codeLenses = codeLenses!.filter(lens => lens !== undefined && lens.command !== undefined)
+            if (codeLenses!.length === 3) {
+                return codeLenses as vscode.CodeLens[]
+            }
+        } catch (e) {}
+    }
+}
 
-    return codeLenses as vscode.CodeLens[]
+async function getCodeLensesOrTimeout(): Promise<vscode.CodeLens[]> {
+    const codeLensPromise = getCodeLenses()
+    const timeout = new Promise((resolve) => { setTimeout(resolve, 10000, undefined)})
+    const result = await Promise.race([codeLensPromise, timeout])
+
+    if (result) {
+        return result as vscode.CodeLens[]
+    }
+    throw new Error('Codelenses took too long to show up, this inidicates an issue!')
 }
 
 async function onDebugChanged(e: vscode.DebugSession | undefined) {
@@ -65,7 +84,7 @@ for (const runtime of runtimes) {
             projectPath = runtime.path
             // set up debug config
             vscode.debug.onDidChangeActiveDebugSession(onDebugChanged)
-            await activateExtension()
+            await activateExtension('amazonwebservices.aws-toolkit-vscode')
             console.log(`Using SDK ${projectSDK} with project in path ${projectPath}`)
             // this is really test 1, but since it has to run before everything it's in the before section
             try {
@@ -79,14 +98,14 @@ for (const runtime of runtimes) {
             }
             const samCliContext = getSamCliContext()
             await runSamCliInit(initArguments, samCliContext.invoker)
-            // we have to restore dotnet projects before we do anything, so we need this step just for dotnet
-            if (projectSDK.includes('dotnet') || projectSDK.includes('python')) {
-                console.log(`Runtime ${projectSDK} relies on an extension to work properly. `
-                         + 'Will open the project then wait for the extension to activate before continuing to test')
-                await openSamProject()
-                // to add to this we have to wait for the .net extension to active to restore
-                await sleep(10000)
+            // Activate the relevent extensions if needed
+            if (projectSDK.includes('dotnet')) {
+                await activateExtension('ms-vscode.csharp')
             }
+            if (projectSDK.includes('python')) {
+                await activateExtension('ms-python.python')
+            }
+            documentUri = await openSamProject()
         })
 
         it('Generates a template with a proper runtime', async () => {
@@ -108,7 +127,7 @@ for (const runtime of runtimes) {
         }).timeout(TIMEOUT)
 
         it('Invokes the run codelens', async () => {
-            const [runCodeLens] = await getCodeLenses()
+            const [runCodeLens] = await getCodeLensesOrTimeout()
             assert.ok(runCodeLens.command)
             const command = runCodeLens.command!
             assert.ok(command.arguments)
@@ -130,7 +149,7 @@ for (const runtime of runtimes) {
         }).timeout(TIMEOUT)
 
         it('Invokes the debug codelens', async () => {
-            const [, debugCodeLens] = await getCodeLenses()
+            const [, debugCodeLens] = await getCodeLensesOrTimeout()
             assert.ok(debugCodeLens.command)
             const command = debugCodeLens.command!
             assert.ok(command.arguments)

@@ -7,6 +7,6 @@ import { activateExtension, TIMEOUT } from './integrationTestsUtilities'
 
 describe('VSCode tests', async () => {
     it('activates the extension', async () => {
-        await activateExtension()
+        await activateExtension('amazonwebservices.aws-toolkit-vscode')
     }).timeout(TIMEOUT)
 })
