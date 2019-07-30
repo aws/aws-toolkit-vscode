@@ -12,7 +12,6 @@ export const TIMEOUT = 30 * SECOND
 export async function activateExtension(extensionName: string): Promise<vscode.Extension<void>> {
     const extension: vscode.Extension<void> | undefined = vscode.extensions.getExtension(extensionName)
     assert.ok(extension)
-    // tslint:disable-next-line: no-unsafe-any
     await extension!.activate()
 
     return extension as vscode.Extension<void>

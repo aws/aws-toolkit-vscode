@@ -33,6 +33,12 @@ async function openSamProject(): Promise<vscode.Uri> {
     return vscode.Uri.file(documentPath)
 }
 
+function tryRemoveProjectFolder() {
+    try {
+        removeSync(path.join(projectFolder, 'testProject'))
+    } catch (e) { }
+}
+
 async function getCodeLenses(): Promise<vscode.CodeLens[]> {
     let codeLenses: vscode.CodeLens[] | undefined
     while (true) {
@@ -72,7 +78,9 @@ async function onDebugChanged(e: vscode.DebugSession | undefined) {
     }
     assert.strictEqual(e.configuration.name, 'SamLocalDebug')
     assert.strictEqual(e.configuration.type, debuggerType)
-    // wait for it to actually start (which we do not get an event for)
+    // wait for it to actually start (which we do not get an event for). 800 is
+    // short enough to finish before the next test is run and long enough to
+    // actually act after it pauses
     await sleep(800)
     await vscode.commands.executeCommand('workbench.action.debug.continue')
 }
@@ -90,11 +98,9 @@ for (const runtime of runtimes) {
             vscode.debug.onDidChangeActiveDebugSession(onDebugChanged)
             await activateExtension('amazonwebservices.aws-toolkit-vscode')
             console.log(`Using SDK ${projectSDK} with project in path ${projectPath}`)
-            // this is really test 1, but since it has to run before everything it's in the before section
-            try {
-                removeSync(path.join(projectFolder, 'testProject'))
-            } catch (e) { }
+            tryRemoveProjectFolder()
             mkdirpSync(projectFolder)
+            // this is really test 1, but since it has to run before everything it's in the before section
             const initArguments: SamCliInitArgs = {
                 name: 'testProject',
                 location: projectFolder,
@@ -110,6 +116,10 @@ for (const runtime of runtimes) {
                 await activateExtension('ms-python.python')
             }
             documentUri = await openSamProject()
+        })
+
+        after(async () => {
+            tryRemoveProjectFolder()
         })
 
         it('Generates a template with a proper runtime', async () => {
@@ -173,11 +183,5 @@ for (const runtime of runtimes) {
             assert.strictEqual(metadata.get('debug'), 'true')
             // This timeout is significantly longer, mostly to accommodate the long first time .net debugger
         }).timeout(TIMEOUT * 2)
-
-        after(async () => {
-            try {
-                removeSync(path.join(projectFolder, 'testProject'))
-            } catch (e) { }
-        })
     })
 }
