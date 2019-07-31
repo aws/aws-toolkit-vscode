@@ -17,6 +17,7 @@ import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
 import { ErrorNode } from '../../../lambda/explorer/errorNode'
 import { PlaceholderNode } from '../../../lambda/explorer/placeholderNode'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
+import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { StsClient } from '../../../shared/clients/stsClient'
 import { ext } from '../../../shared/extensionGlobals'
@@ -82,9 +83,14 @@ describe('DefaultCloudFormationStackNode', () => {
             }
         } as any as LambdaClient
 
+        // TODO: Move this to MockToolkitClientBuilder
         ext.toolkitClientBuilder = {
             createCloudFormationClient(regionCode: string): CloudFormationClient {
                 return cloudFormationClient
+            },
+
+            createEcsClient(regionCode: string): EcsClient {
+                throw new Error('ecs client unused')
             },
 
             createLambdaClient(regionCode: string): LambdaClient {
@@ -169,9 +175,14 @@ describe('DefaultCloudFormationStackNode', () => {
         lambdaClient.addLambdaResource(lambda2Name)
         lambdaClient.addLambdaResource(lambda3Name)
 
+        // TODO: Move to MockToolkitClientBuilder
         ext.toolkitClientBuilder = {
             createCloudFormationClient(regionCode: string): CloudFormationClient {
                 return cloudFormationClient
+            },
+
+            createEcsClient(regionCode: string): EcsClient {
+                throw new Error('ecs client unused')
             },
 
             createLambdaClient(regionCode: string): LambdaClient {
@@ -299,9 +310,14 @@ describe('DefaultCloudFormationNode', () => {
             'elephant'
         ]
 
+        // TODO: Move to MockToolkitClientBuilder
         ext.toolkitClientBuilder = {
             createCloudFormationClient(regionCode: string): CloudFormationClient {
                 return new StackNamesMockCloudFormationClient(inputStackNames)
+            },
+
+            createEcsClient(regionCode: string): EcsClient {
+                throw new Error('ecs client unused')
             },
 
             createLambdaClient(regionCode: string): LambdaClient {
