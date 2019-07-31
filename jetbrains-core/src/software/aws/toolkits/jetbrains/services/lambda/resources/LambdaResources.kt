@@ -7,5 +7,7 @@ import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 
 object LambdaResources {
-    val LIST_FUNCTIONS = ClientBackedCachedResource(LambdaClient::class) { listFunctionsPaginator().functions().toList() }
+    val LIST_FUNCTIONS = ClientBackedCachedResource(LambdaClient::class, "lambda.list_functions") {
+        listFunctionsPaginator().functions().toList()
+    }
 }

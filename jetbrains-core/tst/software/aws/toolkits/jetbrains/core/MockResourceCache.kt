@@ -12,6 +12,13 @@ import java.util.concurrent.CompletionStage
 
 @Suppress("UNCHECKED_CAST")
 class MockResourceCache : AwsResourceCache {
+    override fun <T> getResourceIfPresent(resource: Resource<T>, useStale: Boolean): T? {
+        TODO("not implemented")
+    }
+
+    override fun <T> getResourceIfPresent(resource: Resource<T>, region: AwsRegion, credentialProvider: ToolkitCredentialsProvider, useStale: Boolean): T? {
+        TODO("not implemented")
+    }
 
     override fun <T> getResource(resource: Resource<T>, useStale: Boolean, forceFetch: Boolean) = resourceFuture as CompletionStage<T>
 
