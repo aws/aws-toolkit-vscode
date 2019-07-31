@@ -13,7 +13,7 @@ export class DefaultEcsClient implements EcsClient {
         public readonly regionCode: string
     ) { }
 
-    public async *listClusters(): AsyncIterableIterator<ECS.String> {
+    public async *listClusters(): AsyncIterableIterator<string> {
         const sdkClient = await this.createSdkClient()
         const request: ECS.ListClustersRequest = {}
         do {
@@ -25,7 +25,7 @@ export class DefaultEcsClient implements EcsClient {
         } while (request.nextToken)
     }
 
-    public async *listServices(cluster: string): AsyncIterableIterator<ECS.String> {
+    public async *listServices(cluster: string): AsyncIterableIterator<string> {
         const sdkClient = await this.createSdkClient()
         const request: ECS.ListServicesRequest = {
             cluster
@@ -39,7 +39,7 @@ export class DefaultEcsClient implements EcsClient {
         } while (request.nextToken)
     }
 
-    public async *listTaskDefinitions(): AsyncIterableIterator<ECS.String> {
+    public async *listTaskDefinitions(): AsyncIterableIterator<string> {
         const sdkClient = await this.createSdkClient()
         // do we also want to cover inactive? If so, would we want to use a separate function?
         const request: ECS.ListTaskDefinitionsRequest = {

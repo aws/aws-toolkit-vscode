@@ -65,9 +65,9 @@ export class MockCloudFormationClient implements CloudFormationClient {
 
 export class MockEcsClient implements EcsClient {
     public readonly regionCode: string
-    public readonly listClusters: () => AsyncIterableIterator<ECS.String>
-    public readonly listServices: (cluster: string) => AsyncIterableIterator<ECS.String>
-    public readonly listTaskDefinitions: () => AsyncIterableIterator<ECS.String>
+    public readonly listClusters: () => AsyncIterableIterator<string>
+    public readonly listServices: (cluster: string) => AsyncIterableIterator<string>
+    public readonly listTaskDefinitions: () => AsyncIterableIterator<string>
 
     public constructor({
         regionCode = '',
@@ -76,9 +76,9 @@ export class MockEcsClient implements EcsClient {
         listTaskDefinitions = () => asyncGenerator([])
     }: {
         regionCode?: string
-        listClusters?(): AsyncIterableIterator<ECS.String>
-        listServices?(cluster: string): AsyncIterableIterator<ECS.String>
-        listTaskDefinitions?(): AsyncIterableIterator<ECS.String>
+        listClusters?(): AsyncIterableIterator<string>
+        listServices?(cluster: string): AsyncIterableIterator<string>
+        listTaskDefinitions?(): AsyncIterableIterator<string>
     }) {
         this.regionCode = regionCode
         this.listClusters = listClusters
