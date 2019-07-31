@@ -23,7 +23,9 @@ import software.aws.toolkits.core.region.AwsRegion
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -34,7 +36,7 @@ class AwsResourceCacheTest {
     val projectRule = ProjectRule()
 
     private val mockClock = mock<Clock>()
-    private val mockResource = mock<CachedResource<String>>()
+    private val mockResource = mock<Resource.Cached<String>>()
     private val sut = DefaultAwsResourceCache(projectRule.project, mockClock, 1000)
 
     @Before
@@ -166,6 +168,50 @@ class AwsResourceCacheTest {
         assertExpectedExpiryFunctions({ plusMillis(1) }, shouldExpire = true) // after expiry
     }
 
+    @Test
+    fun viewsCanBeCreatedOnTopOfOtherCachedItems() {
+        whenever(mockResource.fetch(any(), any(), any())).thenReturn("hello")
+        val viewResource = Resource.View(mockResource) { toList() }
+
+        assertThat(sut.getResource(mockResource)).hasValue("hello")
+        assertThat(sut.getResource(viewResource)).hasValue(listOf('h', 'e', 'l', 'l', 'o'))
+        verifyResourceCalled(times = 1)
+    }
+
+    @Test
+    fun clearingViewsClearTheUnderlyingCachedResource() {
+        whenever(mockResource.fetch(any(), any(), any())).thenReturn("hello")
+        val viewResource = Resource.View(mockResource) { toList() }
+        sut.getResource(viewResource).value
+        sut.clear(viewResource)
+        sut.getResource(viewResource).value
+
+        verifyResourceCalled(times = 2)
+    }
+
+    @Test
+    fun multipleCallsInDifferentThreadsStillOnlyCallTheUnderlyingResourceOnce() {
+        whenever(mockResource.fetch(any(), any(), any())).thenReturn("hello")
+        val concurrency = 50
+
+        val executor = Executors.newFixedThreadPool(concurrency)
+        try {
+            val futures = (1 until concurrency).map {
+                val future = CompletableFuture<String>()
+                executor.submit { sut.getResource(mockResource).whenComplete { result, error -> when {
+                    result != null -> future.complete(result)
+                    error != null -> future.completeExceptionally(error)
+                } } }
+                future
+            }.toTypedArray()
+            CompletableFuture.allOf(*futures).value
+        } finally {
+            executor.shutdown()
+        }
+
+        verifyResourceCalled(times = 1)
+    }
+
     private fun assertExpectedExpiryFunctions(expiryFunction: Instant.() -> Instant, shouldExpire: Boolean) {
         whenever(mockResource.fetch(any(), any(), any())).thenReturn("hello", "goodbye")
         whenever(mockResource.expiry()).thenReturn(Duration.ofSeconds(1))
@@ -183,7 +229,7 @@ class AwsResourceCacheTest {
         sut.clear()
     }
 
-    private fun verifyResourceCalled(times: Int, resource: CachedResource<*> = mockResource) {
+    private fun verifyResourceCalled(times: Int, resource: Resource.Cached<*> = mockResource) {
         verify(resource, times(times)).fetch(any(), any(), any())
         verify(resource, times(times)).expiry()
         verifyNoMoreInteractions(resource)

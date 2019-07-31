@@ -34,7 +34,7 @@ interface AwsResourceCache {
      * @param[useStale] if an exception occurs attempting to refresh the resource return a cached version if it exists (even if it's expired). Default: true
      * @param[forceFetch] force the resource to refresh (and update cache) even if a valid cache version exists. Default: false
      */
-    fun <T> getResource(resource: CachedResource<T>, useStale: Boolean = true, forceFetch: Boolean = false): CompletionStage<T>
+    fun <T> getResource(resource: Resource<T>, useStale: Boolean = true, forceFetch: Boolean = false): CompletionStage<T>
 
     /**
      * @see [getResource]
@@ -43,7 +43,7 @@ interface AwsResourceCache {
      * @param[credentialProvider] the specific [ToolkitCredentialsProvider] to use for this resource
      */
     fun <T> getResource(
-        resource: CachedResource<T>,
+        resource: Resource<T>,
         region: AwsRegion,
         credentialProvider: ToolkitCredentialsProvider,
         useStale: Boolean = true,
@@ -58,12 +58,12 @@ interface AwsResourceCache {
     /**
      * Clears the contents of the cache for the specific [resource] type, in the currently active [AwsRegion] & [ToolkitCredentialsProvider]
      */
-    fun clear(resource: CachedResource<*>)
+    fun clear(resource: Resource<*>)
 
     /**
      * Clears the contents of the cache for the specific [resource] type, [AwsRegion] & [ToolkitCredentialsProvider]
      */
-    fun clear(resource: CachedResource<*>, region: AwsRegion, credentialProvider: ToolkitCredentialsProvider)
+    fun clear(resource: Resource<*>, region: AwsRegion, credentialProvider: ToolkitCredentialsProvider)
 
     companion object {
         @JvmStatic
@@ -71,21 +71,41 @@ interface AwsResourceCache {
     }
 }
 
-interface CachedResource<T> {
-    fun fetch(project: Project, region: AwsRegion, credentials: ToolkitCredentialsProvider): T
-    fun expiry(): Duration = DEFAULT_EXPIRY
+fun <T> Project.getResource(resource: Resource<T>, useStale: Boolean = true, forceFetch: Boolean = false) =
+    AwsResourceCache.getInstance(this).getResource(resource, useStale, forceFetch)
 
-    companion object {
-        private val DEFAULT_EXPIRY = Duration.ofMinutes(10)
+sealed class Resource<T> {
+
+    /**
+     * A [Cached] resource is one whose fetch is potentially expensive, the result of which should be memoized for a period of time ([expiry]).
+     */
+    abstract class Cached<T> : Resource<T>() {
+        abstract fun fetch(project: Project, region: AwsRegion, credentials: ToolkitCredentialsProvider): T
+        open fun expiry(): Duration = DEFAULT_EXPIRY
+
+        companion object {
+            private val DEFAULT_EXPIRY = Duration.ofMinutes(10)
+        }
+    }
+
+    /**
+     * A [View] resource depends on some other underlying [Resource] and then performs some [transform] of the [underlying]'s result
+     * in order to return the desired type [Output]. The [transform] result is not cached, [transform]s are re-applied on each fetch - thus should
+     * should be relatively cheap.
+     */
+    class View<Input, Output>(internal val underlying: Resource<Input>, private val transform: Input.() -> Output) : Resource<Output>() {
+        @Suppress("UNCHECKED_CAST")
+        internal fun doMap(input: Any) = transform(input as Input)
     }
 }
 
-abstract class CachedResourceBase<ReturnType, ClientType : SdkClient>(private val sdkClientClass: KClass<ClientType>) : CachedResource<ReturnType> {
-    abstract fun fetch(client: ClientType): ReturnType
-
-    final override fun fetch(project: Project, region: AwsRegion, credentials: ToolkitCredentialsProvider): ReturnType {
+class ClientBackedCachedResource<ReturnType, ClientType : SdkClient>(
+    private val sdkClientClass: KClass<ClientType>,
+    private val fetchCall: ClientType.() -> ReturnType
+) : Resource.Cached<ReturnType>() {
+    override fun fetch(project: Project, region: AwsRegion, credentials: ToolkitCredentialsProvider): ReturnType {
         val client = AwsClientManager.getInstance(project).getClient(sdkClientClass, credentials, region)
-        return fetch(client)
+        return fetchCall(client)
     }
 }
 
@@ -97,36 +117,42 @@ class DefaultAwsResourceCache(private val project: Project, private val clock: C
     private val cache = CacheBuilder.newBuilder().maximumSize(maximumCacheEntries).build<Key<*>, Entry<*>>().asMap()
     private val accountSettings = ProjectAccountSettingsManager.getInstance(project)
 
-    override fun <T> getResource(resource: CachedResource<T>, useStale: Boolean, forceFetch: Boolean) =
+    override fun <T> getResource(resource: Resource<T>, useStale: Boolean, forceFetch: Boolean) =
         getResource(resource, accountSettings.activeRegion, accountSettings.activeCredentialProvider, useStale, forceFetch)
 
     override fun <T> getResource(
-        resource: CachedResource<T>,
+        resource: Resource<T>,
         region: AwsRegion,
         credentialProvider: ToolkitCredentialsProvider,
         useStale: Boolean,
         forceFetch: Boolean
-    ): CompletionStage<T> {
-        val key = Key(resource, region, credentialProvider)
-        val future = CompletableFuture<T>()
-        ApplicationManager.getApplication().executeOnPooledThread {
-            try {
-                @Suppress("UNCHECKED_CAST")
-                val result = cache.compute(key) { _, value -> fetchIfNeeded(key, value as Entry<T>?, useStale, forceFetch) } as Entry<T>
-                future.complete(result.value)
-            } catch (e: Exception) {
-                future.completeExceptionally(e)
+    ): CompletionStage<T> = when (resource) {
+        is Resource.View<*, T> -> getResource(resource.underlying, region, credentialProvider, useStale, forceFetch).thenApply { resource.doMap(it as Any) }
+        is Resource.Cached<T> -> {
+            val future = CompletableFuture<T>()
+            val key = Key(resource, region, credentialProvider)
+            ApplicationManager.getApplication().executeOnPooledThread {
+                try {
+                    @Suppress("UNCHECKED_CAST")
+                    val result = cache.compute(key) { _, value -> fetchIfNeeded(key, value as Entry<T>?, useStale, forceFetch) } as Entry<T>
+                    future.complete(result.value)
+                } catch (e: Exception) {
+                    future.completeExceptionally(e)
+                }
             }
+            future
         }
-        return future
     }
 
-    override fun clear(resource: CachedResource<*>) {
+    override fun clear(resource: Resource<*>) {
         clear(resource, accountSettings.activeRegion, accountSettings.activeCredentialProvider)
     }
 
-    override fun clear(resource: CachedResource<*>, region: AwsRegion, credentialProvider: ToolkitCredentialsProvider) {
-        cache.remove(Key(resource, region, credentialProvider))
+    override fun clear(resource: Resource<*>, region: AwsRegion, credentialProvider: ToolkitCredentialsProvider) {
+        when (resource) {
+            is Resource.Cached<*> -> cache.remove(Key(resource, region, credentialProvider))
+            is Resource.View<*, *> -> clear(resource.underlying, region, credentialProvider)
+        }
     }
 
     override fun clear() {
@@ -154,7 +180,7 @@ class DefaultAwsResourceCache(private val project: Project, private val clock: C
         private val LOG = getLogger<DefaultAwsResourceCache>()
         private const val MAXIMUM_CACHE_ENTRIES = 100L
 
-        private data class Key<T>(val resource: CachedResource<T>, val region: AwsRegion, val credentials: ToolkitCredentialsProvider)
+        private data class Key<T>(val resource: Resource.Cached<T>, val region: AwsRegion, val credentials: ToolkitCredentialsProvider)
         private class Entry<T>(val expiry: Instant, val value: T)
     }
 }

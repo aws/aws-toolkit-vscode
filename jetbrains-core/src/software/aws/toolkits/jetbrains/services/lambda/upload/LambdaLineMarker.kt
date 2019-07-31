@@ -20,7 +20,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.SmartPointerManager
 import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.core.AwsResourceCache
+import software.aws.toolkits.jetbrains.core.getResource
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplateIndex.Companion.listFunctions
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
@@ -98,7 +98,7 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
     // Handler defined in remote Lambda with the same runtime group is valid
     private fun handlerInRemote(psiFile: PsiFile, handler: String, runtimeGroup: RuntimeGroup): Boolean =
         try {
-            val result = AwsResourceCache.getInstance(psiFile.project).getResource(LambdaResources.LIST_FUNCTIONS).toCompletableFuture()
+            val result = psiFile.project.getResource(LambdaResources.LIST_FUNCTIONS).toCompletableFuture()
             if (result.isDone) {
                 result.getNow(null)?.any {
                     it.handler() == handler && it.runtime().runtimeGroup == runtimeGroup
