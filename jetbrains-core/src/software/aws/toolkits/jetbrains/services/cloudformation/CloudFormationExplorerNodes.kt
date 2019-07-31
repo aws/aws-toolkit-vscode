@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.cloudformation
 
 import com.intellij.ide.util.treeView.AbstractTreeNode
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import icons.AwsIcons
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
@@ -21,6 +22,7 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNo
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsNodeAlwaysExpandable
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsTruncatedResultNode
+import software.aws.toolkits.jetbrains.core.stack.StackWindowManager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
 import software.aws.toolkits.jetbrains.utils.TaggingResourceType
@@ -157,6 +159,9 @@ class DeleteCloudFormationStackAction : DeleteResourceAction<CloudFormationStack
     override fun performDelete(selected: CloudFormationStackNode) {
         val client: CloudFormationClient = AwsClientManager.getInstance(selected.nodeProject).getClient()
         client.deleteStack { it.stackName(selected.stackName) }
+        runInEdt {
+            StackWindowManager.getInstance(selected.nodeProject).openStack(selected.stackName, selected.stackId)
+        }
         client.waitForStackDeletionComplete(selected.stackName)
     }
 }

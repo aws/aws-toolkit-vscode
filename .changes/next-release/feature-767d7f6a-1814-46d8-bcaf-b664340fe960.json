@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Open Stack Status UI on CloudFormation stack deletion."
+}
