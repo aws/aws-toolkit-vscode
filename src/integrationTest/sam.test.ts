@@ -20,8 +20,8 @@ const runtimes = [
     { name: 'nodejs10.x', path: 'testProject/hello-world/app.js', debuggerType: 'node2' },
     { name: 'python2.7', path: 'testProject/hello_world/app.py', debuggerType: 'python' },
     { name: 'python3.6', path: 'testProject/hello_world/app.py', debuggerType: 'python' },
-    { name: 'python3.7', path: 'testProject/hello_world/app.py', debuggerType: 'python' },
-    { name: 'dotnetcore2.1', path: 'testProject/src/HelloWorld/Function.cs', debuggerType: 'coreclr' }
+    { name: 'python3.7', path: 'testProject/hello_world/app.py', debuggerType: 'python' }
+    // { name: 'dotnetcore2.1', path: 'testProject/src/HelloWorld/Function.cs', debuggerType: 'coreclr' }
 ]
 
 async function openSamProject(projectPath: string): Promise<vscode.Uri> {
@@ -40,14 +40,13 @@ function tryRemoveProjectFolder() {
 async function getCodeLenses(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
     while (true) {
         try {
-            // this works without a sleep locally, but not on CodeBuild. For some reason, it actaully
-            // overwhelms the instance of VSCode and this never completes
+            // this works without a sleep locally, but not on CodeBuild
             await sleep(200)
             let codeLenses: vscode.CodeLens[] | undefined = await vscode.commands.executeCommand(
                 'vscode.executeCodeLensProvider',
                 documentUri
             )
-            if (!codeLenses) {
+            if (!codeLenses || codeLenses.length === 0) {
                 continue
             }
             // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
@@ -70,7 +69,7 @@ async function getCodeLensesOrTimeout(documentUri: vscode.Uri): Promise<vscode.C
     if (result) {
         return result as vscode.CodeLens[]
     }
-    throw new Error('Codelenses took too long to show up, this inidicates an issue!')
+    throw new Error('Codelenses took too long to show up!')
 }
 
 async function onDebugChanged(e: vscode.DebugSession | undefined, debuggerType: string) {
@@ -98,13 +97,14 @@ function validateRunResult(runResult: any | undefined, projectSDK: string, debug
     const metadata = datum.metadata!
     assert.strictEqual(metadata.get('runtime'), projectSDK)
     assert.strictEqual(metadata.get('debug'), debug)
+    // tslint:enable: no-unsafe-any
 }
 
 // Iterate through and test all runtimes
 for (const runtime of runtimes) {
-    let projectSDK = ''
-    let projectPath = ''
-    let debuggerType = ''
+    const projectSDK = runtime.name
+    const projectPath = runtime.path
+    const debuggerType = runtime.debuggerType
     let documentUri: vscode.Uri
     let debugDisposable: vscode.Disposable
 
@@ -112,9 +112,6 @@ for (const runtime of runtimes) {
         before(async function() {
             // tslint:disable-next-line: no-invalid-this
             this.timeout(TIMEOUT)
-            projectSDK = runtime.name
-            projectPath = runtime.path
-            debuggerType = runtime.debuggerType
             // set up debug config
             debugDisposable = vscode.debug.onDidChangeActiveDebugSession(async session =>
                 onDebugChanged(session, debuggerType)
