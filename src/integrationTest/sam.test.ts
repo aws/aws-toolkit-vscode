@@ -10,13 +10,10 @@ import * as vscode from 'vscode'
 import { SamLambdaRuntime } from '../../src/lambda/models/samLambdaRuntime'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
+import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
 import { activateExtension, sleep, TIMEOUT } from './integrationTestsUtilities'
 
 const projectFolder = `${__dirname}`
-let projectSDK = ''
-let projectPath = ''
-let debuggerType = ''
-let documentUri: vscode.Uri
 
 const runtimes = [
     { name: 'nodejs8.10', path: 'testProject/hello-world/app.js', debuggerType: 'node2' },
@@ -27,11 +24,11 @@ const runtimes = [
     { name: 'dotnetcore2.1', path: 'testProject/src/HelloWorld/Function.cs', debuggerType: 'coreclr' }
 ]
 
-async function openSamProject(): Promise<vscode.Uri> {
+async function openSamProject(projectPath: string): Promise<vscode.Uri> {
     const documentPath = path.join(projectFolder, projectPath)
-    await vscode.workspace.openTextDocument(documentPath)
+    const document = await vscode.workspace.openTextDocument(documentPath)
 
-    return vscode.Uri.file(documentPath)
+    return document.uri
 }
 
 function tryRemoveProjectFolder() {
@@ -40,32 +37,31 @@ function tryRemoveProjectFolder() {
     } catch (e) {}
 }
 
-async function getCodeLenses(): Promise<vscode.CodeLens[]> {
-    let codeLenses: vscode.CodeLens[] | undefined
+async function getCodeLenses(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
     while (true) {
         try {
-            // this works without a sleep locally, but not on CodeBuild
+            // this works without a sleep locally, but not on CodeBuild. For some reason, it actaully
+            // overwhelms the instance of VSCode and this never completes
             await sleep(200)
-            const codeLensesPromise: Thenable<vscode.CodeLens[] | undefined> = vscode.commands.executeCommand(
+            let codeLenses: vscode.CodeLens[] | undefined = await vscode.commands.executeCommand(
                 'vscode.executeCodeLensProvider',
                 documentUri
             )
-            codeLenses = await codeLensesPromise
             if (!codeLenses) {
                 continue
             }
             // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
             // not shown to the user and do not affect how our extension is working
             codeLenses = codeLenses.filter(lens => lens !== undefined && lens.command !== undefined)
-            if (codeLenses.length === 3) {
-                return codeLenses as vscode.CodeLens[]
-            }
+            assert.strictEqual(codeLenses.length, 3, `codelense length was ${codeLenses.length} not 3!`)
+
+            return codeLenses as vscode.CodeLens[]
         } catch (e) {}
     }
 }
 
-async function getCodeLensesOrTimeout(): Promise<vscode.CodeLens[]> {
-    const codeLensPromise = getCodeLenses()
+async function getCodeLensesOrTimeout(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
+    const codeLensPromise = getCodeLenses(documentUri)
     const timeout = new Promise(resolve => {
         setTimeout(resolve, 10000, undefined)
     })
@@ -77,7 +73,7 @@ async function getCodeLensesOrTimeout(): Promise<vscode.CodeLens[]> {
     throw new Error('Codelenses took too long to show up, this inidicates an issue!')
 }
 
-async function onDebugChanged(e: vscode.DebugSession | undefined) {
+async function onDebugChanged(e: vscode.DebugSession | undefined, debuggerType: string) {
     if (!e) {
         return
     }
@@ -90,8 +86,28 @@ async function onDebugChanged(e: vscode.DebugSession | undefined) {
     await vscode.commands.executeCommand('workbench.action.debug.continue')
 }
 
+function validateRunResult(runResult: any | undefined, projectSDK: string, debug: string) {
+    // tslint:disable: no-unsafe-any
+    assert.ok(runResult)
+    const datum = runResult!.datum
+    assert.strictEqual(datum.name, 'invokelocal')
+    assert.strictEqual(datum.value, 1)
+    assert.strictEqual(datum.unit, 'Count')
+
+    assert.ok(datum.metadata)
+    const metadata = datum.metadata!
+    assert.strictEqual(metadata.get('runtime'), projectSDK)
+    assert.strictEqual(metadata.get('debug'), debug)
+}
+
 // Iterate through and test all runtimes
 for (const runtime of runtimes) {
+    let projectSDK = ''
+    let projectPath = ''
+    let debuggerType = ''
+    let documentUri: vscode.Uri
+    let debugDisposable: vscode.Disposable
+
     describe(`SAM Integration tests ${runtime.name}`, async () => {
         before(async function() {
             // tslint:disable-next-line: no-invalid-this
@@ -100,7 +116,9 @@ for (const runtime of runtimes) {
             projectPath = runtime.path
             debuggerType = runtime.debuggerType
             // set up debug config
-            vscode.debug.onDidChangeActiveDebugSession(onDebugChanged)
+            debugDisposable = vscode.debug.onDidChangeActiveDebugSession(async session =>
+                onDebugChanged(session, debuggerType)
+            )
             await activateExtension('amazonwebservices.aws-toolkit-vscode')
             console.log(`Using SDK ${projectSDK} with project in path ${projectPath}`)
             tryRemoveProjectFolder()
@@ -120,11 +138,12 @@ for (const runtime of runtimes) {
             if (projectSDK.includes('python')) {
                 await activateExtension('ms-python.python')
             }
-            documentUri = await openSamProject()
+            documentUri = await openSamProject(projectPath)
         })
 
         after(async () => {
             tryRemoveProjectFolder()
+            debugDisposable.dispose()
         })
 
         it('Generates a template with a proper runtime', async () => {
@@ -140,13 +159,12 @@ for (const runtime of runtimes) {
             }
             console.log(initArguments.location)
             const samCliContext = getSamCliContext()
-            await runSamCliInit(initArguments, samCliContext.invoker).catch((e: Error) => {
-                assert(e.message.includes('directory already exists'))
-            })
+            const err = await assertThrowsError(async () => runSamCliInit(initArguments, samCliContext.invoker))
+            assert(err.message.includes('directory already exists'))
         }).timeout(TIMEOUT)
 
         it('Invokes the run codelens', async () => {
-            const [runCodeLens] = await getCodeLensesOrTimeout()
+            const [runCodeLens] = await getCodeLensesOrTimeout(documentUri)
             assert.ok(runCodeLens.command)
             const command = runCodeLens.command!
             assert.ok(command.arguments)
@@ -154,21 +172,11 @@ for (const runtime of runtimes) {
                 command.command,
                 ...command.arguments!
             )
-            assert.ok(runResult)
-            // tslint:disable: no-unsafe-any
-            const datum = runResult!.datum
-            assert.strictEqual(datum.name, 'invokelocal')
-            assert.strictEqual(datum.value, 1)
-            assert.strictEqual(datum.unit, 'Count')
-
-            assert.ok(datum.metadata)
-            const metadata = datum.metadata!
-            assert.strictEqual(metadata.get('runtime'), projectSDK)
-            assert.strictEqual(metadata.get('debug'), 'false')
+            validateRunResult(runResult, projectSDK, 'false')
         }).timeout(TIMEOUT)
 
         it('Invokes the debug codelens', async () => {
-            const [, debugCodeLens] = await getCodeLensesOrTimeout()
+            const [, debugCodeLens] = await getCodeLensesOrTimeout(documentUri)
             assert.ok(debugCodeLens.command)
             const command = debugCodeLens.command!
             assert.ok(command.arguments)
@@ -176,16 +184,7 @@ for (const runtime of runtimes) {
                 command.command,
                 ...command.arguments!
             )
-            assert.ok(runResult)
-            const datum = runResult!.datum
-            assert.strictEqual(datum.name, 'invokelocal')
-            assert.strictEqual(datum.value, 1)
-            assert.strictEqual(datum.unit, 'Count')
-
-            assert.ok(datum.metadata)
-            const metadata = datum.metadata!
-            assert.strictEqual(metadata.get('runtime'), projectSDK)
-            assert.strictEqual(metadata.get('debug'), 'true')
+            validateRunResult(runResult, projectSDK, 'true')
             // This timeout is significantly longer, mostly to accommodate the long first time .net debugger
         }).timeout(TIMEOUT * 2)
     })
