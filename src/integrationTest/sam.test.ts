@@ -53,9 +53,9 @@ async function getCodeLenses(documentUri: vscode.Uri): Promise<vscode.CodeLens[]
             // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
             // not shown to the user and do not affect how our extension is working
             codeLenses = codeLenses.filter(lens => lens !== undefined && lens.command !== undefined)
-            assert.strictEqual(codeLenses.length, 3, `codelense length was ${codeLenses.length} not 3!`)
-
-            return codeLenses as vscode.CodeLens[]
+            if (codeLenses.length === 3) {
+                return codeLenses as vscode.CodeLens[]
+            }
         } catch (e) {}
     }
 }
