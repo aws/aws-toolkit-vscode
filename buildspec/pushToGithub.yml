@@ -1,0 +1,18 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 10
+
+  build:
+    commands:
+      - |
+        if [ $STAGE != "prod" ]; then
+          echo "Stage is not production, skipping github push step"
+          exit 0
+        fi
+        VERSION=$(node -e "console.log(require('./package.json').version);")
+        echo "pushing to github"
+        git push origin --tags
+        git push origin release/v$VERSION
