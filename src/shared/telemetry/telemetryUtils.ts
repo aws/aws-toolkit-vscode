@@ -63,10 +63,6 @@ export function registerCommand<T>({
                 })
             }
 
-            if (result && result.datum) {
-                delete result.datum
-            }
-
             return result
         },
         thisArg
