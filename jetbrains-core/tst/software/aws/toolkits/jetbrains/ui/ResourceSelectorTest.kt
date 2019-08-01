@@ -43,6 +43,7 @@ class ResourceSelectorTest {
     fun comboBoxPopulation_useDefaultSelectedWhenPreviouslySelectedIsNull() {
         val items = listOf("foo", "bar", "baz")
 
+        comboBox.model.selectedItem = null
         comboBox.populateValues(default = "bar", forceSelectDefault = false) { items }
 
         waitForPopulationComplete(comboBox, items.size)

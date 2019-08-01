@@ -3,8 +3,11 @@
 
 package software.aws.toolkits.jetbrains.core
 
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.project.Project
 import com.intellij.testFramework.ProjectRule
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.atLeastOnce
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.reset
@@ -13,6 +16,7 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.CompletableFutureAssert
 import org.junit.Before
 import org.junit.Rule
@@ -20,11 +24,15 @@ import org.junit.Test
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 
 class AwsResourceCacheTest {
@@ -34,7 +42,7 @@ class AwsResourceCacheTest {
     val projectRule = ProjectRule()
 
     private val mockClock = mock<Clock>()
-    private val mockResource = mock<CachedResource<String>>()
+    private val mockResource = mock<Resource.Cached<String>>()
     private val sut = DefaultAwsResourceCache(projectRule.project, mockClock, 1000)
 
     @Before
@@ -42,6 +50,7 @@ class AwsResourceCacheTest {
         sut.clear()
         reset(mockClock, mockResource)
         whenever(mockResource.expiry()).thenReturn(DEFAULT_EXPIRY)
+        whenever(mockResource.id).thenReturn("mock")
         whenever(mockClock.instant()).thenReturn(Instant.now())
     }
 
@@ -166,6 +175,171 @@ class AwsResourceCacheTest {
         assertExpectedExpiryFunctions({ plusMillis(1) }, shouldExpire = true) // after expiry
     }
 
+    @Test
+    fun viewsCanBeCreatedOnTopOfOtherCachedItems() {
+        whenever(mockResource.fetch(any(), any(), any())).thenReturn("hello")
+        val viewResource = Resource.View(mockResource) { toList() }
+
+        assertThat(sut.getResource(mockResource)).hasValue("hello")
+        assertThat(sut.getResource(viewResource)).hasValue(listOf('h', 'e', 'l', 'l', 'o'))
+        verifyResourceCalled(times = 1)
+    }
+
+    @Test
+    fun clearingViewsClearTheUnderlyingCachedResource() {
+        whenever(mockResource.fetch(any(), any(), any())).thenReturn("hello")
+        val viewResource = Resource.View(mockResource) { toList() }
+        sut.getResource(viewResource).value
+        sut.clear(viewResource)
+        sut.getResource(viewResource).value
+
+        verifyResourceCalled(times = 2)
+    }
+
+    @Test
+    fun multipleCallsInDifferentThreadsStillOnlyCallTheUnderlyingResourceOnce() {
+        whenever(mockResource.fetch(any(), any(), any())).thenReturn("hello")
+        val concurrency = 50
+
+        val executor = Executors.newFixedThreadPool(concurrency)
+        try {
+            val futures = (1 until concurrency).map {
+                val future = CompletableFuture<String>()
+                executor.submit {
+                    sut.getResource(mockResource).whenComplete { result, error ->
+                        when {
+                            result != null -> future.complete(result)
+                            error != null -> future.completeExceptionally(error)
+                        }
+                    }
+                }
+                future
+            }.toTypedArray()
+            CompletableFuture.allOf(*futures).value
+        } finally {
+            executor.shutdown()
+        }
+
+        verifyResourceCalled(times = 1)
+    }
+
+    @Test
+    fun cachingShouldBeBasedOnId() {
+        val first = DummyCachedResource("first")
+        val anotherFirst = DummyCachedResource("first")
+
+        sut.getResource(first).value
+        sut.getResource(anotherFirst).value
+        assertThat(first.callCount).hasValue(1)
+        assertThat(anotherFirst.callCount).hasValue(0)
+    }
+
+    @Test
+    fun whenACredentialIdIsRemovedItsEntriesAreRemovedFromTheCache() {
+        whenever(mockResource.fetch(any(), any(), any())).thenReturn("hello")
+        getAllRegionAndCredPermutations()
+
+        ApplicationManager.getApplication().messageBus.syncPublisher(CredentialManager.CREDENTIALS_CHANGED).providerRemoved(CRED1.id)
+
+        getAllRegionAndCredPermutations()
+
+        verify(mockResource, times(2)).fetch(projectRule.project, US_WEST_1, CRED1)
+        verify(mockResource, times(2)).fetch(projectRule.project, US_WEST_2, CRED1)
+        verify(mockResource, times(1)).fetch(projectRule.project, US_WEST_1, CRED2)
+        verify(mockResource, times(1)).fetch(projectRule.project, US_WEST_2, CRED2)
+    }
+
+    @Test
+    fun whenACredentialIdIsModifiedItsEntriesAreRemovedFromTheCache() {
+        whenever(mockResource.fetch(any(), any(), any())).thenReturn("hello")
+        getAllRegionAndCredPermutations()
+
+        ApplicationManager.getApplication().messageBus.syncPublisher(CredentialManager.CREDENTIALS_CHANGED).providerModified(CRED1)
+
+        getAllRegionAndCredPermutations()
+
+        verify(mockResource, times(2)).fetch(projectRule.project, US_WEST_1, CRED1)
+        verify(mockResource, times(2)).fetch(projectRule.project, US_WEST_2, CRED1)
+        verify(mockResource, times(1)).fetch(projectRule.project, US_WEST_1, CRED2)
+        verify(mockResource, times(1)).fetch(projectRule.project, US_WEST_2, CRED2)
+    }
+
+    @Test
+    fun cacheExposesBlockingApi() {
+        whenever(mockResource.fetch(any(), any(), any())).thenReturn("hello")
+        assertThat(sut.getResourceNow(mockResource)).isEqualTo("hello")
+    }
+
+    @Test
+    fun cacheExposesBlockingApiWithRegionAndCred() {
+        whenever(mockResource.fetch(any(), any(), any())).thenReturn("hello")
+        assertThat(sut.getResourceNow(mockResource, US_WEST_1, CRED1)).isEqualTo("hello")
+        verify(mockResource).fetch(projectRule.project, US_WEST_1, CRED1)
+    }
+
+    @Test
+    fun cacheExposesBlockingApiWhereExecutionExceptionIsUnwrapped() {
+        whenever(mockResource.fetch(any(), any(), any())).thenThrow(RuntimeException("boom"))
+        assertThatThrownBy { sut.getResourceNow(mockResource, timeout = Duration.ofMillis(5)) }
+            .isInstanceOf(RuntimeException::class.java)
+            .withFailMessage("boom")
+    }
+
+    @Test
+    fun cacheExposesBlockingApiWithTimeout() {
+        whenever(mockResource.fetch(any(), any(), any())).thenAnswer {
+            Thread.sleep(50)
+            "hello"
+        }
+        assertThatThrownBy { sut.getResourceNow(mockResource, timeout = Duration.ofMillis(5)) }.isInstanceOf(TimeoutException::class.java)
+    }
+
+    @Test
+    fun canConditionallyFetchOnlyIfAvailableInCache() {
+        whenever(mockResource.fetch(any(), any(), any())).thenReturn("hello")
+
+        assertThat(sut.getResourceIfPresent(mockResource, US_WEST_1, CRED1)).isNull()
+        sut.getResource(mockResource, US_WEST_1, CRED1).value
+        assertThat(sut.getResourceIfPresent(mockResource, US_WEST_1, CRED1)).isEqualTo("hello")
+    }
+
+    @Test
+    fun canConditionallyFetchOnlyIfAvailableInCacheAndRespectExpiry() {
+        whenever(mockResource.fetch(any(), any(), any())).thenReturn("hello")
+
+        val now = Instant.now()
+        whenever(mockClock.instant()).thenReturn(now)
+        sut.getResource(mockResource, US_WEST_1, CRED1).value
+
+        whenever(mockClock.instant()).thenReturn(now.plus(DEFAULT_EXPIRY).plusMillis(1))
+        assertThat(sut.getResourceIfPresent(mockResource, US_WEST_1, CRED1, useStale = false)).isNull()
+    }
+
+    @Test
+    fun canConditionallyFetchViewOnlyIfAvailableInCache() {
+        whenever(mockResource.fetch(any(), any(), any())).thenReturn("hello")
+        val viewResource = Resource.View(mockResource) { reversed() }
+
+        assertThat(sut.getResourceIfPresent(viewResource, US_WEST_1, CRED1)).isNull()
+        sut.getResource(viewResource, US_WEST_1, CRED1).value
+        assertThat(sut.getResourceIfPresent(viewResource, US_WEST_1, CRED1)).isEqualTo("olleh")
+    }
+
+    @Test
+    fun canConditionallyFetchOnlyIfAvailableWithoutExplicitCredentialsRegion() {
+        whenever(mockResource.fetch(any(), any(), any())).thenReturn("hello")
+        sut.getResource(mockResource).value
+
+        assertThat(sut.getResourceIfPresent(mockResource)).isEqualTo("hello")
+    }
+
+    private fun getAllRegionAndCredPermutations() {
+        sut.getResource(mockResource, US_WEST_1, CRED1).value
+        sut.getResource(mockResource, US_WEST_2, CRED1).value
+        sut.getResource(mockResource, US_WEST_1, CRED2).value
+        sut.getResource(mockResource, US_WEST_2, CRED2).value
+    }
+
     private fun assertExpectedExpiryFunctions(expiryFunction: Instant.() -> Instant, shouldExpire: Boolean) {
         whenever(mockResource.fetch(any(), any(), any())).thenReturn("hello", "goodbye")
         whenever(mockResource.expiry()).thenReturn(Duration.ofSeconds(1))
@@ -183,9 +357,10 @@ class AwsResourceCacheTest {
         sut.clear()
     }
 
-    private fun verifyResourceCalled(times: Int, resource: CachedResource<*> = mockResource) {
+    private fun verifyResourceCalled(times: Int, resource: Resource.Cached<*> = mockResource) {
         verify(resource, times(times)).fetch(any(), any(), any())
         verify(resource, times(times)).expiry()
+        verify(resource, atLeastOnce()).id
         verifyNoMoreInteractions(resource)
     }
 
@@ -219,6 +394,14 @@ class AwsResourceCacheTest {
 
             override fun resolveCredentials(): AwsCredentials {
                 TODO("not implemented")
+            }
+        }
+
+        private class DummyCachedResource(override val id: String) : Resource.Cached<String>() {
+            val callCount = AtomicInteger(0)
+            override fun fetch(project: Project, region: AwsRegion, credentials: ToolkitCredentialsProvider): String {
+                callCount.incrementAndGet()
+                return id
             }
         }
     }
