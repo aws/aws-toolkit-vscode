@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
@@ -14,25 +13,19 @@ import com.intellij.openapi.components.Storage
 import com.intellij.openapi.project.Project
 import com.intellij.util.messages.MessageBus
 import com.intellij.util.messages.Topic
-import org.slf4j.event.Level
-import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.sts.StsClient
-import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
-import software.aws.toolkits.core.utils.tryOrThrow
-import software.aws.toolkits.jetbrains.core.AwsAccountCache
-import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.core.AwsSdkClient
+import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier.AccountSettingsEvent
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.Companion.ACCOUNT_SETTINGS_CHANGED
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileToolkitCredentialsProviderFactory
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
+import software.aws.toolkits.jetbrains.services.sts.StsResources
 import software.aws.toolkits.jetbrains.utils.MRUList
 import software.aws.toolkits.jetbrains.utils.createNotificationExpiringAction
 import software.aws.toolkits.jetbrains.utils.createShowMoreInfoDialogAction
@@ -130,23 +123,7 @@ data class AccountState(
 )
 
 @State(name = "accountSettings", storages = [Storage("aws.xml")])
-class DefaultProjectAccountSettingsManager(
-    private val project: Project,
-    private val stsClient: StsClient
-) : ProjectAccountSettingsManager, PersistentStateComponent<AccountState>, Disposable {
-
-    constructor(project: Project, sdkClient: AwsSdkClient) : this(
-        project,
-        ToolkitClientManager.createNewClient(
-            StsClient::class,
-            sdkClient.sdkHttpClient,
-            Region.US_EAST_1,
-            AnonymousCredentialsProvider.create(),
-            AwsClientManager.userAgent
-        )
-    )
-
-    private val awsAccountCache = AwsAccountCache.getInstance()
+class DefaultProjectAccountSettingsManager(private val project: Project) : ProjectAccountSettingsManager, PersistentStateComponent<AccountState> {
     private val credentialManager = CredentialManager.getInstance()
     private val regionProvider = AwsRegionProvider.getInstance()
 
@@ -178,7 +155,7 @@ class DefaultProjectAccountSettingsManager(
         get() = activeProfileInternal ?: throw CredentialProviderNotFound(message("credentials.profile.not_configured"))
 
     override val activeAwsAccount: String?
-        get() = if (hasActiveCredentials()) awsAccountCache.awsAccount(activeCredentialProvider) else null
+        get() = if (hasActiveCredentials()) AwsResourceCache.getInstance(project).getResourceNow(StsResources.ACCOUNT) else null
 
     override fun recentlyUsedRegions(): List<AwsRegion> = recentlyUsedRegions.elements()
 
@@ -223,31 +200,34 @@ class DefaultProjectAccountSettingsManager(
         broadcastChangeEvent()
 
         ApplicationManager.getApplication().executeOnPooledThread {
-            try {
-                LOGGER.tryOrThrow(
-                    message("credentials.profile.validation_error", credentialsProvider.displayName),
-                    Level.WARN
-                ) {
-                    credentialsProvider.getAwsAccount(stsClient)
-                    activeProfileInternal = credentialsProvider
+            AwsResourceCache.getInstance(project).getResource(
+                StsResources.ACCOUNT,
+                region = activeRegion,
+                credentialProvider = credentialsProvider,
+                useStale = false,
+                forceFetch = true
+            ).whenComplete { _, exception ->
+                when (exception) {
+                    null -> activeProfileInternal = credentialsProvider
+                    else -> {
+                        val title = message("credentials.invalid.title")
+                        val message = message("credentials.profile.validation_error", credentialsProvider.displayName)
+                        LOGGER.warn(exception) { message }
+                        notifyWarn(
+                            title = title,
+                            content = message,
+                            notificationActions = listOf(
+                                createShowMoreInfoDialogAction(
+                                    message("credentials.invalid.more_info"),
+                                    title,
+                                    message,
+                                    exception.localizedMessage
+                                ),
+                                createNotificationExpiringAction(ActionManager.getInstance().getAction("aws.settings.upsertCredentials"))
+                            )
+                        )
+                    }
                 }
-            } catch (e: Exception) {
-                val title = message("credentials.invalid.title")
-                val message = message("credentials.profile.validation_error", credentialsProvider.displayName)
-                notifyWarn(
-                    title = title,
-                    content = message,
-                    notificationActions = listOf(
-                        createShowMoreInfoDialogAction(
-                            message("credentials.invalid.more_info"),
-                            title,
-                            message,
-                            e.localizedMessage
-                        ),
-                        createNotificationExpiringAction(ActionManager.getInstance().getAction("aws.settings.upsertCredentials"))
-                    )
-                )
-            } finally {
                 runInEdt {
                     isLoading = false
                     broadcastChangeEvent()
@@ -260,10 +240,6 @@ class DefaultProjectAccountSettingsManager(
         activeRegionInternal = region
         recentlyUsedRegions.add(region)
         broadcastChangeEvent()
-    }
-
-    override fun dispose() {
-        stsClient.close()
     }
 
     private fun getCredentialProviderOrNull(id: String): ToolkitCredentialsProvider? = tryOrNull {
