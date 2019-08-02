@@ -118,7 +118,7 @@ describe('defaultEcsClient', async () => {
 
     describe('ListTaskDefinitions', async () => {
 
-        it('lists services from a single page', async () => {
+        it('lists task definitions from a single page', async () => {
             const targetArr = ['arn1', 'arn2', 'arn3']
             testClient.listTaskDefinitionsResponses = [{
                 taskDefinitionArns: targetArr
@@ -131,7 +131,7 @@ describe('defaultEcsClient', async () => {
             assert.deepStrictEqual(targetArr, arr)
         })
 
-        it('lists services from multiple pages', async () => {
+        it('lists task definitions from multiple pages', async () => {
             const targetArr1 = ['arn1', 'arn2', 'arn3']
             const targetArr2 = ['arn4', 'arn5', 'arn6']
             testClient.listTaskDefinitionsResponses = [
