@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ECS } from 'aws-sdk'
+import { AWSError, ECS } from 'aws-sdk'
+import { PromiseResult } from 'aws-sdk/lib/request'
 import { ext } from '../extensionGlobals'
 import { EcsClient } from './ecsClient'
 
@@ -14,10 +15,9 @@ export class DefaultEcsClient implements EcsClient {
     ) { }
 
     public async *listClusters(): AsyncIterableIterator<string> {
-        const sdkClient = await this.createSdkClient()
         const request: ECS.ListClustersRequest = {}
         do {
-            const response = await sdkClient.listClusters(request).promise()
+            const response = await this.invokeListClusters(request)
             if (response.clusterArns) {
                 yield* response.clusterArns
             }
@@ -26,12 +26,11 @@ export class DefaultEcsClient implements EcsClient {
     }
 
     public async *listServices(cluster: string): AsyncIterableIterator<string> {
-        const sdkClient = await this.createSdkClient()
         const request: ECS.ListServicesRequest = {
             cluster
         }
         do {
-            const response = await sdkClient.listServices(request).promise()
+            const response = await this.invokeListServices(request)
             if (response.serviceArns) {
                 yield* response.serviceArns
             }
@@ -40,18 +39,38 @@ export class DefaultEcsClient implements EcsClient {
     }
 
     public async *listTaskDefinitions(): AsyncIterableIterator<string> {
-        const sdkClient = await this.createSdkClient()
         // do we also want to cover inactive? If so, would we want to use a separate function?
         const request: ECS.ListTaskDefinitionsRequest = {
             status: 'ACTIVE'
         }
         do {
-            const response = await sdkClient.listTaskDefinitions(request).promise()
+            const response = await this.invokeListTaskDefinitions(request)
             if (response.taskDefinitionArns) {
                 yield* response.taskDefinitionArns
             }
             request.nextToken = response.nextToken
         } while (request.nextToken)
+    }
+
+    protected async invokeListClusters(request: ECS.ListClustersRequest)
+        : Promise<PromiseResult<ECS.ListClustersResponse, AWSError>> {
+        const sdkClient = await this.createSdkClient()
+
+        return sdkClient.listClusters(request).promise()
+    }
+
+    protected async invokeListServices(request: ECS.ListServicesRequest)
+        : Promise<PromiseResult<ECS.ListServicesResponse, AWSError>> {
+        const sdkClient = await this.createSdkClient()
+
+        return sdkClient.listServices(request).promise()
+    }
+
+    protected async invokeListTaskDefinitions(request: ECS.ListTaskDefinitionsRequest)
+        : Promise<PromiseResult<ECS.ListTaskDefinitionsResponse, AWSError>> {
+        const sdkClient = await this.createSdkClient()
+
+        return sdkClient.listTaskDefinitions(request).promise()
     }
 
     private async createSdkClient(): Promise<ECS> {

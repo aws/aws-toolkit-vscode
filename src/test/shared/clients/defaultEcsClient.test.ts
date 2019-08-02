@@ -1,0 +1,255 @@
+/*!
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+import * as assert from 'assert'
+
+import { AWSError, ECS, Response } from 'aws-sdk'
+import { PromiseResult } from 'aws-sdk/lib/request'
+import { DefaultEcsClient } from '../../../shared/clients/defaultEcsClient'
+
+describe('defaultEcsClient', async () => {
+
+    let testClient: TestEcsClient
+
+    before(() => {
+        testClient = new TestEcsClient()
+    })
+
+    describe('listClusters', async () => {
+
+        it('lists clusters from a single page', async () => {
+            const targetArr = ['cluster1', 'cluster2', 'cluster3']
+            testClient.listClustersResponses = [{
+                clusterArns: targetArr
+            }]
+            const iterator = testClient.listClusters()
+            const arr = []
+            for await (const item of iterator) {
+                arr.push(item)
+            }
+            assert.deepStrictEqual(targetArr, arr)
+        })
+
+        it('lists clusters from multiple pages', async () => {
+            const targetArr1 = ['cluster1', 'cluster2', 'cluster3']
+            const targetArr2 = ['cluster4', 'cluster5', 'cluster6']
+            testClient.listClustersResponses = [
+                {
+                    clusterArns: targetArr1,
+                    nextToken: 'what else you got'
+                },
+                {
+                    clusterArns: targetArr2
+                }
+            ]
+            const iterator = testClient.listClusters()
+            const arr = []
+            for await (const item of iterator) {
+                arr.push(item)
+            }
+            assert.deepStrictEqual(targetArr1.concat(targetArr2), arr)
+        })
+
+        it('handles errors', async () => {
+            testClient.listClustersResponses = new Error() as AWSError
+            try {
+                const iterator = testClient.listClusters()
+                const arr = []
+                for await (const item of iterator) {
+                    arr.push(item)
+                }
+                assert.ok(false)
+            } catch (err) {
+                assert.ok(true)
+            }
+        })
+    })
+
+    describe('listServices', async () => {
+
+        it('lists services from a single page', async () => {
+            const targetArr = ['service1', 'service2', 'service3']
+            testClient.listServicesResponses = [{
+                serviceArns: targetArr
+            }]
+            const iterator = testClient.listServices('mycluster')
+            const arr = []
+            for await (const item of iterator) {
+                arr.push(item)
+            }
+            assert.deepStrictEqual(targetArr, arr)
+        })
+
+        it('lists services from multiple pages', async () => {
+            const targetArr1 = ['service1', 'service2', 'service3']
+            const targetArr2 = ['service4', 'service5', 'service6']
+            testClient.listServicesResponses = [
+                {
+                    serviceArns: targetArr1,
+                    nextToken: 'theres more where that came from'
+                },
+                {
+                    serviceArns: targetArr2
+                }
+            ]
+            const iterator = testClient.listServices('yourcluster')
+            const arr = []
+            for await (const item of iterator) {
+                arr.push(item)
+            }
+            assert.deepStrictEqual(targetArr1.concat(targetArr2), arr)
+        })
+
+        it('handles errors', async () => {
+            testClient.listServicesResponses = new Error() as AWSError
+            try {
+                const iterator = testClient.listServices('ourcluster')
+                const arr = []
+                for await (const item of iterator) {
+                    arr.push(item)
+                }
+                assert.ok(false)
+            } catch (err) {
+                assert.ok(true)
+            }
+        })
+    })
+
+    describe('ListTaskDefinitions', async () => {
+
+        it('lists services from a single page', async () => {
+            const targetArr = ['arn1', 'arn2', 'arn3']
+            testClient.listTaskDefinitionsResponses = [{
+                taskDefinitionArns: targetArr
+            }]
+            const iterator = testClient.listTaskDefinitions()
+            const arr = []
+            for await (const item of iterator) {
+                arr.push(item)
+            }
+            assert.deepStrictEqual(targetArr, arr)
+        })
+
+        it('lists services from multiple pages', async () => {
+            const targetArr1 = ['arn1', 'arn2', 'arn3']
+            const targetArr2 = ['arn4', 'arn5', 'arn6']
+            testClient.listTaskDefinitionsResponses = [
+                {
+                    taskDefinitionArns: targetArr1,
+                    nextToken: 'there i go, turn the page'
+                },
+                {
+                    taskDefinitionArns: targetArr2
+                }
+            ]
+            const iterator = testClient.listTaskDefinitions()
+            const arr = []
+            for await (const item of iterator) {
+                arr.push(item)
+            }
+            assert.deepStrictEqual(targetArr1.concat(targetArr2), arr)
+        })
+
+        it('handles errors', async () => {
+            testClient.listTaskDefinitionsResponses = new Error() as AWSError
+            try {
+                const iterator = testClient.listTaskDefinitions()
+                const arr = []
+                for await (const item of iterator) {
+                    arr.push(item)
+                }
+                assert.ok(false)
+            } catch (err) {
+                assert.ok(true)
+            }
+        })
+    })
+})
+
+class TestEcsClient extends DefaultEcsClient {
+
+    public listClustersResponses: ECS.ListClustersResponse[] | AWSError = [{}]
+
+    public listServicesResponses: ECS.ListServicesResponse[] | AWSError = [{}]
+
+    public listTaskDefinitionsResponses: ECS.ListTaskDefinitionsResponse[] | AWSError = [{}]
+
+    private pageNum: number = 0
+
+    public constructor(
+        regionCode: string = 'us-weast-1'
+    ) {
+        super(regionCode)
+    }
+
+    protected async invokeListClusters(request: ECS.ListClustersRequest)
+        : Promise<PromiseResult<ECS.ListClustersResponse, AWSError>> {
+        const responseDatum
+            = this.getResponseDatum<ECS.ListClustersResponse>(this.listClustersResponses, request.nextToken)
+        const result: PromiseResult<ECS.ListClustersResponse, AWSError> = {
+            $response: new Response<ECS.ListClustersResponse, AWSError>()
+        }
+
+        if (responseDatum instanceof Error) {
+            throw responseDatum
+        } else {
+            result.$response.data = responseDatum
+            result.clusterArns = responseDatum.clusterArns
+            result.nextToken = responseDatum.nextToken
+        }
+
+        return result
+    }
+
+    protected async invokeListServices(request: ECS.ListServicesRequest)
+        : Promise<PromiseResult<ECS.ListServicesResponse, AWSError>> {
+        const responseDatum
+            = this.getResponseDatum<ECS.ListServicesResponse>(this.listServicesResponses, request.nextToken)
+        const result: PromiseResult<ECS.ListServicesResponse, AWSError> = {
+            $response: new Response<ECS.ListServicesResponse, AWSError>()
+        }
+
+        if (responseDatum instanceof Error) {
+            throw responseDatum
+        } else {
+            result.$response.data = responseDatum
+            result.serviceArns = responseDatum.serviceArns
+            result.nextToken = responseDatum.nextToken
+        }
+
+        return result
+    }
+
+    protected async invokeListTaskDefinitions(request: ECS.ListTaskDefinitionsRequest)
+        : Promise<PromiseResult<ECS.ListTaskDefinitionsResponse, AWSError>> {
+        const responseDatum =
+            this.getResponseDatum<ECS.ListTaskDefinitionsResponse>(this.listTaskDefinitionsResponses, request.nextToken)
+        const result: PromiseResult<ECS.ListTaskDefinitionsResponse, AWSError> = {
+            $response: new Response<ECS.ListTaskDefinitionsResponse, AWSError>()
+        }
+
+        if (responseDatum instanceof Error) {
+            throw responseDatum
+        } else {
+            result.$response.data = responseDatum
+            result.taskDefinitionArns = responseDatum.taskDefinitionArns
+            result.nextToken = responseDatum.nextToken
+        }
+
+        return result
+    }
+
+    private getResponseDatum<T>(responses: T[] | AWSError, nextToken?: string): T | AWSError {
+        if (!nextToken) {
+            this.pageNum = 0
+        }
+        if (responses instanceof Error) {
+            return responses
+        }
+        const response = responses[this.pageNum]
+        this.pageNum++
+
+        return response
+    }
+}

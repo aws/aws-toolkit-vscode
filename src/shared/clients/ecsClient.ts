@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ECS } from 'aws-sdk'
-
 export interface EcsClient {
     readonly regionCode: string
 
