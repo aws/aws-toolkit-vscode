@@ -2,35 +2,23 @@
     "compilerOptions": {
         "baseUrl": ".",
         "paths": {
-            "*": [
-                "types/*"
-            ]
+            "*": ["types/*"]
         },
         "incremental": true,
         "module": "commonjs",
         "target": "es6",
         "outDir": "out",
-        "lib": [
-            "dom",
-            "es6",
-            "esnext.asynciterable"
-        ],
+        "lib": ["dom", "es6", "esnext.asynciterable"],
         "sourceMap": true,
-        "rootDirs": [
-            "src",
-            "third-party"
-        ],
+        "rootDirs": ["src", "third-party"],
         "resolveJsonModule": true,
         /* Strict Type-Checking Option */
-        "strict": true, /* enable all strict type-checking options */
+        "strict": true /* enable all strict type-checking options */,
         /* Additional Checks */
         "noUnusedLocals": true /* Report errors on unused locals. */
         // "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
         // "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
         // "noUnusedParameters": true,  /* Report errors on unused parameters. */
     },
-    "exclude": [
-        "node_modules",
-        ".vscode-test"
-    ]
+    "exclude": ["node_modules", ".vscode-test"]
 }
