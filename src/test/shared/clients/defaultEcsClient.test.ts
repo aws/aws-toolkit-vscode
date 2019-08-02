@@ -4,8 +4,7 @@
  */
 import * as assert from 'assert'
 
-import { AWSError, ECS, Response } from 'aws-sdk'
-import { PromiseResult } from 'aws-sdk/lib/request'
+import { AWSError, ECS } from 'aws-sdk'
 import { DefaultEcsClient } from '../../../shared/clients/defaultEcsClient'
 
 describe('defaultEcsClient', async () => {
@@ -184,60 +183,43 @@ class TestEcsClient extends DefaultEcsClient {
     }
 
     protected async invokeListClusters(request: ECS.ListClustersRequest)
-        : Promise<PromiseResult<ECS.ListClustersResponse, AWSError>> {
+        : Promise<ECS.ListClustersResponse> {
         const responseDatum
             = this.getResponseDatum<ECS.ListClustersResponse>(this.listClustersResponses, request.nextToken)
-        const result: PromiseResult<ECS.ListClustersResponse, AWSError> = {
-            $response: new Response<ECS.ListClustersResponse, AWSError>()
-        }
 
         if (responseDatum instanceof Error) {
             throw responseDatum
         } else {
-            result.$response.data = responseDatum
-            result.clusterArns = responseDatum.clusterArns
-            result.nextToken = responseDatum.nextToken
+            return responseDatum
         }
-
-        return result
     }
 
     protected async invokeListServices(request: ECS.ListServicesRequest)
-        : Promise<PromiseResult<ECS.ListServicesResponse, AWSError>> {
+        : Promise<ECS.ListServicesResponse> {
         const responseDatum
             = this.getResponseDatum<ECS.ListServicesResponse>(this.listServicesResponses, request.nextToken)
-        const result: PromiseResult<ECS.ListServicesResponse, AWSError> = {
-            $response: new Response<ECS.ListServicesResponse, AWSError>()
-        }
 
         if (responseDatum instanceof Error) {
             throw responseDatum
         } else {
-            result.$response.data = responseDatum
-            result.serviceArns = responseDatum.serviceArns
-            result.nextToken = responseDatum.nextToken
+            return responseDatum
         }
-
-        return result
     }
 
     protected async invokeListTaskDefinitions(request: ECS.ListTaskDefinitionsRequest)
-        : Promise<PromiseResult<ECS.ListTaskDefinitionsResponse, AWSError>> {
+        : Promise<ECS.ListTaskDefinitionsResponse> {
         const responseDatum =
             this.getResponseDatum<ECS.ListTaskDefinitionsResponse>(this.listTaskDefinitionsResponses, request.nextToken)
-        const result: PromiseResult<ECS.ListTaskDefinitionsResponse, AWSError> = {
-            $response: new Response<ECS.ListTaskDefinitionsResponse, AWSError>()
-        }
 
         if (responseDatum instanceof Error) {
             throw responseDatum
         } else {
-            result.$response.data = responseDatum
-            result.taskDefinitionArns = responseDatum.taskDefinitionArns
-            result.nextToken = responseDatum.nextToken
+            return responseDatum
         }
+    }
 
-        return result
+    protected async createSdkClient(): Promise<ECS> {
+        return new ECS()
     }
 
     private getResponseDatum<T>(responses: T[] | AWSError, nextToken?: string): T | AWSError {
