@@ -14,6 +14,7 @@ import com.intellij.openapi.components.Storage
 import com.intellij.openapi.project.Project
 import com.intellij.util.messages.MessageBus
 import com.intellij.util.messages.Topic
+import org.slf4j.event.Level
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sts.StsClient
@@ -22,7 +23,9 @@ import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.core.utils.tryOrThrow
 import software.aws.toolkits.jetbrains.core.AwsAccountCache
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsSdkClient
@@ -221,8 +224,13 @@ class DefaultProjectAccountSettingsManager(
 
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
-                credentialsProvider.getAwsAccount(stsClient)
-                activeProfileInternal = credentialsProvider
+                LOGGER.tryOrThrow(
+                    message("credentials.profile.validation_error", credentialsProvider.displayName),
+                    Level.WARN
+                ) {
+                    credentialsProvider.getAwsAccount(stsClient)
+                    activeProfileInternal = credentialsProvider
+                }
             } catch (e: Exception) {
                 val title = message("credentials.invalid.title")
                 val message = message("credentials.profile.validation_error", credentialsProvider.displayName)
@@ -270,6 +278,7 @@ class DefaultProjectAccountSettingsManager(
     }
 
     companion object {
+        private val LOGGER = getLogger<DefaultProjectAccountSettingsManager>()
         private const val MAX_HISTORY = 5
     }
 }

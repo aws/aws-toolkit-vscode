@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Log errors to idea.log when we fail to swtich the active AWS credential profile"
+}
