@@ -18,7 +18,7 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaInputPane
 import software.aws.toolkits.jetbrains.ui.CredentialProviderSelector;
 import software.aws.toolkits.jetbrains.ui.RegionSelector;
 
-public class LambdaRemoteRunSettingsEditorPanel {
+public class RemoteLambdaRunSettingsEditorPanel {
     private final Project project;
     private SortedComboBoxModel<String> functionNamesModel;
 
@@ -29,7 +29,7 @@ public class LambdaRemoteRunSettingsEditorPanel {
     LambdaInputPanel lambdaInput;
     JPanel lambdaInputPanel;
 
-    public LambdaRemoteRunSettingsEditorPanel(Project project) {
+    public RemoteLambdaRunSettingsEditorPanel(Project project) {
         this.project = project;
 
         lambdaInputPanel.setBorder(IdeBorderFactory.createTitledBorder(message("lambda.input.label"),

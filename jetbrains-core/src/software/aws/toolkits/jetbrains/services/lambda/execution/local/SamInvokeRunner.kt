@@ -88,6 +88,8 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
                 lambdaSettings.handlerElement,
                 lambdaSettings.handler,
                 lambdaSettings.runtime,
+                lambdaSettings.timeout,
+                lambdaSettings.memorySize,
                 lambdaSettings.environmentVariables,
                 lambdaSettings.samOptions
             )

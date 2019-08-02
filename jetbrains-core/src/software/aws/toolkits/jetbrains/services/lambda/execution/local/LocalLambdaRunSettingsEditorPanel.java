@@ -21,22 +21,24 @@ import org.jetbrains.yaml.YAMLFileType;
 import software.amazon.awssdk.services.lambda.model.Runtime;
 import software.aws.toolkits.core.utils.ExceptionUtils;
 import software.aws.toolkits.jetbrains.services.cloudformation.Function;
+import software.aws.toolkits.jetbrains.services.lambda.LambdaWidgets;
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupUtil;
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaInputPanel;
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils;
 import software.aws.toolkits.jetbrains.ui.CredentialProviderSelector;
 import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField;
 import software.aws.toolkits.jetbrains.ui.RegionSelector;
+import software.aws.toolkits.jetbrains.ui.SliderPanel;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import java.io.File;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.addQuickSelect;
 import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.find;
@@ -56,6 +58,8 @@ public final class LocalLambdaRunSettingsEditorPanel {
     private DefaultComboBoxModel<Function> functionModels;
     public TextFieldWithBrowseButton templateFile;
     public JPanel lambdaInputPanel;
+    public SliderPanel timeoutSlider;
+    public SliderPanel memorySlider;
 
     private final Project project;
 
@@ -69,6 +73,7 @@ public final class LocalLambdaRunSettingsEditorPanel {
         useTemplate.addActionListener(e -> updateComponents());
         addQuickSelect(templateFile.getTextField(), useTemplate, this::updateComponents);
         templateFile.addActionListener(new TemplateFileBrowseListener());
+
         updateComponents();
     }
 
@@ -82,12 +87,16 @@ public final class LocalLambdaRunSettingsEditorPanel {
         runtimeModel = new SortedComboBoxModel<>(Comparator.comparing(Runtime::toString, Comparator.naturalOrder()));
         runtime = new ComboBox<>(runtimeModel);
         environmentVariables = new EnvironmentVariablesTextField(project);
+        timeoutSlider = LambdaWidgets.lambdaTimeout();
+        memorySlider = LambdaWidgets.lambdaMemory();
     }
 
     private void updateComponents() {
         handler.setEnabled(!useTemplate.isSelected());
         runtime.setEnabled(!useTemplate.isSelected());
         templateFile.setEnabled(useTemplate.isSelected());
+        timeoutSlider.setEnabled(!useTemplate.isSelected());
+        memorySlider.setEnabled(!useTemplate.isSelected());
 
         if (useTemplate.isSelected()) {
             handler.setBackground(UIUtil.getComboBoxDisabledBackground());
@@ -96,6 +105,14 @@ public final class LocalLambdaRunSettingsEditorPanel {
             if (functionModels.getSelectedItem() instanceof Function) {
                 Function selected = (Function) functionModels.getSelectedItem();
                 handler.setText(selected.handler());
+                Integer memorySize = selected.memorySize();
+                Integer timeout = selected.timeout();
+                if (memorySize != null) {
+                    memorySlider.setValue(memorySize);
+                }
+                if (timeout != null) {
+                    timeoutSlider.setValue(timeout);
+                }
 
                 Runtime runtime = Runtime.fromValue(ExceptionUtils.tryOrNull(selected::runtime));
                 runtimeModel.setSelectedItem(RuntimeGroupUtil.getValidOrNull(runtime));

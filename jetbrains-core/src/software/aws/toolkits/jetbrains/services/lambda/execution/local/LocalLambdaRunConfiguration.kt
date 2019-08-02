@@ -109,6 +109,8 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
                 runtime,
                 handler,
                 resolveInput(),
+                timeout(),
+                memorySize(),
                 environmentVariables(),
                 resolveCredentials(),
                 resolveRegion(),
@@ -181,6 +183,18 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
     fun handler() = lambdaOptions.functionOptions.handler
 
     fun runtime(): Runtime? = Runtime.fromValue(lambdaOptions.functionOptions.runtime)?.validOrNull
+
+    fun timeout() = lambdaOptions.functionOptions.timeout
+
+    fun timeout(timeout: Int) {
+        lambdaOptions.functionOptions.timeout = timeout
+    }
+
+    fun memorySize() = lambdaOptions.functionOptions.memorySize
+
+    fun memorySize(memorySize: Int) {
+        lambdaOptions.functionOptions.memorySize = memorySize
+    }
 
     fun environmentVariables() = lambdaOptions.functionOptions.environmentVariables
 
@@ -273,6 +287,8 @@ data class LocalLambdaRunSettings(
     val runtime: Runtime,
     val handler: String,
     val input: String,
+    val timeout: Int,
+    val memorySize: Int,
     val environmentVariables: Map<String, String>,
     val credentials: ToolkitCredentialsProvider,
     val region: AwsRegion,

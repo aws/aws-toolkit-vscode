@@ -95,8 +95,8 @@ class EditFunctionDialogTest {
         assertThat(dialog.getViewForTestAssertions().createRole.isVisible).isFalse()
         assertThat(dialog.getViewForTestAssertions().runtime.isVisible).isFalse()
         assertThat(dialog.getViewForTestAssertions().envVars.isVisible).isFalse()
-        assertThat(dialog.getViewForTestAssertions().timeout.isVisible).isFalse()
-        assertThat(dialog.getViewForTestAssertions().memorySize.isVisible).isFalse()
+        assertThat(dialog.getViewForTestAssertions().timeoutSlider.isVisible).isFalse()
+        assertThat(dialog.getViewForTestAssertions().memorySlider.isVisible).isFalse()
     }
 
     private fun mockBuckets() {

@@ -17,7 +17,7 @@ import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
 import javax.swing.JPanel
 
 class RemoteLambdaRunSettingsEditor(project: Project) : SettingsEditor<RemoteLambdaRunConfiguration>() {
-    private val view = LambdaRemoteRunSettingsEditorPanel(project)
+    private val view = RemoteLambdaRunSettingsEditorPanel(project)
     private val credentialManager = CredentialManager.getInstance()
     private val regionProvider = AwsRegionProvider.getInstance()
     private val resourceCache = AwsResourceCache.getInstance(project)
