@@ -15,6 +15,7 @@ import {
     StandaloneFunctionNode
 } from '../../../lambda/explorer/standaloneNodes'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
+import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { StsClient } from '../../../shared/clients/stsClient'
 import { ext } from '../../../shared/extensionGlobals'
@@ -187,9 +188,14 @@ describe('DefaultStandaloneFunctionGroupNode', () => {
             'elephant'
         ]
 
+        // TODO: Move to MockToolkitClientBuilder
         ext.toolkitClientBuilder = {
             createCloudFormationClient(regionCode: string): CloudFormationClient {
                 throw new Error('cloudformation client unused')
+            },
+
+            createEcsClient(regionCode: string): EcsClient {
+                throw new Error('ecs client unused')
             },
 
             createLambdaClient(regionCode: string): LambdaClient {
