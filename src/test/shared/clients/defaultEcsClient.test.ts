@@ -6,6 +6,7 @@ import * as assert from 'assert'
 
 import { AWSError, ECS } from 'aws-sdk'
 import { DefaultEcsClient } from '../../../shared/clients/defaultEcsClient'
+import { assertThrowsError } from '../utilities/assertUtils'
 
 describe('defaultEcsClient', async () => {
 
@@ -33,13 +34,18 @@ describe('defaultEcsClient', async () => {
         it('lists clusters from multiple pages', async () => {
             const targetArr1 = ['cluster1', 'cluster2', 'cluster3']
             const targetArr2 = ['cluster4', 'cluster5', 'cluster6']
+            const targetArr3 = ['cluster7', 'cluster8', 'cluster9']
             testClient.listClustersResponses = [
                 {
                     clusterArns: targetArr1,
                     nextToken: 'what else you got'
                 },
                 {
-                    clusterArns: targetArr2
+                    clusterArns: targetArr2,
+                    nextToken: 'may i have some more'
+                },
+                {
+                    clusterArns: targetArr3
                 }
             ]
             const iterator = testClient.listClusters()
@@ -47,21 +53,18 @@ describe('defaultEcsClient', async () => {
             for await (const item of iterator) {
                 arr.push(item)
             }
-            assert.deepStrictEqual(targetArr1.concat(targetArr2), arr)
+            assert.deepStrictEqual(targetArr1.concat(targetArr2).concat(targetArr3), arr)
         })
 
         it('handles errors', async () => {
             testClient.listClustersResponses = new Error() as AWSError
-            try {
+            await assertThrowsError(async () => {
                 const iterator = testClient.listClusters()
                 const arr = []
                 for await (const item of iterator) {
                     arr.push(item)
                 }
-                assert.ok(false)
-            } catch (err) {
-                assert.ok(true)
-            }
+            })
         })
     })
 
@@ -83,13 +86,18 @@ describe('defaultEcsClient', async () => {
         it('lists services from multiple pages', async () => {
             const targetArr1 = ['service1', 'service2', 'service3']
             const targetArr2 = ['service4', 'service5', 'service6']
+            const targetArr3 = ['service7', 'service8', 'service9']
             testClient.listServicesResponses = [
                 {
                     serviceArns: targetArr1,
                     nextToken: 'theres more where that came from'
                 },
                 {
-                    serviceArns: targetArr2
+                    serviceArns: targetArr2,
+                    nextToken: 'theres still more where that came from'
+                },
+                {
+                    serviceArns: targetArr3
                 }
             ]
             const iterator = testClient.listServices('yourcluster')
@@ -97,21 +105,18 @@ describe('defaultEcsClient', async () => {
             for await (const item of iterator) {
                 arr.push(item)
             }
-            assert.deepStrictEqual(targetArr1.concat(targetArr2), arr)
+            assert.deepStrictEqual(targetArr1.concat(targetArr2).concat(targetArr3), arr)
         })
 
         it('handles errors', async () => {
             testClient.listServicesResponses = new Error() as AWSError
-            try {
+            await assertThrowsError(async () => {
                 const iterator = testClient.listServices('ourcluster')
                 const arr = []
                 for await (const item of iterator) {
                     arr.push(item)
                 }
-                assert.ok(false)
-            } catch (err) {
-                assert.ok(true)
-            }
+            })
         })
     })
 
@@ -133,13 +138,18 @@ describe('defaultEcsClient', async () => {
         it('lists task definitions from multiple pages', async () => {
             const targetArr1 = ['arn1', 'arn2', 'arn3']
             const targetArr2 = ['arn4', 'arn5', 'arn6']
+            const targetArr3 = ['arn7', 'arn8', 'arn9']
             testClient.listTaskDefinitionsResponses = [
                 {
                     taskDefinitionArns: targetArr1,
                     nextToken: 'there i go, turn the page'
                 },
                 {
-                    taskDefinitionArns: targetArr2
+                    taskDefinitionArns: targetArr2,
+                    nextToken: 'you can write a book with all these pages'
+                },
+                {
+                    taskDefinitionArns: targetArr3
                 }
             ]
             const iterator = testClient.listTaskDefinitions()
@@ -147,21 +157,18 @@ describe('defaultEcsClient', async () => {
             for await (const item of iterator) {
                 arr.push(item)
             }
-            assert.deepStrictEqual(targetArr1.concat(targetArr2), arr)
+            assert.deepStrictEqual(targetArr1.concat(targetArr2).concat(targetArr3), arr)
         })
 
         it('handles errors', async () => {
             testClient.listTaskDefinitionsResponses = new Error() as AWSError
-            try {
+            await assertThrowsError(async () => {
                 const iterator = testClient.listTaskDefinitions()
                 const arr = []
                 for await (const item of iterator) {
                     arr.push(item)
                 }
-                assert.ok(false)
-            } catch (err) {
-                assert.ok(true)
-            }
+            })
         })
     })
 })
@@ -219,7 +226,7 @@ class TestEcsClient extends DefaultEcsClient {
     }
 
     protected async createSdkClient(): Promise<ECS> {
-        return new ECS()
+        return {} as any as ECS
     }
 
     private getResponseDatum<T>(responses: T[] | AWSError, nextToken?: string): T | AWSError {
