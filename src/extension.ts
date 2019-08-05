@@ -6,17 +6,11 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import { resumeCreateNewSamApp } from './lambda/commands/createNewSamApp'
-import { SamParameterCompletionItemProvider } from './lambda/config/samParameterCompletionItemProvider'
 import { RegionNode } from './lambda/explorer/regionNode'
 import { LambdaTreeDataProvider } from './lambda/lambdaTreeDataProvider'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
-import { CodeLensProviderParams } from './shared/codelens/codeLensUtils'
-import * as csLensProvider from './shared/codelens/csharpCodeLensProvider'
-import * as pyLensProvider from './shared/codelens/pythonCodeLensProvider'
-import * as tsLensProvider from './shared/codelens/typescriptCodeLensProvider'
 import { documentationUrl, extensionSettingsPrefix, githubUrl, reportIssueUrl } from './shared/constants'
 import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
 import { UserCredentialsUtils } from './shared/credentials/userCredentialsUtils'
@@ -33,16 +27,13 @@ import {
 } from './shared/extensionUtilities'
 import * as logFactory from './shared/logger'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
-import * as SamCliContext from './shared/sam/cli/samCliContext'
-import * as SamCliDetection from './shared/sam/cli/samCliDetection'
-import { DefaultSettingsConfiguration, SettingsConfiguration } from './shared/settingsConfiguration'
+import { activate as activateServerless } from './shared/sam/activation'
+import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
 import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryService'
-import { TelemetryService } from './shared/telemetry/telemetryService'
 import { TelemetryNamespace } from './shared/telemetry/telemetryTypes'
 import { registerCommand } from './shared/telemetry/telemetryUtils'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
-import { PromiseSharer } from './shared/utilities/promiseUtilities'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -65,7 +56,8 @@ export async function activate(context: vscode.ExtensionContext) {
     try {
         await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
 
-        const awsContext = new DefaultAwsContext(new DefaultSettingsConfiguration(extensionSettingsPrefix), context)
+        const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
+        const awsContext = new DefaultAwsContext(toolkitSettings, context)
         const awsContextTrees = new AwsContextTreeCollection()
         const resourceFetcher = new DefaultResourceFetcher()
         const regionProvider = new DefaultRegionProvider(context, resourceFetcher)
@@ -87,19 +79,12 @@ export async function activate(context: vscode.ExtensionContext) {
 
         ext.statusBar = new DefaultAWSStatusBar(awsContext, context)
         ext.telemetry = new DefaultTelemetryService(context, awsContext)
-        new AwsTelemetryOptOut(ext.telemetry, new DefaultSettingsConfiguration(extensionSettingsPrefix))
+        new AwsTelemetryOptOut(ext.telemetry, toolkitSettings)
             .ensureUserNotified()
             .catch((err) => {
                 console.warn(`Exception while displaying opt-out message: ${err}`)
             })
         await ext.telemetry.start()
-
-        context.subscriptions.push(
-            ...await activateCodeLensProviders(
-                awsContext.settingsConfiguration,
-                toolkitOutputChannel,
-                ext.telemetry)
-        )
 
         registerCommand({
             command: 'aws.login',
@@ -164,7 +149,6 @@ export async function activate(context: vscode.ExtensionContext) {
                 awsContextTrees,
                 regionProvider,
                 resourceFetcher,
-                getChannelLogger(toolkitOutputChannel),
                 (relativeExtensionPath) => getExtensionAbsolutePath(context, relativeExtensionPath)
             )
         ]
@@ -176,26 +160,18 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await ext.statusBar.updateContext(undefined)
 
-        await initializeSamCli(
-            new DefaultSettingsConfiguration(extensionSettingsPrefix),
-            logFactory.getLogger()
-        )
-
         await ExtensionDisposableFiles.initialize(context)
 
-        vscode.languages.registerCompletionItemProvider(
-            {
-                language: 'json',
-                scheme: 'file',
-                pattern: '**/.aws/parameters.json'
-            },
-            new SamParameterCompletionItemProvider(),
-            '"'
-        )
+        await activateServerless({
+            awsContext,
+            extensionContext: context,
+            outputChannel: toolkitOutputChannel,
+            regionProvider,
+            telemetryService: ext.telemetry,
+            toolkitSettings
+        })
 
         toastNewUser(context, logFactory.getLogger())
-
-        await resumeCreateNewSamApp()
     } catch (error) {
         const channelLogger = getChannelLogger(toolkitOutputChannel)
         channelLogger.error(
@@ -209,67 +185,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
 export async function deactivate() {
     await ext.telemetry.shutdown()
-}
-
-async function activateCodeLensProviders(
-    configuration: SettingsConfiguration,
-    toolkitOutputChannel: vscode.OutputChannel,
-    telemetryService: TelemetryService,
-): Promise<vscode.Disposable[]> {
-    const disposables: vscode.Disposable[] = []
-    const providerParams: CodeLensProviderParams = {
-        configuration,
-        outputChannel: toolkitOutputChannel,
-        telemetryService,
-    }
-
-    tsLensProvider.initialize(providerParams)
-
-    disposables.push(
-        vscode.languages.registerCodeLensProvider(
-            [
-                {
-                    language: 'javascript',
-                    scheme: 'file',
-                },
-            ],
-            tsLensProvider.makeTypescriptCodeLensProvider()
-        )
-    )
-
-    await pyLensProvider.initialize(providerParams)
-    disposables.push(vscode.languages.registerCodeLensProvider(
-        pyLensProvider.PYTHON_ALLFILES,
-        await pyLensProvider.makePythonCodeLensProvider(new DefaultSettingsConfiguration('python'))
-    ))
-
-    await csLensProvider.initialize(providerParams)
-    disposables.push(vscode.languages.registerCodeLensProvider(
-        csLensProvider.CSHARP_ALLFILES,
-        await csLensProvider.makeCSharpCodeLensProvider()
-    ))
-
-    return disposables
-}
-
-/**
- * Performs SAM CLI relevant extension initialization
- */
-async function initializeSamCli(
-    settingsConfiguration: SettingsConfiguration,
-    logger: logFactory.Logger,
-): Promise<void> {
-    SamCliContext.initialize({ settingsConfiguration, logger })
-
-    registerCommand({
-        command: 'aws.samcli.detect',
-        callback: async () => await PromiseSharer.getExistingPromiseOrCreate(
-            'samcli.detect',
-            async () => await SamCliDetection.detectSamCli(true)
-        )
-    })
-
-    await SamCliDetection.detectSamCli(false)
 }
 
 function getExtensionAbsolutePath(context: vscode.ExtensionContext, relativeExtensionPath: string): string {
