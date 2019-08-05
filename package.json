@@ -331,6 +331,10 @@
             {
                 "fileMatch": ".aws/templates.json",
                 "url": "./out/src/schemas/templates.json"
+            },
+            {
+                "fileMatch": "*task-def.json",
+                "url": "https://ecs-intellisense.s3-us-west-2.amazonaws.com/task-definition/schema.json"
             }
         ]
     },
