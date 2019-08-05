@@ -4,9 +4,9 @@
  */
 
 import { TreeItemCollapsibleState } from 'vscode'
-import { ErrorNode } from '../../lambda/explorer/errorNode'
 import { getLogger, Logger } from '../logger'
 import { AWSTreeNodeBase } from './awsTreeNodeBase'
+import { ErrorNode } from './errorNode'
 
 export abstract class AWSTreeErrorHandlerNode extends AWSTreeNodeBase {
     protected errorNode?: ErrorNode

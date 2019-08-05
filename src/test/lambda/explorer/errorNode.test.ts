@@ -5,8 +5,8 @@
 
 import * as assert from 'assert'
 import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
-import { ErrorNode } from '../../../lambda/explorer/errorNode'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
+import { ErrorNode } from '../../../shared/treeview/errorNode'
 
 describe('ErrorNode', () => {
 

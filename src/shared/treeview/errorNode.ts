@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
+import { AWSTreeNodeBase } from './awsTreeNodeBase'
 
 // Used as a child node when an exception occurs while querying AWS resources
 export class ErrorNode extends AWSTreeNodeBase {
