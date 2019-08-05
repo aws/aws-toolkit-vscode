@@ -1,0 +1,23 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 10
+
+  pre_build:
+    commands:
+      - STAGE_NAME=Release
+      - PIPELINE=$(echo $CODEBUILD_INITIATOR | sed -e 's/codepipeline\///')
+  build:
+    commands:
+      - |
+        if [ $STAGE != "prod" ]; then
+          echo "Stage is not production, skipping"
+        else
+          aws codepipeline disable-stage-transition \
+            --pipeline-name $PIPELINE \
+            --stage-name $STAGE_NAME \
+            --transition-type "Inbound" \
+            --reason "Disabled by CloseGate (automation)"
+        fi

@@ -1,18 +1,16 @@
-# Debugging Python lambda functions
+# Debugging Python Lambda Functions
 
-You can debug your Serverless Application's Lambda Function locally using the CodeLens links above the lambda handler. If you would like to use the Debug Panel to launch the debugger instead, use the following steps to configure your project's Debug Configuration.
+You can debug your Serverless Application's AWS Lambda function locally using the CodeLens links above the lambda handler. If you would like to use the Debug Panel to launch the debugger instead, use the following steps to configure your project's Debug Configuration.
 
-## Install and configure prerequisites
+## Install and Configure Prerequisites
 
-1. Install the [AWS Toolkit for Visual Studio Code](https://github.com/aws/aws-toolkit-vscode#getting-started).
-2. Install the [Python extension for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-python.python). This extension gives VS Code the ability to debug Python applications.
-3. Launch Visual Studio Code and open a SAM application or create a new one. <!-- TODO: Link to separate doc with instructions. -->
+1. Install the [AWS Toolkit for Visual Studio Code (VS Code)](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode) (also see the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-toolkit)).
+1. Install the [Python extension for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-python.python). This extension gives VS Code the ability to debug Python applications.
+1. Re-launch VS Code if necessary and open a SAM application or [create a new one](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam).
+1. Open the folder that contains `template.yaml`.
+1. Open a terminal at the root of your application and configure `virtualenv` by running `python -m venv ./.venv`.
 
-    Note: Open the folder that contains `template.yaml`.
-
-4. Open a terminal at the root of your application and configure `virtualenv` by running `python -m venv ./.venv`.
-
-## Instrument your code
+## Instrument Your Code
 
 Throughout these instructions, replace the following:
 
@@ -48,7 +46,7 @@ Throughout these instructions, replace the following:
     ptvsd.wait_for_attach()
     ```
 
-## Configure your debugger
+## Configure Your Debugger
 
 1. Open `<sam app root>/.vscode/launch.json` (create a new file if it does not already exist), and add the following contents.
 
@@ -85,7 +83,7 @@ Throughout these instructions, replace the following:
 
     ![Launch Configuration](./images/select_launch_config.png)
 
-## Start debugging
+## Start Debugging
 
 1. Set a breakpoint in your lambda handler somewhere after the line `ptvsd.wait_for_attach()`.
 2. Open a terminal in `<sam app root>`, and run the following commands. The SAM CLI will invoke your lambda handler, and wait for a debugger to attach to it. Replace `HelloWorldFunction` with the name of the function that you want to invoke.
@@ -106,7 +104,7 @@ Throughout these instructions, replace the following:
 
 3. When you see `waiting for debugger to attach...`, go back to Visual Studio Code and press F5 to attach the debugger to the handler that you invoked in the previous step.
 
-## Optional: Automatically start debugging when ready
+## Optional: Automatically Start Debugging When Ready
 
 With the above steps, you need to manually invoke SAM CLI from the command line, wait for it to be ready, then attach the debugger. We can automate the process of invoking SAM CLI and waiting for it to be ready by using a `preLaunchTask`.
 

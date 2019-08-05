@@ -1,26 +1,24 @@
-# Debugging .NET Core lambda functions
+# Debugging .NET Core Lambda Functions
 
-These instructions outline how you can debug a lambda handler locally using the SAM CLI, and attach the VS Code debugger to it.
+You can debug your Serverless Application's AWS Lambda function locally using the CodeLens links above the lambda handler. If you would like to use the Debug Panel to launch the debugger instead, use the following steps to configure your project's Debug Configuration.
 
-## Install and configure prerequisites
+## Install and Configure Prerequisites
 
-1. Install the [AWS Toolkit for Visual Studio Code](https://github.com/aws/aws-toolkit-vscode#getting-started).
-2. Install the [C# extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp). This extension gives VS Code the ability to debug .NET Core applications.
-3. Launch Visual Studio Code and open a SAM application or create a new one. <!-- TODO: Link to separate doc with instructions. -->
+1. Install the [AWS Toolkit for Visual Studio Code (VS Code)](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode) (also see the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-toolkit)).
+1. Install the [C# extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp). This extension gives VS Code the ability to debug .NET Core applications.
+1. Re-launch VS Code if necessary and open a SAM application or [create a new one](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam).
+1. Open the folder that contains `template.yaml`.
+1. Open a terminal in the folder containing `template.yaml` and set up the debugger by running the following commands:
 
-    Note: Open the folder that contains `template.yaml`.
-
-4. Open a terminal in the folder containing `template.yaml` and set up the debugger by running the following commands:
-
-    * replace `<CODE_URI>` with the *absolute* path matching the `CodeUri` property from `template.yaml` for the resource that you wish to debug.
-    * Replace `dotnetcore2.1` with the framework identifier for the runtime that you are targetting.
+    * Replace `<CODE_URI>` (in two places) with the *absolute path that corresponds to* the `CodeUri` property (not the `CodeUri` property itself) from `template.yaml` for the resource that you wish to debug.
+    * If appropriate, replace `dotnetcore2.1` with the framework identifier for the runtime that you are targeting.
 
     ```bash
     mkdir <CODE_URI>/.vsdbg
     docker run --rm --mount type=bind,src=<CODE_URI>/.vsdbg,dst=/vsdbg --entrypoint bash lambci/lambda:dotnetcore2.1 -c "curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg"
     ```
 
-## Configure your debugger
+## Configure Your Debugger
 
 1. Open `<workspace folder root>/.vscode/launch.json` (create a new file if it does not already exist), and add the following contents:
 
@@ -70,7 +68,7 @@ These instructions outline how you can debug a lambda handler locally using the 
 
 4. Select `SamLocalDebug` from the drop-down menu at the top of the viewlet. Do not start debugging yet, just select the configuration from the list. Follow the steps below to build and launch your application before launching the debugger.
 
-## Start debugging
+## Start Debugging
 
 1. Set a breakpoint anywhere in your lambda handler.
 2. Open a terminal in the folder containing `template.yaml`, and run the following commands. The SAM CLI will invoke your lambda handler, and wait for a debugger to attach to it.
@@ -94,7 +92,7 @@ These instructions outline how you can debug a lambda handler locally using the 
 
 3. When you see `Waiting for debugger to attach...`, go back to Visual Studio Code and press F5 to attach the debugger to the handler that you invoked in the previous step.
 
-## Optional: Automatically start debugging when ready
+## Optional: Automatically Start Debugging When Ready
 
 With the above steps, you need to manually invoke SAM CLI from the command line, wait for it to be ready, then attach the debugger. We can automate the process of invoking SAM CLI and waiting for it to be ready by using a `preLaunchTask`.
 
