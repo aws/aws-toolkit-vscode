@@ -46,13 +46,6 @@ export interface SAMTemplateEnvironmentVariables {
     }
 }
 
-export interface OnDidSamBuildParams {
-    buildDir: string
-    debugPort: number
-    handlerName: string
-    isDebug: boolean
-}
-
 const TEMPLATE_RESOURCE_NAME = 'awsToolkitSamLocalResource'
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
 const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
@@ -76,7 +69,6 @@ export class LocalLambdaRunner {
         private readonly debugConfig: DebugConfiguration,
         private readonly codeRootDirectoryPath: string,
         private readonly telemetryService: TelemetryService,
-        private readonly onDidSamBuild?: (params: OnDidSamBuildParams) => Promise<void>,
         private readonly channelLogger = getChannelLogger(outputChannel)
     ) {
         if (localInvokeParams.isDebug && !debugPort) {
@@ -98,7 +90,13 @@ export class LocalLambdaRunner {
             )
 
             const inputTemplate: string = await this.generateInputTemplate(this.codeRootDirectoryPath)
-            const samBuildTemplate: string = await this.executeSamBuild(this.codeRootDirectoryPath, inputTemplate)
+            const samBuildTemplate: string = await executeSamBuild({
+                baseBuildDir: await this.getBaseBuildFolder(),
+                channelLogger: this.channelLogger,
+                codeDir: this.codeRootDirectoryPath,
+                inputTemplatePath: inputTemplate,
+                samProcessInvoker: this.processInvoker,
+            })
 
             await this.invokeLambdaFunction(samBuildTemplate)
         } catch (err) {
@@ -176,34 +174,6 @@ export class LocalLambdaRunner {
         })
     }
 
-    private async executeSamBuild(rootCodeFolder: string, inputTemplatePath: string): Promise<string> {
-        this.channelLogger.info('AWS.output.building.sam.application', 'Building SAM Application...')
-
-        const samBuildOutputFolder = path.join(await this.getBaseBuildFolder(), 'output')
-
-        const samCliArgs: SamCliBuildInvocationArguments = {
-            buildDir: samBuildOutputFolder,
-            baseDir: rootCodeFolder,
-            templatePath: inputTemplatePath,
-            invoker: this.processInvoker
-        }
-        await new SamCliBuildInvocation(samCliArgs).execute()
-
-        this.channelLogger.info('AWS.output.building.sam.application.complete', 'Build complete.')
-
-        if (this.onDidSamBuild) {
-            // Enable post build tasks if needed
-            await this.onDidSamBuild({
-                buildDir: samBuildOutputFolder,
-                debugPort: this._debugPort!, // onDidSamBuild will only be called for debug, _debugPort will be defined
-                handlerName: this.localInvokeParams.handlerName,
-                isDebug: this.localInvokeParams.isDebug
-            })
-        }
-
-        return path.join(samBuildOutputFolder, 'template.yaml')
-    }
-
     /**
      * Runs `sam local invoke` against the provided template file
      * @param samTemplatePath sam template to run locally
@@ -220,7 +190,7 @@ export class LocalLambdaRunner {
         const maxRetries: number = getAttachDebuggerMaxRetryLimit(this.configuration, MAX_DEBUGGER_RETRIES_DEFAULT)
 
         await writeFile(eventPath, JSON.stringify(config.event || {}))
-        await writeFile(environmentVariablePath, JSON.stringify(this.getEnvironmentVariables(config)))
+        await writeFile(environmentVariablePath, JSON.stringify(getEnvironmentVariables(config)))
 
         const command = new SamCliLocalInvokeInvocation({
             templateResourceName: TEMPLATE_RESOURCE_NAME,
@@ -287,16 +257,6 @@ export class LocalLambdaRunner {
         )
 
         return config
-    }
-
-    private getEnvironmentVariables(config: HandlerConfig): SAMTemplateEnvironmentVariables {
-        if (!!config.environmentVariables) {
-            return {
-                [TEMPLATE_RESOURCE_NAME]: config.environmentVariables
-            }
-        } else {
-            return {}
-        }
     }
 } // end class LocalLambdaRunner
 

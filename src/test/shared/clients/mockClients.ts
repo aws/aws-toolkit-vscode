@@ -5,6 +5,7 @@
 
 import { CloudFormation, Lambda, STS } from 'aws-sdk'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
+import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { StsClient } from '../../../shared/clients/stsClient'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
@@ -19,6 +20,8 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
     public constructor(
         private readonly cloudFormationClient: CloudFormationClient = new MockCloudFormationClient(),
 
+        private readonly ecsClient: EcsClient = new MockEcsClient({}),
+
         private readonly lambdaClient: LambdaClient = new MockLambdaClient({}),
 
         private readonly stsClient: StsClient = new MockStsClient({})
@@ -27,6 +30,10 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
 
     public createCloudFormationClient(regionCode: string): CloudFormationClient {
         return this.cloudFormationClient
+    }
+
+    public createEcsClient(regionCode: string): EcsClient {
+        return this.ecsClient
     }
 
     public createLambdaClient(regionCode: string): LambdaClient {
@@ -53,6 +60,30 @@ export class MockCloudFormationClient implements CloudFormationClient {
                 StackResources: []
             })
     ) {
+    }
+}
+
+export class MockEcsClient implements EcsClient {
+    public readonly regionCode: string
+    public readonly listClusters: () => AsyncIterableIterator<string>
+    public readonly listServices: (cluster: string) => AsyncIterableIterator<string>
+    public readonly listTaskDefinitions: () => AsyncIterableIterator<string>
+
+    public constructor({
+        regionCode = '',
+        listClusters = () => asyncGenerator([]),
+        listServices = (cluster: string) => asyncGenerator([]),
+        listTaskDefinitions = () => asyncGenerator([])
+    }: {
+        regionCode?: string
+        listClusters?(): AsyncIterableIterator<string>
+        listServices?(cluster: string): AsyncIterableIterator<string>
+        listTaskDefinitions?(): AsyncIterableIterator<string>
+    }) {
+        this.regionCode = regionCode
+        this.listClusters = listClusters
+        this.listServices = listServices
+        this.listTaskDefinitions = listTaskDefinitions
     }
 }
 

@@ -331,6 +331,10 @@
             {
                 "fileMatch": ".aws/templates.json",
                 "url": "./out/src/schemas/templates.json"
+            },
+            {
+                "fileMatch": "*ecs-task-def.json",
+                "url": "https://ecs-intellisense.s3-us-west-2.amazonaws.com/task-definition/schema.json"
             }
         ]
     },
@@ -347,6 +351,7 @@
         "watch": "npm run buildScripts && tsc -watch -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
         "test": "npm run compile && node ./test-scripts/test.js",
+        "integrationTest": "npm run compile && ts-node ./test-scripts/integrationTest.ts",
         "lint": "tslint --project .",
         "lintfix": "tslint --project . --fix",
         "package": "vsce package",
@@ -408,7 +413,7 @@
         "sleep-promise": "^8.0.1",
         "tcp-port-used": "^1.0.1",
         "triple-beam": "^1.3.0",
-        "typescript": "^3.1.3",
+        "typescript": "^3.5.3",
         "uuid": "^3.3.2",
         "vscode-nls": "^3.2.4",
         "vue": "^2.5.16",
@@ -428,7 +433,7 @@
     },
     "husky": {
         "hooks": {
-            "pre-commit": "(git secrets --pre_commit_hook -- \"$@\" || echo 'Please install git-secrets https://github.com/awslabs/git-secrets to check for accidentally commited secrets!')"
+            "pre-commit": "(git secrets --pre_commit_hook -- \"$@\" || echo 'Please install git-secrets https://github.com/awslabs/git-secrets to check for accidentally commited secrets!') && pretty-quick --staged"
         }
     }
 }
