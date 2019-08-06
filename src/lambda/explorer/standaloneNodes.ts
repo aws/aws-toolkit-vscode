@@ -12,10 +12,10 @@ import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
+import { RegionNode } from '../../shared/treeview/nodes/regionNode'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listLambdaFunctions } from '../utils'
 import { FunctionNodeBase } from './functionNode'
-import { RegionNode } from './regionNode'
 
 export interface StandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode {
     readonly regionCode: string

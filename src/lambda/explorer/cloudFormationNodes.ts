@@ -15,6 +15,7 @@ import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
+import { RegionNode } from '../../shared/treeview/nodes/regionNode'
 import {
     intersection,
     toArrayAsync,
@@ -24,7 +25,6 @@ import {
 } from '../../shared/utilities/collectionUtils'
 import { listCloudFormationStacks, listLambdaFunctions } from '../utils'
 import { FunctionNodeBase } from './functionNode'
-import { RegionNode } from './regionNode'
 
 export interface CloudFormationNode extends AWSTreeErrorHandlerNode {
     readonly regionCode: string

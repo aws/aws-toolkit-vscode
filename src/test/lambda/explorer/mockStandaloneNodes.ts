@@ -4,13 +4,13 @@
  */
 
 import { Lambda } from 'aws-sdk'
-import { RegionNode } from '../../../lambda/explorer/regionNode'
 import {
     StandaloneFunctionGroupNode,
     StandaloneFunctionNode
 } from '../../../lambda/explorer/standaloneNodes'
 import { AWSTreeErrorHandlerNode } from '../../../shared/treeview/nodes/awsTreeErrorHandlerNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import { RegionNode } from '../../../shared/treeview/nodes/regionNode'
 
 export class MockStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode implements StandaloneFunctionGroupNode {
     public constructor(

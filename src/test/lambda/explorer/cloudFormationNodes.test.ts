@@ -13,7 +13,6 @@ import {
     DefaultCloudFormationNode,
     DefaultCloudFormationStackNode
 } from '../../../lambda/explorer/cloudFormationNodes'
-import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
@@ -21,6 +20,7 @@ import { StsClient } from '../../../shared/clients/stsClient'
 import { ext } from '../../../shared/extensionGlobals'
 import { TestLogger } from '../../../shared/loggerUtils'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
+import { DefaultRegionNode } from '../../../shared/treeview/nodes/defaultRegionNode'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { MockCloudFormationClient } from '../../shared/clients/mockClients'

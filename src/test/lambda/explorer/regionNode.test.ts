@@ -4,8 +4,8 @@
  */
 
 import * as assert from 'assert'
-import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
+import { DefaultRegionNode } from '../../../shared/treeview/nodes/defaultRegionNode'
 
 // TODO: create test for getChildren() after mocking is introduced
 describe('DefaultRegionNode', () => {
