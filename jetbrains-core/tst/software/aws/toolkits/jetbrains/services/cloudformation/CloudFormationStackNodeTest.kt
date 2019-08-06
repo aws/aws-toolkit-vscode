@@ -25,7 +25,6 @@ import software.amazon.awssdk.services.lambda.model.TracingMode
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
-import software.aws.toolkits.jetbrains.utils.delegateMock
 
 class CloudFormationStackNodeTest {
 
@@ -37,13 +36,9 @@ class CloudFormationStackNodeTest {
     @Rule
     val mockClientManager = MockClientManagerRule(projectRule)
 
-    private val mockCfnClient by lazy {
-        mockClientManager.register(CloudFormationClient::class, delegateMock())
-    }
+    private val mockCfnClient by lazy { mockClientManager.create<CloudFormationClient>() }
 
-    private val mockLambdaClient by lazy {
-        mockClientManager.register(LambdaClient::class, delegateMock())
-    }
+    private val mockLambdaClient by lazy { mockClientManager.create<LambdaClient>() }
 
     @Before
     fun setup() {

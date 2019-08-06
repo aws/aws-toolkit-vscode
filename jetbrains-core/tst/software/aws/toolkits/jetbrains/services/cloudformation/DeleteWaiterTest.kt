@@ -22,7 +22,6 @@ import software.amazon.awssdk.services.cloudformation.model.StackStatus
 import software.aws.toolkits.core.utils.WaiterTimeoutException
 import software.aws.toolkits.core.utils.WaiterUnrecoverableException
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.utils.delegateMock
 import java.time.Duration
 
 class DeleteWaiterTest {
@@ -34,7 +33,7 @@ class DeleteWaiterTest {
     @Rule
     val mockClientManagerRule = MockClientManagerRule(projectRule)
 
-    private val mockClient by lazy { mockClientManagerRule.register(CloudFormationClient::class, delegateMock()) }
+    private val mockClient by lazy { mockClientManagerRule.create<CloudFormationClient>() }
 
     @Test
     fun deleteSuccessful() {

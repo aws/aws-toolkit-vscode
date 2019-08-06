@@ -18,11 +18,9 @@ import software.amazon.awssdk.services.cloudformation.model.ResourceStatus
 import software.amazon.awssdk.services.cloudformation.model.Stack
 import software.amazon.awssdk.services.cloudformation.model.StackResource
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
-import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsTruncatedResultNode
-import software.aws.toolkits.jetbrains.utils.delegateMock
 
 class CloudFormationServiceNodeTest {
 
@@ -34,10 +32,7 @@ class CloudFormationServiceNodeTest {
     @Rule
     val mockClientManagerRule = MockClientManagerRule(projectRule)
 
-    private val mockClient by lazy {
-        mockClientManagerRule.register(LambdaClient::class, delegateMock())
-        mockClientManagerRule.register(CloudFormationClient::class, delegateMock())
-    }
+    private val mockClient by lazy { mockClientManagerRule.create<CloudFormationClient>() }
 
     @Test
     fun completedStacksThatContainActiveLambdas_Shown() {

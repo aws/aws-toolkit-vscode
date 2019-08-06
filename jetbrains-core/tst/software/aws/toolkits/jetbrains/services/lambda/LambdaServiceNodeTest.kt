@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services.lambda
 
 import com.intellij.testFramework.ProjectRule
 import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
@@ -29,7 +28,7 @@ class LambdaServiceNodeTest {
     @Rule
     val mockClientManagerRule = MockClientManagerRule(projectRule)
 
-    private val mockClient: LambdaClient by lazy { mockClientManagerRule.register(LambdaClient::class, mock()) }
+    private val mockClient by lazy { mockClientManagerRule.create<LambdaClient>() }
 
     @Test
     fun lambdaFunctionsAreSortedAlphabetically() {
