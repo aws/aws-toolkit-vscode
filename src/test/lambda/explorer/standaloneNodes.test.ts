@@ -7,6 +7,7 @@ import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
 import * as os from 'os'
 import { TreeItem, Uri } from 'vscode'
+import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
 import {
     DefaultStandaloneFunctionGroupNode,
     DefaultStandaloneFunctionNode,
@@ -19,7 +20,6 @@ import { StsClient } from '../../../shared/clients/stsClient'
 import { ext } from '../../../shared/extensionGlobals'
 import { TestLogger } from '../../../shared/loggerUtils'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
-import { DefaultRegionNode } from '../../../shared/treeview/nodes/defaultRegionNode'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { MockLambdaClient } from '../../shared/clients/mockClients'
 

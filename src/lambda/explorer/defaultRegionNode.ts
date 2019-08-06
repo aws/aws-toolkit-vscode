@@ -4,15 +4,15 @@
  */
 
 import { TreeItemCollapsibleState } from 'vscode'
-import { CloudFormationNode, DefaultCloudFormationNode } from '../../../lambda/explorer/cloudFormationNodes'
+import { RegionInfo } from '../../shared/regions/regionInfo'
+import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
+import { RegionNode } from '../../shared/treeview/nodes/regionNode'
+import { toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
+import { CloudFormationNode, DefaultCloudFormationNode } from './cloudFormationNodes'
 import {
     DefaultStandaloneFunctionGroupNode,
     StandaloneFunctionGroupNode
-} from '../../../lambda/explorer/standaloneNodes'
-import { RegionInfo } from '../../regions/regionInfo'
-import { toMap, updateInPlace } from '../../utilities/collectionUtils'
-import { AWSTreeNodeBase } from './awsTreeNodeBase'
-import { RegionNode } from './regionNode'
+} from './standaloneNodes'
 
 // Collects the regions the user has declared they want to work with;
 // on expansion each region lists the functions and CloudFormation Stacks
