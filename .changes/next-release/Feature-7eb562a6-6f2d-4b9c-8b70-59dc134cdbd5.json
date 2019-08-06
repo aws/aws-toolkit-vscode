@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "Added JSON validation for ECS task definition intellisense"
+}
