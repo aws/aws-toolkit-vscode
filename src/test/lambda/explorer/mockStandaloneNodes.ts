@@ -9,8 +9,8 @@ import {
     StandaloneFunctionGroupNode,
     StandaloneFunctionNode
 } from '../../../lambda/explorer/standaloneNodes'
-import { AWSTreeErrorHandlerNode } from '../../../shared/treeview/awsTreeErrorHandlerNode'
-import { AWSTreeNodeBase } from '../../../shared/treeview/awsTreeNodeBase'
+import { AWSTreeErrorHandlerNode } from '../../../shared/treeview/nodes/awsTreeErrorHandlerNode'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 
 export class MockStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode implements StandaloneFunctionGroupNode {
     public constructor(

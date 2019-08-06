@@ -6,7 +6,7 @@
 import { Lambda } from 'aws-sdk'
 import * as os from 'os'
 import { Uri } from 'vscode'
-import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
+import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
 export abstract class FunctionNodeBase extends AWSTreeNodeBase {
     public abstract readonly regionCode: string

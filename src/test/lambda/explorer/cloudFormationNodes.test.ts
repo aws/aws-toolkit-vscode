@@ -21,8 +21,8 @@ import { StsClient } from '../../../shared/clients/stsClient'
 import { ext } from '../../../shared/extensionGlobals'
 import { TestLogger } from '../../../shared/loggerUtils'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
-import { ErrorNode } from '../../../shared/treeview/errorNode'
-import { PlaceholderNode } from '../../../shared/treeview/placeholderNode'
+import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
+import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { MockCloudFormationClient } from '../../shared/clients/mockClients'
 
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {

@@ -10,7 +10,7 @@ import _ = require('lodash')
 import * as vscode from 'vscode'
 import { getLogger, Logger } from '../../shared/logger'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
-import { ErrorNode } from '../../shared/treeview/errorNode'
+import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { ErrorTemplates } from '../templates/errorTemplates'
 
 export async function showErrorDetails(element: ErrorNode) {

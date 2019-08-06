@@ -5,7 +5,7 @@
 
 import { TreeItemCollapsibleState } from 'vscode'
 import { RegionInfo } from '../../shared/regions/regionInfo'
-import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
+import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { CloudFormationNode, DefaultCloudFormationNode } from './cloudFormationNodes'
 import { RegionNode } from './regionNode'

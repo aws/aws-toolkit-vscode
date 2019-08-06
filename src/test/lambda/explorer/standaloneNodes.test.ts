@@ -20,7 +20,7 @@ import { StsClient } from '../../../shared/clients/stsClient'
 import { ext } from '../../../shared/extensionGlobals'
 import { TestLogger } from '../../../shared/loggerUtils'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
-import { ErrorNode } from '../../../shared/treeview/errorNode'
+import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { MockLambdaClient } from '../../shared/clients/mockClients'
 
 // TODO : Consolidate all asyncGenerator calls into a shared utility method

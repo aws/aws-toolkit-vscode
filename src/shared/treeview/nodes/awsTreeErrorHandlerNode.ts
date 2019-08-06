@@ -4,7 +4,7 @@
  */
 
 import { TreeItemCollapsibleState } from 'vscode'
-import { getLogger, Logger } from '../logger'
+import { getLogger, Logger } from '../../logger'
 import { AWSTreeNodeBase } from './awsTreeNodeBase'
 import { ErrorNode } from './errorNode'
 

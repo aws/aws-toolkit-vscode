@@ -4,7 +4,7 @@
  */
 
 import { RegionInfo } from '../../shared/regions/regionInfo'
-import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
+import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
 // This interface and its implementation are in separate files to prevent circular imports.
 export interface RegionNode extends AWSTreeNodeBase {
