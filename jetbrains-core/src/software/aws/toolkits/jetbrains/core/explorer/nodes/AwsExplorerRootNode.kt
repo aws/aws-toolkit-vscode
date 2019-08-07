@@ -3,9 +3,9 @@
 
 package software.aws.toolkits.jetbrains.core.explorer.nodes
 
+import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.project.Project
-import icons.AwsIcons
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
@@ -13,18 +13,13 @@ import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 /**
  * The root node of the AWS explorer tree.
  */
-class AwsExplorerRootNode(project: Project) : AwsExplorerNode<String>(project, "ROOT", AwsIcons.Logos.AWS) {
+class AwsExplorerRootNode(private val nodeProject: Project) : AbstractTreeNode<Any>(nodeProject, Object()) {
     private val regionProvider = AwsRegionProvider.getInstance()
-    private val settings = ProjectAccountSettingsManager.getInstance(project)
+    private val settings = ProjectAccountSettingsManager.getInstance(nodeProject)
 
-    override fun getChildren(): Collection<AbstractTreeNode<String>> {
-        val childrenList = mutableListOf<AbstractTreeNode<String>>()
-        AwsExplorerService.values()
-            .filter {
-                regionProvider.isServiceSupported(settings.activeRegion, it.serviceId)
-            }
-            .mapTo(childrenList) { it.buildServiceRootNode(project!!) }
+    override fun getChildren(): List<AwsExplorerNode<*>> = AwsExplorerService.values()
+        .filter { regionProvider.isServiceSupported(settings.activeRegion, it.serviceId) }
+        .map { it.buildServiceRootNode(nodeProject) }
 
-        return childrenList
-    }
+    override fun update(presentation: PresentationData) { }
 }

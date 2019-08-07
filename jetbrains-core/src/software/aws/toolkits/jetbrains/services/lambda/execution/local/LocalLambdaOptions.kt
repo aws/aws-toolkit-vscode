@@ -6,6 +6,8 @@ package software.aws.toolkits.jetbrains.services.lambda.execution.local
 import com.intellij.util.xmlb.annotations.OptionTag
 import com.intellij.util.xmlb.annotations.Property
 import com.intellij.util.xmlb.annotations.Tag
+import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.DEFAULT_MEMORY_SIZE
+import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.DEFAULT_TIMEOUT
 import software.aws.toolkits.jetbrains.services.lambda.execution.BaseLambdaOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 
@@ -25,5 +27,7 @@ class FunctionOptions {
     var logicalId: String? = null
     var runtime: String? = null
     var handler: String? = null
+    var timeout: Int = DEFAULT_TIMEOUT
+    var memorySize: Int = DEFAULT_MEMORY_SIZE
     var environmentVariables: Map<String, String> = linkedMapOf<String, String>()
 }

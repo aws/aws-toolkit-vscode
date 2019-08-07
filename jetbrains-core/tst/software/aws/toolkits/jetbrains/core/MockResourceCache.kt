@@ -3,24 +3,33 @@
 
 package software.aws.toolkits.jetbrains.core
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
+import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("UNCHECKED_CAST")
 class MockResourceCache : AwsResourceCache {
-    override fun <T> getResourceIfPresent(resource: Resource<T>, useStale: Boolean): T? {
-        TODO("not implemented")
+    private val map = ConcurrentHashMap<String, Any>()
+    override fun <T> getResourceIfPresent(resource: Resource<T>, useStale: Boolean): T? = when (resource) {
+        is Resource.View<*, T> -> getResourceIfPresent(resource.underlying)?.let { resource.doMap(it) }
+        is Resource.Cached<T> -> mockResourceIfPresent(resource)
     }
 
-    override fun <T> getResourceIfPresent(resource: Resource<T>, region: AwsRegion, credentialProvider: ToolkitCredentialsProvider, useStale: Boolean): T? {
-        TODO("not implemented")
-    }
+    override fun <T> getResourceIfPresent(resource: Resource<T>, region: AwsRegion, credentialProvider: ToolkitCredentialsProvider, useStale: Boolean): T? =
+        getResourceIfPresent(resource)
 
-    override fun <T> getResource(resource: Resource<T>, useStale: Boolean, forceFetch: Boolean) = resourceFuture as CompletionStage<T>
+    override fun <T> getResource(resource: Resource<T>, useStale: Boolean, forceFetch: Boolean): CompletionStage<T> = when (resource) {
+        is Resource.View<*, T> ->
+            getResource(resource.underlying, useStale, forceFetch).thenApply { resource.doMap(it as Any) }
+        is Resource.Cached<T> -> {
+            mockResource(resource)
+        }
+    }
 
     override fun <T> getResource(
         resource: Resource<T>,
@@ -28,7 +37,23 @@ class MockResourceCache : AwsResourceCache {
         credentialProvider: ToolkitCredentialsProvider,
         useStale: Boolean,
         forceFetch: Boolean
-    ): CompletionStage<T> = resourceFuture as CompletionStage<T>
+    ): CompletionStage<T> = getResource(resource)
+
+    private fun <T> mockResourceIfPresent(resource: Resource.Cached<T>): T? = when (val value = map[resource.id]) {
+        is CompletableFuture<*> -> if (value.isDone) value.get() as T else null
+        else -> value as? T?
+    }
+
+    private fun <T> mockResource(resource: Resource.Cached<T>) = when (val value = map[resource.id]) {
+        is CompletableFuture<*> -> value as CompletionStage<T>
+        else -> {
+            val future = CompletableFuture<T>()
+            ApplicationManager.getApplication().executeOnPooledThread {
+                value?.also { future.complete(it as T) } ?: future.completeExceptionally(IllegalStateException("No value found for $resource in mock"))
+            }
+            future
+        }
+    }
 
     override fun clear(resource: Resource<*>) {
         TODO("not implemented")
@@ -39,10 +64,16 @@ class MockResourceCache : AwsResourceCache {
     }
 
     override fun clear() {
-        TODO("not implemented")
+        map.clear()
     }
 
-    val resourceFuture = CompletableFuture<Any>()
+    fun <T> addEntry(resource: Resource.Cached<T>, value: T) {
+        map[resource.id] = value as Any
+    }
+
+    fun <T> addEntry(resource: Resource.Cached<T>, value: CompletableFuture<T>) {
+        map[resource.id] = value as Any
+    }
 
     companion object {
         @JvmStatic

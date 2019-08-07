@@ -145,21 +145,26 @@ sealed class Resource<T> {
      * in order to return the desired type [Output]. The [transform] result is not cached, [transform]s are re-applied on each fetch - thus should
      * should be relatively cheap.
      */
-    class View<Input, Output>(internal val underlying: Resource<Input>, private val transform: Input.() -> Output) : Resource<Output>() {
+    class View<Input, Output>(val underlying: Resource<Input>, private val transform: Input.() -> Output) : Resource<Output>() {
         @Suppress("UNCHECKED_CAST")
-        internal fun doMap(input: Any) = transform(input as Input)
+        fun doMap(input: Any) = transform(input as Input)
     }
 }
 
 class ClientBackedCachedResource<ReturnType, ClientType : SdkClient>(
     private val sdkClientClass: KClass<ClientType>,
     override val id: String,
+    private val expiry: Duration?,
     private val fetchCall: ClientType.() -> ReturnType
 ) : Resource.Cached<ReturnType>() {
+
+    constructor(sdkClientClass: KClass<ClientType>, id: String, fetchCall: ClientType.() -> ReturnType) : this(sdkClientClass, id, null, fetchCall)
     override fun fetch(project: Project, region: AwsRegion, credentials: ToolkitCredentialsProvider): ReturnType {
         val client = AwsClientManager.getInstance(project).getClient(sdkClientClass, credentials, region)
         return fetchCall(client)
     }
+
+    override fun expiry(): Duration = expiry ?: super.expiry()
 }
 
 class DefaultAwsResourceCache(private val project: Project, private val clock: Clock, maximumCacheEntries: Long) :

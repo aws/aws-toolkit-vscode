@@ -14,11 +14,13 @@ import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.lambda.model.TracingMode
 import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
 import software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker
 import software.aws.toolkits.jetbrains.settings.LambdaSettings
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.openClass
 import software.aws.toolkits.jetbrains.utils.rules.openFile
+import java.util.concurrent.CompletableFuture
 
 class JavaLambdaLineMarkerTest {
     @Rule
@@ -486,6 +488,8 @@ Resources:
         LambdaSettings.getInstance(projectRule.project).showAllHandlerGutterIcons = false
 
         val fixture = projectRule.fixture
+        val future = CompletableFuture<List<FunctionConfiguration>>()
+        MockResourceCache.getInstance(fixture.project).addEntry(LambdaResources.LIST_FUNCTIONS, future)
 
         fixture.openClass(
             """
@@ -518,17 +522,14 @@ Resources:
             .tracingConfig { it.mode(TracingMode.PASS_THROUGH) }
             .build()
 
-        MockResourceCache.getInstance(fixture.project).resourceFuture.complete(listOf(lambdaFunction))
+        future.complete(listOf(lambdaFunction))
 
         findAndAssertMarks(fixture) { marks ->
             assertLineMarkerIs(marks, "upperCase")
         }
     }
 
-    private fun findAndAssertMarks(
-        fixture: CodeInsightTestFixture,
-        assertion: (List<LambdaLineMarker.LambdaGutterIcon>) -> Unit
-    ) {
+    private fun findAndAssertMarks(fixture: CodeInsightTestFixture, assertion: (List<LambdaLineMarker.LambdaGutterIcon>) -> Unit) {
         runInEdtAndWait {
             val marks = fixture.findAllGutters().filterIsInstance<LambdaLineMarker.LambdaGutterIcon>()
             assertion(marks)

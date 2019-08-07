@@ -22,6 +22,8 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
+import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.DEFAULT_MEMORY_SIZE
+import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.DEFAULT_TIMEOUT
 import software.aws.toolkits.jetbrains.services.lambda.execution.PathMapping
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
@@ -47,6 +49,8 @@ abstract class LambdaBuilder {
         handlerElement: PsiElement,
         handler: String,
         runtime: Runtime,
+        timeout: Int,
+        memorySize: Int,
         envVars: Map<String, String>,
         samOptions: SamOptions,
         onStart: (ProcessHandler) -> Unit = {}
@@ -57,7 +61,7 @@ abstract class LambdaBuilder {
         FileUtil.createIfDoesntExist(customTemplate)
 
         val logicalId = "Function"
-        SamTemplateUtils.writeDummySamTemplate(customTemplate, logicalId, runtime, baseDir, handler, envVars)
+        SamTemplateUtils.writeDummySamTemplate(customTemplate, logicalId, runtime, baseDir, handler, timeout, memorySize, envVars)
 
         return buildLambdaFromTemplate(module, customTemplate.toPath(), logicalId, samOptions, onStart)
     }
@@ -177,7 +181,7 @@ abstract class LambdaBuilder {
         samOptions: SamOptions,
         onStart: (ProcessHandler) -> Unit = {}
     ): Path {
-        val builtLambda = buildLambda(module, handlerElement, handler, runtime, emptyMap(), samOptions, onStart)
+        val builtLambda = buildLambda(module, handlerElement, handler, runtime, DEFAULT_TIMEOUT, DEFAULT_MEMORY_SIZE, emptyMap(), samOptions, onStart)
         val zipLocation = FileUtil.createTempFile("builtLambda", "zip", true)
         Compressor.Zip(zipLocation).use {
             it.addDirectory(builtLambda.codeLocation.toFile())
@@ -229,6 +233,8 @@ data class BuildLambdaFromHandler(
     val handlerElement: PsiElement,
     val handler: String,
     val runtime: Runtime,
+    val timeout: Int,
+    val memorySize: Int,
     val envVars: Map<String, String>,
     val samOptions: SamOptions
 ) : BuildLambdaRequest()

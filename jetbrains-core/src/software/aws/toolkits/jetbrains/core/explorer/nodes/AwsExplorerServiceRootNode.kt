@@ -10,8 +10,10 @@ import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
  * Top level node for any AWS service node
  */
 abstract class AwsExplorerServiceRootNode(project: Project, private val service: AwsExplorerService) :
-    AwsExplorerPageableNode<String>(project, service.displayName, null), AwsNodeAlwaysExpandable {
+    AwsExplorerNode<String>(project, service.displayName, null), ResourceParentNode {
 
     val serviceId: String
         get() = service.serviceId
+
+    override fun isAlwaysShowPlus(): Boolean = true
 }

@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Support timeout and memory size settings in run configuration"
+}

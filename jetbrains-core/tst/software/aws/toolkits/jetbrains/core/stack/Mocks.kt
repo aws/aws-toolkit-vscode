@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.core.stack
 
-import com.nhaarman.mockitokotlin2.mock
 import org.junit.Assert
 import org.mockito.Mockito
 import org.mockito.Mockito.`when`
@@ -58,9 +57,9 @@ internal class MockEventsGenerator {
 internal fun MockClientManagerRule.createMock(
     events: MockEventsGenerator,
     postprocess: (CloudFormationClient) -> Unit = { }
-) = register(CloudFormationClient::class, mock<CloudFormationClient>().apply {
+) = create<CloudFormationClient>().apply {
     `when`(describeStackEvents(Mockito.any<DescribeStackEventsRequest>())).then { invocation ->
         events.getEvents((invocation.arguments[0] as DescribeStackEventsRequest))
     }
     postprocess(this)
-})
+}

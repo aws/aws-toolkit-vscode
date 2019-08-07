@@ -4,28 +4,24 @@
 package software.aws.toolkits.jetbrains.services.cloudformation
 
 import com.intellij.testFramework.ProjectRule
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.services.cloudformation.CloudFormationClient
-import software.amazon.awssdk.services.cloudformation.model.DescribeStackResourcesRequest
-import software.amazon.awssdk.services.cloudformation.model.DescribeStackResourcesResponse
 import software.amazon.awssdk.services.cloudformation.model.ResourceStatus
-import software.amazon.awssdk.services.cloudformation.model.StackResource
+import software.amazon.awssdk.services.cloudformation.model.StackResourceSummary
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
-import software.amazon.awssdk.services.lambda.LambdaClient
-import software.amazon.awssdk.services.lambda.model.GetFunctionRequest
-import software.amazon.awssdk.services.lambda.model.GetFunctionResponse
+import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.lambda.model.TracingConfigResponse
 import software.amazon.awssdk.services.lambda.model.TracingMode
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
+import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
+import software.aws.toolkits.jetbrains.services.cloudformation.resources.CloudFormationResources
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
-import software.aws.toolkits.jetbrains.utils.delegateMock
+import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
+import java.util.concurrent.CompletableFuture
 
 class CloudFormationStackNodeTest {
 
@@ -37,65 +33,13 @@ class CloudFormationStackNodeTest {
     @Rule
     val mockClientManager = MockClientManagerRule(projectRule)
 
-    private val mockCfnClient by lazy {
-        mockClientManager.register(CloudFormationClient::class, delegateMock())
-    }
-
-    private val mockLambdaClient by lazy {
-        mockClientManager.register(LambdaClient::class, delegateMock())
-    }
-
     @Before
-    fun setup() {
-        whenever(mockCfnClient.describeStackResources(any<DescribeStackResourcesRequest>())).thenReturn(
-            DescribeStackResourcesResponse.builder()
-                .stackResources(
-                    StackResource.builder().resourceType(LAMBDA_FUNCTION_TYPE).resourceStatus(ResourceStatus.CREATE_COMPLETE).logicalResourceId("processor").build(),
-                    StackResource.builder().resourceType(LAMBDA_FUNCTION_TYPE).resourceStatus(ResourceStatus.CREATE_COMPLETE).logicalResourceId("processor2").build(),
-                    StackResource.builder().resourceType("a dynamodb table").resourceStatus(ResourceStatus.CREATE_COMPLETE).build(),
-                    StackResource.builder().resourceType("an IAM role").resourceStatus(ResourceStatus.CREATE_COMPLETE).build()
-                )
-                .build()
-        )
-
-        whenever(mockLambdaClient.getFunction(any<GetFunctionRequest>())).thenReturn(
-            GetFunctionResponse.builder()
-                .configuration {
-                    it.functionName("Foo")
-                    it.functionArn("arn:aws:lambda:us-west-2:0123456789:function:Foo")
-                    it.lastModified("A ways back")
-                    it.handler("blah:blah")
-                    it.runtime(Runtime.JAVA8)
-                    it.role("SomeRoleArn")
-                    it.environment { env -> env.variables(emptyMap()) }
-                    it.timeout(60)
-                    it.memorySize(128)
-                    it.tracingConfig(TracingConfigResponse.builder().mode(TracingMode.PASS_THROUGH).build())
-                }
-                .build()
-        )
-    }
-
-    @Test
-    fun nodeRefreshesHitCache() {
-        val node = aCloudFormationStackNode(StackStatus.CREATE_COMPLETE)
-        assertThat(node.isChildCacheInInitialState).isEqualTo(true)
-        val children = node.children
-
-        assertThat(node.isChildCacheInInitialState).isEqualTo(false)
-        assertThat(children).hasSize(2)
-        assertThat(children).hasOnlyElementsOfType(LambdaFunctionNode::class.java)
+    fun setUp() {
+        resourceCache().clear()
     }
 
     @Test
     fun failedStackHaveNoChildren() {
-        val node = aCloudFormationStackNode(StackStatus.CREATE_FAILED)
-
-        assertThat(node.children).isEmpty()
-    }
-
-    @Test
-    fun failedStackHaveNoChildrenAfterRefresh() {
         val node = aCloudFormationStackNode(StackStatus.CREATE_FAILED)
 
         assertThat(node.children).isEmpty()
@@ -109,28 +53,74 @@ class CloudFormationStackNodeTest {
     }
 
     @Test
-    fun inProgressStacksHaveNoChildrenAfterRefresh() {
-        val node = aCloudFormationStackNode(StackStatus.CREATE_IN_PROGRESS)
-
-        assertThat(node.children).isEmpty()
-    }
-
-    @Test
-    fun stackOnlyContainingDeletedResourceHasPlaceholderChild() {
-        whenever(mockCfnClient.describeStackResources(any<DescribeStackResourcesRequest>())).thenReturn(
-            DescribeStackResourcesResponse.builder()
-                .stackResources(
-                    StackResource.builder().resourceType(LAMBDA_FUNCTION_TYPE).resourceStatus(ResourceStatus.DELETE_COMPLETE).logicalResourceId("processor").build(),
-                    StackResource.builder().resourceType(LAMBDA_FUNCTION_TYPE).resourceStatus(ResourceStatus.DELETE_COMPLETE).logicalResourceId("processor2").build()
-                )
-                .build()
-        )
-
+    fun deletedAndFailedResourcesAreNotShown() {
         val node = aCloudFormationStackNode(StackStatus.CREATE_COMPLETE)
+
+        resourceCache().stackWithResources(
+            node.stackId,
+            listOf(
+                Triple("processor", LAMBDA_FUNCTION_TYPE, ResourceStatus.DELETE_COMPLETE),
+                Triple("processor2", LAMBDA_FUNCTION_TYPE, ResourceStatus.CREATE_FAILED)
+            )
+        )
 
         assertThat(node.children).hasSize(1)
         assertThat(node.children).hasOnlyElementsOfType(AwsExplorerEmptyNode::class.java)
     }
 
+    @Test
+    fun completedSupportedResourcesAreShown() {
+        val node = aCloudFormationStackNode(StackStatus.CREATE_COMPLETE)
+
+        resourceCache().stackWithResources(
+            node.stackId,
+            listOf(
+                Triple("processor", LAMBDA_FUNCTION_TYPE, ResourceStatus.CREATE_COMPLETE),
+                Triple("role", "AWS::IAM::Role", ResourceStatus.CREATE_COMPLETE)
+            )
+        )
+
+        resourceCache().lambdaFunction(
+            FunctionConfiguration.builder()
+                .functionName("processor")
+                .functionArn("arn:aws:lambda:us-west-2:0123456789:function:processor")
+                .lastModified("A ways back")
+                .handler("blah:blah")
+                .runtime(Runtime.JAVA8)
+                .role("SomeRoleArn")
+                .environment { it.variables(emptyMap()) }
+                .timeout(60)
+                .memorySize(128)
+                .tracingConfig(TracingConfigResponse.builder().mode(TracingMode.PASS_THROUGH).build())
+                .build()
+        )
+
+        assertThat(node.children).hasSize(1)
+        assertThat(node.children).hasOnlyElementsOfType(LambdaFunctionNode::class.java)
+    }
+
     private fun aCloudFormationStackNode(status: StackStatus) = CloudFormationStackNode(projectRule.project, "stack", status, "stackId")
+
+    private fun resourceCache() = MockResourceCache.getInstance(projectRule.project)
+
+    private fun MockResourceCache.stackWithResources(stackName: String, resources: List<Triple<String, String, ResourceStatus>>) {
+        this.addEntry(
+            CloudFormationResources.listStackResources(stackName),
+            CompletableFuture.completedFuture(
+                resources.map {
+                    StackResourceSummary.builder()
+                        .logicalResourceId(it.first)
+                        .physicalResourceId("arn:aws:lambda:us-west-2:0123456789:function:${it.first}")
+                        .resourceType(it.second)
+                        .resourceStatus(it.third)
+                        .build()
+                }
+            ))
+    }
+
+    private fun MockResourceCache.lambdaFunction(functionConfiguration: FunctionConfiguration) {
+        this.addEntry(
+            LambdaResources.LIST_FUNCTIONS,
+            CompletableFuture.completedFuture(listOf(functionConfiguration)))
+    }
 }

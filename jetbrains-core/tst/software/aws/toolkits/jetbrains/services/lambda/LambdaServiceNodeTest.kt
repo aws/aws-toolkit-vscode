@@ -4,20 +4,19 @@
 package software.aws.toolkits.jetbrains.services.lambda
 
 import com.intellij.testFramework.ProjectRule
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
-import software.amazon.awssdk.services.lambda.model.ListFunctionsRequest
-import software.amazon.awssdk.services.lambda.model.ListFunctionsResponse
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.lambda.model.TracingConfigResponse
 import software.amazon.awssdk.services.lambda.model.TracingMode
-import software.aws.toolkits.jetbrains.core.MockClientManagerRule
+import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
+import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
+import java.util.concurrent.CompletableFuture
 
 class LambdaServiceNodeTest {
 
@@ -25,25 +24,49 @@ class LambdaServiceNodeTest {
     @Rule
     val projectRule = ProjectRule()
 
-    @JvmField
-    @Rule
-    val mockClientManagerRule = MockClientManagerRule(projectRule)
-
-    private val mockClient: LambdaClient by lazy { mockClientManagerRule.register(LambdaClient::class, mock()) }
+    @Before
+    fun setUp() {
+        resourceCache().clear()
+    }
 
     @Test
-    fun lambdaFunctionsAreSortedAlphabetically() {
-        whenever(mockClient.listFunctions(any<ListFunctionsRequest>())).thenReturn(ListFunctionsResponse.builder().apply {
-            this.functions(functionConfiguration("bcd"),
-                functionConfiguration("abc"),
-                functionConfiguration("zzz"),
-                functionConfiguration("AEF"))
-        }.build())
+    fun lambdaFunctionsAreListed() {
+        resourceCache().lambdaFunctions(listOf("bcd", "abc", "zzz", "AEF"))
 
         val children = LambdaServiceNode(projectRule.project).children
 
         assertThat(children).allMatch { it is LambdaFunctionNode }
-        assertThat(children.filterIsInstance<LambdaFunctionNode>().map { it.functionName() }).containsExactly("abc", "AEF", "bcd", "zzz")
+        assertThat(children.filterIsInstance<LambdaFunctionNode>().map { it.functionName() }).containsExactlyInAnyOrder("abc", "AEF", "bcd", "zzz")
+    }
+
+    @Test
+    fun noFunctionsShowsEmptyList() {
+        resourceCache().lambdaFunctions(emptyList())
+
+        val children = LambdaServiceNode(projectRule.project).children
+
+        assertThat(children).hasSize(1)
+        assertThat(children).allMatch { it is AwsExplorerEmptyNode }
+    }
+
+    @Test
+    fun exceptionLeadsToErrorNode() {
+        resourceCache().addEntry(LambdaResources.LIST_FUNCTIONS, CompletableFuture<List<FunctionConfiguration>>().also {
+            it.completeExceptionally(RuntimeException("Simulated error"))
+        })
+
+        val children = LambdaServiceNode(projectRule.project).children
+
+        assertThat(children).hasSize(1)
+        assertThat(children).allMatch { it is AwsExplorerErrorNode }
+    }
+
+    private fun resourceCache() = MockResourceCache.getInstance(projectRule.project)
+
+    private fun MockResourceCache.lambdaFunctions(names: List<String>) {
+        this.addEntry(
+            LambdaResources.LIST_FUNCTIONS,
+            CompletableFuture.completedFuture(names.map(::functionConfiguration)))
     }
 
     private fun functionConfiguration(functionName: String) =

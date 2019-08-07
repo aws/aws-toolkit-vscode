@@ -16,13 +16,13 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.services.sts.StsClient
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
-import software.aws.toolkits.jetbrains.utils.delegateMock
+import software.aws.toolkits.jetbrains.services.sts.StsResources
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.toElement
 
@@ -35,6 +35,7 @@ class DefaultProjectAccountSettingsManagerTest {
     private lateinit var mockCredentialManager: MockCredentialsManager
     private lateinit var manager: DefaultProjectAccountSettingsManager
     private lateinit var messageBusConnection: MessageBusConnection
+    private lateinit var mockResourceCache: MockResourceCache
     private lateinit var queue: MutableList<Any>
 
     @Before
@@ -43,7 +44,8 @@ class DefaultProjectAccountSettingsManagerTest {
 
         mockRegionManager = MockRegionProvider.getInstance()
         mockCredentialManager = MockCredentialsManager.getInstance()
-        manager = DefaultProjectAccountSettingsManager(projectRule.project, delegateMock<StsClient>())
+        manager = DefaultProjectAccountSettingsManager(projectRule.project)
+        mockResourceCache = MockResourceCache.getInstance(projectRule.project)
         messageBusConnection = projectRule.project.messageBus.connect()
         messageBusConnection.subscribe(ProjectAccountSettingsManager.ACCOUNT_SETTINGS_CHANGED, object :
             ProjectAccountSettingsManager.AccountSettingsChangedNotifier {
@@ -51,6 +53,8 @@ class DefaultProjectAccountSettingsManagerTest {
                 queue.add(event)
             }
         })
+
+        mockResourceCache.addEntry(StsResources.ACCOUNT, "111111111111")
 
         for (i in 1..5) {
             val mockRegion = "MockRegion-$i"
@@ -96,6 +100,8 @@ class DefaultProjectAccountSettingsManagerTest {
             awsAccountId = "222222222222"
         )
         changeCredentialProvider(credentials2)
+
+        mockResourceCache.addEntry(StsResources.ACCOUNT, "222222222222")
 
         assertThat(manager.recentlyUsedCredentials()).element(0).isEqualTo(credentials2)
         assertThat(manager.recentlyUsedCredentials()).element(1).isEqualTo(credentials)
@@ -350,8 +356,7 @@ class DefaultProjectAccountSettingsManagerTest {
 
         assertThat(manager.activeCredentialProvider.id).isEqualTo("profile:admin")
 
-        ApplicationManager.getApplication().messageBus.syncPublisher(CredentialManager.CREDENTIALS_CHANGED)
-            .providerRemoved("profile:admin")
+        ApplicationManager.getApplication().messageBus.syncPublisher(CredentialManager.CREDENTIALS_CHANGED).providerRemoved("profile:admin")
         assertThat(manager.hasActiveCredentials()).isFalse()
         assertThat(manager.activeAwsAccount).isNull()
     }
