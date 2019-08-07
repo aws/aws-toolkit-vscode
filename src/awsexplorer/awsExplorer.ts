@@ -4,6 +4,14 @@
  */
 
 import * as vscode from 'vscode'
+import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
+import { deleteLambda } from '../lambda/commands/deleteLambda'
+import { invokeLambda } from '../lambda/commands/invokeLambda'
+import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
+import { DefaultRegionNode } from '../lambda/explorer/defaultRegionNode'
+import { FunctionNodeBase } from '../lambda/explorer/functionNode'
+import { StandaloneFunctionNode } from '../lambda/explorer/standaloneNodes'
+import { configureLocalLambda } from '../lambda/local/configureLocalLambda'
 import { AwsContext } from '../shared/awsContext'
 import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
 import { ext } from '../shared/extensionGlobals'
@@ -19,16 +27,8 @@ import { RegionNode } from '../shared/treeview/nodes/regionNode'
 import { showErrorDetails } from '../shared/treeview/webviews/showErrorDetails'
 import { intersection, toMap, updateInPlace } from '../shared/utilities/collectionUtils'
 import { localize } from '../shared/utilities/vsCodeUtils'
-import { deleteCloudFormation } from './commands/deleteCloudFormation'
-import { deleteLambda } from './commands/deleteLambda'
-import { invokeLambda } from './commands/invokeLambda'
-import { CloudFormationStackNode } from './explorer/cloudFormationNodes'
-import { DefaultRegionNode } from './explorer/defaultRegionNode'
-import { FunctionNodeBase } from './explorer/functionNode'
-import { StandaloneFunctionNode } from './explorer/standaloneNodes'
-import { configureLocalLambda } from './local/configureLocalLambda'
 
-export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
+export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
     public viewProviderId: string = 'aws.explorer'
     public readonly onDidChangeTreeData: vscode.Event<AWSTreeNodeBase | undefined>
     private readonly _onDidChangeTreeData: vscode.EventEmitter<AWSTreeNodeBase | undefined>
@@ -108,9 +108,9 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
         })
 
         registerCommand({
-            command: 'aws.refreshLambdaProviderNode',
-            callback: async (lambdaProvider: LambdaTreeDataProvider, element: AWSTreeNodeBase) => {
-                lambdaProvider._onDidChangeTreeData.fire(element)
+            command: 'aws.refreshAwsExplorerNode',
+            callback: async (awsExplorer: AwsExplorer, element: AWSTreeNodeBase) => {
+                awsExplorer._onDidChangeTreeData.fire(element)
             }
         })
 
@@ -133,7 +133,7 @@ export class LambdaTreeDataProvider implements vscode.TreeDataProvider<AWSTreeNo
                             'AWS.explorerNode.lambda.retry',
                             'Unable to load Lambda Functions, click here to retry'
                         ),
-                        'aws.refreshLambdaProviderNode',
+                        'aws.refreshAwsExplorerNode',
                         [this, element],
                     )
                 ]
