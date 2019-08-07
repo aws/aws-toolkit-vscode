@@ -12,25 +12,43 @@ describe('FeatureController', async () => {
     const testConfig = new TestSettingsConfiguration()
     const activeSettingKey = 'activeSetting'
     const inactiveSettingKey = 'inactiveSetting'
+    const activeNotBoolSettingKey = 'activeNotBoolSetting'
+    const inactiveNotBoolSettingKey = 'inactiveNotBoolSetting'
     const missingSettingKey = 'missingSetting'
     const variableSettingKey = 'variableSetting'
     const permanentSettingKey = 'permanentSetting'
     const permanentMissingSettingKey = 'permanentMissingSetting'
     const permanentMissingVariableSettingKey = 'permanentMissingVariableSetting'
-    await testConfig.writeSetting(`toggle.${activeSettingKey}`, true)
-    await testConfig.writeSetting(`toggle.${inactiveSettingKey}`, false)
-    await testConfig.writeSetting(`toggle.${variableSettingKey}`, false)
-    await testConfig.writeSetting(`toggle.${permanentSettingKey}`, true)
+    let features: FeatureController
 
-    const features = new FeatureController(testConfig, [
-        permanentSettingKey,
-        permanentMissingSettingKey,
-        permanentMissingVariableSettingKey
-    ])
+    beforeEach(async () => {
+        await testConfig.writeSetting(`toggle.${activeSettingKey}`, true)
+        await testConfig.writeSetting(`toggle.${inactiveSettingKey}`, false)
+        await testConfig.writeSetting(`toggle.${activeNotBoolSettingKey}`, 'can you hear me')
+        await testConfig.writeSetting(`toggle.${inactiveNotBoolSettingKey}`, 0)
+        await testConfig.writeSetting(`toggle.${variableSettingKey}`, false)
+        await testConfig.writeSetting(`toggle.${permanentSettingKey}`, true)
+        features = new FeatureController(testConfig, [
+            permanentSettingKey,
+            permanentMissingSettingKey,
+            permanentMissingVariableSettingKey
+        ])
+    })
 
-    it('returns whether or not a feature is active', () => {
+    it('returns true if feature is active', () => {
         assert.strictEqual(features.isFeatureActive(activeSettingKey), true)
+    })
+
+    it('returns false if feature is inactive', () => {
         assert.strictEqual(features.isFeatureActive(inactiveSettingKey), false)
+    })
+
+    it('returns true if feature is a non-boolean but truthy value', () => {
+        assert.strictEqual(features.isFeatureActive(activeNotBoolSettingKey), true)
+    })
+
+    it('returns false if feature is a non-boolean but falsy value', () => {
+        assert.strictEqual(features.isFeatureActive(inactiveNotBoolSettingKey), false)
     })
 
     it('returns false for features that are not present', () => {
