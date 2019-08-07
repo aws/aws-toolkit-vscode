@@ -190,23 +190,26 @@ class DefaultAwsResourceCache(private val project: Project, private val clock: C
         useStale: Boolean,
         forceFetch: Boolean
     ): CompletionStage<T> = when (resource) {
-        is Resource.View<*, T> ->
-            getResource(resource.underlying, region, credentialProvider, useStale, forceFetch).thenApply { resource.doMap(it as Any) }
-        is Resource.Cached<T> -> {
-            val future = CompletableFuture<T>()
-            val context = Context(resource, region, credentialProvider, useStale, forceFetch)
-            ApplicationManager.getApplication().executeOnPooledThread {
-                try {
-                    @Suppress("UNCHECKED_CAST")
-                    val result = cache.compute(context.cacheKey) { _, value ->
-                        fetchIfNeeded(context, value as Entry<T>?)
-                    } as Entry<T>
-                    future.complete(result.value)
-                } catch (e: Exception) {
-                    future.completeExceptionally(e)
+        is Resource.View<*, T> -> getResource(resource.underlying, region, credentialProvider, useStale, forceFetch).thenApply { resource.doMap(it as Any) }
+        is Resource.Cached<T> -> Context(resource, region, credentialProvider, useStale, forceFetch).also { getCachedResource(it, 0) }.future
+    }
+
+    private fun <T> getCachedResource(context: Context<T>, failedAttempts: Int) {
+        ApplicationManager.getApplication().executeOnPooledThread {
+            try {
+                @Suppress("UNCHECKED_CAST")
+                val result = cache.compute(context.cacheKey) { _, value ->
+                    fetchIfNeeded(context, value as Entry<T>?)
+                } as Entry<T>
+                context.future.complete(result.value)
+            } catch (e: AssertionError) { // HACK: until we figure out why Guava Cache is throwing an exception : https://github.com/google/guava/issues/3464
+                when {
+                    failedAttempts > 0 -> context.future.completeExceptionally(e)
+                    else -> getCachedResource(context, failedAttempts + 1)
                 }
+            } catch (e: Throwable) {
+                context.future.completeExceptionally(e)
             }
-            future
         }
     }
 
@@ -283,6 +286,7 @@ class DefaultAwsResourceCache(private val project: Project, private val clock: C
             val forceFetch: Boolean
         ) {
             val cacheKey = CacheKey(resource.id, region.id, credentials.id)
+            val future = CompletableFuture<T>()
         }
 
         private class Entry<T>(val expiry: Instant, val value: T)

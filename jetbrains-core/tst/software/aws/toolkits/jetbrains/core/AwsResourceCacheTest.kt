@@ -8,6 +8,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.testFramework.ProjectRule
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.atLeastOnce
+import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.reset
@@ -25,11 +26,13 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
+import java.lang.AssertionError
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -75,9 +78,15 @@ class AwsResourceCacheTest {
 
     @Test
     fun exceptionsAreBubbledWhenNoEntry() {
-        whenever(mockResource.fetch(any(), any(), any())).doThrow(RuntimeException("BOOM"))
+        doAnswer { throw Throwable("Bang!") }.`when`(mockResource).fetch(any(), any(), any())
+        assertThat(sut.getResource(mockResource)).hasException.withFailMessage("Bang!")
+    }
 
-        assertThat(sut.getResource(mockResource)).hasException
+    @Test
+    fun guavaAssertionExceptionIsRetried() {
+        doAnswer { throw AssertionError("Bang!") }.`when`(mockResource).fetch(any(), any(), any())
+        assertThat(sut.getResource(mockResource)).hasException.withFailMessage("Bang!")
+        verify(mockResource, times(2)).fetch(any(), any(), any())
     }
 
     @Test
@@ -199,13 +208,15 @@ class AwsResourceCacheTest {
     @Test
     fun multipleCallsInDifferentThreadsStillOnlyCallTheUnderlyingResourceOnce() {
         whenever(mockResource.fetch(any(), any(), any())).thenReturn("hello")
-        val concurrency = 50
+        val concurrency = 200
 
+        val latch = CountDownLatch(1)
         val executor = Executors.newFixedThreadPool(concurrency)
         try {
             val futures = (1 until concurrency).map {
                 val future = CompletableFuture<String>()
                 executor.submit {
+                    latch.await()
                     sut.getResource(mockResource).whenComplete { result, error ->
                         when {
                             result != null -> future.complete(result)
@@ -215,6 +226,7 @@ class AwsResourceCacheTest {
                 }
                 future
             }.toTypedArray()
+            latch.countDown()
             CompletableFuture.allOf(*futures).value
         } finally {
             executor.shutdown()
