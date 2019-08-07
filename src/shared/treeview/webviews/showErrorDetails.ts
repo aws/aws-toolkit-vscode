@@ -8,10 +8,10 @@ const localize = nls.loadMessageBundle()
 
 import _ = require('lodash')
 import * as vscode from 'vscode'
-import { ErrorTemplates } from '../../../lambda/templates/errorTemplates'
 import { getLogger, Logger } from '../../logger'
 import { BaseTemplates } from '../../templates/baseTemplates'
 import { ErrorNode } from '../nodes/errorNode'
+import { ErrorTemplates } from './errorTemplates'
 
 export async function showErrorDetails(element: ErrorNode) {
 
