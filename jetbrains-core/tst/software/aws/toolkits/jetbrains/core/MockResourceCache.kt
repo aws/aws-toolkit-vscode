@@ -14,13 +14,22 @@ import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("UNCHECKED_CAST")
 class MockResourceCache : AwsResourceCache {
-    private val map = ConcurrentHashMap<Resource<*>, Any>()
-    override fun <T> getResourceIfPresent(resource: Resource<T>, useStale: Boolean): T? = mockResourceIfPresent(resource)
+    private val map = ConcurrentHashMap<String, Any>()
+    override fun <T> getResourceIfPresent(resource: Resource<T>, useStale: Boolean): T? = when (resource) {
+        is Resource.View<*, T> -> getResourceIfPresent(resource.underlying)?.let { resource.doMap(it) }
+        is Resource.Cached<T> -> mockResourceIfPresent(resource)
+    }
 
     override fun <T> getResourceIfPresent(resource: Resource<T>, region: AwsRegion, credentialProvider: ToolkitCredentialsProvider, useStale: Boolean): T? =
-        mockResourceIfPresent(resource)
+        getResourceIfPresent(resource)
 
-    override fun <T> getResource(resource: Resource<T>, useStale: Boolean, forceFetch: Boolean) = mockResource(resource)
+    override fun <T> getResource(resource: Resource<T>, useStale: Boolean, forceFetch: Boolean): CompletionStage<T> = when (resource) {
+        is Resource.View<*, T> ->
+            getResource(resource.underlying, useStale, forceFetch).thenApply { resource.doMap(it as Any) }
+        is Resource.Cached<T> -> {
+            mockResource(resource)
+        }
+    }
 
     override fun <T> getResource(
         resource: Resource<T>,
@@ -28,14 +37,14 @@ class MockResourceCache : AwsResourceCache {
         credentialProvider: ToolkitCredentialsProvider,
         useStale: Boolean,
         forceFetch: Boolean
-    ): CompletionStage<T> = mockResource(resource)
+    ): CompletionStage<T> = getResource(resource)
 
-    private fun <T> mockResourceIfPresent(resource: Resource<T>): T? = when (val value = map[resource]) {
+    private fun <T> mockResourceIfPresent(resource: Resource.Cached<T>): T? = when (val value = map[resource.id]) {
         is CompletableFuture<*> -> if (value.isDone) value.get() as T else null
         else -> value as? T?
     }
 
-    private fun <T> mockResource(resource: Resource<T>) = when (val value = map[resource]) {
+    private fun <T> mockResource(resource: Resource.Cached<T>) = when (val value = map[resource.id]) {
         is CompletableFuture<*> -> value as CompletionStage<T>
         else -> {
             val future = CompletableFuture<T>()
@@ -55,15 +64,15 @@ class MockResourceCache : AwsResourceCache {
     }
 
     override fun clear() {
-        TODO("not implemented")
+        map.clear()
     }
 
-    fun <T> addEntry(resource: Resource<T>, value: T) {
-        map[resource] = value as Any
+    fun <T> addEntry(resource: Resource.Cached<T>, value: T) {
+        map[resource.id] = value as Any
     }
 
-    fun <T> addEntry(resource: Resource<T>, value: CompletableFuture<T>) {
-        map[resource] = value as Any
+    fun <T> addEntry(resource: Resource.Cached<T>, value: CompletableFuture<T>) {
+        map[resource.id] = value as Any
     }
 
     companion object {

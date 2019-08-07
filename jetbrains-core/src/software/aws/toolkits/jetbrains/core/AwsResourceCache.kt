@@ -145,9 +145,9 @@ sealed class Resource<T> {
      * in order to return the desired type [Output]. The [transform] result is not cached, [transform]s are re-applied on each fetch - thus should
      * should be relatively cheap.
      */
-    class View<Input, Output>(internal val underlying: Resource<Input>, private val transform: Input.() -> Output) : Resource<Output>() {
+    class View<Input, Output>(val underlying: Resource<Input>, private val transform: Input.() -> Output) : Resource<Output>() {
         @Suppress("UNCHECKED_CAST")
-        internal fun doMap(input: Any) = transform(input as Input)
+        fun doMap(input: Any) = transform(input as Input)
     }
 }
 

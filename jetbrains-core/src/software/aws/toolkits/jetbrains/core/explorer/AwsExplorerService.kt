@@ -3,10 +3,10 @@
 
 package software.aws.toolkits.jetbrains.core.explorer
 
-import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.lambda.LambdaClient
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationServiceNode
 import software.aws.toolkits.jetbrains.services.lambda.LambdaServiceNode
 import software.aws.toolkits.resources.message
@@ -20,5 +20,5 @@ enum class AwsExplorerService(val serviceId: String, val displayName: String) {
     },
     ;
 
-    abstract fun buildServiceRootNode(project: Project): AbstractTreeNode<String>
+    abstract fun buildServiceRootNode(project: Project): AwsExplorerServiceRootNode
 }

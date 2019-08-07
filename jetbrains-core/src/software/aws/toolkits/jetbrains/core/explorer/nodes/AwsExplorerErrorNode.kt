@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.core.explorer.nodes
 
 import com.intellij.ide.projectView.PresentationData
-import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.project.Project
 import com.intellij.ui.SimpleTextAttributes
 import software.amazon.awssdk.awscore.exception.AwsServiceException
@@ -13,10 +12,10 @@ import software.aws.toolkits.resources.message
 /**
  * Used to represent an error loading a node, such as an AccessDenied when loading resources
  */
-class AwsExplorerErrorNode(project: Project, exception: Exception) :
-    AwsExplorerNode<Exception>(project, exception, null) {
+class AwsExplorerErrorNode(project: Project, exception: Throwable) :
+    AwsExplorerNode<Throwable>(project, exception, null) {
 
-    override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
+    override fun getChildren(): List<AwsExplorerNode<*>> = emptyList()
 
     override fun update(presentation: PresentationData) {
         presentation.apply {
@@ -40,7 +39,7 @@ class AwsExplorerErrorNode(project: Project, exception: Exception) :
 
     override fun isAlwaysLeaf() = true
 
-    companion object {
+    private companion object {
         fun nodeText(details: String): String = message("explorer.error_loading_resources", details)
     }
 }

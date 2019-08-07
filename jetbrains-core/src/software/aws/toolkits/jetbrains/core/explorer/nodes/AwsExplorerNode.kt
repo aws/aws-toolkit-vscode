@@ -10,8 +10,6 @@ import com.intellij.ui.SimpleTextAttributes
 import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import javax.swing.Icon
-import javax.swing.tree.DefaultMutableTreeNode
-import javax.swing.tree.DefaultTreeModel
 
 /**
  * Top level class for any node in the AWS explorer tree
@@ -40,5 +38,7 @@ abstract class AwsExplorerNode<T>(val nodeProject: Project, value: T, private va
     /**
      * Called when the node is double clicked on
      */
-    open fun onDoubleClick(model: DefaultTreeModel, selectedElement: DefaultMutableTreeNode) {}
+    open fun onDoubleClick() {}
+
+    override fun toString(): String = displayName()
 }

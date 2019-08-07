@@ -12,6 +12,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.openapi.wm.ex.ToolWindowEx
+import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.ChangeAccountSettingsAction
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.help.HelpIds
@@ -28,7 +29,8 @@ class AwsExplorerFactory : ToolWindowFactory, DumbAware {
             toolWindow.setTitleActions(
                 object : DumbAwareAction(message("explorer.refresh.title"), message("explorer.refresh.description"), AllIcons.Actions.Refresh) {
                     override fun actionPerformed(e: AnActionEvent) {
-                        explorer.updateModel()
+                        AwsResourceCache.getInstance(project).clear()
+                        explorer.invalidateTree()
                     }
                 })
             toolWindow.setAdditionalGearActions(

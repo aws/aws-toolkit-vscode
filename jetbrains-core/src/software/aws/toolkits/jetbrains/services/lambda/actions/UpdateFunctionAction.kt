@@ -6,6 +6,9 @@ package software.aws.toolkits.jetbrains.services.lambda.actions
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.application.ApplicationManager
+import software.amazon.awssdk.services.lambda.LambdaClient
+import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.explorer.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
@@ -23,17 +26,24 @@ abstract class UpdateFunctionAction(private val mode: EditFunctionMode, title: S
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
 
         ApplicationManager.getApplication().executeOnPooledThread {
+            val selectedFunction = selected.value
+
+            val client: LambdaClient = AwsClientManager.getInstance(project).getClient(
+                credentialsProviderOverride = CredentialManager.getInstance().getCredentialProvider(selectedFunction.credentialProviderId),
+                regionOverride = selectedFunction.region
+            )
+
             // Fetch latest version just in case
-            val functionConfiguration = selected.client.getFunction {
+            val functionConfiguration = client.getFunction {
                 it.functionName(selected.functionName())
             }.configuration()
 
             val lambdaFunction = functionConfiguration.toDataClass(
-                selected.function.credentialProviderId,
-                selected.function.region
+                selectedFunction.credentialProviderId,
+                selectedFunction.region
             )
 
-            warnResourceOperationAgainstCodePipeline(project, selected.function.name, selected.function.arn, TaggingResourceType.LAMBDA_FUNCTION, Operation.UPDATE) {
+            warnResourceOperationAgainstCodePipeline(project, selectedFunction.name, selectedFunction.arn, TaggingResourceType.LAMBDA_FUNCTION, Operation.UPDATE) {
                 EditFunctionDialog(project, lambdaFunction, mode = mode).show()
             }
         }
@@ -44,7 +54,7 @@ class UpdateFunctionConfigurationAction : UpdateFunctionAction(EditFunctionMode.
 
 class UpdateFunctionCodeAction : UpdateFunctionAction(EditFunctionMode.UPDATE_CODE, message("lambda.function.updateCode.action")) {
     override fun update(selected: LambdaFunctionNode, e: AnActionEvent) {
-        if (selected.function.runtime.runtimeGroup?.let { LambdaBuilder.getInstance(it) } != null) {
+        if (selected.value.runtime.runtimeGroup?.let { LambdaBuilder.getInstance(it) } != null) {
             return
         }
         e.presentation.isVisible = false

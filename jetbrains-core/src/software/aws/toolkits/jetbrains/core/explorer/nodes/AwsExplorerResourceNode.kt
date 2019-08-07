@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.core.explorer.nodes
 
-import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.project.Project
 import javax.swing.Icon
 
@@ -20,7 +19,9 @@ abstract class AwsExplorerResourceNode<T>(
     val immutable: Boolean = false
 ) : AwsExplorerNode<T>(project, value, awsIcon) {
 
-    override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
+    override fun isAlwaysLeaf(): Boolean = true
+
+    override fun getChildren(): List<AwsExplorerNode<*>> = emptyList()
 
     abstract fun resourceType(): String
 
