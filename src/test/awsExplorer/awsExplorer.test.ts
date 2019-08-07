@@ -36,7 +36,7 @@ describe('AwsExplorer', () => {
         const resourceFetcher = new FakeResourceFetcher()
         const mockChannel = new MockOutputChannel()
 
-        const lambdaProvider = new AwsExplorer(
+        const awsExplorer = new AwsExplorer(
             awsContext,
             awsContextTreeCollection,
             regionProvider,
@@ -45,7 +45,7 @@ describe('AwsExplorer', () => {
             mockChannel
         )
 
-        const treeNodesPromise = lambdaProvider.getChildren()
+        const treeNodesPromise = awsExplorer.getChildren()
 
         assert(treeNodesPromise)
         const treeNodes = await treeNodesPromise

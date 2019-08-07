@@ -108,9 +108,9 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
         })
 
         registerCommand({
-            command: 'aws.refreshLambdaProviderNode',
-            callback: async (lambdaProvider: AwsExplorer, element: AWSTreeNodeBase) => {
-                lambdaProvider._onDidChangeTreeData.fire(element)
+            command: 'aws.refreshAwsExplorerNode',
+            callback: async (awsExplorer: AwsExplorer, element: AWSTreeNodeBase) => {
+                awsExplorer._onDidChangeTreeData.fire(element)
             }
         })
 
@@ -133,7 +133,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
                             'AWS.explorerNode.lambda.retry',
                             'Unable to load Lambda Functions, click here to retry'
                         ),
-                        'aws.refreshLambdaProviderNode',
+                        'aws.refreshAwsExplorerNode',
                         [this, element],
                     )
                 ]
