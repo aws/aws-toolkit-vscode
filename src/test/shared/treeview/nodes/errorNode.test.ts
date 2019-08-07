@@ -4,19 +4,19 @@
  */
 
 import * as assert from 'assert'
-import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
-import { ErrorNode } from '../../../lambda/explorer/errorNode'
-import { RegionInfo } from '../../../shared/regions/regionInfo'
+import { RegionInfo } from '../../../../shared/regions/regionInfo'
+import { ErrorNode } from '../../../../shared/treeview/nodes/errorNode'
+import { RegionNode } from '../../../../shared/treeview/nodes/regionNode'
 
 describe('ErrorNode', () => {
 
-    const regionCode = 'us-east-1'
-    const regionName = 'US East (N. Virginia)'
+    const regionNode: RegionNode = {
+        regionCode: 'us-weast-1',
+        regionName: 'East? I thought you said...weast!',
+        update: (info: RegionInfo) => {},
+        getChildren: async () => Promise.resolve([])
+    }
 
-    const regionNode = new DefaultRegionNode(
-        new RegionInfo(regionCode, regionName),
-        () => { throw new Error('unused') }
-    )
     const error = new Error('error message')
     error.name = 'myMockError'
 

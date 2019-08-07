@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { RegionInfo } from '../../shared/regions/regionInfo'
-import { AWSTreeNodeBase } from '../../shared/treeview/awsTreeNodeBase'
+import { RegionInfo } from '../../regions/regionInfo'
+import { AWSTreeNodeBase } from './awsTreeNodeBase'
 
 // This interface and its implementation are in separate files to prevent circular imports.
 export interface RegionNode extends AWSTreeNodeBase {

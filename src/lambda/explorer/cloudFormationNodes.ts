@@ -12,7 +12,10 @@ import * as vscode from 'vscode'
 import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
-import { AWSTreeErrorHandlerNode } from '../../shared/treeview/awsTreeErrorHandlerNode'
+import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
+import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
+import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
+import { RegionNode } from '../../shared/treeview/nodes/regionNode'
 import {
     intersection,
     toArrayAsync,
@@ -21,10 +24,7 @@ import {
     updateInPlace
 } from '../../shared/utilities/collectionUtils'
 import { listCloudFormationStacks, listLambdaFunctions } from '../utils'
-import { ErrorNode } from './errorNode'
 import { FunctionNodeBase } from './functionNode'
-import { PlaceholderNode } from './placeholderNode'
-import { RegionNode } from './regionNode'
 
 export interface CloudFormationNode extends AWSTreeErrorHandlerNode {
     readonly regionCode: string

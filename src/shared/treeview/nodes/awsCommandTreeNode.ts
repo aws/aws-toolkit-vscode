@@ -4,7 +4,7 @@
  */
 
 import { TreeItemCollapsibleState } from 'vscode'
-import { AWSTreeNodeBase } from '../treeview/awsTreeNodeBase'
+import { AWSTreeNodeBase } from './awsTreeNodeBase'
 
 export class AWSCommandTreeNode extends AWSTreeNodeBase {
     public constructor(

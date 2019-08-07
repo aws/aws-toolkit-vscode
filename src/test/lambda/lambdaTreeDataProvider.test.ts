@@ -4,10 +4,10 @@
  */
 
 import * as assert from 'assert'
-import { RegionNode } from '../../lambda/explorer/regionNode'
 import { LambdaTreeDataProvider } from '../../lambda/lambdaTreeDataProvider'
 import { AwsContextTreeCollection } from '../../shared/awsContextTreeCollection'
 import { TestLogger } from '../../shared/loggerUtils'
+import { RegionNode } from '../../shared/treeview/nodes/regionNode'
 import { MockOutputChannel } from '../mockOutputChannel'
 import {
     DEFAULT_TEST_REGION_CODE,

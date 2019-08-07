@@ -14,8 +14,6 @@ import {
     DefaultCloudFormationStackNode
 } from '../../../lambda/explorer/cloudFormationNodes'
 import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
-import { ErrorNode } from '../../../lambda/explorer/errorNode'
-import { PlaceholderNode } from '../../../lambda/explorer/placeholderNode'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
@@ -23,6 +21,8 @@ import { StsClient } from '../../../shared/clients/stsClient'
 import { ext } from '../../../shared/extensionGlobals'
 import { TestLogger } from '../../../shared/loggerUtils'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
+import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
+import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { MockCloudFormationClient } from '../../shared/clients/mockClients'
 
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
