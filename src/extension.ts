@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import { LambdaTreeDataProvider } from './lambda/lambdaTreeDataProvider'
+import { AwsExplorer } from './awsexplorer/awsExplorer'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
@@ -144,7 +144,7 @@ export async function activate(context: vscode.ExtensionContext) {
         })
 
         const providers = [
-            new LambdaTreeDataProvider(
+            new AwsExplorer(
                 awsContext,
                 awsContextTrees,
                 regionProvider,

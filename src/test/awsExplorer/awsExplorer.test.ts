@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { LambdaTreeDataProvider } from '../../lambda/lambdaTreeDataProvider'
+import { AwsExplorer } from '../../awsexplorer/awsExplorer'
 import { AwsContextTreeCollection } from '../../shared/awsContextTreeCollection'
 import { TestLogger } from '../../shared/loggerUtils'
 import { RegionNode } from '../../shared/treeview/nodes/regionNode'
@@ -17,7 +17,7 @@ import {
     FakeResourceFetcher
 } from '../utilities/fakeAwsContext'
 
-describe('LambdaProvider', () => {
+describe('AwsExplorer', () => {
 
     let logger: TestLogger
 
@@ -36,7 +36,7 @@ describe('LambdaProvider', () => {
         const resourceFetcher = new FakeResourceFetcher()
         const mockChannel = new MockOutputChannel()
 
-        const lambdaProvider = new LambdaTreeDataProvider(
+        const lambdaProvider = new AwsExplorer(
             awsContext,
             awsContextTreeCollection,
             regionProvider,
