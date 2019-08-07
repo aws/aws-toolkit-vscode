@@ -13,6 +13,7 @@ data class AwsRegion(val id: String, val name: String) {
         id.startsWith("ap") -> "Asia Pacific"
         id.startsWith("sa") -> "South America"
         id.startsWith("cn") -> "China"
+        id.startsWith("me") -> "Middle East"
         else -> null
     }
 
