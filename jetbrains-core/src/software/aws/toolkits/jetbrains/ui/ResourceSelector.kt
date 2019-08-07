@@ -7,7 +7,6 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
-import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.util.ExceptionUtil
 import org.jetbrains.annotations.TestOnly
@@ -16,6 +15,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.Resource
+import software.aws.toolkits.jetbrains.utils.CompatibilityUtils
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.ui.find
 import software.aws.toolkits.resources.message
@@ -111,14 +111,7 @@ class ResourceSelector<T>(private val project: Project, private val resourceType
             loadingStatus = Status.NOT_LOADED
             super.setSelectedItem(message)
             notifyError(message, ExceptionUtil.getThrowableText(error), project)
-
-            try {
-                ComponentValidator.createPopupBuilder(ValidationInfo(error.message ?: message, this), null)
-                    .createPopup()
-                    .showUnderneathOf(this)
-            } catch (_: NoSuchMethodError) {
-                // Ignore - try/catch can be removed when min version is 19.1 (FIX_WHEN_MIN_IS_192)
-            }
+            CompatibilityUtils.createPopupBuilder(ValidationInfo(error.message ?: message, this), null)?.createPopup()?.showUnderneathOf(this)
         }
     }
 
