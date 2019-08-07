@@ -28,7 +28,7 @@ phases:
       - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
       - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
       - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
-      - curl -s https://codecov.io/bash > codecov.sh
+      - curl -s https://codecov.io/bash > codecov.sh || true # this sometimes times out but we don't want to fail the build
       - if [ "$CODE_COV_TOKEN" ]; then bash ./codecov.sh -t $CODE_COV_TOKEN -F integtest || true; fi
 
   post_build:
