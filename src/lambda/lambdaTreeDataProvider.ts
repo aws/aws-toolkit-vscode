@@ -23,7 +23,6 @@ import { deleteCloudFormation } from './commands/deleteCloudFormation'
 import { deleteLambda } from './commands/deleteLambda'
 import { invokeLambda } from './commands/invokeLambda'
 import { CloudFormationStackNode } from './explorer/cloudFormationNodes'
-// tslint:disable-next-line:ordered-imports
 import { DefaultRegionNode } from './explorer/defaultRegionNode'
 import { FunctionNodeBase } from './explorer/functionNode'
 import { StandaloneFunctionNode } from './explorer/standaloneNodes'
