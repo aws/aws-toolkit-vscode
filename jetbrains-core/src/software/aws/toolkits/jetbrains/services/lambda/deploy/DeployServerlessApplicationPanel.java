@@ -8,6 +8,7 @@ import static software.aws.toolkits.resources.Localization.message;
 import com.intellij.execution.util.EnvVariablesTable;
 import com.intellij.execution.util.EnvironmentVariable;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.project.Project;
 import com.intellij.ui.AnActionButton;
 import com.intellij.ui.IdeBorderFactory;
 import com.intellij.ui.ToolbarDecorator;
@@ -24,9 +25,13 @@ import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationResources;
 import software.aws.toolkits.jetbrains.services.cloudformation.Parameter;
+import software.aws.toolkits.jetbrains.services.cloudformation.Stack;
+import software.aws.toolkits.jetbrains.services.s3.S3Resources;
 import software.aws.toolkits.jetbrains.ui.ResourceSelector;
 
+@SuppressWarnings("NullableProblems")
 public class DeployServerlessApplicationPanel {
     @NotNull JTextField newStackName;
     @NotNull JButton createS3BucketButton;
@@ -40,6 +45,11 @@ public class DeployServerlessApplicationPanel {
     @NotNull JCheckBox requireReview;
     @NotNull JPanel parametersPanel;
     @NotNull JCheckBox useContainer;
+    private final Project project;
+
+    public DeployServerlessApplicationPanel(Project project) {
+        this.project = project;
+    }
 
     public DeployServerlessApplicationPanel withTemplateParameters(final Collection<Parameter> parameters) {
         parametersPanel.setBorder(
@@ -79,6 +89,8 @@ public class DeployServerlessApplicationPanel {
     private void createUIComponents() {
         environmentVariablesTable = new EnvVariablesTable();
         stackParameters = new Wrapper();
+        stacks = new ResourceSelector<>(project, CloudFormationResources.ACTIVE_STACKS);
+        s3Bucket = new ResourceSelector<>(project, S3Resources.listBucketsByActiveRegion(project));
 
         if (!ApplicationManager.getApplication().isUnitTestMode()) {
             JComponent tableComponent = environmentVariablesTable.getComponent();

@@ -12,6 +12,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.services.cloudformation.Parameter
+import software.aws.toolkits.jetbrains.services.cloudformation.Stack
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.resources.message
 import javax.swing.DefaultComboBoxModel
@@ -36,17 +37,17 @@ class DeploySamApplicationValidatorTest {
         )
 
         view = runInEdtAndGet {
-            DeployServerlessApplicationPanel()
+            DeployServerlessApplicationPanel(projectRule.project)
         }
 
         view.withTemplateParameters(parameters)
 
         view.updateStack.isSelected = true
-        view.stacks.model = DefaultComboBoxModel(arrayOf(Stack("stack123")))
-        view.stacks.selectedItem = "stack123"
+        view.stacks.model = DefaultComboBoxModel(arrayOf(Stack("stack123"))).also { it.selectedItem = Stack("stack123") }
+        view.stacks.forceLoaded()
 
-        view.s3Bucket.model = DefaultComboBoxModel(arrayOf("bucket123"))
-        view.s3Bucket.selectedItem = "bucket123"
+        view.s3Bucket.model = DefaultComboBoxModel(arrayOf("bucket123")).also { it.selectedItem = "bucket123" }
+        view.s3Bucket.forceLoaded()
 
         sut = DeploySamApplicationValidator(view)
     }

@@ -4,119 +4,119 @@
 package software.aws.toolkits.jetbrains.ui
 
 import com.intellij.openapi.ui.ComboBox
+import com.intellij.testFramework.ProjectRule
+import com.intellij.testFramework.runInEdtAndWait
+import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
-import java.util.concurrent.CountDownLatch
+import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.Resource
+import software.aws.toolkits.resources.message
+import java.util.concurrent.CompletableFuture
 
 class ResourceSelectorTest {
     @Rule
     @JvmField
-    val projectRule = JavaCodeInsightTestFixtureRule()
+    val projectRule = ProjectRule()
 
-    val comboBox = ResourceSelector<String>()
-
-    @Test
-    fun comboBoxPopulation_useDefaultSelected() {
-        val items = listOf("foo", "bar", "baz")
-
-        comboBox.model.selectedItem = "foo"
-        comboBox.populateValues(default = "bar") { items }
-
-        waitForPopulationComplete(comboBox, items.size)
-        assertThat(comboBox.selectedItem).isEqualTo("bar")
+    private val mockResource = mock<Resource.Cached<List<String>>> {
+        on { id }.thenReturn("mockResource")
     }
 
-    @Test
-    fun comboBoxPopulation_overrideDefaultSelected() {
-        val items = listOf("foo", "bar", "baz")
-
-        comboBox.model.selectedItem = "foo"
-        comboBox.populateValues(default = "bar", forceSelectDefault = false) { items }
-
-        waitForPopulationComplete(comboBox, items.size)
-        assertThat(comboBox.selectedItem).isEqualTo("foo")
-    }
+    private val mockResourceCache = MockResourceCache.getInstance(projectRule.project)
 
     @Test
-    fun comboBoxPopulation_useDefaultSelectedWhenPreviouslySelectedIsNull() {
-        val items = listOf("foo", "bar", "baz")
+    fun canSpecifyADefaultItem() {
+        mockResourceCache.addEntry(mockResource, listOf("foo", "bar", "baz"))
+        val comboBox = ResourceSelector(projectRule.project, mockResource)
 
-        comboBox.model.selectedItem = null
-        comboBox.populateValues(default = "bar", forceSelectDefault = false) { items }
+        comboBox.selectedItem = "bar"
 
-        waitForPopulationComplete(comboBox, items.size)
-        assertThat(comboBox.selectedItem).isEqualTo("bar")
-    }
-
-    @Test
-    fun comboBoxPopulation_notUpdateState() {
-        val items = listOf("foo", "bar", "baz")
-
-        comboBox.isEnabled = false
-        comboBox.populateValues(updateStatus = false) { items }
-
-        waitForPopulationComplete(comboBox, items.size)
-        assertThat(comboBox.isEnabled).isEqualTo(false)
-    }
-
-    @Test
-    fun comboBoxPopulation_updateStateToDesired() {
-        val items = listOf("foo", "bar", "baz")
-
-        val latch = CountDownLatch(1)
-
-        comboBox.isEnabled = false
-        comboBox.populateValues(updateStatus = false) {
-            latch.await()
-            items
+        waitForPopulationComplete(comboBox, 3)
+        runInEdtAndWait {
+            assertThat(comboBox.selected()).isEqualTo("bar")
         }
-        // Wait for the ComboBox to be in loading status.
-        while (comboBox.loadingStatus != ResourceSelector.ResourceLoadingStatus.LOADING) {
-            Thread.sleep(100L)
+    }
+
+    @Test
+    fun previouslySelectedIsRetainedIfNoDefault() {
+        mockResourceCache.addEntry(mockResource, listOf("foo", "bar", "baz"))
+        val comboBox = ResourceSelector(projectRule.project, mockResource)
+
+        comboBox.selectedItem = "bar"
+        comboBox.reload()
+
+        waitForPopulationComplete(comboBox, 3)
+        runInEdtAndWait {
+            assertThat(comboBox.selected()).isEqualTo("bar")
         }
-        // In the loading status, even enabling the ComboBox, the status will not be changed until the loading finishes.
-        comboBox.isEnabled = true
-        assertThat(comboBox.isEnabled).isEqualTo(false)
-        latch.countDown()
-        waitForPopulationComplete(comboBox, items.size)
-        assertThat(comboBox.isEnabled).isEqualTo(true)
     }
 
     @Test
-    fun comboBoxPopulation_updateStateToTrueWhenItemsAreNotEmpty() {
-        val items = listOf("foo", "bar", "baz")
+    fun canSpecifyADefaultItemMatcher() {
+        mockResourceCache.addEntry(mockResource, listOf("foo", "bar", "baz"))
+        val comboBox = ResourceSelector(projectRule.project, mockResource)
 
-        comboBox.isEnabled = false
-        comboBox.populateValues(updateStatus = true) { items }
+        comboBox.reload()
+        comboBox.selectedItem { it.endsWith("z") }
 
-        waitForPopulationComplete(comboBox, items.size)
-        assertThat(comboBox.isEnabled).isEqualTo(true)
+        waitForPopulationComplete(comboBox, 3)
+        runInEdtAndWait {
+            assertThat(comboBox.selected()).isEqualTo("baz")
+        }
     }
 
     @Test
-    fun comboBoxPopulation_updateStateToFalseWhenItemsAreEmpty() {
+    fun loadFailureShowsAnErrorAndDisablesTheBox() {
+        val future = CompletableFuture<List<String>>()
+        mockResourceCache.addEntry(mockResource, future)
+        val comboBox = ResourceSelector(projectRule.project, mockResource)
 
-        arrayOf("foo", "bar").forEach { comboBox.addItem(it) }
+        future.completeExceptionally(RuntimeException("boom"))
 
-        comboBox.isEnabled = true
-        comboBox.populateValues(updateStatus = true) { listOf() }
-
-        waitForPopulationComplete(comboBox, 0)
-        assertThat(comboBox.isEnabled).isEqualTo(false)
+        runInEdtAndWait {
+            assertThat(comboBox.isEnabled).isFalse()
+            assertThat(comboBox.model.selectedItem).isEqualTo(message("loading_resource.failed"))
+        }
     }
 
     @Test
-    fun comboBoxPopulation_loadingAndFailed() {
+    fun usePreviouslySelectedItemAfterReloadUnlessSelectItemSet() {
+        mockResourceCache.addEntry(mockResource, listOf("foo", "bar", "baz"))
+        val comboBox = ResourceSelector(projectRule.project, mockResource)
 
-        arrayOf("foo", "bar").forEach { comboBox.addItem(it) }
+        runInEdtAndWait {
+            comboBox.model.selectedItem = "bar"
+        }
 
-        val exception = Exception("Failed")
-        comboBox.populateValues { throw exception }
+        comboBox.reload()
 
-        waitForPopulationComplete(comboBox, 0)
-        assertThat(comboBox.loadingException).isEqualTo(exception)
+        waitForPopulationComplete(comboBox, 3)
+        runInEdtAndWait {
+            assertThat(comboBox.selected()).isEqualTo("bar")
+        }
+    }
+
+    @Test
+    fun comboBoxIsDisabledWhileEntriesAreLoading() {
+        val future = CompletableFuture<List<String>>()
+        mockResourceCache.addEntry(mockResource, future)
+        val comboBox = ResourceSelector(projectRule.project, mockResource)
+
+        assertThat(comboBox.selected()).isNull()
+
+        comboBox.reload()
+        runInEdtAndWait {
+            assertThat(comboBox.isEnabled).isFalse()
+            assertThat(comboBox.selectedItem).isEqualTo(message("loading_resource.loading"))
+        }
+
+        future.complete(listOf("foo", "bar", "baz"))
+        runInEdtAndWait {
+            assertThat(comboBox.isEnabled).isTrue()
+            assertThat(comboBox.selectedItem).isNull()
+        }
     }
 
     // Wait for the combo box population complete by detecting the item count

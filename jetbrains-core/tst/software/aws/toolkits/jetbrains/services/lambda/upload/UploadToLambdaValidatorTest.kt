@@ -39,13 +39,13 @@ class UploadToLambdaValidatorTest {
         view.description.text = "description"
         view.handler.text = "com.example.LambdaHandler::handleRequest"
         val role = IamRole("DummyArn")
-        view.iamRole.model = DefaultComboBoxModel(arrayOf(role))
-        view.iamRole.selectedItem = role
+        view.iamRole.model = DefaultComboBoxModel(arrayOf(role)).also { it.selectedItem = role }
+        view.iamRole.forceLoaded()
         view.runtime.model = DefaultComboBoxModel(Runtime.knownValues().toTypedArray())
         view.runtime.selectedItem = Runtime.JAVA8
         val bucket = "sourceBucket"
-        view.sourceBucket.model = DefaultComboBoxModel(arrayOf(bucket))
-        view.sourceBucket.selectedItem = bucket
+        view.sourceBucket.model = DefaultComboBoxModel(arrayOf(bucket)).also { it.selectedItem = bucket }
+        view.sourceBucket.forceLoaded()
         view.timeoutSlider.value = 30
         view.memorySlider.value = 512
 

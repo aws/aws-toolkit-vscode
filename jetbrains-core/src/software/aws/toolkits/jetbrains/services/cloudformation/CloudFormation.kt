@@ -9,14 +9,9 @@ import software.amazon.awssdk.services.cloudformation.model.CloudFormationExcept
 import software.amazon.awssdk.services.cloudformation.model.DescribeStacksRequest
 import software.amazon.awssdk.services.cloudformation.model.Stack
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
-import software.amazon.awssdk.services.cloudformation.model.StackSummary
 import software.aws.toolkits.core.utils.wait
 import software.aws.toolkits.resources.message
 import java.time.Duration
-import kotlin.streams.asSequence
-
-fun CloudFormationClient.listStackSummariesFilter(predicate: (StackSummary) -> Boolean): Sequence<StackSummary> =
-        this.listStacksPaginator().stackSummaries().stream().asSequence().filter(predicate)
 
 fun CloudFormationClient.executeChangeSetAndWait(stackName: String, changeSet: String) {
     val isCreate = try {

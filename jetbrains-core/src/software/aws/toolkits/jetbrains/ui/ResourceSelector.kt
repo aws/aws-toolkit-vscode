@@ -3,146 +3,135 @@
 
 package software.aws.toolkits.jetbrains.ui
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
+import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.util.ExceptionUtil
+import org.jetbrains.annotations.TestOnly
+import software.aws.toolkits.core.utils.Either
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.utils.ui.selected
+import software.aws.toolkits.jetbrains.core.AwsResourceCache
+import software.aws.toolkits.jetbrains.core.Resource
+import software.aws.toolkits.jetbrains.utils.notifyError
+import software.aws.toolkits.jetbrains.utils.ui.find
 import software.aws.toolkits.resources.message
 import javax.swing.DefaultComboBoxModel
 
-class ResourceSelector<T> : ComboBox<T>() {
+typealias Selector<T> = Either<Any?, (T) -> Boolean>
 
-    var loadingStatus: ResourceLoadingStatus = ResourceLoadingStatus.SUCCESSFUL
-        private set
+class ResourceSelector<T>(private val project: Project, private val resourceType: Resource<out Collection<T>>) : ComboBox<T>() {
 
+    private val resourceCache = AwsResourceCache.getInstance(project)
+    private val actualModel = this.model as DefaultComboBoxModel<T>
+    @Volatile
+    private var loadingStatus: Status = Status.NOT_LOADED
     private var shouldBeEnabled: Boolean = isEnabled
+    private var selector: Selector<T>? = null
 
-    var loadingException: Exception? = null
-        private set
+    init {
+        if (isEnabled) {
+            reload()
+        }
+    }
 
-    /**
-     * Postpone the ComboBox enability changing when it is still in loading status. Ie. when the ComboBox is in
-     * [ResourceLoadingStatus.LOADING]    - always disable it, and change to the desired status after successfully loaded.
-     * [ResourceLoadingStatus.SUCCESSFUL] - same as the standard [setEnabled] behavior.
-     * [ResourceLoadingStatus.FAILED]     - always disable it, and always set the desired status to false.
-     */
-    @Synchronized override fun setEnabled(enabled: Boolean) {
-        shouldBeEnabled = when (loadingStatus) {
-            ResourceLoadingStatus.SUCCESSFUL -> {
-                super.setEnabled(enabled)
-                enabled
+    @JvmOverloads
+    @Synchronized
+    fun reload(forceFetch: Boolean = false) {
+        val previouslySelected = actualModel.selectedItem
+        loadingStatus = Status.LOADING
+        runInEdt(ModalityState.any()) {
+            super.setEnabled(false)
+            setEditable(true)
+            super.setSelectedItem(message("loading_resource.loading"))
+
+            resourceCache.getResource(resourceType, forceFetch = forceFetch).whenComplete { value, error ->
+                when {
+                    value != null -> processSuccess(value, previouslySelected)
+                    error != null -> processFailure(error)
+                }
             }
-            ResourceLoadingStatus.LOADING -> {
-                super.setEnabled(false)
-                enabled
-            }
-            else -> {
-                super.setEnabled(false)
-                false
-            }
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun selected(): T? = if (loadingStatus == Status.LOADED) this.selectedItem as? T else null
+
+    override fun setSelectedItem(item: Any?) {
+        selector = Either.Left(item)
+        if (loadingStatus == Status.LOADED) {
+            super.setSelectedItem(item)
         }
     }
 
     /**
-     * @param default The default selected item
-     * @param updateStatus If enabled, disable the combo box if the item collection is empty or enable it if the item collection
-     * is not empty. Otherwise, the status of the combo box is not changed.
-     * @param forceSelectDefault If disabled, override the [default] by selecting previously selected item if it
-     * is not null, otherwise still falls back to select [default]
-     * @param block Lambda function that returns a new set of items for the combo box.
+     * Should be used when a filter expression can be applied to find which item should be selected.
+     * Useful when the loaded type is more complex than a string (e.g. you have an id and want to
+     * select the resource that has that id).
      */
-    fun populateValues(
-        default: T? = null,
-        updateStatus: Boolean = true,
-        forceSelectDefault: Boolean = true,
-        block: () -> Collection<T>
-    ) {
-        ApplicationManager.getApplication().executeOnPooledThread {
-            val previouslySelected = this.model.selectedItem
-            val previousState = this.isEnabled
-            loadingStatus = ResourceLoadingStatus.LOADING
-            isEnabled = previousState
+    fun selectedItem(matcher: (T) -> Boolean) {
+        selector = Either.Right(matcher)
+        if (loadingStatus == Status.LOADED) {
+            super.setSelectedItem(actualModel.find(matcher))
+        }
+    }
 
-            val model = this.model as DefaultComboBoxModel<T>
-            model.removeAllElements()
+    @Synchronized
+    override fun setEnabled(enabled: Boolean) {
+        shouldBeEnabled = enabled
+        when {
+            loadingStatus == Status.LOADED || !enabled -> super.setEnabled(enabled)
+            loadingStatus == Status.NOT_LOADED -> reload()
+        }
+    }
 
-            val values = try {
-                block().apply {
-                    loadingException = null
-                    loadingStatus = ResourceLoadingStatus.SUCCESSFUL
-                }
-            } catch (e: Exception) {
-                // TODO: We need a way to inform people that this fails sooner then relying on the validation system to be running
-                loadingException = e
-                loadingStatus = ResourceLoadingStatus.FAILED
-                null
-            } ?: return@executeOnPooledThread
+    @TestOnly
+    fun forceLoaded() {
+        loadingStatus = Status.LOADED
+    }
 
-            runInEdt(ModalityState.any()) {
-                values.forEach { model.addElement(it) }
-                this.selectedItem = if (forceSelectDefault || previouslySelected == null) default else previouslySelected
-                if (updateStatus) {
-                    this.isEnabled = values.isNotEmpty()
-                } else {
-                    this.isEnabled = shouldBeEnabled
-                }
+    private fun processSuccess(value: Collection<T>, previouslySelected: Any?) {
+        runInEdt(ModalityState.any()) {
+            loadingStatus = Status.LOADED
+            setEditable(false)
+            actualModel.removeAllElements()
+            value.sortedBy { it.toString().toLowerCase() }.forEach { actualModel.addElement(it) }
+            super.setEnabled(shouldBeEnabled)
+            super.setSelectedItem(determineSelection(selector, previouslySelected))
+        }
+    }
+
+    private fun processFailure(error: Throwable) {
+        val message = message("loading_resource.failed")
+        LOG.warn(error) { message }
+        runInEdt(ModalityState.any()) {
+            loadingStatus = Status.NOT_LOADED
+            super.setSelectedItem(message)
+            notifyError(message, ExceptionUtil.getThrowableText(error), project)
+
+            try {
+                ComponentValidator.createPopupBuilder(ValidationInfo(error.message ?: message, this), null)
+                    .createPopup()
+                    .showUnderneathOf(this)
+            } catch (_: NoSuchMethodError) {
+                // Ignore - try/catch can be removed when min version is 19.1 (FIX_WHEN_MIN_IS_192)
             }
         }
     }
 
-    fun addAndSelectValue(updateStatus: Boolean = true, fetch: () -> T) {
-        ApplicationManager.getApplication().executeOnPooledThread {
-            val previousState = this.isEnabled
-            loadingStatus = ResourceLoadingStatus.LOADING
-            isEnabled = previousState
-
-            val value = try {
-                fetch().apply {
-                    loadingException = null
-                    loadingStatus = ResourceLoadingStatus.SUCCESSFUL
-                }
-            } catch (e: Exception) {
-                LOG.warn(e) { "Failed to load values" }
-                loadingException = e
-                loadingStatus = ResourceLoadingStatus.FAILED
-                null
-            } ?: return@executeOnPooledThread
-
-            runInEdt(ModalityState.any()) {
-                val model = this.model as DefaultComboBoxModel<T>
-                model.addElement(value)
-                model.selectedItem = value
-                if (updateStatus) {
-                    this.isEnabled = true
-                } else {
-                    this.isEnabled = shouldBeEnabled
-                }
-            }
-        }
+    private fun determineSelection(selector: Selector<T>?, previouslySelected: Any?): Any? = when (selector) {
+        is Either.Right<(T) -> Boolean> -> actualModel.find(selector.value)
+        is Either.Left<*> -> selector.value
+        else -> previouslySelected
     }
 
-    fun toValidationInfo(loading: String = message("loading_resource.loading"), failed: String = message("loading_resource.failed"), notSelected: String): ValidationInfo? {
-        if (this.selected() != null) {
-            return null
-        }
-        // Error messages do not work on a disabled component. May be a JetBrains bug?
-        // Revisit after https://github.com/aws/aws-toolkit-jetbrains/issues/726
-        val component = if (super.isEnabled()) this else null
-        return when (loadingStatus) {
-            ResourceLoadingStatus.LOADING -> ValidationInfo(loading, component)
-            ResourceLoadingStatus.FAILED -> ValidationInfo(loadingException?.message ?: failed, component)
-            ResourceLoadingStatus.SUCCESSFUL -> ValidationInfo(notSelected, component)
-        }
-    }
-
-    enum class ResourceLoadingStatus {
+    private enum class Status {
+        NOT_LOADED,
         LOADING,
-        FAILED,
-        SUCCESSFUL
+        LOADED
     }
 
     private companion object {

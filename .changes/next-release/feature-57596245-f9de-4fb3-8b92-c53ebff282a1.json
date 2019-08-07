@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Porting resource selector to use resource-cache so network won't be hit on each dialog load."
+}
