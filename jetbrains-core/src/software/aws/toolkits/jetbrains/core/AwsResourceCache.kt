@@ -159,12 +159,14 @@ class ClientBackedCachedResource<ReturnType, ClientType : SdkClient>(
 ) : Resource.Cached<ReturnType>() {
 
     constructor(sdkClientClass: KClass<ClientType>, id: String, fetchCall: ClientType.() -> ReturnType) : this(sdkClientClass, id, null, fetchCall)
+
     override fun fetch(project: Project, region: AwsRegion, credentials: ToolkitCredentialsProvider): ReturnType {
         val client = AwsClientManager.getInstance(project).getClient(sdkClientClass, credentials, region)
         return fetchCall(client)
     }
 
     override fun expiry(): Duration = expiry ?: super.expiry()
+    override fun toString(): String = "ClientBackedCachedResource(id='$id')"
 }
 
 class DefaultAwsResourceCache(private val project: Project, private val clock: Clock, maximumCacheEntries: Long) :
