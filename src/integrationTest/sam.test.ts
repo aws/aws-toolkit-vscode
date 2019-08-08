@@ -13,6 +13,8 @@ import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliIn
 import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
 import { activateExtension, sleep, TIMEOUT } from './integrationTestsUtilities'
 
+import { EOL } from 'os'
+
 const projectFolder = `${__dirname}`
 
 const runtimes = [
@@ -20,7 +22,7 @@ const runtimes = [
     { name: 'nodejs10.x', path: 'testProject/hello-world/app.js', debuggerType: 'node2' },
     { name: 'python2.7', path: 'testProject/hello_world/app.py', debuggerType: 'python' },
     { name: 'python3.6', path: 'testProject/hello_world/app.py', debuggerType: 'python' },
-    { name: 'python3.7', path: 'testProject/hello_world/app.py', debuggerType: 'python' }
+    { name: 'python3.7', path: 'testProject/hello_world/app.py', debuggerType: 'python' },
     // { name: 'dotnetcore2.1', path: 'testProject/src/HelloWorld/Function.cs', debuggerType: 'coreclr' }
 ]
 
@@ -28,13 +30,24 @@ async function openSamProject(projectPath: string): Promise<vscode.Uri> {
     const documentPath = path.join(projectFolder, projectPath)
     const document = await vscode.workspace.openTextDocument(documentPath)
 
+    // Make an edit to the file to try and help trigger CodeLens generation
+    const editor = await vscode.window.showTextDocument(
+        document,
+        {
+            preview: true,
+        })
+
+    await editor.edit(editBuilder => {
+        editBuilder.insert(document.positionAt(document.getText().length), EOL)
+    })
+
     return document.uri
 }
 
 function tryRemoveProjectFolder() {
     try {
         removeSync(path.join(projectFolder, 'testProject'))
-    } catch (e) {}
+    } catch (e) { }
 }
 
 async function getCodeLenses(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
@@ -55,7 +68,7 @@ async function getCodeLenses(documentUri: vscode.Uri): Promise<vscode.CodeLens[]
             if (codeLenses.length === 3) {
                 return codeLenses as vscode.CodeLens[]
             }
-        } catch (e) {}
+        } catch (e) { }
     }
 }
 
@@ -109,7 +122,7 @@ for (const runtime of runtimes) {
     let debugDisposable: vscode.Disposable
 
     describe(`SAM Integration tests ${runtime.name}`, async () => {
-        before(async function() {
+        before(async function () {
             // tslint:disable-next-line: no-invalid-this
             this.timeout(TIMEOUT)
             // set up debug config
