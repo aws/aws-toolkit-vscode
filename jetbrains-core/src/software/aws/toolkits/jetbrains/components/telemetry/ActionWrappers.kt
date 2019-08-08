@@ -66,6 +66,11 @@ abstract class ToogleActionWrapper(text: String? = null, description: String? = 
     TelemetryNamespace,
     ToggleAction(text, description, icon) {
 
+    init {
+        // Disable mnemonic check to avoid filtering '_'
+        this.templatePresentation.setText(text, false)
+    }
+
     // this will be repeatedly called by the IDE, so we likely do not want telemetry on this,
     // but keeping this to maintain API consistency
     final override fun isSelected(e: AnActionEvent): Boolean = doIsSelected(e)
