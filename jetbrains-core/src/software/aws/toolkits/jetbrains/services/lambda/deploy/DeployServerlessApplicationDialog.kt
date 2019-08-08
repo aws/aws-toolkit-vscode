@@ -13,12 +13,14 @@ import com.intellij.util.text.nullize
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.jetbrains.components.telemetry.LoggingDialogWrapper
+import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.help.HelpIds
+import software.aws.toolkits.jetbrains.core.map
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
-import software.aws.toolkits.jetbrains.services.cloudformation.Stack
 import software.aws.toolkits.jetbrains.services.cloudformation.describeStack
 import software.aws.toolkits.jetbrains.services.cloudformation.mergeRemoteParameters
+import software.aws.toolkits.jetbrains.services.cloudformation.resources.CloudFormationResources
 import software.aws.toolkits.jetbrains.services.s3.CreateS3BucketDialog
 import software.aws.toolkits.jetbrains.settings.DeploySettings
 import software.aws.toolkits.jetbrains.settings.relativeSamPath
@@ -165,6 +167,10 @@ class DeployServerlessApplicationDialog(
             }
         }
     }
+    companion object {
+        @JvmField
+        internal val ACTIVE_STACKS: Resource<List<Stack>> = CloudFormationResources.ACTIVE_STACKS.map { Stack(it.stackName(), it.stackId()) }
+    }
 }
 
 class DeploySamApplicationValidator(private val view: DeployServerlessApplicationPanel) {
@@ -232,4 +238,8 @@ class DeploySamApplicationValidator(private val view: DeployServerlessApplicatio
         private val STACK_NAME_PATTERN = "[a-zA-Z][a-zA-Z0-9-]*".toRegex()
         const val MAX_STACK_NAME_LENGTH = 128
     }
+}
+
+data class Stack(val name: String, val id: String? = null) {
+    override fun toString() = name
 }

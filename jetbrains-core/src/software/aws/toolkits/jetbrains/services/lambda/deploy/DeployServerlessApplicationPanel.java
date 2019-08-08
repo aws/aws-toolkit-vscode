@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.deploy;
 
+import static software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationDialog.ACTIVE_STACKS;
 import static software.aws.toolkits.resources.Localization.message;
 
 import com.intellij.execution.util.EnvVariablesTable;
@@ -25,9 +26,7 @@ import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationResources;
 import software.aws.toolkits.jetbrains.services.cloudformation.Parameter;
-import software.aws.toolkits.jetbrains.services.cloudformation.Stack;
 import software.aws.toolkits.jetbrains.services.s3.S3Resources;
 import software.aws.toolkits.jetbrains.ui.ResourceSelector;
 
@@ -89,7 +88,7 @@ public class DeployServerlessApplicationPanel {
     private void createUIComponents() {
         environmentVariablesTable = new EnvVariablesTable();
         stackParameters = new Wrapper();
-        stacks = new ResourceSelector<>(project, CloudFormationResources.ACTIVE_STACKS);
+        stacks = new ResourceSelector<>(project, ACTIVE_STACKS);
         s3Bucket = new ResourceSelector<>(project, S3Resources.listBucketsByActiveRegion(project));
 
         if (!ApplicationManager.getApplication().isUnitTestMode()) {

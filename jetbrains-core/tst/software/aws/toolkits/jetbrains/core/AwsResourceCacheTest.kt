@@ -195,6 +195,18 @@ class AwsResourceCacheTest {
     }
 
     @Test
+    fun mapFilterAndFindExtensionsToEasilyCreateViews() {
+        whenever(mockResource.fetch(any(), any(), any())).thenReturn("hello")
+        val viewResource = Resource.View(mockResource) { toList() }
+
+        val filteredAndMapped = viewResource.filter { it != 'l' }.map { it.toUpperCase() }
+        assertThat(sut.getResource(filteredAndMapped)).hasValue(listOf('H', 'E', 'O'))
+
+        val find = viewResource.find { it == 'l' }
+        assertThat(sut.getResource(find)).hasValue('l')
+    }
+
+    @Test
     fun clearingViewsClearTheUnderlyingCachedResource() {
         whenever(mockResource.fetch(any(), any(), any())).thenReturn("hello")
         val viewResource = Resource.View(mockResource) { toList() }

@@ -87,7 +87,7 @@ class ResourceSelectorTest {
         val comboBox = ResourceSelector(projectRule.project, mockResource)
 
         runInEdtAndWait {
-            comboBox.model.selectedItem = "bar"
+            comboBox.selectedItem = "bar"
         }
 
         comboBox.reload()
