@@ -15,6 +15,8 @@ import org.jetbrains.yaml.YAMLLanguage
 import org.jetbrains.yaml.psi.YAMLFile
 import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLMapping
+import software.aws.toolkits.core.utils.debug
+import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationParameter
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.cloudformation.NamedMap
@@ -28,35 +30,41 @@ class YamlCloudFormationTemplate(template: YAMLFile) : CloudFormationTemplate {
 
     private val templateRoot = getTemplateRoot(template)
 
-    private fun getTemplateRoot(file: YAMLFile): YAMLMapping {
+    private fun getTemplateRoot(file: YAMLFile): YAMLMapping? {
         val documents = file.documents
         if (documents.size != 1) {
-            throw IllegalStateException(message("cloudformation.yaml.too_many_documents"))
+            LOG.debug { message("cloudformation.yaml.too_many_documents", file) }
+            return null
         }
 
-        return documents[0].topLevelValue as? YAMLMapping
-            ?: throw IllegalStateException(message("cloudformation.yaml.invalid_root_type"))
+        val topLevelValue = documents[0].topLevelValue
+        return if (topLevelValue is YAMLMapping) {
+            topLevelValue
+        } else {
+            LOG.debug { message("cloudformation.yaml.invalid_root_type", file) }
+            null
+        }
     }
 
     override fun resources(): Sequence<Resource> {
-        val resourcesBlock = templateRoot.getKeyValueByKey("Resources") ?: return emptySequence()
+        val resourcesBlock = templateRoot?.getKeyValueByKey("Resources") ?: return emptySequence()
         val resources = PsiTreeUtil.findChildOfAnyType(resourcesBlock, YAMLMapping::class.java) ?: return emptySequence()
         return resources.keyValues.asSequence().mapNotNull { it.asResource(this) }
     }
 
     override fun parameters(): Sequence<Parameter> {
-        val parametersBlock = templateRoot.getKeyValueByKey("Parameters") ?: return emptySequence()
+        val parametersBlock = templateRoot?.getKeyValueByKey("Parameters") ?: return emptySequence()
         val parameters = PsiTreeUtil.findChildOfAnyType(parametersBlock, YAMLMapping::class.java) ?: return emptySequence()
         return parameters.keyValues.asSequence().mapNotNull { it.asProperty() }
     }
 
     override fun globals(): Map<String, NamedMap> {
-        val globalsBlock = templateRoot.getKeyValueByKey("Globals") ?: return emptyMap()
+        val globalsBlock = templateRoot?.getKeyValueByKey("Globals") ?: return emptyMap()
         val globals = PsiTreeUtil.findChildOfAnyType(globalsBlock, YAMLMapping::class.java) ?: return emptyMap()
         return globals.keyValues.asSequence().mapNotNull { yamlKeyValue -> yamlKeyValue.asGlobal()?.let { Pair(it.logicalName, it) } }.toMap()
     }
 
-    override fun text(): String = templateRoot.text
+    override fun text(): String = templateRoot?.text ?: "<invalid>"
 
     private class YamlGlobal(override val logicalName: String, private val delegate: YAMLMapping) :
         YAMLMapping by delegate, NamedMap {
@@ -111,6 +119,8 @@ class YamlCloudFormationTemplate(template: YAMLFile) : CloudFormationTemplate {
     }
 
     companion object {
+        private val LOG = getLogger<YamlCloudFormationTemplate>()
+
         private fun loadYamlFile(project: Project, templateFile: VirtualFile): YAMLFile =
             PsiFileFactory.getInstance(project).createFileFromText(
                 "template_temp.yaml",

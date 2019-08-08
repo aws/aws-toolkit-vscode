@@ -294,6 +294,25 @@ Resources:
         }
     }
 
+    @Test
+    fun invalidTemplateIsHandledGracefully() {
+        val template = yamlTemplate(
+            """
+            foo:
+              bar
+            ---
+            hello:
+              world
+            """.trimIndent()
+        )
+
+        runInEdtAndWait {
+            assertThat(template.resources().toList()).isEmpty()
+            assertThat(template.parameters().toList()).isEmpty()
+            assertThat(template.globals().toList()).isEmpty()
+        }
+    }
+
     private fun yamlTemplate(template: String = TEST_TEMPLATE): CloudFormationTemplate = runInEdtAndGet {
         val file = projectRule.fixture.addFileToProject("template.yaml", template)
         CloudFormationTemplate.parse(projectRule.project, file.virtualFile)
