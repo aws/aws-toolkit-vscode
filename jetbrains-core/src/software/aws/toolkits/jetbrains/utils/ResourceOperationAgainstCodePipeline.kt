@@ -21,8 +21,8 @@ const val CODEPIPELINE_SYSTEM_TAG_KEY = "aws:codepipeline:pipelineArn"
  */
 enum class TaggingResourceType(val value: String, val tagFilter: String) {
     LAMBDA_FUNCTION(message("codepipeline.lambda.resource_type"), "lambda:function"),
-    CLOUDFORMATION_STACK(message("codepipeline.stack.resource_type"), "cloudformation:stack");
-
+    CLOUDFORMATION_STACK(message("codepipeline.stack.resource_type"), "cloudformation:stack"),
+    S3_BUCKET(message("codepipeline.bucket.resource_type"), "s3");
     override fun toString() = value
 }
 

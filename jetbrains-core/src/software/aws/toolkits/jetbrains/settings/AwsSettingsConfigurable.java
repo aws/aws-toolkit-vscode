@@ -66,14 +66,14 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
         JBTextField samExecutableTextField = new JBTextField();
         if(autoDetectPath != null) {
             samExecutableTextField.getEmptyText()
-                                  .setText(message("aws.settings.sam.auto_detect", autoDetectPath));
+                    .setText(message("aws.settings.sam.auto_detect", autoDetectPath));
         }
         samExecutablePath = new TextFieldWithBrowseButton(samExecutableTextField);
         samExecutablePath.addBrowseFolderListener(
-            message("aws.settings.sam.find.title"),
-            message("aws.settings.sam.find.description"),
-            project,
-            FileChooserDescriptorFactory.createSingleLocalFileDescriptor()
+                message("aws.settings.sam.find.title"),
+                message("aws.settings.sam.find.description"),
+                project,
+                FileChooserDescriptorFactory.createSingleLocalFileDescriptor()
         );
     }
 

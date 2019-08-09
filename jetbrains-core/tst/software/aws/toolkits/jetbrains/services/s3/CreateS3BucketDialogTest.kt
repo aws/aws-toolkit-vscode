@@ -68,7 +68,9 @@ class CreateS3BucketDialogTest {
         val createBucketCaptor = argumentCaptor<CreateBucketRequest>()
 
         s3Mock.stub {
-            on { createBucket(createBucketCaptor.capture()) } doThrow BucketAlreadyExistsException.builder().message(TEST_ERROR_MESSAGE).build()
+            on { createBucket(createBucketCaptor.capture()) } doThrow BucketAlreadyExistsException.builder().message(
+                TEST_ERROR_MESSAGE
+            ).build()
         }
 
         runInEdtAndWait {

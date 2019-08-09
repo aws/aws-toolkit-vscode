@@ -106,7 +106,8 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
         object : DoubleClickListener() {
             override fun onDoubleClick(event: MouseEvent): Boolean {
                 val path = awsTree.getClosestPathForLocation(event.x, event.y)
-                (path?.lastPathComponent as? AwsExplorerNode<*>)?.onDoubleClick()
+                val selected = path?.lastPathComponent as? DefaultMutableTreeNode
+                (selected?.userObject as? AwsExplorerNode<*>)?.onDoubleClick()
                 return true
             }
         }.installOn(awsTree)
