@@ -15,13 +15,15 @@ We will add a feature access control class to the codebase which will allow deve
 
 * A feature access control system that grants access to unreleased code for development purposes.
   * Access should not be dependent on a rebuild--this should be user-configurable.
+    * Waiting until a VS Code restart to grant access is fair game.
   * Flags should be undocumented outside the codebase. Even though features will be included in new builds, they will eminently not be ready for general use.
-  * Individual features should be able to be toggled on/off on-the-fly or only on restart ("session-permanent") in a predictable manner.
   * Tests should be able to inject their own configurations into the feature access control system to ensure correct features are tested.
+  * A hard limit on the amount of active feature flags should be imposed in order to protect against bloat.
 
 ### Out-of-Scope
 
-* Visual confirmation for a user to discern whether or not a feature is session-permanent when adding a toggle to their `settings.json` file while the extension is running.
+* Visual confirmation to tell a user that their `settings.json` features array has changed and that they should restart to see changes
+* The ability to toggle features on and off mid-session
 * The ability to pass non-boolean values through feature access control.
 * The ability to permanently override the switch for the feature (as opposed to pruning the toggle and the forking code) when a feature is set to go live.
 
@@ -38,21 +40,27 @@ Implementation
 FeatureAccessControl will be initialized on plugin activation in the `extension.ts:activate()` function. This provides a few things:
 
 * The use of the initialized `DefaultSettingsConfiguration` object, which is also initialized in `activate()`
-* The ability to pass the feature access control object to other objects
-* The ability to lock in session-permanent features as the session is starting.
+  * This can be initialized elsewhere, but this sticks to the idea of a session-permanent flag. Ad-hoc initialization is used by tests.
+* The ability to pass the feature access control object to other objects.
 
 The FeatureAccessControl object will essentially wrap the SettingsConfiguration object. This wrapping will provide the following:
 
-* A defined list of session-permanent features.
-* Consistent assessment of session-permanent features; initializing the FeatureAccessControl object will lock in the initial values for session-permanent features.
-* On-the-fly assessment of non session-permanent features.
+* A defined list of features.
+* Consistent assessment of features; initializing the FeatureAccessControl object will lock in the initial values for features.
 * An enforced boolean return. Pulling from the VS Code `settings.json` file does not enforce any types.
-* A standard naming convention for feature toggles: searching for feature `featureName` will always correspond to the setting `aws.toggle.featureName`.
+
+The FeatureAccessControl file will also export an enum with the possible flag names. This enum will be size-restricted to 5 entries to prevent feature bloat.
+
+```typescript
+export enum FeatureEnum {
+    myFeature = 'myFeature'
+}
+```
 
 Feature access will be granted by passing the initialized FeatureAccessControl object down from the extension activation. Code can then be gated with code similar to the following:
 
 ``` typescript
-if (featureController.isFeatureActive('myFeature')) {
+if (featureController.isFeatureActive(FeatureEnum.myFeature)) {
     newCodePath()
 }
 ```
@@ -62,7 +70,11 @@ A developer will then gain access to the feature by opening their VS Code `setti
 ```javascript
 {
     ...
-    "aws.toggle.myFeature": true
+    "aws.experimentalFeatureFlags": [
+        ...,
+        "myFeature",
+        ...,
+    ],
     ...
 }
 ```
@@ -73,13 +85,19 @@ If the developer wants to make the feature session-permanent, they will add the 
 
 We will test the following scenarios:
 
-* returns true if feature is active
-* returns false if feature is inactive
-* returns true if feature is a non-boolean but truthy value
-* returns false if feature is a non-boolean but falsy value
-* returns false for features that are not present
-* returns the current value of non-session-permanent features
-* returns the current value of non-session-permanent features that are not present at launch but later set
-* returns only the initial value of session-permanent features
-* returns false for session-permanent features that are not present
-* returns false for session-permanent features that are not present at launch but changed mid-lifecycle
+* returns true if feature is declared active
+* returns false for features that are not declared active
+* returns false for features that are declared active but not a registered flag
+* throws an error if too many features are registered
+
+Considerations
+--------------
+
+* Should we provide an option to permanently toggle a feature on?
+  * No. If a feature is to be presented to all customers (instead of requiring an opt-in), it should not be wrapped by a feature.
+* Should we use "expiration dates" for individual features?
+  * No. This will add complexity and can at worst completely pause new development. We will instead provide a limit on how many feature flags we can have in the codebase at a time--this will ensure we clean up in a timely manner.
+* Should we provide a class with a function per feature so we can track features easier through the codebase?
+  * No (at least in this iteration). Enums work in a similar capacity (with a search all instead of a symbol search) and allow for fewer touch points in the codebase (new flags are an addition to the enum instead of a brand new function)
+* Should flags be able to pass non-boolean values?
+  * No. User can add additional non-flag settings to the settings.json file, though.
