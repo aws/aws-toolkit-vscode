@@ -47,7 +47,7 @@ async function openSamProject(projectPath: string): Promise<vscode.Uri> {
 function tryRemoveProjectFolder() {
     try {
         removeSync(path.join(projectFolder, 'testProject'))
-    } catch (e) { }
+    } catch (e) {}
 }
 
 async function getCodeLenses(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
