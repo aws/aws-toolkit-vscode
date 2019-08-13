@@ -17,18 +17,18 @@ import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/colle
 import { listLambdaFunctions } from '../utils'
 import { FunctionNodeBase } from './functionNode'
 
-export interface StandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode {
+export interface LambdaFunctionGroupNode extends AWSTreeErrorHandlerNode {
     readonly regionCode: string
 
     readonly parent: RegionNode
 
-    getChildren(): Thenable<(StandaloneFunctionNode | ErrorNode)[]>
+    getChildren(): Thenable<(LambdaFunctionNode | ErrorNode)[]>
 
     updateChildren(): Thenable<void>
 }
 
-export class DefaultStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode implements StandaloneFunctionGroupNode {
-    private readonly functionNodes: Map<string, StandaloneFunctionNode>
+export class DefaultLambdaFunctionGroupNode extends AWSTreeErrorHandlerNode implements LambdaFunctionGroupNode {
+    private readonly functionNodes: Map<string, LambdaFunctionNode>
 
     public get regionCode(): string {
         return this.parent.regionCode
@@ -39,10 +39,10 @@ export class DefaultStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode 
         private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
     ) {
         super('Lambda', vscode.TreeItemCollapsibleState.Collapsed)
-        this.functionNodes = new Map<string, StandaloneFunctionNode>()
+        this.functionNodes = new Map<string, LambdaFunctionNode>()
     }
 
-    public async getChildren(): Promise<(StandaloneFunctionNode | ErrorNode)[]> {
+    public async getChildren(): Promise<(LambdaFunctionNode | ErrorNode)[]> {
         await this.handleErrorProneOperation(
             async () => this.updateChildren(),
             localize(
@@ -72,7 +72,7 @@ export class DefaultStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode 
             this.functionNodes,
             functions.keys(),
             key => this.functionNodes.get(key)!.update(functions.get(key)!),
-            key => new DefaultStandaloneFunctionNode(
+            key => new DefaultLambdaFunctionNode(
                 this,
                 functions.get(key)!,
                 relativeExtensionPath => this.getExtensionAbsolutePath(relativeExtensionPath)
@@ -81,17 +81,17 @@ export class DefaultStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode 
     }
 }
 
-export interface StandaloneFunctionNode extends FunctionNodeBase {
-    readonly parent: StandaloneFunctionGroupNode
+export interface LambdaFunctionNode extends FunctionNodeBase {
+    readonly parent: LambdaFunctionGroupNode
 }
 
-export class DefaultStandaloneFunctionNode extends FunctionNodeBase implements StandaloneFunctionNode {
+export class DefaultLambdaFunctionNode extends FunctionNodeBase implements LambdaFunctionNode {
     public get regionCode(): string {
         return this.parent.regionCode
     }
 
     public constructor(
-        public readonly parent: StandaloneFunctionGroupNode,
+        public readonly parent: LambdaFunctionGroupNode,
         configuration: Lambda.FunctionConfiguration,
         getExtensionAbsolutePath: (relativeExtensionPath: string) => string
     ) {
