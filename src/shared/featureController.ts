@@ -48,7 +48,7 @@ export class FeatureController {
     private readonly maxFeatures: number = 5
 
     public constructor (
-        private readonly configuration: SettingsConfiguration,
+        configuration: SettingsConfiguration,
         private readonly overrideKeys?: string[]
     ) {
         this.enabledFeatures = new Set()
@@ -67,7 +67,7 @@ export class FeatureController {
             )
         }
 
-        const settingsArr = this.configuration.readSetting('experimentalFeatureFlags')
+        const settingsArr = configuration.readSetting('experimentalFeatureFlags')
 
         if (Array.isArray(settingsArr)) {
             for (const setting of settingsArr) {
