@@ -8,9 +8,8 @@ import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { deleteLambda } from '../lambda/commands/deleteLambda'
 import { invokeLambda } from '../lambda/commands/invokeLambda'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
-import { DefaultRegionNode } from '../lambda/explorer/defaultRegionNode'
 import { FunctionNodeBase } from '../lambda/explorer/functionNode'
-import { StandaloneFunctionNode } from '../lambda/explorer/standaloneNodes'
+import { LambdaFunctionNode } from '../lambda/explorer/lambdaNodes'
 import { configureLocalLambda } from '../lambda/local/configureLocalLambda'
 import { AwsContext } from '../shared/awsContext'
 import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
@@ -27,6 +26,7 @@ import { RegionNode } from '../shared/treeview/nodes/regionNode'
 import { showErrorDetails } from '../shared/treeview/webviews/showErrorDetails'
 import { intersection, toMap, updateInPlace } from '../shared/utilities/collectionUtils'
 import { localize } from '../shared/utilities/vsCodeUtils'
+import { DefaultRegionNode } from './defaultRegionNode'
 
 export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
     public viewProviderId: string = 'aws.explorer'
@@ -55,7 +55,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
 
         registerCommand({
             command: 'aws.deleteLambda',
-            callback: async (node: StandaloneFunctionNode) => await deleteLambda({
+            callback: async (node: LambdaFunctionNode) => await deleteLambda({
                 deleteParams: { functionName: node.configuration.FunctionName || '' },
                 lambdaClient: ext.toolkitClientBuilder.createLambdaClient(node.regionCode),
                 outputChannel: this.lambdaOutputChannel,

@@ -4,15 +4,15 @@
  */
 
 import { TreeItemCollapsibleState } from 'vscode'
-import { RegionInfo } from '../../shared/regions/regionInfo'
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { RegionNode } from '../../shared/treeview/nodes/regionNode'
-import { toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
-import { CloudFormationNode, DefaultCloudFormationNode } from './cloudFormationNodes'
+import { CloudFormationNode, DefaultCloudFormationNode } from '../lambda/explorer/cloudFormationNodes'
 import {
-    DefaultStandaloneFunctionGroupNode,
-    StandaloneFunctionGroupNode
-} from './standaloneNodes'
+    DefaultLambdaFunctionGroupNode,
+    LambdaFunctionGroupNode
+} from '../lambda/explorer/lambdaNodes'
+import { RegionInfo } from '../shared/regions/regionInfo'
+import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
+import { RegionNode } from '../shared/treeview/nodes/regionNode'
+import { toMap, updateInPlace } from '../shared/utilities/collectionUtils'
 
 // Collects the regions the user has declared they want to work with;
 // on expansion each region lists the functions and CloudFormation Stacks
@@ -20,7 +20,7 @@ import {
 export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
     private info: RegionInfo
     private readonly cloudFormationNode: CloudFormationNode
-    private readonly standaloneFunctionGroupNode: StandaloneFunctionGroupNode
+    private readonly lambdaFunctionGroupNode: LambdaFunctionGroupNode
 
     public get regionCode(): string {
         return this.info.regionCode
@@ -40,13 +40,13 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
         this.update(info)
 
         this.cloudFormationNode = new DefaultCloudFormationNode(this, getExtensionAbsolutePath)
-        this.standaloneFunctionGroupNode = new DefaultStandaloneFunctionGroupNode(this, getExtensionAbsolutePath)
+        this.lambdaFunctionGroupNode = new DefaultLambdaFunctionGroupNode(this, getExtensionAbsolutePath)
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return [
             this.cloudFormationNode,
-            this.standaloneFunctionGroupNode
+            this.lambdaFunctionGroupNode
         ]
     }
 

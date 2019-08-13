@@ -5,18 +5,18 @@
 
 import { Lambda } from 'aws-sdk'
 import {
-    StandaloneFunctionGroupNode,
-    StandaloneFunctionNode
-} from '../../../lambda/explorer/standaloneNodes'
+    LambdaFunctionGroupNode,
+    LambdaFunctionNode
+} from '../../../lambda/explorer/lambdaNodes'
 import { AWSTreeErrorHandlerNode } from '../../../shared/treeview/nodes/awsTreeErrorHandlerNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { RegionNode } from '../../../shared/treeview/nodes/regionNode'
 
-export class MockStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode implements StandaloneFunctionGroupNode {
+export class MockLambdaFunctionGroupNode extends AWSTreeErrorHandlerNode implements LambdaFunctionGroupNode {
     public constructor(
         public readonly regionCode: string = '',
         public readonly parent: RegionNode = {} as any as RegionNode,
-        public readonly getChildren: () => Thenable<StandaloneFunctionNode[]> = async () => [],
+        public readonly getChildren: () => Thenable<LambdaFunctionNode[]> = async () => [],
         public readonly updateChildren: () => Thenable<void> = async () => { },
         public readonly doErrorProneOperation: () => Promise<void> = async () => { },
     ) {
@@ -24,17 +24,17 @@ export class MockStandaloneFunctionGroupNode extends AWSTreeErrorHandlerNode imp
     }
 }
 
-export class MockStandaloneFunctionNode implements StandaloneFunctionNode {
+export class MockLambdaFunctionNode implements LambdaFunctionNode {
 
     public constructor(
         public readonly regionCode: string = '',
         public readonly functionName: string = '',
-        public readonly parent: StandaloneFunctionGroupNode = {} as any as StandaloneFunctionGroupNode,
+        public readonly parent: LambdaFunctionGroupNode = {} as any as LambdaFunctionGroupNode,
         public readonly configuration: Lambda.FunctionConfiguration = {},
         public readonly getChildren: () => Thenable<AWSTreeNodeBase[]> = async () => [],
         public readonly update: (configuration: Lambda.FunctionConfiguration) => void = config => { },
         public readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string =
-            (relativeExtensionPath) => 'MockStandaloneFunctionNode'
+            (relativeExtensionPath) => 'MockLambdaFunctionNode'
     ) {
     }
 }
