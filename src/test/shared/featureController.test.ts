@@ -4,7 +4,10 @@
  */
 
 import * as assert from 'assert'
-import { FeatureController } from '../../shared/featureController'
+import {
+    // ActiveFeatureKeys, // uncomment this line when adding a test for an enum
+    FeatureController
+} from '../../shared/featureController'
 import { TestSettingsConfiguration } from '../utilities/testSettingsConfiguration'
 
 describe('FeatureController', async () => {
@@ -34,8 +37,6 @@ describe('FeatureController', async () => {
 
                 // simulate active feature flags
                 const features = new FeatureController(config, [flag])
-
-                assert.ok(features.isFeatureActive(flag))
                 assert.strictEqual(features.isFeatureActive(notFlag), false)
             }
         )
@@ -52,7 +53,6 @@ describe('FeatureController', async () => {
                 // simulate active feature flags
                 const features = new FeatureController(config, [flag, notFlag])
 
-                assert.ok(features.isFeatureActive(flag))
                 assert.strictEqual(features.isFeatureActive(notFlag), false)
             }
         )
@@ -61,5 +61,22 @@ describe('FeatureController', async () => {
             const config = new TestSettingsConfiguration()
             assert.throws(() => new FeatureController(config, ['1', '2', '3', '4', '5', '6']))
         })
+
+        /**
+         * Use the following boilerplate to create tests for individual enums
+         * Replace all `{YOUR_FEATURE_HERE}` with the flag you want to test.
+         * Also, uncomment the `ActiveFeatureKeys` import declaration.
+         */
+
+        // it('successfully finds feature `{YOUR_FEATURE_HERE}`', async () => {
+        //     // simulate settings.json
+        //     const config = new TestSettingsConfiguration()
+        //     const flag = '{YOUR_FEATURE_HERE}'
+        //     await config.writeSetting('experimentalFeatureFlags', [flag])
+
+        //     // use enums included in FeatureController
+        //     const features = new FeatureController(config)
+        //     assert.ok(features.isFeatureActive(ActiveFeatureKeys.{YOUR_FEATURE_HERE}}))
+        // })
     })
 })

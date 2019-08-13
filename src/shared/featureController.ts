@@ -11,6 +11,7 @@ import { SettingsConfiguration } from './settingsConfiguration'
 // Features that do not follow this scheme will not work.
 // You cannot have more active features than FeatureController.maxFeatures (default: 5)
 // Any features that are flagged in the code but not added here will always return false.
+// ADD A TEST FOR ANY ENUMS ADDED HERE (see boilerplate in /src/test/shared/FeatureController.test.ts)
 export enum ActiveFeatureKeys {
 }
 
@@ -42,7 +43,7 @@ export enum ActiveFeatureKeys {
  */
 export class FeatureController {
 
-    private readonly permanentSettings: Set<string>
+    private readonly enabledFeatures: Set<string>
 
     private readonly maxFeatures: number = 5
 
@@ -50,7 +51,7 @@ export class FeatureController {
         private readonly configuration: SettingsConfiguration,
         private readonly overrideKeys?: string[]
     ) {
-        this.permanentSettings = new Set()
+        this.enabledFeatures = new Set()
 
         let keys: string[] = []
 
@@ -60,7 +61,7 @@ export class FeatureController {
             keys = Object.keys(ActiveFeatureKeys)
         }
 
-        if (keys.length > 5) {
+        if (keys.length > this.maxFeatures) {
             throw new Error(
                 `Amount of active feature flags (${keys.length}) exceeds maximum allowed (${this.maxFeatures}).`
             )
@@ -72,7 +73,7 @@ export class FeatureController {
             for (const setting of settingsArr) {
                 // check for string as settings.json does not enforce types
                 if (typeof setting === 'string' && keys.indexOf(setting) >= 0) {
-                    this.permanentSettings.add(setting)
+                    this.enabledFeatures.add(setting)
                 }
             }
         }
@@ -83,6 +84,6 @@ export class FeatureController {
      * @param key Feature key to search for
      */
     public isFeatureActive(key: string): boolean {
-        return this.permanentSettings.has(key)
+        return this.enabledFeatures.has(key)
     }
 }
