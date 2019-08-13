@@ -6,6 +6,7 @@
 import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
+import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { RegionNode } from '../../shared/treeview/nodes/regionNode'
 
 export interface EcsNode extends AWSTreeNodeBase {
@@ -13,7 +14,7 @@ export interface EcsNode extends AWSTreeNodeBase {
 
     readonly parent: RegionNode
 
-    getChildren(): Thenable<(EcsTaskDefinitionsNode | EcsClustersNode | ErrorNode)[]>
+    getChildren(): Thenable<AWSTreeErrorHandlerNode[]>
 
     update(): void
 }
@@ -49,7 +50,11 @@ export interface EcsClusterNode extends AWSTreeErrorHandlerNode {
 
     readonly parent: EcsClustersNode
 
+    readonly name: string
+
     getChildren(): Thenable<(EcsServicesNode | ErrorNode)[]>
+
+    update(name: string): void
 }
 
 export interface EcsServicesNode extends AWSTreeErrorHandlerNode {
@@ -57,7 +62,7 @@ export interface EcsServicesNode extends AWSTreeErrorHandlerNode {
 
     readonly parent: EcsClusterNode
 
-    getChildren(): Thenable<(EcsServiceNode | ErrorNode)[]>
+    getChildren(): Thenable<(EcsServiceNode | ErrorNode | PlaceholderNode)[]>
 
     updateChildren(): Thenable<void>
 }
@@ -66,4 +71,8 @@ export interface EcsServiceNode extends AWSTreeErrorHandlerNode {
     readonly regionCode: string
 
     readonly parent: EcsServicesNode
+
+    readonly name: string
+
+    update(name: string): void
 }
