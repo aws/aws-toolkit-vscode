@@ -49,14 +49,14 @@ export class FeatureController {
 
     public constructor (
         configuration: SettingsConfiguration,
-        private readonly overrideKeys?: string[]
+        overrideKeys?: string[]
     ) {
         this.enabledFeatures = new Set()
 
         let keys: string[] = []
 
-        if (this.overrideKeys) {
-            keys = this.overrideKeys
+        if (overrideKeys) {
+            keys = overrideKeys
         } else {
             keys = Object.keys(ActiveFeatureKeys)
         }
