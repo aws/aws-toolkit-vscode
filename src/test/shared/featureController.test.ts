@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import {
-    // ActiveFeatureKeys, // uncomment this line when adding a test for an enum
+    ActiveFeatureKeys,
     FeatureController
 } from '../../shared/featureController'
 import { TestSettingsConfiguration } from '../utilities/testSettingsConfiguration'
@@ -62,21 +62,21 @@ describe('FeatureController', async () => {
             assert.throws(() => new FeatureController(config, ['1', '2', '3', '4', '5', '6']))
         })
 
-        /**
-         * Use the following boilerplate to create tests for individual enums
-         * Replace all `{YOUR_FEATURE_HERE}` with the flag you want to test.
-         * Also, uncomment the `ActiveFeatureKeys` import declaration.
-         */
+        // Generated tests which ensure current list of enums are working
+        for (const featureFlag of Object.keys(ActiveFeatureKeys)) {
+            it(`returns true for currently-active feature: ${featureFlag}`, async () => {
+                // simulate settings.json
+                const config = new TestSettingsConfiguration()
+                await config.writeSetting('experimentalFeatureFlags', [featureFlag])
 
-        // it('successfully finds feature `{YOUR_FEATURE_HERE}`', async () => {
-        //     // simulate settings.json
-        //     const config = new TestSettingsConfiguration()
-        //     const flag = '{YOUR_FEATURE_HERE}'
-        //     await config.writeSetting('experimentalFeatureFlags', [flag])
+                // use active feature flags from enum
+                const features = new FeatureController(config)
 
-        //     // use enums included in FeatureController
-        //     const features = new FeatureController(config)
-        //     assert.ok(features.isFeatureActive(ActiveFeatureKeys.{YOUR_FEATURE_HERE}}))
-        // })
+                assert.ok(
+                    features.isFeatureActive(featureFlag),
+                    `Expected ${featureFlag} from ActiveFeatureKeys to be active`
+                )
+            })
+        }
     })
 })

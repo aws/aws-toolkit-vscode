@@ -90,6 +90,8 @@ We will test the following scenarios:
 * returns false for features that are not declared as active feature keys but are present in settings.json
 * returns false for features that are declared as active feature keys but are not active in settings.json
 * throws an error if too many features are registered
+* For each feature that is currently added to the ActiveFeatureKeys enum:
+  * returns true for currently-active feature: ${featureFlag}
 
 Considerations
 --------------

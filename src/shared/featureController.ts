@@ -11,7 +11,6 @@ import { SettingsConfiguration } from './settingsConfiguration'
 // Features that do not follow this scheme will not work.
 // You cannot have more active features than FeatureController.maxFeatures (default: 5)
 // Any features that are flagged in the code but not added here will always return false.
-// ADD A TEST FOR ANY ENUMS ADDED HERE (see boilerplate in /src/test/shared/FeatureController.test.ts)
 export enum ActiveFeatureKeys {
 }
 
