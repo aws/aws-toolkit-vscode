@@ -4,19 +4,18 @@
  */
 
 import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
+import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { RegionNode } from '../../shared/treeview/nodes/regionNode'
-import { EcsClustersNode } from './ecsClustersNode'
-import { EcsTaskDefinitionsNode } from './ecsTaskDefinitionsNode'
 
-export interface EcsNode extends AWSTreeErrorHandlerNode {
+export interface EcsNode extends AWSTreeNodeBase {
     readonly regionCode: string
 
     readonly parent: RegionNode
 
     getChildren(): Thenable<(EcsTaskDefinitionsNode | EcsClustersNode | ErrorNode)[]>
 
-    updateChildren(): Thenable<void>
+    update(): void
 }
 
 export interface EcsTaskDefinitionsNode extends AWSTreeErrorHandlerNode {
