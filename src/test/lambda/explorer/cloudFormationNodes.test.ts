@@ -7,13 +7,13 @@ import * as assert from 'assert'
 import { CloudFormation, Lambda } from 'aws-sdk'
 import * as os from 'os'
 import { TreeItem, Uri } from 'vscode'
+import { DefaultRegionNode } from '../../../awsexplorer/defaultRegionNode'
 import {
     CloudFormationStackNode,
     DefaultCloudFormationFunctionNode,
     DefaultCloudFormationNode,
     DefaultCloudFormationStackNode
 } from '../../../lambda/explorer/cloudFormationNodes'
-import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'

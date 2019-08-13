@@ -7,12 +7,12 @@ import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
 import * as os from 'os'
 import { TreeItem, Uri } from 'vscode'
-import { DefaultRegionNode } from '../../../lambda/explorer/defaultRegionNode'
+import { DefaultRegionNode } from '../../../awsexplorer/defaultRegionNode'
 import {
-    DefaultStandaloneFunctionGroupNode,
-    DefaultStandaloneFunctionNode,
-    StandaloneFunctionNode
-} from '../../../lambda/explorer/standaloneNodes'
+    DefaultLambdaFunctionGroupNode,
+    DefaultLambdaFunctionNode,
+    LambdaFunctionNode
+} from '../../../lambda/explorer/lambdaNodes'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
@@ -28,10 +28,10 @@ async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
 }
 
-describe('DefaultStandaloneFunctionNode', () => {
+describe('DefaultLambdaFunctionNode', () => {
 
     let fakeFunctionConfig: Lambda.FunctionConfiguration
-    const fakeIconPathPrefix: string = 'DefaultStandaloneFunctionNode'
+    const fakeIconPathPrefix: string = 'DefaultLambdaFunctionNode'
     let logger: TestLogger
 
     before(async () => {
@@ -119,9 +119,9 @@ describe('DefaultStandaloneFunctionNode', () => {
         )
     }
 
-    function generateTestNode(): DefaultStandaloneFunctionNode {
-        return new DefaultStandaloneFunctionNode(
-            new DefaultStandaloneFunctionGroupNode(
+    function generateTestNode(): DefaultLambdaFunctionNode {
+        return new DefaultLambdaFunctionNode(
+            new DefaultLambdaFunctionGroupNode(
                 new DefaultRegionNode(new RegionInfo('code', 'name'), iconPathMaker),
                 iconPathMaker
             ),
@@ -135,7 +135,7 @@ describe('DefaultStandaloneFunctionNode', () => {
     }
 })
 
-describe('DefaultStandaloneFunctionGroupNode', () => {
+describe('DefaultLambdaFunctionGroupNode', () => {
 
     let logger: TestLogger
 
@@ -168,7 +168,7 @@ describe('DefaultStandaloneFunctionGroupNode', () => {
         }
     }
 
-    class ThrowErrorDefaultStandaloneFunctionGroupNode extends DefaultStandaloneFunctionGroupNode {
+    class ThrowErrorDefaultLambdaFunctionGroupNode extends DefaultLambdaFunctionGroupNode {
         public constructor(
             public readonly parent: DefaultRegionNode
         ) {
@@ -207,7 +207,7 @@ describe('DefaultStandaloneFunctionGroupNode', () => {
             }
         }
 
-        const functionGroupNode = new DefaultStandaloneFunctionGroupNode(
+        const functionGroupNode = new DefaultLambdaFunctionGroupNode(
             new DefaultRegionNode(new RegionInfo('code', 'name'), stubPathResolver),
             stubPathResolver
         )
@@ -222,7 +222,7 @@ describe('DefaultStandaloneFunctionGroupNode', () => {
         )
 
         function assertChildNodeFunctionName(
-            actualChildNode: StandaloneFunctionNode | ErrorNode,
+            actualChildNode: LambdaFunctionNode | ErrorNode,
             expectedNodeText: string) {
 
             assert.strictEqual(
@@ -231,7 +231,7 @@ describe('DefaultStandaloneFunctionGroupNode', () => {
                 'Child node expected to contain functionName property'
             )
 
-            const node: DefaultStandaloneFunctionNode = actualChildNode as DefaultStandaloneFunctionNode
+            const node: DefaultLambdaFunctionNode = actualChildNode as DefaultLambdaFunctionNode
             assert.strictEqual(
                 node.functionName,
                 expectedNodeText,
@@ -246,7 +246,7 @@ describe('DefaultStandaloneFunctionGroupNode', () => {
     })
 
     it('handles error', async () => {
-        const testNode = new ThrowErrorDefaultStandaloneFunctionGroupNode(
+        const testNode = new ThrowErrorDefaultLambdaFunctionGroupNode(
             new DefaultRegionNode(new RegionInfo('code', 'name'), unusedPathResolver)
         )
 
