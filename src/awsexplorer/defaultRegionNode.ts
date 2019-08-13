@@ -13,6 +13,7 @@ import { RegionInfo } from '../shared/regions/regionInfo'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { RegionNode } from '../shared/treeview/nodes/regionNode'
 import { toMap, updateInPlace } from '../shared/utilities/collectionUtils'
+// import { EcsNode } from './nodes/ecsNodeInterfaces'
 
 // Collects the regions the user has declared they want to work with;
 // on expansion each region lists the functions and CloudFormation Stacks
@@ -21,6 +22,7 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
     private info: RegionInfo
     private readonly cloudFormationNode: CloudFormationNode
     private readonly lambdaFunctionGroupNode: LambdaFunctionGroupNode
+    // private ecsNode: EcsNode
 
     public get regionCode(): string {
         return this.info.regionCode
@@ -41,6 +43,8 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
 
         this.cloudFormationNode = new DefaultCloudFormationNode(this, getExtensionAbsolutePath)
         this.lambdaFunctionGroupNode = new DefaultLambdaFunctionGroupNode(this, getExtensionAbsolutePath)
+        // TODO: add gate here
+        // this.ecsNode = new DefaultEcsNode(this, getExtensionAbsolutePath)
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
