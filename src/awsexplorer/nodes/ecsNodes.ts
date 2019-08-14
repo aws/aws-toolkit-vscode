@@ -178,6 +178,7 @@ export class DefaultEcsClusterNode extends AWSTreeErrorHandlerNode implements Ec
         super('', vscode.TreeItemCollapsibleState.Collapsed)
         this.servicesNode = new DefaultEcsServicesNode(this, this.getExtensionAbsolutePath)
         // TODO: Get new icons
+        // These currently display blank space
         this.iconPath = {
             dark: vscode.Uri.file(this.getExtensionAbsolutePath('resources/dark/ecsCluster.svg')),
             light: vscode.Uri.file(this.getExtensionAbsolutePath('resources/light/ecsCluster.svg')),
@@ -187,9 +188,7 @@ export class DefaultEcsClusterNode extends AWSTreeErrorHandlerNode implements Ec
 
     public update(arn: string) {
         this.arn = arn
-        // transform here
-        // Up to 255 letters (uppercase and lowercase), numbers, hyphens, and underscores are allowed.
-        this.label = convertArnToResourceName(arn)
+        this.label = convertEcsArnToResourceName(arn)
     }
 
     public async getChildren() {
@@ -275,6 +274,7 @@ export class DefaultEcsServiceNode extends AWSTreeErrorHandlerNode implements Ec
     ) {
         super('')
         // TODO: Get new icons
+        // These currently display blank space
         this.iconPath = {
             dark: vscode.Uri.file(this.getExtensionAbsolutePath('resources/dark/ecsService.svg')),
             light: vscode.Uri.file(this.getExtensionAbsolutePath('resources/light/ecsService.svg')),
@@ -284,8 +284,7 @@ export class DefaultEcsServiceNode extends AWSTreeErrorHandlerNode implements Ec
 
     public update(arn: string) {
         this.arn = arn
-        // Up to 255 letters (uppercase and lowercase), numbers, hyphens, and underscores are allowed.
-        this.label = convertArnToResourceName(arn, this.parent.parent.label)
+        this.label = convertEcsArnToResourceName(arn, this.parent.parent.label)
     }
 }
 
@@ -302,6 +301,7 @@ export class DefaultEcsTaskDefinitionNode extends AWSTreeErrorHandlerNode implem
     ) {
         super('')
         // TODO: Get new icons
+        // These currently display blank space
         this.iconPath = {
             dark: vscode.Uri.file(this.getExtensionAbsolutePath('resources/dark/ecsTaskDef.svg')),
             light: vscode.Uri.file(this.getExtensionAbsolutePath('resources/light/ecsTaskDef.svg')),
@@ -311,11 +311,16 @@ export class DefaultEcsTaskDefinitionNode extends AWSTreeErrorHandlerNode implem
 
     public update(arn: string) {
         this.arn = arn
-        // Up to 255 letters (uppercase and lowercase), numbers, hyphens, and underscores are allowed.
-        this.label = convertArnToResourceName(arn)
+        this.label = convertEcsArnToResourceName(arn)
     }
 }
 
+/**
+ * Wrapper function to handle status bar updates and lifecycle while iterating through an AsyncIterable
+ *
+ * @param iterableFromClient AsyncIterable, often from a default AWS client
+ * @param statusMessage Status bar message to display while iterating through iterator
+ */
 async function* asyncIterableIteratorFromAwsClient<T>(
     iterableFromClient: AsyncIterable<T>,
     statusMessage: string
@@ -324,25 +329,30 @@ async function* asyncIterableIteratorFromAwsClient<T>(
 
     try {
         yield* iterableFromClient
-
     } finally {
         status.dispose()
     }
 }
 
-function convertArnToResourceName(arn: string, excluded?: string): string | undefined {
-    let regex
-
-    if (excluded) {
-        regex = new RegExp(`\/(${excluded}\/){0,1}([a-zA-Z0-9-_]{1,255})`)
-    } else {
-        regex = new RegExp('\/([a-zA-Z0-9-_]{1,255})')
-    }
+/**
+ * Converts ECS ARNs into friendly names. All ECS ARNs have the same naming requirement:
+ * Up to 255 letters (uppercase and lowercase), numbers, hyphens, and underscores are allowed.
+ *
+ * @param arn ARN to pull the resource name from
+ * @param excluded Resource-level text to omit from the resource name.
+ * Some ARNs are nested under another resource name (e.g. services and tasks can incorporate the parent cluster name)
+ * See https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html#arn-syntax-ecs for details
+ */
+function convertEcsArnToResourceName(arn: string, excluded?: string): string | undefined {
+    const regex = excluded ?
+        new RegExp(`\/(${excluded}\/){0,1}([a-zA-Z0-9-_]{1,255})`) : new RegExp('\/([a-zA-Z0-9-_]{1,255})')
 
     const regexedString = regex.exec(arn)
     if (regexedString) {
+        // always return last capture group
         return (regexedString[regexedString.length - 1])
     }
 
+    // resource name not found
     return undefined
 }
