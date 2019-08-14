@@ -51,7 +51,7 @@ export async function invokeLambda(params: {
     const logger: Logger = getLogger()
 
     try {
-        const fn: params.element
+        const fn = params.element
         const view = vscode.window.createWebviewPanel(
             'html',
             `Invoked ${fn.configuration.FunctionName}`,
