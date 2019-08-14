@@ -1,0 +1,78 @@
+/*!
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import * as vscode from 'vscode'
+import { EcsClient } from '../../shared/clients/ecsClient'
+import { ext } from '../../shared/extensionGlobals'
+import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
+import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
+import { asyncIterableWithStatusBarUpdate, toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
+import { EcsClusterNode, EcsServiceNode, EcsServicesNode } from './ecsNodeInterfaces'
+import { DefaultEcsServiceNode } from './ecsServiceNode'
+
+export class DefaultEcsServicesNode extends AWSTreeErrorHandlerNode implements EcsServicesNode {
+    private readonly serviceNodes: Map<string, EcsServiceNode>
+
+    public get regionCode(): string {
+        return this.parent.regionCode
+    }
+
+    public constructor(
+        public readonly parent: EcsClusterNode,
+        private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
+    ) {
+        super('Services', vscode.TreeItemCollapsibleState.Collapsed)
+        this.serviceNodes = new Map<string, EcsServiceNode>()
+    }
+
+    public async getChildren() {
+        await this.handleErrorProneOperation(
+            async () => this.updateChildren(),
+            'localized failure message here'
+        )
+
+        if (!!this.errorNode) {
+            return [this.errorNode]
+        }
+
+        if (this.serviceNodes.size > 0) {
+            return [...this.serviceNodes.values()]
+            .sort((nodeA, nodeB) =>
+                nodeA.arn.localeCompare(
+                    nodeB.arn
+                )
+            )
+        }
+
+        return [
+            new PlaceholderNode(
+                this,
+                'localized placeholder-no clusters'
+            )
+        ]
+    }
+
+    public async updateChildren() {
+        const client: EcsClient = ext.toolkitClientBuilder.createEcsClient(this.regionCode)
+        const services = await toMapAsync(
+            asyncIterableWithStatusBarUpdate<string>(
+                client.listServices(this.parent.arn),
+                'localized waiting message'
+            ),
+            service => service
+        )
+
+        updateInPlace(
+            this.serviceNodes,
+            services.keys(),
+            key => this.serviceNodes.get(key)!.update(services.get(key)!),
+            key => new DefaultEcsServiceNode(
+                this,
+                services.get(key)!,
+                relativeExtensionPath => this.getExtensionAbsolutePath(relativeExtensionPath)
+            )
+        )
+    }
+}

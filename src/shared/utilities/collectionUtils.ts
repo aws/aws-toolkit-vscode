@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import './asyncIteratorShim'
 
 export function union<T>(a: Iterable<T>, b: Iterable<T>): Set<T> {
@@ -159,4 +160,23 @@ export async function take<T>(sequence: AsyncIterable<T>, count: number): Promis
     }
 
     return result
+}
+
+/**
+ * Wrapper function to handle status bar updates and lifecycle while iterating through an AsyncIterable
+ *
+ * @param iterableFromClient AsyncIterable, often from a default AWS client
+ * @param statusMessage Status bar message to display while iterating through iterator
+ */
+export async function* asyncIterableWithStatusBarUpdate<T>(
+    iterableFromClient: AsyncIterable<T>,
+    statusMessage: string
+): AsyncIterableIterator<T> {
+    const status = vscode.window.setStatusBarMessage(statusMessage)
+
+    try {
+        yield* iterableFromClient
+    } finally {
+        status.dispose()
+    }
 }
