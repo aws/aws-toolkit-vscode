@@ -46,15 +46,15 @@ export async function invokeLambda(params: {
     awsContext: AwsContext // TODO: Consider replacing 'awsContext' with something specific and meaningful
     outputChannel: vscode.OutputChannel
     resourceFetcher: ResourceFetcher
-    element: FunctionNodeBase // TODO: Consider replacing 'element'' with something specific and meaningful
+    functionNode: FunctionNodeBase // TODO: Consider replacing 'element'' with something specific and meaningful
 }) {
     const logger: Logger = getLogger()
 
     try {
-        const fn = params.element
+        const functionNode = params.functionNode
         const view = vscode.window.createWebviewPanel(
             'html',
-            `Invoked ${fn.configuration.FunctionName}`,
+            `Invoked ${functionNode.configuration.FunctionName}`,
             vscode.ViewColumn.One,
             {
                 // Enable scripts in the webview
@@ -104,7 +104,7 @@ export async function invokeLambda(params: {
 
             view.webview.html = baseTemplateFn({
                 content: invokeTemplateFn({
-                    FunctionName: fn.configuration.FunctionName,
+                    FunctionName: functionNode.configuration.FunctionName,
                     InputSamples: inputs,
                     Scripts: loadScripts,
                     Libraries: loadLibs
@@ -113,7 +113,7 @@ export async function invokeLambda(params: {
 
             view.webview.onDidReceiveMessage(
                 createMessageReceivedFunc({
-                    fn,
+                    fn: functionNode,
                     outputChannel: params.outputChannel,
                     resourceFetcher: params.resourceFetcher,
                     resourcePath: resourcePath,

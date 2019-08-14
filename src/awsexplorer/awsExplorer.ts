@@ -88,7 +88,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
             callback: async (node: FunctionNodeBase) =>
                 await invokeLambda({
                     awsContext: this.awsContext,
-                    element: node,
+                    functionNode: node,
                     outputChannel: this.lambdaOutputChannel,
                     resourceFetcher: this.resourceFetcher
                 }),
