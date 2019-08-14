@@ -20,7 +20,6 @@ import { sampleRequestManifestPath, sampleRequestPath } from '../constants'
 import { FunctionNodeBase } from '../explorer/functionNode'
 import { SampleRequest } from '../models/sampleRequest'
 import { LambdaTemplates } from '../templates/lambdaTemplates'
-import { selectLambdaNode } from '../utils'
 
 interface SampleRequestManifest {
     requests: {
@@ -43,19 +42,18 @@ export async function invokeLambda(params: {
      *      invokeParams: {functionArn: string} // or Lambda.Types.InvocationRequest (see: lambda.d.ts)
      *  }
      */
-    awsContext: AwsContext, // TODO: Consider replacing 'awsContext' with something specific and meaningful
-    outputChannel: vscode.OutputChannel,
-    resourceFetcher: ResourceFetcher,
-    element?: FunctionNodeBase, // TODO: Consider replacing 'element'' with something specific and meaningful
+    awsContext: AwsContext // TODO: Consider replacing 'awsContext' with something specific and meaningful
+    outputChannel: vscode.OutputChannel
+    resourceFetcher: ResourceFetcher
+    functionNode: FunctionNodeBase // TODO: Consider replacing 'element'' with something specific and meaningful
 }) {
-
     const logger: Logger = getLogger()
 
     try {
-        const fn: FunctionNodeBase = await selectLambdaNode(params.awsContext, params.element)
+        const functionNode = params.functionNode
         const view = vscode.window.createWebviewPanel(
             'html',
-            `Invoked ${fn.configuration.FunctionName}`,
+            `Invoked ${functionNode.configuration.FunctionName}`,
             vscode.ViewColumn.One,
             {
                 // Enable scripts in the webview
@@ -93,7 +91,7 @@ export async function invokeLambda(params: {
                     return
                 }
 
-                _.forEach(result.requests.request, (r) => {
+                _.forEach(result.requests.request, r => {
                     inputs.push({ name: r.name, filename: r.filename })
                 })
             })
@@ -105,20 +103,20 @@ export async function invokeLambda(params: {
 
             view.webview.html = baseTemplateFn({
                 content: invokeTemplateFn({
-                    FunctionName: fn.configuration.FunctionName,
+                    FunctionName: functionNode.configuration.FunctionName,
                     InputSamples: inputs,
                     Scripts: loadScripts,
                     Libraries: loadLibs
-                }),
+                })
             })
 
             view.webview.onDidReceiveMessage(
                 createMessageReceivedFunc({
-                    fn,
+                    fn: functionNode,
                     outputChannel: params.outputChannel,
                     resourceFetcher: params.resourceFetcher,
                     resourcePath: resourcePath,
-                    onPostMessage: message  => view.webview.postMessage(message)
+                    onPostMessage: message => view.webview.postMessage(message)
                 }),
                 undefined,
                 ext.context.subscriptions
@@ -132,15 +130,18 @@ export async function invokeLambda(params: {
     }
 }
 
-function createMessageReceivedFunc({fn, outputChannel, ...restParams}: {
+function createMessageReceivedFunc({
+    fn,
+    outputChannel,
+    ...restParams
+}: {
     // TODO: Consider passing lambdaClient: LambdaClient
-    fn: FunctionNodeBase, // TODO: Replace w/ invokeParams: {functionArn: string} // or Lambda.Types.InvocationRequest
+    fn: FunctionNodeBase // TODO: Replace w/ invokeParams: {functionArn: string} // or Lambda.Types.InvocationRequest
     outputChannel: vscode.OutputChannel
-    resourceFetcher: ResourceFetcher,
-    resourcePath: string,
+    resourceFetcher: ResourceFetcher
+    resourcePath: string
     onPostMessage(message: any): Thenable<boolean>
 }) {
-
     const logger: Logger = getLogger()
 
     return async (message: CommandMessage) => {
@@ -172,13 +173,8 @@ function createMessageReceivedFunc({fn, outputChannel, ...restParams}: {
                         throw new Error(`Could not determine ARN for function ${fn.configuration.FunctionName}`)
                     }
                     const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(fn.regionCode)
-                    const funcResponse = await client.invoke(
-                        fn.configuration.FunctionArn,
-                        message.value
-                    )
-                    const logs = funcResponse.LogResult ?
-                        Buffer.from(funcResponse.LogResult, 'base64').toString() :
-                        ''
+                    const funcResponse = await client.invoke(fn.configuration.FunctionArn, message.value)
+                    const logs = funcResponse.LogResult ? Buffer.from(funcResponse.LogResult, 'base64').toString() : ''
                     const payload = funcResponse.Payload ? funcResponse.Payload : JSON.stringify({})
 
                     outputChannel.appendLine(`Invocation result for ${fn.configuration.FunctionArn}`)
