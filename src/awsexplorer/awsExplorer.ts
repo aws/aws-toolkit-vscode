@@ -40,7 +40,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
         private readonly regionProvider: RegionProvider,
         private readonly resourceFetcher: ResourceFetcher,
         private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string,
-        private readonly lambdaOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda'),
+        private readonly lambdaOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda')
     ) {
         this._onDidChangeTreeData = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
         this.onDidChangeTreeData = this._onDidChangeTreeData.event
@@ -55,12 +55,13 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
 
         registerCommand({
             command: 'aws.deleteLambda',
-            callback: async (node: LambdaFunctionNode) => await deleteLambda({
-                deleteParams: { functionName: node.configuration.FunctionName || '' },
-                lambdaClient: ext.toolkitClientBuilder.createLambdaClient(node.regionCode),
-                outputChannel: this.lambdaOutputChannel,
-                onRefresh: () => this.refresh(node.parent)
-            }),
+            callback: async (node: LambdaFunctionNode) =>
+                await deleteLambda({
+                    deleteParams: { functionName: node.configuration.FunctionName || '' },
+                    lambdaClient: ext.toolkitClientBuilder.createLambdaClient(node.regionCode),
+                    outputChannel: this.lambdaOutputChannel,
+                    onRefresh: () => this.refresh(node.parent)
+                }),
             telemetryName: {
                 namespace: TelemetryNamespace.Lambda,
                 name: 'delete'
@@ -69,10 +70,8 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
 
         registerCommand({
             command: 'aws.deleteCloudFormation',
-            callback: async (node: CloudFormationStackNode) => await deleteCloudFormation(
-                () => this.refresh(node.parent),
-                node
-            ),
+            callback: async (node: CloudFormationStackNode) =>
+                await deleteCloudFormation(() => this.refresh(node.parent), node),
             telemetryName: {
                 namespace: TelemetryNamespace.Cloudformation,
                 name: 'delete'
@@ -86,12 +85,13 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
 
         registerCommand({
             command: 'aws.invokeLambda',
-            callback: async (node: FunctionNodeBase) => await invokeLambda({
-                awsContext: this.awsContext,
-                element: node,
-                outputChannel: this.lambdaOutputChannel,
-                resourceFetcher: this.resourceFetcher
-            }),
+            callback: async (node: FunctionNodeBase) =>
+                await invokeLambda({
+                    awsContext: this.awsContext,
+                    functionNode: node,
+                    outputChannel: this.lambdaOutputChannel,
+                    resourceFetcher: this.resourceFetcher
+                }),
             telemetryName: {
                 namespace: TelemetryNamespace.Lambda,
                 name: 'invokeremote'
@@ -134,7 +134,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
                             'Unable to load Lambda Functions, click here to retry'
                         ),
                         'aws.refreshAwsExplorerNode',
-                        [this, element],
+                        [this, element]
                     )
                 ]
             }
@@ -148,7 +148,8 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
                     localize('AWS.explorerNode.signIn', 'Connect to AWS...'),
                     'aws.login',
                     undefined,
-                    localize('AWS.explorerNode.signIn.tooltip', 'Connect to AWS using a credential profile'))
+                    localize('AWS.explorerNode.signIn.tooltip', 'Connect to AWS using a credential profile')
+                )
             ]
         }
 
@@ -159,10 +160,10 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
             this.regionNodes,
             intersection(regionMap.keys(), explorerRegionCodes),
             key => this.regionNodes.get(key)!.update(regionMap.get(key)!),
-            key => new DefaultRegionNode(
-                regionMap.get(key)!,
-                relativeExtensionPath => this.getExtensionAbsolutePath(relativeExtensionPath)
-            )
+            key =>
+                new DefaultRegionNode(regionMap.get(key)!, relativeExtensionPath =>
+                    this.getExtensionAbsolutePath(relativeExtensionPath)
+                )
         )
 
         if (this.regionNodes.size > 0) {
@@ -174,7 +175,8 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
                     localize('AWS.explorerNode.addRegion', 'Click to add a region to view functions...'),
                     'aws.showRegion',
                     undefined,
-                    localize('AWS.explorerNode.addRegion.tooltip', 'Configure a region to show available functions'))
+                    localize('AWS.explorerNode.addRegion.tooltip', 'Configure a region to show available functions')
+                )
             ]
         }
     }
