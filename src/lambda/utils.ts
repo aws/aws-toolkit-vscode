@@ -17,11 +17,7 @@ import { toArrayAsync } from '../shared/utilities/collectionUtils'
 import { quickPickLambda } from './commands/quickPickLambda'
 import { FunctionNodeBase } from './explorer/functionNode'
 
-export async function selectLambdaNode(
-    awsContext: AwsContext,
-    element?: FunctionNodeBase
-): Promise<FunctionNodeBase> {
-
+export async function selectLambdaNode(awsContext: AwsContext, element?: FunctionNodeBase): Promise<FunctionNodeBase> {
     const logger: Logger = getLogger()
 
     if (element && element.configuration) {
@@ -68,13 +64,12 @@ export async function* listCloudFormationStacks(
 }
 
 export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableIterator<Lambda.FunctionConfiguration> {
-
     const status = vscode.window.setStatusBarMessage(
-        localize('AWS.message.statusBar.loading.lambda', 'Loading Lambdas...'))
+        localize('AWS.message.statusBar.loading.lambda', 'Loading Lambdas...')
+    )
 
     try {
         yield* client.listFunctions()
-
     } finally {
         if (!!status) {
             status.dispose()
