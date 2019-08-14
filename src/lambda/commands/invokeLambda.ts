@@ -20,7 +20,6 @@ import { sampleRequestManifestPath, sampleRequestPath } from '../constants'
 import { FunctionNodeBase } from '../explorer/functionNode'
 import { SampleRequest } from '../models/sampleRequest'
 import { LambdaTemplates } from '../templates/lambdaTemplates'
-import { selectLambdaNode } from '../utils'
 
 interface SampleRequestManifest {
     requests: {
