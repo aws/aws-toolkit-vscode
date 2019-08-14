@@ -46,12 +46,12 @@ export async function invokeLambda(params: {
     awsContext: AwsContext // TODO: Consider replacing 'awsContext' with something specific and meaningful
     outputChannel: vscode.OutputChannel
     resourceFetcher: ResourceFetcher
-    element?: FunctionNodeBase // TODO: Consider replacing 'element'' with something specific and meaningful
+    element: FunctionNodeBase // TODO: Consider replacing 'element'' with something specific and meaningful
 }) {
     const logger: Logger = getLogger()
 
     try {
-        const fn: FunctionNodeBase = await selectLambdaNode(params.awsContext, params.element)
+        const fn: params.element
         const view = vscode.window.createWebviewPanel(
             'html',
             `Invoked ${fn.configuration.FunctionName}`,
