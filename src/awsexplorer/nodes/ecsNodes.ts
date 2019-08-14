@@ -27,7 +27,7 @@ import {
 
 export class DefaultEcsNode extends AWSTreeNodeBase implements EcsNode {
     private readonly clustersNode: EcsClustersNode
-    //private readonly taskDefinitionsNode: EcsTaskDefinitionsNode
+    private readonly taskDefinitionsNode: EcsTaskDefinitionsNode
 
     public constructor(
         public readonly parent: RegionNode,
@@ -35,7 +35,7 @@ export class DefaultEcsNode extends AWSTreeNodeBase implements EcsNode {
     ) {
         super('ECS', vscode.TreeItemCollapsibleState.Collapsed)
         this.clustersNode = new DefaultEcsClustersNode(this, this.getExtensionAbsolutePath)
-        //this.taskDefinitionsNode = new DefaultEcsTaskDefinitionsNode(this, this.getExtensionAbsolutePath)
+        this.taskDefinitionsNode = new DefaultEcsTaskDefinitionsNode(this, this.getExtensionAbsolutePath)
         this.update()
     }
 
@@ -46,12 +46,12 @@ export class DefaultEcsNode extends AWSTreeNodeBase implements EcsNode {
     public async getChildren(): Promise<AWSTreeErrorHandlerNode[]> {
         return [
             this.clustersNode,
-            //this.taskDefinitionsNode
+            this.taskDefinitionsNode
         ]
     }
 
     public update(): void {
-        this.tooltip = 'temp'
+        this.tooltip = 'localized tooltip here'
     }
 }
 
@@ -73,14 +73,14 @@ export class DefaultEcsClustersNode extends AWSTreeErrorHandlerNode implements E
     public async getChildren(): Promise<(EcsClusterNode | ErrorNode)[]> {
         await this.handleErrorProneOperation(
             async () => this.updateChildren(),
-            'localized string here'
+            'localized error here'
         )
 
         return !!this.errorNode ? [this.errorNode]
             : [...this.clusterNodes.values()]
                 .sort((nodeA, nodeB) =>
-                    nodeA.name.localeCompare(
-                        nodeB.name
+                    nodeA.arn.localeCompare(
+                        nodeB.arn
                     )
                 )
     }
@@ -89,7 +89,7 @@ export class DefaultEcsClustersNode extends AWSTreeErrorHandlerNode implements E
 
         const client: EcsClient = ext.toolkitClientBuilder.createEcsClient(this.regionCode)
         const clusters = await toMapAsync(
-            asyncIterableIteratorFromAwsClient<string>(client.listClusters(), 'localized string here'),
+            asyncIterableIteratorFromAwsClient<string>(client.listClusters(), 'localized waiting message here'),
             cluster => cluster
         )
 
@@ -106,24 +106,61 @@ export class DefaultEcsClustersNode extends AWSTreeErrorHandlerNode implements E
     }
 }
 
-// export class DefaultEcsTaskDefinitionsNode extends AWSTreeErrorHandlerNode implements EcsTaskDefinitionsNode {
-//     private readonly taskDefinitionNodes: Map<string, EcsTaskDefinitionNode>
+export class DefaultEcsTaskDefinitionsNode extends AWSTreeErrorHandlerNode implements EcsTaskDefinitionsNode {
+    private readonly taskDefinitionNodes: Map<string, EcsTaskDefinitionNode>
 
-//     public constructor(
-//         public readonly parent: EcsNode,
-//         private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
-//     ) {
-//         super('ECSClusters', vscode.TreeItemCollapsibleState.Collapsed)
-//         this.taskDefinitionNodes = new Map<string, EcsTaskDefinitionNode>()
-//         // TODO: Get new icons
-//         // this.iconPath = {
-//         //     dark: vscode.Uri.file(this.getExtensionAbsolutePath('resources/dark/cloudformation.svg')),
-//         //     light: vscode.Uri.file(this.getExtensionAbsolutePath('resources/light/cloudformation.svg')),
-//         // }
-//     }
+    public constructor(
+        public readonly parent: EcsNode,
+        private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
+    ) {
+        super('Task Definitions', vscode.TreeItemCollapsibleState.Collapsed)
+        this.taskDefinitionNodes = new Map<string, EcsTaskDefinitionNode>()
+        // TODO: Get new icons
+        // this.iconPath = {
+        //     dark: vscode.Uri.file(this.getExtensionAbsolutePath('resources/dark/cloudformation.svg')),
+        //     light: vscode.Uri.file(this.getExtensionAbsolutePath('resources/light/cloudformation.svg')),
+        // }
+    }
 
-//     public update()
-// }
+    public get regionCode(): string {
+        return this.parent.regionCode
+    }
+
+    public async getChildren(): Promise<(EcsTaskDefinitionNode | ErrorNode)[]> {
+        await this.handleErrorProneOperation(
+            async () => this.updateChildren(),
+            'localized failure message here'
+        )
+
+        return !!this.errorNode ? [this.errorNode]
+            : [...this.taskDefinitionNodes.values()]
+                .sort((nodeA, nodeB) =>
+                    nodeA.arn.localeCompare(
+                        nodeB.arn
+                    )
+                )
+    }
+
+    public async updateChildren(): Promise<void> {
+
+        const client: EcsClient = ext.toolkitClientBuilder.createEcsClient(this.regionCode)
+        const taskDefs = await toMapAsync(
+            asyncIterableIteratorFromAwsClient<string>(client.listTaskDefinitions(), 'localized waiting message here'),
+            cluster => cluster
+        )
+
+        updateInPlace(
+            this.taskDefinitionNodes,
+            taskDefs.keys(),
+            key => this.taskDefinitionNodes.get(key)!.update(taskDefs.get(key)!),
+            key => new DefaultEcsTaskDefinitionNode(
+                this,
+                taskDefs.get(key)!,
+                relativeExtensionPath => this.getExtensionAbsolutePath(relativeExtensionPath)
+            )
+        )
+    }
+}
 
 export class DefaultEcsClusterNode extends AWSTreeErrorHandlerNode implements EcsClusterNode {
 
@@ -135,22 +172,24 @@ export class DefaultEcsClusterNode extends AWSTreeErrorHandlerNode implements Ec
 
     public constructor(
         public readonly parent: EcsClustersNode,
-        public name: string,
+        public arn: string,
         private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
     ) {
         super('', vscode.TreeItemCollapsibleState.Collapsed)
         this.servicesNode = new DefaultEcsServicesNode(this, this.getExtensionAbsolutePath)
         // TODO: Get new icons
         this.iconPath = {
-            dark: vscode.Uri.file(this.getExtensionAbsolutePath('resources/dark/cloudformation.svg')),
-            light: vscode.Uri.file(this.getExtensionAbsolutePath('resources/light/cloudformation.svg')),
+            dark: vscode.Uri.file(this.getExtensionAbsolutePath('resources/dark/ecsCluster.svg')),
+            light: vscode.Uri.file(this.getExtensionAbsolutePath('resources/light/ecsCluster.svg')),
         }
-        this.update(name)
+        this.update(arn)
     }
 
-    public update(name: string) {
-        this.name = name
-        this.label = name
+    public update(arn: string) {
+        this.arn = arn
+        // transform here
+        // Up to 255 letters (uppercase and lowercase), numbers, hyphens, and underscores are allowed.
+        this.label = convertArnToResourceName(arn)
     }
 
     public async getChildren() {
@@ -171,17 +210,12 @@ export class DefaultEcsServicesNode extends AWSTreeErrorHandlerNode implements E
     ) {
         super('Services', vscode.TreeItemCollapsibleState.Collapsed)
         this.serviceNodes = new Map<string, EcsServiceNode>()
-        // TODO: Get new icons
-        this.iconPath = {
-            dark: vscode.Uri.file(this.getExtensionAbsolutePath('resources/dark/cloudformation.svg')),
-            light: vscode.Uri.file(this.getExtensionAbsolutePath('resources/light/cloudformation.svg')),
-        }
     }
 
     public async getChildren() {
         await this.handleErrorProneOperation(
             async () => this.updateChildren(),
-            'localized string here'
+            'localized failure message here'
         )
 
         if (!!this.errorNode) {
@@ -191,8 +225,8 @@ export class DefaultEcsServicesNode extends AWSTreeErrorHandlerNode implements E
         if (this.serviceNodes.size > 0) {
             return [...this.serviceNodes.values()]
             .sort((nodeA, nodeB) =>
-                nodeA.name.localeCompare(
-                    nodeB.name
+                nodeA.arn.localeCompare(
+                    nodeB.arn
                 )
             )
         }
@@ -200,7 +234,7 @@ export class DefaultEcsServicesNode extends AWSTreeErrorHandlerNode implements E
         return [
             new PlaceholderNode(
                 this,
-                'localized string here'
+                'localized placeholder-no clusters'
             )
         ]
     }
@@ -208,7 +242,10 @@ export class DefaultEcsServicesNode extends AWSTreeErrorHandlerNode implements E
     public async updateChildren() {
         const client: EcsClient = ext.toolkitClientBuilder.createEcsClient(this.regionCode)
         const services = await toMapAsync(
-            asyncIterableIteratorFromAwsClient<string>(client.listServices(this.parent.name), 'localized string here'),
+            asyncIterableIteratorFromAwsClient<string>(
+                client.listServices(this.parent.arn),
+                'localized waiting message'
+            ),
             service => service
         )
 
@@ -233,21 +270,49 @@ export class DefaultEcsServiceNode extends AWSTreeErrorHandlerNode implements Ec
 
     public constructor(
         public readonly parent: EcsServicesNode,
-        public name: string,
+        public arn: string,
         private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
     ) {
-        super('', vscode.TreeItemCollapsibleState.Collapsed)
+        super('')
         // TODO: Get new icons
         this.iconPath = {
-            dark: vscode.Uri.file(this.getExtensionAbsolutePath('resources/dark/cloudformation.svg')),
-            light: vscode.Uri.file(this.getExtensionAbsolutePath('resources/light/cloudformation.svg')),
+            dark: vscode.Uri.file(this.getExtensionAbsolutePath('resources/dark/ecsService.svg')),
+            light: vscode.Uri.file(this.getExtensionAbsolutePath('resources/light/ecsService.svg')),
         }
-        this.update(name)
+        this.update(arn)
     }
 
-    public update(name: string) {
-        this.name = name
-        this.label = name
+    public update(arn: string) {
+        this.arn = arn
+        // Up to 255 letters (uppercase and lowercase), numbers, hyphens, and underscores are allowed.
+        this.label = convertArnToResourceName(arn, this.parent.parent.label)
+    }
+}
+
+export class DefaultEcsTaskDefinitionNode extends AWSTreeErrorHandlerNode implements EcsTaskDefinitionNode {
+
+    public get regionCode(): string {
+        return this.parent.regionCode
+    }
+
+    public constructor(
+        public readonly parent: EcsTaskDefinitionsNode,
+        public arn: string,
+        private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
+    ) {
+        super('')
+        // TODO: Get new icons
+        this.iconPath = {
+            dark: vscode.Uri.file(this.getExtensionAbsolutePath('resources/dark/ecsTaskDef.svg')),
+            light: vscode.Uri.file(this.getExtensionAbsolutePath('resources/light/ecsTaskDef.svg')),
+        }
+        this.update(arn)
+    }
+
+    public update(arn: string) {
+        this.arn = arn
+        // Up to 255 letters (uppercase and lowercase), numbers, hyphens, and underscores are allowed.
+        this.label = convertArnToResourceName(arn)
     }
 }
 
@@ -265,4 +330,19 @@ async function* asyncIterableIteratorFromAwsClient<T>(
     }
 }
 
-// define task and service
+function convertArnToResourceName(arn: string, excluded?: string): string | undefined {
+    let regex
+
+    if (excluded) {
+        regex = new RegExp(`\/(${excluded}\/){0,1}([a-zA-Z0-9-_]{1,255})`)
+    } else {
+        regex = new RegExp('\/([a-zA-Z0-9-_]{1,255})')
+    }
+
+    const regexedString = regex.exec(arn)
+    if (regexedString) {
+        return (regexedString[regexedString.length - 1])
+    }
+
+    return undefined
+}

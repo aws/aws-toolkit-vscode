@@ -33,6 +33,10 @@ export interface EcsTaskDefinitionNode extends AWSTreeErrorHandlerNode {
     readonly regionCode: string
 
     readonly parent: EcsTaskDefinitionsNode
+
+    readonly arn: string
+
+    update(arn: string): void
 }
 
 export interface EcsClustersNode extends AWSTreeErrorHandlerNode {
@@ -50,11 +54,11 @@ export interface EcsClusterNode extends AWSTreeErrorHandlerNode {
 
     readonly parent: EcsClustersNode
 
-    readonly name: string
+    readonly arn: string
 
     getChildren(): Thenable<(EcsServicesNode | ErrorNode)[]>
 
-    update(name: string): void
+    update(arn: string): void
 }
 
 export interface EcsServicesNode extends AWSTreeErrorHandlerNode {
@@ -72,7 +76,7 @@ export interface EcsServiceNode extends AWSTreeErrorHandlerNode {
 
     readonly parent: EcsServicesNode
 
-    readonly name: string
+    readonly arn: string
 
-    update(name: string): void
+    update(arn: string): void
 }
