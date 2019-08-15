@@ -16,8 +16,7 @@ is required.
 
 ## Requirements
 
-The resource cache has some unique requirements that make sense to implement in a re-usable way on-top of a
-known in-memory caching implementation ([Guava][5]):
+The resource cache has some unique requirements that make sense to implement in a re-usable way:
 - Ability to cache a resource (or list of resources) by AWS [Region][6] / Account ([Credential][7])
 - Time-based expiration, customizable by resource-type (some resources are more dynamic than others)
 - The ability to fall-back to stale data in the event of a failed refresh (e.g. the developers machine is offline)
@@ -171,6 +170,52 @@ val filteredView: Resource<String?> = BASE_RESOURCE.filter { it.functionArn() > 
   .find { it == "foo" }
 ```
 
+### Eviction
+
+In order to be respectful of a users memory constraints - we don't want the cache to be unbounded. Due to the fall-back
+nature of the cache - we don't evict items immediately upon expiry (nor do we want to) - expiry is merely an indicator 
+that an item should be refreshed.
+
+The `DefaultAwsResourceCache` implementation is backed by a [`ConcurrentHashMap`][9] which has no
+eviction logic of its own - entries will remain until they're explicitly removed. To satisfy the memory requirement we need
+to periodically remove items once the cache grows too large.
+
+#### Eviction Eligibility
+The pruning process is based off the "weight" of the total cache, each `Entry` in the cache is given a numeric weighting. Since
+there's no straightforward way to determine 'how much memory' an object takes up weighting is based on a simple algorithm: *collection based
+items get 1 point per entry in the collection, all other items are assigned 1 point*. As an example:
+
+* A *ListBuckets* resource that was a collection containing 5 buckets would be assigned a weight of 5, whereas a *DescribeService* resource with
+only a single Service would have a weight of 1.
+
+The **weighting** of the cache (and it's items) determines **how much** needs to be pruned at any given time. The determination of **what** is pruned
+is based on an `Entry`'s **expiry**. With items that are expiring sooner being evicted first.
+
+The current **default max size** is 1000 weight-points.
+
+#### When to Prune
+There's a few options for when to implement pruning:
+1) **Inline during fetch**: when new items are fetched that pushes the cache beyond it's size limit, perform pruning before
+returning the items fetched.
+    * **Pros**
+        * Doesn't require an additional thread-pool
+        * Cache will never exceed it's size/weight limit
+        * Proven approach (this is how [Guava][5] does it)
+    * **Cons**
+        * Multiple prunes could happen concurrently leading to more removal than necessary (unless locking is introduced)
+        * Causes fetches to be delayed
+        * Adds complexity to the (already fairly complex) fetch process
+2) **Time-based prune**: a separate scheduled process (using JetBrains' [`Alarm`][10] system) periodically runs pruning in
+a separate thread. 
+    * **Pros**
+        * Doesn't interfere with the fetch process
+        * Only one prune runs at any given time
+    * **Cons**
+        * Adds complexity in the form of managing a scheduler
+        * Cache may temporarily grow larger than it's size limit
+        
+The current implementation uses Option 2) the **Time-Based** mechanism.
+
 ## Future Enhancements
 
 ### New `Resource` type `Resource.Compound`
@@ -193,3 +238,5 @@ result should be cached). A good use-case for this would be `LIST_BUCKETS_BY_REG
 [6]: https://github.com/aws/aws-toolkit-jetbrains/blob/master/core/src/software/aws/toolkits/core/region/AwsRegion.kt
 [7]: https://github.com/aws/aws-toolkit-jetbrains/blob/master/core/src/software/aws/toolkits/core/credentials/ToolkitCredentialsProvider.kt
 [8]: https://github.com/aws/aws-toolkit-jetbrains/blob/master/jetbrains-core/src/software/aws/toolkits/jetbrains/core/AwsResourceCache.kt
+[9]: https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ConcurrentHashMap.html
+[10]: https://github.com/JetBrains/intellij-community/blob/master/platform/platform-api/src/com/intellij/util/Alarm.java

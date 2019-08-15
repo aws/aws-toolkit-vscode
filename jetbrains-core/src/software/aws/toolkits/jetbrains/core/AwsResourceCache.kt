@@ -3,10 +3,11 @@
 
 package software.aws.toolkits.jetbrains.core
 
-import com.google.common.cache.CacheBuilder
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
+import com.intellij.util.Alarm
+import com.intellij.util.AlarmFactory
 import software.amazon.awssdk.core.SdkClient
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
@@ -20,6 +21,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
@@ -175,18 +177,24 @@ class ClientBackedCachedResource<ReturnType, ClientType : SdkClient>(
     override fun toString(): String = "ClientBackedCachedResource(id='$id')"
 }
 
-class DefaultAwsResourceCache(private val project: Project, private val clock: Clock, maximumCacheEntries: Long) :
-    AwsResourceCache, ToolkitCredentialsChangeListener {
+class DefaultAwsResourceCache(
+    private val project: Project,
+    private val clock: Clock,
+    private val maximumCacheEntries: Int,
+    private val maintenanceInterval: Duration
+) : AwsResourceCache, ToolkitCredentialsChangeListener {
 
     @Suppress("unused")
-    constructor(project: Project) : this(project, Clock.systemDefaultZone(), MAXIMUM_CACHE_ENTRIES)
+    constructor(project: Project) : this(project, Clock.systemDefaultZone(), MAXIMUM_CACHE_ENTRIES, DEFAULT_MAINTENANCE_INTERVAL)
+
+    private val cache = ConcurrentHashMap<CacheKey, Entry<*>>()
+    private val accountSettings = ProjectAccountSettingsManager.getInstance(project)
+    private val alarm = AlarmFactory.getInstance().create(Alarm.ThreadToUse.POOLED_THREAD, project)
 
     init {
         ApplicationManager.getApplication().messageBus.connect().subscribe(CredentialManager.CREDENTIALS_CHANGED, this)
+        scheduleCacheMaintenance()
     }
-
-    private val cache = CacheBuilder.newBuilder().maximumSize(maximumCacheEntries).build<CacheKey, Entry<*>>().asMap()
-    private val accountSettings = ProjectAccountSettingsManager.getInstance(project)
 
     override fun <T> getResource(resource: Resource<T>, useStale: Boolean, forceFetch: Boolean) =
         getResource(resource, accountSettings.activeRegion, accountSettings.activeCredentialProvider, useStale, forceFetch)
@@ -199,10 +207,10 @@ class DefaultAwsResourceCache(private val project: Project, private val clock: C
         forceFetch: Boolean
     ): CompletionStage<T> = when (resource) {
         is Resource.View<*, T> -> getResource(resource.underlying, region, credentialProvider, useStale, forceFetch).thenApply { resource.doMap(it as Any) }
-        is Resource.Cached<T> -> Context(resource, region, credentialProvider, useStale, forceFetch).also { getCachedResource(it, 0) }.future
+        is Resource.Cached<T> -> Context(resource, region, credentialProvider, useStale, forceFetch).also { getCachedResource(it) }.future
     }
 
-    private fun <T> getCachedResource(context: Context<T>, failedAttempts: Int) {
+    private fun <T> getCachedResource(context: Context<T>) {
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
                 @Suppress("UNCHECKED_CAST")
@@ -210,14 +218,32 @@ class DefaultAwsResourceCache(private val project: Project, private val clock: C
                     fetchIfNeeded(context, value as Entry<T>?)
                 } as Entry<T>
                 context.future.complete(result.value)
-            } catch (e: AssertionError) { // HACK: until we figure out why Guava Cache is throwing an exception : https://github.com/google/guava/issues/3464
-                when {
-                    failedAttempts > 0 -> context.future.completeExceptionally(e)
-                    else -> getCachedResource(context, failedAttempts + 1)
-                }
             } catch (e: Throwable) {
                 context.future.completeExceptionally(e)
             }
+        }
+    }
+
+    private fun runCacheMaintenance() {
+        try {
+            var totalWeight = 0
+            val entries = cache.entries.asSequence().onEach { totalWeight += it.value.weight }.toList()
+            var exceededWeight = totalWeight - maximumCacheEntries
+            if (exceededWeight <= 0) return
+            entries.sortedBy { it.value.expiry }.forEach { (key, value) ->
+                if (exceededWeight <= 0) return@runCacheMaintenance
+                if (cache.computeRemoveIf(key) { it === value }) {
+                    exceededWeight -= value.weight
+                }
+            }
+        } finally {
+            scheduleCacheMaintenance()
+        }
+    }
+
+    private fun scheduleCacheMaintenance() {
+        if (!alarm.isDisposed) {
+            alarm.addRequest(this::runCacheMaintenance, maintenanceInterval.toMillis())
         }
     }
 
@@ -282,7 +308,8 @@ class DefaultAwsResourceCache(private val project: Project, private val clock: C
 
     companion object {
         private val LOG = getLogger<DefaultAwsResourceCache>()
-        private const val MAXIMUM_CACHE_ENTRIES = 100L
+        private const val MAXIMUM_CACHE_ENTRIES = 1000
+        private val DEFAULT_MAINTENANCE_INTERVAL: Duration = Duration.ofMinutes(5)
 
         private data class CacheKey(val resourceId: String, val regionId: String, val credentialsId: String)
 
@@ -297,11 +324,32 @@ class DefaultAwsResourceCache(private val project: Project, private val clock: C
             val future = CompletableFuture<T>()
         }
 
-        private class Entry<T>(val expiry: Instant, val value: T)
+        private class Entry<T>(val expiry: Instant, val value: T) {
+            val weight = when (value) {
+                is Collection<*> -> value.size
+                else -> 1
+            }
+        }
 
         private fun <T> ConcurrentMap<CacheKey, Entry<*>>.getTyped(key: CacheKey) = this[key]?.let {
             @Suppress("UNCHECKED_CAST")
             it as Entry<T>
+        }
+
+        /**
+         * Atomically apply a [predicate] to the value at [key] (if it exists) and remove if matched.
+         *
+         * @return - true if removal occurred else false
+         */
+        private fun <K, V> ConcurrentHashMap<K, V>.computeRemoveIf(key: K, predicate: (V) -> Boolean): Boolean {
+            var removed = false
+            computeIfPresent(key) { _, v ->
+                if (predicate(v)) {
+                    removed = true
+                    null
+                } else v
+            }
+            return removed
         }
     }
 }

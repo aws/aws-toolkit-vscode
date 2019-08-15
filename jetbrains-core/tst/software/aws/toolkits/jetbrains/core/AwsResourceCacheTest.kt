@@ -26,7 +26,6 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
-import java.lang.AssertionError
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -46,7 +45,7 @@ class AwsResourceCacheTest {
 
     private val mockClock = mock<Clock>()
     private val mockResource = mock<Resource.Cached<String>>()
-    private val sut = DefaultAwsResourceCache(projectRule.project, mockClock, 1000)
+    private val sut = DefaultAwsResourceCache(projectRule.project, mockClock, 1000, Duration.ofMinutes(1))
 
     @Before
     fun setup() {
@@ -80,13 +79,6 @@ class AwsResourceCacheTest {
     fun exceptionsAreBubbledWhenNoEntry() {
         doAnswer { throw Throwable("Bang!") }.`when`(mockResource).fetch(any(), any(), any())
         assertThat(sut.getResource(mockResource)).hasException.withFailMessage("Bang!")
-    }
-
-    @Test
-    fun guavaAssertionExceptionIsRetried() {
-        doAnswer { throw AssertionError("Bang!") }.`when`(mockResource).fetch(any(), any(), any())
-        assertThat(sut.getResource(mockResource)).hasException.withFailMessage("Bang!")
-        verify(mockResource, times(2)).fetch(any(), any(), any())
     }
 
     @Test
@@ -218,6 +210,42 @@ class AwsResourceCacheTest {
     }
 
     @Test
+    fun cacheIsRegularlyPrunedToEnsureItDoesntGrowTooLarge() {
+        val localSut = DefaultAwsResourceCache(projectRule.project, Clock.systemDefaultZone(), 5, Duration.ofMillis(50))
+
+        val now = Instant.now()
+        whenever(mockClock.instant()).thenReturn(now)
+        localSut.getResource(StringResource("1")).value
+        whenever(mockClock.instant()).thenReturn(now.plusMillis(10))
+        localSut.getResource(StringResource("2")).value
+        localSut.getResource(StringResource("3")).value
+        localSut.getResource(StringResource("4")).value
+        localSut.getResource(StringResource("5")).value
+        localSut.getResource(StringResource("6")).value
+
+        Thread.sleep(100)
+        assertThat(localSut.getResourceIfPresent(StringResource("1"))).isNull()
+    }
+
+    @Test
+    fun pruningConsidersCollectionEntriesBasedOnTheirSize() {
+        val localSut = DefaultAwsResourceCache(projectRule.project, mockClock, 5, Duration.ofMillis(50))
+
+        val listResource = DummyResource("list", listOf("a", "b", "c", "d"))
+        val now = Instant.now()
+        whenever(mockClock.instant()).thenReturn(now)
+        localSut.getResource(listResource).value
+        whenever(mockClock.instant()).thenReturn(now.plusMillis(10))
+        localSut.getResource(StringResource("1")).value
+        localSut.getResource(StringResource("2")).value
+
+        Thread.sleep(100)
+        assertThat(localSut.getResourceIfPresent(listResource)).isNull()
+        assertThat(localSut.getResourceIfPresent(StringResource("1"))).isNotEmpty()
+        assertThat(localSut.getResourceIfPresent(StringResource("2"))).isNotEmpty()
+    }
+
+    @Test
     fun multipleCallsInDifferentThreadsStillOnlyCallTheUnderlyingResourceOnce() {
         whenever(mockResource.fetch(any(), any(), any())).thenReturn("hello")
         val concurrency = 200
@@ -249,8 +277,8 @@ class AwsResourceCacheTest {
 
     @Test
     fun cachingShouldBeBasedOnId() {
-        val first = DummyCachedResource("first")
-        val anotherFirst = DummyCachedResource("first")
+        val first = StringResource("first")
+        val anotherFirst = StringResource("first")
 
         sut.getResource(first).value
         sut.getResource(anotherFirst).value
@@ -421,12 +449,15 @@ class AwsResourceCacheTest {
             }
         }
 
-        private class DummyCachedResource(override val id: String) : Resource.Cached<String>() {
+        private open class DummyResource<T>(override val id: String, private val value: T) : Resource.Cached<T>() {
             val callCount = AtomicInteger(0)
-            override fun fetch(project: Project, region: AwsRegion, credentials: ToolkitCredentialsProvider): String {
-                callCount.incrementAndGet()
-                return id
+
+            override fun fetch(project: Project, region: AwsRegion, credentials: ToolkitCredentialsProvider): T {
+                callCount.getAndIncrement()
+                return value
             }
         }
+
+        private class StringResource(id: String) : DummyResource<String>(id, id)
     }
 }
