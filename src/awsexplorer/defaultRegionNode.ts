@@ -13,8 +13,8 @@ import { RegionInfo } from '../shared/regions/regionInfo'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { RegionNode } from '../shared/treeview/nodes/regionNode'
 import { toMap, updateInPlace } from '../shared/utilities/collectionUtils'
+import { DefaultEcsNode } from './nodes/ecsNode'
 import { EcsNode } from './nodes/ecsNodeInterfaces'
-import { DefaultEcsNode } from './nodes/ecsNodes'
 
 // Collects the regions the user has declared they want to work with;
 // on expansion each region lists the functions and CloudFormation Stacks
