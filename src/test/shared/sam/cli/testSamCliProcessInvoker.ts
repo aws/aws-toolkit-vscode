@@ -6,6 +6,8 @@
 import * as assert from 'assert'
 import { SpawnOptions } from 'child_process'
 
+import { access } from '../../../../shared/filesystem'
+import { readFileAsString } from '../../../../shared/filesystemUtilities'
 import { TestLogger } from '../../../../shared/loggerUtils'
 import {
     makeRequiredSamCliProcessInvokeOptions,
@@ -15,10 +17,7 @@ import {
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 
 export class TestSamCliProcessInvoker implements SamCliProcessInvoker {
-    public constructor(
-        private readonly onInvoke: (spawnOptions: SpawnOptions, ...args: any[]) => ChildProcessResult
-    ) {
-    }
+    public constructor(private readonly onInvoke: (spawnOptions: SpawnOptions, ...args: any[]) => ChildProcessResult) {}
 
     public async invoke(options?: SamCliProcessInvokeOptions): Promise<ChildProcessResult> {
         const invokeOptions = makeRequiredSamCliProcessInvokeOptions(options)
@@ -28,7 +27,6 @@ export class TestSamCliProcessInvoker implements SamCliProcessInvoker {
 }
 
 export class BadExitCodeSamCliProcessInvoker extends TestSamCliProcessInvoker {
-
     public exitCode: number
     public error: Error
     public stdout: string
@@ -38,7 +36,7 @@ export class BadExitCodeSamCliProcessInvoker extends TestSamCliProcessInvoker {
         exitCode = -1,
         error = new Error('Bad Result'),
         stdout = 'stdout message',
-        stderr = 'stderr message',
+        stderr = 'stderr message'
     }: {
         exitCode?: number
         error?: Error
@@ -60,7 +58,7 @@ export class BadExitCodeSamCliProcessInvoker extends TestSamCliProcessInvoker {
             exitCode: this.exitCode,
             error: this.error,
             stdout: this.stdout,
-            stderr: this.stderr,
+            stderr: this.stderr
         }
 
         return result
@@ -73,14 +71,7 @@ export class FakeChildProcessResult implements ChildProcessResult {
     public stdout: string
     public stderr: string
 
-    public constructor(
-        {
-            exitCode = 0,
-            stdout = '',
-            stderr = '',
-            ...params
-        }: Partial<ChildProcessResult>
-    ) {
+    public constructor({ exitCode = 0, stdout = '', stderr = '', ...params }: Partial<ChildProcessResult>) {
         this.exitCode = exitCode
         this.error = params.error
         this.stdout = stdout
@@ -88,12 +79,10 @@ export class FakeChildProcessResult implements ChildProcessResult {
     }
 }
 
-export function assertErrorContainsBadExitMessage(
-    actualError: Error,
-    sourceErrorMessage: string
-) {
+export function assertErrorContainsBadExitMessage(actualError: Error, sourceErrorMessage: string) {
     assert.strictEqual(
-        actualError.message, `Error with child process: ${sourceErrorMessage}`,
+        actualError.message,
+        `Error with child process: ${sourceErrorMessage}`,
         'Unexpected error message'
     )
 }
@@ -101,23 +90,79 @@ export function assertErrorContainsBadExitMessage(
 export async function assertLogContainsBadExitInformation(
     logger: TestLogger,
     errantChildProcessResult: ChildProcessResult,
-    expectedExitCode: number,
+    expectedExitCode: number
 ): Promise<void> {
-    assert.ok(
-        // tslint:disable-next-line:max-line-length
-        await logger.logContainsText(`Unexpected exitcode (${errantChildProcessResult.exitCode}), expecting (${expectedExitCode})`),
-        'Log message missing for exit code'
-    )
-    assert.ok(
-        await logger.logContainsText(`Error: ${errantChildProcessResult.error}`),
-        'Log message missing for error'
-    )
-    assert.ok(
-        await logger.logContainsText(`stderr: ${errantChildProcessResult.stderr}`),
-        'Log message missing for stderr'
-    )
-    assert.ok(
-        await logger.logContainsText(`stdout: ${errantChildProcessResult.stdout}`),
-        'Log message missing for stdout'
-    )
+    const logPath = logger.logPath
+
+    // Give the log a chance to get created/flushed
+    await retryOnError({
+        description: 'Wait for log file to exist',
+        fn: async () => await access(logPath),
+        retries: 20,
+        delayMilliseconds: 50,
+        failureMessage: `Could not find log file: ${logPath}`
+    })
+    await retryOnError({
+        description: 'Wait for expected text to appear in log',
+        fn: async () => {
+            const logText = await readFileAsString(logPath)
+            const verifyMessage = verifyLogText(logText, errantChildProcessResult, expectedExitCode)
+            if (verifyMessage) {
+                console.log(verifyMessage)
+                throw new Error(verifyMessage)
+            }
+        },
+        retries: 20,
+        delayMilliseconds: 50,
+        failureMessage: 'Did not find expected log contents'
+    })
+}
+
+function verifyLogText(
+    text: string,
+    errantChildProcessResult: ChildProcessResult,
+    expectedExitCode: number
+): string | undefined {
+    const expectedText = [
+        {
+            text: `Unexpected exitcode (${errantChildProcessResult.exitCode}), expecting (${expectedExitCode})`,
+            verifyMessage: 'Log message missing for exit code'
+        },
+        { text: `Error: ${errantChildProcessResult.error}`, verifyMessage: 'Log message missing for error' },
+        { text: `stderr: ${errantChildProcessResult.stderr}`, verifyMessage: 'Log message missing for stderr' },
+        { text: `stdout: ${errantChildProcessResult.stdout}`, verifyMessage: 'Log message missing for stdout' }
+    ]
+
+    for (const entry of expectedText) {
+        if (!text.includes(entry.text)) {
+            return entry.verifyMessage
+        }
+    }
+
+    return undefined
+}
+
+async function retryOnError(parameters: {
+    description: string
+    retries: number
+    delayMilliseconds: number
+    failureMessage: string
+    fn(): Promise<void>
+}): Promise<void> {
+    for (let attempt = 0; attempt < parameters.retries; attempt++) {
+        try {
+            console.log(`${parameters.description}: Attempt ${attempt + 1}`)
+            await parameters.fn()
+
+            return
+        } catch (err) {
+            if (attempt + 1 >= parameters.retries) {
+                assert.fail(parameters.failureMessage)
+            }
+        }
+
+        await new Promise<any>(resolve => setTimeout(resolve, parameters.delayMilliseconds))
+    }
+
+    assert.fail(parameters.failureMessage)
 }
