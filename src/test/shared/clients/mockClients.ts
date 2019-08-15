@@ -67,23 +67,23 @@ export class MockEcsClient implements EcsClient {
     public readonly regionCode: string
     public readonly listClusters: () => AsyncIterableIterator<string>
     public readonly listServices: (cluster: string) => AsyncIterableIterator<string>
-    public readonly listTaskDefinitions: () => AsyncIterableIterator<string>
+    public readonly listTaskDefinitionFamilies: () => AsyncIterableIterator<string>
 
     public constructor({
         regionCode = '',
         listClusters = () => asyncGenerator([]),
         listServices = (cluster: string) => asyncGenerator([]),
-        listTaskDefinitions = () => asyncGenerator([])
+        listTaskDefinitionFamilies = () => asyncGenerator([])
     }: {
         regionCode?: string
         listClusters?(): AsyncIterableIterator<string>
         listServices?(cluster: string): AsyncIterableIterator<string>
-        listTaskDefinitions?(): AsyncIterableIterator<string>
+        listTaskDefinitionFamilies?(): AsyncIterableIterator<string>
     }) {
         this.regionCode = regionCode
         this.listClusters = listClusters
         this.listServices = listServices
-        this.listTaskDefinitions = listTaskDefinitions
+        this.listTaskDefinitionFamilies = listTaskDefinitionFamilies
     }
 }
 
