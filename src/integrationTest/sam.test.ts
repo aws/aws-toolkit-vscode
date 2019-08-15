@@ -107,11 +107,15 @@ for (const runtime of runtimes) {
     const debuggerType = runtime.debuggerType
     let documentUri: vscode.Uri
     let debugDisposable: vscode.Disposable
+    let samIntegrationTestsAttempt: number = 0
 
     describe(`SAM Integration tests ${runtime.name}`, async () => {
         before(async function() {
             // tslint:disable-next-line: no-invalid-this
             this.timeout(TIMEOUT)
+
+            console.log(`Test Attempt #${++samIntegrationTestsAttempt} for ${runtime.name}`)
+
             // set up debug config
             debugDisposable = vscode.debug.onDidChangeActiveDebugSession(async session =>
                 onDebugChanged(session, debuggerType)
