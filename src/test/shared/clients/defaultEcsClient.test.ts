@@ -120,14 +120,14 @@ describe('defaultEcsClient', async () => {
         })
     })
 
-    describe('ListTaskDefinitions', async () => {
+    describe('ListTaskDefinitionFamilies', async () => {
 
-        it('lists task definitions from a single page', async () => {
-            const targetArr = ['arn1', 'arn2', 'arn3']
-            testClient.listTaskDefinitionsResponses = [{
-                taskDefinitionArns: targetArr
+        it('lists task definition families from a single page', async () => {
+            const targetArr = ['fam1', 'fam2', 'fam3']
+            testClient.listTaskDefinitionFamiliesResponses = [{
+                families: targetArr
             }]
-            const iterator = testClient.listTaskDefinitions()
+            const iterator = testClient.listTaskDefinitionFamilies()
             const arr = []
             for await (const item of iterator) {
                 arr.push(item)
@@ -135,24 +135,24 @@ describe('defaultEcsClient', async () => {
             assert.deepStrictEqual(targetArr, arr)
         })
 
-        it('lists task definitions from multiple pages', async () => {
-            const targetArr1 = ['arn1', 'arn2', 'arn3']
-            const targetArr2 = ['arn4', 'arn5', 'arn6']
-            const targetArr3 = ['arn7', 'arn8', 'arn9']
-            testClient.listTaskDefinitionsResponses = [
+        it('lists task definition families from multiple pages', async () => {
+            const targetArr1 = ['fam1', 'fam2', 'fam3']
+            const targetArr2 = ['fam4', 'fam5', 'fam6']
+            const targetArr3 = ['fam7', 'fam8', 'fam9']
+            testClient.listTaskDefinitionFamiliesResponses = [
                 {
-                    taskDefinitionArns: targetArr1,
+                    families: targetArr1,
                     nextToken: 'there i go, turn the page'
                 },
                 {
-                    taskDefinitionArns: targetArr2,
+                    families: targetArr2,
                     nextToken: 'you can write a book with all these pages'
                 },
                 {
-                    taskDefinitionArns: targetArr3
+                    families: targetArr3
                 }
             ]
-            const iterator = testClient.listTaskDefinitions()
+            const iterator = testClient.listTaskDefinitionFamilies()
             const arr = []
             for await (const item of iterator) {
                 arr.push(item)
@@ -161,9 +161,9 @@ describe('defaultEcsClient', async () => {
         })
 
         it('handles errors', async () => {
-            testClient.listTaskDefinitionsResponses = new Error() as AWSError
+            testClient.listTaskDefinitionFamiliesResponses = new Error() as AWSError
             await assertThrowsError(async () => {
-                const iterator = testClient.listTaskDefinitions()
+                const iterator = testClient.listTaskDefinitionFamilies()
                 const arr = []
                 for await (const item of iterator) {
                     arr.push(item)
@@ -179,7 +179,7 @@ class TestEcsClient extends DefaultEcsClient {
 
     public listServicesResponses: ECS.ListServicesResponse[] | AWSError = [{}]
 
-    public listTaskDefinitionsResponses: ECS.ListTaskDefinitionsResponse[] | AWSError = [{}]
+    public listTaskDefinitionFamiliesResponses: ECS.ListTaskDefinitionFamiliesResponse[] | AWSError = [{}]
 
     private pageNum: number = 0
 
@@ -213,10 +213,13 @@ class TestEcsClient extends DefaultEcsClient {
         }
     }
 
-    protected async invokeListTaskDefinitions(request: ECS.ListTaskDefinitionsRequest)
-        : Promise<ECS.ListTaskDefinitionsResponse> {
+    protected async invokeListTaskDefinitionFamilies(request: ECS.ListTaskDefinitionFamiliesRequest)
+        : Promise<ECS.ListTaskDefinitionFamiliesResponse> {
         const responseDatum =
-            this.getResponseDatum<ECS.ListTaskDefinitionsResponse>(this.listTaskDefinitionsResponses, request.nextToken)
+            this.getResponseDatum<ECS.ListTaskDefinitionFamiliesResponse>(
+                this.listTaskDefinitionFamiliesResponses,
+                request.nextToken
+            )
 
         if (responseDatum instanceof Error) {
             throw responseDatum

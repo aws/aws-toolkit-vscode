@@ -39,16 +39,14 @@ export class DefaultEcsClient implements EcsClient {
         } while (request.nextToken)
     }
 
-    public async *listTaskDefinitions(): AsyncIterableIterator<string> {
+    public async *listTaskDefinitionFamilies(): AsyncIterableIterator<string> {
         const sdkClient = await this.createSdkClient()
         // do we also want to cover inactive? If so, would we want to use a separate function?
-        const request: ECS.ListTaskDefinitionsRequest = {
-            status: 'ACTIVE'
-        }
+        const request: ECS.ListTaskDefinitionFamiliesRequest = {}
         do {
-            const response = await this.invokeListTaskDefinitions(request, sdkClient)
-            if (response.taskDefinitionArns) {
-                yield* response.taskDefinitionArns
+            const response = await this.invokeListTaskDefinitionFamilies(request, sdkClient)
+            if (response.families) {
+                yield* response.families
             }
             request.nextToken = response.nextToken
         } while (request.nextToken)
@@ -64,9 +62,9 @@ export class DefaultEcsClient implements EcsClient {
         return sdkClient.listServices(request).promise()
     }
 
-    protected async invokeListTaskDefinitions(request: ECS.ListTaskDefinitionsRequest, sdkClient: ECS)
-        : Promise<ECS.ListTaskDefinitionsResponse> {
-        return sdkClient.listTaskDefinitions(request).promise()
+    protected async invokeListTaskDefinitionFamilies(request: ECS.ListTaskDefinitionFamiliesRequest, sdkClient: ECS)
+        : Promise<ECS.ListTaskDefinitionFamiliesResponse> {
+        return sdkClient.listTaskDefinitionFamilies(request).promise()
     }
 
     protected async createSdkClient(): Promise<ECS> {
