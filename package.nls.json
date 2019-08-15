@@ -61,6 +61,7 @@
     "AWS.explorerNode.ecs.services.loading": "Loading ECS services for cluster {0}...",
     "AWS.explorerNode.ecs.services.error": "Error loading ECS services for cluster {0}",
     "AWS.explorerNode.ecs.services.none": "No services found for cluster {0}",
+    "AWS.explorerNode.ecs.taskDef.loading": "Loading ECS task defintions...",
     "AWS.explorerNode.ecs.taskDef.error": "Error loading ECS task defintions",
     "AWS.explorerNode.ecs.taskDef.none": "No task definitions found",
     "AWS.explorerNode.signIn": "Connect to AWS...",
