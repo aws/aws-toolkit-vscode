@@ -10,5 +10,5 @@ export interface EcsClient {
 
     listServices(cluster: string): AsyncIterableIterator<string>
 
-    listTaskDefinitions(): AsyncIterableIterator<string>
+    listTaskDefinitionFamilies(): AsyncIterableIterator<string>
 }
