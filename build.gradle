@@ -37,7 +37,11 @@ allprojects {
         systemProperty("aws.toolkits.enableTelemetry", false)
         intellij {
             if (System.env.ALTERNATIVE_IDE) {
-                alternativeIdePath = System.env.ALTERNATIVE_IDE
+                if(file(System.env.ALTERNATIVE_IDE).exists()) {
+                    alternativeIdePath = System.env.ALTERNATIVE_IDE
+                } else {
+                    throw new GradleException("ALTERNATIVE_IDE path ${System.env.ALTERNATIVE_IDE} not found")
+                }
             }
         }
     }
