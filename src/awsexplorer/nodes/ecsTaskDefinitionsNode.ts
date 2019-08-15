@@ -42,8 +42,8 @@ export class DefaultEcsTaskDefinitionsNode extends AWSTreeErrorHandlerNode imple
         return !!this.errorNode ? [this.errorNode]
             : [...this.taskDefinitionNodes.values()]
                 .sort((nodeA, nodeB) =>
-                    nodeA.arn.localeCompare(
-                        nodeB.arn
+                    nodeA.name.localeCompare(
+                        nodeB.name
                     )
                 )
     }
@@ -53,7 +53,7 @@ export class DefaultEcsTaskDefinitionsNode extends AWSTreeErrorHandlerNode imple
         const client: EcsClient = ext.toolkitClientBuilder.createEcsClient(this.regionCode)
         const taskDefs = await toMapAsync(
             asyncIterableWithStatusBarUpdate<string>(
-                client.listTaskDefinitions(),
+                client.listTaskDefinitionFamilies(),
                 localize('AWS.explorerNode.ecs.taskDef.loading', 'Loading ECS task defintions...')
             ),
             cluster => cluster

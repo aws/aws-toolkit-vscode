@@ -34,9 +34,9 @@ export interface EcsTaskDefinitionNode extends AWSTreeErrorHandlerNode {
 
     readonly parent: EcsTaskDefinitionsNode
 
-    readonly arn: string
+    readonly name: string
 
-    update(arn: string): void
+    update(name: string): void
 }
 
 export interface EcsClustersNode extends AWSTreeErrorHandlerNode {

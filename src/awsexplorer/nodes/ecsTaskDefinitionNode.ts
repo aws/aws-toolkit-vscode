@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
-import { convertEcsArnToResourceName } from '../explorerUtils'
 import { EcsTaskDefinitionNode, EcsTaskDefinitionsNode } from './ecsNodeInterfaces'
 
 export class DefaultEcsTaskDefinitionNode extends AWSTreeErrorHandlerNode implements EcsTaskDefinitionNode {
@@ -16,7 +15,7 @@ export class DefaultEcsTaskDefinitionNode extends AWSTreeErrorHandlerNode implem
 
     public constructor(
         public readonly parent: EcsTaskDefinitionsNode,
-        public arn: string,
+        public name: string,
         private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
     ) {
         super('')
@@ -26,12 +25,12 @@ export class DefaultEcsTaskDefinitionNode extends AWSTreeErrorHandlerNode implem
             dark: vscode.Uri.file(this.getExtensionAbsolutePath('resources/dark/ecsTaskDef.svg')),
             light: vscode.Uri.file(this.getExtensionAbsolutePath('resources/light/ecsTaskDef.svg')),
         }
-        this.update(arn)
+        this.update(name)
     }
 
-    public update(arn: string) {
-        this.arn = arn
-        this.tooltip = arn
-        this.label = convertEcsArnToResourceName(arn)
+    public update(name: string) {
+        this.name = name
+        this.tooltip = name
+        this.label = name
     }
 }
