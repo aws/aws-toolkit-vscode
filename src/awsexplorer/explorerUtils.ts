@@ -14,12 +14,12 @@
  */
 export function convertEcsArnToResourceName(arn: string, excluded?: string): string | undefined {
     const regex = excluded ?
-        new RegExp(`\/(${excluded}\/){0,1}([a-zA-Z0-9-_]{1,255})`) : new RegExp('\/([a-zA-Z0-9-_]{1,255})')
+        new RegExp(`\/(?:${excluded}\/){0,1}([a-zA-Z0-9-_]{1,255})`) : new RegExp('\/([a-zA-Z0-9-_]{1,255})')
 
     const regexedString = regex.exec(arn)
     if (regexedString) {
         // always return last capture group
-        return (regexedString[regexedString.length - 1])
+        return (regexedString[1])
     }
 
     // resource name not found

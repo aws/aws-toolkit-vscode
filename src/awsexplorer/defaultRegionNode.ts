@@ -45,7 +45,7 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
         this.cloudFormationNode = new DefaultCloudFormationNode(this, getExtensionAbsolutePath)
         this.lambdaFunctionGroupNode = new DefaultLambdaFunctionGroupNode(this, getExtensionAbsolutePath)
         // TODO: add gate here
-        if (this.ecsNode) {
+        if (true) {
             this.ecsNode = new DefaultEcsNode(this, getExtensionAbsolutePath)
         }
     }
