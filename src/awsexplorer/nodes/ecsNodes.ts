@@ -41,6 +41,6 @@ export class DefaultEcsNode extends AWSTreeNodeBase implements EcsNode {
     }
 
     public update(): void {
-        this.tooltip = 'localized tooltip here'
+        this.tooltip = this.label
     }
 }

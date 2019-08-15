@@ -4,6 +4,9 @@
  */
 
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import { EcsClient } from '../../shared/clients/ecsClient'
 import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
@@ -30,7 +33,10 @@ export class DefaultEcsClustersNode extends AWSTreeErrorHandlerNode implements E
     public async getChildren(): Promise<(EcsClusterNode | ErrorNode)[]> {
         await this.handleErrorProneOperation(
             async () => this.updateChildren(),
-            'localized error here'
+            localize(
+                'AWS.explorerNode.ecs.clusters.error',
+                'Error loading ECS clusters'
+            )
         )
 
         return !!this.errorNode ? [this.errorNode]
@@ -46,7 +52,10 @@ export class DefaultEcsClustersNode extends AWSTreeErrorHandlerNode implements E
 
         const client: EcsClient = ext.toolkitClientBuilder.createEcsClient(this.regionCode)
         const clusters = await toMapAsync(
-            asyncIterableWithStatusBarUpdate<string>(client.listClusters(), 'localized waiting message here'),
+            asyncIterableWithStatusBarUpdate<string>(
+                client.listClusters(),
+                localize('AWS.explorerNode.ecs.clusters.loading', 'Loading ECS clusters...')
+            ),
             cluster => cluster
         )
 

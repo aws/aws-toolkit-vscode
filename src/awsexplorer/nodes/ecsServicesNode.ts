@@ -4,9 +4,13 @@
  */
 
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import { EcsClient } from '../../shared/clients/ecsClient'
 import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
+import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { asyncIterableWithStatusBarUpdate, toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { EcsClusterNode, EcsServiceNode, EcsServicesNode } from './ecsNodeInterfaces'
@@ -27,10 +31,14 @@ export class DefaultEcsServicesNode extends AWSTreeErrorHandlerNode implements E
         this.serviceNodes = new Map<string, EcsServiceNode>()
     }
 
-    public async getChildren() {
+    public async getChildren(): Promise<(EcsServicesNode | ErrorNode | PlaceholderNode)[]>  {
         await this.handleErrorProneOperation(
             async () => this.updateChildren(),
-            'localized failure message here'
+            localize(
+                'AWS.explorerNode.ecs.services.error',
+                'Error loading ECS services for cluster {0}',
+                this.parent.parent.label
+            )
         )
 
         if (!!this.errorNode) {
@@ -49,7 +57,11 @@ export class DefaultEcsServicesNode extends AWSTreeErrorHandlerNode implements E
         return [
             new PlaceholderNode(
                 this,
-                'localized placeholder-no clusters'
+                localize(
+                    'AWS.explorerNode.ecs.services.none',
+                    'No services found for cluster {0}',
+                    this.parent.parent.label
+                )
             )
         ]
     }
@@ -59,7 +71,11 @@ export class DefaultEcsServicesNode extends AWSTreeErrorHandlerNode implements E
         const services = await toMapAsync(
             asyncIterableWithStatusBarUpdate<string>(
                 client.listServices(this.parent.arn),
-                'localized waiting message'
+                localize(
+                    'AWS.explorerNode.ecs.services.loading',
+                    'Loading ECS services for cluster {0}...',
+                    this.parent.parent.label
+                )
             ),
             service => service
         )
