@@ -13,14 +13,11 @@ describe('explorerUtils', () => {
 
             const clusterArn = 'arn:aws:ecs:us-east-1:123456789012:cluster/my-cluster'
             const serviceArn = 'arn:aws:ecs:us-east-1:123456789012:service/sample-webapp'
-            const taskDefArn = 'arn:aws:ecs:us-east-1:123456789012:task-definition/hello_world:8'
             const clusterName = 'my-cluster'
             const serviceName = 'sample-webapp'
-            const taskDefName = 'hello_world'
 
             assert.strictEqual(convertEcsArnToResourceName(clusterArn), clusterName)
             assert.strictEqual(convertEcsArnToResourceName(serviceArn), serviceName)
-            assert.strictEqual(convertEcsArnToResourceName(taskDefArn), taskDefName)
         })
         it ('converts service arns that include the cluster name to a friendly name', () => {
 
