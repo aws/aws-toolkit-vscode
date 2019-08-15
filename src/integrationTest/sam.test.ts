@@ -189,4 +189,5 @@ for (const runtime of runtimes) {
             // This timeout is significantly longer, mostly to accommodate the long first time .net debugger
         }).timeout(TIMEOUT * 2)
     }).retries(3) // Retry tests because CodeLenses do not reliably get produced in the tests
+    // TODO : Remove retries in future - https://github.com/aws/aws-toolkit-vscode/issues/737
 }
