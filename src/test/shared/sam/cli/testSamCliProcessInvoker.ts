@@ -93,6 +93,15 @@ export async function assertLogContainsBadExitInformation(
     expectedExitCode: number
 ): Promise<void> {
     const logPath = logger.logPath
+    const expectedTexts = [
+        {
+            text: `Unexpected exitcode (${errantChildProcessResult.exitCode}), expecting (${expectedExitCode})`,
+            verifyMessage: 'Log message missing for exit code'
+        },
+        { text: `Error: ${errantChildProcessResult.error}`, verifyMessage: 'Log message missing for error' },
+        { text: `stderr: ${errantChildProcessResult.stderr}`, verifyMessage: 'Log message missing for stderr' },
+        { text: `stdout: ${errantChildProcessResult.stdout}`, verifyMessage: 'Log message missing for stdout' }
+    ]
 
     // Give the log a chance to get created/flushed
     await retryOnError({
@@ -102,11 +111,12 @@ export async function assertLogContainsBadExitInformation(
         delayMilliseconds: 50,
         failureMessage: `Could not find log file: ${logPath}`
     })
+
     await retryOnError({
         description: 'Wait for expected text to appear in log',
         fn: async () => {
             const logText = await readFileAsString(logPath)
-            const verifyMessage = verifyLogText(logText, errantChildProcessResult, expectedExitCode)
+            const verifyMessage = verifyLogText(logText, expectedTexts)
             if (verifyMessage) {
                 console.log(verifyMessage)
                 throw new Error(verifyMessage)
@@ -118,22 +128,8 @@ export async function assertLogContainsBadExitInformation(
     })
 }
 
-function verifyLogText(
-    text: string,
-    errantChildProcessResult: ChildProcessResult,
-    expectedExitCode: number
-): string | undefined {
-    const expectedText = [
-        {
-            text: `Unexpected exitcode (${errantChildProcessResult.exitCode}), expecting (${expectedExitCode})`,
-            verifyMessage: 'Log message missing for exit code'
-        },
-        { text: `Error: ${errantChildProcessResult.error}`, verifyMessage: 'Log message missing for error' },
-        { text: `stderr: ${errantChildProcessResult.stderr}`, verifyMessage: 'Log message missing for stderr' },
-        { text: `stdout: ${errantChildProcessResult.stdout}`, verifyMessage: 'Log message missing for stdout' }
-    ]
-
-    for (const entry of expectedText) {
+function verifyLogText(text: string, expectedTexts: { text: string; verifyMessage: string }[]): string | undefined {
+    for (const entry of expectedTexts) {
         if (!text.includes(entry.text)) {
             return entry.verifyMessage
         }
