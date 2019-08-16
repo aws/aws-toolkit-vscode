@@ -12,16 +12,13 @@ import { ext } from '../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../shared/logger'
 import { CloudFormationStackNode } from '../explorer/cloudFormationNodes'
 
-export async function deleteCloudFormation(
-    refresh: () => void,
-    node?: CloudFormationStackNode
-) {
+export async function deleteCloudFormation(refresh: () => void, node?: CloudFormationStackNode) {
     const logger: Logger = getLogger()
     if (!node) {
         vscode.window.showErrorMessage(
             localize(
                 'AWS.message.error.cloudFormation.unsupported',
-                'Unable to delete a CloudFormation Stack. No stack provided.',
+                'Unable to delete a CloudFormation Stack. No stack provided.'
             )
         )
 
@@ -35,11 +32,7 @@ export async function deleteCloudFormation(
 
     try {
         const userResponse = await vscode.window.showInformationMessage(
-            localize(
-                'AWS.message.prompt.deleteCloudFormation',
-                'Are you sure you want to delete {0}?',
-                stackName
-            ),
+            localize('AWS.message.prompt.deleteCloudFormation', 'Are you sure you want to delete {0}?', stackName),
             responseYes,
             responseNo
         )
@@ -49,23 +42,22 @@ export async function deleteCloudFormation(
 
             await client.deleteStack(stackName)
 
-            vscode.window.showInformationMessage(localize(
-                'AWS.message.info.cloudFormation.delete',
-                'Deleted CloudFormation Stack {0}',
-                stackName
-            ))
+            vscode.window.showInformationMessage(
+                localize('AWS.message.info.cloudFormation.delete', 'Deleted CloudFormation Stack {0}', stackName)
+            )
 
             refresh()
         }
-
     } catch (err) {
         const error = err as Error
 
-        vscode.window.showInformationMessage(localize(
-            'AWS.message.error.cloudFormation.delete',
-            'An error occurred while deleting {0}. Please check the stack events on the AWS Console',
-            stackName
-        ))
+        vscode.window.showInformationMessage(
+            localize(
+                'AWS.message.error.cloudFormation.delete',
+                'An error occurred while deleting {0}. Please check the stack events on the AWS Console',
+                stackName
+            )
+        )
 
         logger.error(error)
     }

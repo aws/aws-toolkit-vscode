@@ -65,7 +65,8 @@ async function getLambdaHandlerCandidates({
     const filename = uri.fsPath
 
     let symbols: vscode.DocumentSymbol[] =
-        await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri) || []
+        (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri)) ||
+        []
 
     // A recent regression in vscode-python stops codelenses from rendering if we first return an empty array
     // (because symbols have not yet been loaded), then a non-empty array (when our codelens provider is re-invoked
@@ -81,10 +82,11 @@ async function getLambdaHandlerCandidates({
     if (jediEnabled) {
         for (let i = 0; i < MAX_RETRIES && !symbols.length; i++) {
             await new Promise<void>(resolve => setTimeout(resolve, RETRY_INTERVAL_MS))
-            symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
-                'vscode.executeDocumentSymbolProvider',
-                uri
-            ) || []
+            symbols =
+                (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
+                    'vscode.executeDocumentSymbolProvider',
+                    uri
+                )) || []
         }
     }
 

@@ -46,7 +46,7 @@ export interface SharedConfigFiles {
 }
 
 export async function loadSharedConfigFiles(init: SharedConfigInit = {}): Promise<SharedConfigFiles> {
-    const [ configFile, credentialsFile ] = await Promise.all([
+    const [configFile, credentialsFile] = await Promise.all([
         /* tslint:disable await-promise */
         loadConfigFile(init.configFilepath),
         loadCredentialsFile(init.filepath)
@@ -59,30 +59,26 @@ export async function loadSharedConfigFiles(init: SharedConfigInit = {}): Promis
     }
 }
 
-async function loadConfigFile(
-    configFilePath?: string
-): Promise<ParsedIniData> {
+async function loadConfigFile(configFilePath?: string): Promise<ParsedIniData> {
     const env = process.env as EnvironmentVariables
     if (!configFilePath) {
         configFilePath = env.AWS_CONFIG_FILE || join(getHomeDir(), '.aws', 'config')
     }
 
-    if (!await fileExists(configFilePath)) {
+    if (!(await fileExists(configFilePath))) {
         return {}
     }
 
     return normalizeConfigFile(parseIni(await readFileAsString(configFilePath)))
 }
 
-async function loadCredentialsFile(
-    credentialsFilePath?: string
-): Promise<ParsedIniData> {
+async function loadCredentialsFile(credentialsFilePath?: string): Promise<ParsedIniData> {
     const env = process.env as EnvironmentVariables
     if (!credentialsFilePath) {
         credentialsFilePath = env.AWS_SHARED_CREDENTIALS_FILE || join(getHomeDir(), '.aws', 'credentials')
     }
 
-    if (!await fileExists(credentialsFilePath)) {
+    if (!(await fileExists(credentialsFilePath))) {
         return {}
     }
 
@@ -92,16 +88,12 @@ async function loadCredentialsFile(
 // TODO: FOR POC-DEMOS ONLY, NOT FOR PRODUCTION USE!
 // REMOVE_BEFORE_RELEASE
 // This is nowhere near resilient enough :-)
-export async function saveProfile(
-    name: string,
-    accessKey: string,
-    secretKey: string
-): Promise<void> {
+export async function saveProfile(name: string, accessKey: string, secretKey: string): Promise<void> {
     const env = process.env as EnvironmentVariables
     const filepath = env.AWS_SHARED_CREDENTIALS_FILE || join(getHomeDir(), '.aws', 'credentials')
 
     // even though poc concept code, let's preserve the user's file!
-    await copy(filepath, `${filepath}.bak_vscode`, { overwrite: true})
+    await copy(filepath, `${filepath}.bak_vscode`, { overwrite: true })
 
     const data = `${await readFileAsString(filepath)}
 [${name}]
@@ -155,16 +147,17 @@ function parseIni(iniData: string): ParsedIniData {
 
 function getHomeDir(): string {
     const env = process.env as EnvironmentVariables
-    const {
-        HOME,
-        USERPROFILE,
-        HOMEPATH,
-        HOMEDRIVE = `C:${sep}`,
-    } = env
+    const { HOME, USERPROFILE, HOMEPATH, HOMEDRIVE = `C:${sep}` } = env
 
-    if (HOME) { return HOME }
-    if (USERPROFILE) { return USERPROFILE }
-    if (HOMEPATH) { return `${HOMEDRIVE}${HOMEPATH}` }
+    if (HOME) {
+        return HOME
+    }
+    if (USERPROFILE) {
+        return USERPROFILE
+    }
+    if (HOMEPATH) {
+        return `${HOMEDRIVE}${HOMEPATH}`
+    }
 
     return homedir()
 }

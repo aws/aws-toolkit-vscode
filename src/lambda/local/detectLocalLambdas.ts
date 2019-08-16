@@ -34,13 +34,11 @@ export async function detectLocalLambdas(
     )
 }
 
-async function detectLambdasFromWorkspaceFolder(
-    workspaceFolder: vscode.WorkspaceFolder
-): Promise<LocalLambda[]> {
+async function detectLambdasFromWorkspaceFolder(workspaceFolder: vscode.WorkspaceFolder): Promise<LocalLambda[]> {
     const result = []
 
     for await (const templateUri of detectLocalTemplates({ workspaceUris: [workspaceFolder.uri] })) {
-        result.push(...await detectLambdasFromTemplate(workspaceFolder, templateUri.fsPath))
+        result.push(...(await detectLambdasFromTemplate(workspaceFolder, templateUri.fsPath)))
     }
 
     return result
@@ -50,7 +48,7 @@ async function detectLambdasFromTemplate(
     workspaceFolder: vscode.WorkspaceFolder,
     templatePath: string
 ): Promise<LocalLambda[]> {
-    if (!await fileExists(templatePath)) {
+    if (!(await fileExists(templatePath))) {
         return []
     }
 

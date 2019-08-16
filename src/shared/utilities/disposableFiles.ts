@@ -10,7 +10,6 @@ import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
 import { getLogger, Logger } from '../logger'
 
 export class DisposableFiles implements vscode.Disposable {
-
     private _disposed: boolean = false
     private readonly _filePaths: Set<string> = new Set<string>()
     private readonly _folderPaths: Set<string> = new Set<string>()
@@ -31,29 +30,25 @@ export class DisposableFiles implements vscode.Disposable {
         const logger: Logger = getLogger()
         if (!this._disposed) {
             try {
-                del.sync(
-                    [...this._filePaths],
-                    {
-                        absolute: true,
-                        force: true,
-                        nobrace: false,
-                        nodir: true,
-                        noext: true,
-                        noglobstar: true,
-                    })
+                del.sync([...this._filePaths], {
+                    absolute: true,
+                    force: true,
+                    nobrace: false,
+                    nodir: true,
+                    noext: true,
+                    noglobstar: true
+                })
 
                 this._folderPaths.forEach(folder => {
                     if (fs.existsSync(folder)) {
-                        del.sync(
-                            folder,
-                            {
-                                absolute: true,
-                                force: true,
-                                nobrace: false,
-                                nodir: false,
-                                noext: true,
-                                noglobstar: true,
-                            })
+                        del.sync(folder, {
+                            absolute: true,
+                            force: true,
+                            nobrace: false,
+                            nodir: false,
+                            noext: true,
+                            noglobstar: true
+                        })
                     }
                 })
             } catch (err) {
@@ -68,17 +63,13 @@ export class DisposableFiles implements vscode.Disposable {
 export class ExtensionDisposableFiles extends DisposableFiles {
     protected static INSTANCE?: ExtensionDisposableFiles
 
-    protected constructor(
-        public readonly toolkitTempFolder: string
-    ) {
+    protected constructor(public readonly toolkitTempFolder: string) {
         super()
 
         this.addFolder(this.toolkitTempFolder)
     }
 
-    public static async initialize(
-        extensionContext: vscode.ExtensionContext
-    ): Promise<void> {
+    public static async initialize(extensionContext: vscode.ExtensionContext): Promise<void> {
         if (!!ExtensionDisposableFiles.INSTANCE) {
             throw new Error('ExtensionDisposableFiles already initialized')
         }

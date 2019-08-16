@@ -9,10 +9,7 @@ import {
     resolveSamCliProcessInvokerContext,
     SamCliProcessInvokerContext
 } from './samCliInvoker'
-import {
-    SamCliProcessInvokeOptions,
-    SamCliProcessInvoker
-} from './samCliInvokerUtils'
+import { SamCliProcessInvokeOptions, SamCliProcessInvoker } from './samCliInvokerUtils'
 import { throwAndNotifyIfInvalid } from './samCliValidationUtils'
 import {
     DefaultSamCliValidator,

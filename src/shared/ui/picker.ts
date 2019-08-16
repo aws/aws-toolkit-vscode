@@ -31,22 +31,27 @@ export interface AdditionalQuickPickOptions {
 export function createQuickPick<T extends vscode.QuickPickItem>({
     options,
     items,
-    buttons,
+    buttons
 }: {
-    options?: vscode.QuickPickOptions & AdditionalQuickPickOptions,
-    items?: T[],
-    buttons?: vscode.QuickInputButton[],
+    options?: vscode.QuickPickOptions & AdditionalQuickPickOptions
+    items?: T[]
+    buttons?: vscode.QuickInputButton[]
 }): vscode.QuickPick<T> {
-
     const picker = vscode.window.createQuickPick<T>()
 
     if (options) {
         picker.title = options.title
         picker.placeholder = options.placeHolder
         picker.value = options.value || ''
-        if (options.matchOnDescription !== undefined) { picker.matchOnDescription = options.matchOnDescription }
-        if (options.matchOnDetail !== undefined) { picker.matchOnDetail = options.matchOnDetail }
-        if (options.ignoreFocusOut !== undefined) { picker.ignoreFocusOut = options.ignoreFocusOut }
+        if (options.matchOnDescription !== undefined) {
+            picker.matchOnDescription = options.matchOnDescription
+        }
+        if (options.matchOnDetail !== undefined) {
+            picker.matchOnDetail = options.matchOnDetail
+        }
+        if (options.ignoreFocusOut !== undefined) {
+            picker.ignoreFocusOut = options.ignoreFocusOut
+        }
 
         // TODO : Apply more options as they are needed in the future, and add corresponding tests
     }
@@ -74,38 +79,36 @@ export function createQuickPick<T extends vscode.QuickPickItem>({
  *
  * @returns If the picker was cancelled, undefined is returned. Otherwise, an array of the selected items is returned.
  */
-export async function promptUser<T extends vscode.QuickPickItem>(
-    {
-        picker,
-        onDidTriggerButton,
-    }: {
-        picker: vscode.QuickPick<T>,
-        onDidTriggerButton?(
-            button: vscode.QuickInputButton,
-            resolve: (value: T[] | PromiseLike<T[] | undefined> | undefined) => void,
-            reject: (reason?: any) => void,
-        ): void,
-    }
-): Promise<T[] | undefined> {
-
+export async function promptUser<T extends vscode.QuickPickItem>({
+    picker,
+    onDidTriggerButton
+}: {
+    picker: vscode.QuickPick<T>
+    onDidTriggerButton?(
+        button: vscode.QuickInputButton,
+        resolve: (value: T[] | PromiseLike<T[] | undefined> | undefined) => void,
+        reject: (reason?: any) => void
+    ): void
+}): Promise<T[] | undefined> {
     const disposables: vscode.Disposable[] = []
 
     try {
         const response = await new Promise<T[] | undefined>((resolve, reject) => {
-
             picker.onDidAccept(
                 () => {
                     resolve(Array.from(picker.selectedItems))
                 },
                 picker,
-                disposables)
+                disposables
+            )
 
             picker.onDidHide(
                 () => {
                     resolve(undefined)
                 },
                 picker,
-                disposables)
+                disposables
+            )
 
             if (onDidTriggerButton) {
                 picker.onDidTriggerButton(
@@ -125,9 +128,7 @@ export async function promptUser<T extends vscode.QuickPickItem>(
     }
 }
 
-export function verifySinglePickerOutput<T extends vscode.QuickPickItem>(
-    choices: T[] | undefined
-): T | undefined {
+export function verifySinglePickerOutput<T extends vscode.QuickPickItem>(choices: T[] | undefined): T | undefined {
     const logger = getLogger()
     if (!choices || choices.length === 0) {
         return undefined
@@ -136,7 +137,7 @@ export function verifySinglePickerOutput<T extends vscode.QuickPickItem>(
     if (choices.length > 1) {
         logger.warn(
             `Received ${choices.length} responses from user, expected 1.` +
-            ' Cancelling to prevent deployment of unexpected template.'
+                ' Cancelling to prevent deployment of unexpected template.'
         )
 
         return undefined

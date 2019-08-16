@@ -27,14 +27,14 @@ export interface TemplatesConfig {
 export interface TemplateConfig {
     parameterOverrides?: {
         [key: string]: string | undefined
-    },
+    }
     handlers?: {
         [handler: string]: HandlerConfig | undefined
     }
 }
 
 export interface HandlerConfig {
-    event: {},
+    event: {}
     environmentVariables: {
         [name: string]: string
     }
@@ -61,20 +61,14 @@ export class DefaultLoadTemplatesConfigContext implements LoadTemplatesConfigCon
 }
 
 export function getTemplatesConfigPath(workspaceFolderPath: string): string {
-    return _path.join(
-        workspaceFolderPath,
-        '.aws',
-        'templates.json'
-    )
+    return _path.join(workspaceFolderPath, '.aws', 'templates.json')
 }
 
 export async function load(
     workspaceFolderPath: string,
     context: LoadTemplatesConfigContext = new DefaultLoadTemplatesConfigContext()
 ): Promise<TemplatesConfig> {
-    const templatesConfigPath = getTemplatesConfigPath(
-        workspaceFolderPath,
-    )
+    const templatesConfigPath = getTemplatesConfigPath(workspaceFolderPath)
 
     return await loadTemplatesConfig(templatesConfigPath, context)
 }
@@ -104,15 +98,14 @@ async function loadTemplatesConfig(
     }
 }
 
-export function loadTemplatesConfigFromJson(
-    json: string
-): TemplatesConfig {
+export function loadTemplatesConfigFromJson(json: string): TemplatesConfig {
     const errors: jsonParser.ParseError[] = []
     const config = jsonParser.parse(json, errors) as TemplatesConfig
     if (errors.length > 0) {
-        const message = errors.length === 1 ?
-            ` ${formatParseError(errors[0])}` :
-            `${os.EOL}${errors.map(formatParseError).join(os.EOL)}`
+        const message =
+            errors.length === 1
+                ? ` ${formatParseError(errors[0])}`
+                : `${os.EOL}${errors.map(formatParseError).join(os.EOL)}`
 
         throw new Error(`Could not parse .aws/templates.json:${message}`)
     }
@@ -133,12 +126,16 @@ export function showTemplatesConfigurationError(
             'Your templates.json file has an issue. {0} was detected as {1} instead of one of the following: [{2}]. Please change or remove this field, and try again.',
             error.jsonPath.join('.'),
             error.actualType,
-            error.expectedTypes.join(', '),
+            error.expectedTypes.join(', ')
         )
     )
 
     // tslint:disable-next-line:max-line-length
-    logger.error(`Error detected in templates.json: ${error.message}. Field: ${error.jsonPath.join('.')}, expected one of: [${error.expectedTypes.join(', ')}], was: ${error.actualType}`)
+    logger.error(
+        `Error detected in templates.json: ${error.message}. Field: ${error.jsonPath.join(
+            '.'
+        )}, expected one of: [${error.expectedTypes.join(', ')}], was: ${error.actualType}`
+    )
 }
 
 export async function ensureTemplatesConfigFileExists(path: string): Promise<void> {
@@ -205,14 +202,12 @@ export class TemplatesConfigFieldTypeError extends Error {
     public readonly expectedTypes: jsonParser.NodeType[]
     public readonly actualType: jsonParser.NodeType
 
-    public constructor(
-        params: {
-            message?: string,
-            jsonPath: jsonParser.JSONPath,
-            expectedTypes: jsonParser.NodeType[],
-            actualType: jsonParser.NodeType,
-        }
-    ) {
+    public constructor(params: {
+        message?: string
+        jsonPath: jsonParser.JSONPath
+        expectedTypes: jsonParser.NodeType[]
+        actualType: jsonParser.NodeType
+    }) {
         super(params.message)
 
         this.jsonPath = params.jsonPath
@@ -229,11 +224,10 @@ export class TemplatesConfigPopulator {
         private readonly modificationOptions: jsonParser.ModificationOptions = {
             formattingOptions: {
                 insertSpaces: true,
-                tabSize: getTabSizeSetting(),
-            },
+                tabSize: getTabSizeSetting()
+            }
         }
-    ) {
-    }
+    ) {}
 
     public ensureTemplateSectionExists(templateRelativePath: string): TemplatesConfigPopulator {
         this.ensureTemplatesSectionExists()
@@ -243,19 +237,13 @@ export class TemplatesConfigPopulator {
         return this
     }
 
-    public ensureTemplateHandlerSectionExists(
-        templateRelativePath: string,
-        handler: string
-    ): TemplatesConfigPopulator {
+    public ensureTemplateHandlerSectionExists(templateRelativePath: string, handler: string): TemplatesConfigPopulator {
         this.ensureTemplateHandlersSectionExists(templateRelativePath)
 
-        this.ensureJsonPropertyExists(
-            ['templates', templateRelativePath, 'handlers', handler],
-            {
-                event: {},
-                environmentVariables: {}
-            }
-        )
+        this.ensureJsonPropertyExists(['templates', templateRelativePath, 'handlers', handler], {
+            event: {},
+            environmentVariables: {}
+        })
 
         return this
     }
@@ -266,10 +254,7 @@ export class TemplatesConfigPopulator {
     ): TemplatesConfigPopulator {
         this.ensureTemplateHandlerSectionExists(templateRelativePath, handler)
 
-        this.ensureJsonPropertyExists(
-            ['templates', templateRelativePath, 'handlers', handler, 'event'],
-            {}
-        )
+        this.ensureJsonPropertyExists(['templates', templateRelativePath, 'handlers', handler, 'event'], {})
 
         this.ensureJsonPropertyExists(
             ['templates', templateRelativePath, 'handlers', handler, 'environmentVariables'],
@@ -285,22 +270,21 @@ export class TemplatesConfigPopulator {
     ): TemplatesConfigPopulator {
         this.ensureTemplateParameterOverridesSectionExists(templateRelativePath)
 
-        this.ensureJsonPropertyExists(
-            ['templates', templateRelativePath, 'parameterOverrides', parameterName],
-            '',
-            ['string', 'null']
-        )
+        this.ensureJsonPropertyExists(['templates', templateRelativePath, 'parameterOverrides', parameterName], '', [
+            'string',
+            'null'
+        ])
 
         return this
     }
 
     public getResults(): {
-        isDirty: boolean,
-        json: string,
+        isDirty: boolean
+        json: string
     } {
         return {
             isDirty: this.isDirty,
-            json: this.json,
+            json: this.json
         }
     }
 
@@ -318,17 +302,12 @@ export class TemplatesConfigPopulator {
                 message: 'Invalid configuration',
                 jsonPath: jsonPath,
                 actualType: node.type,
-                expectedTypes: allowedTypes,
+                expectedTypes: allowedTypes
             })
         }
 
         if (!node || node.type === 'null') {
-            const edits = jsonParser.modify(
-                this.json,
-                jsonPath,
-                value,
-                this.modificationOptions
-            )
+            const edits = jsonParser.modify(this.json, jsonPath, value, this.modificationOptions)
 
             if (edits.length > 0) {
                 this.json = jsonParser.applyEdits(this.json, edits)
@@ -354,10 +333,7 @@ export class TemplatesConfigPopulator {
     private ensureTemplateParameterOverridesSectionExists(templateRelativePath: string): TemplatesConfigPopulator {
         this.ensureTemplateSectionExists(templateRelativePath)
 
-        this.ensureJsonPropertyExists(
-            ['templates', templateRelativePath, 'parameterOverrides'],
-            {}
-        )
+        this.ensureJsonPropertyExists(['templates', templateRelativePath, 'parameterOverrides'], {})
 
         return this
     }

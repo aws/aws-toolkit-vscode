@@ -11,7 +11,7 @@ export interface NpmPackage {
     publisher: string
     repository: string
     engines: {
-        [ engine: string ]: string
+        [engine: string]: string
     }
     categories: string[]
     activationEvents: string[]
@@ -21,7 +21,7 @@ export interface NpmPackage {
             type: string
             title: string
             properties: {
-                [ key: string ]: {
+                [key: string]: {
                     type: string
                     default: any
                     description?: string
@@ -30,20 +30,20 @@ export interface NpmPackage {
             }
         }
         viewsContainers: {
-            [ key: string ]: {
+            [key: string]: {
                 id: string
                 title: string
                 icon: string
             }[]
         }
         views: {
-            [ key: string ]: {
+            [key: string]: {
                 id: string
                 name: string
             }[]
         }
         menus: {
-            [ key: string ]: {
+            [key: string]: {
                 command: string
                 when: string
                 group: string
@@ -60,12 +60,12 @@ export interface NpmPackage {
         }[]
     }
     scripts: {
-        [ key: string ]: string
+        [key: string]: string
     }
     devDependencies: {
-        [ key: string ]: string
+        [key: string]: string
     }
     dependencies: {
-        [ key: string ]: string
+        [key: string]: string
     }
 }

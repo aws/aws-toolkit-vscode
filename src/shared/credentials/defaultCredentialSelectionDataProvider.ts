@@ -21,12 +21,11 @@ import { CredentialSelectionState } from './credentialSelectionState'
 import { CredentialsProfileMru } from './credentialsProfileMru'
 
 interface ProfileEntry {
-    profileName: string,
-    isRecentlyUsed: boolean,
+    profileName: string
+    isRecentlyUsed: boolean
 }
 
 export class DefaultCredentialSelectionDataProvider implements CredentialSelectionDataProvider {
-
     private static readonly defaultCredentialsProfileName: string = 'default'
     private readonly _credentialsMru: CredentialsProfileMru
 
@@ -142,7 +141,6 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
      * used recently. Ordered by: MRU, default, all others
      */
     private getOrderedProfiles(): ProfileEntry[] {
-
         const mostRecentProfileNames = this.getMostRecentlyUsedProfileNames()
 
         const orderedProfiles: ProfileEntry[] = []
@@ -184,7 +182,6 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
 export async function credentialProfileSelector(
     dataProvider: CredentialSelectionDataProvider
 ): Promise<CredentialSelectionState | undefined> {
-
     async function pickCredentialProfile(
         input: MultiStepInputFlowController,
         state: Partial<CredentialSelectionState>
@@ -205,7 +202,6 @@ export async function credentialProfileSelector(
 export async function promptToDefineCredentialsProfile(
     dataProvider: CredentialSelectionDataProvider
 ): Promise<CredentialSelectionState> {
-
     async function inputProfileName(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>) {
         state.profileName = await dataProvider.inputProfileName(input, state)
 

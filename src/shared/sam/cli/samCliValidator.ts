@@ -36,11 +36,11 @@ export enum SamCliVersionValidation {
     Valid = 'Valid',
     VersionTooLow = 'VersionTooLow',
     VersionTooHigh = 'VersionTooHigh',
-    VersionNotParseable = 'VersionNotParseable',
+    VersionNotParseable = 'VersionNotParseable'
 }
 
 export interface SamCliVersionValidatorResult {
-    version?: string,
+    version?: string
     validation: SamCliVersionValidation
 }
 
@@ -63,8 +63,7 @@ export class DefaultSamCliValidator implements SamCliValidator {
     private cachedSamInfoResponse?: SamCliInfoResponse
     private cachedSamCliVersionId?: string
 
-    public constructor(private readonly context: SamCliValidatorContext) {
-    }
+    public constructor(private readonly context: SamCliValidatorContext) {}
 
     public async detectValidSamCli(): Promise<SamCliValidatorResult> {
         const result: SamCliValidatorResult = {
@@ -93,13 +92,17 @@ export class DefaultSamCliValidator implements SamCliValidator {
 
         return {
             version,
-            validation: DefaultSamCliValidator.validateSamCliVersion(version),
+            validation: DefaultSamCliValidator.validateSamCliVersion(version)
         }
     }
 
     private isSamCliVersionCached(samCliVersionId: string): boolean {
-        if (!this.cachedSamInfoResponse) { return false }
-        if (!this.cachedSamCliVersionId) { return false }
+        if (!this.cachedSamInfoResponse) {
+            return false
+        }
+        if (!this.cachedSamCliVersionId) {
+            return false
+        }
 
         return this.cachedSamCliVersionId === samCliVersionId
     }
@@ -129,8 +132,7 @@ export class DefaultSamCliValidatorContext implements SamCliValidatorContext {
     public constructor(
         private readonly samCliConfiguration: SamCliConfiguration,
         private readonly invoker: SamCliProcessInvoker
-    ) {
-    }
+    ) {}
 
     public get samCliLocation(): string | undefined {
         return this.samCliConfiguration.getSamCliLocation()
@@ -138,7 +140,9 @@ export class DefaultSamCliValidatorContext implements SamCliValidatorContext {
 
     public async getSamCliExecutableId(): Promise<string> {
         // Function should never get called if there is no SAM CLI
-        if (!this.samCliLocation) { throw new Error('SAM CLI does not exist') }
+        if (!this.samCliLocation) {
+            throw new Error('SAM CLI does not exist')
+        }
 
         // The modification timestamp of SAM CLI is used as the "distinct executable id"
         const stats = await stat(this.samCliLocation)

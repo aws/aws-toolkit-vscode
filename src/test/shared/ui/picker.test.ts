@@ -18,11 +18,7 @@ describe('createQuickPick', async () => {
     })
 
     it('Sets items', async () => {
-        const items: vscode.QuickPickItem[] = [
-            { label: 'item one' },
-            { label: 'item two' },
-            { label: 'item triangle' },
-        ]
+        const items: vscode.QuickPickItem[] = [{ label: 'item one' }, { label: 'item two' }, { label: 'item triangle' }]
 
         testPicker = picker.createQuickPick({
             items: items
@@ -37,7 +33,7 @@ describe('createQuickPick', async () => {
                 label: 'label',
                 detail: 'detail',
                 alwaysShow: true,
-                description: 'description',
+                description: 'description'
             }
         ]
 
@@ -47,9 +43,7 @@ describe('createQuickPick', async () => {
     })
 
     it('Sets buttons', async () => {
-        const buttons: vscode.QuickInputButton[] = [
-            vscode.QuickInputButtons.Back
-        ]
+        const buttons: vscode.QuickInputButton[] = [vscode.QuickInputButtons.Back]
 
         testPicker = picker.createQuickPick({
             buttons: buttons
@@ -65,7 +59,7 @@ describe('createQuickPick', async () => {
             matchOnDescription: true,
             matchOnDetail: true,
             ignoreFocusOut: true,
-            value: 'test value',
+            value: 'test value'
         }
 
         testPicker = picker.createQuickPick({
@@ -79,7 +73,7 @@ describe('createQuickPick', async () => {
         const options = {
             matchOnDescription: false,
             matchOnDetail: false,
-            ignoreFocusOut: false,
+            ignoreFocusOut: false
         }
 
         testPicker = picker.createQuickPick({
@@ -90,8 +84,7 @@ describe('createQuickPick', async () => {
     })
 
     it('Sets Options to undefined values', async () => {
-        const options = {
-        }
+        const options = {}
 
         testPicker = picker.createQuickPick({
             options: options
@@ -101,8 +94,7 @@ describe('createQuickPick', async () => {
     })
 
     it('Does not set Options', async () => {
-        testPicker = picker.createQuickPick({
-        })
+        testPicker = picker.createQuickPick({})
 
         assertPickerOptions(testPicker, {})
     })
@@ -112,37 +104,41 @@ describe('createQuickPick', async () => {
         expectedOptions: vscode.QuickPickOptions & picker.AdditionalQuickPickOptions
     ) {
         assert.strictEqual(
-            actualPicker.title, expectedOptions.title,
+            actualPicker.title,
+            expectedOptions.title,
             `Picker title mismatch, expected ${expectedOptions.title}, got ${actualPicker.title}`
         )
 
         assert.strictEqual(
-            actualPicker.placeholder, expectedOptions.placeHolder,
+            actualPicker.placeholder,
+            expectedOptions.placeHolder,
             `Picker placeHolder mismatch, expected ${expectedOptions.placeHolder}, got ${actualPicker.placeholder}`
         )
 
         // vscode.window.createQuickPick defaults matchOnDescription to true
         const expectedMatchOnDescription = getValueOrDefault(expectedOptions.matchOnDescription, true)
         assert.strictEqual(
-            actualPicker.matchOnDescription, expectedMatchOnDescription,
+            actualPicker.matchOnDescription,
+            expectedMatchOnDescription,
             `Picker matchOnDescription mismatch, expected ${expectedMatchOnDescription},` +
-            ` got ${actualPicker.matchOnDescription}`
+                ` got ${actualPicker.matchOnDescription}`
         )
 
         // vscode.window.createQuickPick defaults matchOnDetail to true
         const expectedMatchOnDetail = getValueOrDefault(expectedOptions.matchOnDetail, true)
         assert.strictEqual(
-            actualPicker.matchOnDetail, expectedMatchOnDetail,
-            `Picker matchOnDetail mismatch, expected ${expectedMatchOnDetail},` +
-            ` got ${actualPicker.matchOnDetail}`
+            actualPicker.matchOnDetail,
+            expectedMatchOnDetail,
+            `Picker matchOnDetail mismatch, expected ${expectedMatchOnDetail},` + ` got ${actualPicker.matchOnDetail}`
         )
 
         // vscode.window.createQuickPick defaults ignoreFocusOut to true
         const expectedIgnoreFocusOut = getValueOrDefault(expectedOptions.ignoreFocusOut, true)
         assert.strictEqual(
-            actualPicker.ignoreFocusOut, expectedIgnoreFocusOut,
+            actualPicker.ignoreFocusOut,
+            expectedIgnoreFocusOut,
             `Picker ignoreFocusOut mismatch, expected ${expectedIgnoreFocusOut},` +
-            ` got ${actualPicker.ignoreFocusOut}`
+                ` got ${actualPicker.ignoreFocusOut}`
         )
 
         // TODO : Test more options as they are added in the picker
@@ -179,10 +175,7 @@ describe('promptUser', async () => {
 
         const promptResult: vscode.QuickPickItem[] | undefined = await promptPromise
 
-        assertPromptResultEquals(
-            promptResult,
-            selectedItem
-        )
+        assertPromptResultEquals(promptResult, selectedItem)
     })
 
     it('Hide returns undefined', async () => {
@@ -194,11 +187,7 @@ describe('promptUser', async () => {
 
         const result = await promptPromise
 
-        assert.strictEqual(
-            result,
-            undefined,
-            `Expected calling hide() on prompt to return undefined, got ${result}`
-        )
+        assert.strictEqual(result, undefined, `Expected calling hide() on prompt to return undefined, got ${result}`)
     })
 
     it('Button can cancel and return undefined', async () => {
@@ -212,7 +201,7 @@ describe('promptUser', async () => {
                     button,
                     buttonOfInterest,
                     `Expected button ${JSON.stringify(buttonOfInterest)} ` +
-                    `but got button ${JSON.stringify(buttonOfInterest)}`
+                        `but got button ${JSON.stringify(buttonOfInterest)}`
                 )
 
                 samplePicker.hide()
@@ -241,7 +230,7 @@ describe('promptUser', async () => {
                     button,
                     buttonOfInterest,
                     `Expected button ${JSON.stringify(buttonOfInterest)} ` +
-                    `but got button ${JSON.stringify(buttonOfInterest)}`
+                        `but got button ${JSON.stringify(buttonOfInterest)}`
                 )
 
                 samplePicker.accept(selectedItem)
@@ -252,10 +241,7 @@ describe('promptUser', async () => {
 
         const promptResult = await promptPromise
 
-        assertPromptResultEquals(
-            promptResult,
-            selectedItem
-        )
+        assertPromptResultEquals(promptResult, selectedItem)
     })
 
     it('Button can do something and leave picker open', async () => {
@@ -270,7 +256,7 @@ describe('promptUser', async () => {
                     button,
                     buttonOfInterest,
                     `Expected button ${JSON.stringify(buttonOfInterest)} ` +
-                    `but got button ${JSON.stringify(buttonOfInterest)}`
+                        `but got button ${JSON.stringify(buttonOfInterest)}`
                 )
 
                 // do something that is not accept/cancel
@@ -292,11 +278,7 @@ describe('promptUser', async () => {
         actualResult: vscode.QuickPickItem[] | undefined,
         expectedResult: vscode.QuickPickItem[]
     ) {
-        assert.notStrictEqual(
-            actualResult,
-            undefined,
-            'Expected result to be not undefined'
-        )
+        assert.notStrictEqual(actualResult, undefined, 'Expected result to be not undefined')
 
         const resultItems = actualResult as vscode.QuickPickItem[]
 
@@ -345,8 +327,9 @@ describe('promptUser', async () => {
         private readonly onDidChangeValueEmitter: vscode.EventEmitter<string> = new vscode.EventEmitter()
         private readonly onDidChangeActiveEmitter: vscode.EventEmitter<T[]> = new vscode.EventEmitter()
         private readonly onDidChangeSelectionEmitter: vscode.EventEmitter<T[]> = new vscode.EventEmitter()
-        private readonly onDidTriggerButtonEmitter: vscode.EventEmitter<vscode.QuickInputButton> =
-            new vscode.EventEmitter()
+        private readonly onDidTriggerButtonEmitter: vscode.EventEmitter<
+            vscode.QuickInputButton
+        > = new vscode.EventEmitter()
 
         public constructor() {
             this.onDidHide = this.onDidHideEmitter.event
@@ -355,7 +338,6 @@ describe('promptUser', async () => {
             this.onDidChangeActive = this.onDidChangeActiveEmitter.event
             this.onDidChangeSelection = this.onDidChangeSelectionEmitter.event
             this.onDidTriggerButton = this.onDidTriggerButtonEmitter.event
-
         }
 
         public show(): void {
@@ -370,8 +352,7 @@ describe('promptUser', async () => {
             this.onDidAcceptEmitter.fire()
             this.isShowing = false
         }
-        public dispose(): void {
-        }
+        public dispose(): void {}
 
         public pressButton(button: vscode.QuickInputButton) {
             this.onDidTriggerButtonEmitter.fire(button)
@@ -380,12 +361,7 @@ describe('promptUser', async () => {
 
     function createSamplePicker(): TestQuickPick<vscode.QuickPickItem> {
         const pickerDialog = new TestQuickPick<vscode.QuickPickItem>()
-        pickerDialog.items = [
-            { label: 'item 1' },
-            { label: 'item 2' },
-            { label: 'item 3' },
-            { label: 'item 4' },
-        ]
+        pickerDialog.items = [{ label: 'item 1' }, { label: 'item 2' }, { label: 'item 3' }, { label: 'item 4' }]
 
         return pickerDialog
     }

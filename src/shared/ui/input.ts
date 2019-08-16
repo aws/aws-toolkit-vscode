@@ -26,19 +26,20 @@ export interface AdditionalInputBoxOptions {
  */
 export function createInputBox({
     options,
-    buttons,
+    buttons
 }: {
-    options?: vscode.InputBoxOptions & AdditionalInputBoxOptions,
-    buttons?: vscode.QuickInputButton[],
+    options?: vscode.InputBoxOptions & AdditionalInputBoxOptions
+    buttons?: vscode.QuickInputButton[]
 }): vscode.InputBox {
-
     const inputBox = vscode.window.createInputBox()
 
     if (options) {
         inputBox.title = options.title
         inputBox.placeholder = options.placeHolder
         inputBox.prompt = options.prompt
-        if (options.ignoreFocusOut !== undefined) { inputBox.ignoreFocusOut = options.ignoreFocusOut }
+        if (options.ignoreFocusOut !== undefined) {
+            inputBox.ignoreFocusOut = options.ignoreFocusOut
+        }
 
         // TODO : Apply more options as they are needed in the future, and add corresponding tests
     }
@@ -62,22 +63,19 @@ export function createInputBox({
  *
  * @returns If the InputBox was cancelled, undefined is returned. Otherwise, the string entered is returned.
  */
-export async function promptUser(
-    {
-        inputBox,
-        onValidateInput,
-        onDidTriggerButton,
-    }: {
-        inputBox: vscode.InputBox
-        onValidateInput?(value: string): string | undefined
-        onDidTriggerButton?(
-            button: vscode.QuickInputButton,
-            resolve: (value: string | PromiseLike<string | undefined> | undefined) => void,
-            reject: (reason?: any) => void,
-        ): void
-    }
-): Promise<string | undefined> {
-
+export async function promptUser({
+    inputBox,
+    onValidateInput,
+    onDidTriggerButton
+}: {
+    inputBox: vscode.InputBox
+    onValidateInput?(value: string): string | undefined
+    onDidTriggerButton?(
+        button: vscode.QuickInputButton,
+        resolve: (value: string | PromiseLike<string | undefined> | undefined) => void,
+        reject: (reason?: any) => void
+    ): void
+}): Promise<string | undefined> {
     const disposables: vscode.Disposable[] = []
 
     try {
@@ -89,14 +87,16 @@ export async function promptUser(
                     }
                 },
                 inputBox,
-                disposables)
+                disposables
+            )
 
             inputBox.onDidHide(
                 () => {
                     resolve(undefined)
                 },
                 inputBox,
-                disposables)
+                disposables
+            )
 
             if (onValidateInput) {
                 inputBox.onDidChangeValue(
@@ -104,7 +104,8 @@ export async function promptUser(
                         inputBox.validationMessage = onValidateInput(value)
                     },
                     inputBox,
-                    disposables)
+                    disposables
+                )
             }
 
             if (onDidTriggerButton) {

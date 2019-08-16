@@ -30,8 +30,7 @@ export class SamParameterCompletionItemProvider implements vscode.CompletionItem
             getWorkspaceFolder: vscode.workspace.getWorkspaceFolder,
             loadTemplate: CloudFormation.load
         }
-    ) {
-    }
+    ) {}
 
     public async provideCompletionItems(
         document: vscode.TextDocument,
@@ -91,15 +90,20 @@ export class SamParameterCompletionItemProvider implements vscode.CompletionItem
         }
 
         // The JSON spec requires the use of double-quotes rather than single-quotes.
-        return document.getText(wordRange)
+        return document
+            .getText(wordRange)
             .replace(/^\"/, '') // strip leading quote character
             .replace(/\"$/, '') // strip trailing quote character
     }
 }
 
-async function getTemplateUri({ workspaceUri, symbols, position }: {
-    workspaceUri: vscode.Uri,
-    symbols: vscode.DocumentSymbol[],
+async function getTemplateUri({
+    workspaceUri,
+    symbols,
+    position
+}: {
+    workspaceUri: vscode.Uri
+    symbols: vscode.DocumentSymbol[]
     position: vscode.Position
 }): Promise<vscode.Uri | undefined> {
     const templates = symbols.find(symbol => symbol.name === 'templates')

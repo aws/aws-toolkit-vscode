@@ -13,10 +13,34 @@ import * as vscode from 'vscode'
  */
 
 export function getDocumentSymbols(): vscode.DocumentSymbol[] {
-    const namespaceSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol('HelloWorld', '', vscode.SymbolKind.Namespace, new vscode.Range(14, 0, 51, 1), new vscode.Range(14, 10, 14, 20))
-    const classSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol('HelloWorld.Function', '', vscode.SymbolKind.Class, new vscode.Range(17, 4, 50, 5), new vscode.Range(17, 17, 17, 25))
-    const privateMethodSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol('GetCallingIP()', '', vscode.SymbolKind.Method, new vscode.Range(22, 8, 31, 9), new vscode.Range(22, 42, 22, 54))
-    const publicMethodSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol('FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)', '', vscode.SymbolKind.Method, new vscode.Range(33, 8, 49, 9), new vscode.Range(33, 39, 33, 54))
+    const namespaceSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
+        'HelloWorld',
+        '',
+        vscode.SymbolKind.Namespace,
+        new vscode.Range(14, 0, 51, 1),
+        new vscode.Range(14, 10, 14, 20)
+    )
+    const classSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
+        'HelloWorld.Function',
+        '',
+        vscode.SymbolKind.Class,
+        new vscode.Range(17, 4, 50, 5),
+        new vscode.Range(17, 17, 17, 25)
+    )
+    const privateMethodSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
+        'GetCallingIP()',
+        '',
+        vscode.SymbolKind.Method,
+        new vscode.Range(22, 8, 31, 9),
+        new vscode.Range(22, 42, 22, 54)
+    )
+    const publicMethodSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
+        'FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)',
+        '',
+        vscode.SymbolKind.Method,
+        new vscode.Range(33, 8, 49, 9),
+        new vscode.Range(33, 39, 33, 54)
+    )
 
     namespaceSymbol.children.push(classSymbol)
     classSymbol.children.push(privateMethodSymbol)

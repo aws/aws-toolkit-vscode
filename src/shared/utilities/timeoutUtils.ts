@@ -29,7 +29,7 @@ export class Timeout {
     public get remainingTime(): number {
         const remainingTime = this._endTime - new Date().getTime()
 
-        return (remainingTime > 0 ? remainingTime : 0)
+        return remainingTime > 0 ? remainingTime : 0
     }
 
     /**

@@ -12,7 +12,6 @@ export interface SamCliLocationProvider {
 }
 
 export class DefaultSamCliLocationProvider implements SamCliLocationProvider {
-
     private static SAM_CLI_LOCATOR: BaseSamCliLocator | undefined
 
     public async getLocation(): Promise<string | undefined> {
@@ -30,11 +29,9 @@ export class DefaultSamCliLocationProvider implements SamCliLocationProvider {
 
         return DefaultSamCliLocationProvider.SAM_CLI_LOCATOR
     }
-
 }
 
 abstract class BaseSamCliLocator {
-
     public constructor() {
         this.verifyOs()
     }
@@ -56,21 +53,14 @@ abstract class BaseSamCliLocator {
     protected abstract getExecutableFilenames(): string[]
     protected abstract getExecutableFolders(): string[]
 
-    protected async findFileInFolders(
-        files: string[],
-        folders: string[]
-    ): Promise<string | undefined> {
-        const fullPaths: string[] = files.map(
-            file => folders
-                .filter(folder => !!folder)
-                .map(folder => path.join(folder, file))
-        ).reduce(
-            (accumulator, paths) => {
+    protected async findFileInFolders(files: string[], folders: string[]): Promise<string | undefined> {
+        const fullPaths: string[] = files
+            .map(file => folders.filter(folder => !!folder).map(folder => path.join(folder, file)))
+            .reduce((accumulator, paths) => {
                 accumulator.push(...paths)
 
                 return accumulator
-            }
-        )
+            })
 
         for (const fullPath of fullPaths) {
             if (await filesystemUtilities.fileExists(fullPath)) {
@@ -85,8 +75,7 @@ abstract class BaseSamCliLocator {
         const envVars = process.env as EnvironmentVariables
 
         if (!!envVars.PATH) {
-            const systemPaths: string[] = envVars.PATH.split(path.delimiter)
-                .filter(folder => !!folder)
+            const systemPaths: string[] = envVars.PATH.split(path.delimiter).filter(folder => !!folder)
 
             return await this.findFileInFolders(this.getExecutableFilenames(), systemPaths)
         }
@@ -96,14 +85,10 @@ abstract class BaseSamCliLocator {
 }
 
 class WindowsSamCliLocator extends BaseSamCliLocator {
-
     // Do not access LOCATION_PATHS directly. Use getExecutableFolders()
     private static LOCATION_PATHS: string[] | undefined
 
-    private static readonly EXECUTABLE_FILENAMES: string[] = [
-        'sam.cmd',
-        'sam.exe'
-    ]
+    private static readonly EXECUTABLE_FILENAMES: string[] = ['sam.cmd', 'sam.exe']
 
     public constructor() {
         super()
@@ -138,19 +123,12 @@ class WindowsSamCliLocator extends BaseSamCliLocator {
 
         return WindowsSamCliLocator.LOCATION_PATHS
     }
-
 }
 
 class UnixSamCliLocator extends BaseSamCliLocator {
+    private static readonly LOCATION_PATHS: string[] = ['/usr/local/bin', '/usr/bin']
 
-    private static readonly LOCATION_PATHS: string[] = [
-        '/usr/local/bin',
-        '/usr/bin'
-    ]
-
-    private static readonly EXECUTABLE_FILENAMES: string[] = [
-        'sam'
-    ]
+    private static readonly EXECUTABLE_FILENAMES: string[] = ['sam']
 
     public constructor() {
         super()
@@ -169,5 +147,4 @@ class UnixSamCliLocator extends BaseSamCliLocator {
     protected getExecutableFolders(): string[] {
         return UnixSamCliLocator.LOCATION_PATHS
     }
-
 }

@@ -16,7 +16,7 @@ export interface FakeExtensionState {
 
 export class FakeExtensionContext implements ExtensionContext {
     public subscriptions: {
-        dispose(): any;
+        dispose(): any
     }[] = []
     public workspaceState: Memento = new FakeMemento()
     public globalState: Memento = new FakeMemento()

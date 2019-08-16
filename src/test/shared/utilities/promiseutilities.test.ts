@@ -23,9 +23,15 @@ describe('PromiseSharer', async () => {
             timesCalled++
         }
 
-        const p1 = PromiseSharer.getExistingPromiseOrCreate('abc', doThing).then(() => { promisesCompleted++ })
-        const p2 = PromiseSharer.getExistingPromiseOrCreate('abc', doThing).then(() => { promisesCompleted++ })
-        const p3 = PromiseSharer.getExistingPromiseOrCreate('abc', doThing).then(() => { promisesCompleted++ })
+        const p1 = PromiseSharer.getExistingPromiseOrCreate('abc', doThing).then(() => {
+            promisesCompleted++
+        })
+        const p2 = PromiseSharer.getExistingPromiseOrCreate('abc', doThing).then(() => {
+            promisesCompleted++
+        })
+        const p3 = PromiseSharer.getExistingPromiseOrCreate('abc', doThing).then(() => {
+            promisesCompleted++
+        })
 
         await p1
         await p2
@@ -44,9 +50,15 @@ describe('PromiseSharer', async () => {
             timesCalled++
         }
 
-        const p1 = PromiseSharer.getExistingPromiseOrCreate('abc', doThing).then(() => { promisesCompleted++ })
-        const p2 = PromiseSharer.getExistingPromiseOrCreate('def', doThing).then(() => { promisesCompleted++ })
-        const p3 = PromiseSharer.getExistingPromiseOrCreate('abc', doThing).then(() => { promisesCompleted++ })
+        const p1 = PromiseSharer.getExistingPromiseOrCreate('abc', doThing).then(() => {
+            promisesCompleted++
+        })
+        const p2 = PromiseSharer.getExistingPromiseOrCreate('def', doThing).then(() => {
+            promisesCompleted++
+        })
+        const p3 = PromiseSharer.getExistingPromiseOrCreate('abc', doThing).then(() => {
+            promisesCompleted++
+        })
 
         await p1
         await p2
