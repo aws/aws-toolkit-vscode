@@ -5,26 +5,26 @@
 
 import * as assert from 'assert'
 import { DefaultEcsNode } from '../../../awsexplorer/nodes/ecsNode'
-import { RegionInfo } from '../../../shared/regions/regionInfo'
+import { MockRegionNode } from './mockNodes'
 
 // TODO: create test for getChildren() after mocking is introduced
-describe('DefaultRegionNode', () => {
+describe('DefaultEcsNode', () => {
 
     // Validates we tagged the node correctly
-    it('initializes name and tooltip', async () => {
+    it('initializes name, tooltip, and initial children', async () => {
 
         const testNode = new DefaultEcsNode(
-            {
-                regionCode: 'us-weast-1',
-                regionName: 'that says "west", Patrick',
-                update: (info: RegionInfo) => undefined,
-                getChildren: async () => []
-            },
+            new MockRegionNode(),
             () => { throw new Error('unused') }
         )
 
         assert.strictEqual(testNode.label, 'ECS')
         assert.strictEqual(testNode.tooltip, 'ECS')
+
+        const children = await testNode.getChildren()
+
+        assert.strictEqual(children[0].label, 'Clusters')
+        assert.strictEqual(children[1].label, 'Task Definitions')
     })
 
 })

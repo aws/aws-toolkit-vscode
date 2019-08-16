@@ -4,12 +4,12 @@
  */
 
 import * as assert from 'assert'
-import { DefaultEcsClustersNode } from '../../../awsexplorer/nodes/ecsClustersNode'
 import { EcsNode } from '../../../awsexplorer/nodes/ecsNodeInterfaces'
+import { DefaultEcsTaskDefinitionsNode } from '../../../awsexplorer/nodes/ecsTaskDefinitionsNode'
 import { TestLogger } from '../../../shared/loggerUtils'
 import { MockEcsNode } from './mockNodes'
 
-describe('DefaultEcsClustersNode', () => {
+describe('DefaultEcsTaskDefinitionsNode', () => {
 
     let logger: TestLogger
 
@@ -21,7 +21,7 @@ describe('DefaultEcsClustersNode', () => {
         await logger.cleanupLogger()
     })
 
-    class TestEcsClustersNode extends DefaultEcsClustersNode {
+    class TestEcsTaskDefinitionsNode extends DefaultEcsTaskDefinitionsNode {
 
         public response: Map<string, string> | Error = new Map<string, string>()
 
@@ -41,15 +41,17 @@ describe('DefaultEcsClustersNode', () => {
     }
 
     it('creates a node with child EcsClusterNodes in alphabetical order', async () => {
-        const arn = 'arn:aws:ecs:us-east-1:123456789012:cluster/abc'
-        const arn2 = 'arn:aws:ecs:us-east-1:123456789012:cluster/xyz'
-        const nameArr = ['abc', 'xyz']
-        const testNode = new TestEcsClustersNode(
+        const name = 'abc'
+        const name2 = 'xyz'
+        const name3 = 'jkl'
+        const nameArr = ['abc', 'jkl', 'xyz']
+        const testNode = new TestEcsTaskDefinitionsNode(
             new MockEcsNode()
         )
         const map = new Map<string, string>()
-        map.set(arn, arn)
-        map.set(arn2, arn2)
+        map.set(name, name)
+        map.set(name2, name2)
+        map.set(name3, name3)
         testNode.response = map
         const children = await testNode.getChildren()
         for (let i = 0; i < children.length; i++) {
@@ -58,7 +60,7 @@ describe('DefaultEcsClustersNode', () => {
     })
 
     it ('handles errors', async () => {
-        const testNode = new TestEcsClustersNode(
+        const testNode = new TestEcsTaskDefinitionsNode(
             new MockEcsNode()
         )
         testNode.response = new Error('oh nooooooo')
