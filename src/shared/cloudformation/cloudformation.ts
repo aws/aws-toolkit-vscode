@@ -12,14 +12,12 @@ import { SystemUtilities } from '../systemUtilities'
 export namespace CloudFormation {
     export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function'
 
-    export function validateProperties(
-        {
-            Handler,
-            CodeUri,
-            Runtime,
-            ...rest
-        }: Partial<ResourceProperties>
-    ): ResourceProperties {
+    export function validateProperties({
+        Handler,
+        CodeUri,
+        Runtime,
+        ...rest
+    }: Partial<ResourceProperties>): ResourceProperties {
         if (!Handler) {
             throw new Error('Missing value: Handler')
         }
@@ -41,16 +39,16 @@ export namespace CloudFormation {
     }
 
     export interface ResourceProperties {
-        Handler: string,
-        CodeUri: string,
-        Runtime?: string,
-        MemorySize?: number,
-        Timeout?: number,
+        Handler: string
+        CodeUri: string
+        Runtime?: string
+        MemorySize?: number
+        Timeout?: number
         Environment?: Environment
     }
 
     export interface Resource {
-        Type: typeof SERVERLESS_FUNCTION_TYPE,
+        Type: typeof SERVERLESS_FUNCTION_TYPE
         Properties?: ResourceProperties
     }
 
@@ -58,60 +56,60 @@ export namespace CloudFormation {
     // tslint:disable-next-line:max-line-length
     // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html#parameters-section-structure-properties
     export type ParameterType =
-        'String' |
-        'Number' |
-        'List<Number>' |
-        'CommaDelimitedList' |
-        AWSSpecificParameterType |
-        SSMParameterType
+        | 'String'
+        | 'Number'
+        | 'List<Number>'
+        | 'CommaDelimitedList'
+        | AWSSpecificParameterType
+        | SSMParameterType
 
     // tslint:disable-next-line:max-line-length
     // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html#aws-specific-parameter-types
     type AWSSpecificParameterType =
-        'AWS::EC2::AvailabilityZone::Name' |
-        'AWS::EC2::Image::Id' |
-        'AWS::EC2::KeyPair::KeyName' |
-        'AWS::EC2::SecurityGroup::GroupName' |
-        'AWS::EC2::SecurityGroup::Id' |
-        'AWS::EC2::Subnet::Id' |
-        'AWS::EC2::Volume::Id' |
-        'AWS::EC2::VPC::Id' |
-        'AWS::Route53::HostedZone::Id' |
-        'List<AWS::EC2::AvailabilityZone::Name>' |
-        'List<AWS::EC2::Image::Id>' |
-        'List<AWS::EC2::Instance::Id>' |
-        'List<AWS::EC2::SecurityGroup::GroupName>' |
-        'List<AWS::EC2::SecurityGroup::Id>' |
-        'List<AWS::EC2::Subnet::Id>' |
-        'List<AWS::EC2::Volume::Id>' |
-        'List<AWS::EC2::VPC::Id>' |
-        'List<AWS::Route53::HostedZone::Id>'
+        | 'AWS::EC2::AvailabilityZone::Name'
+        | 'AWS::EC2::Image::Id'
+        | 'AWS::EC2::KeyPair::KeyName'
+        | 'AWS::EC2::SecurityGroup::GroupName'
+        | 'AWS::EC2::SecurityGroup::Id'
+        | 'AWS::EC2::Subnet::Id'
+        | 'AWS::EC2::Volume::Id'
+        | 'AWS::EC2::VPC::Id'
+        | 'AWS::Route53::HostedZone::Id'
+        | 'List<AWS::EC2::AvailabilityZone::Name>'
+        | 'List<AWS::EC2::Image::Id>'
+        | 'List<AWS::EC2::Instance::Id>'
+        | 'List<AWS::EC2::SecurityGroup::GroupName>'
+        | 'List<AWS::EC2::SecurityGroup::Id>'
+        | 'List<AWS::EC2::Subnet::Id>'
+        | 'List<AWS::EC2::Volume::Id>'
+        | 'List<AWS::EC2::VPC::Id>'
+        | 'List<AWS::Route53::HostedZone::Id>'
 
     // tslint:disable-next-line:max-line-length
     // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html#aws-ssm-parameter-types
     type SSMParameterType =
-        'AWS::SSM::Parameter::Name' |
-        'AWS::SSM::Parameter::Value<String>' |
-        'AWS::SSM::Parameter::Value<List<String>>' |
-        'AWS::SSM::Parameter::Value<CommaDelimitedList>' |
-        'AWS::SSM::Parameter::Value<AWS::EC2::AvailabilityZone::Name>' |
-        'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>' |
-        'AWS::SSM::Parameter::Value<AWS::EC2::KeyPair::KeyName>' |
-        'AWS::SSM::Parameter::ValueAWS::EC2::SecurityGroup::GroupName<>' |
-        'AWS::SSM::Parameter::Value<AWS::EC2::SecurityGroup::Id>' |
-        'AWS::SSM::Parameter::Value<AWS::EC2::Subnet::Id>' |
-        'AWS::SSM::Parameter::Value<AWS::EC2::Volume::Id>' |
-        'AWS::SSM::Parameter::Value<AWS::EC2::VPC::Id>' |
-        'AWS::SSM::Parameter::Value<AWS::Route53::HostedZone::Id>' |
-        'AWS::SSM::Parameter::Value<List<AWS::EC2::AvailabilityZone::Name>>' |
-        'AWS::SSM::Parameter::Value<List<AWS::EC2::Image::Id>>' |
-        'AWS::SSM::Parameter::Value<List<AWS::EC2::KeyPair::KeyName>>' |
-        'AWS::SSM::Parameter::Value<List<AWS::EC2::SecurityGroup::GroupName>>' |
-        'AWS::SSM::Parameter::Value<List<AWS::EC2::SecurityGroup::Id>>' |
-        'AWS::SSM::Parameter::Value<List<AWS::EC2::Subnet::Id>>' |
-        'AWS::SSM::Parameter::Value<List<AWS::EC2::Volume::Id>>' |
-        'AWS::SSM::Parameter::Value<List<AWS::EC2::VPC::Id>>' |
-        'AWS::SSM::Parameter::Value<List<AWS::Route53::HostedZone::Id>>'
+        | 'AWS::SSM::Parameter::Name'
+        | 'AWS::SSM::Parameter::Value<String>'
+        | 'AWS::SSM::Parameter::Value<List<String>>'
+        | 'AWS::SSM::Parameter::Value<CommaDelimitedList>'
+        | 'AWS::SSM::Parameter::Value<AWS::EC2::AvailabilityZone::Name>'
+        | 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+        | 'AWS::SSM::Parameter::Value<AWS::EC2::KeyPair::KeyName>'
+        | 'AWS::SSM::Parameter::ValueAWS::EC2::SecurityGroup::GroupName<>'
+        | 'AWS::SSM::Parameter::Value<AWS::EC2::SecurityGroup::Id>'
+        | 'AWS::SSM::Parameter::Value<AWS::EC2::Subnet::Id>'
+        | 'AWS::SSM::Parameter::Value<AWS::EC2::Volume::Id>'
+        | 'AWS::SSM::Parameter::Value<AWS::EC2::VPC::Id>'
+        | 'AWS::SSM::Parameter::Value<AWS::Route53::HostedZone::Id>'
+        | 'AWS::SSM::Parameter::Value<List<AWS::EC2::AvailabilityZone::Name>>'
+        | 'AWS::SSM::Parameter::Value<List<AWS::EC2::Image::Id>>'
+        | 'AWS::SSM::Parameter::Value<List<AWS::EC2::KeyPair::KeyName>>'
+        | 'AWS::SSM::Parameter::Value<List<AWS::EC2::SecurityGroup::GroupName>>'
+        | 'AWS::SSM::Parameter::Value<List<AWS::EC2::SecurityGroup::Id>>'
+        | 'AWS::SSM::Parameter::Value<List<AWS::EC2::Subnet::Id>>'
+        | 'AWS::SSM::Parameter::Value<List<AWS::EC2::Volume::Id>>'
+        | 'AWS::SSM::Parameter::Value<List<AWS::EC2::VPC::Id>>'
+        | 'AWS::SSM::Parameter::Value<List<AWS::Route53::HostedZone::Id>>'
 
     export interface Parameter {
         Type: ParameterType
@@ -149,21 +147,15 @@ export namespace CloudFormation {
         }
     }
 
-    export async function load(
-        filename: string
-    ): Promise<Template> {
-
-        if (!await SystemUtilities.fileExists(filename)) {
+    export async function load(filename: string): Promise<Template> {
+        if (!(await SystemUtilities.fileExists(filename))) {
             throw new Error(`Template file not found: ${filename}`)
         }
 
         const templateAsYaml: string = await filesystemUtilities.readFileAsString(filename)
-        const template = yaml.safeLoad(
-            templateAsYaml,
-            {
-                schema: schema as yaml.SchemaDefinition
-            }
-        ) as Template
+        const template = yaml.safeLoad(templateAsYaml, {
+            schema: schema as yaml.SchemaDefinition
+        }) as Template
         validateTemplate(template)
 
         return template
@@ -240,8 +232,11 @@ export namespace CloudFormation {
     }
 
     export async function getResourceFromTemplate(
-        { templatePath, handlerName }: {
-            templatePath: string,
+        {
+            templatePath,
+            handlerName
+        }: {
+            templatePath: string
             handlerName: string
         },
         context: { loadTemplate: typeof load } = { loadTemplate: load }
@@ -254,19 +249,20 @@ export namespace CloudFormation {
         })
     }
 
-    export async function getResourceFromTemplateResources(
-        params: {
-            templateResources?: TemplateResources,
-            handlerName: string,
-        }
-    ): Promise<Resource> {
+    export async function getResourceFromTemplateResources(params: {
+        templateResources?: TemplateResources
+        handlerName: string
+    }): Promise<Resource> {
         const resources = params.templateResources || {}
 
         const matches = Object.keys(resources)
-            .filter(key => matchesHandler({
-                resource: resources[key],
-                handlerName: params.handlerName
-            })).map(key => resources[key]!)
+            .filter(key =>
+                matchesHandler({
+                    resource: resources[key],
+                    handlerName: params.handlerName
+                })
+            )
+            .map(key => resources[key]!)
 
         if (matches.length < 1) {
             throw new Error(`Could not find a SAM resource for handler ${params.handlerName}`)
@@ -280,11 +276,9 @@ export namespace CloudFormation {
         return matches[0]
     }
 
-    function matchesHandler({ resource, handlerName }: {
-        resource?: Resource
-        handlerName: string
-    }) {
-        return resource &&
+    function matchesHandler({ resource, handlerName }: { resource?: Resource; handlerName: string }) {
+        return (
+            resource &&
             resource.Type === SERVERLESS_FUNCTION_TYPE &&
             resource.Properties &&
             // TODO: `resource.Properties.Handler` is relative to `CodeUri`, but
@@ -293,5 +287,6 @@ export namespace CloudFormation {
             //       interpreted languages to return a handler name relative to the
             //       `CodeUri`, rather than to the directory containing the source file.
             resource.Properties.Handler === handlerName
+        )
     }
 }

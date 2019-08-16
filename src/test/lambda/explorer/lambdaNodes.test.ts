@@ -29,7 +29,6 @@ async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
 }
 
 describe('DefaultLambdaFunctionNode', () => {
-
     let fakeFunctionConfig: Lambda.FunctionConfiguration
     const fakeIconPathPrefix: string = 'DefaultLambdaFunctionNode'
     let logger: TestLogger
@@ -80,15 +79,13 @@ describe('DefaultLambdaFunctionNode', () => {
         assert.strictEqual(childNodes.length, 0)
     })
 
-    function validateIconPath(
-        node: TreeItem
-    ) {
+    function validateIconPath(node: TreeItem) {
         const fileScheme: string = 'file'
         const expectedPrefix = `/${fakeIconPathPrefix}/`
 
         assert(node.iconPath !== undefined)
         const iconPath = node.iconPath! as {
-            light: Uri,
+            light: Uri
             dark: Uri
         }
 
@@ -136,7 +133,6 @@ describe('DefaultLambdaFunctionNode', () => {
 })
 
 describe('DefaultLambdaFunctionGroupNode', () => {
-
     let logger: TestLogger
 
     before(async () => {
@@ -148,19 +144,21 @@ describe('DefaultLambdaFunctionGroupNode', () => {
     })
 
     const stubPathResolver = (path: string): string => path
-    const unusedPathResolver = () => { throw new Error('path resolver unused') }
+    const unusedPathResolver = () => {
+        throw new Error('path resolver unused')
+    }
 
     class FunctionNamesMockLambdaClient extends MockLambdaClient {
         public constructor(
             public readonly functionNames: string[] = [],
-            listFunctions: () => AsyncIterableIterator<Lambda.FunctionConfiguration> =
-                () => asyncGenerator<Lambda.FunctionConfiguration>(
+            listFunctions: () => AsyncIterableIterator<Lambda.FunctionConfiguration> = () =>
+                asyncGenerator<Lambda.FunctionConfiguration>(
                     functionNames.map<Lambda.FunctionConfiguration>(name => {
                         return {
                             FunctionName: name
                         }
                     })
-                ),
+                )
         ) {
             super({
                 listFunctions
@@ -169,9 +167,7 @@ describe('DefaultLambdaFunctionGroupNode', () => {
     }
 
     class ThrowErrorDefaultLambdaFunctionGroupNode extends DefaultLambdaFunctionGroupNode {
-        public constructor(
-            public readonly parent: DefaultRegionNode
-        ) {
+        public constructor(public readonly parent: DefaultRegionNode) {
             super(parent, unusedPathResolver)
         }
 
@@ -181,12 +177,7 @@ describe('DefaultLambdaFunctionGroupNode', () => {
     }
 
     it('Sorts Lambda Function Nodes', async () => {
-        const inputFunctionNames: string[] = [
-            'zebra',
-            'Antelope',
-            'aardvark',
-            'elephant'
-        ]
+        const inputFunctionNames: string[] = ['zebra', 'Antelope', 'aardvark', 'elephant']
 
         // TODO: Move to MockToolkitClientBuilder
         ext.toolkitClientBuilder = {
@@ -223,8 +214,8 @@ describe('DefaultLambdaFunctionGroupNode', () => {
 
         function assertChildNodeFunctionName(
             actualChildNode: LambdaFunctionNode | ErrorNode,
-            expectedNodeText: string) {
-
+            expectedNodeText: string
+        ) {
             assert.strictEqual(
                 'functionName' in actualChildNode,
                 true,

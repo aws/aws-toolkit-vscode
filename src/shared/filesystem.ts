@@ -25,7 +25,7 @@ interface ErrorWithCode {
 
 export async function mkdir(
     path: PathLike,
-    options?: number | string | MakeDirectoryOptions | undefined | null,
+    options?: number | string | MakeDirectoryOptions | undefined | null
 ): Promise<void> {
     try {
         await _mkdir(path, options)
@@ -46,10 +46,7 @@ export async function mkdir(
     }
 }
 
-async function mkdirRecursive(
-    path: string,
-    options: MakeDirectoryOptions,
-): Promise<void> {
+async function mkdirRecursive(path: string, options: MakeDirectoryOptions): Promise<void> {
     const parent = _path.dirname(path)
     if (parent !== path) {
         await mkdir(parent, options)

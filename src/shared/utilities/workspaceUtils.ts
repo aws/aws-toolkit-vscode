@@ -11,8 +11,8 @@ import { getLogger } from '../logger'
  * so we will as a convenience.
  */
 export interface NewWorkspaceFolder {
-    uri: vscode.Uri,
-    name?: string,
+    uri: vscode.Uri
+    name?: string
 }
 
 /**
@@ -30,9 +30,7 @@ export interface NewWorkspaceFolder {
  *
  * @returns true if folder was added, false otherwise
  */
-export async function addFolderToWorkspace(
-    folder: NewWorkspaceFolder,
-): Promise<boolean> {
+export async function addFolderToWorkspace(folder: NewWorkspaceFolder): Promise<boolean> {
     const disposables: vscode.Disposable[] = []
     const logger = getLogger()
 
@@ -40,10 +38,10 @@ export async function addFolderToWorkspace(
         // Wait for the WorkspaceFolders changed notification for the folder of interest before returning to caller
         return await new Promise<boolean>(resolve => {
             vscode.workspace.onDidChangeWorkspaceFolders(
-                (workspaceFoldersChanged) => {
-                    if (workspaceFoldersChanged.added.some(
-                        addedFolder => addedFolder.uri.fsPath === folder.uri.fsPath
-                    )) {
+                workspaceFoldersChanged => {
+                    if (
+                        workspaceFoldersChanged.added.some(addedFolder => addedFolder.uri.fsPath === folder.uri.fsPath)
+                    ) {
                         resolve(true)
                     }
                 },
@@ -51,13 +49,15 @@ export async function addFolderToWorkspace(
                 disposables
             )
 
-            if (!vscode.workspace.updateWorkspaceFolders(
-                // Add new folder to the end of the list rather than the beginning, to avoid VS Code
-                // terminating and reinitializing our extension.
-                (vscode.workspace.workspaceFolders || []).length,
-                0,
-                folder
-            )) {
+            if (
+                !vscode.workspace.updateWorkspaceFolders(
+                    // Add new folder to the end of the list rather than the beginning, to avoid VS Code
+                    // terminating and reinitializing our extension.
+                    (vscode.workspace.workspaceFolders || []).length,
+                    0,
+                    folder
+                )
+            ) {
                 resolve(false)
             }
         })

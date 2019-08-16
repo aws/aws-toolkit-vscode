@@ -12,7 +12,7 @@ class InputFlowAction {
     public static back = new InputFlowAction()
     public static cancel = new InputFlowAction()
     public static resume = new InputFlowAction()
-    private constructor() { }
+    private constructor() {}
 }
 
 type InputStep = (input: MultiStepInputFlowController) => Thenable<InputStep | void>
@@ -66,10 +66,7 @@ export class MultiStepInputFlowController {
                 if (activeItem) {
                     input.activeItems = [activeItem]
                 }
-                input.buttons = [
-                    ...(this.steps.length > 1 ? [QuickInputButtons.Back] : []),
-                    ...(buttons || [])
-                ]
+                input.buttons = [...(this.steps.length > 1 ? [QuickInputButtons.Back] : []), ...(buttons || [])]
                 disposables.push(
                     input.onDidTriggerButton(item => {
                         if (item === QuickInputButtons.Back) {
@@ -80,12 +77,11 @@ export class MultiStepInputFlowController {
                     }),
                     input.onDidChangeSelection(inputItems => resolve(inputItems[0])),
                     input.onDidHide(() => {
-                        (async () => {
-                            reject(shouldResume && await shouldResume() ?
-                                InputFlowAction.resume :
-                                InputFlowAction.cancel)
-                        })()
-                            .catch(reject)
+                        ;(async () => {
+                            reject(
+                                shouldResume && (await shouldResume()) ? InputFlowAction.resume : InputFlowAction.cancel
+                            )
+                        })().catch(reject)
                     })
                 )
                 if (this.current) {
@@ -119,10 +115,7 @@ export class MultiStepInputFlowController {
                 input.totalSteps = totalSteps
                 input.value = value || ''
                 input.prompt = prompt
-                input.buttons = [
-                    ...(this.steps.length > 1 ? [QuickInputButtons.Back] : []),
-                    ...(buttons || [])
-                ]
+                input.buttons = [...(this.steps.length > 1 ? [QuickInputButtons.Back] : []), ...(buttons || [])]
                 input.ignoreFocusOut = ignoreFocusOut ? ignoreFocusOut : false
                 let validating = validate('')
                 disposables.push(
@@ -151,12 +144,11 @@ export class MultiStepInputFlowController {
                         }
                     }),
                     input.onDidHide(() => {
-                        (async () => {
-                            reject(shouldResume && await shouldResume() ?
-                            InputFlowAction.resume :
-                            InputFlowAction.cancel)
-                        })()
-                            .catch(reject)
+                        ;(async () => {
+                            reject(
+                                shouldResume && (await shouldResume()) ? InputFlowAction.resume : InputFlowAction.cancel
+                            )
+                        })().catch(reject)
                     })
                 )
                 if (this.current) {

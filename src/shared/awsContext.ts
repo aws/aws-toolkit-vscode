@@ -16,7 +16,6 @@ export class ContextChangeEventsArgs {
 
 // Represents a credential profile and zero or more regions.
 export interface AwsContext {
-
     onDidChangeContext: vscode.Event<ContextChangeEventsArgs>
 
     // optionally accepts a profile to validate a profile that hasn't logged in yet

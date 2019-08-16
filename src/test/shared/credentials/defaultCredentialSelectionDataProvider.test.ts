@@ -14,15 +14,11 @@ import {
 import { MultiStepInputFlowController } from '../../../shared/multiStepInputFlowController'
 
 describe('defaultCredentialSelectionDataProvider', () => {
-
     describe('credentialProfileSelector', () => {
-
         it('stops on selection of existing profile name', async () => {
-
             // need to find a better mock solution
             class MockCredentialSelectionDataProvider implements CredentialSelectionDataProvider {
-                public constructor(public readonly existingProfileNames: string[]) {
-                }
+                public constructor(public readonly existingProfileNames: string[]) {}
 
                 public async pickCredentialProfile(
                     input: MultiStepInputFlowController,
@@ -55,11 +51,7 @@ describe('defaultCredentialSelectionDataProvider', () => {
                 }
             }
 
-            const profileNames: string[] = [
-                'profile1',
-                'profile2',
-                'profile3'
-            ]
+            const profileNames: string[] = ['profile1', 'profile2', 'profile3']
 
             const dataProvider = new MockCredentialSelectionDataProvider(profileNames)
             const state: CredentialSelectionState | undefined = await credentialProfileSelector(dataProvider)
@@ -72,17 +64,14 @@ describe('defaultCredentialSelectionDataProvider', () => {
     })
 
     describe('promptToDefineCredentialsProfile', () => {
-
         it('populates prompt with profiles from from data provider', async () => {
-
             const sampleProfileName: string = 'demoProfile'
             const sampleAccessKey: string = 'ABCD1234'
             const sampleSecretKey: string = '!@#$!@#$'
 
             // need to find a better mock solution
             class MockCredentialSelectionDataProvider implements CredentialSelectionDataProvider {
-                public constructor(public readonly existingProfileNames: string[]) {
-                }
+                public constructor(public readonly existingProfileNames: string[]) {}
 
                 public async pickCredentialProfile(
                     input: MultiStepInputFlowController,
@@ -113,15 +102,12 @@ describe('defaultCredentialSelectionDataProvider', () => {
                 }
             }
 
-            const profileNames: string[] = [
-                'profile1',
-                'profile2',
-                'profile3'
-            ]
+            const profileNames: string[] = ['profile1', 'profile2', 'profile3']
 
             const dataProvider = new MockCredentialSelectionDataProvider(profileNames)
-            const credentialState: CredentialSelectionState | undefined =
-                await promptToDefineCredentialsProfile(dataProvider)
+            const credentialState: CredentialSelectionState | undefined = await promptToDefineCredentialsProfile(
+                dataProvider
+            )
 
             assert(credentialState)
             assert(credentialState!.accesskey)

@@ -3,16 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    TreeItem,
-    TreeItemCollapsibleState
-} from 'vscode'
+import { TreeItem, TreeItemCollapsibleState } from 'vscode'
 
 export abstract class AWSTreeNodeBase extends TreeItem {
-    protected constructor(
-        label: string,
-        collapsibleState?: TreeItemCollapsibleState
-    ) {
+    protected constructor(label: string, collapsibleState?: TreeItemCollapsibleState) {
         super(label, collapsibleState)
     }
 

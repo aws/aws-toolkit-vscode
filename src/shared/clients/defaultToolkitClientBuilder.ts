@@ -27,10 +27,7 @@ export class DefaultToolkitClientBuilder implements ToolkitClientBuilder {
         return new DefaultLambdaClient(regionCode)
     }
 
-    public createStsClient(
-        regionCode: string,
-        credentials?: ServiceConfigurationOptions
-    ): StsClient {
+    public createStsClient(regionCode: string, credentials?: ServiceConfigurationOptions): StsClient {
         return new DefaultStsClient(regionCode, credentials)
     }
 }

@@ -17,27 +17,13 @@ import { getChannelLogger, getDebugPort, localize } from '../utilities/vsCodeUti
 
 import { getLogger } from '../logger'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
-import {
-    CodeLensProviderParams,
-    getInvokeCmdKey,
-    getMetricDatum,
-    makeCodeLenses,
-} from './codeLensUtils'
-import {
-    LambdaLocalInvokeParams,
-    LocalLambdaRunner,
-} from './localLambdaRunner'
+import { CodeLensProviderParams, getInvokeCmdKey, getMetricDatum, makeCodeLenses } from './codeLensUtils'
+import { LambdaLocalInvokeParams, LocalLambdaRunner } from './localLambdaRunner'
 
-const supportedNodeJsRuntimes: Set<string> = new Set<string>([
-    'nodejs8.10',
-    'nodejs10.x',
-])
+const supportedNodeJsRuntimes: Set<string> = new Set<string>(['nodejs8.10', 'nodejs10.x'])
 
 async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
-    const packageJsonPath: string | undefined = await findFileInParentPaths(
-        path.dirname(filepath),
-        'package.json'
-    )
+    const packageJsonPath: string | undefined = await findFileInParentPaths(path.dirname(filepath), 'package.json')
     if (!packageJsonPath) {
         throw new Error( // TODO: Do we want to localize errors? This might be confusing if we need to review logs.
             localize(
@@ -55,13 +41,11 @@ export function initialize({
     configuration,
     outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultValidatingSamCliProcessInvoker({}),
-    localInvokeCommand = new DefaultSamLocalInvokeCommand(
-        getChannelLogger(toolkitOutputChannel),
-        [WAIT_FOR_DEBUGGER_MESSAGES.NODEJS]
-    ),
-    telemetryService,
+    localInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(toolkitOutputChannel), [
+        WAIT_FOR_DEBUGGER_MESSAGES.NODEJS
+    ]),
+    telemetryService
 }: CodeLensProviderParams): void {
-
     const invokeLambda = async (params: LambdaLocalInvokeParams & { runtime: string }) => {
         const samProjectCodeRoot = await getSamProjectDirPathForFile(params.document.uri.fsPath)
         let debugPort: number | undefined
@@ -80,10 +64,7 @@ export function initialize({
             localRoot: samProjectCodeRoot,
             remoteRoot: '/var/task',
             protocol: 'inspector',
-            skipFiles: [
-                '/var/runtime/node_modules/**/*.js',
-                '<node_internals>/**/*.js'
-            ]
+            skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js']
         }
 
         const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
@@ -117,7 +98,7 @@ export function initialize({
             if (!supportedNodeJsRuntimes.has(runtime)) {
                 logger.error(
                     `Javascript local invoke on ${params.document.uri.fsPath} encountered` +
-                    ` unsupported runtime ${runtime}`
+                        ` unsupported runtime ${runtime}`
                 )
 
                 vscode.window.showErrorMessage(
@@ -125,19 +106,19 @@ export function initialize({
                         'AWS.samcli.local.invoke.runtime.unsupported',
                         'Unsupported {0} runtime: {1}',
                         'javascript',
-                        runtime,
+                        runtime
                     )
                 )
             } else {
                 await invokeLambda({
                     runtime,
-                    ...params,
+                    ...params
                 })
             }
 
             return getMetricDatum({
                 isDebug: params.isDebug,
-                runtime,
+                runtime
             })
         },
         telemetryName: {

@@ -15,6 +15,6 @@ export interface ExportedInterface {
 }
 
 // @ts-ignore
-function functionWithNoArgs(): void { }
+function functionWithNoArgs(): void {}
 
-export function exportedFunctionWithNoArgs(): void { }
+export function exportedFunctionWithNoArgs(): void {}

@@ -7,20 +7,20 @@
 
 // @ts-ignore
 class NonExportedClass {
-    public publicMethod(): void { }
+    public publicMethod(): void {}
     // @ts-ignore
-    private privateMethod(): void { }
+    private privateMethod(): void {}
 }
 
 export class ExportedClass {
-    public publicMethod(): void { }
+    public publicMethod(): void {}
     // @ts-ignore
-    private privateMethod(): void { }
+    private privateMethod(): void {}
 
-    public static publicStaticMethod(): void { }
+    public static publicStaticMethod(): void {}
 }
 
 // @ts-ignore
-function functionWithNoArgs(): void { }
+function functionWithNoArgs(): void {}
 
-export function exportedFunctionWithNoArgs(): void { }
+export function exportedFunctionWithNoArgs(): void {}

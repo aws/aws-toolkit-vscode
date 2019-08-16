@@ -12,7 +12,7 @@ export class AWSCommandTreeNode extends AWSTreeNodeBase {
         label: string,
         commandId: string,
         commandArguments?: any[],
-        tooltip?: string,
+        tooltip?: string
     ) {
         super(label, TreeItemCollapsibleState.None)
         this.command = {

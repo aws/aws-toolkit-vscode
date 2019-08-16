@@ -42,7 +42,7 @@ for (const changeFile of changeFiles) {
 }
 
 // tslint:disable-next-line: no-unsafe-any
-changelog.entries.sort((x: {type: string}, y: {type: string}) => x.type.localeCompare(y.type))
+changelog.entries.sort((x: { type: string }, y: { type: string }) => x.type.localeCompare(y.type))
 
 // Write changelog file
 fs.writeFileSync(changesFile, JSON.stringify(changelog, undefined, '\t'))

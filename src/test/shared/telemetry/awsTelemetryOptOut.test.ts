@@ -20,9 +20,15 @@ class MockTelemetryService implements TelemetryService {
         this._telemetryEnabled = value
     }
 
-    public async start(): Promise<void> { return }
-    public async shutdown(): Promise<void> { return }
-    public record(_event: TelemetryEvent ): void { return }
+    public async start(): Promise<void> {
+        return
+    }
+    public async shutdown(): Promise<void> {
+        return
+    }
+    public record(_event: TelemetryEvent): void {
+        return
+    }
     public clearRecords(): void {}
     public notifyOptOutOptionMade(): void {}
 }

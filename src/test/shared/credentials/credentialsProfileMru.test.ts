@@ -8,9 +8,7 @@ import { CredentialsProfileMru } from '../../../shared/credentials/credentialsPr
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 describe('CredentialsProfileMru', () => {
-
     it('lists no profile when none exist', async () => {
-
         const credentialsMru = new CredentialsProfileMru(new FakeExtensionContext())
 
         const mru = credentialsMru.getMruList()
@@ -20,7 +18,6 @@ describe('CredentialsProfileMru', () => {
     })
 
     it('lists single profile when only one exists', async () => {
-
         const credentialsMru = new CredentialsProfileMru(new FakeExtensionContext())
 
         await credentialsMru.setMostRecentlyUsedProfile('apples')

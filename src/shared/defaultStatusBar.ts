@@ -13,7 +13,6 @@ import { AWSStatusBar } from './statusBar'
 // may want to have multiple elements of data on the status bar,
 // so wrapping in a class to allow for per-element update capability
 export class DefaultAWSStatusBar implements AWSStatusBar {
-
     public readonly credentialContext: StatusBarItem
     private readonly _awsContext: AwsContext
 
@@ -23,7 +22,7 @@ export class DefaultAWSStatusBar implements AWSStatusBar {
         this.credentialContext = window.createStatusBarItem(StatusBarAlignment.Right, 100)
         context.subscriptions.push(this.credentialContext)
 
-        this._awsContext.onDidChangeContext(async (changedContext) => await this.updateContext(changedContext))
+        this._awsContext.onDidChangeContext(async changedContext => await this.updateContext(changedContext))
     }
 
     public async updateContext(eventContext: ContextChangeEventsArgs | undefined) {

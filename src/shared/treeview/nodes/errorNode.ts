@@ -8,11 +8,7 @@ import { AWSTreeNodeBase } from './awsTreeNodeBase'
 
 // Used as a child node when an exception occurs while querying AWS resources
 export class ErrorNode extends AWSTreeNodeBase {
-    public constructor(
-        public readonly parent: AWSTreeNodeBase,
-        public readonly error: Error,
-        label: string
-    ) {
+    public constructor(public readonly parent: AWSTreeNodeBase, public readonly error: Error, label: string) {
         super(label, vscode.TreeItemCollapsibleState.None)
 
         this.tooltip = `${error.name}:${error.message}`

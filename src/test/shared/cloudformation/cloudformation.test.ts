@@ -14,7 +14,6 @@ import { SystemUtilities } from '../../../shared/systemUtilities'
 import { assertRejects } from '../utilities/assertUtils'
 
 describe('CloudFormation', () => {
-
     let tempFolder: string
     let filename: string
 
@@ -107,8 +106,7 @@ describe('CloudFormation', () => {
         })
 
         it('can successfully load a file with parameters', async () => {
-            const yamlStr: string =
-                `Parameters:
+            const yamlStr: string = `Parameters:
     MyParam1:
         Type: String
     MyParam2:
@@ -131,7 +129,7 @@ describe('CloudFormation', () => {
                     MyParam3: { Type: 'List<Number>' },
                     MyParam4: { Type: 'CommaDelimitedList' },
                     MyParam5: { Type: 'AWS::EC2::AvailabilityZone::Name' },
-                    MyParam6: { Type: 'AWS::SSM::Parameter::Value<AWS::EC2::AvailabilityZone::Name>' },
+                    MyParam6: { Type: 'AWS::SSM::Parameter::Value<AWS::EC2::AvailabilityZone::Name>' }
                 }
             }
 
@@ -140,8 +138,7 @@ describe('CloudFormation', () => {
 
         it('only loads YAML with valid types', async () => {
             // timeout is not a number
-            const badYamlStr: string =
-                `Resources:
+            const badYamlStr: string = `Resources:
     TestResource:
         Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
         Properties:
@@ -158,8 +155,7 @@ describe('CloudFormation', () => {
 
         it('only loads valid YAML', async () => {
             // same as above, minus the handler
-            const badYamlStr: string =
-                `Resources:
+            const badYamlStr: string = `Resources:
     TestResource:
         Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
         Properties:
@@ -239,7 +235,7 @@ describe('CloudFormation', () => {
             handlerName: 'app.lambda_handler3',
             templateFileName: 'template_python_mixed.yaml',
             expectedRuntime: 'python3.6'
-        },
+        }
     ]
 
     const templateWithNonExistingHandlerScenarios = [
@@ -254,7 +250,7 @@ describe('CloudFormation', () => {
             handlerName: 'app.handler_that_does_not_exist',
             templateFileName: 'template_python_mixed.yaml',
             expectedRuntime: undefined
-        },
+        }
     ]
 
     const makeTemplatePath = (templateFileName: string): string => {

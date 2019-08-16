@@ -8,10 +8,7 @@ import { ext } from '../extensionGlobals'
 import { EcsClient } from './ecsClient'
 
 export class DefaultEcsClient implements EcsClient {
-
-    public constructor(
-        public readonly regionCode: string
-    ) { }
+    public constructor(public readonly regionCode: string) {}
 
     public async *listClusters(): AsyncIterableIterator<string> {
         const sdkClient = await this.createSdkClient()
@@ -52,24 +49,30 @@ export class DefaultEcsClient implements EcsClient {
         } while (request.nextToken)
     }
 
-    protected async invokeListClusters(request: ECS.ListClustersRequest, sdkClient: ECS)
-        : Promise<ECS.ListClustersResponse> {
+    protected async invokeListClusters(
+        request: ECS.ListClustersRequest,
+        sdkClient: ECS
+    ): Promise<ECS.ListClustersResponse> {
         return sdkClient.listClusters(request).promise()
     }
 
-    protected async invokeListServices(request: ECS.ListServicesRequest, sdkClient: ECS)
-        : Promise<ECS.ListServicesResponse> {
+    protected async invokeListServices(
+        request: ECS.ListServicesRequest,
+        sdkClient: ECS
+    ): Promise<ECS.ListServicesResponse> {
         return sdkClient.listServices(request).promise()
     }
 
-    protected async invokeListTaskDefinitionFamilies(request: ECS.ListTaskDefinitionFamiliesRequest, sdkClient: ECS)
-        : Promise<ECS.ListTaskDefinitionFamiliesResponse> {
+    protected async invokeListTaskDefinitionFamilies(
+        request: ECS.ListTaskDefinitionFamiliesRequest,
+        sdkClient: ECS
+    ): Promise<ECS.ListTaskDefinitionFamiliesResponse> {
         return sdkClient.listTaskDefinitionFamilies(request).promise()
     }
 
     protected async createSdkClient(): Promise<ECS> {
         return await ext.sdkClientBuilder.createAndConfigureServiceClient(
-            (options) => new ECS(options),
+            options => new ECS(options),
             undefined,
             this.regionCode
         )

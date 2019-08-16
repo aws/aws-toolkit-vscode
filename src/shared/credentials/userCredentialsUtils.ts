@@ -33,13 +33,12 @@ export interface CredentialsTemplateContext {
 }
 
 export interface CredentialsValidationResult {
-    isValid: boolean,
-    account?: string,
+    isValid: boolean
+    account?: string
     invalidMessage?: string
 }
 
 export class UserCredentialsUtils {
-
     /**
      * @description Determines which credentials related files
      * exist, and returns their filenames.
@@ -47,10 +46,7 @@ export class UserCredentialsUtils {
      * @returns array of filenames for files found.
      */
     public static async findExistingCredentialsFilenames(): Promise<string[]> {
-        const candidateFiles: string[] = [
-            this.getCredentialsFilename(),
-            this.getConfigFilename()
-        ]
+        const candidateFiles: string[] = [this.getCredentialsFilename(), this.getConfigFilename()]
 
         const existsResults: boolean[] = await Promise.all(
             candidateFiles.map(async filename => await SystemUtilities.fileExists(filename))
@@ -65,8 +61,7 @@ export class UserCredentialsUtils {
     public static getCredentialsFilename(): string {
         const env = process.env as EnvironmentVariables
 
-        return env.AWS_SHARED_CREDENTIALS_FILE
-            || path.join(SystemUtilities.getHomeDirectory(), '.aws', 'credentials')
+        return env.AWS_SHARED_CREDENTIALS_FILE || path.join(SystemUtilities.getHomeDirectory(), '.aws', 'credentials')
     }
 
     /**
@@ -75,8 +70,7 @@ export class UserCredentialsUtils {
     public static getConfigFilename(): string {
         const env = process.env as EnvironmentVariables
 
-        return env.AWS_CONFIG_FILE
-            || path.join(SystemUtilities.getHomeDirectory(), '.aws', 'config')
+        return env.AWS_CONFIG_FILE || path.join(SystemUtilities.getHomeDirectory(), '.aws', 'config')
     }
 
     /**
@@ -86,7 +80,7 @@ export class UserCredentialsUtils {
      */
     public static async generateCredentialDirectoryIfNonexistent(): Promise<void> {
         const filepath = path.dirname(this.getCredentialsFilename())
-        if (!await fileExists(filepath)) {
+        if (!(await fileExists(filepath))) {
             await mkdir(filepath, { recursive: true })
         }
     }
@@ -217,16 +211,9 @@ export class UserCredentialsUtils {
     }
 
     public static async notifyUserCredentialsAreBad(profileName: string) {
-        const getHelp = localize(
-            'AWS.message.credentials.invalidProfile.help',
-            'Get Help...'
-        )
+        const getHelp = localize('AWS.message.credentials.invalidProfile.help', 'Get Help...')
         const selection = await vscode.window.showErrorMessage(
-            localize(
-                'AWS.message.credentials.invalidProfile',
-                'Credentials profile {0} is invalid',
-                profileName
-            ),
+            localize('AWS.message.credentials.invalidProfile', 'Credentials profile {0} is invalid', profileName),
             getHelp
         )
 

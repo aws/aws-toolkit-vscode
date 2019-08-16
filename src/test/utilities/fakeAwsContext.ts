@@ -23,16 +23,16 @@ export class FakeRegionProvider implements RegionProvider {
 }
 
 export interface FakeAwsContextParams {
-    credentials?: AWS.Credentials,
-    profileName?: string,
-    accountId?: string,
+    credentials?: AWS.Credentials
+    profileName?: string
+    accountId?: string
     allowUndefined?: boolean
 }
 
 export class FakeAwsContext implements AwsContext {
-
-    public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> =
-        new vscode.EventEmitter<ContextChangeEventsArgs>().event
+    public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> = new vscode.EventEmitter<
+        ContextChangeEventsArgs
+    >().event
     private readonly credentials: AWS.Credentials | undefined
     private accountId: string | undefined
     private profileName: string | undefined
@@ -41,11 +41,11 @@ export class FakeAwsContext implements AwsContext {
         if (params && params.allowUndefined) {
             this.credentials = params.credentials ? params.credentials : undefined
             this.accountId = params.accountId ? params.accountId : undefined
-            this.profileName = params.profileName ? params.profileName :  undefined
+            this.profileName = params.profileName ? params.profileName : undefined
         } else {
-            this.credentials = (params && params.credentials) ? params.credentials : undefined
-            this.accountId = (params && params.accountId) ? params.accountId : DEFAULT_TEST_ACCOUNT_ID
-            this.profileName = (params && params.profileName) ? params.profileName :  DEFAULT_TEST_PROFILE_NAME
+            this.credentials = params && params.credentials ? params.credentials : undefined
+            this.accountId = params && params.accountId ? params.accountId : DEFAULT_TEST_ACCOUNT_ID
+            this.profileName = params && params.profileName ? params.profileName : DEFAULT_TEST_PROFILE_NAME
         }
     }
 
