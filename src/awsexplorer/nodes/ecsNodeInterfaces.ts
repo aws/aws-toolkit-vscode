@@ -24,9 +24,7 @@ export interface EcsTaskDefinitionsNode extends AWSTreeErrorHandlerNode {
 
     readonly parent: EcsNode
 
-    getChildren(): Thenable<(EcsTaskDefinitionNode | ErrorNode)[]>
-
-    updateChildren(): Thenable<void>
+    getChildren(): Thenable<(EcsTaskDefinitionNode | ErrorNode | PlaceholderNode)[]>
 }
 
 export interface EcsTaskDefinitionNode extends AWSTreeErrorHandlerNode {
@@ -44,9 +42,7 @@ export interface EcsClustersNode extends AWSTreeErrorHandlerNode {
 
     readonly parent: EcsNode
 
-    getChildren(): Thenable<(EcsClusterNode | ErrorNode)[]>
-
-    updateChildren(): Thenable<void>
+    getChildren(): Thenable<(EcsClusterNode | ErrorNode | PlaceholderNode)[]>
 }
 
 export interface EcsClusterNode extends AWSTreeErrorHandlerNode {
@@ -56,7 +52,7 @@ export interface EcsClusterNode extends AWSTreeErrorHandlerNode {
 
     readonly arn: string
 
-    getChildren(): Thenable<(EcsServicesNode | ErrorNode)[]>
+    getChildren(): Thenable<(EcsServicesNode | ErrorNode | PlaceholderNode)[]>
 
     update(arn: string): void
 }
@@ -67,8 +63,6 @@ export interface EcsServicesNode extends AWSTreeErrorHandlerNode {
     readonly parent: EcsClusterNode
 
     getChildren(): Thenable<(EcsServiceNode | ErrorNode | PlaceholderNode)[]>
-
-    updateChildren(): Thenable<void>
 }
 
 export interface EcsServiceNode extends AWSTreeErrorHandlerNode {

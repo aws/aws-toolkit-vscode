@@ -11,11 +11,16 @@ import { EcsClient } from '../../shared/clients/ecsClient'
 import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
+import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { asyncIterableWithStatusBarUpdate, toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { DefaultEcsClusterNode } from './ecsClusterNode'
 import { EcsClusterNode, EcsClustersNode, EcsNode } from './ecsNodeInterfaces'
 
 export class DefaultEcsClustersNode extends AWSTreeErrorHandlerNode implements EcsClustersNode {
+
+    public get regionCode(): string {
+        return this.parent.regionCode
+    }
     private readonly clusterNodes: Map<string, EcsClusterNode>
 
     public constructor(
@@ -26,11 +31,7 @@ export class DefaultEcsClustersNode extends AWSTreeErrorHandlerNode implements E
         this.clusterNodes = new Map<string, EcsClusterNode>()
     }
 
-    public get regionCode(): string {
-        return this.parent.regionCode
-    }
-
-    public async getChildren(): Promise<(EcsClusterNode | ErrorNode)[]> {
+    public async getChildren(): Promise<(EcsClusterNode | ErrorNode | PlaceholderNode)[]> {
         await this.handleErrorProneOperation(
             async () => this.updateChildren(),
             localize(
@@ -39,25 +40,46 @@ export class DefaultEcsClustersNode extends AWSTreeErrorHandlerNode implements E
             )
         )
 
-        return !!this.errorNode ? [this.errorNode]
-            : [...this.clusterNodes.values()]
-                .sort((nodeA, nodeB) =>
-                    nodeA.arn.localeCompare(
-                        nodeB.arn
-                    )
+        if (!!this.errorNode) {
+            return [this.errorNode]
+        }
+
+        if (this.clusterNodes.size > 0) {
+            return [...this.clusterNodes.values()]
+            .sort((nodeA, nodeB) =>
+                nodeA.arn.localeCompare(
+                    nodeB.arn
                 )
+            )
+        }
+
+        return [
+            new PlaceholderNode(
+                this,
+                localize(
+                    'AWS.explorerNode.ecs.clusters.none',
+                    'No clusters found',
+                    this.parent.parent.label
+                )
+            )
+        ]
     }
 
-    public async updateChildren(): Promise<void> {
-
+    protected async getDataMapFromAwsCall() {
         const client: EcsClient = ext.toolkitClientBuilder.createEcsClient(this.regionCode)
-        const clusters = await toMapAsync(
+
+        return await toMapAsync(
             asyncIterableWithStatusBarUpdate<string>(
                 client.listClusters(),
                 localize('AWS.explorerNode.ecs.clusters.loading', 'Loading ECS clusters...')
             ),
             cluster => cluster
         )
+    }
+
+    private async updateChildren(): Promise<void> {
+
+        const clusters = await this.getDataMapFromAwsCall()
 
         updateInPlace(
             this.clusterNodes,

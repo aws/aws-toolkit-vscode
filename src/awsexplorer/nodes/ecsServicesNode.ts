@@ -17,11 +17,11 @@ import { EcsClusterNode, EcsServiceNode, EcsServicesNode } from './ecsNodeInterf
 import { DefaultEcsServiceNode } from './ecsServiceNode'
 
 export class DefaultEcsServicesNode extends AWSTreeErrorHandlerNode implements EcsServicesNode {
-    private readonly serviceNodes: Map<string, EcsServiceNode>
 
     public get regionCode(): string {
         return this.parent.regionCode
     }
+    private readonly serviceNodes: Map<string, EcsServiceNode>
 
     public constructor(
         public readonly parent: EcsClusterNode,
@@ -66,9 +66,10 @@ export class DefaultEcsServicesNode extends AWSTreeErrorHandlerNode implements E
         ]
     }
 
-    public async updateChildren() {
+    protected async getDataMapFromAwsCall() {
         const client: EcsClient = ext.toolkitClientBuilder.createEcsClient(this.regionCode)
-        const services = await toMapAsync(
+
+        return await toMapAsync(
             asyncIterableWithStatusBarUpdate<string>(
                 client.listServices(this.parent.arn),
                 localize(
@@ -79,7 +80,10 @@ export class DefaultEcsServicesNode extends AWSTreeErrorHandlerNode implements E
             ),
             service => service
         )
+    }
 
+    private async updateChildren() {
+        const services = await this.getDataMapFromAwsCall()
         updateInPlace(
             this.serviceNodes,
             services.keys(),

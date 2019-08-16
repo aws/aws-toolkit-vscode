@@ -11,6 +11,7 @@ import { EcsClient } from '../../shared/clients/ecsClient'
 import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
+import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { asyncIterableWithStatusBarUpdate, toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { EcsNode, EcsTaskDefinitionNode, EcsTaskDefinitionsNode } from './ecsNodeInterfaces'
 import { DefaultEcsTaskDefinitionNode } from './ecsTaskDefinitionNode'
@@ -30,7 +31,7 @@ export class DefaultEcsTaskDefinitionsNode extends AWSTreeErrorHandlerNode imple
         return this.parent.regionCode
     }
 
-    public async getChildren(): Promise<(EcsTaskDefinitionNode | ErrorNode)[]> {
+    public async getChildren(): Promise<(EcsTaskDefinitionNode | ErrorNode | PlaceholderNode)[]> {
         await this.handleErrorProneOperation(
             async () => this.updateChildren(),
             localize(
@@ -39,25 +40,34 @@ export class DefaultEcsTaskDefinitionsNode extends AWSTreeErrorHandlerNode imple
             )
         )
 
-        return !!this.errorNode ? [this.errorNode]
-            : [...this.taskDefinitionNodes.values()]
-                .sort((nodeA, nodeB) =>
-                    nodeA.name.localeCompare(
-                        nodeB.name
-                    )
+        if (!!this.errorNode) {
+            return [this.errorNode]
+        }
+
+        if (this.taskDefinitionNodes.size > 0) {
+            return [...this.taskDefinitionNodes.values()]
+            .sort((nodeA, nodeB) =>
+                nodeA.name.localeCompare(
+                    nodeB.name
                 )
+            )
+        }
+
+        return [
+            new PlaceholderNode(
+                this,
+                localize(
+                    'AWS.explorerNode.ecs.taskDef.none',
+                    'No task definitions found',
+                    this.parent.parent.label
+                )
+            )
+        ]
     }
 
     public async updateChildren(): Promise<void> {
 
-        const client: EcsClient = ext.toolkitClientBuilder.createEcsClient(this.regionCode)
-        const taskDefs = await toMapAsync(
-            asyncIterableWithStatusBarUpdate<string>(
-                client.listTaskDefinitionFamilies(),
-                localize('AWS.explorerNode.ecs.taskDef.loading', 'Loading ECS task defintions...')
-            ),
-            cluster => cluster
-        )
+        const taskDefs = await this.getDataMapFromAwsCall()
 
         updateInPlace(
             this.taskDefinitionNodes,
@@ -68,6 +78,18 @@ export class DefaultEcsTaskDefinitionsNode extends AWSTreeErrorHandlerNode imple
                 taskDefs.get(key)!,
                 relativeExtensionPath => this.getExtensionAbsolutePath(relativeExtensionPath)
             )
+        )
+    }
+
+    protected async getDataMapFromAwsCall() {
+        const client: EcsClient = ext.toolkitClientBuilder.createEcsClient(this.regionCode)
+
+        return await toMapAsync(
+            asyncIterableWithStatusBarUpdate<string>(
+                client.listTaskDefinitionFamilies(),
+                localize('AWS.explorerNode.ecs.taskDef.loading', 'Loading ECS task defintions...')
+            ),
+            cluster => cluster
         )
     }
 }
