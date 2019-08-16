@@ -23,6 +23,7 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
     private info: RegionInfo
     private readonly cloudFormationNode: CloudFormationNode
     private readonly lambdaFunctionGroupNode: LambdaFunctionGroupNode
+    // TODO: remove undefined when feature flag is removed.
     private readonly ecsNode: EcsNode | undefined
 
     public get regionCode(): string {
@@ -56,6 +57,7 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
             this.lambdaFunctionGroupNode
         ]
 
+        // TODO: Remove when feature flag is removed
         if (this.ecsNode) {
             children.push(this.ecsNode)
         }
