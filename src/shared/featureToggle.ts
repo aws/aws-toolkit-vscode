@@ -9,7 +9,7 @@ import { SettingsConfiguration } from './settingsConfiguration'
 // Features all need to be added with matching enums and string values
 // e.g. `Feature1 = 'Feature1'`
 // Features that do not follow this scheme will not work.
-// You cannot have more active features than FeatureController.maxFeatures (default: 5)
+// You cannot have more active features than FeatureToggle.maxFeatures (default: 5)
 // Any features that are flagged in the code but not added here will always return false.
 export enum ActiveFeatureKeys {
 }
@@ -18,7 +18,7 @@ export enum ActiveFeatureKeys {
  * This class handles feature access for unreleased or gated features.
  * Example: adding a feature called `NewFeature1`:
  *
- * Add the following to the `featureController.ActiveFeatureKeys` enum:
+ * Add the following to the `featureToggle.ActiveFeatureKeys` enum:
  *
  * ```
  * export enum ActiveFeatureKeys {
@@ -29,7 +29,7 @@ export enum ActiveFeatureKeys {
  * You can then gate your feature with the following code (returning a boolean):
  *
  * ```
- * FeatureController.isFeatureActive(featureController.ActiveFeatureKeys.NewFeature1)
+ * FeatureToggle.isFeatureActive(featureToggle.ActiveFeatureKeys.NewFeature1)
  * ```
  *
  * Finally, you can access the gated feature by adding the following snippet to the VS Code `settings.json` file:
@@ -40,7 +40,7 @@ export enum ActiveFeatureKeys {
  *     ],
  * ```
  */
-export class FeatureController {
+export class FeatureToggle {
 
     private readonly enabledFeatures: Set<string>
 

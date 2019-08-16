@@ -6,11 +6,11 @@
 import * as assert from 'assert'
 import {
     ActiveFeatureKeys,
-    FeatureController
-} from '../../shared/featureController'
+    FeatureToggle
+} from '../../shared/featureToggle'
 import { TestSettingsConfiguration } from '../utilities/testSettingsConfiguration'
 
-describe('FeatureController', async () => {
+describe('FeatureToggle', async () => {
 
     describe('isFeatureActive', async () => {
 
@@ -21,7 +21,7 @@ describe('FeatureController', async () => {
             await config.writeSetting('experimentalFeatureFlags', [flag])
 
             // simulate active feature flags
-            const features = new FeatureController(config, [flag])
+            const features = new FeatureToggle(config, [flag])
 
             assert.ok(features.isFeatureActive(flag))
         })
@@ -36,7 +36,7 @@ describe('FeatureController', async () => {
                 await config.writeSetting('experimentalFeatureFlags', [flag, notFlag])
 
                 // simulate active feature flags
-                const features = new FeatureController(config, [flag])
+                const features = new FeatureToggle(config, [flag])
                 assert.strictEqual(features.isFeatureActive(notFlag), false)
             }
         )
@@ -51,7 +51,7 @@ describe('FeatureController', async () => {
                 await config.writeSetting('experimentalFeatureFlags', [flag])
 
                 // simulate active feature flags
-                const features = new FeatureController(config, [flag, notFlag])
+                const features = new FeatureToggle(config, [flag, notFlag])
 
                 assert.strictEqual(features.isFeatureActive(notFlag), false)
             }
@@ -59,7 +59,7 @@ describe('FeatureController', async () => {
 
         it('throws an error if too many features are registered', () => {
             const config = new TestSettingsConfiguration()
-            assert.throws(() => new FeatureController(config, ['1', '2', '3', '4', '5', '6']))
+            assert.throws(() => new FeatureToggle(config, ['1', '2', '3', '4', '5', '6']))
         })
 
         // Generated tests which ensure current list of enums are working
@@ -70,7 +70,7 @@ describe('FeatureController', async () => {
                 await config.writeSetting('experimentalFeatureFlags', [featureFlag])
 
                 // use active feature flags from enum
-                const features = new FeatureController(config)
+                const features = new FeatureToggle(config)
 
                 assert.ok(
                     features.isFeatureActive(featureFlag),
