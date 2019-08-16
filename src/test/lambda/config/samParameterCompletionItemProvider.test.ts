@@ -18,8 +18,8 @@ function createTemplatesSymbol({
     includeOverrides = false,
     parameterName
 }: {
-    uri?: vscode.Uri,
-    includeOverrides?: boolean,
+    uri?: vscode.Uri
+    includeOverrides?: boolean
     parameterName?: string
 }) {
     const templatesSymbol = new vscode.DocumentSymbol(
@@ -96,22 +96,24 @@ class MockSamParameterCompletionItemProviderContext implements SamParameterCompl
 describe('SamParameterCompletionItemProvider', async () => {
     it('recovers gracefully if document is not in a workspace', async () => {
         const warnArgs: (Error | string)[][] = []
-        const provider = new SamParameterCompletionItemProvider(new MockSamParameterCompletionItemProviderContext({
-            logger: {
-                warn(...message: (Error | string)[]) {
-                    warnArgs.push(message)
+        const provider = new SamParameterCompletionItemProvider(
+            new MockSamParameterCompletionItemProviderContext({
+                logger: {
+                    warn(...message: (Error | string)[]) {
+                        warnArgs.push(message)
+                    }
                 }
-            }
-        }))
+            })
+        )
 
-        const document: vscode.TextDocument = {
-            uri: vscode.Uri.file(path.join('my', 'path')),
-        } as any as vscode.TextDocument
+        const document: vscode.TextDocument = ({
+            uri: vscode.Uri.file(path.join('my', 'path'))
+        } as any) as vscode.TextDocument
         const actualItems = await provider.provideCompletionItems(
             document,
             new vscode.Position(0, 0),
-            {} as any as vscode.CancellationToken,
-            {} as any as vscode.CompletionContext
+            ({} as any) as vscode.CancellationToken,
+            ({} as any) as vscode.CompletionContext
         )
 
         assert.ok(actualItems)
@@ -125,19 +127,21 @@ describe('SamParameterCompletionItemProvider', async () => {
     })
 
     it('does not provide suggestions if document symbols could not be loaded', async () => {
-        const provider = new SamParameterCompletionItemProvider(new MockSamParameterCompletionItemProviderContext({
-            executeCommand: async () => undefined,
-            getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder)
-        }))
+        const provider = new SamParameterCompletionItemProvider(
+            new MockSamParameterCompletionItemProviderContext({
+                executeCommand: async () => undefined,
+                getWorkspaceFolder: () => (({ uri: vscode.Uri.file('') } as any) as vscode.WorkspaceFolder)
+            })
+        )
 
-        const document: vscode.TextDocument = {
-            uri: vscode.Uri.file(path.join('my', 'path')),
-        } as any as vscode.TextDocument
+        const document: vscode.TextDocument = ({
+            uri: vscode.Uri.file(path.join('my', 'path'))
+        } as any) as vscode.TextDocument
         const actualItems = await provider.provideCompletionItems(
             document,
             new vscode.Position(0, 0),
-            {} as any as vscode.CancellationToken,
-            {} as any as vscode.CompletionContext
+            ({} as any) as vscode.CancellationToken,
+            ({} as any) as vscode.CompletionContext
         )
 
         assert.ok(actualItems)
@@ -145,19 +149,21 @@ describe('SamParameterCompletionItemProvider', async () => {
     })
 
     it('does not provide suggestions if no matching template is found', async () => {
-        const provider = new SamParameterCompletionItemProvider(new MockSamParameterCompletionItemProviderContext({
-            executeCommand: async <T>() => [] as any as T,
-            getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder)
-        }))
+        const provider = new SamParameterCompletionItemProvider(
+            new MockSamParameterCompletionItemProviderContext({
+                executeCommand: async <T>() => ([] as any) as T,
+                getWorkspaceFolder: () => (({ uri: vscode.Uri.file('') } as any) as vscode.WorkspaceFolder)
+            })
+        )
 
-        const document: vscode.TextDocument = {
-            uri: vscode.Uri.file(path.join('my', 'path')),
-        } as any as vscode.TextDocument
+        const document: vscode.TextDocument = ({
+            uri: vscode.Uri.file(path.join('my', 'path'))
+        } as any) as vscode.TextDocument
         const actualItems = await provider.provideCompletionItems(
             document,
             new vscode.Position(0, 0),
-            {} as any as vscode.CancellationToken,
-            {} as any as vscode.CompletionContext
+            ({} as any) as vscode.CancellationToken,
+            ({} as any) as vscode.CompletionContext
         )
 
         assert.ok(actualItems)
@@ -170,32 +176,34 @@ describe('SamParameterCompletionItemProvider', async () => {
             parameterName: 'myParamName'
         })
 
-        const provider = new SamParameterCompletionItemProvider(new MockSamParameterCompletionItemProviderContext({
-            executeCommand: async <T>() => [ templatesSymbol ] as any as T,
-            getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
-            loadTemplate: async () => ({
-                Parameters: {
-                    MyParamName1: {
-                        Type: 'String'
-                    },
-                    MyParamName2: {
-                        Type: 'String'
+        const provider = new SamParameterCompletionItemProvider(
+            new MockSamParameterCompletionItemProviderContext({
+                executeCommand: async <T>() => ([templatesSymbol] as any) as T,
+                getWorkspaceFolder: () => (({ uri: vscode.Uri.file('') } as any) as vscode.WorkspaceFolder),
+                loadTemplate: async () => ({
+                    Parameters: {
+                        MyParamName1: {
+                            Type: 'String'
+                        },
+                        MyParamName2: {
+                            Type: 'String'
+                        }
                     }
-                }
+                })
             })
-        }))
+        )
 
-        const document: vscode.TextDocument = {
+        const document: vscode.TextDocument = ({
             uri: vscode.Uri.file(path.join('.aws', 'templates.json')),
             getWordRangeAtPosition: () => new vscode.Range(3, 0, 3, 10),
             getText: () => ''
-        } as any as vscode.TextDocument
+        } as any) as vscode.TextDocument
 
         const actualItems = await provider.provideCompletionItems(
             document,
             new vscode.Position(3, 0),
-            {} as any as vscode.CancellationToken,
-            {} as any as vscode.CompletionContext
+            ({} as any) as vscode.CancellationToken,
+            ({} as any) as vscode.CompletionContext
         )
 
         assert.ok(actualItems)
@@ -210,35 +218,37 @@ describe('SamParameterCompletionItemProvider', async () => {
             parameterName: 'myParamName'
         })
 
-        const provider = new SamParameterCompletionItemProvider(new MockSamParameterCompletionItemProviderContext({
-            executeCommand: async <T>() => [ templatesSymbol ] as any as T,
-            getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
-            loadTemplate: async () => ({
-                Parameters: {
-                    MyParamName1: {
-                        Type: 'String'
-                    },
-                    MyParamName2: {
-                        Type: 'String'
-                    },
-                    MyOtherParamName: {
-                        Type: 'String'
+        const provider = new SamParameterCompletionItemProvider(
+            new MockSamParameterCompletionItemProviderContext({
+                executeCommand: async <T>() => ([templatesSymbol] as any) as T,
+                getWorkspaceFolder: () => (({ uri: vscode.Uri.file('') } as any) as vscode.WorkspaceFolder),
+                loadTemplate: async () => ({
+                    Parameters: {
+                        MyParamName1: {
+                            Type: 'String'
+                        },
+                        MyParamName2: {
+                            Type: 'String'
+                        },
+                        MyOtherParamName: {
+                            Type: 'String'
+                        }
                     }
-                }
+                })
             })
-        }))
+        )
 
-        const document: vscode.TextDocument = {
+        const document: vscode.TextDocument = ({
             uri: vscode.Uri.file(path.join('.aws', 'templates.json')),
             getWordRangeAtPosition: () => new vscode.Range(3, 0, 3, 10),
             getText: () => 'MyParamName'
-        } as any as vscode.TextDocument
+        } as any) as vscode.TextDocument
 
         const actualItems = await provider.provideCompletionItems(
             document,
             new vscode.Position(3, 0),
-            {} as any as vscode.CancellationToken,
-            {} as any as vscode.CompletionContext
+            ({} as any) as vscode.CancellationToken,
+            ({} as any) as vscode.CompletionContext
         )
 
         assert.ok(actualItems)
@@ -248,16 +258,18 @@ describe('SamParameterCompletionItemProvider', async () => {
     })
 
     it('recovers gracefully if templates.json is empty or invalid', async () => {
-        const provider = new SamParameterCompletionItemProvider(new MockSamParameterCompletionItemProviderContext({
-            executeCommand: async <T>() => undefined,
-            getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder)
-        }))
+        const provider = new SamParameterCompletionItemProvider(
+            new MockSamParameterCompletionItemProviderContext({
+                executeCommand: async <T>() => undefined,
+                getWorkspaceFolder: () => (({ uri: vscode.Uri.file('') } as any) as vscode.WorkspaceFolder)
+            })
+        )
 
         const actualItems = await provider.provideCompletionItems(
-            { uri: vscode.Uri.file(path.join('.aws', 'templates.json')) } as any as vscode.TextDocument,
+            ({ uri: vscode.Uri.file(path.join('.aws', 'templates.json')) } as any) as vscode.TextDocument,
             new vscode.Position(0, 0),
-            {} as any as vscode.CancellationToken,
-            {} as any as vscode.CompletionContext
+            ({} as any) as vscode.CancellationToken,
+            ({} as any) as vscode.CompletionContext
         )
 
         assert.ok(actualItems)
@@ -270,35 +282,37 @@ describe('SamParameterCompletionItemProvider', async () => {
             parameterName: 'myParamName'
         })
 
-        const provider = new SamParameterCompletionItemProvider(new MockSamParameterCompletionItemProviderContext({
-            executeCommand: async <T>() => [ templatesSymbol ] as any as T,
-            getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
-            loadTemplate: async () => ({
-                Parameters: {
-                    MyParamName1: {
-                        Type: 'String'
-                    },
-                    MyParamName2: {
-                        Type: 'String'
-                    },
-                    MyOtherParamName: {
-                        Type: 'String'
+        const provider = new SamParameterCompletionItemProvider(
+            new MockSamParameterCompletionItemProviderContext({
+                executeCommand: async <T>() => ([templatesSymbol] as any) as T,
+                getWorkspaceFolder: () => (({ uri: vscode.Uri.file('') } as any) as vscode.WorkspaceFolder),
+                loadTemplate: async () => ({
+                    Parameters: {
+                        MyParamName1: {
+                            Type: 'String'
+                        },
+                        MyParamName2: {
+                            Type: 'String'
+                        },
+                        MyOtherParamName: {
+                            Type: 'String'
+                        }
                     }
-                }
+                })
             })
-        }))
+        )
 
-        const document: vscode.TextDocument = {
+        const document: vscode.TextDocument = ({
             uri: vscode.Uri.file(path.join('.aws', 'templates.json')),
             getWordRangeAtPosition: () => new vscode.Range(3, 0, 3, 10),
             getText: () => 'MyParamName'
-        } as any as vscode.TextDocument
+        } as any) as vscode.TextDocument
 
         const actualItems = await provider.provideCompletionItems(
             document,
             new vscode.Position(11, 0),
-            {} as any as vscode.CancellationToken,
-            {} as any as vscode.CompletionContext
+            ({} as any) as vscode.CancellationToken,
+            ({} as any) as vscode.CompletionContext
         )
 
         assert.ok(actualItems)
@@ -307,35 +321,37 @@ describe('SamParameterCompletionItemProvider', async () => {
 
     it('recovers gracefully if `parameterOverrides` is not defined for this template', async () => {
         const templatesSymbol = createTemplatesSymbol({})
-        const provider = new SamParameterCompletionItemProvider(new MockSamParameterCompletionItemProviderContext({
-            executeCommand: async <T>() => [ templatesSymbol ] as any as T,
-            getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
-            loadTemplate: async () => ({
-                Parameters: {
-                    MyParamName1: {
-                        Type: 'String'
-                    },
-                    MyParamName2: {
-                        Type: 'String'
-                    },
-                    MyOtherParamName: {
-                        Type: 'String'
+        const provider = new SamParameterCompletionItemProvider(
+            new MockSamParameterCompletionItemProviderContext({
+                executeCommand: async <T>() => ([templatesSymbol] as any) as T,
+                getWorkspaceFolder: () => (({ uri: vscode.Uri.file('') } as any) as vscode.WorkspaceFolder),
+                loadTemplate: async () => ({
+                    Parameters: {
+                        MyParamName1: {
+                            Type: 'String'
+                        },
+                        MyParamName2: {
+                            Type: 'String'
+                        },
+                        MyOtherParamName: {
+                            Type: 'String'
+                        }
                     }
-                }
+                })
             })
-        }))
+        )
 
-        const document: vscode.TextDocument = {
+        const document: vscode.TextDocument = ({
             uri: vscode.Uri.file(path.join('.aws', 'templates.json')),
             getWordRangeAtPosition: () => new vscode.Range(3, 0, 3, 10),
             getText: () => 'MyParamName'
-        } as any as vscode.TextDocument
+        } as any) as vscode.TextDocument
 
         const actualItems = await provider.provideCompletionItems(
             document,
             new vscode.Position(11, 0),
-            {} as any as vscode.CancellationToken,
-            {} as any as vscode.CompletionContext
+            ({} as any) as vscode.CancellationToken,
+            ({} as any) as vscode.CompletionContext
         )
 
         assert.ok(actualItems)
@@ -348,35 +364,37 @@ describe('SamParameterCompletionItemProvider', async () => {
             parameterName: 'myParamName'
         })
 
-        const provider = new SamParameterCompletionItemProvider(new MockSamParameterCompletionItemProviderContext({
-            executeCommand: async <T>() => [ templatesSymbol ] as any as T,
-            getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
-            loadTemplate: async () => ({
-                Parameters: {
-                    MyParamName1: {
-                        Type: 'String'
-                    },
-                    MyParamName2: {
-                        Type: 'String'
-                    },
-                    MyOtherParamName: {
-                        Type: 'String'
+        const provider = new SamParameterCompletionItemProvider(
+            new MockSamParameterCompletionItemProviderContext({
+                executeCommand: async <T>() => ([templatesSymbol] as any) as T,
+                getWorkspaceFolder: () => (({ uri: vscode.Uri.file('') } as any) as vscode.WorkspaceFolder),
+                loadTemplate: async () => ({
+                    Parameters: {
+                        MyParamName1: {
+                            Type: 'String'
+                        },
+                        MyParamName2: {
+                            Type: 'String'
+                        },
+                        MyOtherParamName: {
+                            Type: 'String'
+                        }
                     }
-                }
+                })
             })
-        }))
+        )
 
-        const document: vscode.TextDocument = {
+        const document: vscode.TextDocument = ({
             uri: vscode.Uri.file(path.join('.aws', 'templates.json')),
             getWordRangeAtPosition: () => new vscode.Range(3, 0, 3, 10),
             getText: () => 'MyParamName'
-        } as any as vscode.TextDocument
+        } as any) as vscode.TextDocument
 
         const actualItems = await provider.provideCompletionItems(
             document,
             new vscode.Position(9, 0),
-            {} as any as vscode.CancellationToken,
-            {} as any as vscode.CompletionContext
+            ({} as any) as vscode.CancellationToken,
+            ({} as any) as vscode.CompletionContext
         )
 
         assert.ok(actualItems)
@@ -389,35 +407,37 @@ describe('SamParameterCompletionItemProvider', async () => {
             parameterName: 'myParamName'
         })
 
-        const provider = new SamParameterCompletionItemProvider(new MockSamParameterCompletionItemProviderContext({
-            executeCommand: async <T>() => [ templatesSymbol ] as any as T,
-            getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
-            loadTemplate: async () => ({
-                Parameters: {
-                    MyParamName1: {
-                        Type: 'String'
-                    },
-                    MyParamName2: {
-                        Type: 'String'
-                    },
-                    MyOtherParamName: {
-                        Type: 'String'
+        const provider = new SamParameterCompletionItemProvider(
+            new MockSamParameterCompletionItemProviderContext({
+                executeCommand: async <T>() => ([templatesSymbol] as any) as T,
+                getWorkspaceFolder: () => (({ uri: vscode.Uri.file('') } as any) as vscode.WorkspaceFolder),
+                loadTemplate: async () => ({
+                    Parameters: {
+                        MyParamName1: {
+                            Type: 'String'
+                        },
+                        MyParamName2: {
+                            Type: 'String'
+                        },
+                        MyOtherParamName: {
+                            Type: 'String'
+                        }
                     }
-                }
+                })
             })
-        }))
+        )
 
-        const document: vscode.TextDocument = {
+        const document: vscode.TextDocument = ({
             uri: vscode.Uri.file(path.join('.aws', 'templates.json')),
             getWordRangeAtPosition: () => new vscode.Range(3, 0, 3, 10),
             getText: () => 'MyParamName'
-        } as any as vscode.TextDocument
+        } as any) as vscode.TextDocument
 
         const actualItems = await provider.provideCompletionItems(
             document,
             new vscode.Position(4, 0),
-            {} as any as vscode.CancellationToken,
-            {} as any as vscode.CompletionContext
+            ({} as any) as vscode.CancellationToken,
+            ({} as any) as vscode.CompletionContext
         )
 
         assert.ok(actualItems)

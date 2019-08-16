@@ -9,12 +9,11 @@ import * as buttons from '../../../shared/ui/buttons'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 describe('UI buttons', () => {
-
     const extContext = new FakeExtensionContext()
 
     it('creates a help button without a tooltip or icons', () => {
         const help = buttons.createHelpButton(extContext)
-        const paths = help.iconPath as {light: vscode.Uri, dark: vscode.Uri}
+        const paths = help.iconPath as { light: vscode.Uri; dark: vscode.Uri }
 
         assert.strictEqual(help.tooltip, undefined)
         assert.ok(paths.light)

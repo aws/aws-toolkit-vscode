@@ -16,8 +16,8 @@ export interface DockerInvokeArguments {
     image: string
     removeOnExit?: boolean
     mount?: {
-        type: 'bind',
-        source: string,
+        type: 'bind'
+        source: string
         destination: string
     }
     entryPoint?: {
@@ -34,18 +34,12 @@ export interface DockerInvokeContext {
 class DefaultDockerInvokeContext implements DockerInvokeContext {
     private readonly channelLogger: ChannelLogger
 
-    public constructor(
-        outputChannel: vscode.OutputChannel,
-    ) {
+    public constructor(outputChannel: vscode.OutputChannel) {
         this.channelLogger = getChannelLogger(outputChannel)
     }
 
     public async run(args: string[]): Promise<void> {
-        const process = new ChildProcess(
-            'docker',
-            {},
-            ...(args || [])
-        )
+        const process = new ChildProcess('docker', {}, ...(args || []))
 
         return new Promise<void>(async (resolve, reject) => {
             let stderr: string
@@ -62,14 +56,16 @@ class DefaultDockerInvokeContext implements DockerInvokeContext {
                 },
                 onClose: (code, signal) => {
                     if (code) {
-                        const errorMessage: string = `Could not invoke docker with arguments: [${args.join(', ')}].`
-                            + `${JSON.stringify(
+                        const errorMessage: string =
+                            `Could not invoke docker with arguments: [${args.join(', ')}].` +
+                            `${JSON.stringify(
                                 {
                                     exitCode: code,
-                                    stdErr: stderr,
+                                    stdErr: stderr
                                 },
                                 undefined,
-                                4)}`
+                                4
+                            )}`
 
                         reject(new Error(errorMessage))
                     }
@@ -82,19 +78,12 @@ class DefaultDockerInvokeContext implements DockerInvokeContext {
 }
 
 export class DefaultDockerClient implements DockerClient {
-
     public constructor(
         outputChannel: vscode.OutputChannel,
         private readonly context: DockerInvokeContext = new DefaultDockerInvokeContext(outputChannel)
-    ) { }
+    ) {}
 
-    public async invoke({
-        command,
-        image,
-        removeOnExit,
-        mount,
-        entryPoint
-    }: DockerInvokeArguments): Promise<void> {
+    public async invoke({ command, image, removeOnExit, mount, entryPoint }: DockerInvokeArguments): Promise<void> {
         const args: string[] = [command]
 
         if (removeOnExit) {

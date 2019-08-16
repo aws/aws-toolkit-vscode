@@ -8,8 +8,7 @@ export interface WizardStep {
 }
 
 export abstract class MultiStepWizard<TResult> {
-    protected constructor() {
-    }
+    protected constructor() {}
 
     public async run(): Promise<TResult | undefined> {
         let step: WizardStep | undefined = this.startStep

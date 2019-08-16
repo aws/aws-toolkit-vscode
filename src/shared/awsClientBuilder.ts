@@ -17,12 +17,10 @@ export interface AWSClientBuilder {
 }
 
 export class DefaultAWSClientBuilder implements AWSClientBuilder {
-
     private readonly _awsContext: AwsContext
 
     public constructor(awsContext: AwsContext) {
         this._awsContext = awsContext
-
     }
 
     // centralized construction of transient AWS service clients, allowing us

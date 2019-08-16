@@ -1,0 +1,5 @@
+out
+resources/endpoints.json
+third-party/**
+CHANGELOG.md
+src/shared/telemetry/service-2.json

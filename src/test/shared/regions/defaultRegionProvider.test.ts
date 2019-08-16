@@ -27,7 +27,7 @@ const sampleEndpoints: RawEndpoints = {
                 },
                 region3: {
                     description: 'aws region three'
-                },
+                }
             }
         },
         {
@@ -35,7 +35,7 @@ const sampleEndpoints: RawEndpoints = {
             regions: {
                 awscnregion1: {
                     description: 'aws-cn region one'
-                },
+                }
             }
         },
         {
@@ -43,7 +43,7 @@ const sampleEndpoints: RawEndpoints = {
             regions: {
                 fakeregion1: {
                     description: 'fake region one'
-                },
+                }
             }
         }
     ]

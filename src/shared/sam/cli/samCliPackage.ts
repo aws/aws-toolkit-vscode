@@ -23,16 +23,21 @@ export interface SamCliPackageParameters {
 export async function runSamCliPackage(
     packageArguments: SamCliPackageParameters,
     invoker: SamCliProcessInvoker,
-    logger: BasicLogger = getLogger(),
+    logger: BasicLogger = getLogger()
 ): Promise<void> {
     const childProcessResult = await invoker.invoke({
         arguments: [
             'package',
-            '--template-file', packageArguments.sourceTemplateFile,
-            '--s3-bucket', packageArguments.s3Bucket,
-            '--output-template-file', packageArguments.destinationTemplateFile,
-            '--region', packageArguments.region,
-            '--profile', packageArguments.profile
+            '--template-file',
+            packageArguments.sourceTemplateFile,
+            '--s3-bucket',
+            packageArguments.s3Bucket,
+            '--output-template-file',
+            packageArguments.destinationTemplateFile,
+            '--region',
+            packageArguments.region,
+            '--profile',
+            packageArguments.profile
         ]
     })
 

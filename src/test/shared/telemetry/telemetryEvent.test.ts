@@ -27,10 +27,7 @@ describe('TelemetryEventArray', () => {
                             name: 'event:2',
                             value: 0.5,
                             unit: 'Percent',
-                            metadata: new Map([
-                                ['key', 'value'],
-                                ['key2', 'value2']
-                            ])
+                            metadata: new Map([['key', 'value'], ['key2', 'value2']])
                         }
                     ]
                 }
@@ -74,18 +71,13 @@ describe('TelemetryEventArray', () => {
                         name: 'event2',
                         value: 0.5,
                         unit: 'Percent',
-                        metadata: new Map([
-                            ['key', 'value'],
-                            ['key2', 'value2']
-                        ])
+                        metadata: new Map([['key', 'value'], ['key2', 'value2']])
                     },
                     {
                         name: 'event3',
                         value: 0.333,
                         unit: 'Percent',
-                        metadata: new Map([
-                            ['key3', 'value3'],
-                        ])
+                        metadata: new Map([['key3', 'value3']])
                     }
                 ]
             }
@@ -107,13 +99,8 @@ describe('TelemetryEventArray', () => {
             assert.strictEqual(data[2].Unit, 'Percent')
             assert.deepStrictEqual(data[0].Metadata, undefined)
 
-            const expectedMetadata1 = [
-                { Key: 'key', Value: 'value' },
-                { Key: 'key2', Value: 'value2' }
-            ]
-            const expectedMetadata2 = [
-                { Key: 'key3', Value: 'value3' }
-            ]
+            const expectedMetadata1 = [{ Key: 'key', Value: 'value' }, { Key: 'key2', Value: 'value2' }]
+            const expectedMetadata2 = [{ Key: 'key3', Value: 'value3' }]
 
             assert.deepStrictEqual(data[1].Metadata, expectedMetadata1)
             assert.deepStrictEqual(data[2].Metadata, expectedMetadata2)

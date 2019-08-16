@@ -18,9 +18,7 @@ describe('createInputBox', async () => {
     })
 
     it('Sets buttons', async () => {
-        const buttons: vscode.QuickInputButton[] = [
-            vscode.QuickInputButtons.Back
-        ]
+        const buttons: vscode.QuickInputButton[] = [vscode.QuickInputButtons.Back]
 
         testInput = input.createInputBox({
             buttons: buttons
@@ -33,7 +31,7 @@ describe('createInputBox', async () => {
         const options = {
             title: 'title',
             placeHolder: 'placeholder',
-            ignoreFocusOut: true,
+            ignoreFocusOut: true
         }
 
         testInput = input.createInputBox({
@@ -45,7 +43,7 @@ describe('createInputBox', async () => {
 
     it('Sets boolean Options to false values', async () => {
         const options = {
-            ignoreFocusOut: false,
+            ignoreFocusOut: false
         }
 
         testInput = input.createInputBox({
@@ -56,8 +54,7 @@ describe('createInputBox', async () => {
     })
 
     it('Sets Options to undefined values', async () => {
-        const options = {
-        }
+        const options = {}
 
         testInput = input.createInputBox({
             options: options
@@ -67,8 +64,7 @@ describe('createInputBox', async () => {
     })
 
     it('Does not set Options', async () => {
-        testInput = input.createInputBox({
-        })
+        testInput = input.createInputBox({})
 
         assertInputBoxOptions(testInput, {})
     })
@@ -78,12 +74,14 @@ describe('createInputBox', async () => {
         expectedOptions: vscode.InputBoxOptions & input.AdditionalInputBoxOptions
     ) {
         assert.strictEqual(
-            actualInput.title, expectedOptions.title,
+            actualInput.title,
+            expectedOptions.title,
             `InputBox title mismatch, expected ${expectedOptions.title}, got ${actualInput.title}`
         )
 
         assert.strictEqual(
-            actualInput.placeholder, expectedOptions.placeHolder,
+            actualInput.placeholder,
+            expectedOptions.placeHolder,
             `InputBox placeHolder mismatch, expected ${expectedOptions.placeHolder}, got ${actualInput.placeholder}`
         )
 
@@ -91,9 +89,10 @@ describe('createInputBox', async () => {
         const expectedIgnoreFocusOut =
             expectedOptions.ignoreFocusOut !== undefined ? expectedOptions.ignoreFocusOut : true
         assert.strictEqual(
-            actualInput.ignoreFocusOut, expectedIgnoreFocusOut,
+            actualInput.ignoreFocusOut,
+            expectedIgnoreFocusOut,
             `InputBox ignoreFocusOut mismatch, expected ${expectedIgnoreFocusOut},` +
-            ` got ${actualInput.ignoreFocusOut}`
+                ` got ${actualInput.ignoreFocusOut}`
         )
 
         // TODO : Test more options as they are added in the InputBox
@@ -133,11 +132,7 @@ describe('promptUser', async () => {
 
         const result = await promptPromise
 
-        assert.strictEqual(
-            result,
-            undefined,
-            `Expected calling hide() on prompt to return undefined, got ${result}`
-        )
+        assert.strictEqual(result, undefined, `Expected calling hide() on prompt to return undefined, got ${result}`)
     })
 
     it('Button can cancel and return undefined', async () => {
@@ -151,7 +146,7 @@ describe('promptUser', async () => {
                     button,
                     buttonOfInterest,
                     `Expected button ${JSON.stringify(buttonOfInterest)} ` +
-                    `but got button ${JSON.stringify(buttonOfInterest)}`
+                        `but got button ${JSON.stringify(buttonOfInterest)}`
                 )
 
                 sampleInput.hide()
@@ -180,7 +175,7 @@ describe('promptUser', async () => {
                     button,
                     buttonOfInterest,
                     `Expected button ${JSON.stringify(buttonOfInterest)} ` +
-                    `but got button ${JSON.stringify(buttonOfInterest)}`
+                        `but got button ${JSON.stringify(buttonOfInterest)}`
                 )
 
                 sampleInput.accept(expectedValue)
@@ -207,7 +202,7 @@ describe('promptUser', async () => {
                     button,
                     buttonOfInterest,
                     `Expected button ${JSON.stringify(buttonOfInterest)} ` +
-                    `but got button ${JSON.stringify(buttonOfInterest)}`
+                        `but got button ${JSON.stringify(buttonOfInterest)}`
                 )
 
                 // do something that is not accept/cancel
@@ -248,15 +243,15 @@ describe('promptUser', async () => {
         private readonly onDidHideEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
         private readonly onDidAcceptEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
         private readonly onDidChangeValueEmitter: vscode.EventEmitter<string> = new vscode.EventEmitter()
-        private readonly onDidTriggerButtonEmitter: vscode.EventEmitter<vscode.QuickInputButton> =
-            new vscode.EventEmitter()
+        private readonly onDidTriggerButtonEmitter: vscode.EventEmitter<
+            vscode.QuickInputButton
+        > = new vscode.EventEmitter()
 
         public constructor() {
             this.onDidHide = this.onDidHideEmitter.event
             this.onDidAccept = this.onDidAcceptEmitter.event
             this.onDidChangeValue = this.onDidChangeValueEmitter.event
             this.onDidTriggerButton = this.onDidTriggerButtonEmitter.event
-
         }
 
         public show(): void {
@@ -271,8 +266,7 @@ describe('promptUser', async () => {
             this.onDidAcceptEmitter.fire()
             this.isShowing = false
         }
-        public dispose(): void {
-        }
+        public dispose(): void {}
 
         public pressButton(button: vscode.QuickInputButton) {
             this.onDidTriggerButtonEmitter.fire(button)

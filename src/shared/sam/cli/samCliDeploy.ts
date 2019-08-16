@@ -18,23 +18,23 @@ export interface SamCliDeployParameters {
 export async function runSamCliDeploy(
     deployArguments: SamCliDeployParameters,
     invoker: SamCliProcessInvoker,
-    logger: BasicLogger = getLogger(),
+    logger: BasicLogger = getLogger()
 ): Promise<void> {
     const args = [
         'deploy',
-        '--template-file', deployArguments.templateFile,
-        '--stack-name', deployArguments.stackName,
-        '--capabilities', 'CAPABILITY_IAM',
-        '--region', deployArguments.region,
-        '--profile', deployArguments.profile
+        '--template-file',
+        deployArguments.templateFile,
+        '--stack-name',
+        deployArguments.stackName,
+        '--capabilities',
+        'CAPABILITY_IAM',
+        '--region',
+        deployArguments.region,
+        '--profile',
+        deployArguments.profile
     ]
     if (deployArguments.parameterOverrides.size > 0) {
-        const overrides = [
-            ...map(
-                deployArguments.parameterOverrides.entries(),
-                ([key, value]) => `${key}=${value}`
-            )
-        ]
+        const overrides = [...map(deployArguments.parameterOverrides.entries(), ([key, value]) => `${key}=${value}`)]
         args.push('--parameter-overrides', ...overrides)
     }
 

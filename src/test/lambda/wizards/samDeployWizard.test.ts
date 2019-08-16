@@ -12,7 +12,7 @@ import {
     ParameterPromptResult,
     SamDeployWizard,
     SamDeployWizardContext,
-    validateS3Bucket,
+    validateS3Bucket
 } from '../../../lambda/wizards/samDeployWizard'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { RegionProvider } from '../../../shared/regions/regionProvider'
@@ -28,7 +28,7 @@ interface QuickPickUriResponseItem extends vscode.QuickPickItem {
 function createQuickPickUriResponseItem(uri: vscode.Uri): QuickPickUriResponseItem {
     return {
         label: '',
-        uri: uri,
+        uri: uri
     }
 }
 
@@ -39,16 +39,18 @@ interface QuickPickRegionResponseItem extends vscode.QuickPickItem {
 function createQuickPickRegionResponseItem(detail: string): QuickPickRegionResponseItem {
     return {
         label: '',
-        detail: detail,
+        detail: detail
     }
 }
 
 class MockRegionProvider implements RegionProvider {
     public async getRegionData(): Promise<RegionInfo[]> {
-        return [{
-            regionCode: 'us-west-2',
-            regionName: 'TEST REGION'
-        }]
+        return [
+            {
+                regionCode: 'us-west-2',
+                regionName: 'TEST REGION'
+            }
+        ]
     }
 }
 
@@ -67,7 +69,7 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         private readonly promptForSamTemplateResponses: (QuickPickUriResponseItem | undefined)[] = [],
         private readonly promptForRegionResponses: (QuickPickRegionResponseItem | undefined)[] = [],
         private readonly promptForS3BucketResponses: (string | undefined)[] = [],
-        private readonly promptForStackNameResponses: (string | undefined)[] = [],
+        private readonly promptForStackNameResponses: (string | undefined)[] = []
     ) {
         this.workspaceFoldersResponses = workspaceFoldersResponses.reverse()
         this.promptForSamTemplateResponses = promptForSamTemplateResponses.reverse()
@@ -80,12 +82,10 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
 
     public readonly getParameters: typeof paramUtils.getParameters = async () => new Map()
 
-    public readonly promptUserForParametersIfApplicable: (
-        options: {
-            templateUri: vscode.Uri
-            missingParameters?: Set<string>
-        }
-    ) => Promise<ParameterPromptResult> = async () => ParameterPromptResult.Continue
+    public readonly promptUserForParametersIfApplicable: (options: {
+        templateUri: vscode.Uri
+        missingParameters?: Set<string>
+    }) => Promise<ParameterPromptResult> = async () => ParameterPromptResult.Continue
 
     public async promptUserForSamTemplate(): Promise<vscode.Uri | undefined> {
         if (this.promptForSamTemplateResponses.length <= 0) {
@@ -93,7 +93,9 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         }
 
         const response = this.promptForSamTemplateResponses.pop()
-        if (!response) { return undefined }
+        if (!response) {
+            return undefined
+        }
 
         return response.uri
     }
@@ -115,18 +117,18 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         }
 
         const response = this.promptForRegionResponses.pop()
-        if (!response) { return undefined }
+        if (!response) {
+            return undefined
+        }
 
         return response.detail
     }
 
-    public async promptUserForStackName(
-        {
-            validateInput,
-        }: {
-            validateInput(value: string): string | undefined
-        }
-    ): Promise<string | undefined> {
+    public async promptUserForStackName({
+        validateInput
+    }: {
+        validateInput(value: string): string | undefined
+    }): Promise<string | undefined> {
         if (this.promptForStackNameResponses.length <= 0) {
             throw new Error('promptUserForStackName was called more times than expected')
         }
@@ -154,11 +156,13 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(
                 new MockRegionProvider(),
                 new MockSamDeployWizardContext(
-                    async function* () { yield* [] },
+                    async function*() {
+                        yield* []
+                    },
                     [[]],
                     [undefined],
                     [],
-                    [],
+                    []
                 )
             )
             const result = await wizard.run()
@@ -172,11 +176,13 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(
                 new MockRegionProvider(),
                 new MockSamDeployWizardContext(
-                    async function* () { yield vscode.Uri.file(templatePath) },
+                    async function*() {
+                        yield vscode.Uri.file(templatePath)
+                    },
                     [[vscode.Uri.file(workspaceFolderPath)]],
                     [undefined],
                     [],
-                    [],
+                    []
                 )
             )
             const result = await wizard.run()
@@ -190,16 +196,14 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(
                 new MockRegionProvider(),
                 new MockSamDeployWizardContext(
-                    async function* () { yield vscode.Uri.file(templatePath) },
+                    async function*() {
+                        yield vscode.Uri.file(templatePath)
+                    },
                     [[vscode.Uri.file(workspaceFolderPath)]],
-                    [
-                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath))
-                    ],
-                    [
-                        createQuickPickRegionResponseItem('asdf')
-                    ],
+                    [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
+                    [createQuickPickRegionResponseItem('asdf')],
                     ['mys3bucketname'],
-                    ['myStackName'],
+                    ['myStackName']
                 )
             )
             const result = await wizard.run()
@@ -218,7 +222,8 @@ describe('SamDeployWizard', async () => {
             region = 'us-east-1',
             s3Bucket = 'mys3bucket',
             stackName = 'mystackname'
-        }: Pick<SamDeployWizardContext,
+        }: Pick<
+            SamDeployWizardContext,
             'getParameters' | 'getOverriddenParameters' | 'promptUserForParametersIfApplicable'
         > & {
             templatePath?: string
@@ -246,10 +251,12 @@ describe('SamDeployWizard', async () => {
             it('skips configuring overrides and continues wizard', async () => {
                 const context = makeFakeContext({
                     getParameters: async () => new Map<string, { required: boolean }>([]),
-                    getOverriddenParameters: async () => { throw new Error('Should skip loading overrides') },
+                    getOverriddenParameters: async () => {
+                        throw new Error('Should skip loading overrides')
+                    },
                     promptUserForParametersIfApplicable: async () => {
                         throw new Error('Should skip configuring overrides')
-                    },
+                    }
                 })
 
                 const wizard = new SamDeployWizard(new MockRegionProvider(), context)
@@ -263,13 +270,12 @@ describe('SamDeployWizard', async () => {
         describe('SAM template has only optional parameters', async () => {
             it('skips configuring overrides and continues wizard if parameterOverrides is defined', async () => {
                 const context = makeFakeContext({
-                    getParameters: async () => new Map<string, { required: boolean }>([
-                        ['myParam', { required: false }]
-                    ]),
+                    getParameters: async () =>
+                        new Map<string, { required: boolean }>([['myParam', { required: false }]]),
                     getOverriddenParameters: async () => new Map<string, string>(),
                     promptUserForParametersIfApplicable: async () => {
                         throw new Error('Should skip configuring overrides')
-                    },
+                    }
                 })
 
                 const wizard = new SamDeployWizard(new MockRegionProvider(), context)
@@ -282,11 +288,10 @@ describe('SamDeployWizard', async () => {
             // tslint:disable-next-line:max-line-length
             it('skips configuring overrides and continues wizard if parameterOverrides is undefined and user declines prompt', async () => {
                 const context = makeFakeContext({
-                    getParameters: async () => new Map<string, { required: boolean }>([
-                        ['myParam', { required: false }]
-                    ]),
+                    getParameters: async () =>
+                        new Map<string, { required: boolean }>([['myParam', { required: false }]]),
                     getOverriddenParameters: async () => undefined,
-                    promptUserForParametersIfApplicable: async () => ParameterPromptResult.Continue,
+                    promptUserForParametersIfApplicable: async () => ParameterPromptResult.Continue
                 })
 
                 const wizard = new SamDeployWizard(new MockRegionProvider(), context)
@@ -299,20 +304,19 @@ describe('SamDeployWizard', async () => {
             // tslint:disable-next-line:max-line-length
             it('configures overrides and cancels wizard if parameterOverrides is undefined and user accepts prompt', async () => {
                 const configureParameterOverridesArgs: {
-                    templateUri: vscode.Uri,
+                    templateUri: vscode.Uri
                     missingParameters?: Set<string> | undefined
                 }[] = []
 
                 const context = makeFakeContext({
-                    getParameters: async () => new Map<string, { required: boolean }>([
-                        ['myParam', { required: false }]
-                    ]),
+                    getParameters: async () =>
+                        new Map<string, { required: boolean }>([['myParam', { required: false }]]),
                     getOverriddenParameters: async () => undefined,
                     async promptUserForParametersIfApplicable(options): Promise<ParameterPromptResult> {
                         configureParameterOverridesArgs.push(options)
 
                         return ParameterPromptResult.Cancel
-                    },
+                    }
                 })
 
                 const wizard = new SamDeployWizard(new MockRegionProvider(), context)
@@ -328,20 +332,19 @@ describe('SamDeployWizard', async () => {
             // tslint:disable-next-line:max-line-length
             it('configures overrides and cancels wizard if overrides are not defined', async () => {
                 const configureParameterOverridesArgs: {
-                    templateUri: vscode.Uri,
+                    templateUri: vscode.Uri
                     missingParameters?: Set<string> | undefined
                 }[] = []
 
                 const context = makeFakeContext({
-                    getParameters: async () => new Map<string, { required: boolean }>([
-                        ['myParam', { required: true }]
-                    ]),
+                    getParameters: async () =>
+                        new Map<string, { required: boolean }>([['myParam', { required: true }]]),
                     getOverriddenParameters: async () => undefined,
                     async promptUserForParametersIfApplicable(options): Promise<ParameterPromptResult> {
                         configureParameterOverridesArgs.push(options)
 
                         return ParameterPromptResult.Cancel
-                    },
+                    }
                 })
 
                 const wizard = new SamDeployWizard(new MockRegionProvider(), context)
@@ -356,20 +359,19 @@ describe('SamDeployWizard', async () => {
             // tslint:disable-next-line:max-line-length
             it('configures overrides and cancels wizard if there are missing overrides', async () => {
                 const configureParameterOverridesArgs: {
-                    templateUri: vscode.Uri,
+                    templateUri: vscode.Uri
                     missingParameters?: Set<string> | undefined
                 }[] = []
 
                 const context = makeFakeContext({
-                    getParameters: async () => new Map<string, { required: boolean }>([
-                        ['myParam', { required: true }]
-                    ]),
+                    getParameters: async () =>
+                        new Map<string, { required: boolean }>([['myParam', { required: true }]]),
                     getOverriddenParameters: async () => new Map<string, string>(),
                     async promptUserForParametersIfApplicable(options): Promise<ParameterPromptResult> {
                         configureParameterOverridesArgs.push(options)
 
                         return ParameterPromptResult.Cancel
-                    },
+                    }
                 })
 
                 const wizard = new SamDeployWizard(new MockRegionProvider(), context)
@@ -384,22 +386,19 @@ describe('SamDeployWizard', async () => {
             // tslint:disable-next-line:max-line-length
             it('stores existing overrides and continues without configuring overrides if there are no missing overrides', async () => {
                 const configureParameterOverridesArgs: {
-                    templateUri: vscode.Uri,
+                    templateUri: vscode.Uri
                     missingParameters?: Set<string> | undefined
                 }[] = []
 
                 const context = makeFakeContext({
-                    getParameters: async () => new Map<string, { required: boolean }>([
-                        ['myParam', { required: true }]
-                    ]),
-                    getOverriddenParameters: async () => new Map<string, string>([
-                        ['myParam', 'myValue']
-                    ]),
+                    getParameters: async () =>
+                        new Map<string, { required: boolean }>([['myParam', { required: true }]]),
+                    getOverriddenParameters: async () => new Map<string, string>([['myParam', 'myValue']]),
                     async promptUserForParametersIfApplicable(options): Promise<ParameterPromptResult> {
                         configureParameterOverridesArgs.push(options)
 
                         return ParameterPromptResult.Cancel
-                    },
+                    }
                 })
 
                 const wizard = new SamDeployWizard(new MockRegionProvider(), context)
@@ -423,24 +422,14 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(
                 new MockRegionProvider(),
                 new MockSamDeployWizardContext(
-                    async function* () {
+                    async function*() {
                         yield vscode.Uri.file(templatePath)
                     },
-                    [
-                        [vscode.Uri.file(workspaceFolderPath)]
-                    ],
-                    [
-                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath))
-                    ],
-                    [
-                        createQuickPickRegionResponseItem(region)
-                    ],
-                    [
-                        'mys3bucketname'
-                    ],
-                    [
-                        'myStackName'
-                    ],
+                    [[vscode.Uri.file(workspaceFolderPath)]],
+                    [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
+                    [createQuickPickRegionResponseItem(region)],
+                    ['mys3bucketname'],
+                    ['myStackName']
                 )
             )
             const result = await wizard.run()
@@ -459,28 +448,21 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(
                 new MockRegionProvider(),
                 new MockSamDeployWizardContext(
-                    async function* () {
+                    async function*() {
                         yield vscode.Uri.file(templatePath1)
                         yield vscode.Uri.file(templatePath2)
                     },
-                    [
-                        [vscode.Uri.file(workspaceFolderPath1)],
-                        [vscode.Uri.file(workspaceFolderPath2)]
-                    ],
+                    [[vscode.Uri.file(workspaceFolderPath1)], [vscode.Uri.file(workspaceFolderPath2)]],
                     [
                         createQuickPickUriResponseItem(vscode.Uri.file(templatePath1)),
-                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath2)),
+                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath2))
                     ],
                     [
                         undefined, // First time we ask about the S3 Bucket, cancel back to the template step
                         createQuickPickRegionResponseItem(region)
                     ],
-                    [
-                        'mys3bucketname'
-                    ],
-                    [
-                        'myStackName'
-                    ],
+                    ['mys3bucketname'],
+                    ['myStackName']
                 )
             )
             const result = await wizard.run()
@@ -502,29 +484,21 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(
                 new MockRegionProvider(),
                 new MockSamDeployWizardContext(
-                    async function* () {
+                    async function*() {
                         yield vscode.Uri.file(templatePath1)
                         yield vscode.Uri.file(templatePath2)
                     },
-                    [
-                        [vscode.Uri.file(workspaceFolderPath1)],
-                        [vscode.Uri.file(workspaceFolderPath2)]
-                    ],
+                    [[vscode.Uri.file(workspaceFolderPath1)], [vscode.Uri.file(workspaceFolderPath2)]],
                     [
                         createQuickPickUriResponseItem(vscode.Uri.file(templatePath1)),
-                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath2)),
+                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath2))
                     ],
-                    [
-                        createQuickPickRegionResponseItem(region1),
-                        createQuickPickRegionResponseItem(region2)
-                    ],
+                    [createQuickPickRegionResponseItem(region1), createQuickPickRegionResponseItem(region2)],
                     [
                         undefined, // First time we ask about the S3 Bucket, cancel back to the region step
                         'mys3bucketname'
                     ],
-                    [
-                        'myStackName'
-                    ],
+                    ['myStackName']
                 )
             )
             const result = await wizard.run()
@@ -540,16 +514,14 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(
                 new MockRegionProvider(),
                 new MockSamDeployWizardContext(
-                    async function* () { yield vscode.Uri.file(templatePath) },
+                    async function*() {
+                        yield vscode.Uri.file(templatePath)
+                    },
                     [[vscode.Uri.file(workspaceFolderPath)]],
-                    [
-                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath)),
-                    ],
-                    [
-                        createQuickPickRegionResponseItem('asdf')
-                    ],
+                    [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
+                    [createQuickPickRegionResponseItem('asdf')],
                     ['mys3bucketname'],
-                    ['myStackName'],
+                    ['myStackName']
                 )
             )
             const result = await wizard.run()
@@ -566,22 +538,14 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(
                 new MockRegionProvider(),
                 new MockSamDeployWizardContext(
-                    async function* () { yield vscode.Uri.file(templatePath) },
+                    async function*() {
+                        yield vscode.Uri.file(templatePath)
+                    },
                     [[vscode.Uri.file(workspaceFolderPath)]],
-                    [
-                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath)),
-                    ],
-                    [
-                        createQuickPickRegionResponseItem('asdf')
-                    ],
-                    [
-                        'mys3bucketname1',
-                        'mys3bucketname2',
-                    ],
-                    [
-                        undefined,
-                        'myStackName'
-                    ],
+                    [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
+                    [createQuickPickRegionResponseItem('asdf')],
+                    ['mys3bucketname1', 'mys3bucketname2'],
+                    [undefined, 'myStackName']
                 )
             )
             const result = await wizard.run()
@@ -596,20 +560,14 @@ describe('SamDeployWizard', async () => {
             const wizard = new SamDeployWizard(
                 new MockRegionProvider(),
                 new MockSamDeployWizardContext(
-                    async function* () { yield vscode.Uri.file(templatePath) },
+                    async function*() {
+                        yield vscode.Uri.file(templatePath)
+                    },
                     [[vscode.Uri.file(workspaceFolderPath)]],
-                    [
-                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath)),
-                    ],
-                    [
-                        createQuickPickRegionResponseItem('asdf')
-                    ],
-                    [
-                        'mys3bucketname',
-                    ],
-                    [
-                        'myStackName'
-                    ],
+                    [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
+                    [createQuickPickRegionResponseItem('asdf')],
+                    ['mys3bucketname'],
+                    ['myStackName']
                 )
             )
             const result = await wizard.run()
@@ -627,16 +585,14 @@ describe('SamDeployWizard', async () => {
                     await new SamDeployWizard(
                         new MockRegionProvider(),
                         new MockSamDeployWizardContext(
-                            async function* () { yield vscode.Uri.file(templatePath) },
+                            async function*() {
+                                yield vscode.Uri.file(templatePath)
+                            },
                             [[vscode.Uri.file(workspaceFolderPath)]],
-                            [
-                                createQuickPickUriResponseItem(vscode.Uri.file(templatePath)),
-                            ],
-                            [
-                                createQuickPickRegionResponseItem('asdf')
-                            ],
+                            [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
+                            [createQuickPickRegionResponseItem('asdf')],
                             ['myBucketName'],
-                            [stackName],
+                            [stackName]
                         )
                     ).run()
                 } catch (err) {
@@ -679,11 +635,7 @@ describe('validateS3Bucket', async () => {
     }
 
     it('validates a valid bucket name', async () => {
-        assert.strictEqual(
-            validateS3Bucket('validbucketname'),
-            undefined,
-            'failed to validate valid bucket name'
-        )
+        assert.strictEqual(validateS3Bucket('validbucketname'), undefined, 'failed to validate valid bucket name')
     })
 
     it('validates that bucket name has a valid length', async () => {

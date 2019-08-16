@@ -37,10 +37,7 @@ export class PromiseSharer {
         return promise!
     }
 
-    private static async createPromise(
-        promiseName: string,
-        promiseGenerator: () => Promise<void>
-    ): Promise<void> {
+    private static async createPromise(promiseName: string, promiseGenerator: () => Promise<void>): Promise<void> {
         await promiseGenerator()
 
         await lock.acquire(PromiseSharer.LOCK_PROMISE_REUSE, async () => {

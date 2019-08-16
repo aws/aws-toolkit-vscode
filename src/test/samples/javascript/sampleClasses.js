@@ -6,17 +6,17 @@
 'use strict'
 
 class NonExportedClass {
-    publicMethod() { }
+    publicMethod() {}
 }
 
 class ExportedClass {
-    publicMethod() { }
+    publicMethod() {}
 
-    static publicStaticMethod() { }
+    static publicStaticMethod() {}
 }
 exports.ExportedClass = ExportedClass
 
-function functionWithNoArgs() { }
+function functionWithNoArgs() {}
 
-function exportedFunctionWithNoArgs() { }
+function exportedFunctionWithNoArgs() {}
 exports.exportedFunctionWithNoArgs = exportedFunctionWithNoArgs

@@ -6,13 +6,9 @@
 import { TestLogger } from '../../../../shared/loggerUtils'
 import { logAndThrowIfUnexpectedExitCode } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { assertThrowsError } from '../../utilities/assertUtils'
-import {
-    assertErrorContainsBadExitMessage,
-    assertLogContainsBadExitInformation,
-} from './testSamCliProcessInvoker'
+import { assertErrorContainsBadExitMessage, assertLogContainsBadExitInformation } from './testSamCliProcessInvoker'
 
 describe('logAndThrowIfUnexpectedExitCode', async () => {
-
     let logger: TestLogger
 
     before(async () => {
@@ -29,9 +25,9 @@ describe('logAndThrowIfUnexpectedExitCode', async () => {
                 exitCode: 123,
                 error: undefined,
                 stderr: '',
-                stdout: '',
+                stdout: ''
             },
-            123,
+            123
         )
     })
 
@@ -41,15 +37,12 @@ describe('logAndThrowIfUnexpectedExitCode', async () => {
             exitCode: 123,
             error: exitError,
             stderr: 'stderr text',
-            stdout: 'stdout text',
+            stdout: 'stdout text'
         }
 
-        const error = await assertThrowsError(
-            async () => {
-                logAndThrowIfUnexpectedExitCode(childProcessResult, 456)
-            },
-            'Expected an error to be thrown'
-        )
+        const error = await assertThrowsError(async () => {
+            logAndThrowIfUnexpectedExitCode(childProcessResult, 456)
+        }, 'Expected an error to be thrown')
 
         assertErrorContainsBadExitMessage(error, exitError.message)
         await assertLogContainsBadExitInformation(logger, childProcessResult, 456)

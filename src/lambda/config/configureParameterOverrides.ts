@@ -13,7 +13,7 @@ import {
     getTemplatesConfigPath,
     showTemplatesConfigurationError,
     TemplatesConfigFieldTypeError,
-    TemplatesConfigPopulator,
+    TemplatesConfigPopulator
 } from './templates'
 
 export interface ConfigureParameterOverridesContext {
@@ -58,35 +58,26 @@ export async function configureParameterOverrides(
     const relativeTemplatePath = getNormalizedRelativePath(workspaceFolder.uri.fsPath, templateUri.fsPath)
 
     try {
-        let populator = new TemplatesConfigPopulator(
-            editor.document.getText(),
-            {
-                formattingOptions: {
-                    insertSpaces: true,
-                    tabSize: getTabSize(editor),
-                    eol: editor.document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n'
-                }
+        let populator = new TemplatesConfigPopulator(editor.document.getText(), {
+            formattingOptions: {
+                insertSpaces: true,
+                tabSize: getTabSize(editor),
+                eol: editor.document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n'
             }
-        )
+        })
 
         for (const parameterName of requiredParameterNames) {
-            populator = populator.ensureTemplateParameterOverrideExists(
-                relativeTemplatePath,
-                parameterName
-            )
+            populator = populator.ensureTemplateParameterOverrideExists(relativeTemplatePath, parameterName)
         }
 
-        const {
-            json,
-            isDirty
-        } = populator.getResults()
+        const { json, isDirty } = populator.getResults()
 
         if (isDirty) {
             await editor.edit(eb => {
                 eb.replace(
                     new vscode.Range(
                         editor.document.positionAt(0),
-                        editor.document.positionAt(editor.document.getText().length),
+                        editor.document.positionAt(editor.document.getText().length)
                     ),
                     json
                 )
@@ -95,18 +86,15 @@ export async function configureParameterOverrides(
             // We don't save the doc. The user has the option to revert changes, or make further edits.
         }
 
-        await context.showTextDocument(
-            editor.document,
-            {
-                selection: await getParameterOverridesRange(
-                    {
-                        editor,
-                        relativeTemplatePath,
-                    },
-                    context
-                )
-            }
-        )
+        await context.showTextDocument(editor.document, {
+            selection: await getParameterOverridesRange(
+                {
+                    editor,
+                    relativeTemplatePath
+                },
+                context
+            )
+        })
     } catch (err) {
         if (err instanceof TemplatesConfigFieldTypeError) {
             showTemplatesConfigurationError(err, context.showErrorMessage)
@@ -119,7 +107,7 @@ export async function configureParameterOverrides(
 async function getParameterOverridesRange(
     {
         editor,
-        relativeTemplatePath,
+        relativeTemplatePath
     }: {
         editor: vscode.TextEditor
         relativeTemplatePath: string
@@ -131,10 +119,7 @@ async function getParameterOverridesRange(
         editor.document.uri
     )
 
-    const defaultRange = new vscode.Range(
-        new vscode.Position(0, 0),
-        new vscode.Position(0, 0)
-    )
+    const defaultRange = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0))
 
     if (!symbols || symbols.length < 1) {
         return defaultRange

@@ -17,10 +17,7 @@ export class TestLogger {
      * @param logFolder - Folder to be managed by this object. Will be deleted on cleanup
      * @param logger - Logger to work with
      */
-    private constructor(
-        private readonly logFolder: string,
-        private readonly logger: l.Logger
-    ) { }
+    private constructor(private readonly logFolder: string, private readonly logger: l.Logger) {}
 
     // cleanupLogger clears out the logger's transports, but the logger will still exist as a default
     // this means that the default logger will still work for other files but will output an error

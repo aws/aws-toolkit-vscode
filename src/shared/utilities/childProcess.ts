@@ -7,16 +7,16 @@ import * as child_process from 'child_process'
 import * as crossSpawn from 'cross-spawn'
 
 export interface ChildProcessStartArguments {
-    onStdout?(text: string): void,
-    onStderr?(text: string): void,
-    onError?(error: Error): void,
-    onClose?(code: number, signal: string): void,
+    onStdout?(text: string): void
+    onStderr?(text: string): void
+    onError?(error: Error): void
+    onClose?(code: number, signal: string): void
 }
 
 export interface ChildProcessResult {
-    exitCode: number,
-    error: Error | undefined,
-    stdout: string,
+    exitCode: number
+    error: Error | undefined
+    stdout: string
     stderr: string
 }
 
@@ -39,7 +39,6 @@ export class ChildProcess {
     }
 
     public async run(): Promise<ChildProcessResult> {
-
         return await new Promise<ChildProcessResult>(async (resolve, reject) => {
             let childProcessError: Error | undefined
             const stdoutChunks: string[] = []
@@ -48,7 +47,7 @@ export class ChildProcess {
             await this.start({
                 onStdout: text => stdoutChunks.push(text),
                 onStderr: text => stderrChunks.push(text),
-                onError: error => childProcessError = error,
+                onError: error => (childProcessError = error),
                 onClose: (code, signal) => {
                     const processResult: ChildProcessResult = {
                         exitCode: code,
@@ -72,11 +71,7 @@ export class ChildProcess {
             throw new Error('process already started')
         }
 
-        this.childProcess = crossSpawn(
-            this.process,
-            this.args,
-            this.options
-        )
+        this.childProcess = crossSpawn(this.process, this.args, this.options)
 
         this.childProcess.stdout.on('data', (data: { toString(): string }) => {
             if (params.onStdout) {
@@ -90,7 +85,7 @@ export class ChildProcess {
             }
         })
 
-        this.childProcess.on('error', (error) => {
+        this.childProcess.on('error', error => {
             if (params.onError) {
                 params.onError(error)
             }

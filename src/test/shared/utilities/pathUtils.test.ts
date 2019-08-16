@@ -8,7 +8,7 @@ import * as path from 'path'
 import {
     dirnameWithTrailingSlash,
     getNormalizedRelativePath,
-    normalizeSeparator,
+    normalizeSeparator
 } from '../../../shared/utilities/pathUtils'
 
 describe('getNormalizedRelativePath', async () => {

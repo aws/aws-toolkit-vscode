@@ -16,7 +16,7 @@ import {
     generateDotNetLambdaHandler,
     getLambdaHandlerComponents,
     isPublicClassSymbol,
-    isPublicMethodSymbol,
+    isPublicMethodSymbol
 } from '../../../shared/codelens/csharpCodeLensProvider'
 import { writeFile } from '../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
@@ -34,40 +34,40 @@ describe('findParentProjectFile', async () => {
         {
             scenario: 'locates project in same folder',
             findFilesResult: [projectInSameFolderUri],
-            expectedResult: projectInSameFolderUri,
+            expectedResult: projectInSameFolderUri
         },
         {
             scenario: 'locates project in parent folder',
             findFilesResult: [projectInParentFolderUri],
-            expectedResult: projectInParentFolderUri,
+            expectedResult: projectInParentFolderUri
         },
         {
             scenario: 'locates project two parent folders up',
             findFilesResult: [projectInParentParentFolderUri],
-            expectedResult: projectInParentParentFolderUri,
+            expectedResult: projectInParentParentFolderUri
         },
         {
             scenario: 'selects project in same folder over parent folder',
             findFilesResult: [projectInSameFolderUri, projectInParentFolderUri],
-            expectedResult: projectInSameFolderUri,
+            expectedResult: projectInSameFolderUri
         },
         {
             scenario: 'returns undefined when no project files are located',
             findFilesResult: [],
-            expectedResult: undefined,
+            expectedResult: undefined
         },
         {
             scenario: 'returns undefined when no project files are located in parent chain',
             findFilesResult: [projectOutOfParentChainUri],
-            expectedResult: undefined,
-        },
+            expectedResult: undefined
+        }
     ]
 
-    testScenarios.forEach((test) => {
+    testScenarios.forEach(test => {
         it(test.scenario, async () => {
             const projectFile = await findParentProjectFile(
                 sourceCodeUri,
-                async (): Promise<vscode.Uri[]> => test.findFilesResult,
+                async (): Promise<vscode.Uri[]> => test.findFilesResult
             )
             assert.strictEqual(projectFile, test.expectedResult, 'Project file was not the expected one')
         })
@@ -94,11 +94,7 @@ describe('getLambdaHandlerComponents', async () => {
         const documentSymbols = sampleDotNetSamProgram.getDocumentSymbols()
         const assembly = 'myAssembly'
 
-        const componentsArray = getLambdaHandlerComponents(
-            textDoc,
-            documentSymbols,
-            assembly,
-        )
+        const componentsArray = getLambdaHandlerComponents(textDoc, documentSymbols, assembly)
 
         assert.ok(componentsArray)
         assert.strictEqual(componentsArray.length, 1, 'Expected only one set of Lambda Handler components')
@@ -114,7 +110,9 @@ describe('isPublicClassSymbol', async () => {
     const sampleClassSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
         'HelloWorld.Function',
         '',
-        vscode.SymbolKind.Class, fakeRange, fakeRange
+        vscode.SymbolKind.Class,
+        fakeRange,
+        fakeRange
     )
 
     it('returns true for a public class', async () => {
@@ -130,8 +128,11 @@ describe('isPublicClassSymbol', async () => {
 
     it('returns false when symbol is not of type Class', async () => {
         const symbol = new vscode.DocumentSymbol(
-            sampleClassSymbol.name, sampleClassSymbol.detail, vscode.SymbolKind.Method,
-            sampleClassSymbol.range, sampleClassSymbol.selectionRange
+            sampleClassSymbol.name,
+            sampleClassSymbol.detail,
+            vscode.SymbolKind.Method,
+            sampleClassSymbol.range,
+            sampleClassSymbol.selectionRange
         )
 
         const doc = {
@@ -158,7 +159,9 @@ describe('isPublicMethodSymbol', async () => {
     const sampleMethodSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
         'FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)',
         '',
-        vscode.SymbolKind.Method, fakeRange, fakeRange
+        vscode.SymbolKind.Method,
+        fakeRange,
+        fakeRange
     )
 
     const validPublicMethodTests = [
@@ -177,14 +180,13 @@ describe('isPublicMethodSymbol', async () => {
         {
             scenario: 'args on many lines',
             functionSignature: generateFunctionSignature('public', 'FunctionHandler', false, true)
-        },
+        }
     ]
 
-    validPublicMethodTests.forEach((test) => {
+    validPublicMethodTests.forEach(test => {
         it(`returns true for a public method symbol when ${test.scenario}`, async () => {
             const doc = {
-                getText: (range?: vscode.Range): string =>
-                    generateFunctionDeclaration(test.functionSignature)
+                getText: (range?: vscode.Range): string => generateFunctionDeclaration(test.functionSignature)
             }
 
             const isPublic = isPublicMethodSymbol(doc, sampleMethodSymbol)
@@ -194,8 +196,11 @@ describe('isPublicMethodSymbol', async () => {
 
     it('returns false for a symbol that is not a method', async () => {
         const symbol = new vscode.DocumentSymbol(
-            sampleMethodSymbol.name, sampleMethodSymbol.detail, vscode.SymbolKind.Class,
-            sampleMethodSymbol.range, sampleMethodSymbol.selectionRange
+            sampleMethodSymbol.name,
+            sampleMethodSymbol.detail,
+            vscode.SymbolKind.Class,
+            sampleMethodSymbol.range,
+            sampleMethodSymbol.selectionRange
         )
 
         const doc = {
@@ -220,8 +225,11 @@ describe('isPublicMethodSymbol', async () => {
 
     it('returns false when a private method name contains the word public in it', async () => {
         const symbol = new vscode.DocumentSymbol(
-            'notpublicmethod', sampleMethodSymbol.detail, vscode.SymbolKind.Method,
-            sampleMethodSymbol.range, sampleMethodSymbol.selectionRange
+            'notpublicmethod',
+            sampleMethodSymbol.detail,
+            vscode.SymbolKind.Method,
+            sampleMethodSymbol.range,
+            sampleMethodSymbol.selectionRange
         )
 
         const doc = {
@@ -265,7 +273,7 @@ describe('isPublicMethodSymbol', async () => {
         functionName: string,
         beforeFunctionName: boolean = false,
         beforeArgument: boolean = false,
-        afterSignature: boolean = false,
+        afterSignature: boolean = false
     ): string {
         const beforeFunctionText = beforeFunctionName ? os.EOL : ''
         const beforeArgumentText = beforeArgument ? os.EOL : ''
@@ -283,7 +291,7 @@ describe('generateDotNetLambdaHandler', async () => {
             namespace: 'myNamespace',
             class: 'myClass',
             method: 'foo',
-            handlerRange: undefined!,
+            handlerRange: undefined!
         }
 
         const handlerName = generateDotNetLambdaHandler(components)

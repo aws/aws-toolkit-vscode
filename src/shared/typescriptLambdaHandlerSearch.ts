@@ -11,14 +11,13 @@ import { LambdaHandlerCandidate, LambdaHandlerSearch } from './lambdaHandlerSear
 
 const getRange = (node: ts.Node) => ({
     positionStart: node.getStart(),
-    positionEnd: node.end,
+    positionEnd: node.end
 })
 
 /**
  * Detects functions that could possibly be used as Lambda Function Handlers from a Typescript file.
  */
 export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
-
     public static readonly MAXIMUM_FUNCTION_PARAMETERS: number = 3
 
     private readonly _uri!: vscode.Uri
@@ -86,7 +85,6 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
      */
     private scanSourceFile(sourceFile: ts.SourceFile): void {
         sourceFile.forEachChild((node: ts.Node) => {
-
             // Function declarations
             if (ts.isFunctionLike(node)) {
                 if (TypescriptLambdaHandlerSearch.isFunctionLambdaHandlerCandidate(node)) {
@@ -100,10 +98,11 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                     if (ts.isVariableDeclaration(declaration)) {
                         const declarationName: string = declaration.name.getText()
 
-                        if (declarationName.length > 0
-                            && declaration.initializer
-                            && ts.isFunctionLike(declaration.initializer)
-                            && TypescriptLambdaHandlerSearch.isFunctionLambdaHandlerCandidate(
+                        if (
+                            declarationName.length > 0 &&
+                            declaration.initializer &&
+                            ts.isFunctionLike(declaration.initializer) &&
+                            TypescriptLambdaHandlerSearch.isFunctionLambdaHandlerCandidate(
                                 declaration.initializer,
                                 false // initializers do not have a name value, it is up in declaration.name
                             )
@@ -146,17 +145,20 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                     expression,
                     this._candidateDeclaredFunctionNames
                 )
-            }).map(candidate => {
+            })
+            .map(candidate => {
                 // 'module.exports.xyz' => ['module', 'exports', 'xyz']
-                const lhsComponents: string[] = (candidate.expression as ts.BinaryExpression)
-                    .left.getText().split('.').map(x => x.trim())
+                const lhsComponents: string[] = (candidate.expression as ts.BinaryExpression).left
+                    .getText()
+                    .split('.')
+                    .map(x => x.trim())
 
                 const exportsTarget: string = lhsComponents[0] === 'exports' ? lhsComponents[1] : lhsComponents[2]
 
                 return {
                     filename: this._filename,
                     handlerName: `${this._baseFilename}.${exportsTarget}`,
-                    range: getRange(candidate),
+                    range: getRange(candidate)
                 }
             })
     }
@@ -177,7 +179,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                             handlers.push({
                                 filename: this._filename,
                                 handlerName: `${this._baseFilename}.${exportedFunction}`,
-                                range: getRange(clause),
+                                range: getRange(clause)
                             })
                         }
                     }
@@ -195,29 +197,28 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
         const handlers: LambdaHandlerCandidate[] = []
 
         this._candidateExportNodes.forEach(exportNode => {
-            if (ts.isFunctionLike(exportNode)
-                && (TypescriptLambdaHandlerSearch.isFunctionLambdaHandlerCandidate(exportNode))
-                && !!exportNode.name
+            if (
+                ts.isFunctionLike(exportNode) &&
+                TypescriptLambdaHandlerSearch.isFunctionLambdaHandlerCandidate(exportNode) &&
+                !!exportNode.name
             ) {
                 handlers.push({
                     filename: this._filename,
                     handlerName: `${this._baseFilename}.${exportNode.name.getText()}`,
-                    range: getRange(exportNode),
+                    range: getRange(exportNode)
                 })
             } else if (ts.isVariableStatement(exportNode)) {
                 exportNode.declarationList.forEachChild(declaration => {
-                    if (ts.isVariableDeclaration(declaration)
-                        && !!declaration.initializer
-                        && ts.isFunctionLike(declaration.initializer)
-                        && TypescriptLambdaHandlerSearch.isFunctionLambdaHandlerCandidate(
-                            declaration.initializer,
-                            false
-                        )
+                    if (
+                        ts.isVariableDeclaration(declaration) &&
+                        !!declaration.initializer &&
+                        ts.isFunctionLike(declaration.initializer) &&
+                        TypescriptLambdaHandlerSearch.isFunctionLambdaHandlerCandidate(declaration.initializer, false)
                     ) {
                         handlers.push({
                             filename: this._filename,
                             handlerName: `${this._baseFilename}.${declaration.name.getText()}`,
-                            range: getRange(declaration),
+                            range: getRange(declaration)
                         })
                     }
                 })
@@ -233,10 +234,15 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
      */
     private static isModuleExportsAssignment(expressionStatement: ts.ExpressionStatement): boolean {
         if (ts.isBinaryExpression(expressionStatement.expression)) {
-            const lhsComponents: string[] = expressionStatement.expression.left.getText().split('.').map(x => x.trim())
+            const lhsComponents: string[] = expressionStatement.expression.left
+                .getText()
+                .split('.')
+                .map(x => x.trim())
 
-            return (lhsComponents.length === 3 && lhsComponents[0] === 'module' && lhsComponents[1] === 'exports')
-                || (lhsComponents.length === 2 && lhsComponents[0] === 'exports')
+            return (
+                (lhsComponents.length === 3 && lhsComponents[0] === 'module' && lhsComponents[1] === 'exports') ||
+                (lhsComponents.length === 2 && lhsComponents[0] === 'exports')
+            )
         }
 
         return false
@@ -255,8 +261,10 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
         functionHandlerNames: Set<string>
     ): boolean {
         if (ts.isBinaryExpression(expressionStatement.expression)) {
-            return this.isTargetFunctionReference(expressionStatement.expression.right, functionHandlerNames)
-                || this.isValidFunctionAssignment(expressionStatement.expression.right)
+            return (
+                this.isTargetFunctionReference(expressionStatement.expression.right, functionHandlerNames) ||
+                this.isValidFunctionAssignment(expressionStatement.expression.right)
+            )
         }
 
         return false
@@ -272,7 +280,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
      */
     private static isTargetFunctionReference(expression: ts.Expression, targetFunctionNames: Set<string>): boolean {
         if (ts.isIdentifier(expression)) {
-            return (targetFunctionNames.has(expression.text))
+            return targetFunctionNames.has(expression.text)
         }
 
         return false
@@ -304,7 +312,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
         const flags: ts.ModifierFlags = ts.getCombinedModifierFlags(node as ts.Declaration)
 
         // tslint:disable-next-line:no-bitwise
-        return ((flags & ts.ModifierFlags.Export) === ts.ModifierFlags.Export)
+        return (flags & ts.ModifierFlags.Export) === ts.ModifierFlags.Export
     }
 
     /**
@@ -316,7 +324,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
         node: ts.SignatureDeclaration,
         validateName: boolean = true
     ): boolean {
-        const nameIsValid: boolean = (!validateName || !!node.name)
+        const nameIsValid: boolean = !validateName || !!node.name
 
         return node.parameters.length <= TypescriptLambdaHandlerSearch.MAXIMUM_FUNCTION_PARAMETERS && nameIsValid
     }

@@ -32,12 +32,12 @@ import { detectSamCli } from './cli/samCliDetection'
  * Activate serverless related functionality for the extension.
  */
 export async function activate(activateArguments: {
-    extensionContext: vscode.ExtensionContext,
-    awsContext: AwsContext,
-    regionProvider: RegionProvider,
-    toolkitSettings: SettingsConfiguration,
-    outputChannel: vscode.OutputChannel,
-    telemetryService: TelemetryService,
+    extensionContext: vscode.ExtensionContext
+    awsContext: AwsContext
+    regionProvider: RegionProvider
+    toolkitSettings: SettingsConfiguration
+    outputChannel: vscode.OutputChannel
+    telemetryService: TelemetryService
 }): Promise<void> {
     const logger = getLogger()
     const channelLogger = getChannelLogger(activateArguments.outputChannel, logger)
@@ -48,17 +48,18 @@ export async function activate(activateArguments: {
     })
 
     activateArguments.extensionContext.subscriptions.push(
-        ...await activateCodeLensProviders(
+        ...(await activateCodeLensProviders(
             activateArguments.toolkitSettings,
             activateArguments.outputChannel,
-            activateArguments.telemetryService)
+            activateArguments.telemetryService
+        ))
     )
 
     await registerServerlessCommands({
         awsContext: activateArguments.awsContext,
         extensionContext: activateArguments.extensionContext,
         regionProvider: activateArguments.regionProvider,
-        channelLogger,
+        channelLogger
     })
 
     activateArguments.extensionContext.subscriptions.push(
@@ -78,21 +79,17 @@ export async function activate(activateArguments: {
     await resumeCreateNewSamApp()
 }
 
-async function registerServerlessCommands(
-    params: {
-        extensionContext: vscode.ExtensionContext,
-        awsContext: AwsContext,
-        regionProvider: RegionProvider,
-        channelLogger: ChannelLogger
-    }
-): Promise<void> {
+async function registerServerlessCommands(params: {
+    extensionContext: vscode.ExtensionContext
+    awsContext: AwsContext
+    regionProvider: RegionProvider
+    channelLogger: ChannelLogger
+}): Promise<void> {
     params.extensionContext.subscriptions.push(
         registerCommand({
             command: 'aws.samcli.detect',
-            callback: async () => await PromiseSharer.getExistingPromiseOrCreate(
-                'samcli.detect',
-                async () => await detectSamCli(true)
-            )
+            callback: async () =>
+                await PromiseSharer.getExistingPromiseOrCreate('samcli.detect', async () => await detectSamCli(true))
         })
     )
 
@@ -102,7 +99,7 @@ async function registerServerlessCommands(
             callback: async (): Promise<{ datum: Datum }> => {
                 const createNewSamApplicationResults: CreateNewSamApplicationResults = await createNewSamApplication(
                     params.channelLogger,
-                    params.extensionContext,
+                    params.extensionContext
                 )
                 const datum = defaultMetricDatum('new')
                 datum.metadata = new Map()
@@ -122,16 +119,17 @@ async function registerServerlessCommands(
     params.extensionContext.subscriptions.push(
         registerCommand({
             command: 'aws.deploySamApplication',
-            callback: async () => await deploySamApplication(
-                {
-                    channelLogger: params.channelLogger,
-                    regionProvider: params.regionProvider,
-                    extensionContext: params.extensionContext
-                },
-                {
-                    awsContext: params.awsContext
-                }
-            ),
+            callback: async () =>
+                await deploySamApplication(
+                    {
+                        channelLogger: params.channelLogger,
+                        regionProvider: params.regionProvider,
+                        extensionContext: params.extensionContext
+                    },
+                    {
+                        awsContext: params.awsContext
+                    }
+                ),
             telemetryName: {
                 namespace: TelemetryNamespace.Lambda,
                 name: 'deploy'
@@ -145,13 +143,13 @@ async function registerServerlessCommands(
 async function activateCodeLensProviders(
     configuration: SettingsConfiguration,
     toolkitOutputChannel: vscode.OutputChannel,
-    telemetryService: TelemetryService,
+    telemetryService: TelemetryService
 ): Promise<vscode.Disposable[]> {
     const disposables: vscode.Disposable[] = []
     const providerParams: CodeLensProviderParams = {
         configuration,
         outputChannel: toolkitOutputChannel,
-        telemetryService,
+        telemetryService
     }
 
     tsLensProvider.initialize(providerParams)
@@ -162,24 +160,28 @@ async function activateCodeLensProviders(
             [
                 {
                     language: 'javascript',
-                    scheme: 'file',
-                },
+                    scheme: 'file'
+                }
             ],
             tsLensProvider.makeTypescriptCodeLensProvider()
         )
     )
 
     await pyLensProvider.initialize(providerParams)
-    disposables.push(vscode.languages.registerCodeLensProvider(
-        pyLensProvider.PYTHON_ALLFILES,
-        await pyLensProvider.makePythonCodeLensProvider(new DefaultSettingsConfiguration('python'))
-    ))
+    disposables.push(
+        vscode.languages.registerCodeLensProvider(
+            pyLensProvider.PYTHON_ALLFILES,
+            await pyLensProvider.makePythonCodeLensProvider(new DefaultSettingsConfiguration('python'))
+        )
+    )
 
     await csLensProvider.initialize(providerParams)
-    disposables.push(vscode.languages.registerCodeLensProvider(
-        csLensProvider.CSHARP_ALLFILES,
-        await csLensProvider.makeCSharpCodeLensProvider()
-    ))
+    disposables.push(
+        vscode.languages.registerCodeLensProvider(
+            csLensProvider.CSHARP_ALLFILES,
+            await csLensProvider.makeCSharpCodeLensProvider()
+        )
+    )
 
     return disposables
 }

@@ -64,9 +64,7 @@ export class DefaultCredentialsFileReaderWriter implements CredentialsFileReader
      * @description Calls setCanUseConfigFile , setting it to true if the config file exists, false otherwise
      */
     public async setCanUseConfigFileIfExists(): Promise<void> {
-        this.setCanUseConfigFile(
-            await SystemUtilities.fileExists(UserCredentialsUtils.getConfigFilename())
-        )
+        this.setCanUseConfigFile(await SystemUtilities.fileExists(UserCredentialsUtils.getConfigFilename()))
     }
 
     /**

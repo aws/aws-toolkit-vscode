@@ -22,36 +22,21 @@ class MockTelemetryClient implements TelemetryClient {
 
 describe('DefaultTelemetryPublisher', () => {
     it('enqueues events', () => {
-        const publisher = new DefaultTelemetryPublisher(
-            '',
-            '',
-            new AWS.Credentials('', ''),
-            new MockTelemetryClient()
-        )
-        publisher.enqueue(...[
-            { namespace: 'name', createTime: new Date() },
-        ])
+        const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
+        publisher.enqueue(...[{ namespace: 'name', createTime: new Date() }])
 
         assert.strictEqual(publisher.queue.length, 1)
 
-        publisher.enqueue(...[
-            { namespace: 'name2', createTime: new Date() },
-            { namespace: 'name3', createTime: new Date() },
-        ])
+        publisher.enqueue(
+            ...[{ namespace: 'name2', createTime: new Date() }, { namespace: 'name3', createTime: new Date() }]
+        )
 
         assert.strictEqual(publisher.queue.length, 3)
     })
 
     it('can flush single event', async () => {
-        const publisher = new DefaultTelemetryPublisher(
-            '',
-            '',
-            new AWS.Credentials('', ''),
-            new MockTelemetryClient()
-        )
-        publisher.enqueue(...[
-            { namespace: 'name', createTime: new Date() },
-        ])
+        const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
+        publisher.enqueue(...[{ namespace: 'name', createTime: new Date() }])
 
         assert.strictEqual(publisher.queue.length, 1)
 
@@ -60,9 +45,7 @@ describe('DefaultTelemetryPublisher', () => {
     })
 
     it('retains queue on flush failure', async () => {
-        const batch = [
-            { namespace: 'name', createTime: new Date() },
-        ]
+        const batch = [{ namespace: 'name', createTime: new Date() }]
         const publisher = new DefaultTelemetryPublisher(
             '',
             '',

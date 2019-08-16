@@ -9,15 +9,16 @@ import '../utilities/asyncIteratorShim'
 import { CloudFormationClient } from './cloudFormationClient'
 
 export class DefaultCloudFormationClient implements CloudFormationClient {
-    public constructor(public readonly regionCode: string) {
-    }
+    public constructor(public readonly regionCode: string) {}
 
     public async deleteStack(name: string): Promise<void> {
         const client = await this.createSdkClient()
 
-        await client.deleteStack({
-            StackName: name
-        }).promise()
+        await client
+            .deleteStack({
+                StackName: name
+            })
+            .promise()
     }
 
     public async *listStacks(
@@ -43,9 +44,11 @@ export class DefaultCloudFormationClient implements CloudFormationClient {
     public async describeStackResources(name: string): Promise<CloudFormation.DescribeStackResourcesOutput> {
         const client = await this.createSdkClient()
 
-        return await client.describeStackResources({
-            StackName: name
-        }).promise()
+        return await client
+            .describeStackResources({
+                StackName: name
+            })
+            .promise()
     }
 
     private async createSdkClient(): Promise<CloudFormation> {

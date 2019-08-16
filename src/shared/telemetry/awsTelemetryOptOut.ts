@@ -26,13 +26,14 @@ export class AwsTelemetryOptOut {
     public constructor(
         public readonly service: TelemetryService,
         private readonly settings: SettingsConfiguration,
-        private readonly getVSCodeTelemetrySetting: () => boolean =
-            () => !!vscode.workspace.getConfiguration('telemetry').get<boolean>('enableTelemetry')
+        private readonly getVSCodeTelemetrySetting: () => boolean = () =>
+            !!vscode.workspace.getConfiguration('telemetry').get<boolean>('enableTelemetry')
     ) {
         vscode.workspace.onDidChangeConfiguration(async event => {
             // if telemetry.enableTelemetry changed and user has not expressed a preference
-            if (event.affectsConfiguration('telemetry.enableTelemetry')
-                && this.settings.readSetting(AwsTelemetryOptOut.AWS_TELEMETRY_KEY) === undefined
+            if (
+                event.affectsConfiguration('telemetry.enableTelemetry') &&
+                this.settings.readSetting(AwsTelemetryOptOut.AWS_TELEMETRY_KEY) === undefined
             ) {
                 await this.updateTelemetryConfiguration(TelemetryOptOutOptions.SameAsVsCode)
             }
@@ -95,8 +96,8 @@ export class AwsTelemetryOptOut {
     public async showNotification(): Promise<string | undefined> {
         const notificationMessage: string = localize(
             'AWS.telemetry.notificationMessage',
-            'Please help improve the AWS Toolkit by enabling it to send usage data to AWS. '
-            + 'You can always change your mind later by going to the "AWS Configuration" section in your user settings.'
+            'Please help improve the AWS Toolkit by enabling it to send usage data to AWS. ' +
+                'You can always change your mind later by going to the "AWS Configuration" section in your user settings.'
         )
 
         return vscode.window.showInformationMessage(notificationMessage, this.responseYes, this.responseNo)

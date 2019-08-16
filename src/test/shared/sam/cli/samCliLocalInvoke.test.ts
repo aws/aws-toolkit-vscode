@@ -12,17 +12,13 @@ import { TestLogger } from '../../../../shared/loggerUtils'
 import {
     SamCliLocalInvokeInvocation,
     SamLocalInvokeCommand,
-    SamLocalInvokeCommandArgs,
+    SamLocalInvokeCommandArgs
 } from '../../../../shared/sam/cli/samCliLocalInvoke'
 import { assertArgIsPresent, assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
 
 describe('SamCliLocalInvokeInvocation', async () => {
-
     class TestSamLocalInvokeCommand implements SamLocalInvokeCommand {
-        public constructor(
-            private readonly onInvoke: ({ ...params }: SamLocalInvokeCommandArgs) => void
-        ) {
-        }
+        public constructor(private readonly onInvoke: ({ ...params }: SamLocalInvokeCommandArgs) => void) {}
 
         public async invoke({ ...params }: SamLocalInvokeCommandArgs): Promise<void> {
             this.onInvoke(params)
@@ -222,7 +218,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
             eventPath: placeholderEventFile,
             environmentVariablePath: nonRelevantArg,
             invoker: taskInvoker,
-            skipPullImage: true,
+            skipPullImage: true
         }).execute()
     })
 
@@ -239,7 +235,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
             eventPath: placeholderEventFile,
             environmentVariablePath: nonRelevantArg,
             invoker: taskInvoker,
-            skipPullImage: false,
+            skipPullImage: false
         }).execute()
     })
 
@@ -256,7 +252,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
             eventPath: placeholderEventFile,
             environmentVariablePath: nonRelevantArg,
             invoker: taskInvoker,
-            skipPullImage: undefined,
+            skipPullImage: undefined
         }).execute()
     })
 
@@ -291,7 +287,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
             templatePath: placeholderTemplateFile,
             eventPath: placeholderEventFile,
             environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
+            invoker: taskInvoker
         }).execute()
     })
 })

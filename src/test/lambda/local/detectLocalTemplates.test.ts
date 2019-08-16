@@ -15,7 +15,7 @@ function normalizePath(...paths: string[]): string {
 
 describe('detectLocalTemplates', async () => {
     it('Detects no templates when there are no workspace folders', async () => {
-        for await (const template of detectLocalTemplates({ workspaceUris: []})) {
+        for await (const template of detectLocalTemplates({ workspaceUris: [] })) {
             assert.fail(`Expected no templates, but found '${template.fsPath}'`)
         }
     })
@@ -24,7 +24,7 @@ describe('detectLocalTemplates', async () => {
         const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
 
         const result = detectLocalTemplates({
-            workspaceUris: [ vscode.Uri.file(workspaceFolderPath) ],
+            workspaceUris: [vscode.Uri.file(workspaceFolderPath)],
             context: {
                 async access(_path: filesystem.PathLike): Promise<void> {
                     if (_path !== normalizePath(workspaceFolderPath, 'template.yaml')) {
@@ -34,22 +34,24 @@ describe('detectLocalTemplates', async () => {
 
                 async readDir(
                     _path: filesystem.PathLike,
-                    options?: {
-                        encoding: BufferEncoding | null
-                        withFileTypes?: false
-                    } | BufferEncoding | undefined | null
+                    options?:
+                        | {
+                              encoding: BufferEncoding | null
+                              withFileTypes?: false
+                          }
+                        | BufferEncoding
+                        | undefined
+                        | null
                 ): Promise<string[]> {
-                    return [ 'template.yaml' ]
+                    return ['template.yaml']
                 },
 
-                async stat(
-                    _path: filesystem.PathLike
-                ): Promise<filesystem.Stats> {
-                    return {
+                async stat(_path: filesystem.PathLike): Promise<filesystem.Stats> {
+                    return ({
                         isDirectory() {
                             return true
                         }
-                    } as any as filesystem.Stats
+                    } as any) as filesystem.Stats
                 }
             }
         })
@@ -68,7 +70,7 @@ describe('detectLocalTemplates', async () => {
         const workspaceFolderChildPath = normalizePath(workspaceFolderPath, 'child')
 
         const result = detectLocalTemplates({
-            workspaceUris: [ vscode.Uri.file(workspaceFolderPath) ],
+            workspaceUris: [vscode.Uri.file(workspaceFolderPath)],
             context: {
                 async access(_path: filesystem.PathLike): Promise<void> {
                     if (_path !== normalizePath(workspaceFolderChildPath, 'template.yaml')) {
@@ -76,27 +78,23 @@ describe('detectLocalTemplates', async () => {
                     }
                 },
 
-                async readDir(
-                    _path: filesystem.PathLike
-                ): Promise<string[]> {
+                async readDir(_path: filesystem.PathLike): Promise<string[]> {
                     switch (_path) {
                         case workspaceFolderPath:
-                            return [ 'child' ]
+                            return ['child']
                         case workspaceFolderChildPath:
-                            return [ 'template.yaml' ]
+                            return ['template.yaml']
                         default:
                             throw new Error(`Unexpected path: '${_path}'`)
                     }
                 },
 
-                async stat(
-                    _path: filesystem.PathLike
-                ): Promise<filesystem.Stats> {
-                    return {
+                async stat(_path: filesystem.PathLike): Promise<filesystem.Stats> {
+                    return ({
                         isDirectory() {
                             return true
                         }
-                    } as any as filesystem.Stats
+                    } as any) as filesystem.Stats
                 }
             }
         })
@@ -116,7 +114,7 @@ describe('detectLocalTemplates', async () => {
         const workspaceFolderGrandchildPath = normalizePath(workspaceFolderChildPath, 'grandchild')
 
         const result = detectLocalTemplates({
-            workspaceUris: [ vscode.Uri.file(workspaceFolderPath) ],
+            workspaceUris: [vscode.Uri.file(workspaceFolderPath)],
             context: {
                 async access(_path: filesystem.PathLike): Promise<void> {
                     if (_path !== normalizePath(workspaceFolderGrandchildPath, 'template.yaml')) {
@@ -127,22 +125,22 @@ describe('detectLocalTemplates', async () => {
                 async readDir(_path: filesystem.PathLike): Promise<string[]> {
                     switch (_path) {
                         case workspaceFolderPath:
-                            return [ 'child' ]
+                            return ['child']
                         case workspaceFolderChildPath:
-                            return [ 'grandchild' ]
+                            return ['grandchild']
                         case workspaceFolderGrandchildPath:
-                            return [ 'template.yaml' ]
+                            return ['template.yaml']
                         default:
                             throw new Error(`Unexpected path: '${_path}'`)
                     }
                 },
 
                 async stat(_path: filesystem.PathLike): Promise<filesystem.Stats> {
-                    return {
+                    return ({
                         isDirectory() {
                             return true
                         }
-                    } as any as filesystem.Stats
+                    } as any) as filesystem.Stats
                 }
             }
         })
@@ -161,7 +159,7 @@ describe('detectLocalTemplates', async () => {
         const workspaceFolderChildPath2 = normalizePath(workspaceFolderPath, 'child2')
 
         const result = detectLocalTemplates({
-            workspaceUris: [ vscode.Uri.file(workspaceFolderPath) ],
+            workspaceUris: [vscode.Uri.file(workspaceFolderPath)],
             context: {
                 async access(_path: filesystem.PathLike): Promise<void> {
                     switch (_path) {
@@ -173,26 +171,24 @@ describe('detectLocalTemplates', async () => {
                     }
                 },
 
-                async readDir(
-                    _path: filesystem.PathLike
-                ): Promise<string[]> {
+                async readDir(_path: filesystem.PathLike): Promise<string[]> {
                     switch (_path) {
                         case workspaceFolderPath:
-                            return [ 'child1', 'child2' ]
+                            return ['child1', 'child2']
                         case workspaceFolderChildPath1:
                         case workspaceFolderChildPath2:
-                            return [ 'template.yaml' ]
+                            return ['template.yaml']
                         default:
                             throw new Error(`Unexpected path: '${_path}'`)
                     }
                 },
 
                 async stat(_path: filesystem.PathLike): Promise<filesystem.Stats> {
-                    return {
+                    return ({
                         isDirectory() {
                             return true
                         }
-                    } as any as filesystem.Stats
+                    } as any) as filesystem.Stats
                 }
             }
         })
@@ -205,7 +201,6 @@ describe('detectLocalTemplates', async () => {
         assert.strictEqual(templates.length, 2)
         assert.ok(templates.some(t => t.fsPath === normalizePath(workspaceFolderChildPath1, 'template.yaml')))
         assert.ok(templates.some(t => t.fsPath === normalizePath(workspaceFolderChildPath2, 'template.yaml')))
-
     })
 
     it('Detects multiple templates when both template.yml and template.yaml exist in a folder', async () => {
@@ -213,7 +208,7 @@ describe('detectLocalTemplates', async () => {
         const workspaceFolderChildPath = normalizePath(workspaceFolderPath, 'child')
 
         const result = detectLocalTemplates({
-            workspaceUris: [ vscode.Uri.file(workspaceFolderPath) ],
+            workspaceUris: [vscode.Uri.file(workspaceFolderPath)],
             context: {
                 async access(_path: filesystem.PathLike): Promise<void> {
                     switch (_path) {
@@ -228,20 +223,20 @@ describe('detectLocalTemplates', async () => {
                 async readDir(_path: filesystem.PathLike): Promise<string[]> {
                     switch (_path) {
                         case workspaceFolderPath:
-                            return [ 'child' ]
+                            return ['child']
                         case workspaceFolderChildPath:
-                            return [ 'template.yml', 'template.yaml' ]
+                            return ['template.yml', 'template.yaml']
                         default:
                             throw new Error(`Unexpected path: '${_path}'`)
                     }
                 },
 
                 async stat(_path: filesystem.PathLike): Promise<filesystem.Stats> {
-                    return {
+                    return ({
                         isDirectory() {
                             return true
                         }
-                    } as any as filesystem.Stats
+                    } as any) as filesystem.Stats
                 }
             }
         })

@@ -79,7 +79,7 @@ export class SamCliBuildInvocation {
             skipPullImage = false,
             ...params
         }: SamCliBuildInvocationArguments,
-        private readonly context: { file: FileFunctions } = { file: getDefaultFileFunctions() },
+        private readonly context: { file: FileFunctions } = { file: getDefaultFileFunctions() }
     ) {
         this.buildDir = params.buildDir
         this.baseDir = params.baseDir
@@ -95,11 +95,7 @@ export class SamCliBuildInvocation {
     public async execute(): Promise<void> {
         await this.validate()
 
-        const invokeArgs: string[] = [
-            'build',
-            '--build-dir', this.buildDir,
-            '--template', this.templatePath,
-        ]
+        const invokeArgs: string[] = ['build', '--build-dir', this.buildDir, '--template', this.templatePath]
 
         this.addArgumentIf(invokeArgs, !!this.baseDir, '--base-dir', this.baseDir!)
         this.addArgumentIf(invokeArgs, !!this.dockerNetwork, '--docker-network', this.dockerNetwork!)
@@ -114,7 +110,7 @@ export class SamCliBuildInvocation {
 
         const childProcessResult = await this.invoker.invoke({
             spawnOptions: { env },
-            arguments: invokeArgs,
+            arguments: invokeArgs
         })
 
         logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
@@ -127,7 +123,7 @@ export class SamCliBuildInvocation {
     }
 
     private async validate(): Promise<void> {
-        if (!await this.context.file.fileExists(this.templatePath)) {
+        if (!(await this.context.file.fileExists(this.templatePath))) {
             const logger: Logger = getLogger()
 
             const err = new Error(`template path does not exist: ${this.templatePath}`)

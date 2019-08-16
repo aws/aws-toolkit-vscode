@@ -45,23 +45,17 @@ export class DefaultLambdaFunctionGroupNode extends AWSTreeErrorHandlerNode impl
     public async getChildren(): Promise<(LambdaFunctionNode | ErrorNode)[]> {
         await this.handleErrorProneOperation(
             async () => this.updateChildren(),
-            localize(
-                'AWS.explorerNode.lambda.error',
-                'Error loading Lambda resources'
-            )
+            localize('AWS.explorerNode.lambda.error', 'Error loading Lambda resources')
         )
 
-        return !!this.errorNode ? [this.errorNode]
-            : [...this.functionNodes.values()]
-                .sort((nodeA, nodeB) =>
-                    nodeA.functionName.localeCompare(
-                        nodeB.functionName
-                    )
-                )
+        return !!this.errorNode
+            ? [this.errorNode]
+            : [...this.functionNodes.values()].sort((nodeA, nodeB) =>
+                  nodeA.functionName.localeCompare(nodeB.functionName)
+              )
     }
 
     public async updateChildren(): Promise<void> {
-
         const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(this.regionCode)
         const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
             await toArrayAsync(listLambdaFunctions(client)),
@@ -72,11 +66,10 @@ export class DefaultLambdaFunctionGroupNode extends AWSTreeErrorHandlerNode impl
             this.functionNodes,
             functions.keys(),
             key => this.functionNodes.get(key)!.update(functions.get(key)!),
-            key => new DefaultLambdaFunctionNode(
-                this,
-                functions.get(key)!,
-                relativeExtensionPath => this.getExtensionAbsolutePath(relativeExtensionPath)
-            )
+            key =>
+                new DefaultLambdaFunctionNode(this, functions.get(key)!, relativeExtensionPath =>
+                    this.getExtensionAbsolutePath(relativeExtensionPath)
+                )
         )
     }
 }

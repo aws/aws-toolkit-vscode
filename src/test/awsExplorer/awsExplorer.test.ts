@@ -18,7 +18,6 @@ import {
 } from '../utilities/fakeAwsContext'
 
 describe('AwsExplorer', () => {
-
     let logger: TestLogger
 
     before(async () => {
@@ -41,7 +40,9 @@ describe('AwsExplorer', () => {
             awsContextTreeCollection,
             regionProvider,
             resourceFetcher,
-            (path) => { throw new Error('unused') },
+            path => {
+                throw new Error('unused')
+            },
             mockChannel
         )
 
