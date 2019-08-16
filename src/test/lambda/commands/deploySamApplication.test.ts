@@ -32,11 +32,10 @@ import { FakeChannelLogger } from '../../shared/fakeChannelLogger'
 import { FakeChildProcessResult, TestSamCliProcessInvoker } from '../../shared/sam/cli/testSamCliProcessInvoker'
 
 describe('deploySamApplication', async () => {
-
     // Bad Validator
 
     const badValidatorResult: SamCliValidatorResult = {
-        samCliFound: false,
+        samCliFound: false
     }
 
     const badValidator: SamCliValidator = {
@@ -45,11 +44,11 @@ describe('deploySamApplication', async () => {
 
     // Bad Invoker
 
-    const badSamCliProcessInvoker = {} as any as SamCliProcessInvoker
+    const badSamCliProcessInvoker = ({} as any) as SamCliProcessInvoker
 
     const invalidSamCliContext: SamCliContext = {
         invoker: badSamCliProcessInvoker,
-        validator: badValidator,
+        validator: badValidator
     }
 
     // Good Validator
@@ -79,17 +78,19 @@ describe('deploySamApplication', async () => {
     const goodSamCliContext = (): SamCliContext => {
         return {
             invoker: goodSamCliProcessInvoker,
-            validator: goodValidator,
+            validator: goodValidator
         }
     }
 
     // vscode window stubs
 
     function showMessage(message: string, ...items: string[]): Thenable<string | undefined>
-    function showMessage(message: string, options: vscode.MessageOptions, ...items: string[]):
-        Thenable<string | undefined>
-    async function showMessage<T extends vscode.MessageItem>(message: string, ...items: T[]):
-        Promise<T | undefined> {
+    function showMessage(
+        message: string,
+        options: vscode.MessageOptions,
+        ...items: string[]
+    ): Thenable<string | undefined>
+    async function showMessage<T extends vscode.MessageItem>(message: string, ...items: T[]): Promise<T | undefined> {
         return undefined
     }
 
@@ -97,23 +98,25 @@ describe('deploySamApplication', async () => {
     function setStatusBarMessage(text: string, hideWhenDone: Thenable<any>): vscode.Disposable {
         runningDeployProcess = hideWhenDone
 
-        return new vscode.Disposable(() => { })
+        return new vscode.Disposable(() => {})
     }
 
     const window: WindowFunctions = {
         setStatusBarMessage,
         showErrorMessage: showMessage,
-        showInformationMessage: showMessage,
+        showInformationMessage: showMessage
     }
 
     // Other support stubs
 
     const regionProvider: RegionProvider = {
         getRegionData: async (): Promise<RegionInfo[]> => {
-            return [{
-                regionCode: 'us-west-2',
-                regionName: 'TEST REGION'
-            }]
+            return [
+                {
+                    regionCode: 'us-west-2',
+                    regionName: 'TEST REGION'
+                }
+            ]
         }
     }
 
@@ -150,7 +153,7 @@ describe('deploySamApplication', async () => {
             region: 'region',
             s3Bucket: 'bucket',
             stackName: 'stack',
-            template: vscode.Uri.file(templatePath),
+            template: vscode.Uri.file(templatePath)
         }
 
         runningDeployProcess = undefined
@@ -172,8 +175,8 @@ describe('deploySamApplication', async () => {
             },
             {
                 awsContext,
-                window,
-            },
+                window
+            }
         )
 
         await waitForDeployToComplete()
@@ -193,8 +196,8 @@ describe('deploySamApplication', async () => {
             },
             {
                 awsContext,
-                window,
-            },
+                window
+            }
         )
 
         assertGeneralErrorLogged(channelLogger)
@@ -211,8 +214,8 @@ describe('deploySamApplication', async () => {
             },
             {
                 awsContext,
-                window,
-            },
+                window
+            }
         )
 
         assertGeneralErrorLogged(channelLogger)
@@ -231,8 +234,8 @@ describe('deploySamApplication', async () => {
             },
             {
                 awsContext,
-                window,
-            },
+                window
+            }
         )
 
         assert.strictEqual(invokerCalledCount, 0, 'Did not expect sam cli to get invoked')
@@ -247,7 +250,7 @@ describe('deploySamApplication', async () => {
 
                 return new FakeChildProcessResult({
                     exitCode: isDeployInvoke ? -1 : 0,
-                    error: isDeployInvoke ? new Error('broken build') : undefined,
+                    error: isDeployInvoke ? new Error('broken build') : undefined
                 })
             }
         )
@@ -262,8 +265,8 @@ describe('deploySamApplication', async () => {
             },
             {
                 awsContext,
-                window,
-            },
+                window
+            }
         )
 
         await waitForDeployToComplete()
@@ -281,7 +284,7 @@ describe('deploySamApplication', async () => {
 
                 return new FakeChildProcessResult({
                     exitCode: isDeployInvoke ? -1 : 0,
-                    error: isDeployInvoke ? new Error('broken package') : undefined,
+                    error: isDeployInvoke ? new Error('broken package') : undefined
                 })
             }
         )
@@ -296,8 +299,8 @@ describe('deploySamApplication', async () => {
             },
             {
                 awsContext,
-                window,
-            },
+                window
+            }
         )
 
         await waitForDeployToComplete()
@@ -315,7 +318,7 @@ describe('deploySamApplication', async () => {
 
                 return new FakeChildProcessResult({
                     exitCode: isDeployInvoke ? -1 : 0,
-                    error: isDeployInvoke ? new Error('broken deploy') : undefined,
+                    error: isDeployInvoke ? new Error('broken deploy') : undefined
                 })
             }
         )
@@ -330,8 +333,8 @@ describe('deploySamApplication', async () => {
             },
             {
                 awsContext,
-                window,
-            },
+                window
+            }
         )
 
         await waitForDeployToComplete()
@@ -356,8 +359,7 @@ function assertGeneralErrorLogged(channelLogger: FakeChannelLogger) {
 function assertErrorLogsContain(text: string, channelLogger: FakeChannelLogger, exactMatch: boolean) {
     assert.ok(
         channelLogger.logger.errorEntries.some(
-            e => e instanceof Error &&
-                (exactMatch ? e.message === text : e.message.indexOf(text) !== -1)
+            e => e instanceof Error && (exactMatch ? e.message === text : e.message.indexOf(text) !== -1)
         ),
         `Expected to find ${text} in the error logs`
     )

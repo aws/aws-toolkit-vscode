@@ -4,7 +4,7 @@
  */
 
 export const getPropAs = <T>(obj: any, key: string) => {
-    return (obj as any as {
+    return ((obj as any) as {
         [key: string]: T
     })[key]
 }

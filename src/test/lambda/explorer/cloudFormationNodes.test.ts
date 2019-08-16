@@ -30,7 +30,6 @@ async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
 }
 
 describe('DefaultCloudFormationStackNode', () => {
-
     let fakeStackSummary: CloudFormation.StackSummary
     const fakeIconPathPrefix: string = 'DefaultCloudFormationStackNode'
     let logger: TestLogger
@@ -64,7 +63,7 @@ describe('DefaultCloudFormationStackNode', () => {
     })
 
     it('returns placeholder node if no children are present', async () => {
-        const cloudFormationClient = {
+        const cloudFormationClient = ({
             regionCode: 'code',
 
             async describeStackResources(name: string): Promise<CloudFormation.DescribeStackResourcesOutput> {
@@ -72,16 +71,15 @@ describe('DefaultCloudFormationStackNode', () => {
                     StackResources: []
                 }
             }
+        } as any) as CloudFormationClient
 
-        } as any as CloudFormationClient
-
-        const lambdaClient = {
+        const lambdaClient = ({
             regionCode: 'code',
 
             async *listFunctions(): AsyncIterableIterator<Lambda.FunctionConfiguration> {
                 yield* []
             }
-        } as any as LambdaClient
+        } as any) as LambdaClient
 
         // TODO: Move this to MockToolkitClientBuilder
         ext.toolkitClientBuilder = {
@@ -113,11 +111,9 @@ describe('DefaultCloudFormationStackNode', () => {
         class TestMockCloudFormationClient implements CloudFormationClient {
             private readonly resources: CloudFormation.StackResource[] = []
 
-            public constructor(public readonly regionCode: string) {
-            }
+            public constructor(public readonly regionCode: string) {}
 
-            public async deleteStack(name: string): Promise<void> {
-            }
+            public async deleteStack(name: string): Promise<void> {}
 
             public async *listStacks(statusFilter?: string[]): AsyncIterableIterator<CloudFormation.StackSummary> {
                 yield* []
@@ -130,25 +126,22 @@ describe('DefaultCloudFormationStackNode', () => {
             }
 
             public addLambdaResource(name: string): void {
-                this.resources.push({
+                this.resources.push(({
                     ResourceType: 'Lambda::Function',
                     PhysicalResourceId: name
-                } as any as CloudFormation.StackResource)
+                } as any) as CloudFormation.StackResource)
             }
         }
 
         class MockLambdaClient implements LambdaClient {
             private readonly lambdas: Lambda.FunctionConfiguration[] = []
 
-            public constructor(public readonly regionCode: string) {
-            }
+            public constructor(public readonly regionCode: string) {}
 
-            public async deleteFunction(name: string): Promise<void> {
-
-            }
+            public async deleteFunction(name: string): Promise<void> {}
 
             public async invoke(name: string, payload?: Lambda._Blob): Promise<Lambda.InvocationResponse> {
-                return {} as any as Lambda.InvocationResponse
+                return ({} as any) as Lambda.InvocationResponse
             }
 
             public async *listFunctions(): AsyncIterableIterator<Lambda.FunctionConfiguration> {
@@ -156,9 +149,9 @@ describe('DefaultCloudFormationStackNode', () => {
             }
 
             public addLambdaResource(name: string): void {
-                this.lambdas.push({
+                this.lambdas.push(({
                     FunctionName: name
-                } as any as Lambda.FunctionConfiguration)
+                } as any) as Lambda.FunctionConfiguration)
             }
         }
 
@@ -207,15 +200,13 @@ describe('DefaultCloudFormationStackNode', () => {
         assert.strictEqual((childNodes[1] as DefaultCloudFormationFunctionNode).label, lambda3Name)
     })
 
-    function validateIconPath(
-        node: TreeItem
-    ) {
+    function validateIconPath(node: TreeItem) {
         const fileScheme: string = 'file'
         const expectedPrefix = `/${fakeIconPathPrefix}/`
 
         assert(node.iconPath !== undefined)
         const iconPath = node.iconPath! as {
-            light: Uri,
+            light: Uri
             dark: Uri
         }
 
@@ -263,7 +254,6 @@ describe('DefaultCloudFormationStackNode', () => {
 })
 
 describe('DefaultCloudFormationNode', () => {
-
     let logger: TestLogger
 
     before(async () => {
@@ -279,36 +269,27 @@ describe('DefaultCloudFormationNode', () => {
     class StackNamesMockCloudFormationClient extends MockCloudFormationClient {
         public constructor(
             public readonly stackNames: string[] = [],
-            listStacks:
-                (statusFilter?: string[]) => AsyncIterableIterator<CloudFormation.StackSummary> =
-                (statusFilter?: string[]) => {
-                    return asyncGenerator<CloudFormation.StackSummary>(
-                        stackNames.map<CloudFormation.StackSummary>(name => {
-                            return {
-                                StackId: name,
-                                StackName: name,
-                                CreationTime: new Date(),
-                                StackStatus: 'CREATE_COMPLETE',
-                            }
-                        }))
-                },
-
+            listStacks: (statusFilter?: string[]) => AsyncIterableIterator<CloudFormation.StackSummary> = (
+                statusFilter?: string[]
+            ) => {
+                return asyncGenerator<CloudFormation.StackSummary>(
+                    stackNames.map<CloudFormation.StackSummary>(name => {
+                        return {
+                            StackId: name,
+                            StackName: name,
+                            CreationTime: new Date(),
+                            StackStatus: 'CREATE_COMPLETE'
+                        }
+                    })
+                )
+            }
         ) {
-            super(
-                undefined,
-                undefined,
-                listStacks
-            )
+            super(undefined, undefined, listStacks)
         }
     }
 
     it('Sorts Stacks', async () => {
-        const inputStackNames: string[] = [
-            'zebra',
-            'Antelope',
-            'aardvark',
-            'elephant'
-        ]
+        const inputStackNames: string[] = ['zebra', 'Antelope', 'aardvark', 'elephant']
 
         // TODO: Move to MockToolkitClientBuilder
         ext.toolkitClientBuilder = {
@@ -345,8 +326,8 @@ describe('DefaultCloudFormationNode', () => {
 
         function assertChildNodeStackName(
             actualChildNode: CloudFormationStackNode | ErrorNode,
-            expectedNodeText: string) {
-
+            expectedNodeText: string
+        ) {
             assert.strictEqual(
                 actualChildNode instanceof DefaultCloudFormationStackNode,
                 true,
@@ -368,13 +349,12 @@ describe('DefaultCloudFormationNode', () => {
     })
 
     it('handles error', async () => {
-
-        const unusedPathResolver = () => { throw new Error('unused') }
+        const unusedPathResolver = () => {
+            throw new Error('unused')
+        }
 
         class ThrowErrorDefaultCloudFormationNode extends DefaultCloudFormationNode {
-            public constructor(
-                public readonly regionNode: DefaultRegionNode
-            ) {
+            public constructor(public readonly regionNode: DefaultRegionNode) {
                 super(regionNode, unusedPathResolver)
             }
 
@@ -392,5 +372,4 @@ describe('DefaultCloudFormationNode', () => {
         assert.strictEqual(childNodes.length, 1)
         assert.strictEqual(childNodes[0] instanceof ErrorNode, true)
     })
-
 })

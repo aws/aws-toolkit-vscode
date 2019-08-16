@@ -15,7 +15,6 @@ import {
 } from './testSamCliProcessInvoker'
 
 describe('SamCliPackageInvocation', async () => {
-
     let logger: TestLogger
     let invokeCount: number
 
@@ -32,16 +31,14 @@ describe('SamCliPackageInvocation', async () => {
     })
 
     it('includes a template, s3 bucket, output template file, region, and profile ', async () => {
-        const invoker = new MockSamCliProcessInvoker(
-            args => {
-                invokeCount++
-                assertArgsContainArgument(args, '--template-file', 'template')
-                assertArgsContainArgument(args, '--s3-bucket', 'bucket')
-                assertArgsContainArgument(args, '--output-template-file', 'output')
-                assertArgsContainArgument(args, '--region', 'region')
-                assertArgsContainArgument(args, '--profile', 'profile')
-            }
-        )
+        const invoker = new MockSamCliProcessInvoker(args => {
+            invokeCount++
+            assertArgsContainArgument(args, '--template-file', 'template')
+            assertArgsContainArgument(args, '--s3-bucket', 'bucket')
+            assertArgsContainArgument(args, '--output-template-file', 'output')
+            assertArgsContainArgument(args, '--region', 'region')
+            assertArgsContainArgument(args, '--profile', 'profile')
+        })
 
         await runSamCliPackage(
             {
@@ -60,21 +57,18 @@ describe('SamCliPackageInvocation', async () => {
     it('throws on unexpected exit code', async () => {
         const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
 
-        const error = await assertThrowsError(
-            async () => {
-                await runSamCliPackage(
-                    {
-                        sourceTemplateFile: 'template',
-                        destinationTemplateFile: 'output',
-                        profile: 'profile',
-                        region: 'region',
-                        s3Bucket: 'bucket'
-                    },
-                    badExitCodeProcessInvoker
-                )
-            },
-            'Expected an error to be thrown'
-        )
+        const error = await assertThrowsError(async () => {
+            await runSamCliPackage(
+                {
+                    sourceTemplateFile: 'template',
+                    destinationTemplateFile: 'output',
+                    profile: 'profile',
+                    region: 'region',
+                    s3Bucket: 'bucket'
+                },
+                badExitCodeProcessInvoker
+            )
+        }, 'Expected an error to be thrown')
 
         assertErrorContainsBadExitMessage(error, badExitCodeProcessInvoker.error.message)
         await assertLogContainsBadExitInformation(logger, badExitCodeProcessInvoker.makeChildProcessResult(), 0)

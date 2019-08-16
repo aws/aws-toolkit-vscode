@@ -13,14 +13,14 @@ describe('getLocalRootVariants', async () => {
                 situation: 'lower case drive letter',
                 inputText: 'c:\\src\\code.js',
                 asLower: 'c:\\src\\code.js',
-                asUpper: 'C:\\src\\code.js',
+                asUpper: 'C:\\src\\code.js'
             },
             {
                 situation: 'upper case drive letter',
                 inputText: 'C:\\src\\code.js',
                 asLower: 'c:\\src\\code.js',
-                asUpper: 'C:\\src\\code.js',
-            },
+                asUpper: 'C:\\src\\code.js'
+            }
         ]
 
         testScenarios.forEach(test => {
@@ -59,7 +59,7 @@ describe('getLocalRootVariants', async () => {
             {
                 situation: 'non-windows path',
                 inputText: '/src/code.js'
-            },
+            }
         ]
 
         testScenarios.forEach(test => {

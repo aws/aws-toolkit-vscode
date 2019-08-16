@@ -10,7 +10,9 @@ import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { writeFile } from '../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
-export async function createWorkspaceFolder(prefix: string): Promise<{
+export async function createWorkspaceFolder(
+    prefix: string
+): Promise<{
     workspacePath: string
     workspaceFolder: WorkspaceFolder
 }> {
@@ -27,8 +29,9 @@ export async function createWorkspaceFolder(prefix: string): Promise<{
 }
 
 export async function saveTemplate(templatePath: string, runtime: string, ...functionNames: string[]) {
-    const functionResources = functionNames.map(
-        functionName => `    ${functionName}:
+    const functionResources = functionNames
+        .map(
+            functionName => `    ${functionName}:
         Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
         Properties:
             CodeUri: hello_world/
@@ -43,7 +46,8 @@ export async function saveTemplate(templatePath: string, runtime: string, ...fun
                     Properties:
                         Path: /hello
                         Method: get`
-    ).join(os.EOL)
+        )
+        .join(os.EOL)
 
     const templateContent = `AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31

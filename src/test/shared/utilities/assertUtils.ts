@@ -34,14 +34,11 @@ export async function assertThrowsError(
         error = err as Error
     } finally {
         // Test that an error was caught
-        assert.throws(
-            () => {
-                if (!!error) {
-                    throw error
-                }
-            },
-            message
-        )
+        assert.throws(() => {
+            if (!!error) {
+                throw error
+            }
+        }, message)
     }
 
     return error!

@@ -25,8 +25,7 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
         private readonly lambdaClient: LambdaClient = new MockLambdaClient({}),
 
         private readonly stsClient: StsClient = new MockStsClient({})
-    ) {
-    }
+    ) {}
 
     public createCloudFormationClient(regionCode: string): CloudFormationClient {
         return this.cloudFormationClient
@@ -49,18 +48,18 @@ export class MockCloudFormationClient implements CloudFormationClient {
     public constructor(
         public readonly regionCode: string = '',
 
-        public readonly deleteStack: (name: string) => Promise<void> =
-            async (name: string) => { },
+        public readonly deleteStack: (name: string) => Promise<void> = async (name: string) => {},
 
-        public readonly listStacks: (statusFilter?: string[]) => AsyncIterableIterator<CloudFormation.StackSummary> =
-            (statusFilter?: string[]) => asyncGenerator([]),
+        public readonly listStacks: (statusFilter?: string[]) => AsyncIterableIterator<CloudFormation.StackSummary> = (
+            statusFilter?: string[]
+        ) => asyncGenerator([]),
 
-        public readonly describeStackResources: (name: string) => Promise<CloudFormation.DescribeStackResourcesOutput> =
-            async (name: string) => ({
-                StackResources: []
-            })
-    ) {
-    }
+        public readonly describeStackResources: (
+            name: string
+        ) => Promise<CloudFormation.DescribeStackResourcesOutput> = async (name: string) => ({
+            StackResources: []
+        })
+    ) {}
 }
 
 export class MockEcsClient implements EcsClient {
@@ -95,10 +94,9 @@ export class MockLambdaClient implements LambdaClient {
 
     public constructor({
         regionCode = '',
-        deleteFunction = async (name: string) => { },
+        deleteFunction = async (name: string) => {},
         invoke = async (name: string, payload?: Lambda._Blob) => ({}),
         listFunctions = () => asyncGenerator([])
-
     }: {
         regionCode?: string
         deleteFunction?(name: string): Promise<void>

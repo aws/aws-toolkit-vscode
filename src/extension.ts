@@ -19,11 +19,7 @@ import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
 import { DefaultAWSStatusBar } from './shared/defaultStatusBar'
 import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
-import {
-    safeGet,
-    showQuickStartWebview,
-    toastNewUser
-} from './shared/extensionUtilities'
+import { safeGet, showQuickStartWebview, toastNewUser } from './shared/extensionUtilities'
 import * as logFactory from './shared/logger'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import { activate as activateServerless } from './shared/sam/activation'
@@ -37,7 +33,6 @@ import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
 
 export async function activate(context: vscode.ExtensionContext) {
-
     const env = process.env as EnvironmentVariables
     if (!!env.VSCODE_NLS_CONFIG) {
         nls.config(JSON.parse(env.VSCODE_NLS_CONFIG) as nls.Options)()
@@ -49,9 +44,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     ext.context = context
     await logFactory.initialize()
-    const toolkitOutputChannel = vscode.window.createOutputChannel(
-        localize('AWS.channel.aws.toolkit', 'AWS Toolkit')
-    )
+    const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', 'AWS Toolkit'))
 
     try {
         await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
@@ -79,11 +72,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
         ext.statusBar = new DefaultAWSStatusBar(awsContext, context)
         ext.telemetry = new DefaultTelemetryService(context, awsContext)
-        new AwsTelemetryOptOut(ext.telemetry, toolkitSettings)
-            .ensureUserNotified()
-            .catch((err) => {
-                console.warn(`Exception while displaying opt-out message: ${err}`)
-            })
+        new AwsTelemetryOptOut(ext.telemetry, toolkitSettings).ensureUserNotified().catch(err => {
+            console.warn(`Exception while displaying opt-out message: ${err}`)
+        })
         await ext.telemetry.start()
 
         registerCommand({
@@ -128,32 +119,36 @@ export async function activate(context: vscode.ExtensionContext) {
         // register URLs in extension menu
         registerCommand({
             command: 'aws.help',
-            callback: async () => { vscode.env.openExternal(vscode.Uri.parse(documentationUrl)) }
+            callback: async () => {
+                vscode.env.openExternal(vscode.Uri.parse(documentationUrl))
+            }
         })
         registerCommand({
             command: 'aws.github',
-            callback: async () => { vscode.env.openExternal(vscode.Uri.parse(githubUrl)) }
+            callback: async () => {
+                vscode.env.openExternal(vscode.Uri.parse(githubUrl))
+            }
         })
         registerCommand({
             command: 'aws.reportIssue',
-            callback: async () => { vscode.env.openExternal(vscode.Uri.parse(reportIssueUrl)) }
+            callback: async () => {
+                vscode.env.openExternal(vscode.Uri.parse(reportIssueUrl))
+            }
         })
         registerCommand({
             command: 'aws.quickStart',
-            callback: async () => { await showQuickStartWebview(context) }
+            callback: async () => {
+                await showQuickStartWebview(context)
+            }
         })
 
         const providers = [
-            new AwsExplorer(
-                awsContext,
-                awsContextTrees,
-                regionProvider,
-                resourceFetcher,
-                (relativeExtensionPath) => getExtensionAbsolutePath(context, relativeExtensionPath)
+            new AwsExplorer(awsContext, awsContextTrees, regionProvider, resourceFetcher, relativeExtensionPath =>
+                getExtensionAbsolutePath(context, relativeExtensionPath)
             )
         ]
 
-        providers.forEach((p) => {
+        providers.forEach(p => {
             p.initialize(context)
             context.subscriptions.push(vscode.window.registerTreeDataProvider(p.viewProviderId, p))
         })
@@ -174,11 +169,7 @@ export async function activate(context: vscode.ExtensionContext) {
         toastNewUser(context, logFactory.getLogger())
     } catch (error) {
         const channelLogger = getChannelLogger(toolkitOutputChannel)
-        channelLogger.error(
-            'AWS.channel.aws.toolkit.activation.error',
-            'Error Activating AWS Toolkit',
-            error as Error
-        )
+        channelLogger.error('AWS.channel.aws.toolkit.activation.error', 'Error Activating AWS Toolkit', error as Error)
         throw error
     }
 }

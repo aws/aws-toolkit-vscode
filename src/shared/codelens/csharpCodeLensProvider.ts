@@ -17,7 +17,7 @@ import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
 import {
     DefaultSamLocalInvokeCommand,
     SamLocalInvokeCommand,
-    WAIT_FOR_DEBUGGER_MESSAGES,
+    WAIT_FOR_DEBUGGER_MESSAGES
 } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
@@ -25,12 +25,7 @@ import { Datum, TelemetryNamespace } from '../telemetry/telemetryTypes'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
-import {
-    CodeLensProviderParams,
-    getInvokeCmdKey,
-    getMetricDatum,
-    makeCodeLenses,
-} from './codeLensUtils'
+import { CodeLensProviderParams, getInvokeCmdKey, getMetricDatum, makeCodeLenses } from './codeLensUtils'
 import {
     executeSamBuild,
     ExecuteSamBuildArguments,
@@ -39,7 +34,7 @@ import {
     InvokeLambdaFunctionContext,
     LambdaLocalInvokeParams,
     makeBuildDir,
-    makeInputTemplate,
+    makeInputTemplate
 } from './localLambdaRunner'
 
 export const CSHARP_LANGUAGE = 'csharp'
@@ -53,12 +48,12 @@ export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
 const REGEXP_RESERVED_WORD_PUBLIC = /\bpublic\b/
 
 export interface DotNetLambdaHandlerComponents {
-    assembly: string,
-    namespace: string,
-    class: string,
-    method: string,
+    assembly: string
+    namespace: string
+    class: string
+    method: string
     // Range of the function representing the Lambda Handler
-    handlerRange: vscode.Range,
+    handlerRange: vscode.Range
 }
 
 export async function initialize({
@@ -66,10 +61,9 @@ export async function initialize({
     outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultSamCliProcessInvoker(),
     telemetryService,
-    localInvokeCommand = new DefaultSamLocalInvokeCommand(
-        getChannelLogger(toolkitOutputChannel),
-        [WAIT_FOR_DEBUGGER_MESSAGES.DOTNET]
-    ),
+    localInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(toolkitOutputChannel), [
+        WAIT_FOR_DEBUGGER_MESSAGES.DOTNET
+    ])
 }: CodeLensProviderParams): Promise<void> {
     const command = getInvokeCmdKey(CSHARP_LANGUAGE)
     registerCommand({
@@ -98,9 +92,7 @@ export interface OnLocalInvokeCommandContext {
 class DefaultOnLocalInvokeCommandContext implements OnLocalInvokeCommandContext {
     private readonly dockerClient: DockerClient
 
-    public constructor(
-        outputChannel: vscode.OutputChannel,
-    ) {
+    public constructor(outputChannel: vscode.OutputChannel) {
         this.dockerClient = new DefaultDockerClient(outputChannel)
     }
 
@@ -112,12 +104,7 @@ class DefaultOnLocalInvokeCommandContext implements OnLocalInvokeCommandContext 
 function getCodeUri(resource: CloudFormation.Resource, samTemplateUri: vscode.Uri) {
     const rawCodeUri = CloudFormation.getCodeUri(resource)
 
-    return path.isAbsolute(rawCodeUri) ?
-        rawCodeUri :
-        path.join(
-            path.dirname(samTemplateUri.fsPath),
-            rawCodeUri
-        )
+    return path.isAbsolute(rawCodeUri) ? rawCodeUri : path.join(path.dirname(samTemplateUri.fsPath), rawCodeUri)
 }
 
 /**
@@ -143,18 +130,16 @@ async function onLocalInvokeCommand(
         getResourceFromTemplateResource = async _args => await CloudFormation.getResourceFromTemplateResources(_args)
     }: {
         configuration: SettingsConfiguration
-        toolkitOutputChannel: vscode.OutputChannel,
-        lambdaLocalInvokeParams: LambdaLocalInvokeParams,
-        processInvoker: SamCliProcessInvoker,
+        toolkitOutputChannel: vscode.OutputChannel
+        lambdaLocalInvokeParams: LambdaLocalInvokeParams
+        processInvoker: SamCliProcessInvoker
         localInvokeCommand: SamLocalInvokeCommand
-        telemetryService: TelemetryService,
-        loadCloudFormationTemplate?(
-            filename: string
-        ): Promise<CloudFormation.Template>,
+        telemetryService: TelemetryService
+        loadCloudFormationTemplate?(filename: string): Promise<CloudFormation.Template>
         getResourceFromTemplateResource?(args: {
-            templateResources?: CloudFormation.TemplateResources,
-            handlerName: string,
-        }): Promise<CloudFormation.Resource>,
+            templateResources?: CloudFormation.TemplateResources
+            handlerName: string
+        }): Promise<CloudFormation.Resource>
     },
     context: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext(toolkitOutputChannel)
 ): Promise<{ datum: Datum }> {
@@ -164,7 +149,7 @@ async function onLocalInvokeCommand(
     )
     const resource = await getResourceFromTemplateResource({
         templateResources: template.Resources,
-        handlerName: lambdaLocalInvokeParams.handlerName,
+        handlerName: lambdaLocalInvokeParams.handlerName
     })
     const runtime = CloudFormation.getRuntime(resource)
 
@@ -196,7 +181,7 @@ async function onLocalInvokeCommand(
             channelLogger,
             codeDir: codeUri,
             inputTemplatePath,
-            samProcessInvoker: processInvoker,
+            samProcessInvoker: processInvoker
         }
         if (lambdaLocalInvokeParams.isDebug) {
             buildArgs.environmentVariables = {
@@ -212,7 +197,7 @@ async function onLocalInvokeCommand(
             handlerName,
             originalSamTemplatePath: lambdaLocalInvokeParams.samTemplate.fsPath,
             samTemplatePath,
-            runtime,
+            runtime
         }
 
         const invokeContext: InvokeLambdaFunctionContext = {
@@ -223,10 +208,7 @@ async function onLocalInvokeCommand(
         }
 
         if (!lambdaLocalInvokeParams.isDebug) {
-            await invokeLambdaFunction(
-                invokeArgs,
-                invokeContext
-            )
+            await invokeLambdaFunction(invokeArgs, invokeContext)
         } else {
             const { debuggerPath } = await context.installDebugger({
                 runtime,
@@ -267,7 +249,7 @@ async function onLocalInvokeCommand(
 
     return getMetricDatum({
         isDebug: lambdaLocalInvokeParams.isDebug,
-        runtime,
+        runtime
     })
 }
 
@@ -303,23 +285,23 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
         return []
     }
 
-    const symbols: vscode.DocumentSymbol[] = (
+    const symbols: vscode.DocumentSymbol[] =
         (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
             'vscode.executeDocumentSymbolProvider',
             document.uri
         )) || []
-    )
 
-    return getLambdaHandlerComponents(document, symbols, assemblyName)
-        .map<LambdaHandlerCandidate>(lambdaHandlerComponents => {
+    return getLambdaHandlerComponents(document, symbols, assemblyName).map<LambdaHandlerCandidate>(
+        lambdaHandlerComponents => {
             const handlerName = generateDotNetLambdaHandler(lambdaHandlerComponents)
 
             return {
                 filename: document.uri.fsPath,
                 handlerName,
-                range: lambdaHandlerComponents.handlerRange,
+                range: lambdaHandlerComponents.handlerRange
             }
-        })
+        }
+    )
 }
 
 async function getAssemblyName(sourceCodeUri: vscode.Uri): Promise<string | undefined> {
@@ -338,61 +320,59 @@ async function getAssemblyName(sourceCodeUri: vscode.Uri): Promise<string | unde
 export function getLambdaHandlerComponents(
     document: vscode.TextDocument,
     symbols: vscode.DocumentSymbol[],
-    assembly: string,
+    assembly: string
 ): DotNetLambdaHandlerComponents[] {
-    return symbols
-        .filter(symbol => symbol.kind === vscode.SymbolKind.Namespace)
-        // Find relevant classes within the namespace
-        .reduce<{
-            namespace: vscode.DocumentSymbol,
-            class: vscode.DocumentSymbol,
-        }[]>(
-            (accumulator, namespaceSymbol: vscode.DocumentSymbol) => {
-                accumulator.push(...namespaceSymbol.children
-                    .filter(namespaceChildSymbol => namespaceChildSymbol.kind === vscode.SymbolKind.Class)
-                    .filter(classSymbol => isPublicClassSymbol(document, classSymbol))
-                    .map(classSymbol => {
-                        return {
-                            namespace: namespaceSymbol,
-                            class: classSymbol,
-                        }
-                    })
+    return (
+        symbols
+            .filter(symbol => symbol.kind === vscode.SymbolKind.Namespace)
+            // Find relevant classes within the namespace
+            .reduce<
+                {
+                    namespace: vscode.DocumentSymbol
+                    class: vscode.DocumentSymbol
+                }[]
+            >((accumulator, namespaceSymbol: vscode.DocumentSymbol) => {
+                accumulator.push(
+                    ...namespaceSymbol.children
+                        .filter(namespaceChildSymbol => namespaceChildSymbol.kind === vscode.SymbolKind.Class)
+                        .filter(classSymbol => isPublicClassSymbol(document, classSymbol))
+                        .map(classSymbol => {
+                            return {
+                                namespace: namespaceSymbol,
+                                class: classSymbol
+                            }
+                        })
                 )
 
                 return accumulator
-            },
-            []
-        )
-        // Find relevant methods within each class
-        .reduce<DotNetLambdaHandlerComponents[]>(
-            (accumulator, lambdaHandlerComponents) => {
-                accumulator.push(...lambdaHandlerComponents.class.children
-                    .filter(classChildSymbol => classChildSymbol.kind === vscode.SymbolKind.Method)
-                    .filter(methodSymbol => isPublicMethodSymbol(document, methodSymbol))
-                    .map(methodSymbol => {
-                        return {
-                            assembly,
-                            namespace: lambdaHandlerComponents.namespace.name,
-                            class: document.getText(lambdaHandlerComponents.class.selectionRange),
-                            method: document.getText(methodSymbol.selectionRange),
-                            handlerRange: methodSymbol.range,
-                        }
-                    })
+            }, [])
+            // Find relevant methods within each class
+            .reduce<DotNetLambdaHandlerComponents[]>((accumulator, lambdaHandlerComponents) => {
+                accumulator.push(
+                    ...lambdaHandlerComponents.class.children
+                        .filter(classChildSymbol => classChildSymbol.kind === vscode.SymbolKind.Method)
+                        .filter(methodSymbol => isPublicMethodSymbol(document, methodSymbol))
+                        .map(methodSymbol => {
+                            return {
+                                assembly,
+                                namespace: lambdaHandlerComponents.namespace.name,
+                                class: document.getText(lambdaHandlerComponents.class.selectionRange),
+                                method: document.getText(methodSymbol.selectionRange),
+                                handlerRange: methodSymbol.range
+                            }
+                        })
                 )
 
                 return accumulator
-            },
-            []
-        )
+            }, [])
+    )
 }
 
 export async function findParentProjectFile(
     sourceCodeUri: vscode.Uri,
-    findWorkspaceFiles: typeof vscode.workspace.findFiles = vscode.workspace.findFiles,
+    findWorkspaceFiles: typeof vscode.workspace.findFiles = vscode.workspace.findFiles
 ): Promise<vscode.Uri | undefined> {
-    const workspaceProjectFiles: vscode.Uri[] = await findWorkspaceFiles(
-        '**/*.csproj'
-    )
+    const workspaceProjectFiles: vscode.Uri[] = await findWorkspaceFiles('**/*.csproj')
 
     // Use the project file "closest" in the parent chain to sourceCodeUri
     // Assumption: only one .csproj file will exist in a given folder
@@ -410,7 +390,7 @@ export async function findParentProjectFile(
 
 export function isPublicClassSymbol(
     document: Pick<vscode.TextDocument, 'getText'>,
-    symbol: vscode.DocumentSymbol,
+    symbol: vscode.DocumentSymbol
 ): boolean {
     if (symbol.kind === vscode.SymbolKind.Class) {
         // from "public class Processor" pull "public class "
@@ -425,7 +405,7 @@ export function isPublicClassSymbol(
 
 export function isPublicMethodSymbol(
     document: Pick<vscode.TextDocument, 'getText'>,
-    symbol: vscode.DocumentSymbol,
+    symbol: vscode.DocumentSymbol
 ): boolean {
     if (symbol.kind === vscode.SymbolKind.Method) {
         // from "public async Task<Response> foo()" pull "public async Task<Response> "
@@ -443,7 +423,7 @@ export function generateDotNetLambdaHandler(components: DotNetLambdaHandlerCompo
 }
 
 interface InstallDebuggerArgs {
-    runtime: string,
+    runtime: string
     targetFolder: string
     channelLogger: ChannelLogger
 }
@@ -456,9 +436,7 @@ function getDebuggerPath(parentFolder: string): string {
     return path.resolve(parentFolder, '.vsdbg')
 }
 
-async function ensureDebuggerPathExists(
-    parentFolder: string
-): Promise<void> {
+async function ensureDebuggerPathExists(parentFolder: string): Promise<void> {
     const vsdbgPath = getDebuggerPath(parentFolder)
 
     try {
@@ -494,10 +472,7 @@ async function _installDebugger(
             },
             entryPoint: {
                 command: 'bash',
-                args: [
-                    '-c',
-                    'curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg'
-                ]
+                args: ['-c', 'curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg']
             }
         })
 
@@ -506,7 +481,7 @@ async function _installDebugger(
         channelLogger.info(
             'AWS.samcli.local.invoke.debugger.install.failed',
             'Error installing .NET Core Debugger: {0}',
-            err instanceof Error ? err as Error : String(err)
+            err instanceof Error ? (err as Error) : String(err)
         )
 
         throw err

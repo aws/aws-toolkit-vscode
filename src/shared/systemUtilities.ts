@@ -12,8 +12,12 @@ export class SystemUtilities {
     public static getHomeDirectory(): string {
         const env = process.env as EnvironmentVariables
 
-        if (env.HOME !== undefined) { return env.HOME }
-        if (env.USERPROFILE !== undefined) { return env.USERPROFILE }
+        if (env.HOME !== undefined) {
+            return env.HOME
+        }
+        if (env.USERPROFILE !== undefined) {
+            return env.USERPROFILE
+        }
         if (env.HOMEPATH !== undefined) {
             const homeDrive: string = env.HOMEDRIVE || 'C:'
 

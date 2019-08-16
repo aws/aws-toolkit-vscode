@@ -10,10 +10,8 @@ import { ResourceFetcher } from './resourceFetcher'
 import { FileResourceLocation, ResourceLocation, WebResourceLocation } from './resourceLocation'
 
 export class DefaultResourceFetcher implements ResourceFetcher {
-
     // Attempts to retrieve a resource from the given locations in order, stopping on the first success.
     public async getResource(resourceLocations: ResourceLocation[]): Promise<string> {
-
         const logger: Logger = getLogger()
         if (resourceLocations.length === 0) {
             throw new Error('no locations provided to get resource from')
@@ -44,11 +42,9 @@ export class DefaultResourceFetcher implements ResourceFetcher {
     // Http based file retriever
     public async getWebResource(resourceLocation: WebResourceLocation): Promise<string> {
         return new Promise<string>((resolve, reject) => {
-
             // TODO: consider inject cache lookup here, or put that in a separate ResourceFetcherBase class
 
             request(resourceLocation.getLocationUri(), {}, (err, res, body: string) => {
-
                 if (!!err) {
                     reject(err)
                 } else {
@@ -61,7 +57,6 @@ export class DefaultResourceFetcher implements ResourceFetcher {
     // Local file retriever
     public async getFileResource(resourceLocation: FileResourceLocation): Promise<string> {
         return new Promise<string>((resolve, reject) => {
-
             try {
                 const content = fse.readFileSync(resourceLocation.getLocationUri()).toString()
                 resolve(content)

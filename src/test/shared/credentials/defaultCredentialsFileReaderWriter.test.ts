@@ -12,7 +12,6 @@ import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
 describe('DefaultCredentialsFileReaderWriter', () => {
-
     let tempFolder: string
     const credentialsProfileNames: string[] = ['default', 'apple', 'orange']
     const configProfileNames: string[] = ['banana', 'mango']
@@ -63,7 +62,7 @@ describe('DefaultCredentialsFileReaderWriter', () => {
                 profileNames.has(profileName),
                 true,
                 `ERROR: profileNames [ ${[...profileNames].map(n => `'${n}'`).join(', ')} ]` +
-                ` does not contain '${profileName}'`
+                    ` does not contain '${profileName}'`
             )
         })
 
@@ -72,7 +71,7 @@ describe('DefaultCredentialsFileReaderWriter', () => {
                 profileNames.has(profileName),
                 true,
                 `ERROR: configProfileNames [ ${[...configProfileNames].map(n => `'${n}'`).join(', ')} ]` +
-                `does not contain '${profileName}'`
+                    `does not contain '${profileName}'`
             )
         })
     })
@@ -88,7 +87,7 @@ describe('DefaultCredentialsFileReaderWriter', () => {
                 profileNames.has(profileName),
                 true,
                 `ERROR: profileNames [ ${[...profileNames].map(n => `'${n}'`).join(', ')} ]` +
-                ` does not contain '${profileName}'`
+                    ` does not contain '${profileName}'`
             )
         })
 
@@ -97,18 +96,17 @@ describe('DefaultCredentialsFileReaderWriter', () => {
                 profileNames.has(profileName),
                 false,
                 `ERROR: configProfileNames [ ${[...configProfileNames].map(n => `'${n}'`).join(', ')} ]` +
-                ` contains '${profileName}'`
+                    ` contains '${profileName}'`
             )
         })
     })
 
     describe('setCanUseConfigFileIfExists', () => {
-
         it('allows use of config file if it exists', async () => {
             let canUseState: boolean | undefined
 
             const writer = new DefaultCredentialsFileReaderWriter()
-            writer.setCanUseConfigFile = (allow) => {
+            writer.setCanUseConfigFile = allow => {
                 canUseState = allow
             }
 
@@ -124,7 +122,7 @@ describe('DefaultCredentialsFileReaderWriter', () => {
             env.AWS_CONFIG_FILE = path.join(tempFolder, 'config-not-exist-file')
 
             const writer = new DefaultCredentialsFileReaderWriter()
-            writer.setCanUseConfigFile = (allow) => {
+            writer.setCanUseConfigFile = allow => {
                 canUseState = allow
             }
 
@@ -146,5 +144,4 @@ aws_secret_access_key = FAKESECRET
 
         fs.writeFileSync(filename, fileContents)
     }
-
 })

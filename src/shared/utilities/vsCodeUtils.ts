@@ -10,9 +10,9 @@ import { BasicLogger, ErrorOrString, getLogger, LogLevel } from '../logger'
 export const localize: TemplateParser = nls.loadMessageBundle()
 
 export interface TemplateParams {
-    nlsKey: string,
-    nlsTemplate: string,
-    templateTokens?: ErrorOrString[],
+    nlsKey: string
+    nlsTemplate: string
+    templateTokens?: ErrorOrString[]
 }
 
 export interface TemplateParser {
@@ -26,8 +26,8 @@ export interface TemplateHandler {
 export function processTemplate<T extends TemplateParams>({
     nlsKey,
     nlsTemplate,
-    templateTokens = [],
-}: T): { errors: Error[], prettyMessage: string } {
+    templateTokens = []
+}: T): { errors: Error[]; prettyMessage: string } {
     const prettyTokens: Exclude<ErrorOrString, Error>[] = []
     const errors: Error[] = []
     if (templateTokens) {
@@ -44,13 +44,13 @@ export function processTemplate<T extends TemplateParams>({
 
     return {
         errors,
-        prettyMessage,
+        prettyMessage
     }
 }
 
 export interface ChannelLogger {
-    readonly channel: vscode.OutputChannel,
-    readonly logger: BasicLogger,
+    readonly channel: vscode.OutputChannel
+    readonly logger: BasicLogger
     verbose: TemplateHandler
     debug: TemplateHandler
     info: TemplateHandler
@@ -63,12 +63,7 @@ export interface ChannelLogger {
  * Avoids making two log statements when writing to output channel and improves consistency
  */
 export function getChannelLogger(channel: vscode.OutputChannel, logger: BasicLogger = getLogger()): ChannelLogger {
-    function log({
-        nlsKey,
-        nlsTemplate,
-        templateTokens,
-        level,
-    }: TemplateParams & { level: LogLevel }): void {
+    function log({ nlsKey, nlsTemplate, templateTokens, level }: TemplateParams & { level: LogLevel }): void {
         if (level === 'error') {
             channel.show(true)
         }
@@ -82,36 +77,41 @@ export function getChannelLogger(channel: vscode.OutputChannel, logger: BasicLog
     return Object.freeze({
         channel,
         logger,
-        verbose: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) => log({
-            level: 'verbose',
-            nlsKey,
-            nlsTemplate,
-            templateTokens,
-        }),
-        debug: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) => log({
-            level: 'debug',
-            nlsKey,
-            nlsTemplate,
-            templateTokens,
-        }),
-        info: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) => log({
-            level: 'info',
-            nlsKey,
-            nlsTemplate,
-            templateTokens,
-        }),
-        warn: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) => log({
-            level: 'warn',
-            nlsKey,
-            nlsTemplate,
-            templateTokens,
-        }),
-        error: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) => log({
-            level: 'error',
-            nlsKey,
-            nlsTemplate,
-            templateTokens,
-        })
+        verbose: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) =>
+            log({
+                level: 'verbose',
+                nlsKey,
+                nlsTemplate,
+                templateTokens
+            }),
+        debug: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) =>
+            log({
+                level: 'debug',
+                nlsKey,
+                nlsTemplate,
+                templateTokens
+            }),
+        info: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) =>
+            log({
+                level: 'info',
+                nlsKey,
+                nlsTemplate,
+                templateTokens
+            }),
+        warn: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) =>
+            log({
+                level: 'warn',
+                nlsKey,
+                nlsTemplate,
+                templateTokens
+            }),
+        error: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) =>
+            log({
+                level: 'error',
+                nlsKey,
+                nlsTemplate,
+                templateTokens
+            })
     })
 }
 

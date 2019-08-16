@@ -17,8 +17,7 @@ export interface SettingsConfiguration {
 
 // default configuration settings handler for production release
 export class DefaultSettingsConfiguration implements SettingsConfiguration {
-    public constructor(public readonly extensionSettingsPrefix: string) {
-    }
+    public constructor(public readonly extensionSettingsPrefix: string) {}
 
     public readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
         // tslint:disable-next-line:no-null-keyword

@@ -142,7 +142,7 @@ describe('DefaultTelemetryService', () => {
 
     it('events created with a bad active account produce metadata mentioning the bad account', async () => {
         const mockContext = new FakeExtensionContext()
-        const mockAws = new FakeAwsContext({accountId: 'this is bad!'})
+        const mockAws = new FakeAwsContext({ accountId: 'this is bad!' })
         const mockPublisher = new MockTelemetryPublisher()
         const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
         service.clearRecords()
@@ -170,7 +170,7 @@ describe('DefaultTelemetryService', () => {
 
     it('events created prior to signing in do not have an account attached', async () => {
         const mockContext = new FakeExtensionContext()
-        const mockAws = new FakeAwsContext({allowUndefined: true})
+        const mockAws = new FakeAwsContext({ allowUndefined: true })
         const mockPublisher = new MockTelemetryPublisher()
         const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
         service.clearRecords()

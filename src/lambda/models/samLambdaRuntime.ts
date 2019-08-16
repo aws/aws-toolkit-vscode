@@ -7,13 +7,7 @@ import * as immutable from 'immutable'
 
 // TODO: Can we dynamically determine the available runtimes? We could theoretically parse the
 // output of `sam init --help`, but that's a hack.
-export type SamLambdaRuntime =
-    'python3.7' |
-    'python3.6' |
-    'python2.7' |
-    'nodejs8.10' |
-    'nodejs10.x' |
-    'dotnetcore2.1'
+export type SamLambdaRuntime = 'python3.7' | 'python3.6' | 'python2.7' | 'nodejs8.10' | 'nodejs10.x' | 'dotnetcore2.1'
 
 export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set([
     'python3.7',
@@ -21,13 +15,13 @@ export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set(
     'python2.7',
     'nodejs8.10',
     'nodejs10.x',
-    'dotnetcore2.1',
+    'dotnetcore2.1'
 ] as SamLambdaRuntime[])
 
 export enum SamLambdaRuntimeFamily {
     Python,
     NodeJS,
-    DotNetCore,
+    DotNetCore
 }
 
 export function getFamily(runtime: string | undefined): SamLambdaRuntimeFamily {
@@ -52,19 +46,14 @@ export function getFamily(runtime: string | undefined): SamLambdaRuntimeFamily {
 
 // This allows us to do things like "sort" nodejs10.x after nodejs8.10
 // Map Values are used for comparisons, not for display
-const runtimeCompareText: Map<SamLambdaRuntime, string> = new Map<SamLambdaRuntime, string>(
-    [
-        ['nodejs8.10', 'nodejs08.10'],
-    ]
-)
+const runtimeCompareText: Map<SamLambdaRuntime, string> = new Map<SamLambdaRuntime, string>([
+    ['nodejs8.10', 'nodejs08.10']
+])
 
 function getSortableCompareText(runtime: SamLambdaRuntime): string {
     return runtimeCompareText.get(runtime) || runtime.toString()
 }
 
-export function compareSamLambdaRuntime(
-    a: SamLambdaRuntime,
-    b: SamLambdaRuntime,
-): number {
+export function compareSamLambdaRuntime(a: SamLambdaRuntime, b: SamLambdaRuntime): number {
     return getSortableCompareText(a).localeCompare(getSortableCompareText(b))
 }

@@ -54,10 +54,7 @@ async function* detectTemplatesInFolder(
     context: DetectLocalTemplatesContext,
     folder: string
 ): AsyncIterableIterator<vscode.Uri> {
-    for (const templatePath of [
-        path.join(folder, 'template.yaml'),
-        path.join(folder, 'template.yml'),
-    ]) {
+    for (const templatePath of [path.join(folder, 'template.yaml'), path.join(folder, 'template.yml')]) {
         try {
             await context.access(templatePath)
             yield vscode.Uri.file(templatePath)

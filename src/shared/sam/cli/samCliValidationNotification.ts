@@ -14,7 +14,7 @@ import {
     MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
     SamCliNotFoundError,
     SamCliVersionValidation,
-    SamCliVersionValidatorResult,
+    SamCliVersionValidatorResult
 } from './samCliValidator'
 
 const localize = nls.loadMessageBundle()
@@ -37,20 +37,14 @@ export interface SamCliValidationNotificationAction {
 }
 
 const actionGoToSamCli: SamCliValidationNotificationAction = {
-    label: localize(
-        'AWS.samcli.userChoice.visit.install.url',
-        'Get SAM CLI'
-    ),
+    label: localize('AWS.samcli.userChoice.visit.install.url', 'Get SAM CLI'),
     invoke: async () => {
         await vscode.env.openExternal(vscode.Uri.parse(samAboutInstallUrl))
     }
 }
 
 const actionGoToVsCodeMarketplace: SamCliValidationNotificationAction = {
-    label: localize(
-        'AWS.samcli.userChoice.update.awstoolkit.url',
-        'Visit Marketplace'
-    ),
+    label: localize('AWS.samcli.userChoice.update.awstoolkit.url', 'Visit Marketplace'),
     invoke: async () => {
         // TODO : Switch to the Extension panel in VS Code instead
         await vscode.env.openExternal(vscode.Uri.parse(vscodeMarketplaceUrl))
@@ -66,14 +60,12 @@ class DefaultSamCliValidationNotification implements SamCliValidationNotificatio
     public constructor(
         private readonly message: string,
         private readonly actions: SamCliValidationNotificationAction[]
-    ) {
-
-    }
+    ) {}
 
     public async show(): Promise<void> {
         const userResponse: string | undefined = await vscode.window.showErrorMessage(
             this.message,
-            ...this.actions.map(action => action.label),
+            ...this.actions.map(action => action.label)
         )
 
         if (userResponse) {
@@ -87,8 +79,9 @@ class DefaultSamCliValidationNotification implements SamCliValidationNotificatio
 }
 
 export async function notifySamCliValidation(samCliValidationError: InvalidSamCliError): Promise<void> {
-
-    if (!samCliValidationError) { return }
+    if (!samCliValidationError) {
+        return
+    }
 
     const notification: SamCliValidationNotification = makeSamCliValidationNotification(samCliValidationError)
 
@@ -100,21 +93,21 @@ export function makeSamCliValidationNotification(
     onCreateNotification: (
         message: string,
         actions: SamCliValidationNotificationAction[]
-    ) => SamCliValidationNotification =
-        (message, actions): SamCliValidationNotification => new DefaultSamCliValidationNotification(message, actions)
+    ) => SamCliValidationNotification = (message, actions): SamCliValidationNotification =>
+        new DefaultSamCliValidationNotification(message, actions)
 ): SamCliValidationNotification {
     if (samCliValidationError instanceof SamCliNotFoundError) {
         return onCreateNotification(
             localize(
                 'AWS.samcli.notification.not.found',
-                'Unable to find SAM CLI. It is required in order to work with Serverless Applications locally.',
+                'Unable to find SAM CLI. It is required in order to work with Serverless Applications locally.'
             ),
-            [actionGoToSamCli],
+            [actionGoToSamCli]
         )
     } else if (samCliValidationError instanceof InvalidSamCliVersionError) {
         return onCreateNotification(
             makeVersionValidationNotificationMessage(samCliValidationError.versionValidation),
-            makeVersionValidationActions(samCliValidationError.versionValidation.validation),
+            makeVersionValidationActions(samCliValidationError.versionValidation.validation)
         )
     } else {
         return onCreateNotification(
@@ -130,8 +123,9 @@ export function makeSamCliValidationNotification(
 
 function makeVersionValidationNotificationMessage(validationResult: SamCliVersionValidatorResult): string {
     const recommendation: string =
-        validationResult.validation === SamCliVersionValidation.VersionTooHigh ?
-            RECOMMENDATION_UPDATE_TOOLKIT : RECOMMENDATION_UPDATE_SAM_CLI
+        validationResult.validation === SamCliVersionValidation.VersionTooHigh
+            ? RECOMMENDATION_UPDATE_TOOLKIT
+            : RECOMMENDATION_UPDATE_SAM_CLI
 
     return localize(
         'AWS.samcli.notification.version.invalid',

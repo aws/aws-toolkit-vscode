@@ -91,7 +91,7 @@ export class DefaultTelemetryService implements TelemetryService {
                 data: [
                     {
                         name: 'end',
-                        value: (currTime.getTime() - this.startTime.getTime()),
+                        value: currTime.getTime() - this.startTime.getTime(),
                         unit: 'Milliseconds'
                     }
                 ]
@@ -193,8 +193,7 @@ export class DefaultTelemetryService implements TelemetryService {
 
             // if we don't have an identity, get one
             if (!identity) {
-                const identityPublisherTuple =
-                    await DefaultTelemetryPublisher.fromDefaultIdentityPool(clientId)
+                const identityPublisherTuple = await DefaultTelemetryPublisher.fromDefaultIdentityPool(clientId)
 
                 // save it
                 identityMap.set(poolId, identityPublisherTuple.cognitoIdentityId)
@@ -249,9 +248,7 @@ export class DefaultTelemetryService implements TelemetryService {
                 if (datum.metadata) {
                     datum.metadata.set(ACCOUNT_METADATA_KEY, accountValue)
                 } else {
-                    datum.metadata = new Map([
-                        [ACCOUNT_METADATA_KEY, accountValue]
-                    ])
+                    datum.metadata = new Map([[ACCOUNT_METADATA_KEY, accountValue]])
                 }
             }
         } else {
@@ -261,9 +258,7 @@ export class DefaultTelemetryService implements TelemetryService {
                 {
                     name: 'noData',
                     value: 0,
-                    metadata: new Map([
-                        [ACCOUNT_METADATA_KEY, accountValue]
-                    ])
+                    metadata: new Map([[ACCOUNT_METADATA_KEY, accountValue]])
                 }
             ]
             event.data = data
@@ -284,5 +279,4 @@ export class DefaultTelemetryService implements TelemetryService {
             return []
         }
     }
-
 }

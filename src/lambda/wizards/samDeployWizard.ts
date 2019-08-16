@@ -72,12 +72,10 @@ export interface SamDeployWizardContext {
      * @returns A value indicating whether the wizard should proceed. `false` if `missingParameters` was
      *          non-empty, or if it was empty and the user opted to configure overrides instead of continuing.
      */
-    promptUserForParametersIfApplicable(
-        options: {
-            templateUri: vscode.Uri
-            missingParameters?: Set<string>
-        }
-    ): Promise<ParameterPromptResult>
+    promptUserForParametersIfApplicable(options: {
+        templateUri: vscode.Uri
+        missingParameters?: Set<string>
+    }): Promise<ParameterPromptResult>
 
     promptUserForRegion(regionProvider: RegionProvider, initialValue?: string): Promise<string | undefined>
 
@@ -98,15 +96,13 @@ export interface SamDeployWizardContext {
      *
      * @returns Stack name. Undefined represents cancel.
      */
-    promptUserForStackName(
-        {
-            initialValue,
-            validateInput,
-        }: {
-            initialValue?: string
-            validateInput(value: string): string | undefined
-        }
-    ): Promise<string | undefined>
+    promptUserForStackName({
+        initialValue,
+        validateInput
+    }: {
+        initialValue?: string
+        validateInput(value: string): string | undefined
+    }): Promise<string | undefined>
 }
 
 function getSingleResponse(responses: vscode.QuickPickItem[] | undefined): string | undefined {
@@ -125,16 +121,9 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public readonly onDetectLocalTemplates = detectLocalTemplates
     public readonly getParameters = getParameters
     public readonly getOverriddenParameters = getOverriddenParameters
-    private readonly helpButton = createHelpButton(
-        this.extContext,
-        localize(
-            'AWS.command.help',
-            'View Documentation'
-        )
-    )
+    private readonly helpButton = createHelpButton(this.extContext, localize('AWS.command.help', 'View Documentation'))
 
-    public constructor(private readonly extContext: Pick<vscode.ExtensionContext, 'asAbsolutePath'>) {
-    }
+    public constructor(private readonly extContext: Pick<vscode.ExtensionContext, 'asAbsolutePath'>) {}
 
     public get workspaceFolders(): vscode.Uri[] | undefined {
         return (vscode.workspace.workspaceFolders || []).map(f => f.uri)
@@ -156,10 +145,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                     'Which SAM Template would you like to deploy to AWS?'
                 )
             },
-            buttons: [
-                this.helpButton,
-                vscode.QuickInputButtons.Back
-            ],
+            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: await getTemplateChoices(this.onDetectLocalTemplates, ...workspaceFolders)
         })
 
@@ -178,55 +164,43 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         return val ? val.uri : undefined
     }
 
-    public async promptUserForParametersIfApplicable(
-        {
-            templateUri,
-            missingParameters = new Set<string>()
-        }: {
-            templateUri: vscode.Uri
-            missingParameters?: Set<string>
-        }
-    ): Promise<ParameterPromptResult> {
+    public async promptUserForParametersIfApplicable({
+        templateUri,
+        missingParameters = new Set<string>()
+    }: {
+        templateUri: vscode.Uri
+        missingParameters?: Set<string>
+    }): Promise<ParameterPromptResult> {
         if (missingParameters.size < 1) {
             const prompt = localize(
                 'AWS.samcli.deploy.parameters.optionalPrompt.message',
                 'The template {0} contains parameters. ' +
-                'Would you like to override the default values for these parameters?',
+                    'Would you like to override the default values for these parameters?',
                 templateUri.fsPath
             )
-            const responseYes = localize(
-                'AWS.samcli.deploy.parameters.optionalPrompt.responseYes',
-                'Yes'
-            )
-            const responseNo = localize(
-                'AWS.samcli.deploy.parameters.optionalPrompt.responseNo',
-                'No'
-            )
+            const responseYes = localize('AWS.samcli.deploy.parameters.optionalPrompt.responseYes', 'Yes')
+            const responseNo = localize('AWS.samcli.deploy.parameters.optionalPrompt.responseNo', 'No')
 
             const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
                 options: {
                     ignoreFocusOut: true,
                     title: prompt
                 },
-                buttons: [
-                    this.helpButton,
-                    vscode.QuickInputButtons.Back
-                ],
-                items: [
-                    { label: responseYes },
-                    { label: responseNo }
-                ]
+                buttons: [this.helpButton, vscode.QuickInputButtons.Back],
+                items: [{ label: responseYes }, { label: responseNo }]
             })
-            const response = getSingleResponse(await picker.promptUser({
-                picker: quickPick,
-                onDidTriggerButton: (button, resolve, reject) => {
-                    if (button === vscode.QuickInputButtons.Back) {
-                        resolve(undefined)
-                    } else if (button === this.helpButton) {
-                        vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
+            const response = getSingleResponse(
+                await picker.promptUser({
+                    picker: quickPick,
+                    onDidTriggerButton: (button, resolve, reject) => {
+                        if (button === vscode.QuickInputButtons.Back) {
+                            resolve(undefined)
+                        } else if (button === this.helpButton) {
+                            vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
+                        }
                     }
-                }
-            }))
+                })
+            )
             if (response !== responseYes) {
                 return ParameterPromptResult.Continue
             }
@@ -241,43 +215,36 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             const prompt = localize(
                 'AWS.samcli.deploy.parameters.mandatoryPrompt.message',
                 'The template {0} contains parameters without default values. ' +
-                'In order to deploy, you must provide values for these parameters. ' +
-                'Configure them now?',
+                    'In order to deploy, you must provide values for these parameters. ' +
+                    'Configure them now?',
                 templateUri.fsPath
             )
             const responseConfigure = localize(
                 'AWS.samcli.deploy.parameters.mandatoryPrompt.responseConfigure',
                 'Configure'
             )
-            const responseCancel = localize(
-                'AWS.samcli.deploy.parameters.mandatoryPrompt.responseCancel',
-                'Cancel'
-            )
+            const responseCancel = localize('AWS.samcli.deploy.parameters.mandatoryPrompt.responseCancel', 'Cancel')
 
             const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
                 options: {
                     ignoreFocusOut: true,
                     title: prompt
                 },
-                buttons: [
-                    this.helpButton,
-                    vscode.QuickInputButtons.Back
-                ],
-                items: [
-                    { label: responseConfigure },
-                    { label: responseCancel }
-                ]
+                buttons: [this.helpButton, vscode.QuickInputButtons.Back],
+                items: [{ label: responseConfigure }, { label: responseCancel }]
             })
-            const response = getSingleResponse(await picker.promptUser({
-                picker: quickPick,
-                onDidTriggerButton: (button, resolve, reject) => {
-                    if (button === vscode.QuickInputButtons.Back) {
-                        resolve(undefined)
-                    } else if (button === this.helpButton) {
-                        vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
+            const response = getSingleResponse(
+                await picker.promptUser({
+                    picker: quickPick,
+                    onDidTriggerButton: (button, resolve, reject) => {
+                        if (button === vscode.QuickInputButtons.Back) {
+                            resolve(undefined)
+                        } else if (button === this.helpButton) {
+                            vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
+                        }
                     }
-                }
-            }))
+                })
+            )
             if (response === responseConfigure) {
                 await configureParameterOverrides({
                     templateUri,
@@ -297,29 +264,23 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
-                title: localize(
-                    'AWS.samcli.deploy.region.prompt',
-                    'Which AWS Region would you like to deploy to?'
-                ),
+                title: localize('AWS.samcli.deploy.region.prompt', 'Which AWS Region would you like to deploy to?'),
                 value: initialRegionCode || '',
                 matchOnDetail: true,
-                ignoreFocusOut: true,
+                ignoreFocusOut: true
             },
-            items: regionData.map(r => (
-                {
-                    label: r.regionName,
-                    detail: r.regionCode,
-                    // this is the only way to get this to show on going back
-                    // this will make it so it always shows even when searching for something else
-                    alwaysShow: r.regionCode === initialRegionCode,
-                    description: r.regionCode === initialRegionCode ?
-                        localize('AWS.samcli.wizard.selectedPreviously', 'Selected Previously') : ''
-                }
-            )),
-            buttons: [
-                this.helpButton,
-                vscode.QuickInputButtons.Back
-            ],
+            items: regionData.map(r => ({
+                label: r.regionName,
+                detail: r.regionCode,
+                // this is the only way to get this to show on going back
+                // this will make it so it always shows even when searching for something else
+                alwaysShow: r.regionCode === initialRegionCode,
+                description:
+                    r.regionCode === initialRegionCode
+                        ? localize('AWS.samcli.wizard.selectedPreviously', 'Selected Previously')
+                        : ''
+            })),
+            buttons: [this.helpButton, vscode.QuickInputButtons.Back]
         })
 
         const choices = await picker.promptUser<vscode.QuickPickItem>({
@@ -346,10 +307,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
      */
     public async promptUserForS3Bucket(selectedRegion: string, initialValue?: string): Promise<string | undefined> {
         const inputBox = input.createInputBox({
-            buttons: [
-                this.helpButton,
-                vscode.QuickInputButtons.Back
-            ],
+            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             options: {
                 title: localize(
                     'AWS.samcli.deploy.s3Bucket.prompt',
@@ -390,26 +348,18 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
      *
      * @returns Stack name. Undefined represents cancel.
      */
-    public async promptUserForStackName(
-        {
-            initialValue,
-            validateInput,
-        }: {
-            initialValue?: string
-            validateInput(value: string): string | undefined
-        }
-    ): Promise<string | undefined> {
+    public async promptUserForStackName({
+        initialValue,
+        validateInput
+    }: {
+        initialValue?: string
+        validateInput(value: string): string | undefined
+    }): Promise<string | undefined> {
         const inputBox = input.createInputBox({
-            buttons: [
-                this.helpButton,
-                vscode.QuickInputButtons.Back
-            ],
+            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             options: {
-                title: localize(
-                    'AWS.samcli.deploy.stackName.prompt',
-                    'Enter the name to use for the deployed stack'
-                ),
-                ignoreFocusOut: true,
+                title: localize('AWS.samcli.deploy.stackName.prompt', 'Enter the name to use for the deployed stack'),
+                ignoreFocusOut: true
             }
         })
 
@@ -513,10 +463,12 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
 
         const missingParameters = difference(requiredParameterNames, overriddenParameters.keys())
         if (missingParameters.size > 0) {
-            return getNextStep(await this.context.promptUserForParametersIfApplicable({
-                templateUri: this.response.template,
-                missingParameters
-            }))
+            return getNextStep(
+                await this.context.promptUserForParametersIfApplicable({
+                    templateUri: this.response.template,
+                    missingParameters
+                })
+            )
         }
 
         this.response.parameterOverrides = overriddenParameters
@@ -541,7 +493,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     private readonly STACK_NAME: WizardStep = async () => {
         this.response.stackName = await this.context.promptUserForStackName({
             initialValue: this.response.stackName,
-            validateInput: validateStackName,
+            validateInput: validateStackName
         })
 
         return this.response.stackName ? undefined : this.S3_BUCKET
@@ -554,10 +506,7 @@ class SamTemplateQuickPickItem implements vscode.QuickPickItem {
     public description?: string
     public detail?: string
 
-    public constructor(
-        public readonly uri: vscode.Uri,
-        showWorkspaceFolderDetails: boolean,
-    ) {
+    public constructor(public readonly uri: vscode.Uri, showWorkspaceFolderDetails: boolean) {
         this.label = SamTemplateQuickPickItem.getLabel(uri)
 
         if (showWorkspaceFolderDetails) {
@@ -594,9 +543,7 @@ class SamTemplateQuickPickItem implements vscode.QuickPickItem {
         }
 
         // We shouldn't find sam templates outside of a workspace folder. If we do, show the full path.
-        logger.warn(
-            `Unexpected situation: detected SAM Template ${uri.fsPath} not found within a workspace folder.`
-        )
+        logger.warn(`Unexpected situation: detected SAM Template ${uri.fsPath} not found within a workspace folder.`)
 
         return uri.fsPath
     }
@@ -626,10 +573,7 @@ export function validateS3Bucket(value: string): string | undefined {
     }
 
     if (value[value.length - 1] === '-') {
-        return localize(
-            'AWS.samcli.deploy.s3Bucket.error.endsWithDash',
-            'S3 bucket name may not end with a dash'
-        )
+        return localize('AWS.samcli.deploy.s3Bucket.error.endsWithDash', 'S3 bucket name may not end with a dash')
     }
 
     if (value.includes('..')) {
@@ -701,13 +645,9 @@ async function getTemplateChoices(
         labelCounts.set(label, 1 + (labelCounts.get(label) || 0))
     })
 
-    return Array.from(
-        uriToLabel,
-        ([uri, label]) => {
-            const showWorkspaceFolderDetails: boolean = (labelCounts.get(label) || 0) > 1
+    return Array.from(uriToLabel, ([uri, label]) => {
+        const showWorkspaceFolderDetails: boolean = (labelCounts.get(label) || 0) > 1
 
-            return new SamTemplateQuickPickItem(uri, showWorkspaceFolderDetails)
-        }
-    )
-        .sort((a, b) => a.compareTo(b))
+        return new SamTemplateQuickPickItem(uri, showWorkspaceFolderDetails)
+    }).sort((a, b) => a.compareTo(b))
 }

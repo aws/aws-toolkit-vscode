@@ -9,11 +9,10 @@ import { ext } from '../extensionGlobals'
 import { StsClient } from './stsClient'
 
 export class DefaultStsClient implements StsClient {
-
     public constructor(
         public readonly regionCode: string,
         private readonly credentials?: ServiceConfigurationOptions
-    ) { }
+    ) {}
 
     public async getCallerIdentity(): Promise<STS.GetCallerIdentityResponse> {
         const sdkClient = await this.createSdkClient()
@@ -25,7 +24,7 @@ export class DefaultStsClient implements StsClient {
 
     private async createSdkClient(): Promise<STS> {
         return await ext.sdkClientBuilder.createAndConfigureServiceClient(
-            (options) => new STS(options),
+            options => new STS(options),
             this.credentials,
             this.regionCode
         )

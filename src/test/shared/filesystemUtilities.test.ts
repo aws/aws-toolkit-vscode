@@ -47,10 +47,7 @@ describe('filesystemUtilities', () => {
         })
 
         it('creates a folder', async () => {
-            assert.ok(
-                await fileExists(tempFolder),
-                `expected folder to exist: ${tempFolder}`
-            )
+            assert.ok(await fileExists(tempFolder), `expected folder to exist: ${tempFolder}`)
         })
 
         it('makes nested temp dirs', async () => {
@@ -64,43 +61,30 @@ describe('filesystemUtilities', () => {
                 `expected nestedTempDirPath ('${nestedTempDirPath}') to be in tempDirPath ('${tempDirPath}')`
             )
             const tmpDirExists = await fileExists(nestedTempDirPath)
-            assert(
-                tmpDirExists,
-                `tempFolder should exist: '${nestedTempDirPath}'`
-            )
+            assert(tmpDirExists, `tempFolder should exist: '${nestedTempDirPath}'`)
         })
     })
 
     describe('findFileInParentPaths', () => {
-
         it('returns undefined when file not found', async () => {
-            assert.strictEqual(
-                await findFileInParentPaths(tempFolder, nonExistingTargetFilename),
-                undefined)
+            assert.strictEqual(await findFileInParentPaths(tempFolder, nonExistingTargetFilename), undefined)
         })
 
         it('finds the file in the same folder', async () => {
-            assert.strictEqual(
-                await findFileInParentPaths(tempFolder, targetFilename),
-                targetFilePath)
+            assert.strictEqual(await findFileInParentPaths(tempFolder, targetFilename), targetFilePath)
         })
 
         it('finds the file next to another file', async () => {
             const searchLocation = path.join(tempFolder, 'foo.txt')
 
-            assert.strictEqual(
-                await findFileInParentPaths(searchLocation, targetFilename),
-                targetFilePath)
+            assert.strictEqual(await findFileInParentPaths(searchLocation, targetFilename), targetFilePath)
         })
 
         it('finds the file in the parent folder', async () => {
             const childFolder = path.join(tempFolder, 'child1')
             await mkdir(childFolder)
 
-            assert.strictEqual(
-                await findFileInParentPaths(childFolder, targetFilename),
-                targetFilePath
-            )
+            assert.strictEqual(await findFileInParentPaths(childFolder, targetFilename), targetFilePath)
         })
 
         it('finds the file 3 parent folders up', async () => {
@@ -111,9 +95,7 @@ describe('filesystemUtilities', () => {
             childFolder = path.join(tempFolder, 'child3')
             await mkdir(childFolder)
 
-            assert.strictEqual(
-                await findFileInParentPaths(childFolder, targetFilename),
-                targetFilePath)
+            assert.strictEqual(await findFileInParentPaths(childFolder, targetFilename), targetFilePath)
         })
     })
 })

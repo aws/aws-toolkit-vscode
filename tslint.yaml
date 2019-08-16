@@ -20,18 +20,6 @@ rules:
     no-var-requires: true
     prefer-for-of: true
     promise-function-async: true
-    typedef-whitespace:
-        options:
-            - call-signature: nospace
-              index-signature: nospace
-              parameter: nospace
-              property-declaration: nospace
-              variable-declaration: nospace
-            - call-signature: onespace
-              index-signature: onespace
-              parameter: onespace
-              property-declaration: onespace
-              variable-declaration: onespace
 
     # Functionality
     # These rules catch common errors in JS programming or otherwise confusing constructs that are prone to producing bugs:
@@ -102,32 +90,11 @@ rules:
         options:
             - spaces
             - 4
-    max-line-length:
-        options:
-            - 120
     no-duplicate-imports: true
     prefer-const: true
     prefer-readonly: true
     trailing-comma: true
 
-    # Style
-    # These rules enforce consistent style across your codebase:
-    align:
-        options:
-            - parameters
-            - arguments
-            - statements
-            - members
-            - elements
-    array-type:
-        options:
-            - array
-    arrow-return-shorthand: true
-    class-name: true
-    comment-format:
-        options:
-            - check-space
-    encoding: true
     # This now allows dates with formats similar to the below:
     # 2018
     # 2018-2019
@@ -180,9 +147,6 @@ rules:
             - single
             - avoid-template
             - avoid-escape
-    semicolon:
-        options:
-            - never
     switch-final-break:
         options:
             - always
@@ -191,19 +155,6 @@ rules:
             - check-format
             - allow-leading-underscore
             - ban-keywords
-    whitespace:
-        options:
-            - check-branch
-            - check-decl
-            - check-operator
-            - check-module
-            - check-separator
-            - check-rest-spread
-            - check-type
-            - check-typecast
-            - check-type-operator
-            - check-preblock
-
     # ESLint
     # The following rules are provided by ESLint via the tslint-eslint-rules package.
     no-unexpected-multiline: true

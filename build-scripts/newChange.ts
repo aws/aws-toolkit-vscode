@@ -12,17 +12,10 @@ import { v4 as uuid } from 'uuid'
 
 const directory = '.changes/next-release'
 
-const changeTypes = [
-    'Breaking Change',
-    'Feature',
-    'Bug Fix',
-    'Deprecation',
-    'Removal',
-    'Test'
-]
+const changeTypes = ['Breaking Change', 'Feature', 'Bug Fix', 'Deprecation', 'Removal', 'Test']
 
 interface NewChange {
-    type: string,
+    type: string
     description: string
 }
 

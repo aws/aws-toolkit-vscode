@@ -10,7 +10,7 @@ import { TelemetryEvent } from './telemetryEvent'
 import { TelemetryPublisher } from './telemetryPublisher'
 
 export interface IdentityPublisherTuple {
-    cognitoIdentityId: string,
+    cognitoIdentityId: string
     publisher: TelemetryPublisher
 }
 
@@ -42,8 +42,10 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
         }
 
         while (this._eventQueue.length !== 0) {
-            const batch = this._eventQueue
-                .splice(0, DefaultTelemetryPublisher.DEFAULT_MAX_BATCH_SIZE) as TelemetryEvent[]
+            const batch = this._eventQueue.splice(
+                0,
+                DefaultTelemetryPublisher.DEFAULT_MAX_BATCH_SIZE
+            ) as TelemetryEvent[]
 
             if (this.telemetryClient === undefined) {
                 return
@@ -67,9 +69,7 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
         )
     }
 
-    public static async fromDefaultIdentityPool(
-        clientId: string
-    ): Promise<IdentityPublisherTuple> {
+    public static async fromDefaultIdentityPool(clientId: string): Promise<IdentityPublisherTuple> {
         return this.fromIdentityPool(clientId, DefaultTelemetryClient.DEFAULT_IDENTITY_POOL)
     }
 
@@ -77,17 +77,16 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
      * Create a telemetry publisher from the given clientId and identityPool
      * @return A tuple containing the new identityId and the telemetry publisher
      */
-    public static async fromIdentityPool(
-        clientId: string,
-        identityPool: string
-    ): Promise<IdentityPublisherTuple> {
+    public static async fromIdentityPool(clientId: string, identityPool: string): Promise<IdentityPublisherTuple> {
         const region = identityPool.split(':')[0]
         try {
             const res = await new CognitoIdentity({
                 region: region
-            }).getId({
-                IdentityPoolId: identityPool
-            }).promise()
+            })
+                .getId({
+                    IdentityPoolId: identityPool
+                })
+                .promise()
             const err = res.$response.error
             if (err) {
                 return Promise.reject(`SDK error: ${err}`)
@@ -106,15 +105,9 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
         }
     }
 
-    public static fromIdentityId(
-        clientId: string,
-        identityId: string
-    ): DefaultTelemetryPublisher {
+    public static fromIdentityId(clientId: string, identityId: string): DefaultTelemetryPublisher {
         const region = identityId.split(':')[0]
-        const cognitoCredentials = new CognitoIdentityCredentials(
-            { IdentityId: identityId },
-            { region: region }
-        )
+        const cognitoCredentials = new CognitoIdentityCredentials({ IdentityId: identityId }, { region: region })
 
         return new this(clientId, region, cognitoCredentials)
     }

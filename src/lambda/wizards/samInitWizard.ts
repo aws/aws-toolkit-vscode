@@ -29,24 +29,15 @@ export interface CreateNewSamAppWizardContext {
 
     promptUserForName(): Promise<string | undefined>
 
-    showOpenDialog(
-        options: vscode.OpenDialogOptions
-    ): Thenable<vscode.Uri[] | undefined>
+    showOpenDialog(options: vscode.OpenDialogOptions): Thenable<vscode.Uri[] | undefined>
 }
 
 export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
     public readonly lambdaRuntimes = lambdaRuntime.samLambdaRuntimes
     public readonly showOpenDialog = vscode.window.showOpenDialog
-    private readonly helpButton = createHelpButton(
-        this.extContext,
-        localize(
-            'AWS.command.help',
-            'View Documentation'
-        )
-    )
+    private readonly helpButton = createHelpButton(this.extContext, localize('AWS.command.help', 'View Documentation'))
 
-    public constructor(private readonly extContext: Pick<vscode.ExtensionContext, 'asAbsolutePath'>) {
-    }
+    public constructor(private readonly extContext: Pick<vscode.ExtensionContext, 'asAbsolutePath'>) {}
 
     public get workspaceFolders(): vscode.WorkspaceFolder[] | undefined {
         return vscode.workspace.workspaceFolders
@@ -58,24 +49,20 @@ export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizar
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
                 ignoreFocusOut: true,
-                title: localize(
-                    'AWS.samcli.initWizard.runtime.prompt',
-                    'Select a SAM Application Runtime'
-                ),
+                title: localize('AWS.samcli.initWizard.runtime.prompt', 'Select a SAM Application Runtime'),
                 value: currRuntime ? currRuntime : ''
             },
-            buttons: [
-                this.helpButton,
-                vscode.QuickInputButtons.Back
-            ],
+            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: this.lambdaRuntimes
                 .toArray()
                 .sort(lambdaRuntime.compareSamLambdaRuntime)
                 .map(runtime => ({
                     label: runtime,
                     alwaysShow: runtime === currRuntime,
-                    description: runtime === currRuntime ?
-                        localize('AWS.samcli.wizard.selectedPreviously', 'Selected Previously') : ''
+                    description:
+                        runtime === currRuntime
+                            ? localize('AWS.samcli.wizard.selectedPreviously', 'Selected Previously')
+                            : ''
                 }))
         })
 
@@ -91,7 +78,7 @@ export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizar
         })
         const val = picker.verifySinglePickerOutput(choices)
 
-        return val ? val.label as lambdaRuntime.SamLambdaRuntime : undefined
+        return val ? (val.label as lambdaRuntime.SamLambdaRuntime) : undefined
     }
 
     public async promptUserForLocation(): Promise<vscode.Uri | undefined> {
@@ -108,10 +95,7 @@ export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizar
                 )
             },
             items: items,
-            buttons: [
-                this.helpButton,
-                vscode.QuickInputButtons.Back
-            ]
+            buttons: [this.helpButton, vscode.QuickInputButtons.Back]
         })
 
         const choices = await picker.promptUser({
@@ -143,26 +127,17 @@ export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizar
     public async promptUserForName(): Promise<string | undefined> {
         const inputBox = input.createInputBox({
             options: {
-                title: localize(
-                    'AWS.samcli.initWizard.name.prompt',
-                    'Enter a name for your new application'
-                ),
-                ignoreFocusOut: true,
+                title: localize('AWS.samcli.initWizard.name.prompt', 'Enter a name for your new application'),
+                ignoreFocusOut: true
             },
-            buttons: [
-                this.helpButton,
-                vscode.QuickInputButtons.Back
-            ]
+            buttons: [this.helpButton, vscode.QuickInputButtons.Back]
         })
 
         return await input.promptUser({
             inputBox: inputBox,
             onValidateInput: (value: string) => {
                 if (!value) {
-                    return localize(
-                        'AWS.samcli.initWizard.name.error.empty',
-                        'Application name cannot be empty'
-                    )
+                    return localize('AWS.samcli.initWizard.name.error.empty', 'Application name cannot be empty')
                 }
 
                 if (value.includes(path.sep)) {
@@ -197,9 +172,7 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
     private location?: vscode.Uri
     private name?: string
 
-    public constructor(
-        private readonly context: CreateNewSamAppWizardContext
-    ) {
+    public constructor(private readonly context: CreateNewSamAppWizardContext) {
         super()
     }
 
@@ -257,17 +230,11 @@ class WorkspaceFolderQuickPickItem implements FolderQuickPickItem {
 class BrowseFolderQuickPickItem implements FolderQuickPickItem {
     public alwaysShow: boolean = true
 
-    public constructor(
-        private readonly context: CreateNewSamAppWizardContext
-    ) {
-    }
+    public constructor(private readonly context: CreateNewSamAppWizardContext) {}
 
     public get label(): string {
         if (this.context.workspaceFolders && this.context.workspaceFolders.length > 0) {
-            return localize(
-                'AWS.samcli.initWizard.location.select.folder',
-                'Select a different folder...'
-            )
+            return localize('AWS.samcli.initWizard.location.select.folder', 'Select a different folder...')
         }
 
         return localize(
@@ -285,16 +252,12 @@ class BrowseFolderQuickPickItem implements FolderQuickPickItem {
 
     public async getUri(): Promise<vscode.Uri | undefined> {
         const workspaceFolders = this.context.workspaceFolders
-        const defaultUri = !!workspaceFolders && workspaceFolders.length > 0 ?
-            workspaceFolders[0].uri :
-            vscode.Uri.file(os.homedir())
+        const defaultUri =
+            !!workspaceFolders && workspaceFolders.length > 0 ? workspaceFolders[0].uri : vscode.Uri.file(os.homedir())
 
         const result = await this.context.showOpenDialog({
             defaultUri,
-            openLabel: localize(
-                'AWS.samcli.initWizard.name.browse.openLabel',
-                'Open'
-            ),
+            openLabel: localize('AWS.samcli.initWizard.name.browse.openLabel', 'Open'),
             canSelectFiles: false,
             canSelectFolders: true,
             canSelectMany: false

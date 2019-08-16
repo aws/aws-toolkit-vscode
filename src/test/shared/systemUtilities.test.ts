@@ -14,7 +14,6 @@ import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../shared/systemUtilities'
 
 describe('SystemUtilities', () => {
-
     let tempFolder: string
 
     before(async () => {

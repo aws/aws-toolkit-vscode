@@ -1,21 +1,21 @@
 language: node_js
 
-node_js: 
-  - "lts/*"
+node_js:
+    - 'lts/*'
 
 matrix:
-  include:
-    - os: linux
-      dist: bionic
-    - os: osx
+    include:
+        - os: linux
+          dist: bionic
+        - os: osx
 
 services:
-  - xvfb
+    - xvfb
 
 script:
-  - npm install
-  - npm run vscode:prepublish
-  - npm test
+    - npm install
+    - npm run vscode:prepublish
+    - npm test
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash) -s .coverage
+    - bash <(curl -s https://codecov.io/bash) -s .coverage

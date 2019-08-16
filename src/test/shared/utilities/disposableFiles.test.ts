@@ -38,8 +38,7 @@ describe('DisposableFiles', async () => {
         const tempFile = path.join(tempFolder, 'file.txt')
         await writeFile(tempFile, 'hi')
 
-        const disposable = new DisposableFiles()
-            .addFile(tempFile)
+        const disposable = new DisposableFiles().addFile(tempFile)
 
         disposable.dispose()
 
@@ -50,8 +49,7 @@ describe('DisposableFiles', async () => {
         const testTempFolder = path.join(tempFolder, 'qwerty')
         await mkdir(testTempFolder)
 
-        const disposable = new DisposableFiles()
-            .addFolder(testTempFolder)
+        const disposable = new DisposableFiles().addFolder(testTempFolder)
 
         disposable.dispose()
 
@@ -68,8 +66,7 @@ describe('DisposableFiles', async () => {
         await mkdir(path.join(testTempFolder, 'subfolder2'))
         await mkdir(path.join(testTempFolder, 'subfolder3'))
 
-        const disposable = new DisposableFiles()
-            .addFolder(testTempFolder)
+        const disposable = new DisposableFiles().addFolder(testTempFolder)
 
         disposable.dispose()
 
@@ -96,11 +93,9 @@ describe('DisposableFiles', async () => {
 
         assert.strictEqual(await fileExists(testTempFolder), false)
     })
-
 })
 
 describe('ExtensionDisposableFiles', async () => {
-
     class TestExtensionDisposableFiles extends ExtensionDisposableFiles {
         public static reset() {
             if (ExtensionDisposableFiles.INSTANCE) {
@@ -114,9 +109,9 @@ describe('ExtensionDisposableFiles', async () => {
     let extensionContext: vscode.ExtensionContext
 
     beforeEach(() => {
-        extensionContext = {
+        extensionContext = ({
             subscriptions: []
-        } as any as vscode.ExtensionContext
+        } as any) as vscode.ExtensionContext
     })
 
     afterEach(() => {
@@ -148,9 +143,6 @@ describe('ExtensionDisposableFiles', async () => {
 
         assert.ok(ExtensionDisposableFiles.getInstance().toolkitTempFolder)
 
-        assert.strictEqual(
-            await fileExists(ExtensionDisposableFiles.getInstance().toolkitTempFolder),
-            true
-        )
+        assert.strictEqual(await fileExists(ExtensionDisposableFiles.getInstance().toolkitTempFolder), true)
     })
 })

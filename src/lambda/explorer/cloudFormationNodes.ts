@@ -16,13 +16,7 @@ import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErro
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { RegionNode } from '../../shared/treeview/nodes/regionNode'
-import {
-    intersection,
-    toArrayAsync,
-    toMap,
-    toMapAsync,
-    updateInPlace
-} from '../../shared/utilities/collectionUtils'
+import { intersection, toArrayAsync, toMap, toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listCloudFormationStacks, listLambdaFunctions } from '../utils'
 import { FunctionNodeBase } from './functionNode'
 
@@ -54,22 +48,15 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
     public async getChildren(): Promise<(CloudFormationStackNode | ErrorNode)[]> {
         await this.handleErrorProneOperation(
             async () => this.updateChildren(),
-            localize(
-                'AWS.explorerNode.cloudFormation.error',
-                'Error loading CloudFormation resources'
-            ))
+            localize('AWS.explorerNode.cloudFormation.error', 'Error loading CloudFormation resources')
+        )
 
-        return !!this.errorNode ? [this.errorNode]
-            : [...this.stackNodes.values()]
-                .sort((nodeA, nodeB) =>
-                    nodeA.stackName.localeCompare(
-                        nodeB.stackName
-                    )
-                )
+        return !!this.errorNode
+            ? [this.errorNode]
+            : [...this.stackNodes.values()].sort((nodeA, nodeB) => nodeA.stackName.localeCompare(nodeB.stackName))
     }
 
     public async updateChildren(): Promise<void> {
-
         const client: CloudFormationClient = ext.toolkitClientBuilder.createCloudFormationClient(this.regionCode)
         const stacks = await toMapAsync(listCloudFormationStacks(client), stack => stack.StackId)
 
@@ -77,11 +64,10 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
             this.stackNodes,
             stacks.keys(),
             key => this.stackNodes.get(key)!.update(stacks.get(key)!),
-            key => new DefaultCloudFormationStackNode(
-                this,
-                stacks.get(key)!,
-                relativeExtensionPath => this.getExtensionAbsolutePath(relativeExtensionPath)
-            )
+            key =>
+                new DefaultCloudFormationStackNode(this, stacks.get(key)!, relativeExtensionPath =>
+                    this.getExtensionAbsolutePath(relativeExtensionPath)
+                )
         )
     }
 }
@@ -117,7 +103,7 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
         this.functionNodes = new Map<string, CloudFormationFunctionNode>()
         this.iconPath = {
             dark: vscode.Uri.file(this.getExtensionAbsolutePath('resources/dark/cloudformation.svg')),
-            light: vscode.Uri.file(this.getExtensionAbsolutePath('resources/light/cloudformation.svg')),
+            light: vscode.Uri.file(this.getExtensionAbsolutePath('resources/light/cloudformation.svg'))
         }
     }
 
@@ -132,10 +118,8 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
     public async getChildren(): Promise<(CloudFormationFunctionNode | PlaceholderNode)[]> {
         await this.handleErrorProneOperation(
             async () => this.updateChildren(),
-            localize(
-                'AWS.explorerNode.cloudFormation.error',
-                'Error loading CloudFormation resources'
-            ))
+            localize('AWS.explorerNode.cloudFormation.error', 'Error loading CloudFormation resources')
+        )
 
         if (!!this.errorNode) {
             return [this.errorNode]
@@ -160,7 +144,6 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
     }
 
     private async updateChildren(): Promise<void> {
-
         const resources: string[] = await this.resolveLambdaResources()
         const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(this.regionCode)
         const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
@@ -172,11 +155,10 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
             this.functionNodes,
             intersection(resources, functions.keys()),
             key => this.functionNodes.get(key)!.update(functions.get(key)!),
-            key => new DefaultCloudFormationFunctionNode(
-                this,
-                functions.get(key)!,
-                relativeExtensionPath => this.getExtensionAbsolutePath(relativeExtensionPath)
-            )
+            key =>
+                new DefaultCloudFormationFunctionNode(this, functions.get(key)!, relativeExtensionPath =>
+                    this.getExtensionAbsolutePath(relativeExtensionPath)
+                )
         )
     }
 
@@ -185,9 +167,9 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
         const response = await client.describeStackResources(this.stackSummary.StackName)
 
         if (response.StackResources) {
-            return response.StackResources
-                .filter(it => it.ResourceType.includes('Lambda::Function'))
-                .map(it => it.PhysicalResourceId || 'none')
+            return response.StackResources.filter(it => it.ResourceType.includes('Lambda::Function')).map(
+                it => it.PhysicalResourceId || 'none'
+            )
         }
 
         return []

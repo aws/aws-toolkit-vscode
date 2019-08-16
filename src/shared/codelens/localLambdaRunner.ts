@@ -95,7 +95,7 @@ export class LocalLambdaRunner {
                 channelLogger: this.channelLogger,
                 codeDir: this.codeRootDirectoryPath,
                 inputTemplatePath: inputTemplate,
-                samProcessInvoker: this.processInvoker,
+                samProcessInvoker: this.processInvoker
             })
 
             await this.invokeLambdaFunction(samBuildTemplate)
@@ -170,7 +170,7 @@ export class LocalLambdaRunner {
             relativeFunctionHandler,
             globals,
             properties,
-            runtime: this.runtime,
+            runtime: this.runtime
         })
     }
 
@@ -305,7 +305,7 @@ export async function makeInputTemplate(params: {
     baseBuildDir: string
     codeDir: string
     relativeFunctionHandler: string
-    globals?: CloudFormation.TemplateGlobals,
+    globals?: CloudFormation.TemplateGlobals
     properties?: CloudFormation.ResourceProperties
     runtime: string
 }): Promise<string> {

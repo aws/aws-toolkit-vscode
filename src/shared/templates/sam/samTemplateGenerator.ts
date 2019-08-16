@@ -83,7 +83,7 @@ export class SamTemplateGenerator {
         const templateAsYaml: string = yaml.safeDump(template, { skipInvalid: true })
 
         const parentDirectory: string = path.dirname(filename)
-        if (!await filesystemUtilities.fileExists(parentDirectory)) {
+        if (!(await filesystemUtilities.fileExists(parentDirectory))) {
             await mkdir(parentDirectory, { recursive: true })
         }
         await writeFile(filename, templateAsYaml, 'utf8')

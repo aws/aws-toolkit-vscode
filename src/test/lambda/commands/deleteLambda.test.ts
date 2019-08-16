@@ -9,7 +9,6 @@ import { MockOutputChannel } from '../../mockOutputChannel'
 import { MockLambdaClient } from '../../shared/clients/mockClients'
 
 describe('deleteLambda', async () => {
-
     it('should do nothing if function name is not provided', async () => {
         return assertLambdaDeleteWorksWhen({
             // test variables
@@ -70,38 +69,33 @@ describe('deleteLambda', async () => {
     })
 
     const assertLambdaDeleteWorksWhen = async ({
-        onAssertOutputChannel = ((channel: MockOutputChannel) => {
+        onAssertOutputChannel = (channel: MockOutputChannel) => {
             // Defaults to expecting no output. Should verify output when expected.
-            assert.strictEqual(
-                channel.value,
-                '',
-                'expect no output since output testing was omitted'
-            )
-        }),
+            assert.strictEqual(channel.value, '', 'expect no output since output testing was omitted')
+        },
         ...params
     }: {
-        functionName: string,
-        errorToThrowDuringDelete?: Error,
-        expectedDeleteCallCount: number,
-        expectedRefreshCallCount: number,
-        onConfirm(): Promise<boolean>,
+        functionName: string
+        errorToThrowDuringDelete?: Error
+        expectedDeleteCallCount: number
+        expectedRefreshCallCount: number
+        onConfirm(): Promise<boolean>
         onAssertOutputChannel?(actualOutputChannel: MockOutputChannel): void
     }) => {
         let deleteCallCount = 0
         let refreshCallCount = 0
         const lambdaClient = new MockLambdaClient({
-            deleteFunction:
-                async (name) => {
-                    deleteCallCount += 1
-                    assert.strictEqual(
-                        name,
-                        params.functionName,
-                        `expected lambda name "${params.functionName}", not "${name}"`
-                    )
-                    if (params.errorToThrowDuringDelete) {
-                        throw params.errorToThrowDuringDelete
-                    }
+            deleteFunction: async name => {
+                deleteCallCount += 1
+                assert.strictEqual(
+                    name,
+                    params.functionName,
+                    `expected lambda name "${params.functionName}", not "${name}"`
+                )
+                if (params.errorToThrowDuringDelete) {
+                    throw params.errorToThrowDuringDelete
                 }
+            }
         })
         const outputChannel = new MockOutputChannel()
 
@@ -110,7 +104,7 @@ describe('deleteLambda', async () => {
                 deleteParams: { functionName: params.functionName },
                 lambdaClient,
                 outputChannel,
-                onRefresh: () => refreshCallCount += 1,
+                onRefresh: () => (refreshCallCount += 1),
                 onConfirm: async () => params.onConfirm()
             })
         } catch (err) {

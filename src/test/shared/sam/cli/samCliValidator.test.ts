@@ -14,14 +14,12 @@ import {
 } from '../../../../shared/sam/cli/samCliValidator'
 
 describe('DefaultSamCliValidator', async () => {
-
     class TestSamCliValidatorContext implements SamCliValidatorContext {
         public samCliVersionId: string = new Date().valueOf().toString()
         public getInfoCallCount: number = 0
         public samCliLocation: string | undefined
 
-        public constructor(public samCliVersion: string) {
-        }
+        public constructor(public samCliVersion: string) {}
 
         public async getSamCliExecutableId(): Promise<string> {
             return this.samCliVersionId
@@ -39,28 +37,28 @@ describe('DefaultSamCliValidator', async () => {
         {
             situation: 'SAM CLI Version is valid',
             version: MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
-            expectedVersionValidation: SamCliVersionValidation.Valid,
+            expectedVersionValidation: SamCliVersionValidation.Valid
         },
         {
             situation: 'SAM CLI Version is too low',
             version: '0.1.0',
-            expectedVersionValidation: SamCliVersionValidation.VersionTooLow,
+            expectedVersionValidation: SamCliVersionValidation.VersionTooLow
         },
         {
             situation: 'SAM CLI Version is too high',
             version: MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE,
-            expectedVersionValidation: SamCliVersionValidation.VersionTooHigh,
+            expectedVersionValidation: SamCliVersionValidation.VersionTooHigh
         },
         {
             situation: 'SAM CLI Version is unparsable - empty string',
             version: '',
-            expectedVersionValidation: SamCliVersionValidation.VersionNotParseable,
+            expectedVersionValidation: SamCliVersionValidation.VersionNotParseable
         },
         {
             situation: 'SAM CLI Version is unparsable - random text',
             version: 'what.in.tarnation',
-            expectedVersionValidation: SamCliVersionValidation.VersionNotParseable,
-        },
+            expectedVersionValidation: SamCliVersionValidation.VersionNotParseable
+        }
     ]
 
     describe('detectValidSamCli', async () => {
@@ -77,7 +75,8 @@ describe('DefaultSamCliValidator', async () => {
                 assert.ok(validatorResult.versionValidation)
                 assert.strictEqual(validatorResult.versionValidation!.version, test.version, 'sam cli version mismatch')
                 assert.strictEqual(
-                    validatorResult.versionValidation!.validation, test.expectedVersionValidation,
+                    validatorResult.versionValidation!.validation,
+                    test.expectedVersionValidation,
                     'sam cli version validation mismatch'
                 )
             })
@@ -96,7 +95,6 @@ describe('DefaultSamCliValidator', async () => {
     })
 
     describe('getVersionValidatorResult', async () => {
-
         samCliVersionTestScenarios.forEach(test => {
             it(`Validates SAM CLI binary for the case: ${test.situation}`, async () => {
                 const validatorContext = new TestSamCliValidatorContext(test.version)
@@ -107,7 +105,8 @@ describe('DefaultSamCliValidator', async () => {
                 assert.ok(validatorResult)
                 assert.strictEqual(validatorResult.version, test.version, 'sam cli version mismatch')
                 assert.strictEqual(
-                    validatorResult.validation, test.expectedVersionValidation,
+                    validatorResult.validation,
+                    test.expectedVersionValidation,
                     'sam cli version validation mismatch'
                 )
             })

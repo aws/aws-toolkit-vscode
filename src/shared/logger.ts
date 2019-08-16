@@ -30,7 +30,6 @@ export interface BasicLogger {
     info(...message: ErrorOrString[]): void
     warn(...message: ErrorOrString[]): void
     error(...message: ErrorOrString[]): void
-
 }
 
 export type LogLevel = keyof BasicLogger
@@ -61,7 +60,7 @@ export async function initialize(params?: LoggerParams): Promise<Logger> {
     if (!params) {
         const logPath = getDefaultLogPath()
         const logFolder = path.dirname(logPath)
-        if (!await fileExists(logFolder)) {
+        if (!(await fileExists(logFolder))) {
             await mkdir(logFolder, { recursive: true })
         }
 
@@ -85,11 +84,13 @@ export async function initialize(params?: LoggerParams): Promise<Logger> {
         defaultLogger = createLogger(params)
     }
     if (defaultLogger.outputChannel) {
-        defaultLogger.outputChannel.appendLine(localize(
-            'AWS.log.fileLocation',
-            'Error logs for this session are permanently stored in {0}',
-            defaultLogger.logPath
-        ))
+        defaultLogger.outputChannel.appendLine(
+            localize(
+                'AWS.log.fileLocation',
+                'Error logs for this session are permanently stored in {0}',
+                defaultLogger.logPath
+            )
+        )
     }
 
     return defaultLogger
@@ -119,7 +120,7 @@ export function createLogger(params: LoggerParams): Logger {
     } else {
         const configuration: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
         const setLevel = configuration.readSetting<string>('logLevel')
-        level = setLevel ? setLevel as LogLevel : DEFAULT_LOG_LEVEL
+        level = setLevel ? (setLevel as LogLevel) : DEFAULT_LOG_LEVEL
     }
     const transports: Transport[] = []
     if (params.logPath) {
@@ -127,9 +128,7 @@ export function createLogger(params: LoggerParams): Logger {
     }
 
     const newLogger: winston.Logger = winston.createLogger({
-        format: winston.format.combine(
-            logFormat
-        ),
+        format: winston.format.combine(logFormat),
         level,
         transports
     })
@@ -193,7 +192,8 @@ function writeToLogs(params: WriteToLogParams): void {
             params.logger.levels[params.level],
             params.logger.levels[params.logger.level],
             message,
-            params.outputChannel)
+            params.outputChannel
+        )
     }
 }
 
@@ -201,7 +201,8 @@ function writeToOutputChannel(
     messageLevel: number,
     logLevel: number,
     message: string,
-    outputChannel: vscode.OutputChannel): void {
+    outputChannel: vscode.OutputChannel
+): void {
     // using default Winston log levels (mapped to numbers): https://github.com/winstonjs/winston#logging
     if (messageLevel <= logLevel) {
         outputChannel.appendLine(message)
@@ -216,13 +217,15 @@ function makeDateString(type: 'filename' | 'logfile'): string {
     const d = new Date()
     const isFilename: boolean = type === 'filename'
 
-    return `${d.getFullYear()}${isFilename ? '' : '-'}` +
+    return (
+        `${d.getFullYear()}${isFilename ? '' : '-'}` +
         // String.prototype.padStart() was introduced in ES7, but we target ES6.
         `${padNumber(d.getMonth() + 1)}${isFilename ? '' : '-'}` +
         `${padNumber(d.getDate())}${isFilename ? 'T' : ' '}` +
         `${padNumber(d.getHours())}${isFilename ? '' : ':'}` +
         `${padNumber(d.getMinutes())}${isFilename ? '' : ':'}` +
         `${padNumber(d.getSeconds())}`
+    )
 }
 
 function padNumber(num: number): string {
