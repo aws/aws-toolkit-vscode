@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.s3
 
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
+import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import icons.AwsIcons
 import software.amazon.awssdk.services.s3.S3Client
@@ -44,12 +45,14 @@ class S3BucketNode(project: Project, val bucket: S3Bucket, val client: S3Client)
     override fun isAlwaysShowPlus(): Boolean = false
 
     override fun onDoubleClick() {
-        val editorManager = FileEditorManager.getInstance(nodeProject)
-        val virtualBucket = S3VirtualBucket(S3VirtualFileSystem(client), bucket)
-        editorManager.openTextEditor(OpenFileDescriptor(nodeProject, virtualBucket), true)
-        TelemetryService.getInstance().record(nodeProject, "s3") {
-            datum("openeditor") {
-                count()
+        if (!DumbService.getInstance(nodeProject).isDumb) {
+            val editorManager = FileEditorManager.getInstance(nodeProject)
+            val virtualBucket = S3VirtualBucket(S3VirtualFileSystem(client), bucket)
+            editorManager.openTextEditor(OpenFileDescriptor(nodeProject, virtualBucket), true)
+            TelemetryService.getInstance().record(nodeProject, "s3") {
+                datum("openeditor") {
+                    count()
+                }
             }
         }
     }

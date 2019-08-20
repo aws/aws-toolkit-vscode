@@ -20,7 +20,7 @@ import software.amazon.awssdk.services.s3.model.CreateBucketRequest
 import software.amazon.awssdk.services.s3.model.CreateBucketResponse
 import software.aws.toolkits.jetbrains.utils.DelegateSdkConsumers
 
-class CreateS3BucketDialogTest {
+class CreateBucketActionDialogTest {
     @Rule
     @JvmField
     val projectRule = ProjectRule()

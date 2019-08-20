@@ -185,6 +185,7 @@
         <projectTemplatesFactory implementation="software.aws.toolkits.jetbrains.ui.wizard.SamProjectGeneratorIntelliJAdapter" />
 
         <webHelpProvider implementation="software.aws.toolkits.jetbrains.core.help.HelpIdTranslator"/>
+        <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.s3.S3ViewerEditorProvider"/>
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit">
@@ -219,6 +220,20 @@
                     class="software.aws.toolkits.jetbrains.core.stack.OpenStackUiAction"/>
             <action id="cloudformation.stack.delete"
                     class="software.aws.toolkits.jetbrains.services.cloudformation.DeleteCloudFormationStackAction"/>
+        </group>
+
+        <group id="aws.toolkit.explorer.s3" popup="false" compact="false">
+        <action id="s3.create.bucket"
+                class="software.aws.toolkits.jetbrains.services.s3.CreateBucketAction"/>
+        </group>
+
+        <group id="aws.toolkit.explorer.s3.bucket" popup="true" compact="false">
+            <action id="s3.open.bucket.viewer"
+                    class="software.aws.toolkits.jetbrains.services.s3.bucketActions.OpenBucketViewerAction"/>
+            <action id="s3.delete.bucket"
+                    class="software.aws.toolkits.jetbrains.services.s3.bucketActions.DeleteBucketAction"/>
+            <action id="s3.copy.bucketname.check"
+                    class="software.aws.toolkits.jetbrains.services.s3.bucketActions.CopyBucketNameAction"/>
         </group>
 
         <action class="software.aws.toolkits.jetbrains.core.SettingsSelectorAction" id="aws.settings.selector" icon="AwsIcons.Logos.AWS"/>

@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.services.s3
 
+import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileSystem
 import java.io.InputStream
 import java.io.OutputStream
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import com.intellij.openapi.util.text.StringUtil
-import java.time.Instant
 
 /**
  * BaseS3VirtualFile is a base class to represent a virtual file
@@ -90,6 +90,8 @@ open class S3VirtualBucket(fileSystem: S3VirtualFileSystem, val s3Bucket: S3Buck
             }.toTypedArray()
 
     override fun isDirectory(): Boolean = true
+
+    override fun getName(): String = getVirtualBucketName()
 }
 
 class S3VirtualDirectory(s3filesystem: S3VirtualFileSystem, private val directory: S3Directory, parent: VirtualFile) :
