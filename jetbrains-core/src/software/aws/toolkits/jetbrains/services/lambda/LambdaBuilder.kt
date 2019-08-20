@@ -117,6 +117,12 @@ abstract class LambdaBuilder {
                 }
             }
 
+            samOptions.additionalBuildArgs?.let {
+                if (it.isNotBlank()) {
+                    commandLine.withParameters(*it.split(" ").toTypedArray())
+                }
+            }
+
             // TODO: FIX_WHEN_SAM_MIN_IS_0.16
             SemVer.parseFromText(SamCommon.getVersionString())?.let {
                 if (it.isGreaterOrEqualThan(0, 16, 0)) {

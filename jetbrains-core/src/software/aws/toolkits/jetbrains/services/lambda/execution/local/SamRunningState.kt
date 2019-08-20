@@ -53,6 +53,12 @@ class SamRunningState(
             }
         }
 
+        samOptions.additionalLocalArgs?.let {
+            if (it.isNotBlank()) {
+                commandLine.withParameters(*it.split(" ").toTypedArray())
+            }
+        }
+
         runner.patchCommandLine(this, commandLine)
 
         return ProcessHandlerFactory.getInstance().createColoredProcessHandler(commandLine)

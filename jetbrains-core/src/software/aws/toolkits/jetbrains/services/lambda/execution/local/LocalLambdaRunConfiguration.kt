@@ -220,6 +220,18 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         lambdaOptions.samOptions.buildInContainer = useContainer
     }
 
+    fun additionalBuildArgs(): String? = lambdaOptions.samOptions.additionalBuildArgs
+
+    fun additionalBuildArgs(args: String?) {
+        lambdaOptions.samOptions.additionalBuildArgs = args
+    }
+
+    fun additionalLocalArgs(): String? = lambdaOptions.samOptions.additionalLocalArgs
+
+    fun additionalLocalArgs(args: String?) {
+        lambdaOptions.samOptions.additionalLocalArgs = args
+    }
+
     override fun suggestedName(): String? {
         val subName = lambdaOptions.functionOptions.logicalId ?: handlerDisplayName()
         return "[${message("lambda.run_configuration.local")}] $subName"
