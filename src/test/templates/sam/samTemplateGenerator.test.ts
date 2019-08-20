@@ -44,8 +44,7 @@ describe('SamTemplateGenerator', () => {
     }
 
     it('Produces a minimal template', async () => {
-        await makeMinimalTemplate()
-            .generate(templateFilename)
+        await makeMinimalTemplate().generate(templateFilename)
 
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
 
@@ -134,14 +133,13 @@ describe('SamTemplateGenerator', () => {
     })
 
     it('errs if resource name is missing', async () => {
-        const error: Error = await assertThrowsError(
-            async () => {
-                await new SamTemplateGenerator()
-                    .withCodeUri(sampleCodeUriValue)
-                    .withFunctionHandler(sampleFunctionHandlerValue)
-                    .withRuntime(sampleRuntimeValue)
-                    .generate(templateFilename)
-            })
+        const error: Error = await assertThrowsError(async () => {
+            await new SamTemplateGenerator()
+                .withCodeUri(sampleCodeUriValue)
+                .withFunctionHandler(sampleFunctionHandlerValue)
+                .withRuntime(sampleRuntimeValue)
+                .generate(templateFilename)
+        })
 
         assert.ok(error)
         assert.strictEqual(error.message, 'Missing value: ResourceName')
@@ -149,14 +147,13 @@ describe('SamTemplateGenerator', () => {
     })
 
     it('errs if function handler is missing', async () => {
-        const error: Error = await assertThrowsError(
-            async () => {
-                await new SamTemplateGenerator()
-                    .withCodeUri(sampleCodeUriValue)
-                    .withRuntime(sampleRuntimeValue)
-                    .withResourceName(sampleResourceNameValue)
-                    .generate(templateFilename)
-            })
+        const error: Error = await assertThrowsError(async () => {
+            await new SamTemplateGenerator()
+                .withCodeUri(sampleCodeUriValue)
+                .withRuntime(sampleRuntimeValue)
+                .withResourceName(sampleResourceNameValue)
+                .generate(templateFilename)
+        })
 
         assert.ok(error)
         assert.strictEqual(error.message, 'Missing value: Handler')
@@ -164,14 +161,13 @@ describe('SamTemplateGenerator', () => {
     })
 
     it('errs if code uri is missing', async () => {
-        const error: Error = await assertThrowsError(
-            async () => {
-                await new SamTemplateGenerator()
-                    .withFunctionHandler(sampleFunctionHandlerValue)
-                    .withRuntime(sampleRuntimeValue)
-                    .withResourceName(sampleResourceNameValue)
-                    .generate(templateFilename)
-            })
+        const error: Error = await assertThrowsError(async () => {
+            await new SamTemplateGenerator()
+                .withFunctionHandler(sampleFunctionHandlerValue)
+                .withRuntime(sampleRuntimeValue)
+                .withResourceName(sampleResourceNameValue)
+                .generate(templateFilename)
+        })
 
         assert.ok(error)
         assert.strictEqual(error.message, 'Missing value: CodeUri')
@@ -179,14 +175,13 @@ describe('SamTemplateGenerator', () => {
     })
 
     it('errs if runtime is missing', async () => {
-        const error: Error = await assertThrowsError(
-            async () => {
-                await new SamTemplateGenerator()
-                    .withCodeUri(sampleCodeUriValue)
-                    .withFunctionHandler(sampleFunctionHandlerValue)
-                    .withResourceName(sampleResourceNameValue)
-                    .generate(templateFilename)
-            })
+        const error: Error = await assertThrowsError(async () => {
+            await new SamTemplateGenerator()
+                .withCodeUri(sampleCodeUriValue)
+                .withFunctionHandler(sampleFunctionHandlerValue)
+                .withResourceName(sampleResourceNameValue)
+                .generate(templateFilename)
+        })
 
         assert.ok(error)
         assert.strictEqual(error.message, 'Missing value: Runtime')

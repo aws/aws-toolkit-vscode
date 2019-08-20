@@ -16,16 +16,12 @@ export async function loadSymbols({
     maxRetries = 10,
     retryDelayMillis = 200
 }: {
-    uri: vscode.Uri,
-    context: LoadSymbolsContext,
-    maxRetries?: number,
+    uri: vscode.Uri
+    context: LoadSymbolsContext
+    maxRetries?: number
     retryDelayMillis?: number
 }): Promise<vscode.DocumentSymbol[] | undefined> {
-
-    const symbols = await context.executeCommand<vscode.DocumentSymbol[]>(
-        'vscode.executeDocumentSymbolProvider',
-        uri
-    )
+    const symbols = await context.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri)
     // checking if symbols exists as this can fail if the VS Code JSON symbol provider is not yet initialized
     if (symbols) {
         // file has symbols if JSON with at least one valid top-level key/value pair

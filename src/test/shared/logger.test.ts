@@ -10,7 +10,6 @@ import * as filesystemUtilities from '../../shared/filesystemUtilities'
 import * as logger from '../../shared/logger'
 
 describe('logger', () => {
-
     let tempFolder: string
     let testLogger: logger.Logger
 
@@ -99,15 +98,11 @@ describe('logger', () => {
     })
 
     async function waitForLogFile(logPath: string): Promise<void> {
-
         const timeoutPromise = new Promise<void>((resolve, reject) => {
-            const timeout = setTimeout(
-                () => {
-                    clearTimeout(timeout)
-                    reject('Log file not found in 1500 ms')
-                },
-                1500
-            )
+            const timeout = setTimeout(() => {
+                clearTimeout(timeout)
+                reject('Log file not found in 1500 ms')
+            }, 1500)
         })
 
         const fileExistsPromise = new Promise<void>(async (resolve, reject) => {

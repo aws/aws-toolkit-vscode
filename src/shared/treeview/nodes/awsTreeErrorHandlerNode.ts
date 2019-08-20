@@ -11,10 +11,7 @@ import { ErrorNode } from './errorNode'
 export abstract class AWSTreeErrorHandlerNode extends AWSTreeNodeBase {
     protected errorNode?: ErrorNode
 
-    protected constructor(
-        label: string,
-        collapsibleState?: TreeItemCollapsibleState
-    ) {
+    protected constructor(label: string, collapsibleState?: TreeItemCollapsibleState) {
         super(label, collapsibleState)
     }
 

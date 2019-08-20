@@ -40,7 +40,7 @@ export class ExtensionUtilities {
 
     private static resolveResourceURIs(basePath: string, names: string[]): ScriptResource[] {
         const scripts: ScriptResource[] = []
-        _.forEach(names, (scriptName) => {
+        _.forEach(names, scriptName => {
             const scriptPathOnDisk = vscode.Uri.file(path.join(basePath, scriptName))
             const scriptUri = scriptPathOnDisk.with({ scheme: 'vscode-resource' })
             const nonce = ExtensionUtilities.getNonce()
@@ -87,10 +87,7 @@ export async function showQuickStartWebview(context: vscode.ExtensionContext): P
         view.reveal()
     } catch {
         vscode.window.showErrorMessage(
-            localize(
-                'AWS.command.quickStart.error',
-                'There was an error retrieving the Quick Start page'
-            )
+            localize('AWS.command.quickStart.error', 'There was an error retrieving the Quick Start page')
         )
     }
 }
@@ -128,10 +125,7 @@ export async function createQuickStartWebview(
  * @param text Text to scan
  * @param basePath Extension path (from extension context)
  */
-function convertExtensionRootTokensToPath(
-    text: string,
-    basePath: string
-): string {
+function convertExtensionRootTokensToPath(text: string, basePath: string): string {
     return text.replace(/!!EXTENSIONROOT!!/g, `vscode-resource:${basePath}`)
 }
 
@@ -169,10 +163,7 @@ export function setMostRecentVersion(context: vscode.ExtensionContext): void {
  * Publishes a toast with a link to the welcome page
  */
 async function promptQuickStart(): Promise<void> {
-    const view = localize(
-        'AWS.command.quickStart',
-        'View Quick Start'
-    )
+    const view = localize('AWS.command.quickStart', 'View Quick Start')
     const prompt = await vscode.window.showInformationMessage(
         localize(
             'AWS.message.prompt.quickStart.toastMessage',

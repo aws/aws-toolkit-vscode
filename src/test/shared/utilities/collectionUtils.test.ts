@@ -18,7 +18,7 @@ import {
     toMap,
     toMapAsync,
     union,
-    updateInPlace,
+    updateInPlace
 } from '../../../shared/utilities/collectionUtils'
 
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
@@ -139,24 +139,14 @@ describe('CollectionUtils', async () => {
 
     describe('toMap', async () => {
         it('returns an empty map if the input is empty', async () => {
-            const result = toMap<string, { key: string }>(
-                [],
-                item => item.key
-            )
+            const result = toMap<string, { key: string }>([], item => item.key)
 
             assert.ok(result)
             assert.strictEqual(result.size, 0)
         })
 
         it('uses selector to choose keys', async () => {
-            const result = toMap<string, { key: string }>(
-                [
-                    { key: 'a' },
-                    { key: 'b' },
-                    { key: 'c' }
-                ],
-                item => item.key
-            )
+            const result = toMap<string, { key: string }>([{ key: 'a' }, { key: 'b' }, { key: 'c' }], item => item.key)
 
             assert.ok(result)
             assert.strictEqual(result.size, 3)
@@ -166,24 +156,18 @@ describe('CollectionUtils', async () => {
         })
 
         it('throws an error on duplicate keys', async () => {
-            assert.throws(() => toMap<string, { key: string }>(
-                [
-                    { key: 'a' },
-                    { key: 'b' },
-                    { key: 'b' },
-                    { key: 'c' }
-                ],
-                item => item.key
-            ))
+            assert.throws(() =>
+                toMap<string, { key: string }>(
+                    [{ key: 'a' }, { key: 'b' }, { key: 'b' }, { key: 'c' }],
+                    item => item.key
+                )
+            )
         })
     })
 
     describe('toMapAsync', async () => {
         it('returns an empty map if the input is empty', async () => {
-            const result = await toMapAsync<string, { key: string }>(
-                asyncGenerator([]),
-                item => item.key
-            )
+            const result = await toMapAsync<string, { key: string }>(asyncGenerator([]), item => item.key)
 
             assert.ok(result)
             assert.strictEqual(result.size, 0)
@@ -191,11 +175,7 @@ describe('CollectionUtils', async () => {
 
         it('uses selector to choose keys', async () => {
             const result = await toMapAsync(
-                asyncGenerator([
-                    { key: 'a' },
-                    { key: 'b' },
-                    { key: 'c' }
-                ]),
+                asyncGenerator([{ key: 'a' }, { key: 'b' }, { key: 'c' }]),
                 item => item.key
             )
 
@@ -227,12 +207,7 @@ describe('CollectionUtils', async () => {
             // tslint:disable-next-line:no-floating-promises
             await assertRejects(async () => {
                 await toMapAsync<string, { key: string }>(
-                    asyncGenerator([
-                        { key: 'a' },
-                        { key: 'b' },
-                        { key: 'b' },
-                        { key: 'c' }
-                    ]),
+                    asyncGenerator([{ key: 'a' }, { key: 'b' }, { key: 'b' }, { key: 'c' }]),
                     item => item.key
                 )
             })
@@ -244,12 +219,7 @@ describe('CollectionUtils', async () => {
             const map = new Map<string, number>()
             map.set('a', 1)
 
-            updateInPlace(
-                map,
-                [],
-                key => assert.fail(),
-                key => assert.fail()
-            )
+            updateInPlace(map, [], key => assert.fail(), key => assert.fail())
 
             assert.ok(map)
             assert.strictEqual(map.size, 0)
@@ -365,7 +335,7 @@ describe('CollectionUtils', async () => {
 
     describe('filter', async () => {
         it('returns the original sequence filtered by the predicate', async () => {
-            const input: Iterable<number>  = [ 1, 2 ]
+            const input: Iterable<number> = [1, 2]
             const result = filter(input, i => i % 2 === 0)
 
             assert.ok(result)
@@ -376,10 +346,7 @@ describe('CollectionUtils', async () => {
 
     describe('filterAsync', async () => {
         it('returns the original sequence filtered by the predicate', async () => {
-            const result = await toArrayAsync(filterAsync(
-                [1, 2],
-                async i => i % 2 === 0
-            ))
+            const result = await toArrayAsync(filterAsync([1, 2], async i => i % 2 === 0))
 
             assert.ok(result)
             assert.strictEqual(result.length, 1)

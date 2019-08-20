@@ -11,7 +11,6 @@ export enum BlueprintOrigin {
 // Enscapsulates a Lambda project blueprint, either from the Visual Studio
 // blueprints collection or other sources
 export class Blueprint {
-
     // data members from the Visual Studio blueprint model
     public sortOrder: number | undefined
 
@@ -24,11 +23,9 @@ export class Blueprint {
         public description: string,
         public filename: string,
         public origin: BlueprintOrigin
-    ) {
-    }
+    ) {}
 
     public isForLanguage(language: string): boolean {
-
         if (this.origin === BlueprintOrigin.vsToolkit) {
             if (this.hiddenTags) {
                 return this.hiddenTags.some(hiddenTag => hiddenTag === language)

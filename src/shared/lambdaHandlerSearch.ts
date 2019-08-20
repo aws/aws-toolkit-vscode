@@ -5,24 +5,22 @@
 import { Range } from 'vscode'
 
 export interface AbsoluteCharOffset {
-    positionStart: number,
+    positionStart: number
     positionEnd: number
 }
 
 export type RangeOrCharOffset = Range | AbsoluteCharOffset
 
 export interface LambdaHandlerCandidate {
-    handlerName: string,
-    filename: string,
+    handlerName: string
+    filename: string
     range: RangeOrCharOffset
 }
 
 export interface LambdaHandlerSearch {
-
     /**
      * @description Looks for functions that appear to be valid Lambda Function Handlers.
      * @returns A collection of information for each detected candidate.
      */
     findCandidateLambdaHandlers(): Promise<LambdaHandlerCandidate[]>
-
 }

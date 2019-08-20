@@ -27,13 +27,7 @@ export async function selectLocalLambda(
         description: lambda.templatePath
     }))
 
-    return await showQuickPick(
-        localLambdas,
-        {
-            placeHolder: localize(
-                'AWS.message.prompt.selectLocalLambda.placeholder',
-                'Select a lambda function'
-            )
-        }
-    )
+    return await showQuickPick(localLambdas, {
+        placeHolder: localize('AWS.message.prompt.selectLocalLambda.placeholder', 'Select a lambda function')
+    })
 }

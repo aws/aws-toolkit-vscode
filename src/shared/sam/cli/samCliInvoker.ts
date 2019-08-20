@@ -40,7 +40,7 @@ export function resolveSamCliProcessInvokerContext(
 }
 
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
-    public constructor(private readonly context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()) { }
+    public constructor(private readonly context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()) {}
 
     public async invoke(options?: SamCliProcessInvokeOptions): Promise<ChildProcessResult> {
         const invokeOptions = makeRequiredSamCliProcessInvokeOptions(options)

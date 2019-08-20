@@ -10,15 +10,16 @@ import '../utilities/asyncIteratorShim'
 import { LambdaClient } from './lambdaClient'
 
 export class DefaultLambdaClient implements LambdaClient {
-    public constructor(public readonly regionCode: string) {
-    }
+    public constructor(public readonly regionCode: string) {}
 
     public async deleteFunction(name: string): Promise<void> {
         const sdkClient = await this.createSdkClient()
 
-        const response = await sdkClient.deleteFunction({
-            FunctionName: name
-        }).promise()
+        const response = await sdkClient
+            .deleteFunction({
+                FunctionName: name
+            })
+            .promise()
 
         if (!!response.$response.error) {
             throw response.$response.error
@@ -28,11 +29,13 @@ export class DefaultLambdaClient implements LambdaClient {
     public async invoke(name: string, payload?: _Blob): Promise<Lambda.InvocationResponse> {
         const sdkClient = await this.createSdkClient()
 
-        const response = await sdkClient.invoke({
-            FunctionName: name,
-            LogType: 'Tail',
-            Payload: payload
-        }).promise()
+        const response = await sdkClient
+            .invoke({
+                FunctionName: name,
+                LogType: 'Tail',
+                Payload: payload
+            })
+            .promise()
 
         return response
     }

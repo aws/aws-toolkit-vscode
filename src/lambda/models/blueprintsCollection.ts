@@ -35,7 +35,6 @@ interface BlueprintManifest {
 
 // Represents a collection of blueprints, potentially from multiple sources
 export class BlueprintsCollection {
-
     private availableBlueprints: Blueprint[] = []
     private readonly _context: ExtensionContext
     private readonly _resourceFetcher: ResourceFetcher
@@ -92,12 +91,12 @@ export class BlueprintsCollection {
         ])
 
         return new Promise<Blueprint[]>((resolve, reject) => {
-            xml2js.parseString(manifest, {explicitArray: false}, (err, result: BlueprintManifest) => {
+            xml2js.parseString(manifest, { explicitArray: false }, (err, result: BlueprintManifest) => {
                 if (err) {
                     // TODO: fall back to resource version before giving up
                     reject(err)
                 } else {
-                    const blueprints: Blueprint[] = (result.BlueprintManifest.Blueprints.Blueprint).map(b => {
+                    const blueprints: Blueprint[] = result.BlueprintManifest.Blueprints.Blueprint.map(b => {
                         const blueprint = new Blueprint(b.Name, b.Description, b.File, BlueprintOrigin.vsToolkit)
 
                         // post optional data
@@ -125,6 +124,6 @@ export class BlueprintsCollection {
     }
 
     private static stringOrArrayToStringArray(input: string | string[]): string[] {
-        return Array.isArray(input) ? [ ...input ] : [ input ]
+        return Array.isArray(input) ? [...input] : [input]
     }
 }

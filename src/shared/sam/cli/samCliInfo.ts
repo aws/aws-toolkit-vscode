@@ -15,10 +15,7 @@ export interface SamCliInfoResponse {
 }
 
 export class SamCliInfoInvocation {
-    public constructor(
-        private readonly invoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker()
-    ) {
-    }
+    public constructor(private readonly invoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker()) {}
 
     public async execute(): Promise<SamCliInfoResponse> {
         const childProcessResult = await this.invoker.invoke({ arguments: ['--info'] })

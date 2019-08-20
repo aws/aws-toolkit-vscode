@@ -37,11 +37,11 @@ export enum AccountStatus {
 export const METADATA_FIELD_NAME = {
     RESULT: 'result',
     DURATION: 'duration',
-    REASON: 'reason',
+    REASON: 'reason'
 }
 
 export enum MetadataResult {
     Pass = 'Succeeded',
     Fail = 'Failed',
-    Cancel = 'Cancelled',
+    Cancel = 'Cancelled'
 }

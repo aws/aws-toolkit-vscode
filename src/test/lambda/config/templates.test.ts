@@ -20,7 +20,7 @@ class MockLoadTemplatesConfigContext {
     public constructor({
         fileExists = async _path => true,
         readFile = async _path => '',
-        saveDocumentIfDirty = async _path => { }
+        saveDocumentIfDirty = async _path => {}
     }: Partial<LoadTemplatesConfigContext>) {
         this.fileExists = fileExists
         this.readFile = readFile
@@ -105,7 +105,9 @@ describe('templates', async () => {
 
         it('throws on error loading file', async () => {
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => { throw new Error('oh no') },
+                readFile: async pathLike => {
+                    throw new Error('oh no')
+                }
             })
 
             try {
@@ -122,7 +124,7 @@ describe('templates', async () => {
 
         it('gracefully handles invalid JSON', async () => {
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => '{',
+                readFile: async pathLike => '{'
             })
 
             try {
@@ -154,7 +156,7 @@ describe('templates', async () => {
             }`
 
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => rawJson,
+                readFile: async pathLike => rawJson
             })
 
             const config = await load('', context)
@@ -175,13 +177,10 @@ describe('templates', async () => {
                     readArgs.push(pathLike)
 
                     return '{}'
-                },
+                }
             })
 
-            await load(
-                path.join('my', 'path'),
-                context
-            )
+            await load(path.join('my', 'path'), context)
 
             assert.strictEqual(readArgs.length, 1)
             assert.strictEqual(readArgs[0], path.join('my', 'path', '.aws', 'templates.json'))
@@ -207,10 +206,7 @@ describe('templates', async () => {
                 }
             })
 
-            await load(
-                path.join('my', 'path'),
-                context
-            )
+            await load(path.join('my', 'path'), context)
 
             assert.strictEqual(readBeforeSave, false)
             assert.strictEqual(saveArgs.length, 1)
@@ -228,11 +224,10 @@ describe('getTemplatesConfigPath', async () => {
 })
 
 describe('TemplatesConfigPopulator', async () => {
-
     const testModificationOptions = {
         formattingOptions: {
             tabSize: 4,
-            insertSpaces: true,
+            insertSpaces: true
         }
     }
 
@@ -245,23 +240,17 @@ describe('TemplatesConfigPopulator', async () => {
         }
 }`
 
-        const results = new TemplatesConfigPopulator(
-            inputJson,
-            {
-                formattingOptions: {
-                    tabSize: 8,
-                    insertSpaces: true,
-                }
+        const results = new TemplatesConfigPopulator(inputJson, {
+            formattingOptions: {
+                tabSize: 8,
+                insertSpaces: true
             }
-        )
+        })
             .ensureTemplateSectionExists('someprocessor')
             .getResults()
 
         assert.strictEqual(results.isDirty, true, 'Expected results to be dirty')
-        assert.strictEqual(
-            JSON.stringify(results.json),
-            JSON.stringify(expectedJson)
-        )
+        assert.strictEqual(JSON.stringify(results.json), JSON.stringify(expectedJson))
     })
 
     describe('ensureTemplateSectionExists', async () => {
@@ -277,10 +266,7 @@ describe('TemplatesConfigPopulator', async () => {
                 .getResults()
 
             assert.strictEqual(results.isDirty, false, 'Expected results to be clean')
-            assert.strictEqual(
-                JSON.stringify(results.json),
-                JSON.stringify(inputJson)
-            )
+            assert.strictEqual(JSON.stringify(results.json), JSON.stringify(inputJson))
         })
 
         it('handles missing templates section', async () => {
@@ -297,10 +283,7 @@ describe('TemplatesConfigPopulator', async () => {
                 .getResults()
 
             assert.strictEqual(results.isDirty, true, 'Expected results to be dirty')
-            assert.strictEqual(
-                JSON.stringify(results.json),
-                JSON.stringify(expectedJson)
-            )
+            assert.strictEqual(JSON.stringify(results.json), JSON.stringify(expectedJson))
         })
 
         it('handles missing template section', async () => {
@@ -319,10 +302,7 @@ describe('TemplatesConfigPopulator', async () => {
                 .getResults()
 
             assert.strictEqual(results.isDirty, true, 'Expected results to be dirty')
-            assert.strictEqual(
-                JSON.stringify(results.json),
-                JSON.stringify(expectedJson)
-            )
+            assert.strictEqual(JSON.stringify(results.json), JSON.stringify(expectedJson))
         })
 
         it('errs with invalid templates type', async () => {
@@ -331,13 +311,15 @@ describe('TemplatesConfigPopulator', async () => {
         }`
 
             assert.throws(
-                () => new TemplatesConfigPopulator(inputJson, testModificationOptions)
-                    .ensureTemplateSectionExists('someprocessor'),
+                () =>
+                    new TemplatesConfigPopulator(inputJson, testModificationOptions).ensureTemplateSectionExists(
+                        'someprocessor'
+                    ),
                 {
                     message: 'Invalid configuration',
                     jsonPath: ['templates'],
                     expectedTypes: ['object', 'null'],
-                    actualType: 'number',
+                    actualType: 'number'
                 }
             )
         })
@@ -363,10 +345,7 @@ describe('TemplatesConfigPopulator', async () => {
                 .getResults()
 
             assert.strictEqual(results.isDirty, false, 'Expected results to be clean')
-            assert.strictEqual(
-                JSON.stringify(results.json),
-                JSON.stringify(inputJson)
-            )
+            assert.strictEqual(JSON.stringify(results.json), JSON.stringify(inputJson))
         })
 
         it('errs with invalid template type', async () => {
@@ -377,13 +356,16 @@ describe('TemplatesConfigPopulator', async () => {
         }`
 
             assert.throws(
-                () => new TemplatesConfigPopulator(inputJson, testModificationOptions)
-                    .ensureTemplateHandlerSectionExists('someprocessor', 'processor'),
+                () =>
+                    new TemplatesConfigPopulator(inputJson, testModificationOptions).ensureTemplateHandlerSectionExists(
+                        'someprocessor',
+                        'processor'
+                    ),
                 {
                     message: 'Invalid configuration',
                     jsonPath: ['templates', 'someprocessor'],
                     expectedTypes: ['object', 'null'],
-                    actualType: 'boolean',
+                    actualType: 'boolean'
                 }
             )
         })
@@ -397,13 +379,16 @@ describe('TemplatesConfigPopulator', async () => {
         }`
 
             assert.throws(
-                () => new TemplatesConfigPopulator(inputJson, testModificationOptions)
-                    .ensureTemplateHandlerSectionExists('someprocessor', 'processor'),
+                () =>
+                    new TemplatesConfigPopulator(inputJson, testModificationOptions).ensureTemplateHandlerSectionExists(
+                        'someprocessor',
+                        'processor'
+                    ),
                 {
                     message: 'Invalid configuration',
                     jsonPath: ['templates', 'someprocessor', 'handlers'],
                     expectedTypes: ['object', 'null'],
-                    actualType: 'array',
+                    actualType: 'array'
                 }
             )
         })
@@ -419,13 +404,16 @@ describe('TemplatesConfigPopulator', async () => {
         }`
 
             assert.throws(
-                () => new TemplatesConfigPopulator(inputJson, testModificationOptions)
-                    .ensureTemplateHandlerSectionExists('someprocessor', 'processor'),
+                () =>
+                    new TemplatesConfigPopulator(inputJson, testModificationOptions).ensureTemplateHandlerSectionExists(
+                        'someprocessor',
+                        'processor'
+                    ),
                 {
                     message: 'Invalid configuration',
                     jsonPath: ['templates', 'someprocessor', 'handlers', 'processor'],
                     expectedTypes: ['object', 'null'],
-                    actualType: 'string',
+                    actualType: 'string'
                 }
             )
         })
@@ -456,10 +444,7 @@ describe('TemplatesConfigPopulator', async () => {
                 .getResults()
 
             assert.strictEqual(results.isDirty, true, 'Expected results to be dirty')
-            assert.strictEqual(
-                JSON.stringify(results.json),
-                JSON.stringify(expectedJson)
-            )
+            assert.strictEqual(JSON.stringify(results.json), JSON.stringify(expectedJson))
         })
 
         it('handles missing handler section', async () => {
@@ -489,10 +474,7 @@ describe('TemplatesConfigPopulator', async () => {
                 .getResults()
 
             assert.strictEqual(results.isDirty, true, 'Expected results to be dirty')
-            assert.strictEqual(
-                JSON.stringify(results.json),
-                JSON.stringify(expectedJson)
-            )
+            assert.strictEqual(JSON.stringify(results.json), JSON.stringify(expectedJson))
         })
     })
 
@@ -516,10 +498,7 @@ describe('TemplatesConfigPopulator', async () => {
                 .getResults()
 
             assert.strictEqual(results.isDirty, false, 'Expected results to be clean')
-            assert.strictEqual(
-                JSON.stringify(results.json),
-                JSON.stringify(inputJson)
-            )
+            assert.strictEqual(JSON.stringify(results.json), JSON.stringify(inputJson))
         })
 
         it('errs with invalid handler type', async () => {
@@ -533,13 +512,16 @@ describe('TemplatesConfigPopulator', async () => {
         }`
 
             assert.throws(
-                () => new TemplatesConfigPopulator(inputJson, testModificationOptions)
-                    .ensureTemplateHandlerPropertiesExist('someprocessor', 'processor'),
+                () =>
+                    new TemplatesConfigPopulator(
+                        inputJson,
+                        testModificationOptions
+                    ).ensureTemplateHandlerPropertiesExist('someprocessor', 'processor'),
                 {
                     message: 'Invalid configuration',
                     jsonPath: ['templates', 'someprocessor', 'handlers', 'processor'],
                     expectedTypes: ['object', 'null'],
-                    actualType: 'string',
+                    actualType: 'string'
                 }
             )
         })
@@ -557,13 +539,16 @@ describe('TemplatesConfigPopulator', async () => {
         }`
 
             assert.throws(
-                () => new TemplatesConfigPopulator(inputJson, testModificationOptions)
-                    .ensureTemplateHandlerPropertiesExist('someprocessor', 'processor'),
+                () =>
+                    new TemplatesConfigPopulator(
+                        inputJson,
+                        testModificationOptions
+                    ).ensureTemplateHandlerPropertiesExist('someprocessor', 'processor'),
                 {
                     message: 'Invalid configuration',
                     jsonPath: ['templates', 'someprocessor', 'handlers', 'processor', 'event'],
                     expectedTypes: ['object', 'null'],
-                    actualType: 'number',
+                    actualType: 'number'
                 }
             )
         })
@@ -598,10 +583,7 @@ describe('TemplatesConfigPopulator', async () => {
                 .getResults()
 
             assert.strictEqual(results.isDirty, true, 'Expected results to be dirty')
-            assert.strictEqual(
-                JSON.stringify(results.json),
-                JSON.stringify(expectedJson)
-            )
+            assert.strictEqual(JSON.stringify(results.json), JSON.stringify(expectedJson))
         })
 
         it('handles missing event', async () => {
@@ -635,10 +617,7 @@ describe('TemplatesConfigPopulator', async () => {
                 .getResults()
 
             assert.strictEqual(results.isDirty, true, 'Expected results to be dirty')
-            assert.strictEqual(
-                JSON.stringify(results.json),
-                JSON.stringify(expectedJson)
-            )
+            assert.strictEqual(JSON.stringify(results.json), JSON.stringify(expectedJson))
         })
 
         it('handles missing envvars', async () => {
@@ -672,10 +651,7 @@ describe('TemplatesConfigPopulator', async () => {
                 .getResults()
 
             assert.strictEqual(results.isDirty, true, 'Expected results to be dirty')
-            assert.strictEqual(
-                JSON.stringify(results.json),
-                JSON.stringify(expectedJson)
-            )
+            assert.strictEqual(JSON.stringify(results.json), JSON.stringify(expectedJson))
         })
     })
 
@@ -701,10 +677,7 @@ describe('TemplatesConfigPopulator', async () => {
                 .ensureTemplateParameterOverrideExists('someprocessor', 'myParam')
                 .getResults()
 
-            assert.strictEqual(
-                JSON.stringify(json),
-                JSON.stringify(expectedJson)
-            )
+            assert.strictEqual(JSON.stringify(json), JSON.stringify(expectedJson))
             assert.strictEqual(isDirty, true, 'Expected results to be dirty')
         })
 
@@ -731,10 +704,7 @@ describe('TemplatesConfigPopulator', async () => {
                 .ensureTemplateParameterOverrideExists('someprocessor', 'myParam')
                 .getResults()
 
-            assert.strictEqual(
-                JSON.stringify(json),
-                JSON.stringify(expectedJson)
-            )
+            assert.strictEqual(JSON.stringify(json), JSON.stringify(expectedJson))
             assert.strictEqual(isDirty, true, 'Expected results to be dirty')
         })
 
@@ -753,10 +723,7 @@ describe('TemplatesConfigPopulator', async () => {
                 .ensureTemplateParameterOverrideExists('someprocessor', 'myParam')
                 .getResults()
 
-            assert.strictEqual(
-                JSON.stringify(json),
-                JSON.stringify(inputJson)
-            )
+            assert.strictEqual(JSON.stringify(json), JSON.stringify(inputJson))
             assert.strictEqual(isDirty, false, 'Expected results to be clean')
         })
 
@@ -770,9 +737,7 @@ describe('TemplatesConfigPopulator', async () => {
 }`
 
             const populator = new TemplatesConfigPopulator(inputJson, testModificationOptions)
-            assert.throws(
-                () => populator.ensureTemplateParameterOverrideExists('someprocessor', 'myParam')
-            )
+            assert.throws(() => populator.ensureTemplateParameterOverrideExists('someprocessor', 'myParam'))
         })
 
         it('throws if override value exists, but is not a string or null', async () => {
@@ -787,9 +752,7 @@ describe('TemplatesConfigPopulator', async () => {
 }`
 
             const populator = new TemplatesConfigPopulator(inputJson, testModificationOptions)
-            assert.throws(
-                () => populator.ensureTemplateParameterOverrideExists('someprocessor', 'myParam')
-            )
+            assert.throws(() => populator.ensureTemplateParameterOverrideExists('someprocessor', 'myParam'))
         })
     })
 })

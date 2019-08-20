@@ -20,7 +20,9 @@ import {
 
 describe('makeSamCliValidationNotification', async () => {
     const fakeSamCliValidationNotification: SamCliValidationNotification = {
-        show: () => { throw new Error('show is unused') }
+        show: () => {
+            throw new Error('show is unused')
+        }
     }
     const actionLabelUpdateSamCli = 'Get SAM CLI'
     const actionLabelUpdateToolkit = 'Visit Marketplace'
@@ -29,10 +31,7 @@ describe('makeSamCliValidationNotification', async () => {
         makeSamCliValidationNotification(
             new SamCliNotFoundError(),
             (message: string, actions: SamCliValidationNotificationAction[]): SamCliValidationNotification => {
-                assert.ok(
-                    message.indexOf('Unable to find SAM CLI') !== -1,
-                    `unexpected validation message: ${message}`
-                )
+                assert.ok(message.indexOf('Unable to find SAM CLI') !== -1, `unexpected validation message: ${message}`)
                 assert.strictEqual(actions.length, 1, 'unexpected action count')
                 assert.strictEqual(
                     actions[0].label,
@@ -50,27 +49,27 @@ describe('makeSamCliValidationNotification', async () => {
             situation: 'SAM CLI Version is too low',
             versionValidation: SamCliVersionValidation.VersionTooLow,
             messageFragment: 'Please update your SAM CLI.',
-            actionLabel: actionLabelUpdateSamCli,
+            actionLabel: actionLabelUpdateSamCli
         },
         {
             situation: 'SAM CLI Version is too high',
             versionValidation: SamCliVersionValidation.VersionTooHigh,
             messageFragment: 'Please check the Marketplace for an updated Toolkit.',
-            actionLabel: actionLabelUpdateToolkit,
+            actionLabel: actionLabelUpdateToolkit
         },
         {
             situation: 'SAM CLI Version is unparsable',
             versionValidation: SamCliVersionValidation.VersionNotParseable,
             messageFragment: 'Please update your SAM CLI.',
-            actionLabel: actionLabelUpdateSamCli,
-        },
+            actionLabel: actionLabelUpdateSamCli
+        }
     ]
 
     versionValidationTestScenarios.forEach(test => {
         it(`handles InvalidSamCliVersionError - ${test.situation}`, async () => {
             const validatorResult: SamCliVersionValidatorResult = {
                 version: '1.2.3',
-                validation: test.versionValidation,
+                validation: test.versionValidation
             }
             const error = new InvalidSamCliVersionError(validatorResult)
 
@@ -78,8 +77,8 @@ describe('makeSamCliValidationNotification', async () => {
                 error,
                 (message: string, actions: SamCliValidationNotificationAction[]): SamCliValidationNotification => {
                     assert.ok(
-                        message.indexOf(test.messageFragment) !== -1
-                        && message.indexOf(validatorResult.version!) !== -1,
+                        message.indexOf(test.messageFragment) !== -1 &&
+                            message.indexOf(validatorResult.version!) !== -1,
                         `unexpected validation message: ${message}`
                     )
                     assert.strictEqual(actions.length, 1, 'unexpected action count')

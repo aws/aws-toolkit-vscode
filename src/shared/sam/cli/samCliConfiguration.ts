@@ -21,18 +21,13 @@ export class DefaultSamCliConfiguration implements SamCliConfiguration {
     private readonly _configuration: SettingsConfiguration
     private readonly _samCliLocationProvider: SamCliLocationProvider
 
-    public constructor(
-        configuration: SettingsConfiguration,
-        samCliLocationProvider: SamCliLocationProvider,
-    ) {
+    public constructor(configuration: SettingsConfiguration, samCliLocationProvider: SamCliLocationProvider) {
         this._configuration = configuration
         this._samCliLocationProvider = samCliLocationProvider
     }
 
     public getSamCliLocation(): string | undefined {
-        return this._configuration.readSetting(
-            DefaultSamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION
-        )
+        return this._configuration.readSetting(DefaultSamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION)
     }
 
     public async setSamCliLocation(location: string | undefined): Promise<void> {
@@ -46,7 +41,9 @@ export class DefaultSamCliConfiguration implements SamCliConfiguration {
     public async initialize(): Promise<void> {
         const configLocation: string | undefined = this.getSamCliLocation()
         if (!!configLocation) {
-            if (await filesystemUtilities.fileExists(configLocation)) { return }
+            if (await filesystemUtilities.fileExists(configLocation)) {
+                return
+            }
         }
 
         const detectedLocation = await this._samCliLocationProvider.getLocation()

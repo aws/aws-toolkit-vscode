@@ -6,14 +6,14 @@
 'use strict'
 
 /*
- * This script removes the specified folders. 
+ * This script removes the specified folders.
  * Used to perform a clean compile, which is useful for things like:
  *   - flushing out stale test files.
  *   - updating dependencies after changing branches
  */
 
-const fs = require('fs');
-const _path = require('path');
+const fs = require('fs')
+const _path = require('path')
 const util = require('util')
 
 const readdir = util.promisify(fs.readdir)
@@ -24,39 +24,40 @@ const unlink = util.promisify(fs.unlink)
 // Recursive delete without requiring a third-party library. This allows the script
 // to be run before `npm install`.
 async function rdelete(path) {
-    const stats = await stat(path);
+    const stats = await stat(path)
     if (stats.isFile()) {
-        await unlink(path);
+        await unlink(path)
     } else if (stats.isDirectory()) {
-        const promises = (await readdir(path))
-            .map(child => rdelete(_path.join(path, child)));
+        const promises = (await readdir(path)).map(child => rdelete(_path.join(path, child)))
 
-        await Promise.all(promises);
-        await rmdir(path);
+        await Promise.all(promises)
+        await rmdir(path)
     } else {
-        throw new Error(`Could not delete '${path}' because it is neither a file nor directory`);
+        throw new Error(`Could not delete '${path}' because it is neither a file nor directory`)
     }
 }
 
-(async () => {
+;(async () => {
     for (const arg of process.argv.slice(2)) {
         try {
-            const directory = _path.join(__dirname, '..', arg);
+            const directory = _path.join(__dirname, '..', arg)
 
             try {
-                fs.accessSync(directory);
+                fs.accessSync(directory)
             } catch (e) {
-                console.log(`Could not access '${directory}', probably because it does not exist. Skipping clean for this directory.`);
-                return;
+                console.log(
+                    `Could not access '${directory}', probably because it does not exist. Skipping clean for this directory.`
+                )
+                return
             }
 
-            console.log(`Removing ${directory} ...`);
+            console.log(`Removing ${directory} ...`)
 
-            await rdelete(directory);
+            await rdelete(directory)
 
-            console.log('Done');
+            console.log('Done')
         } catch (e) {
-            console.error(`Could not clean '${arg}': ${String(e)}`);
+            console.error(`Could not clean '${arg}': ${String(e)}`)
         }
     }
-})();
+})()

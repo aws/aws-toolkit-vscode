@@ -9,7 +9,6 @@ import { ErrorNode } from '../../../../shared/treeview/nodes/errorNode'
 import { RegionNode } from '../../../../shared/treeview/nodes/regionNode'
 
 describe('ErrorNode', () => {
-
     const regionNode: RegionNode = {
         regionCode: 'us-weast-1',
         regionName: 'East? I thought you said...weast!',
@@ -22,7 +21,6 @@ describe('ErrorNode', () => {
 
     // Validates we tagged the node correctly
     it('initializes label and tooltip', async () => {
-
         const testNode = new ErrorNode(regionNode, error, 'Error loading resources')
 
         assert.strictEqual(testNode.label, 'Error loading resources')
@@ -37,5 +35,4 @@ describe('ErrorNode', () => {
         assert(childNodes !== undefined)
         assert.strictEqual(childNodes.length, 0)
     })
-
 })

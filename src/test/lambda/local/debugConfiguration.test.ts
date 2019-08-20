@@ -15,7 +15,7 @@ import {
 describe('makeCoreCLRDebugConfiguration', async () => {
     function makeConfig({
         codeUri = path.join('foo', 'bar'),
-        port = 42,
+        port = 42
     }: Partial<MakeCoreCLRDebugConfigurationArguments>) {
         return makeCoreCLRDebugConfiguration({ codeUri, port })
     }
@@ -23,10 +23,7 @@ describe('makeCoreCLRDebugConfiguration', async () => {
     it('uses the specified codeUri', async () => {
         const config = makeConfig({})
 
-        assert.strictEqual(
-            config.sourceFileMap['/var/task'],
-            path.join('foo', 'bar')
-        )
+        assert.strictEqual(config.sourceFileMap['/var/task'], path.join('foo', 'bar'))
     })
 
     describe('windows', async () => {
@@ -34,10 +31,7 @@ describe('makeCoreCLRDebugConfiguration', async () => {
             it('massages drive letters to uppercase', async () => {
                 const config = makeConfig({ codeUri: 'c:\\foo\\bar' })
 
-                assert.strictEqual(
-                    config.windows.pipeTransport.pipeCwd,
-                    'C:\\foo\\bar'
-                )
+                assert.strictEqual(config.windows.pipeTransport.pipeCwd, 'C:\\foo\\bar')
             })
         }
 

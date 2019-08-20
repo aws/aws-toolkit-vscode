@@ -44,7 +44,7 @@ export const readDirAsString = async (
  */
 export const readFileAsString = async (
     pathLike: string,
-    options: { encoding: BufferEncoding, flag?: string } = { encoding: DEFAULT_ENCODING }
+    options: { encoding: BufferEncoding; flag?: string } = { encoding: DEFAULT_ENCODING }
 ): Promise<string> => {
     return readFile(pathLike, options)
 }
@@ -80,7 +80,7 @@ export const makeTemporaryToolkitFolder = async (...relativePathParts: string[])
     const tmpPathParent = path.dirname(tmpPath)
     // fs.makeTemporaryToolkitFolder fails on OSX if prefix contains path separator
     // so we must create intermediate dirs if needed
-    if (!await fileExists(tmpPathParent)) {
+    if (!(await fileExists(tmpPathParent))) {
         await mkdir(tmpPathParent, { recursive: true })
     }
 

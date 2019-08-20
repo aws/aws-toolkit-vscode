@@ -11,7 +11,6 @@ import { ResourceLocation } from '../../shared/resourceLocation'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 
 describe('ResourceFetcher', () => {
-
     class ResourceFetcherCounter implements ResourceFetcher {
         public timesCalled = 0
 
@@ -26,7 +25,7 @@ describe('ResourceFetcher', () => {
 
     let logger: TestLogger
 
-    before( async () => {
+    before(async () => {
         logger = await TestLogger.createTestLogger()
     })
 
@@ -54,5 +53,4 @@ describe('ResourceFetcher', () => {
 
         assert.strictEqual(fetchCounter.timesCalled, 1)
     })
-
 })

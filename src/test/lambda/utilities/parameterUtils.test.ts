@@ -11,7 +11,7 @@ import {
     GetOverriddenParametersContext,
     getParameterNames,
     getParameters,
-    GetParametersContext,
+    GetParametersContext
 } from '../../../lambda/utilities/parameterUtils'
 import { getNormalizedRelativePath } from '../../../shared/utilities/pathUtils'
 
@@ -19,8 +19,7 @@ describe('parameterUtils', async () => {
     describe('getParameters', async () => {
         it('returns an empty map if template has no parameters section', async () => {
             const context: GetParametersContext = {
-                loadTemplate: async () => ({
-                })
+                loadTemplate: async () => ({})
             }
 
             const actual = await getParameters(vscode.Uri.file(''), context)
@@ -101,8 +100,7 @@ describe('parameterUtils', async () => {
     describe('getParameterNames', async () => {
         it('returns an empty array if no parameters were found', async () => {
             const context: GetParametersContext = {
-                loadTemplate: async () => ({
-                })
+                loadTemplate: async () => ({})
             }
 
             const actual = await getParameterNames(vscode.Uri.file(''), context)
@@ -213,7 +211,7 @@ describe('parameterUtils', async () => {
                         [templateId]: {
                             parameterOverrides: {
                                 MyParamName1: 'MyParamValue1',
-                                MyParamName2: 'MyParamValue2',
+                                MyParamName2: 'MyParamValue2'
                             }
                         }
                     }

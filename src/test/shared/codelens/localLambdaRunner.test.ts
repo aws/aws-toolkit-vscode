@@ -58,7 +58,6 @@ class FakeBasicLogger implements BasicLogger {
 }
 
 describe('localLambdaRunner', async () => {
-
     let logger: TestLogger
     let tempDir: string
     before(async () => {
@@ -116,11 +115,11 @@ describe('localLambdaRunner', async () => {
 
         it('Successful attach has no retries', async () => {
             await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as DebugConfiguration,
+                debugConfig: ({} as any) as DebugConfiguration,
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
-                onWillRetry,
+                onWillRetry
             })
 
             assert.strictEqual(actualRetries, 0, 'Did not expect any retries when attaching debugger succeeds')
@@ -128,11 +127,11 @@ describe('localLambdaRunner', async () => {
 
         it('Successful attach logs that the debugger attached', async () => {
             await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as DebugConfiguration,
+                debugConfig: ({} as any) as DebugConfiguration,
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
-                onWillRetry,
+                onWillRetry
             })
 
             assert.ok(
@@ -143,15 +142,12 @@ describe('localLambdaRunner', async () => {
 
         it('Successful attach records a success metric', async () => {
             await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as DebugConfiguration,
+                debugConfig: ({} as any) as DebugConfiguration,
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
                 onWillRetry,
-                onRecordAttachDebuggerMetric: (
-                    attachResult: boolean | undefined,
-                    attempts: number
-                ) => {
+                onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number) => {
                     assert.ok(attachResult, 'Expected to be logging an attach success metric')
                     assert.strictEqual(attempts, 1, 'Unexpected Attempt count')
                 }
@@ -160,26 +156,23 @@ describe('localLambdaRunner', async () => {
 
         it('Successful attach returns success', async () => {
             const results = await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as DebugConfiguration,
+                debugConfig: ({} as any) as DebugConfiguration,
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
-                onWillRetry,
+                onWillRetry
             })
 
-            assert.ok(
-                results.success,
-                'Expected attach results to be successful'
-            )
+            assert.ok(results.success, 'Expected attach results to be successful')
         })
 
         it('Failure to attach has no retries', async () => {
             await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as DebugConfiguration,
+                debugConfig: ({} as any) as DebugConfiguration,
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
-                onWillRetry,
+                onWillRetry
             })
 
             assert.strictEqual(actualRetries, 0, 'Did not expect any retries when attaching debugger fails')
@@ -187,11 +180,11 @@ describe('localLambdaRunner', async () => {
 
         it('Failure to attach logs that the debugger did not attach', async () => {
             await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as DebugConfiguration,
+                debugConfig: ({} as any) as DebugConfiguration,
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
-                onWillRetry,
+                onWillRetry
             })
 
             assert.ok(
@@ -202,15 +195,12 @@ describe('localLambdaRunner', async () => {
 
         it('Failure to attach records a fail metric', async () => {
             await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as DebugConfiguration,
+                debugConfig: ({} as any) as DebugConfiguration,
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
                 onWillRetry,
-                onRecordAttachDebuggerMetric: (
-                    attachResult: boolean | undefined,
-                    attempts: number
-                ) => {
+                onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number) => {
                     assert.strictEqual(attachResult, false, 'Expected to be logging an attach failure metric')
                 }
             })
@@ -218,29 +208,25 @@ describe('localLambdaRunner', async () => {
 
         it('Failure to attach returns failure', async () => {
             const results = await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as DebugConfiguration,
+                debugConfig: ({} as any) as DebugConfiguration,
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
-                onWillRetry,
+                onWillRetry
             })
 
-            assert.strictEqual(
-                results.success,
-                false,
-                'Expected attach results to fail'
-            )
+            assert.strictEqual(results.success, false, 'Expected attach results to fail')
         })
 
         it('Attempts to retry when startDebugging returns undefined', async () => {
             const maxRetries: number = 3
 
             await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as DebugConfiguration,
+                debugConfig: ({} as any) as DebugConfiguration,
                 channelLogger,
                 maxRetries: maxRetries,
                 onStartDebugging: startDebuggingReturnsUndefined,
-                onWillRetry,
+                onWillRetry
             })
 
             assert.strictEqual(actualRetries, maxRetries, 'Unexpected Retry count')
@@ -250,11 +236,11 @@ describe('localLambdaRunner', async () => {
             const maxRetries: number = 3
 
             await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as DebugConfiguration,
+                debugConfig: ({} as any) as DebugConfiguration,
                 channelLogger,
                 maxRetries,
                 onStartDebugging: startDebuggingReturnsUndefined,
-                onWillRetry,
+                onWillRetry
             })
 
             assert.ok(
@@ -265,24 +251,22 @@ describe('localLambdaRunner', async () => {
 
         it('Does not log metrics when startDebugging returns undefined', async () => {
             await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as DebugConfiguration,
+                debugConfig: ({} as any) as DebugConfiguration,
                 channelLogger,
                 maxRetries: 2,
                 onStartDebugging: startDebuggingReturnsUndefined,
-                onRecordAttachDebuggerMetric: (
-                    attachResult: boolean | undefined, attempts: number
-                ): void => {
+                onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number): void => {
                     assert.strictEqual(actualRetries, 2, 'Metrics should only be recorded once')
                     assert.notStrictEqual(attachResult, undefined, 'attachResult should not be undefined')
                 },
-                onWillRetry,
+                onWillRetry
             })
         })
 
         it('Returns true if attach succeeds during retries', async () => {
             const maxRetries: number = 5
             const results = await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as DebugConfiguration,
+                debugConfig: ({} as any) as DebugConfiguration,
                 channelLogger,
                 maxRetries,
                 onStartDebugging: async (
@@ -293,19 +277,16 @@ describe('localLambdaRunner', async () => {
 
                     return retVal!
                 },
-                onWillRetry,
+                onWillRetry
             })
 
-            assert.ok(
-                results.success,
-                'Expected attach results to succeed'
-            )
+            assert.ok(results.success, 'Expected attach results to succeed')
         })
 
         it('Returns false if attach fails during retries', async () => {
             const maxRetries: number = 5
             const results = await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as DebugConfiguration,
+                debugConfig: ({} as any) as DebugConfiguration,
                 channelLogger,
                 maxRetries,
                 onStartDebugging: async (
@@ -316,31 +297,23 @@ describe('localLambdaRunner', async () => {
 
                     return retVal!
                 },
-                onWillRetry,
+                onWillRetry
             })
 
-            assert.strictEqual(
-                results.success,
-                false,
-                'Expected attach results to fail'
-            )
+            assert.strictEqual(results.success, false, 'Expected attach results to fail')
         })
 
         it('Returns false if retry count exceeded', async () => {
             const maxRetries: number = 3
             const results = await localLambdaRunner.attachDebugger({
-                debugConfig: {} as any as DebugConfiguration,
+                debugConfig: ({} as any) as DebugConfiguration,
                 channelLogger,
                 maxRetries,
                 onStartDebugging: startDebuggingReturnsUndefined,
-                onWillRetry,
+                onWillRetry
             })
 
-            assert.strictEqual(
-                results.success,
-                false,
-                'Expected attach results to fail'
-            )
+            assert.strictEqual(results.success, false, 'Expected attach results to fail')
         })
     })
 

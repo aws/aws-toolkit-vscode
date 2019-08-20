@@ -6,11 +6,7 @@
 import * as assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import {
-    getChildrenRange,
-    loadSymbols,
-    LoadSymbolsContext
-} from '../../../shared/utilities/symbolUtilities'
+import { getChildrenRange, loadSymbols, LoadSymbolsContext } from '../../../shared/utilities/symbolUtilities'
 
 function makeSymbol(name: string): vscode.DocumentSymbol {
     return new vscode.DocumentSymbol(
@@ -18,7 +14,7 @@ function makeSymbol(name: string): vscode.DocumentSymbol {
         'MyDetail',
         vscode.SymbolKind.Property,
         new vscode.Range(0, 0, 0, 0),
-        new vscode.Range(0, 0, 0, 0),
+        new vscode.Range(0, 0, 0, 0)
     )
 }
 
@@ -27,7 +23,7 @@ describe('symbolUtilities', async () => {
         it('returns symbols if available', async () => {
             const context: LoadSymbolsContext = {
                 async executeCommand<T>(command: string, ...args: any[]): Promise<T | undefined> {
-                    return [ makeSymbol('MyName') ] as unknown as T
+                    return ([makeSymbol('MyName')] as unknown) as T
                 }
             }
 
@@ -43,7 +39,7 @@ describe('symbolUtilities', async () => {
         })
 
         it('does not retry if maxRetries is 0', async () => {
-            const executeCommandArgs: { command: string, uri: vscode.Uri }[] = []
+            const executeCommandArgs: { command: string; uri: vscode.Uri }[] = []
             const context: LoadSymbolsContext = {
                 async executeCommand<T>(command: string, ...args: any[]): Promise<T | undefined> {
                     assert.strictEqual(args.length, 1)
@@ -66,8 +62,8 @@ describe('symbolUtilities', async () => {
         })
 
         it('retries if maxRetries is non-zero', async () => {
-            const executeReturnValues = [ undefined, undefined, [ makeSymbol('MyName') ] ].reverse()
-            const executeCommandArgs: { command: string, uri: vscode.Uri }[] = []
+            const executeReturnValues = [undefined, undefined, [makeSymbol('MyName')]].reverse()
+            const executeCommandArgs: { command: string; uri: vscode.Uri }[] = []
             const context: LoadSymbolsContext = {
                 async executeCommand<T>(command: string, ...args: any[]): Promise<T | undefined> {
                     assert.strictEqual(args.length, 1)
@@ -94,7 +90,7 @@ describe('symbolUtilities', async () => {
         })
 
         it('returns undefined if all retries fail', async () => {
-            const executeCommandArgs: { command: string, uri: vscode.Uri }[] = []
+            const executeCommandArgs: { command: string; uri: vscode.Uri }[] = []
             const context: LoadSymbolsContext = {
                 async executeCommand<T>(command: string, ...args: any[]): Promise<T | undefined> {
                     assert.strictEqual(args.length, 1)
@@ -126,16 +122,18 @@ describe('symbolUtilities', async () => {
                 'MyParentDetail',
                 vscode.SymbolKind.Object,
                 new vscode.Range(0, 0, 5, 10),
-                new vscode.Range(0, 0, 0, 10),
+                new vscode.Range(0, 0, 0, 10)
             )
 
-            symbol.children.push(new vscode.DocumentSymbol(
-                'MyChild',
-                'MyChildDetail',
-                vscode.SymbolKind.Property,
-                new vscode.Range(1, 0, 2, 10),
-                new vscode.Range(1, 0, 1, 10)
-            ))
+            symbol.children.push(
+                new vscode.DocumentSymbol(
+                    'MyChild',
+                    'MyChildDetail',
+                    vscode.SymbolKind.Property,
+                    new vscode.Range(1, 0, 2, 10),
+                    new vscode.Range(1, 0, 1, 10)
+                )
+            )
 
             const actualRange = await getChildrenRange(symbol)
             assert.ok(actualRange)
@@ -154,21 +152,25 @@ describe('symbolUtilities', async () => {
                 new vscode.Range(0, 0, 0, 10)
             )
 
-            symbol.children.push(new vscode.DocumentSymbol(
-                'MyChild',
-                'MyChildDetail',
-                vscode.SymbolKind.Property,
-                new vscode.Range(1, 0, 2, 10),
-                new vscode.Range(1, 0, 1, 10)
-            ))
+            symbol.children.push(
+                new vscode.DocumentSymbol(
+                    'MyChild',
+                    'MyChildDetail',
+                    vscode.SymbolKind.Property,
+                    new vscode.Range(1, 0, 2, 10),
+                    new vscode.Range(1, 0, 1, 10)
+                )
+            )
 
-            symbol.children.push(new vscode.DocumentSymbol(
-                'MyChild',
-                'MyChildDetail',
-                vscode.SymbolKind.Property,
-                new vscode.Range(3, 0, 4, 10),
-                new vscode.Range(3, 0, 3, 10)
-            ))
+            symbol.children.push(
+                new vscode.DocumentSymbol(
+                    'MyChild',
+                    'MyChildDetail',
+                    vscode.SymbolKind.Property,
+                    new vscode.Range(3, 0, 4, 10),
+                    new vscode.Range(3, 0, 3, 10)
+                )
+            )
 
             const actualRange = await getChildrenRange(symbol)
             assert.ok(actualRange)

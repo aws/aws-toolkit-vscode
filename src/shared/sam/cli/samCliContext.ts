@@ -12,8 +12,8 @@ import { DefaultSamCliLocationProvider } from './samCliLocator'
 import { DefaultSamCliValidator, DefaultSamCliValidatorContext, SamCliValidator } from './samCliValidator'
 
 export interface SamCliContext {
-    validator: SamCliValidator,
-    invoker: SamCliProcessInvoker,
+    validator: SamCliValidator
+    invoker: SamCliProcessInvoker
 }
 
 // Sam Cli Context is lazy loaded on first request to reduce the
@@ -25,12 +25,7 @@ let samCliContextInitialized: boolean = false
 let settingsConfiguration: SettingsConfiguration
 let logger: Logger
 
-export function initialize(
-    params: {
-        settingsConfiguration: SettingsConfiguration,
-        logger: Logger,
-    }
-) {
+export function initialize(params: { settingsConfiguration: SettingsConfiguration; logger: Logger }) {
     settingsConfiguration = params.settingsConfiguration
     logger = params.logger
 
@@ -54,7 +49,6 @@ export function getSamCliContext() {
 }
 
 function makeSamCliContext(): SamCliContext {
-
     const samCliConfiguration = new DefaultSamCliConfiguration(
         settingsConfiguration,
         new DefaultSamCliLocationProvider()
@@ -62,7 +56,7 @@ function makeSamCliContext(): SamCliContext {
 
     const invokerContext: SamCliProcessInvokerContext = {
         cliConfig: samCliConfiguration,
-        logger,
+        logger
     }
     const invoker = new DefaultSamCliProcessInvoker(invokerContext)
 
@@ -71,7 +65,7 @@ function makeSamCliContext(): SamCliContext {
 
     const context: SamCliContext = {
         invoker,
-        validator,
+        validator
     }
 
     return context

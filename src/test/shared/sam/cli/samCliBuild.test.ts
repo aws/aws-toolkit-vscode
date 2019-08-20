@@ -23,7 +23,6 @@ import {
 } from './testSamCliProcessInvoker'
 
 describe('SamCliBuildInvocation', async () => {
-
     class FakeChildProcessResult implements ChildProcessResult {
         public exitCode: number = 0
         public error = undefined
@@ -33,10 +32,7 @@ describe('SamCliBuildInvocation', async () => {
 
     // Returns FakeChildProcessResult for each invoke
     class ExtendedTestSamCliProcessInvoker extends TestSamCliProcessInvoker {
-
-        public constructor(
-            onInvoke: (...args: any[]) => void
-        ) {
+        public constructor(onInvoke: (...args: any[]) => void) {
             super((spawnOptions: SpawnOptions, ...args: any[]) => {
                 onInvoke(...args)
 
@@ -82,7 +78,7 @@ describe('SamCliBuildInvocation', async () => {
             buildDir: nonRelevantArg,
             baseDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
-            invoker: processInvoker,
+            invoker: processInvoker
         }).execute()
     })
 
@@ -97,7 +93,7 @@ describe('SamCliBuildInvocation', async () => {
             buildDir: expectedBuildDir,
             baseDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
-            invoker: processInvoker,
+            invoker: processInvoker
         }).execute()
     })
 
@@ -112,7 +108,7 @@ describe('SamCliBuildInvocation', async () => {
             buildDir: nonRelevantArg,
             baseDir: expectedBaseDir,
             templatePath: placeholderTemplateFile,
-            invoker: processInvoker,
+            invoker: processInvoker
         }).execute()
     })
 
@@ -124,7 +120,7 @@ describe('SamCliBuildInvocation', async () => {
         await new SamCliBuildInvocation({
             buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
-            invoker: processInvoker,
+            invoker: processInvoker
         }).execute()
     })
 
@@ -137,24 +133,20 @@ describe('SamCliBuildInvocation', async () => {
             buildDir: nonRelevantArg,
             baseDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
-            invoker: processInvoker,
+            invoker: processInvoker
         }).execute()
     })
 
     it('passes --use-container to sam cli if useContainer is true', async () => {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
-            assert.notStrictEqual(
-                args.indexOf('--use-container'),
-                -1,
-                'Expected --use-container arg'
-            )
+            assert.notStrictEqual(args.indexOf('--use-container'), -1, 'Expected --use-container arg')
         })
 
         await new SamCliBuildInvocation({
             buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
             invoker: processInvoker,
-            useContainer: true,
+            useContainer: true
         }).execute()
     })
 
@@ -167,7 +159,7 @@ describe('SamCliBuildInvocation', async () => {
             buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
             invoker: processInvoker,
-            useContainer: false,
+            useContainer: false
         }).execute()
     })
 
@@ -179,7 +171,7 @@ describe('SamCliBuildInvocation', async () => {
         await new SamCliBuildInvocation({
             buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
-            invoker: processInvoker,
+            invoker: processInvoker
         }).execute()
     })
 
@@ -194,12 +186,11 @@ describe('SamCliBuildInvocation', async () => {
             buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
             invoker: processInvoker,
-            manifestPath: expectedArg,
+            manifestPath: expectedArg
         }).execute()
     })
 
     it('does not pass --manifest to sam cli if manifestPath is not set', async () => {
-
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assertArgNotPresent(args, '--manifest')
         })
@@ -234,24 +225,20 @@ describe('SamCliBuildInvocation', async () => {
         await new SamCliBuildInvocation({
             buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
-            invoker: processInvoker,
+            invoker: processInvoker
         }).execute()
     })
 
     it('passes --skip-pull-image to sam cli if skipPullImage is true', async () => {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
-            assert.notStrictEqual(
-                args.indexOf('--skip-pull-image'),
-                -1,
-                'Expected --skip-pull-image arg'
-            )
+            assert.notStrictEqual(args.indexOf('--skip-pull-image'), -1, 'Expected --skip-pull-image arg')
         })
 
         await new SamCliBuildInvocation({
             buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
             invoker: processInvoker,
-            skipPullImage: true,
+            skipPullImage: true
         }).execute()
     })
 
@@ -264,7 +251,7 @@ describe('SamCliBuildInvocation', async () => {
             buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
             invoker: processInvoker,
-            skipPullImage: false,
+            skipPullImage: false
         }).execute()
     })
 
@@ -276,26 +263,23 @@ describe('SamCliBuildInvocation', async () => {
         await new SamCliBuildInvocation({
             buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
-            invoker: processInvoker,
+            invoker: processInvoker
         }).execute()
     })
 
     it('throws on unexpected exit code', async () => {
-        const error = await assertThrowsError(
-            async () => {
-                await new SamCliBuildInvocation(
-                    {
-                        buildDir: nonRelevantArg,
-                        templatePath: placeholderTemplateFile,
-                        invoker: badExitCodeProcessInvoker,
-                    },
-                    {
-                        file: fakeFileFunctions
-                    },
-                ).execute()
-            },
-            'Expected an error to be thrown'
-        )
+        const error = await assertThrowsError(async () => {
+            await new SamCliBuildInvocation(
+                {
+                    buildDir: nonRelevantArg,
+                    templatePath: placeholderTemplateFile,
+                    invoker: badExitCodeProcessInvoker
+                },
+                {
+                    file: fakeFileFunctions
+                }
+            ).execute()
+        }, 'Expected an error to be thrown')
 
         assertErrorContainsBadExitMessage(error, badExitCodeProcessInvoker.error.message)
         await assertLogContainsBadExitInformation(logger, badExitCodeProcessInvoker.makeChildProcessResult(), 0)

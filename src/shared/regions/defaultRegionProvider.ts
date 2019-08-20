@@ -28,7 +28,6 @@ export interface RawEndpoints {
 }
 
 export class DefaultRegionProvider implements RegionProvider {
-
     private _areRegionsLoaded: boolean = false
     private _loadedRegions: RegionInfo[]
     private readonly _context: ExtensionContext
@@ -81,15 +80,14 @@ export function getRegionsFromPartition(partition: RawPartition): RegionInfo[] {
 }
 
 export function getRegionsFromEndpoints(endpoints: RawEndpoints): RegionInfo[] {
-    return endpoints.partitions
-        // TODO : Support other Partition regions : https://github.com/aws/aws-toolkit-vscode/issues/188
-        .filter(partition => partition.partition && partition.partition === 'aws')
-        .reduce(
-            (accumulator: RegionInfo[], partition: RawPartition) => {
+    return (
+        endpoints.partitions
+            // TODO : Support other Partition regions : https://github.com/aws/aws-toolkit-vscode/issues/188
+            .filter(partition => partition.partition && partition.partition === 'aws')
+            .reduce((accumulator: RegionInfo[], partition: RawPartition) => {
                 accumulator.push(...getRegionsFromPartition(partition))
 
                 return accumulator
-            },
-            []
-        )
+            }, [])
+    )
 }

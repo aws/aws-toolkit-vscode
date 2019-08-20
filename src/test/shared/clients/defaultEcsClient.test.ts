@@ -9,7 +9,6 @@ import { DefaultEcsClient } from '../../../shared/clients/defaultEcsClient'
 import { assertThrowsError } from '../utilities/assertUtils'
 
 describe('defaultEcsClient', async () => {
-
     let testClient: TestEcsClient
 
     before(() => {
@@ -17,12 +16,13 @@ describe('defaultEcsClient', async () => {
     })
 
     describe('listClusters', async () => {
-
         it('lists clusters from a single page', async () => {
             const targetArr = ['cluster1', 'cluster2', 'cluster3']
-            testClient.listClustersResponses = [{
-                clusterArns: targetArr
-            }]
+            testClient.listClustersResponses = [
+                {
+                    clusterArns: targetArr
+                }
+            ]
             const iterator = testClient.listClusters()
             const arr = []
             for await (const item of iterator) {
@@ -69,12 +69,13 @@ describe('defaultEcsClient', async () => {
     })
 
     describe('listServices', async () => {
-
         it('lists services from a single page', async () => {
             const targetArr = ['service1', 'service2', 'service3']
-            testClient.listServicesResponses = [{
-                serviceArns: targetArr
-            }]
+            testClient.listServicesResponses = [
+                {
+                    serviceArns: targetArr
+                }
+            ]
             const iterator = testClient.listServices('mycluster')
             const arr = []
             for await (const item of iterator) {
@@ -121,12 +122,13 @@ describe('defaultEcsClient', async () => {
     })
 
     describe('ListTaskDefinitionFamilies', async () => {
-
         it('lists task definition families from a single page', async () => {
             const targetArr = ['fam1', 'fam2', 'fam3']
-            testClient.listTaskDefinitionFamiliesResponses = [{
-                families: targetArr
-            }]
+            testClient.listTaskDefinitionFamiliesResponses = [
+                {
+                    families: targetArr
+                }
+            ]
             const iterator = testClient.listTaskDefinitionFamilies()
             const arr = []
             for await (const item of iterator) {
@@ -174,7 +176,6 @@ describe('defaultEcsClient', async () => {
 })
 
 class TestEcsClient extends DefaultEcsClient {
-
     public listClustersResponses: ECS.ListClustersResponse[] | AWSError = [{}]
 
     public listServicesResponses: ECS.ListServicesResponse[] | AWSError = [{}]
@@ -183,16 +184,15 @@ class TestEcsClient extends DefaultEcsClient {
 
     private pageNum: number = 0
 
-    public constructor(
-        regionCode: string = 'us-weast-1'
-    ) {
+    public constructor(regionCode: string = 'us-weast-1') {
         super(regionCode)
     }
 
-    protected async invokeListClusters(request: ECS.ListClustersRequest)
-        : Promise<ECS.ListClustersResponse> {
-        const responseDatum
-            = this.getResponseDatum<ECS.ListClustersResponse>(this.listClustersResponses, request.nextToken)
+    protected async invokeListClusters(request: ECS.ListClustersRequest): Promise<ECS.ListClustersResponse> {
+        const responseDatum = this.getResponseDatum<ECS.ListClustersResponse>(
+            this.listClustersResponses,
+            request.nextToken
+        )
 
         if (responseDatum instanceof Error) {
             throw responseDatum
@@ -201,10 +201,11 @@ class TestEcsClient extends DefaultEcsClient {
         }
     }
 
-    protected async invokeListServices(request: ECS.ListServicesRequest)
-        : Promise<ECS.ListServicesResponse> {
-        const responseDatum
-            = this.getResponseDatum<ECS.ListServicesResponse>(this.listServicesResponses, request.nextToken)
+    protected async invokeListServices(request: ECS.ListServicesRequest): Promise<ECS.ListServicesResponse> {
+        const responseDatum = this.getResponseDatum<ECS.ListServicesResponse>(
+            this.listServicesResponses,
+            request.nextToken
+        )
 
         if (responseDatum instanceof Error) {
             throw responseDatum
@@ -213,13 +214,13 @@ class TestEcsClient extends DefaultEcsClient {
         }
     }
 
-    protected async invokeListTaskDefinitionFamilies(request: ECS.ListTaskDefinitionFamiliesRequest)
-        : Promise<ECS.ListTaskDefinitionFamiliesResponse> {
-        const responseDatum =
-            this.getResponseDatum<ECS.ListTaskDefinitionFamiliesResponse>(
-                this.listTaskDefinitionFamiliesResponses,
-                request.nextToken
-            )
+    protected async invokeListTaskDefinitionFamilies(
+        request: ECS.ListTaskDefinitionFamiliesRequest
+    ): Promise<ECS.ListTaskDefinitionFamiliesResponse> {
+        const responseDatum = this.getResponseDatum<ECS.ListTaskDefinitionFamiliesResponse>(
+            this.listTaskDefinitionFamiliesResponses,
+            request.nextToken
+        )
 
         if (responseDatum instanceof Error) {
             throw responseDatum
@@ -229,7 +230,7 @@ class TestEcsClient extends DefaultEcsClient {
     }
 
     protected async createSdkClient(): Promise<ECS> {
-        return {} as any as ECS
+        return ({} as any) as ECS
     }
 
     private getResponseDatum<T>(responses: T[] | AWSError, nextToken?: string): T | AWSError {

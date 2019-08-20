@@ -24,9 +24,7 @@ import {
     DefaultCreateNewSamAppWizardContext
 } from '../wizards/samInitWizard'
 
-export async function resumeCreateNewSamApp(
-    activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath()
-) {
+export async function resumeCreateNewSamApp(activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath()) {
     try {
         const pathToLaunch = activationLaunchPath.getLaunchPath()
         if (!pathToLaunch) {
@@ -37,11 +35,13 @@ export async function resumeCreateNewSamApp(
         if (!vscode.workspace.getWorkspaceFolder(uri)) {
             // This should never happen, as `pathToLaunch` will only be set if `uri` is in
             // the newly added workspace folder.
-            vscode.window.showErrorMessage(localize(
-                'AWS.samcli.initWizard.source.error.notInWorkspace',
-                'Could not open file \'{0}\'. If this file exists on disk, try adding it to your workspace.',
-                uri.fsPath
-            ))
+            vscode.window.showErrorMessage(
+                localize(
+                    'AWS.samcli.initWizard.source.error.notInWorkspace',
+                    "Could not open file '{0}'. If this file exists on disk, try adding it to your workspace.",
+                    uri.fsPath
+                )
+            )
 
             return
         }
@@ -54,7 +54,7 @@ export async function resumeCreateNewSamApp(
 
 export interface CreateNewSamApplicationResults {
     reason: 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
-    result: 'pass' | 'fail' | 'cancel',
+    result: 'pass' | 'fail' | 'cancel'
     runtime: string
 }
 
@@ -65,12 +65,12 @@ export async function createNewSamApplication(
     channelLogger: ChannelLogger,
     extensionContext: Pick<vscode.ExtensionContext, 'asAbsolutePath' | 'globalState'>,
     samCliContext: SamCliContext = getSamCliContext(),
-    activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath(),
+    activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath()
 ): Promise<CreateNewSamApplicationResults> {
     const results: CreateNewSamApplicationResults = {
         reason: 'unknown',
         result: 'fail',
-        runtime: 'unknown',
+        runtime: 'unknown'
     }
 
     try {
@@ -90,7 +90,7 @@ export async function createNewSamApplication(
         const initArguments: SamCliInitArgs = {
             name: config.name,
             location: config.location.fsPath,
-            runtime: config.runtime,
+            runtime: config.runtime
         }
         await runSamCliInit(initArguments, samCliContext.invoker)
 
@@ -106,12 +106,10 @@ export async function createNewSamApplication(
         // In case adding the workspace folder triggers a VS Code restart, instruct extension to
         // launch app file after activation.
         activationLaunchPath.setLaunchPath(uri.fsPath)
-        await addWorkspaceFolder(
-            {
-                uri: config.location,
-                name: path.basename(config.location.fsPath)
-            },
-        )
+        await addWorkspaceFolder({
+            uri: config.location,
+            name: path.basename(config.location.fsPath)
+        })
 
         await vscode.window.showTextDocument(uri)
         activationLaunchPath.clearLaunchPath()
@@ -151,20 +149,17 @@ async function getMainUri(
     if (await fileExists(samTemplatePath)) {
         return vscode.Uri.file(samTemplatePath)
     } else {
-        vscode.window.showWarningMessage(localize(
-            'AWS.samcli.initWizard.source.error.notFound',
-            'Project created successfully, but main source code file not found: {0}',
-            samTemplatePath
-        ))
+        vscode.window.showWarningMessage(
+            localize(
+                'AWS.samcli.initWizard.source.error.notFound',
+                'Project created successfully, but main source code file not found: {0}',
+                samTemplatePath
+            )
+        )
     }
 }
 
-async function addWorkspaceFolder(
-    folder: {
-        uri: vscode.Uri,
-        name?: string
-    },
-): Promise<void> {
+async function addWorkspaceFolder(folder: { uri: vscode.Uri; name?: string }): Promise<void> {
     // No-op if the folder is already in the workspace.
     if (vscode.workspace.getWorkspaceFolder(folder.uri)) {
         return

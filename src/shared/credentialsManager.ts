@@ -14,7 +14,6 @@ const localize = nls.loadMessageBundle()
  * @description Encapsulates the setup and caching of credentials profiles
  */
 export class CredentialsManager {
-
     private static readonly userCancelledMfaError: string = localize(
         'AWS.error.mfa.userCancelled',
         'User cancelled entering authentication code'
@@ -33,17 +32,13 @@ export class CredentialsManager {
      * @param profileName Profile to retrieve
      */
     public async getCredentials(profileName: string): Promise<AWS.Credentials> {
+        const credentials = await this._asyncLock.acquire(`credentials.lock.${profileName}`, async () => {
+            if (!this._credentialsCache[profileName]) {
+                this._credentialsCache[profileName] = await this.createCredentials(profileName)
+            }
 
-        const credentials = await this._asyncLock.acquire(
-            `credentials.lock.${profileName}`,
-            async () => {
-
-                if (!this._credentialsCache[profileName]) {
-                    this._credentialsCache[profileName] = await this.createCredentials(profileName)
-                }
-
-                return this._credentialsCache[profileName]
-            })
+            return this._credentialsCache[profileName]
+        })
 
         return credentials
     }
@@ -54,7 +49,6 @@ export class CredentialsManager {
      * @param profileName Profile to set up
      */
     private async createCredentials(profileName: string): Promise<AWS.Credentials> {
-
         const credentials: AWS.Credentials = new AWS.SharedIniFileCredentials({
             profile: profileName,
             tokenCodeFn: async (mfaSerial, callback) =>
@@ -89,7 +83,7 @@ export class CredentialsManager {
                     'AWS.prompt.mfa.enterCode.prompt',
                     'Enter authentication code for profile {0}',
                     profileName
-                ),
+                )
             })
 
             // Distinguish user cancel vs code entry issues

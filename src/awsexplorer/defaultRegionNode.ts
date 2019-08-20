@@ -5,10 +5,7 @@
 
 import { TreeItemCollapsibleState } from 'vscode'
 import { CloudFormationNode, DefaultCloudFormationNode } from '../lambda/explorer/cloudFormationNodes'
-import {
-    DefaultLambdaFunctionGroupNode,
-    LambdaFunctionGroupNode
-} from '../lambda/explorer/lambdaNodes'
+import { DefaultLambdaFunctionGroupNode, LambdaFunctionGroupNode } from '../lambda/explorer/lambdaNodes'
 import { RegionInfo } from '../shared/regions/regionInfo'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { RegionNode } from '../shared/treeview/nodes/regionNode'
@@ -34,10 +31,7 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
         return this.info.regionName
     }
 
-    public constructor(
-        info: RegionInfo,
-        getExtensionAbsolutePath: (relativeExtensionPath: string) => string
-    ) {
+    public constructor(info: RegionInfo, getExtensionAbsolutePath: (relativeExtensionPath: string) => string) {
         super(info.regionName, TreeItemCollapsibleState.Expanded)
         this.contextValue = 'awsRegionNode'
         this.info = info
@@ -52,6 +46,7 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
+<<<<<<< HEAD
         const children: AWSTreeNodeBase[] = [
             this.cloudFormationNode,
             this.lambdaFunctionGroupNode
@@ -63,6 +58,9 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
         }
 
         return children
+=======
+        return [this.cloudFormationNode, this.lambdaFunctionGroupNode]
+>>>>>>> master
     }
 
     public update(info: RegionInfo): void {
@@ -75,9 +73,7 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
 export class RegionNodeCollection {
     private readonly regionNodes: Map<string, RegionNode>
 
-    public constructor(
-        private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
-    ) {
+    public constructor(private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string) {
         this.regionNodes = new Map<string, RegionNode>()
     }
 
@@ -88,10 +84,10 @@ export class RegionNodeCollection {
             this.regionNodes,
             regionMap.keys(),
             key => this.regionNodes.get(key)!.update(regionMap.get(key)!),
-            key => new DefaultRegionNode(
-                regionMap.get(key)!,
-                relativeExtensionPath => this.getExtensionAbsolutePath(relativeExtensionPath)
-            )
+            key =>
+                new DefaultRegionNode(regionMap.get(key)!, relativeExtensionPath =>
+                    this.getExtensionAbsolutePath(relativeExtensionPath)
+                )
         )
     }
 }
