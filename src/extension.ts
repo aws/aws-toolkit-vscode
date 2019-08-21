@@ -20,6 +20,7 @@ import { DefaultAWSStatusBar } from './shared/defaultStatusBar'
 import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
 import { safeGet, showQuickStartWebview, toastNewUser } from './shared/extensionUtilities'
+import { FeatureToggle } from './shared/featureToggle'
 import * as logFactory from './shared/logger'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import { activate as activateServerless } from './shared/sam/activation'
@@ -76,6 +77,8 @@ export async function activate(context: vscode.ExtensionContext) {
             console.warn(`Exception while displaying opt-out message: ${err}`)
         })
         await ext.telemetry.start()
+
+        const featureToggle = new FeatureToggle(toolkitSettings)
 
         registerCommand({
             command: 'aws.login',
@@ -143,8 +146,8 @@ export async function activate(context: vscode.ExtensionContext) {
         })
 
         const providers = [
-            new AwsExplorer(awsContext, awsContextTrees, regionProvider, resourceFetcher, relativeExtensionPath =>
-                getExtensionAbsolutePath(context, relativeExtensionPath)
+            new AwsExplorer(awsContext, awsContextTrees, regionProvider, resourceFetcher, featureToggle,
+                relativeExtensionPath => getExtensionAbsolutePath(context, relativeExtensionPath)
             )
         ]
 

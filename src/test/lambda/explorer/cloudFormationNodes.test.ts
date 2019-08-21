@@ -19,11 +19,13 @@ import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { StsClient } from '../../../shared/clients/stsClient'
 import { ext } from '../../../shared/extensionGlobals'
+import { FeatureToggle } from '../../../shared/featureToggle'
 import { TestLogger } from '../../../shared/loggerUtils'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { MockCloudFormationClient } from '../../shared/clients/mockClients'
+import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
@@ -240,7 +242,11 @@ describe('DefaultCloudFormationStackNode', () => {
     function generateTestNode(): CloudFormationStackNode {
         return new DefaultCloudFormationStackNode(
             new DefaultCloudFormationNode(
-                new DefaultRegionNode(new RegionInfo('code', 'name'), iconPathMaker),
+                new DefaultRegionNode(
+                    new RegionInfo('code', 'name'),
+                    new FeatureToggle(new TestSettingsConfiguration()),
+                    iconPathMaker
+                ),
                 iconPathMaker
             ),
             fakeStackSummary,
@@ -311,7 +317,11 @@ describe('DefaultCloudFormationNode', () => {
         }
 
         const cloudFormationNode = new DefaultCloudFormationNode(
-            new DefaultRegionNode(new RegionInfo('code', 'name'), stubPathResolver),
+            new DefaultRegionNode(
+                new RegionInfo('code', 'name'),
+                new FeatureToggle(new TestSettingsConfiguration()),
+                stubPathResolver
+            ),
             stubPathResolver
         )
 
@@ -364,7 +374,11 @@ describe('DefaultCloudFormationNode', () => {
         }
 
         const testNode: ThrowErrorDefaultCloudFormationNode = new ThrowErrorDefaultCloudFormationNode(
-            new DefaultRegionNode(new RegionInfo('code', 'name'), unusedPathResolver)
+            new DefaultRegionNode(
+                new RegionInfo('code', 'name'),
+                new FeatureToggle(new TestSettingsConfiguration()),
+                unusedPathResolver
+            ),
         )
 
         const childNodes = await testNode.getChildren()

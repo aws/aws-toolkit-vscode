@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import { AwsExplorer } from '../../awsexplorer/awsExplorer'
 import { AwsContextTreeCollection } from '../../shared/awsContextTreeCollection'
+import { FeatureToggle } from '../../shared/featureToggle'
 import { TestLogger } from '../../shared/loggerUtils'
 import { RegionNode } from '../../shared/treeview/nodes/regionNode'
 import { MockOutputChannel } from '../mockOutputChannel'
@@ -16,6 +17,7 @@ import {
     FakeRegionProvider,
     FakeResourceFetcher
 } from '../utilities/fakeAwsContext'
+import { TestSettingsConfiguration } from '../utilities/testSettingsConfiguration'
 
 describe('AwsExplorer', () => {
     let logger: TestLogger
@@ -33,6 +35,7 @@ describe('AwsExplorer', () => {
         const regionProvider = new FakeRegionProvider()
         const awsContextTreeCollection = new AwsContextTreeCollection()
         const resourceFetcher = new FakeResourceFetcher()
+        const featureToggle = new FeatureToggle(new TestSettingsConfiguration())
         const mockChannel = new MockOutputChannel()
 
         const awsExplorer = new AwsExplorer(
@@ -40,6 +43,7 @@ describe('AwsExplorer', () => {
             awsContextTreeCollection,
             regionProvider,
             resourceFetcher,
+            featureToggle,
             path => {
                 throw new Error('unused')
             },

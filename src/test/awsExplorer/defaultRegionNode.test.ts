@@ -5,7 +5,9 @@
 
 import * as assert from 'assert'
 import { DefaultRegionNode } from '../../awsexplorer/defaultRegionNode'
+import { FeatureToggle } from '../../shared/featureToggle'
 import { RegionInfo } from '../../shared/regions/regionInfo'
+import { TestSettingsConfiguration } from '../utilities/testSettingsConfiguration'
 
 // TODO: create test for getChildren() after mocking is introduced
 describe('DefaultRegionNode', () => {
@@ -14,9 +16,13 @@ describe('DefaultRegionNode', () => {
 
     // Validates we tagged the node correctly
     it('initializes name and tooltip', async () => {
-        const testNode = new DefaultRegionNode(new RegionInfo(regionCode, regionName), () => {
-            throw new Error('unused')
-        })
+        const testNode = new DefaultRegionNode(
+            new RegionInfo(regionCode, regionName),
+            new FeatureToggle(new TestSettingsConfiguration()),
+            () => {
+                throw new Error('unused')
+            }
+        )
 
         assert.strictEqual(testNode.label, regionName)
         assert.strictEqual(testNode.tooltip, `${regionName} [${regionCode}]`)

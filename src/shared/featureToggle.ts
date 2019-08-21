@@ -12,6 +12,7 @@ import { SettingsConfiguration } from './settingsConfiguration'
 // You cannot have more active features than FeatureToggle.maxFeatures (default: 5)
 // Any features that are flagged in the code but not added here will always return false.
 export enum ActiveFeatureKeys {
+    EcsExplorer = 'EcsExplorer'
 }
 
 /**

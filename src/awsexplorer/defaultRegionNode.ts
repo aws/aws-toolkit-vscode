@@ -6,10 +6,10 @@
 import { TreeItemCollapsibleState } from 'vscode'
 import { CloudFormationNode, DefaultCloudFormationNode } from '../lambda/explorer/cloudFormationNodes'
 import { DefaultLambdaFunctionGroupNode, LambdaFunctionGroupNode } from '../lambda/explorer/lambdaNodes'
+import { ActiveFeatureKeys, FeatureToggle } from '../shared/featureToggle'
 import { RegionInfo } from '../shared/regions/regionInfo'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { RegionNode } from '../shared/treeview/nodes/regionNode'
-import { toMap, updateInPlace } from '../shared/utilities/collectionUtils'
 import { DefaultEcsNode } from './nodes/ecsNode'
 import { EcsNode } from './nodes/ecsNodeInterfaces'
 
@@ -31,7 +31,11 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
         return this.info.regionName
     }
 
-    public constructor(info: RegionInfo, getExtensionAbsolutePath: (relativeExtensionPath: string) => string) {
+    public constructor(
+        info: RegionInfo,
+        featureToggle: FeatureToggle,
+        getExtensionAbsolutePath: (relativeExtensionPath: string) => string
+    ) {
         super(info.regionName, TreeItemCollapsibleState.Expanded)
         this.contextValue = 'awsRegionNode'
         this.info = info
@@ -39,14 +43,13 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
 
         this.cloudFormationNode = new DefaultCloudFormationNode(this, getExtensionAbsolutePath)
         this.lambdaFunctionGroupNode = new DefaultLambdaFunctionGroupNode(this, getExtensionAbsolutePath)
-        // TODO: add gate here
-        if (true) {
+        // Feature flag for ECS Explorer. Remove when feature goes prod
+        if (featureToggle.isFeatureActive(ActiveFeatureKeys.EcsExplorer)) {
             this.ecsNode = new DefaultEcsNode(this, getExtensionAbsolutePath)
         }
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
-<<<<<<< HEAD
         const children: AWSTreeNodeBase[] = [
             this.cloudFormationNode,
             this.lambdaFunctionGroupNode
@@ -58,36 +61,11 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
         }
 
         return children
-=======
-        return [this.cloudFormationNode, this.lambdaFunctionGroupNode]
->>>>>>> master
     }
 
     public update(info: RegionInfo): void {
         this.info = info
         this.label = info.regionName
         this.tooltip = `${info.regionName} [${info.regionCode}]`
-    }
-}
-
-export class RegionNodeCollection {
-    private readonly regionNodes: Map<string, RegionNode>
-
-    public constructor(private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string) {
-        this.regionNodes = new Map<string, RegionNode>()
-    }
-
-    public async updateChildren(regionDefinitions: RegionInfo[]): Promise<void> {
-        const regionMap = toMap(regionDefinitions, r => r.regionCode)
-
-        updateInPlace(
-            this.regionNodes,
-            regionMap.keys(),
-            key => this.regionNodes.get(key)!.update(regionMap.get(key)!),
-            key =>
-                new DefaultRegionNode(regionMap.get(key)!, relativeExtensionPath =>
-                    this.getExtensionAbsolutePath(relativeExtensionPath)
-                )
-        )
     }
 }

@@ -14,6 +14,7 @@ import { configureLocalLambda } from '../lambda/local/configureLocalLambda'
 import { AwsContext } from '../shared/awsContext'
 import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
 import { ext } from '../shared/extensionGlobals'
+import { FeatureToggle } from '../shared/featureToggle'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { ResourceFetcher } from '../shared/resourceFetcher'
 import { TelemetryNamespace } from '../shared/telemetry/telemetryTypes'
@@ -39,6 +40,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
         private readonly awsContextTrees: AwsContextTreeCollection,
         private readonly regionProvider: RegionProvider,
         private readonly resourceFetcher: ResourceFetcher,
+        private readonly featureToggle: FeatureToggle,
         private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string,
         private readonly lambdaOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda')
     ) {
@@ -161,7 +163,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
             intersection(regionMap.keys(), explorerRegionCodes),
             key => this.regionNodes.get(key)!.update(regionMap.get(key)!),
             key =>
-                new DefaultRegionNode(regionMap.get(key)!, relativeExtensionPath =>
+                new DefaultRegionNode(regionMap.get(key)!, this.featureToggle, relativeExtensionPath =>
                     this.getExtensionAbsolutePath(relativeExtensionPath)
                 )
         )

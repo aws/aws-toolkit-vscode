@@ -18,10 +18,12 @@ import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { StsClient } from '../../../shared/clients/stsClient'
 import { ext } from '../../../shared/extensionGlobals'
+import { FeatureToggle } from '../../../shared/featureToggle'
 import { TestLogger } from '../../../shared/loggerUtils'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { MockLambdaClient } from '../../shared/clients/mockClients'
+import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 
 // TODO : Consolidate all asyncGenerator calls into a shared utility method
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
@@ -119,7 +121,11 @@ describe('DefaultLambdaFunctionNode', () => {
     function generateTestNode(): DefaultLambdaFunctionNode {
         return new DefaultLambdaFunctionNode(
             new DefaultLambdaFunctionGroupNode(
-                new DefaultRegionNode(new RegionInfo('code', 'name'), iconPathMaker),
+                new DefaultRegionNode(
+                    new RegionInfo('code', 'name'),
+                    new FeatureToggle(new TestSettingsConfiguration()),
+                    iconPathMaker
+                ),
                 iconPathMaker
             ),
             fakeFunctionConfig,
@@ -199,7 +205,11 @@ describe('DefaultLambdaFunctionGroupNode', () => {
         }
 
         const functionGroupNode = new DefaultLambdaFunctionGroupNode(
-            new DefaultRegionNode(new RegionInfo('code', 'name'), stubPathResolver),
+            new DefaultRegionNode(
+                new RegionInfo('code', 'name'),
+                new FeatureToggle(new TestSettingsConfiguration()),
+                stubPathResolver
+            ),
             stubPathResolver
         )
 
@@ -238,7 +248,11 @@ describe('DefaultLambdaFunctionGroupNode', () => {
 
     it('handles error', async () => {
         const testNode = new ThrowErrorDefaultLambdaFunctionGroupNode(
-            new DefaultRegionNode(new RegionInfo('code', 'name'), unusedPathResolver)
+            new DefaultRegionNode(
+                new RegionInfo('code', 'name'),
+                new FeatureToggle(new TestSettingsConfiguration()),
+                unusedPathResolver
+            )
         )
 
         const childNodes = await testNode.getChildren()
