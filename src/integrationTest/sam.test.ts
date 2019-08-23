@@ -59,17 +59,16 @@ async function getCodeLenses(documentUri: vscode.Uri): Promise<vscode.CodeLens[]
     }
 }
 
-async function getCodeLensesOrTimeout(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
+async function getCodeLensesOrFail(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
     const codeLensPromise = getCodeLenses(documentUri)
     const timeout = new Promise(resolve => {
         setTimeout(resolve, 10000, undefined)
     })
     const result = await Promise.race([codeLensPromise, timeout])
 
-    if (result) {
-        return result as vscode.CodeLens[]
-    }
-    throw new Error('Codelenses took too long to show up!')
+    assert.ok(result, 'Codelenses took too long to show up!')
+
+    return result as vscode.CodeLens[]
 }
 
 async function onDebugChanged(e: vscode.DebugSession | undefined, debuggerType: string) {
@@ -107,11 +106,15 @@ for (const runtime of runtimes) {
     const debuggerType = runtime.debuggerType
     let documentUri: vscode.Uri
     let debugDisposable: vscode.Disposable
+    let samIntegrationTestsAttempt: number = 0
 
     describe(`SAM Integration tests ${runtime.name}`, async () => {
         before(async function() {
             // tslint:disable-next-line: no-invalid-this
             this.timeout(TIMEOUT)
+
+            console.log(`Test Attempt #${++samIntegrationTestsAttempt} for ${runtime.name}`)
+
             // set up debug config
             debugDisposable = vscode.debug.onDidChangeActiveDebugSession(async session =>
                 onDebugChanged(session, debuggerType)
@@ -161,7 +164,7 @@ for (const runtime of runtimes) {
         }).timeout(TIMEOUT)
 
         it('Invokes the run codelens', async () => {
-            const [runCodeLens] = await getCodeLensesOrTimeout(documentUri)
+            const [runCodeLens] = await getCodeLensesOrFail(documentUri)
             assert.ok(runCodeLens.command)
             const command = runCodeLens.command!
             assert.ok(command.arguments)
@@ -173,7 +176,7 @@ for (const runtime of runtimes) {
         }).timeout(TIMEOUT)
 
         it('Invokes the debug codelens', async () => {
-            const [, debugCodeLens] = await getCodeLensesOrTimeout(documentUri)
+            const [, debugCodeLens] = await getCodeLensesOrFail(documentUri)
             assert.ok(debugCodeLens.command)
             const command = debugCodeLens.command!
             assert.ok(command.arguments)
@@ -184,5 +187,6 @@ for (const runtime of runtimes) {
             validateRunResult(runResult, projectSDK, 'true')
             // This timeout is significantly longer, mostly to accommodate the long first time .net debugger
         }).timeout(TIMEOUT * 2)
-    })
+    }).retries(3) // Retry tests because CodeLenses do not reliably get produced in the tests
+    // TODO : Remove retries in future - https://github.com/aws/aws-toolkit-vscode/issues/737
 }
