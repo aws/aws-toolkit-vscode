@@ -14,6 +14,9 @@ import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
 import { activateExtension, sleep, TIMEOUT } from './integrationTestsUtilities'
 
 const projectFolder = `${__dirname}`
+// Retry tests because CodeLenses do not reliably get produced in the tests
+// TODO : Remove retries in future - https://github.com/aws/aws-toolkit-vscode/issues/737
+const maxCodeLensTestAttempts = 3
 
 const runtimes = [
     { name: 'nodejs8.10', path: 'testProject/hello-world/app.js', debuggerType: 'node2' },
@@ -106,14 +109,13 @@ for (const runtime of runtimes) {
     const debuggerType = runtime.debuggerType
     let documentUri: vscode.Uri
     let debugDisposable: vscode.Disposable
-    let samIntegrationTestsAttempt: number = 0
+    let runCodeLensAttempt: number = 0
+    let debugCodeLensAttempt: number = 0
 
     describe(`SAM Integration tests ${runtime.name}`, async () => {
         before(async function() {
             // tslint:disable-next-line: no-invalid-this
             this.timeout(TIMEOUT)
-
-            console.log(`Test Attempt #${++samIntegrationTestsAttempt} for ${runtime.name}`)
 
             // set up debug config
             debugDisposable = vscode.debug.onDidChangeActiveDebugSession(async session =>
@@ -163,7 +165,9 @@ for (const runtime of runtimes) {
             assert(err.message.includes('directory already exists'))
         }).timeout(TIMEOUT)
 
-        it('Invokes the run codelens', async () => {
+        it(`Invokes the ${runtime.name} run codelens`, async () => {
+            console.log(`Attempt #${++runCodeLensAttempt} at testing ${runtime.name} Run CodeLens`)
+
             const [runCodeLens] = await getCodeLensesOrFail(documentUri)
             assert.ok(runCodeLens.command)
             const command = runCodeLens.command!
@@ -173,9 +177,13 @@ for (const runtime of runtimes) {
                 ...command.arguments!
             )
             validateRunResult(runResult, projectSDK, 'false')
-        }).timeout(TIMEOUT)
+        })
+            .timeout(TIMEOUT)
+            .retries(maxCodeLensTestAttempts) // Retry tests because CodeLenses do not reliably get produced in the tests
 
-        it('Invokes the debug codelens', async () => {
+        it(`Invokes the ${runtime.name} debug codelens`, async () => {
+            console.log(`Attempt #${++debugCodeLensAttempt} at testing ${runtime.name} Debug CodeLens`)
+
             const [, debugCodeLens] = await getCodeLensesOrFail(documentUri)
             assert.ok(debugCodeLens.command)
             const command = debugCodeLens.command!
@@ -186,7 +194,8 @@ for (const runtime of runtimes) {
             )
             validateRunResult(runResult, projectSDK, 'true')
             // This timeout is significantly longer, mostly to accommodate the long first time .net debugger
-        }).timeout(TIMEOUT * 2)
-    }).retries(3) // Retry tests because CodeLenses do not reliably get produced in the tests
-    // TODO : Remove retries in future - https://github.com/aws/aws-toolkit-vscode/issues/737
+        })
+            .timeout(TIMEOUT * 2)
+            .retries(maxCodeLensTestAttempts) // Retry tests because CodeLenses do not reliably get produced in the tests
+    })
 }
