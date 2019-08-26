@@ -72,12 +72,15 @@ class EcsTaskDefinitionsParentNode(project: Project) :
 
     override fun getChildren(): List<AwsExplorerNode<*>> = super.getChildren()
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> = AwsResourceCache.getInstance(nodeProject)
-        .getResourceNow(EcsResources.LIST_TASK_DEFINITION_FAMILIES)
+        .getResourceNow(EcsResources.LIST_ACTIVE_TASK_DEFINITION_FAMILIES)
         .map { EcsTaskDefinitionNode(nodeProject, it) }
 }
 
 class EcsTaskDefinitionNode(project: Project, familyName: String) :
-    AwsExplorerNode<String>(project, familyName, AwsIcons.Logos.AWS) {
+    AwsExplorerResourceNode<String>(project, EcsClient.SERVICE_NAME, familyName, AwsIcons.Logos.AWS) {
+    override fun resourceType() = "taskDefinition"
+
+    override fun resourceArn(): String = AwsResourceCache.getInstance(nodeProject).getResourceNow(EcsResources.describeTaskDefinition(value)).taskDefinitionArn()
 
     override fun getChildren(): List<AwsExplorerResourceNode<*>> = emptyList()
 }

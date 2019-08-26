@@ -30,7 +30,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsMa
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier.AccountSettingsEvent
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_SERVICE_NODE
-import software.aws.toolkits.jetbrains.core.explorer.actions.CopyArn
+import software.aws.toolkits.jetbrains.core.explorer.actions.CopyArnAction
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
@@ -121,7 +121,7 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
                     is AwsExplorerServiceRootNode ->
                         "aws.toolkit.explorer.${explorerNode.serviceId}"
                     is AwsExplorerResourceNode<*> -> {
-                        additionalActions.add(CopyArn(explorerNode.resourceArn()))
+                        additionalActions.add(CopyArnAction())
                         val suffix = if (explorerNode.immutable) ".immutable" else ""
                         "aws.toolkit.explorer.${explorerNode.serviceId}.${explorerNode.resourceType()}$suffix"
                     }

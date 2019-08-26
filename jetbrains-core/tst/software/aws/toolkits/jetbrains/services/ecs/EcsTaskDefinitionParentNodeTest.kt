@@ -31,7 +31,7 @@ class EcsTaskDefinitionParentNodeTest {
         val node = aEcsTaskDefinitionParentNode()
 
         resourceCache().addEntry(
-            EcsResources.LIST_TASK_DEFINITION_FAMILIES,
+            EcsResources.LIST_ACTIVE_TASK_DEFINITION_FAMILIES,
             CompletableFutureUtils.failedFuture(RuntimeException("Simulated error"))
         )
 
@@ -65,7 +65,7 @@ class EcsTaskDefinitionParentNodeTest {
 
     private fun MockResourceCache.taskDefinitionFamilies(vararg familyNames: String) {
         this.addEntry(
-            EcsResources.LIST_TASK_DEFINITION_FAMILIES,
+            EcsResources.LIST_ACTIVE_TASK_DEFINITION_FAMILIES,
             CompletableFuture.completedFuture(familyNames.toList())
         )
     }

@@ -8,7 +8,7 @@ import com.intellij.idea.ActionsBundle
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.psi.NavigatablePsiElement
 import com.intellij.util.OpenSourceUtil
-import software.aws.toolkits.jetbrains.core.explorer.ResourceNodeAction
+import software.aws.toolkits.jetbrains.core.explorer.actions.ResourceNodeAction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 
 class GoToHandlerAction : ResourceNodeAction<LambdaFunctionNode>(ActionsBundle.actionText("EditSource"), description = ActionsBundle.actionText("EditSource")) {

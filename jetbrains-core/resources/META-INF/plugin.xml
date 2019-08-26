@@ -217,6 +217,7 @@
         <group id="aws.toolkit.explorer.cloudformation.stack" popup="true" compact="false">
             <action id="cloudformation.stack.view"
                     class="software.aws.toolkits.jetbrains.core.stack.OpenStackUiAction"/>
+            <separator/>
             <action id="cloudformation.stack.delete"
                     class="software.aws.toolkits.jetbrains.services.cloudformation.DeleteCloudFormationStackAction"/>
         </group>

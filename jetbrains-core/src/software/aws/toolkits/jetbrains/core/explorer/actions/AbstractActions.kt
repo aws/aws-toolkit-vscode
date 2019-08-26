@@ -1,11 +1,12 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.core.explorer
+package software.aws.toolkits.jetbrains.core.explorer.actions
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
+import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
 import javax.swing.Icon
 

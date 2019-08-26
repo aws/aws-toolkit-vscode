@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.core
+package software.aws.toolkits.jetbrains.core.explorer.actions
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -10,7 +10,6 @@ import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.ui.InputValidator
 import com.intellij.openapi.ui.Messages
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
-import software.aws.toolkits.jetbrains.core.explorer.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.jetbrains.utils.Operation
