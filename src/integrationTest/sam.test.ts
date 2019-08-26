@@ -193,9 +193,8 @@ for (const runtime of runtimes) {
                 ...command.arguments!
             )
             validateRunResult(runResult, projectSDK, 'true')
-            // This timeout is significantly longer, mostly to accommodate the long first time .net debugger
         })
-            .timeout(TIMEOUT * 2)
+            .timeout(TIMEOUT * 2) // This timeout is significantly longer, mostly to accommodate the long first time .net debugger
             .retries(maxCodeLensTestAttempts) // Retry tests because CodeLenses do not reliably get produced in the tests
     })
 }
