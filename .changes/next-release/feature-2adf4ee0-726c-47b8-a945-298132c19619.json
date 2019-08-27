@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Add ECS task definitions, clusters, and services to the explorer"
-}

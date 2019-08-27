@@ -56,9 +56,6 @@ dependencies {
     compile("software.amazon.awssdk:iam:$awsSdkVersion") {
         exclude group: 'org.slf4j'
     }
-    compile("software.amazon.awssdk:ecs:$awsSdkVersion") {
-        exclude group: 'org.slf4j'
-    }
     compile("software.amazon.awssdk:cloudformation:$awsSdkVersion") {
         exclude group: 'org.slf4j'
     }
