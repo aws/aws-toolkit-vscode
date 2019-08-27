@@ -64,6 +64,7 @@ public class SamInitSelectionPanel implements ValidatablePanel {
         runtimeComboBox.addItemListener(l -> {
             if (l.getStateChange() == ItemEvent.SELECTED) {
                 runtimeUpdate();
+                sdkSelectionUi.registerListeners();
             }
         });
 
