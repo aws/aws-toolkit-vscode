@@ -4,12 +4,12 @@
  */
 
 import * as assert from 'assert'
+import { DefaultEcsClusterServicesNode } from '../../../awsexplorer/nodes/ecsClusterServicesNode'
 import { EcsClusterNode } from '../../../awsexplorer/nodes/ecsNodeInterfaces'
-import { DefaultEcsServicesNode } from '../../../awsexplorer/nodes/ecsServicesNode'
 import { TestLogger } from '../../../shared/loggerUtils'
 import { MockClusterNode } from './mockNodes'
 
-describe('DefaultEcsServicesNode', () => {
+describe('DefaultEcsClusterServicesNode', () => {
 
     let logger: TestLogger
 
@@ -21,7 +21,7 @@ describe('DefaultEcsServicesNode', () => {
         await logger.cleanupLogger()
     })
 
-    class TestEcsServicesNode extends DefaultEcsServicesNode {
+    class TestEcsClusterServicesNode extends DefaultEcsClusterServicesNode {
 
         public response: Map<string, string> | Error = new Map<string, string>()
 
@@ -31,7 +31,7 @@ describe('DefaultEcsServicesNode', () => {
             super(parent, (unused: string) => 'unused')
         }
 
-        protected async getDataMapFromAwsCall(): Promise<Map<string, string>> {
+        protected async getEcsServices(): Promise<Map<string, string>> {
             if (this.response instanceof Error) {
                 throw this.response
             }
@@ -40,11 +40,11 @@ describe('DefaultEcsServicesNode', () => {
         }
     }
 
-    it('creates a node with child EcsServiceNodes in alphabetical order', async () => {
+    it('creates a node with child EcsClusterServiceNodes in alphabetical order', async () => {
         const arn = 'arn:aws:ecs:us-east-1:123456789012:service/abc'
         const arn2 = 'arn:aws:ecs:us-east-1:123456789012:service/xyz'
         const nameArr = ['abc', 'xyz']
-        const testNode = new TestEcsServicesNode(
+        const testNode = new TestEcsClusterServicesNode(
             new MockClusterNode()
         )
         const map = new Map<string, string>()
@@ -57,11 +57,11 @@ describe('DefaultEcsServicesNode', () => {
         }
     })
 
-    it('creates a node with child EcsServiceNodes that mix ARN styles in alphabetical order', async () => {
+    it('creates a node with child EcsClusterServiceNodes that mix ARN styles in alphabetical order', async () => {
         const arn = 'arn:aws:ecs:us-east-1:123456789012:service/my-cluster/abc'
         const arn2 = 'arn:aws:ecs:us-east-1:123456789012:service/xyz'
         const nameArr = ['abc', 'xyz']
-        const testNode = new TestEcsServicesNode(
+        const testNode = new TestEcsClusterServicesNode(
             new MockClusterNode()
         )
         const map = new Map<string, string>()
@@ -75,7 +75,7 @@ describe('DefaultEcsServicesNode', () => {
     })
 
     it ('handles errors', async () => {
-        const testNode = new TestEcsServicesNode(
+        const testNode = new TestEcsClusterServicesNode(
             new MockClusterNode()
         )
         testNode.response = new Error('oh nooooooo')

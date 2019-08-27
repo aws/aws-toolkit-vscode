@@ -58,8 +58,7 @@ export class DefaultEcsTaskDefinitionsNode extends AWSTreeErrorHandlerNode imple
                 this,
                 localize(
                     'AWS.explorerNode.ecs.taskDef.none',
-                    'No task definitions found',
-                    this.parent.parent.label
+                    'No task definitions found'
                 )
             )
         ]
@@ -67,7 +66,7 @@ export class DefaultEcsTaskDefinitionsNode extends AWSTreeErrorHandlerNode imple
 
     public async updateChildren(): Promise<void> {
 
-        const taskDefs = await this.getDataMapFromAwsCall()
+        const taskDefs = await this.getEcsTaskDefinitions()
 
         updateInPlace(
             this.taskDefinitionNodes,
@@ -81,7 +80,7 @@ export class DefaultEcsTaskDefinitionsNode extends AWSTreeErrorHandlerNode imple
         )
     }
 
-    protected async getDataMapFromAwsCall() {
+    protected async getEcsTaskDefinitions() {
         const client: EcsClient = ext.toolkitClientBuilder.createEcsClient(this.regionCode)
 
         return await toMapAsync(

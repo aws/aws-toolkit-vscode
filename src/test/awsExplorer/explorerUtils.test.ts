@@ -4,10 +4,10 @@
  */
 
 import * as assert from 'assert'
-import { convertEcsArnToResourceName } from '../../awsexplorer/explorerUtils'
+import { convertArnToResourceName } from '../../awsexplorer/explorerUtils'
 
 describe('explorerUtils', () => {
-    describe('convertEcsArnToResourceName', () => {
+    describe('convertArnToResourceName', () => {
         // Will we be capturing task definition revision number? If so, retool this test.
         it ('converts cluster, service, and task definition arns to friendly names', () => {
 
@@ -16,22 +16,21 @@ describe('explorerUtils', () => {
             const clusterName = 'my-cluster'
             const serviceName = 'sample-webapp'
 
-            assert.strictEqual(convertEcsArnToResourceName(clusterArn), clusterName)
-            assert.strictEqual(convertEcsArnToResourceName(serviceArn), serviceName)
+            assert.strictEqual(convertArnToResourceName(clusterArn), clusterName)
+            assert.strictEqual(convertArnToResourceName(serviceArn), serviceName)
         })
         it ('converts service arns that include the cluster name to a friendly name', () => {
 
             const fullServiceArn = 'arn:aws:ecs:us-east-1:123456789012:service/my-cluster/sample-webapp'
-            const clusterName = 'my-cluster'
             const serviceName = 'sample-webapp'
 
-            assert.strictEqual(convertEcsArnToResourceName(fullServiceArn, clusterName), serviceName)
+            assert.strictEqual(convertArnToResourceName(fullServiceArn), serviceName)
         })
         it ('returns undefined for invalid arns', () => {
 
             const badArn = 'you thought this was an ARN? Please.'
 
-            assert.strictEqual(convertEcsArnToResourceName(badArn), undefined)
+            assert.strictEqual(convertArnToResourceName(badArn), undefined)
         })
     })
 })

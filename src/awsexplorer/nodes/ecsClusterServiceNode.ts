@@ -5,17 +5,17 @@
 
 import * as vscode from 'vscode'
 import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
-import { convertEcsArnToResourceName } from '../explorerUtils'
-import { EcsServiceNode, EcsServicesNode } from './ecsNodeInterfaces'
+import { convertArnToResourceName } from '../explorerUtils'
+import { EcsClusterServiceNode, EcsClusterServicesNode } from './ecsNodeInterfaces'
 
-export class DefaultEcsServiceNode extends AWSTreeErrorHandlerNode implements EcsServiceNode {
+export class DefaultEcsClusterServiceNode extends AWSTreeErrorHandlerNode implements EcsClusterServiceNode {
 
     public get regionCode(): string {
         return this.parent.regionCode
     }
 
     public constructor(
-        public readonly parent: EcsServicesNode,
+        public readonly parent: EcsClusterServicesNode,
         public arn: string,
         private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
     ) {
@@ -32,6 +32,6 @@ export class DefaultEcsServiceNode extends AWSTreeErrorHandlerNode implements Ec
     public update(arn: string) {
         this.arn = arn
         this.tooltip = arn
-        this.label = convertEcsArnToResourceName(arn, this.parent.parent.label)
+        this.label = convertArnToResourceName(arn)
     }
 }

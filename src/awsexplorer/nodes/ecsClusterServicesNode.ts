@@ -13,25 +13,25 @@ import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErro
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { asyncIterableWithStatusBarUpdate, toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
-import { EcsClusterNode, EcsServiceNode, EcsServicesNode } from './ecsNodeInterfaces'
-import { DefaultEcsServiceNode } from './ecsServiceNode'
+import { DefaultEcsClusterServiceNode } from './ecsClusterServiceNode'
+import { EcsClusterNode, EcsClusterServiceNode, EcsClusterServicesNode } from './ecsNodeInterfaces'
 
-export class DefaultEcsServicesNode extends AWSTreeErrorHandlerNode implements EcsServicesNode {
+export class DefaultEcsClusterServicesNode extends AWSTreeErrorHandlerNode implements EcsClusterServicesNode {
 
     public get regionCode(): string {
         return this.parent.regionCode
     }
-    private readonly serviceNodes: Map<string, EcsServiceNode>
+    private readonly serviceNodes: Map<string, EcsClusterServiceNode>
 
     public constructor(
         public readonly parent: EcsClusterNode,
         private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
     ) {
         super('Services', vscode.TreeItemCollapsibleState.Collapsed)
-        this.serviceNodes = new Map<string, EcsServiceNode>()
+        this.serviceNodes = new Map<string, EcsClusterServiceNode>()
     }
 
-    public async getChildren(): Promise<(EcsServicesNode | ErrorNode | PlaceholderNode)[]>  {
+    public async getChildren(): Promise<(EcsClusterServicesNode | ErrorNode | PlaceholderNode)[]>  {
         await this.handleErrorProneOperation(
             async () => this.updateChildren(),
             localize(
@@ -66,7 +66,7 @@ export class DefaultEcsServicesNode extends AWSTreeErrorHandlerNode implements E
         ]
     }
 
-    protected async getDataMapFromAwsCall() {
+    protected async getEcsServices() {
         const client: EcsClient = ext.toolkitClientBuilder.createEcsClient(this.regionCode)
 
         return await toMapAsync(
@@ -83,12 +83,12 @@ export class DefaultEcsServicesNode extends AWSTreeErrorHandlerNode implements E
     }
 
     private async updateChildren() {
-        const services = await this.getDataMapFromAwsCall()
+        const services = await this.getEcsServices()
         updateInPlace(
             this.serviceNodes,
             services.keys(),
             key => this.serviceNodes.get(key)!.update(services.get(key)!),
-            key => new DefaultEcsServiceNode(
+            key => new DefaultEcsClusterServiceNode(
                 this,
                 services.get(key)!,
                 relativeExtensionPath => this.getExtensionAbsolutePath(relativeExtensionPath)

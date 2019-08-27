@@ -52,23 +52,23 @@ export interface EcsClusterNode extends AWSTreeErrorHandlerNode {
 
     readonly arn: string
 
-    getChildren(): Thenable<(EcsServicesNode | ErrorNode | PlaceholderNode)[]>
+    getChildren(): Thenable<(EcsClusterServicesNode | ErrorNode | PlaceholderNode)[]>
 
     update(arn: string): void
 }
 
-export interface EcsServicesNode extends AWSTreeErrorHandlerNode {
+export interface EcsClusterServicesNode extends AWSTreeErrorHandlerNode {
     readonly regionCode: string
 
     readonly parent: EcsClusterNode
 
-    getChildren(): Thenable<(EcsServiceNode | ErrorNode | PlaceholderNode)[]>
+    getChildren(): Thenable<(EcsClusterServiceNode | ErrorNode | PlaceholderNode)[]>
 }
 
-export interface EcsServiceNode extends AWSTreeErrorHandlerNode {
+export interface EcsClusterServiceNode extends AWSTreeErrorHandlerNode {
     readonly regionCode: string
 
-    readonly parent: EcsServicesNode
+    readonly parent: EcsClusterServicesNode
 
     readonly arn: string
 

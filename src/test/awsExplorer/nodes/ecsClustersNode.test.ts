@@ -31,7 +31,7 @@ describe('DefaultEcsClustersNode', () => {
             super(parent, (unused: string) => 'unused')
         }
 
-        protected async getDataMapFromAwsCall(): Promise<Map<string, string>> {
+        protected async getEcsClusters(): Promise<Map<string, string>> {
             if (this.response instanceof Error) {
                 throw this.response
             }

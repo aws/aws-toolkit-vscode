@@ -64,7 +64,7 @@ export class MockClusterNode extends AWSTreeErrorHandlerNode implements ecsNodes
     public async getChildren() { return [] }
 }
 
-export class MockServicesNode extends AWSTreeErrorHandlerNode implements ecsNodes.EcsServicesNode {
+export class MockServicesNode extends AWSTreeErrorHandlerNode implements ecsNodes.EcsClusterServicesNode {
 
     public parent = new MockClusterNode()
 

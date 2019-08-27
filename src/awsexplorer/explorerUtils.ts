@@ -4,22 +4,17 @@
  */
 
 /**
- * Converts ECS ARNs into friendly names. All ECS ARNs have the same naming requirement:
- * Up to 255 letters (uppercase and lowercase), numbers, hyphens, and underscores are allowed.
+ * Converts ARNs into friendly names.
+ * Friendly name = text following the final slash in the ARN
+ * Returns undefined if the ARN doesn't contain slashes.
  *
  * @param arn ARN to pull the resource name from
- * @param excluded Resource-level text to omit from the resource name.
- * Some ARNs are nested under another resource name (e.g. services and tasks can incorporate the parent cluster name)
- * See https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html#arn-syntax-ecs for details
  */
-export function convertEcsArnToResourceName(arn: string, excluded?: string): string | undefined {
-    const regex = excluded ?
-        new RegExp(`\/(?:${excluded}\/){0,1}([a-zA-Z0-9-_]{1,255})`) : new RegExp('\/([a-zA-Z0-9-_]{1,255})')
-
-    const regexedString = regex.exec(arn)
-    if (regexedString) {
+export function convertArnToResourceName(arn: string): string | undefined {
+    const splitString = arn.split('/')
+    if (splitString.length > 1) {
         // always return last capture group
-        return (regexedString[1])
+        return (splitString[splitString.length - 1])
     }
 
     // resource name not found

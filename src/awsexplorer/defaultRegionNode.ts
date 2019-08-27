@@ -20,7 +20,8 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
     private info: RegionInfo
     private readonly cloudFormationNode: CloudFormationNode
     private readonly lambdaFunctionGroupNode: LambdaFunctionGroupNode
-    // TODO: remove undefined when feature flag is removed.
+    // TODO: Remove `undefined` when feature flag `EcsExplorer` is removed
+    // REMOVE_WHEN_ECS_STABLE
     private readonly ecsNode: EcsNode | undefined
 
     public get regionCode(): string {
@@ -43,7 +44,8 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
 
         this.cloudFormationNode = new DefaultCloudFormationNode(this, getExtensionAbsolutePath)
         this.lambdaFunctionGroupNode = new DefaultLambdaFunctionGroupNode(this, getExtensionAbsolutePath)
-        // Feature flag for ECS Explorer. Remove when feature goes prod
+        // TODO: Remove when feature flag `EcsExplorer` is removed
+        // REMOVE_WHEN_ECS_STABLE
         if (featureToggle.isFeatureActive(ActiveFeatureKeys.EcsExplorer)) {
             this.ecsNode = new DefaultEcsNode(this, getExtensionAbsolutePath)
         }
@@ -55,7 +57,8 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
             this.lambdaFunctionGroupNode
         ]
 
-        // TODO: Remove when feature flag is removed
+        // TODO: Remove when feature flag `EcsExplorer` is removed
+        // REMOVE_WHEN_ECS_STABLE
         if (this.ecsNode) {
             children.push(this.ecsNode)
         }

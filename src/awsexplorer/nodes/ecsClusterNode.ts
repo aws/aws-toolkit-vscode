@@ -5,9 +5,9 @@
 
 import * as vscode from 'vscode'
 import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
-import { convertEcsArnToResourceName } from '../explorerUtils'
-import { EcsClusterNode, EcsClustersNode, EcsServicesNode } from './ecsNodeInterfaces'
-import { DefaultEcsServicesNode } from './ecsServicesNode'
+import { convertArnToResourceName } from '../explorerUtils'
+import { DefaultEcsClusterServicesNode } from './ecsClusterServicesNode'
+import { EcsClusterNode, EcsClusterServicesNode, EcsClustersNode } from './ecsNodeInterfaces'
 
 export class DefaultEcsClusterNode extends AWSTreeErrorHandlerNode implements EcsClusterNode {
 
@@ -15,7 +15,7 @@ export class DefaultEcsClusterNode extends AWSTreeErrorHandlerNode implements Ec
         return this.parent.regionCode
     }
 
-    private readonly servicesNode: EcsServicesNode
+    private readonly servicesNode: EcsClusterServicesNode
 
     public constructor(
         public readonly parent: EcsClustersNode,
@@ -23,7 +23,7 @@ export class DefaultEcsClusterNode extends AWSTreeErrorHandlerNode implements Ec
         private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
     ) {
         super('', vscode.TreeItemCollapsibleState.Collapsed)
-        this.servicesNode = new DefaultEcsServicesNode(this, this.getExtensionAbsolutePath)
+        this.servicesNode = new DefaultEcsClusterServicesNode(this, this.getExtensionAbsolutePath)
         // TODO: Get new icons
         // These currently display blank space
         this.iconPath = {
@@ -36,7 +36,7 @@ export class DefaultEcsClusterNode extends AWSTreeErrorHandlerNode implements Ec
     public update(arn: string) {
         this.arn = arn
         this.tooltip = arn
-        this.label = convertEcsArnToResourceName(arn)
+        this.label = convertArnToResourceName(arn)
     }
 
     public async getChildren() {

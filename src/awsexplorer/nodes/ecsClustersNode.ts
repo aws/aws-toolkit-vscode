@@ -58,14 +58,13 @@ export class DefaultEcsClustersNode extends AWSTreeErrorHandlerNode implements E
                 this,
                 localize(
                     'AWS.explorerNode.ecs.clusters.none',
-                    'No clusters found',
-                    this.parent.parent.label
+                    'No clusters found'
                 )
             )
         ]
     }
 
-    protected async getDataMapFromAwsCall() {
+    protected async getEcsClusters() {
         const client: EcsClient = ext.toolkitClientBuilder.createEcsClient(this.regionCode)
 
         return await toMapAsync(
@@ -79,7 +78,7 @@ export class DefaultEcsClustersNode extends AWSTreeErrorHandlerNode implements E
 
     private async updateChildren(): Promise<void> {
 
-        const clusters = await this.getDataMapFromAwsCall()
+        const clusters = await this.getEcsClusters()
 
         updateInPlace(
             this.clusterNodes,
