@@ -188,7 +188,7 @@ class DefaultAwsResourceCache(
     constructor(project: Project) : this(project, Clock.systemDefaultZone(), MAXIMUM_CACHE_ENTRIES, DEFAULT_MAINTENANCE_INTERVAL)
 
     private val cache = ConcurrentHashMap<CacheKey, Entry<*>>()
-    private val accountSettings = ProjectAccountSettingsManager.getInstance(project)
+    private val accountSettings by lazy { ProjectAccountSettingsManager.getInstance(project) }
     private val alarm = AlarmFactory.getInstance().create(Alarm.ThreadToUse.POOLED_THREAD, project)
 
     init {

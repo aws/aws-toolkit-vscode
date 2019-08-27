@@ -17,9 +17,9 @@ import javax.swing.Icon
 abstract class AwsExplorerNode<T>(val nodeProject: Project, value: T, private val awsIcon: Icon?) :
     AbstractTreeNode<T>(nodeProject, value) {
 
-    protected val region = nodeProject.activeRegion()
+    protected val region by lazy { nodeProject.activeRegion() }
 
-    protected val credentialProvider = nodeProject.activeCredentialProvider()
+    protected val credentialProvider by lazy { nodeProject.activeCredentialProvider() }
 
     override fun update(presentation: PresentationData) {
         presentation.let {

@@ -74,11 +74,11 @@ class AwsClientManagerTest {
     fun oldClientsAreRemovedWhenProfilesAreRemoved() {
         val sut = getClientManager()
         val testSettings = MockProjectAccountSettingsManager.getInstance(projectRule.project)
+        MockResourceCache.getInstance(projectRule.project).addValidAwsCredential(testSettings.activeRegion.id, "profile:admin", "111111111111")
         testSettings.changeCredentialProvider(
             mockCredentialManager.addCredentials(
                 "profile:admin",
-                AwsBasicCredentials.create("Access", "Secret"),
-                true
+                AwsBasicCredentials.create("Access", "Secret")
             )
         )
 

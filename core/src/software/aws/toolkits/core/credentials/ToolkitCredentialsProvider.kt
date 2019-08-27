@@ -4,8 +4,6 @@
 package software.aws.toolkits.core.credentials
 
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
-import software.amazon.awssdk.services.sts.StsClient
 
 abstract class ToolkitCredentialsProvider : AwsCredentialsProvider {
     /**
@@ -33,17 +31,6 @@ abstract class ToolkitCredentialsProvider : AwsCredentialsProvider {
     override fun hashCode(): Int = id.hashCode()
 
     override fun toString(): String = "${this::class.simpleName}(id='$id')"
-
-    /**
-     * Returns true or throws an Exception
-     */
-    @Throws(Exception::class)
-    open fun getAwsAccount(stsClient: StsClient): String =
-        stsClient.getCallerIdentity {
-            it.overrideConfiguration { overrides ->
-                overrides.credentialsProvider(StaticCredentialsProvider.create(resolveCredentials()))
-            }
-        }.account()
 }
 
 /**
