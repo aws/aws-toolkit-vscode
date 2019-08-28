@@ -17,12 +17,12 @@ export async function run(): Promise<void> {
     })
     mocha.useColors(true)
 
-    const testsRoot = path.resolve(__dirname, '..')
+    const testsRoot = __dirname
 
     return new Promise<void>((resolve, reject) => {
         console.log(`Searching for tests in: ${testsRoot}`)
 
-        glob('test/**/**.test.js', { cwd: testsRoot }, (err, files) => {
+        glob('**/**.test.js', { cwd: testsRoot }, (err, files) => {
             if (err) {
                 reject(err)
 
