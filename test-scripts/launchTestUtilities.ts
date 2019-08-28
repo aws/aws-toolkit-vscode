@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// tslint:disable:no-implicit-dependencies
+// tslint:disable:no-implicit-dependencies - this file will only be used for testing, not during regular extension usage
 import * as glob from 'glob'
 import { runTests } from 'vscode-test'
 // tslint:enable:no-implicit-dependencies
