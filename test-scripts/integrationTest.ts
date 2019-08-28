@@ -3,11 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { join } from 'path'
+import * as path from 'path'
+import { launchVsCodeTest } from './launchTestUtilities'
 
-process.env.CODE_TESTS_PATH = join(process.cwd(), 'out', 'src', 'integrationTest')
-process.env.CODE_EXTENSIONS_PATH = process.cwd()
-
-// Launch the VS Code Test Script
-// tslint:disable-next-line: no-var-requires
-require('../node_modules/vscode/bin/test')
+// tslint:disable-next-line: no-floating-promises
+;(async () => {
+    const cwd = process.cwd()
+    await launchVsCodeTest({
+        extensionDevelopmentPath: cwd,
+        extensionTestsPath: path.resolve(cwd, 'out', 'src', 'integrationTest', 'index.js')
+    })
+})()

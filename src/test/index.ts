@@ -3,48 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// tslint:disable:no-implicit-dependencies
-import * as glob from 'glob'
-import * as Mocha from 'mocha'
-// tslint:enable:no-implicit-dependencies
+/*
+ * Responsible for running the "unit" tests
+ */
 
-import * as path from 'path'
+import { runTests } from './testRunner'
 
 export async function run(): Promise<void> {
-    // Create the mocha test
-    const mocha = new Mocha({
-        ui: 'bdd'
-    })
-    mocha.useColors(true)
-
-    const testsRoot = __dirname
-
-    return new Promise<void>((resolve, reject) => {
-        console.log(`Searching for tests in: ${testsRoot}`)
-
-        glob('**/**.test.js', { cwd: testsRoot }, (err, files) => {
-            if (err) {
-                reject(err)
-
-                return
-            }
-
-            // Add files to the test suite
-            console.log(`Found ${files.length} file(s). Running...`)
-            files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)))
-
-            try {
-                // Run the mocha test
-                mocha.run(failures => {
-                    if (failures > 0) {
-                        reject(new Error(`${failures} tests failed.`))
-                    } else {
-                        resolve()
-                    }
-                })
-            } catch (err) {
-                reject(err)
-            }
-        })
+    await runTests({
+        rootTestsPath: __dirname
     })
 }
