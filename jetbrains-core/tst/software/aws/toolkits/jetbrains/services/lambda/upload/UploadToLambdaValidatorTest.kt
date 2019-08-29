@@ -7,6 +7,7 @@ import com.intellij.testFramework.EdtRule
 import com.intellij.testFramework.RuleChain
 import com.intellij.testFramework.RunsInEdt
 import com.intellij.testFramework.runInEdtAndGet
+import com.intellij.ui.MutableCollectionComboBoxModel
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
@@ -15,7 +16,6 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.openClass
-import software.aws.toolkits.resources.message
 import javax.swing.DefaultComboBoxModel
 
 @RunsInEdt
@@ -39,12 +39,12 @@ class UploadToLambdaValidatorTest {
         view.description.text = "description"
         view.handler.text = "com.example.LambdaHandler::handleRequest"
         val role = IamRole("DummyArn")
-        view.iamRole.model = DefaultComboBoxModel(arrayOf(role)).also { it.selectedItem = role }
+        view.iamRole.model = MutableCollectionComboBoxModel(listOf(role)).also { it.selectedItem = role }
         view.iamRole.forceLoaded()
         view.runtime.model = DefaultComboBoxModel(Runtime.knownValues().toTypedArray())
         view.runtime.selectedItem = Runtime.JAVA8
         val bucket = "sourceBucket"
-        view.sourceBucket.model = DefaultComboBoxModel(arrayOf(bucket)).also { it.selectedItem = bucket }
+        view.sourceBucket.model = MutableCollectionComboBoxModel(listOf(bucket)).also { it.selectedItem = bucket }
         view.sourceBucket.forceLoaded()
         view.timeoutSlider.value = 30
         view.memorySlider.value = 512

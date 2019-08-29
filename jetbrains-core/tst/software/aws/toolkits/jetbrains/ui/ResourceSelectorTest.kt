@@ -5,7 +5,10 @@ package software.aws.toolkits.jetbrains.ui
 
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.runInEdtAndWait
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -13,6 +16,7 @@ import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.utils.test.retryableAssert
 import software.aws.toolkits.resources.message
+import java.awt.event.ActionListener
 import java.util.concurrent.CompletableFuture
 
 class ResourceSelectorTest {
@@ -108,6 +112,29 @@ class ResourceSelectorTest {
             runInEdtAndWait {
                 assertThat(comboBox.isEnabled).isTrue()
                 assertThat(comboBox.selectedItem).isNull()
+            }
+        }
+    }
+
+    @Test
+    fun actionListenerIsInvokedOnSelectionChangeOnce() {
+        val future = CompletableFuture<List<String>>() // Use the future to force slow load
+        mockResourceCache.addEntry(mockResource, future)
+        val comboBox = ResourceSelector(projectRule.project, mockResource)
+
+        val actionListener = mock<ActionListener>()
+        comboBox.addActionListener(actionListener)
+
+        runInEdtAndWait {
+            comboBox.selectedItem = "bar"
+        }
+
+        future.complete(listOf("foo", "bar", "baz"))
+
+        retryableAssert {
+            runInEdtAndWait {
+                assertThat(comboBox.selected()).isEqualTo("bar")
+                verify(actionListener, times(1)).actionPerformed(any())
             }
         }
     }
