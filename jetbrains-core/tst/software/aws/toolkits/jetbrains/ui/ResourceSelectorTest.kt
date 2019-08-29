@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.ui
 
-import com.intellij.openapi.ui.ComboBox
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.runInEdtAndWait
 import com.nhaarman.mockitokotlin2.mock
@@ -12,6 +11,7 @@ import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.Resource
+import software.aws.toolkits.jetbrains.utils.test.retryableAssert
 import software.aws.toolkits.resources.message
 import java.util.concurrent.CompletableFuture
 
@@ -33,23 +33,10 @@ class ResourceSelectorTest {
 
         comboBox.selectedItem = "bar"
 
-        waitForPopulationComplete(comboBox, 3)
-        runInEdtAndWait {
-            assertThat(comboBox.selected()).isEqualTo("bar")
-        }
-    }
-
-    @Test
-    fun previouslySelectedIsRetainedIfNoDefault() {
-        mockResourceCache.addEntry(mockResource, listOf("foo", "bar", "baz"))
-        val comboBox = ResourceSelector(projectRule.project, mockResource)
-
-        comboBox.selectedItem = "bar"
-        comboBox.reload()
-
-        waitForPopulationComplete(comboBox, 3)
-        runInEdtAndWait {
-            assertThat(comboBox.selected()).isEqualTo("bar")
+        retryableAssert {
+            runInEdtAndWait {
+                assertThat(comboBox.selected()).isEqualTo("bar")
+            }
         }
     }
 
@@ -61,9 +48,10 @@ class ResourceSelectorTest {
         comboBox.reload()
         comboBox.selectedItem { it.endsWith("z") }
 
-        waitForPopulationComplete(comboBox, 3)
-        runInEdtAndWait {
-            assertThat(comboBox.selected()).isEqualTo("baz")
+        retryableAssert {
+            runInEdtAndWait {
+                assertThat(comboBox.selected()).isEqualTo("baz")
+            }
         }
     }
 
@@ -75,9 +63,11 @@ class ResourceSelectorTest {
 
         future.completeExceptionally(RuntimeException("boom"))
 
-        runInEdtAndWait {
-            assertThat(comboBox.isEnabled).isFalse()
-            assertThat(comboBox.model.selectedItem).isEqualTo(message("loading_resource.failed"))
+        retryableAssert {
+            runInEdtAndWait {
+                assertThat(comboBox.isEnabled).isFalse()
+                assertThat(comboBox.model.selectedItem).isEqualTo(message("loading_resource.failed"))
+            }
         }
     }
 
@@ -92,9 +82,10 @@ class ResourceSelectorTest {
 
         comboBox.reload()
 
-        waitForPopulationComplete(comboBox, 3)
-        runInEdtAndWait {
-            assertThat(comboBox.selected()).isEqualTo("bar")
+        retryableAssert {
+            runInEdtAndWait {
+                assertThat(comboBox.selected()).isEqualTo("bar")
+            }
         }
     }
 
@@ -113,16 +104,11 @@ class ResourceSelectorTest {
         }
 
         future.complete(listOf("foo", "bar", "baz"))
-        runInEdtAndWait {
-            assertThat(comboBox.isEnabled).isTrue()
-            assertThat(comboBox.selectedItem).isNull()
-        }
-    }
-
-    // Wait for the combo box population complete by detecting the item count
-    private fun <T> waitForPopulationComplete(comboBox: ComboBox<T>, count: Int) {
-        while (comboBox.itemCount != count) {
-            Thread.sleep(100)
+        retryableAssert {
+            runInEdtAndWait {
+                assertThat(comboBox.isEnabled).isTrue()
+                assertThat(comboBox.selectedItem).isNull()
+            }
         }
     }
 }

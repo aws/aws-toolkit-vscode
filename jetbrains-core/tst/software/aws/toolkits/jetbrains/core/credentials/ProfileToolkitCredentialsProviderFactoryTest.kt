@@ -44,6 +44,7 @@ import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileHolder
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileToolkitCredentialsProvider
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileToolkitCredentialsProviderFactory
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileWatcher
+import software.aws.toolkits.jetbrains.utils.test.retryableAssert
 import java.io.File
 import java.time.Duration
 import java.time.ZonedDateTime
@@ -407,7 +408,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
             """.trimIndent()
         )
 
-        assertAttempts(5, Duration.ofSeconds(5)) {
+        retryableAssert(maxAttempts = 5, interval = Duration.ofSeconds(5)) {
             assertThat(credentialsProvider.resolveCredentials()).isInstanceOf(AwsSessionCredentials::class.java)
                 .satisfies {
                     val sessionCredentials = it as AwsSessionCredentials
@@ -415,10 +416,10 @@ class ProfileToolkitCredentialsProviderFactoryTest {
                     assertThat(sessionCredentials.secretAccessKey()).isEqualTo("FooSecretKey2")
                     assertThat(sessionCredentials.sessionToken()).isEqualTo("FooSessionToken2")
                 }
-        }
 
-        // TODO: Debug why on windows this is sometimes 1, sometimes 2
-        verify(mockProviderManager, atLeastOnce()).providerModified(credentialsProvider)
+            // TODO: Debug why on windows this is sometimes 1, sometimes 2
+            verify(mockProviderManager, atLeastOnce()).providerModified(credentialsProvider)
+        }
     }
 
     @Test
@@ -448,16 +449,16 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 
         profileFile.writeText("")
 
-        assertAttempts(5, Duration.ofSeconds(5)) {
+        retryableAssert(maxAttempts = 5, interval = Duration.ofSeconds(5)) {
             assertThat(providerFactory.get("profile:foo")).isNull()
-        }
 
-        assertThatThrownBy {
-            // Old references should now throw exceptions
-            credentialsProvider.resolveCredentials()
-        }
+            assertThatThrownBy {
+                // Old references should now throw exceptions
+                credentialsProvider.resolveCredentials()
+            }
 
-        verify(mockProviderManager).providerRemoved("profile:foo")
+            verify(mockProviderManager).providerRemoved("profile:foo")
+        }
     }
 
     @Test
@@ -481,7 +482,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
             """.trimIndent()
         )
 
-        assertAttempts(5, Duration.ofSeconds(5)) {
+        retryableAssert(maxAttempts = 5, interval = Duration.ofSeconds(5)) {
             assertThat(providerFactory.get("profile:foo")?.resolveCredentials())
                 .isInstanceOf(AwsSessionCredentials::class.java)
                 .satisfies {
@@ -490,22 +491,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
                     assertThat(sessionCredentials.secretAccessKey()).isEqualTo("FooSecretKey")
                     assertThat(sessionCredentials.sessionToken()).isEqualTo("FooSessionToken")
                 }
-        }
-
-        verify(mockProviderManager).providerAdded(providerFactory.get("profile:foo")!!)
-    }
-
-    private fun assertAttempts(maxAttempts: Int, pause: Duration, function: () -> Unit) {
-        for (i in 0..maxAttempts) {
-            try {
-                function()
-            } catch (e: Throwable) {
-                if (i == maxAttempts) {
-                    throw e
-                } else {
-                    Thread.sleep(pause.toMillis())
-                }
-            }
+            verify(mockProviderManager).providerAdded(providerFactory.get("profile:foo")!!)
         }
     }
 

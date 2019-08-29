@@ -56,9 +56,9 @@ fun JComponent.addQuickSelect(button: AbstractButton, postAction: Runnable? = nu
 }
 
 fun <T> ListModel<T>.find(predicate: (T) -> Boolean): T? {
-    for (i in 0..(size - 1)) {
-        val element = getElementAt(i)
-        if (predicate(element)) {
+    for (i in 0 until size) {
+        val element = getElementAt(i)?.takeIf(predicate)
+        if (element != null) {
             return element
         }
     }

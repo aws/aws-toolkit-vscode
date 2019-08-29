@@ -223,7 +223,7 @@ class ProfileToolkitCredentialsProvider(
 
     private fun profile() = profiles.getProfile(profileName)
 
-    override fun toString(): String = "ProfileToolkitCredentialsProvider(profile=${profile()})"
+    override fun toString(): String = "ProfileToolkitCredentialsProvider(profile=$profileName)"
 
     private companion object {
         val LOG = getLogger<ProfileToolkitCredentialsProvider>()

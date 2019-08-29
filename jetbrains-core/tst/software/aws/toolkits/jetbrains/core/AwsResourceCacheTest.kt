@@ -211,7 +211,7 @@ class AwsResourceCacheTest {
 
     @Test
     fun cacheIsRegularlyPrunedToEnsureItDoesntGrowTooLarge() {
-        val localSut = DefaultAwsResourceCache(projectRule.project, Clock.systemDefaultZone(), 5, Duration.ofMillis(50))
+        val localSut = DefaultAwsResourceCache(projectRule.project, mockClock, 5, Duration.ofMillis(50))
 
         val now = Instant.now()
         whenever(mockClock.instant()).thenReturn(now)
