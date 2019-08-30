@@ -56,7 +56,7 @@ class LocalLambdaRunConfigurationTest {
         SamSettings.getInstance().savedExecutablePath = validSam
 
         // Pre-warm the SAM validation cache
-        SamVersionCache.evaluateBlocking(validSam)
+        SamVersionCache.evaluateBlocking(validSam, 2000)
 
         MockCredentialsManager.getInstance().addCredentials(mockId, mockCreds)
 

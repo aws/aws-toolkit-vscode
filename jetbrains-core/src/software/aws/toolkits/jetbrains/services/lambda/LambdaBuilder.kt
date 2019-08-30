@@ -206,9 +206,7 @@ abstract class LambdaBuilder {
         return buildFolder
     }
 
-    companion object : RuntimeGroupExtensionPointObject<LambdaBuilder>(
-        ExtensionPointName("aws.toolkit.lambda.builder")
-    ) {
+    companion object : RuntimeGroupExtensionPointObject<LambdaBuilder>(ExtensionPointName("aws.toolkit.lambda.builder")) {
         private val LOG = getLogger<LambdaBuilder>()
     }
 }

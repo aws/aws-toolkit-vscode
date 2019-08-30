@@ -92,34 +92,36 @@
     </application-components>
 
     <extensionPoints>
-        <extensionPoint qualifiedName="aws.toolkit.credentialProviderFactory" beanClass="software.aws.toolkits.jetbrains.core.credentials.CredentialProviderFactoryEP">
+        <extensionPoint name="credentialProviderFactory" beanClass="software.aws.toolkits.jetbrains.core.credentials.CredentialProviderFactoryEP">
             <with attribute="implementation" implements="software.aws.toolkits.jetbrains.core.credentials.CredentialProviderFactory"/>
         </extensionPoint>
 
-        <extensionPoint qualifiedName="aws.toolkit.lambda.runtimeGroup" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
+        <extensionPoint name="lambda.runtimeGroup" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
             <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupInformation"/>
             <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
         </extensionPoint>
 
-        <extensionPoint qualifiedName="aws.toolkit.lambda.builder" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
+        <extensionPoint name="lambda.builder" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
             <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder"/>
             <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
         </extensionPoint>
 
-        <extensionPoint qualifiedName="aws.toolkit.lambda.sam.debugSupport" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
+        <extensionPoint name="lambda.sam.debugSupport" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
             <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.execution.local.SamDebugSupport"/>
             <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
         </extensionPoint>
 
-        <extensionPoint qualifiedName="aws.toolkit.lambda.handlerResolver" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
+        <extensionPoint name="lambda.handlerResolver" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
             <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver"/>
             <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
         </extensionPoint>
 
-        <extensionPoint qualifiedName="aws.toolkit.lambda.sam.projectWizard" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
+        <extensionPoint name="lambda.sam.projectWizard" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
             <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.SamProjectWizard"/>
             <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
         </extensionPoint>
+
+        <extensionPoint name="executable" interface="software.aws.toolkits.jetbrains.core.executables.ExecutableType"/>
 
     </extensionPoints>
 
@@ -154,6 +156,8 @@
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.services.telemetry.TelemetryService"
                             serviceImplementation="software.aws.toolkits.jetbrains.services.telemetry.DefaultTelemetryService"
                             testServiceImplementation="software.aws.toolkits.jetbrains.services.telemetry.MockTelemetryService" />
+        <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.executables.ExecutableManager"
+                            serviceImplementation="software.aws.toolkits.jetbrains.core.executables.DefaultExecutableManager"/>
         <projectService serviceInterface="software.aws.toolkits.core.ToolkitClientManager"
                         serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientManager"
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.MockClientManager"/>
