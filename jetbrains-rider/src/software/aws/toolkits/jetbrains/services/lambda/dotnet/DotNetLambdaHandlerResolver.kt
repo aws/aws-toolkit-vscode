@@ -10,10 +10,11 @@ import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
 import com.jetbrains.rd.framework.impl.RpcTimeouts
+import com.jetbrains.rd.framework.impl.startAndAdviseSuccess
 import com.jetbrains.rd.util.lifetime.Lifetime
 import com.jetbrains.rd.util.threading.SpinWait
+import com.jetbrains.rdclient.util.idea.pumpMessages
 import com.jetbrains.rider.model.MethodExistingRequest
-import com.jetbrains.rider.model.RdMethodInfo
 import com.jetbrains.rider.model.backendPsiHelperModel
 import com.jetbrains.rider.model.publishableProjectsModel
 import com.jetbrains.rider.projectView.ProjectModelViewHost
@@ -28,6 +29,7 @@ class DotNetLambdaHandlerResolver : LambdaHandlerResolver {
 
     companion object {
         private const val handlerValidationTimeoutMs = 2000L
+        private const val findMethodTimeoutMs = 10000L
     }
 
     override fun version(): Int = 1
@@ -37,35 +39,13 @@ class DotNetLambdaHandlerResolver : LambdaHandlerResolver {
         handler: String,
         searchScope: GlobalSearchScope
     ): Array<NavigatablePsiElement> {
+        val fieldId = getFieldIdByHandlerName(project, handler)
+        if (fieldId < 0) return emptyArray()
 
-        val handlerParts = handler.split("::")
-        if (handlerParts.size != 3) return emptyArray()
-
-        val assemblyName = handlerParts[0]
-        val type = handlerParts[1]
-        val methodName = handlerParts[2]
-
-        val projectModelViewHost = ProjectModelViewHost.getInstance(project)
-        val publishableProjects = project.solution.publishableProjectsModel.publishableProjects.values.toList()
-        val projectToProcess = publishableProjects.find { it.projectName == assemblyName } ?: return emptyArray()
-
-        val methodForHandler: RdMethodInfo? = project.solution.backendPsiHelperModel.findPublicMethod
-                .sync(MethodExistingRequest(
-                        className = type,
-                        methodName = methodName,
-                        targetFramework = "",
-                        projectId = projectModelViewHost.getProjectModeId(projectToProcess.projectFilePath)
-                ), RpcTimeouts.default)
-
-        val fieldId = methodForHandler?.fileId ?: return emptyArray()
-
-        return arrayOf(RiderLambdaHandlerFakePsiElement(project, "$assemblyName::$type::$methodName", fieldId))
+        return arrayOf(RiderLambdaHandlerFakePsiElement(project, handler, fieldId))
     }
 
-    override fun determineHandler(element: PsiElement): String? {
-        if (element !is RiderLambdaHandlerFakePsiElement) return null
-        return element.name
-    }
+    override fun determineHandler(element: PsiElement): String? = null
 
     override fun determineHandlers(element: PsiElement, file: VirtualFile): Set<String> {
         val handler = determineHandler(element) ?: return emptySet()
@@ -98,6 +78,33 @@ class DotNetLambdaHandlerResolver : LambdaHandlerResolver {
         }
 
         return isMethodExists
+    }
+
+    fun getFieldIdByHandlerName(project: Project, handler: String): Int {
+        val handlerParts = handler.split("::")
+        if (handlerParts.size != 3) return -1
+
+        val assemblyName = handlerParts[0]
+        val type = handlerParts[1]
+        val methodName = handlerParts[2]
+
+        val projectModelViewHost = ProjectModelViewHost.getInstance(project)
+        val publishableProjects = project.solution.publishableProjectsModel.publishableProjects.values.toList()
+        val projectToProcess = publishableProjects.find { it.projectName == assemblyName } ?: return -1
+
+        var fieldId: Int? = null
+        project.solution.backendPsiHelperModel.findPublicMethod
+            .startAndAdviseSuccess(
+                MethodExistingRequest(
+                    className = type,
+                    methodName = methodName,
+                    targetFramework = "",
+                    projectId = projectModelViewHost.getProjectModeId(projectToProcess.projectFilePath)
+                )) { methodForHandler -> fieldId = methodForHandler?.fileId }
+
+        pumpMessages(findMethodTimeoutMs) { fieldId != null }
+
+        return fieldId ?: -1
     }
 
     private fun isMethodExists(project: Project, assemblyName: String, type: String, methodName: String): Boolean {

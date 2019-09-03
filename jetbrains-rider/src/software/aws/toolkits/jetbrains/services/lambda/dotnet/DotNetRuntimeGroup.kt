@@ -3,11 +3,13 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.dotnet
 
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.Sdk
 import com.jetbrains.rider.ideaInterop.fileTypes.csharp.CSharpLanguage
 import com.jetbrains.rider.ideaInterop.fileTypes.vb.VbLanguage
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.SdkBasedRuntimeGroupInformation
+import software.aws.toolkits.jetbrains.utils.DotNetRuntimeUtils
 
 class DotNetRuntimeGroup : SdkBasedRuntimeGroupInformation() {
 
@@ -23,4 +25,7 @@ class DotNetRuntimeGroup : SdkBasedRuntimeGroupInformation() {
     override fun runtimeForSdk(sdk: Sdk): Runtime? = null
 
     override fun supportsSamBuild(): Boolean = true
+
+    override fun determineRuntime(project: Project): Runtime? =
+        DotNetRuntimeUtils.getCurrentDotNetCoreRuntime()
 }

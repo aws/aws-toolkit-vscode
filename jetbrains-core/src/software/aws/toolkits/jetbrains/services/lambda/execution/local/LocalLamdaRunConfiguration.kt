@@ -27,7 +27,7 @@ import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsFor
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.isHandlerValid
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
-import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationBase
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
@@ -39,7 +39,7 @@ import software.aws.toolkits.resources.message
 import java.io.File
 import java.nio.file.Path
 
-class LocalLambdaRunConfigurationFactory(configuration: LambdaRunConfiguration) : ConfigurationFactory(configuration) {
+class LocalLambdaRunConfigurationFactory(configuration: LambdaRunConfigurationType) : ConfigurationFactory(configuration) {
     override fun createTemplateConfiguration(project: Project) = LocalLambdaRunConfiguration(project, this)
 
     override fun getName(): String = "Local"

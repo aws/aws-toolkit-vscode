@@ -172,9 +172,8 @@
         <fileBasedIndex implementation="software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerIndex"/>
         <fileBasedIndex implementation="software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplateIndex"/>
 
-        <codeInsight.lineMarkerProvider language="" implementationClass="software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker"/>
         <runLineMarkerContributor language="yaml" implementationClass="software.aws.toolkits.jetbrains.services.lambda.execution.template.YamlLambdaRunLineMarkerContributor"/>
-        <configurationType implementation="software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration"/>
+        <configurationType implementation="software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType"/>
         <runConfigurationProducer implementation="software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfigurationProducer"/>
         <runConfigurationProducer implementation="software.aws.toolkits.jetbrains.services.lambda.execution.remote.LambdaRemoteRunConfigurationProducer"/>
 

@@ -210,7 +210,18 @@ task ktlint(type: JavaExec, group: "verification") {
     description = "Check Kotlin code style."
     classpath = configurations.ktlint
     main = "com.pinterest.ktlint.Main"
-    args "-v", project.rootDir.absolutePath + "/**/*.kt"
+
+    def isWindows = System.properties['os.name'].toLowerCase().contains('windows')
+
+    def toInclude = project.rootDir.relativePath(project.projectDir) + "/**/*.kt"
+    def toExclude = project.rootDir.relativePath(new File(project.projectDir, "jetbrains-rider")) + "/**/*.Generated.kt"
+
+    if (isWindows) {
+        toInclude = toInclude.replace("/", "\\")
+        toExclude = toExclude.replace("/", "\\")
+    }
+
+    args "-v", toInclude, "!${toExclude}"
 
     inputs.files(project.fileTree(dir: "src", include: "**/*.kt"))
     outputs.dir("${project.buildDir}/reports/ktlint/")

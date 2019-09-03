@@ -22,13 +22,13 @@ import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
-import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationBase
 import software.aws.toolkits.resources.message
 import javax.swing.JPanel
 import kotlin.streams.toList
 
-class LambdaRemoteRunConfigurationFactory(configuration: LambdaRunConfiguration) : ConfigurationFactory(configuration) {
+class LambdaRemoteRunConfigurationFactory(configuration: LambdaRunConfigurationType) : ConfigurationFactory(configuration) {
     override fun createTemplateConfiguration(project: Project) = LambdaRemoteRunConfiguration(project, this)
 
     override fun getName(): String = "Remote"

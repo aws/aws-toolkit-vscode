@@ -8,7 +8,7 @@ import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
-import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 
 fun createTemplateRunConfiguration(
@@ -91,7 +91,7 @@ private fun createBaseRunConfiguration(
 
 fun samRunConfiguration(project: Project): LocalLambdaRunConfiguration {
     val runManager = RunManager.getInstance(project)
-    val factory = LambdaRunConfiguration.getInstance().configurationFactories.first { it is LocalLambdaRunConfigurationFactory }
+    val factory = LambdaRunConfigurationType.getInstance().configurationFactories.first { it is LocalLambdaRunConfigurationFactory }
     val runConfigurationAndSettings = runManager.createConfiguration("Test", factory)
     val runConfiguration = runConfigurationAndSettings.configuration as LocalLambdaRunConfiguration
     runManager.addConfiguration(runConfigurationAndSettings)

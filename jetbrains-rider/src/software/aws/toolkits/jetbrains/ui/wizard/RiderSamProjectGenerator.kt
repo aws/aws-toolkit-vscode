@@ -20,14 +20,11 @@ import com.jetbrains.rider.projectView.actions.projectTemplating.backend.ReSharp
 import com.jetbrains.rider.projectView.actions.projectTemplating.impl.ProjectTemplateDialogContext
 import com.jetbrains.rider.projectView.actions.projectTemplating.impl.ProjectTemplateTransferableModel
 import com.jetbrains.rider.ui.themes.RiderTheme
-import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.services.lambda.validOrNull
+import software.aws.toolkits.jetbrains.utils.DotNetRuntimeUtils
 import software.aws.toolkits.resources.message
 import java.awt.Dimension
 import java.io.File
-import java.io.IOException
 import javax.swing.JScrollPane
 import javax.swing.JTabbedPane
 import javax.swing.JTextPane
@@ -45,9 +42,7 @@ class RiderSamProjectGenerator(
 
     companion object {
         private val logger = getLogger<RiderSamProjectGenerator>()
-
         private const val SAM_HELLO_WORLD_PROJECT_NAME = "HelloWorld"
-        private val defaultNetCoreRuntime = Runtime.DOTNETCORE2_1
     }
 
     private val samSettings = SamNewProjectSettings()
@@ -186,32 +181,9 @@ class RiderSamProjectGenerator(
     }
 
     private fun initSamPanel() {
-        samPanel.runtime.selectedItem = getCurrentDotNetCoreRuntime()
+        samPanel.runtime.selectedItem = DotNetRuntimeUtils.getCurrentDotNetCoreRuntime()
     }
 
     private fun htmlText(baseDir: String, relativePath: String) =
-        "<font color=#${ColorUtil.toHex(UIUtil.getLabelDisabledForeground())} >...$baseDir</font>$relativePath<br>"
-
-    private fun getCurrentDotNetCoreRuntime(): Runtime {
-        val runtimeList = try {
-            java.lang.Runtime.getRuntime().exec("dotnet --list-runtimes").inputStream.bufferedReader().readLines()
-        } catch (e: IOException) {
-            logger.warn { "Error getting current runtime version: $e" }
-            return defaultNetCoreRuntime
-        }
-
-        val versionRegex = Regex("(\\d+.\\d+.\\d+)")
-        val versions = runtimeList
-                .filter { it.startsWith("Microsoft.NETCore.App") }
-                .map { runtimeString ->
-                    val match = versionRegex.find(runtimeString) ?: return@map null
-                    match.groups[1]?.value ?: return@map null
-                }
-                .filterNotNull()
-
-        val version = versions.maxBy { it } ?: return defaultNetCoreRuntime
-
-        return Runtime.fromValue("dotnetcore${version.split('.').take(2).joinToString(".")}").validOrNull
-                ?: defaultNetCoreRuntime
-    }
+        "<font color=#${ColorUtil.toHex(UIUtil.getLabelDisabledForeground())}>...$baseDir</font>$relativePath<br>"
 }

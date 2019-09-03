@@ -11,7 +11,7 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLamb
 import software.aws.toolkits.jetbrains.services.lambda.execution.remote.LambdaRemoteRunConfigurationFactory
 import software.aws.toolkits.resources.message
 
-class LambdaRunConfiguration :
+class LambdaRunConfigurationType :
     ConfigurationTypeBase(
         "aws.lambda",
         message("lambda.service_name"),
@@ -26,6 +26,6 @@ class LambdaRunConfiguration :
     override fun getHelpTopic(): String? = HelpIds.RUN_DEBUG_CONFIGURATIONS_DIALOG.id
 
     companion object {
-        fun getInstance() = ConfigurationTypeUtil.findConfigurationType(LambdaRunConfiguration::class.java)
+        fun getInstance() = ConfigurationTypeUtil.findConfigurationType(LambdaRunConfigurationType::class.java)
     }
 }

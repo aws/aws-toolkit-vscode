@@ -62,7 +62,7 @@ abstract class ComboBoxActionWrapper : TelemetryNamespace, ComboBoxAction() {
     open fun doActionPerformed(e: AnActionEvent) = super.actionPerformed(e)
 }
 
-abstract class ToogleActionWrapper(text: String? = null, description: String? = null, icon: Icon? = null) :
+abstract class ToggleActionWrapper(text: String? = null, description: String? = null, icon: Icon? = null) :
     TelemetryNamespace,
     ToggleAction(text, description, icon) {
 

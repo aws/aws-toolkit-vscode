@@ -1,7 +1,33 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+buildscript {
+    ext.rd_version = "0.192.36"
+
+    repositories {
+        maven { url 'https://www.myget.org/F/rd-snapshots/maven/' }
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath "com.jetbrains.rd:rd-gen:$rd_version"
+    }
+}
+
+ext.resharperPluginPath = new File(projectDir, "ReSharper.AWS")
+
+def buildConfiguration = ext.properties["BuildConfiguration"] ?: "Debug"
+def pluginFiles = [
+        "AWS.Localization/bin/$buildConfiguration/net461/AWS.Localization",
+        "AWS.Daemon/bin/$buildConfiguration/net461/AWS.Daemon",
+        "AWS.Psi/bin/$buildConfiguration/net461/AWS.Psi"
+]
+
 apply plugin: 'org.jetbrains.intellij'
+apply plugin: 'com.jetbrains.rdgen'
+
+apply from: 'protocol.gradle'
+apply from: 'backend.gradle'
 
 dependencies {
     compile project(":jetbrains-core")
@@ -19,10 +45,37 @@ intellij {
     plugins = idePlugins("RD") + extraPlugins
 
     // Disable downloading source to avoid issues related to Rider SDK naming that is missed in Idea
-    // snapshots repository. The task is failed due to unable to find related IC sources.
+    // snapshots repository. The task is failed because if is unable to find related IC sources.
     downloadSources = false
     instrumentCode = false
 }
+
+// Tasks:
+//
+// `buildPlugin` depends on `prepareSandbox` task and then zips up the sandbox dir and puts the file in rider/build/distributions
+// `runIde` depends on `prepareSandbox` task and then executes IJ inside the sandbox dir
+// `prepareSandbox` depends on the standard Java `jar` and then copies everything into the sandbox dir
+
+tasks.withType(prepareSandbox.class).all {
+    dependsOn buildReSharperPlugin
+
+    def files = pluginFiles.collect { "$resharperPluginPath/src/${it}.dll" } +
+                pluginFiles.collect { "$resharperPluginPath/src/${it}.pdb" }
+
+    files.each {
+        from(it, { into("${intellij.pluginName}/dotnet") })
+    }
+
+    doLast {
+        files.each {
+            def file = new File(it)
+            if (!file.isFile()) throw new GradleException("File $file does not exist")
+            logger.warn("$name: ${file.name} -> ${destinationDir}/${intellij.pluginName}/dotnet")
+        }
+    }
+}
+
+compileKotlin.dependsOn(generateModel)
 
 test {
     useTestNG()
