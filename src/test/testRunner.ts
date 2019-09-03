@@ -3,12 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// tslint:disable:no-implicit-dependencies - this file will only be used for testing, not during regular extension usage
-import * as glob from 'glob'
-import * as Mocha from 'mocha'
-// tslint:enable:no-implicit-dependencies
-
-import * as path from 'path'
+import * as legacyTestRunner from '../../third-party/test/index'
 
 export interface RunTestsParameters {
     /**
@@ -21,42 +16,14 @@ export interface RunTestsParameters {
  * Utility method to invoke tests. Abstracts away the test framework (currently mocha)
  */
 export async function runTests(parameters: RunTestsParameters): Promise<void> {
-    console.log(`Searching for tests in: ${parameters.rootTestsPath}`)
-    const testFiles = await findTestFiles(parameters.rootTestsPath)
-    console.log(`Found ${testFiles.length} file(s) to test. Running...`)
-
     return new Promise<void>((resolve, reject) => {
-        const mocha = new Mocha({
-            ui: 'bdd'
-        })
-        mocha.useColors(true)
-
-        // Add files to the test suite
-        testFiles.forEach(testFile => mocha.addFile(path.resolve(parameters.rootTestsPath, testFile)))
-
-        try {
-            // Run the mocha test
-            mocha.run((failures: number) => {
-                if (failures > 0) {
-                    reject(new Error(`${failures} tests failed.`))
-                } else {
-                    resolve()
-                }
-            })
-        } catch (err) {
-            reject(err)
-        }
-    })
-}
-
-async function findTestFiles(rootPath: string): Promise<string[]> {
-    return new Promise<string[]>((resolve, reject) => {
-        glob('**/**.test.js', { cwd: rootPath }, (err: any, files: string[]) => {
+        legacyTestRunner.runTests(parameters.rootTestsPath, (err: any, failureCount: number) => {
             if (err) {
                 reject(err)
             }
 
-            resolve(files)
+            console.log(`Tests completed with ${failureCount} failure(s)`)
+            resolve()
         })
     })
 }
