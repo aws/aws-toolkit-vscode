@@ -54,11 +54,23 @@ describe('timeoutUtils', async () => {
         const checkTimerMs = 50
         it(`correctly reports an elapsed time with a ${marginOfError}ms margin of error`, async () => {
             const longTimer = new timeoutUtils.Timeout(300)
-            await new Promise<boolean>(resolve => {
-                setTimeout(() => resolve(true), checkTimerMs)
+            const startMillis = new Date().getTime()
+
+            // Wait a small amount of time, then measulre elapsed time
+            await new Promise<void>(resolve => {
+                setTimeout(resolve, checkTimerMs)
             })
-            const elapsed = longTimer.elapsedTime
-            assert.strictEqual(elapsed > checkTimerMs - marginOfError && elapsed < checkTimerMs + marginOfError, true)
+
+            const endMillis = new Date().getTime()
+            const actualElapsed = Math.abs(longTimer.elapsedTime)
+            const expectedElapsed = Math.abs(endMillis - startMillis)
+            const delta = Math.abs(actualElapsed - expectedElapsed)
+
+            assert.ok(
+                delta <= marginOfError,
+                `Timer elapsed measurement of ${actualElapsed} ms had a higher variance (${delta}) than expected`
+            )
+
             // kill the timer to not mess with other tests
             longTimer.killTimer()
         })
