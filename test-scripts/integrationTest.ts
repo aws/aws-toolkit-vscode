@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as path from 'path'
+import { resolve } from 'path'
 import { launchVsCodeTest } from './launchTestUtilities'
 
 // tslint:disable-next-line: no-floating-promises
@@ -11,6 +11,6 @@ import { launchVsCodeTest } from './launchTestUtilities'
     const cwd = process.cwd()
     await launchVsCodeTest({
         extensionDevelopmentPath: cwd,
-        extensionTestsPath: path.resolve(cwd, 'out', 'src', 'integrationTest', 'index.js')
+        extensionTestsPath: resolve(cwd, 'out', 'src', 'integrationTest', 'index.js')
     })
 })()

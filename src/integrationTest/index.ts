@@ -3,10 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/*
- * Responsible for running the integration tests
- */
-
 import { runTests } from '../test/testRunner'
 
 export async function run(): Promise<void> {
