@@ -22,8 +22,13 @@ export async function runTests(parameters: RunTestsParameters): Promise<void> {
                 reject(err)
             }
 
-            console.log(`Tests completed with ${failureCount} failure(s)`)
-            resolve()
+            if (failureCount > 0) {
+                console.log(`Tests completed with ${failureCount} failure(s)`)
+                reject(new Error(`Failed Tests: ${failureCount}`))
+            } else {
+                console.log('Tests completed with success')
+                resolve()
+            }
         })
     })
 }
