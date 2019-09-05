@@ -14,6 +14,7 @@ import software.aws.toolkits.jetbrains.utils.isInstanceOf
 import software.aws.toolkits.jetbrains.utils.value
 import software.aws.toolkits.jetbrains.utils.wait
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.concurrent.atomic.AtomicInteger
 
 class ExecutableManagerTest {
@@ -160,6 +161,21 @@ class ExecutableManagerTest {
         assertThat(sut.getExecutableIfPresent(type)).isInstanceOfSatisfying(ExecutableInstance.Executable::class.java) {
             assertThat(it.executablePath).isEqualTo(executable.toPath())
         }
+    }
+
+    @Test
+    fun setExecutablePathFailsWhenValidateFails() {
+        val type = object : DummyExecutableType("dummy"), AutoResolvable, Validatable {
+            override fun resolve(): Path? = null
+            override fun validate(path: Path) {
+                throw RuntimeException("ow")
+            }
+        }
+        val executable = "/fake/path////////////"
+
+        sut.setExecutablePath(type, Paths.get(executable)).value
+
+        assertThat(sut.getExecutable(type).value).isInstanceOf(ExecutableInstance.UnresolvedExecutable::class.java)
     }
 
     private fun modifyFile(executable: Path) {

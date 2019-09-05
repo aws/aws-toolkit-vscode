@@ -85,7 +85,6 @@ class DefaultExecutableManager : PersistentStateComponent<List<ExecutableState>>
         val future = CompletableFuture<ExecutableInstance>()
         ApplicationManager.getApplication().executeOnPooledThread {
             val executable = validate(type, path, false)
-            updateInternalState(type, executable)
             future.complete(executable)
         }
         return future
@@ -106,7 +105,12 @@ class DefaultExecutableManager : PersistentStateComponent<List<ExecutableState>>
             resolved?.executablePath?.toString(),
             resolved?.autoResolved,
             resolved?.executablePath?.lastModifiedOrNull()?.toMillis())
-        internalState[type.id] = Triple(newPersistedState, instance, resolved?.executablePath?.lastModified())
+        val lastModified = try {
+            resolved?.executablePath?.lastModified()
+        } catch (e: Exception) {
+            null
+        }
+        internalState[type.id] = Triple(newPersistedState, instance, lastModified)
     }
 
     private fun resolve(type: ExecutableType<*>): ExecutableInstance = try {
@@ -122,12 +126,17 @@ class DefaultExecutableManager : PersistentStateComponent<List<ExecutableState>>
         val message = message("aws.settings.executables.executable_invalid", type.displayName, e.asString)
         LOG.warn(e) { message }
 
-        ExecutableInstance.InvalidExecutable(path,
+        ExecutableInstance.InvalidExecutable(
+            path,
             null,
             autoResolved,
             message
         )
-    }.also { updateInternalState(type, it) }
+    }.also {
+        when (it) {
+            is ExecutableInstance.Executable -> updateInternalState(type, it)
+        }
+    }
 
     private fun determineVersion(type: ExecutableType<*>, path: Path, autoResolved: Boolean): ExecutableInstance = try {
         ExecutableInstance.Executable(path, type.version(path).toString(), autoResolved)
