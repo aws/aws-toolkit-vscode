@@ -409,13 +409,17 @@ class ProfileToolkitCredentialsProviderFactoryTest {
         )
 
         retryableAssert(maxAttempts = 5, interval = Duration.ofSeconds(5)) {
-            assertThat(credentialsProvider.resolveCredentials()).isInstanceOf(AwsSessionCredentials::class.java)
-                .satisfies {
-                    val sessionCredentials = it as AwsSessionCredentials
-                    assertThat(sessionCredentials.accessKeyId()).isEqualTo("FooAccessKey2")
-                    assertThat(sessionCredentials.secretAccessKey()).isEqualTo("FooSecretKey2")
-                    assertThat(sessionCredentials.sessionToken()).isEqualTo("FooSessionToken2")
-                }
+            try {
+                assertThat(credentialsProvider.resolveCredentials()).isInstanceOf(AwsSessionCredentials::class.java)
+                    .satisfies {
+                        val sessionCredentials = it as AwsSessionCredentials
+                        assertThat(sessionCredentials.accessKeyId()).isEqualTo("FooAccessKey2")
+                        assertThat(sessionCredentials.secretAccessKey()).isEqualTo("FooSecretKey2")
+                        assertThat(sessionCredentials.sessionToken()).isEqualTo("FooSessionToken2")
+                    }
+            } catch (e: Exception) {
+                throw AssertionError(e)
+            }
 
             // TODO: Debug why on windows this is sometimes 1, sometimes 2
             verify(mockProviderManager, atLeastOnce()).providerModified(credentialsProvider)
