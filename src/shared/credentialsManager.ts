@@ -49,21 +49,17 @@ export class CredentialsManager {
      * @param profileName Profile to set up
      */
     private async createCredentials(profileName: string): Promise<AWS.Credentials> {
-        let credentials: AWS.Credentials = new AWS.SharedIniFileCredentials({
-            profile: profileName,
-            tokenCodeFn: async (mfaSerial, callback) =>
-                await CredentialsManager.getMfaTokenFromUser(mfaSerial, profileName, callback)
-        })
+        const provider = new AWS.CredentialProviderChain([
+            () => new AWS.ProcessCredentials({ profile: profileName }),
+            () =>
+                new AWS.SharedIniFileCredentials({
+                    profile: profileName,
+                    tokenCodeFn: async (mfaSerial, callback) =>
+                        await CredentialsManager.getMfaTokenFromUser(mfaSerial, profileName, callback)
+                })
+        ])
 
-        try {
-            await credentials.getPromise()
-        } catch {
-            // If ini credentials fail, try credential_process
-            credentials = new AWS.ProcessCredentials({ profile: profileName })
-            await credentials.getPromise()
-        }
-
-        return credentials
+        return provider.resolvePromise()
     }
 
     /**
