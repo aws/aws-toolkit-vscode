@@ -4,19 +4,35 @@
  */
 
 import * as assert from 'assert'
+// tslint:disable-next-line:no-implicit-dependencies
+import * as lolex from 'lolex'
 import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
 
 describe('timeoutUtils', async () => {
+    let clock: lolex.InstalledClock
+
+    before(() => {
+        clock = lolex.install()
+    })
+
+    after(() => {
+        clock.uninstall()
+    })
+
     describe('Timeout', async () => {
         it('returns > 0 if the timer is still active', async () => {
-            const longTimer = new timeoutUtils.Timeout(300)
+            const timerLengthMs = 100
+            const longTimer = new timeoutUtils.Timeout(timerLengthMs)
+            clock.tick(timerLengthMs / 2)
             assert.strictEqual(longTimer.remainingTime > 0, true)
             // kill the timer to not mess with other tests
             longTimer.killTimer()
         })
 
         it('returns 0 if timer is expired', async () => {
-            const shortTimer = new timeoutUtils.Timeout(1)
+            const timerLengthMs = 10
+            const shortTimer = new timeoutUtils.Timeout(timerLengthMs)
+            clock.tick(timerLengthMs + 1)
             setTimeout(() => {
                 assert.strictEqual(shortTimer.remainingTime, 0)
             }, 10)
@@ -30,7 +46,9 @@ describe('timeoutUtils', async () => {
         })
 
         it('timer object rejects if a timer is expired', async () => {
-            const shortTimer = new timeoutUtils.Timeout(1)
+            const timerLengthMs = 10
+            const shortTimer = new timeoutUtils.Timeout(timerLengthMs)
+            clock.tick(timerLengthMs + 1)
             await shortTimer.timer.catch(value => {
                 assert.strictEqual(value, undefined)
             })
@@ -50,15 +68,15 @@ describe('timeoutUtils', async () => {
             }
         })
 
-        const marginOfError = 10
-        const checkTimerMs = 50
-        it(`correctly reports an elapsed time with a ${marginOfError}ms margin of error`, async () => {
-            const longTimer = new timeoutUtils.Timeout(300)
-            await new Promise<boolean>(resolve => {
-                setTimeout(() => resolve(true), checkTimerMs)
-            })
-            const elapsed = longTimer.elapsedTime
-            assert.strictEqual(elapsed > checkTimerMs - marginOfError && elapsed < checkTimerMs + marginOfError, true)
+        it('correctly reports an elapsed time', async () => {
+            const checkTimerMs = 50
+            const longTimer = new timeoutUtils.Timeout(checkTimerMs * 6)
+
+            // Simulate a small amount of time, then measulre elapsed time
+            clock.tick(checkTimerMs)
+
+            assert.strictEqual(longTimer.elapsedTime, checkTimerMs)
+
             // kill the timer to not mess with other tests
             longTimer.killTimer()
         })
