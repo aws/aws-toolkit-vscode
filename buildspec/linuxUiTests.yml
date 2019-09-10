@@ -40,8 +40,8 @@ phases:
       - TEST_ARTIFACTS="/tmp/testArtifacts"
       - mkdir $TEST_ARTIFACTS
       - rsync -r guitest.log $TEST_ARTIFACTS/gui/ || true
-      - rsync -rmv --include='*/' --include '**/build/idea-sandbox/system*/log/**' --exclude='*' . $TEST_ARTIFACTS/ || true
-      - rsync -rmv --include='*/' --include '**/build/reports/**' --exclude='*' . $TEST_ARTIFACTS/ || true
+      - rsync -rmq --include='*/' --include '**/build/idea-sandbox/system*/log/**' --exclude='*' . $TEST_ARTIFACTS/ || true
+      - rsync -rmq --include='*/' --include '**/build/reports/**' --exclude='*' . $TEST_ARTIFACTS/ || true
 
       - if [ "$RECORD_UI" ]; then pkill -2 ffmpeg; while pgrep ffmpeg > /dev/null; do sleep 1; done; fi
       - if [ "$RECORD_UI" ]; then cp /tmp/screen_recording.mp4 $TEST_ARTIFACTS/gui/; fi

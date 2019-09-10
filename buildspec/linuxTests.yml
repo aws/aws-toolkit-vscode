@@ -28,8 +28,8 @@ phases:
     commands:
       - TEST_ARTIFACTS="/tmp/testArtifacts"
       - mkdir $TEST_ARTIFACTS
-      - rsync -rmv --include='*/' --include '**/build/idea-sandbox/system*/log/**' --exclude='*' . $TEST_ARTIFACTS/ || true
-      - rsync -rmv --include='*/' --include '**/build/reports/**' --exclude='*' . $TEST_ARTIFACTS/ || true
+      - rsync -rmq --include='*/' --include '**/build/idea-sandbox/system*/log/**' --exclude='*' . $TEST_ARTIFACTS/ || true
+      - rsync -rmq --include='*/' --include '**/build/reports/**' --exclude='*' . $TEST_ARTIFACTS/ || true
 
 artifacts:
   files:
