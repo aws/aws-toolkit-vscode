@@ -17,7 +17,8 @@ import javax.swing.Icon
  *
  * @see ResourceNodeAction
  */
-abstract class SingleResourceNodeAction<in T : AwsExplorerResourceNode<*>>(text: String, description: String? = null, icon: Icon? = null) : ResourceNodeAction<T>(text, description, icon) {
+abstract class SingleResourceNodeAction<in T : AwsExplorerResourceNode<*>>(text: String, description: String? = null, icon: Icon? = null) :
+    ResourceNodeAction<T>(text, description, icon) {
 
     /**
      * If only a single item is selected [update] will be invoked with that selection periodically.
@@ -48,7 +49,8 @@ abstract class SingleResourceNodeAction<in T : AwsExplorerResourceNode<*>>(text:
 /**
  * Converts generic [ResourceNodeAction] list into [T] typed nodes
  */
-abstract class ResourceNodeAction<in T : AwsExplorerResourceNode<*>>(text: String, description: String? = null, icon: Icon? = null) : AnActionWrapper(text, description, icon) {
+abstract class ResourceNodeAction<in T : AwsExplorerResourceNode<*>>(text: String, description: String? = null, icon: Icon? = null) :
+    AnActionWrapper(text, description, icon) {
 
     /**
      * Invoked periodically with the selected items of type [T].

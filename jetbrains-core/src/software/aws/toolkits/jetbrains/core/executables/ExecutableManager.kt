@@ -75,9 +75,12 @@ class DefaultExecutableManager : PersistentStateComponent<List<ExecutableState>>
 
             future.complete(
                 when {
-                    instance is ExecutableWithPath && persisted.autoResolved == true && instance.executablePath.isNewerThan(lastKnownFileTime) -> validate(type, instance.executablePath, false)
-                    instance is ExecutableWithPath && instance.executablePath.lastModifiedOrNull() == lastValidated -> instance
-                    else -> load(type, persisted)
+                    instance is ExecutableWithPath && persisted.autoResolved == true && instance.executablePath.isNewerThan(lastKnownFileTime) ->
+                        validate(type, instance.executablePath, false)
+                    instance is ExecutableWithPath && instance.executablePath.lastModifiedOrNull() == lastValidated ->
+                        instance
+                    else ->
+                        load(type, persisted)
                 }
             )
         }
@@ -104,10 +107,12 @@ class DefaultExecutableManager : PersistentStateComponent<List<ExecutableState>>
 
     private fun updateInternalState(type: ExecutableType<*>, instance: ExecutableInstance) {
         val resolved = instance as? ExecutableWithPath
-        val newPersistedState = ExecutableState(type.id,
+        val newPersistedState = ExecutableState(
+            type.id,
             resolved?.executablePath?.toString(),
             resolved?.autoResolved,
-            resolved?.executablePath?.lastModifiedOrNull()?.toMillis())
+            resolved?.executablePath?.lastModifiedOrNull()?.toMillis()
+        )
         val lastModified = try {
             resolved?.executablePath?.lastModified()
         } catch (e: Exception) {
@@ -144,7 +149,12 @@ class DefaultExecutableManager : PersistentStateComponent<List<ExecutableState>>
     private fun determineVersion(type: ExecutableType<*>, path: Path, autoResolved: Boolean): ExecutableInstance = try {
         ExecutableInstance.Executable(path, type.version(path).toString(), autoResolved)
     } catch (e: Exception) {
-        ExecutableInstance.InvalidExecutable(path, null, autoResolved, message("aws.settings.executables.cannot_determine_version", type.displayName, e.asString))
+        ExecutableInstance.InvalidExecutable(
+            path,
+            null,
+            autoResolved,
+            message("aws.settings.executables.cannot_determine_version", type.displayName, e.asString)
+        )
     }
 
     private val Exception.asString: String get() = this.message ?: this.toString()

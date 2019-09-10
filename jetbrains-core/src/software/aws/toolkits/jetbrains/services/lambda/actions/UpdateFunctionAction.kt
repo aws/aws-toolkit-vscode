@@ -43,7 +43,13 @@ abstract class UpdateFunctionAction(private val mode: EditFunctionMode, title: S
                 selectedFunction.region
             )
 
-            warnResourceOperationAgainstCodePipeline(project, selectedFunction.name, selectedFunction.arn, TaggingResourceType.LAMBDA_FUNCTION, Operation.UPDATE) {
+            warnResourceOperationAgainstCodePipeline(
+                project,
+                selectedFunction.name,
+                selectedFunction.arn,
+                TaggingResourceType.LAMBDA_FUNCTION,
+                Operation.UPDATE
+            ) {
                 EditFunctionDialog(project, lambdaFunction, mode = mode).show()
             }
         }

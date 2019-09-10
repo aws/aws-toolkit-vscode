@@ -44,7 +44,9 @@ class MockResourceCache(private val project: Project) : AwsResourceCache {
         forceFetch: Boolean
     ): CompletionStage<T> = when (resource) {
         is Resource.View<*, T> -> getResource(resource.underlying, useStale, forceFetch).thenApply { resource.doMap(it as Any) }
-        is Resource.Cached<T> -> { mockResource(resource, region, credentialProvider) }
+        is Resource.Cached<T> -> {
+            mockResource(resource, region, credentialProvider)
+        }
     }
 
     private fun <T> mockResourceIfPresent(
@@ -65,7 +67,8 @@ class MockResourceCache(private val project: Project) : AwsResourceCache {
         else -> {
             val future = CompletableFuture<T>()
             ApplicationManager.getApplication().executeOnPooledThread {
-                value?.also { future.complete(it as T) } ?: future.completeExceptionally(IllegalStateException("No value found for $resource ${region.id} ${credentials.id} in mock"))
+                value?.also { future.complete(it as T) }
+                    ?: future.completeExceptionally(IllegalStateException("No value found for $resource ${region.id} ${credentials.id} in mock"))
             }
             future
         }

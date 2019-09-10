@@ -26,7 +26,11 @@ class LocalLambdaRunConfigurationProducer : RunConfigurationProducer<LocalLambda
     override fun getConfigurationSettingsList(runManager: RunManager): List<RunnerAndConfigurationSettings> =
         super.getConfigurationSettingsList(runManager).filter { it.configuration is LocalLambdaRunConfiguration }
 
-    override fun setupConfigurationFromContext(configuration: LocalLambdaRunConfiguration, context: ConfigurationContext, sourceElement: Ref<PsiElement>): Boolean {
+    override fun setupConfigurationFromContext(
+        configuration: LocalLambdaRunConfiguration,
+        context: ConfigurationContext,
+        sourceElement: Ref<PsiElement>
+    ): Boolean {
         val element = context.psiLocation ?: return false
         val parent = element.parent
         val result = when (parent) {
