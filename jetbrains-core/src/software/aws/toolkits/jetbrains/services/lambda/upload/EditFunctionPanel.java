@@ -70,8 +70,8 @@ public class EditFunctionPanel {
         envVars = new EnvironmentVariablesTextField(project);
         memorySlider = LambdaWidgets.lambdaMemory();
         timeoutSlider = LambdaWidgets.lambdaTimeout();
-        iamRole = new ResourceSelector<>(project, IamResources.LIST_LAMBDA_ROLES);
-        sourceBucket = new ResourceSelector<>(project, S3Resources.listBucketsByActiveRegion(project));
+        iamRole = ResourceSelector.builder(project).resource(IamResources.LIST_LAMBDA_ROLES).build();
+        sourceBucket = ResourceSelector.builder(project).resource(S3Resources.listBucketsByActiveRegion(project)).build();
     }
 
     public void setRuntimes(Collection<Runtime> runtimes) {
