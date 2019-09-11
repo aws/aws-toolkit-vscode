@@ -112,7 +112,7 @@
           <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="serverless.application.deploy.tooltip.createStack"/>
         </properties>
       </component>
-      <component id="92862" class="software.aws.toolkits.jetbrains.ui.ResourceSelector" binding="s3Bucket">
+      <component id="92862" class="software.aws.toolkits.jetbrains.ui.ResourceSelector" binding="s3Bucket" custom-create="true">
         <constraints>
           <grid row="5" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="7" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
         </constraints>
@@ -120,7 +120,7 @@
           <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="serverless.application.deploy.tooltip.s3Bucket"/>
         </properties>
       </component>
-      <component id="ece13" class="software.aws.toolkits.jetbrains.ui.ResourceSelector" binding="stacks">
+      <component id="ece13" class="software.aws.toolkits.jetbrains.ui.ResourceSelector" binding="stacks" custom-create="true">
         <constraints>
           <grid row="1" column="1" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
         </constraints>

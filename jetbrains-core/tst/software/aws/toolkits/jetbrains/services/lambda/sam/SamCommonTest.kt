@@ -68,13 +68,13 @@ class SamCommonTest {
     }
 
     @Test
-    fun compatableSamVersion() {
+    fun compatibleSamVersion() {
         val versions = arrayOf(
             "0.${SamCommon.expectedSamMinVersion.minor}.${SamCommon.expectedSamMinVersion.patch}",
             "0.${SamCommon.expectedSamMinVersion.minor}.123",
             "0.${SamCommon.expectedSamMinVersion.minor}.999999999",
-            "0.${SamCommon.expectedSamMinVersion.minor}.${SamCommon.expectedSamMinVersion.patch}-beta",
-            "0.${SamCommon.expectedSamMinVersion.minor}.${SamCommon.expectedSamMinVersion.patch}-beta+build",
+            "0.${SamCommon.expectedSamMinVersion.minor}.${SamCommon.expectedSamMinVersion.patch + 1}-beta",
+            "0.${SamCommon.expectedSamMinVersion.minor}.${SamCommon.expectedSamMinVersion.patch + 1}-beta+build",
             "0.${SamCommon.expectedSamMaxVersion.minor - 1}.${SamCommon.expectedSamMinVersion.patch}"
         )
         for (version in versions) {

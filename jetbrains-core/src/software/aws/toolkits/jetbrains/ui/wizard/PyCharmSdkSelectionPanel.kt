@@ -7,6 +7,7 @@ import com.intellij.ide.util.projectWizard.AbstractNewProjectStep
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.projectRoots.impl.SdkConfigurationUtil
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.ui.DocumentAdapter
 import com.intellij.util.ui.UIUtil
 import com.jetbrains.python.newProject.PyNewProjectSettings
@@ -16,18 +17,22 @@ import com.jetbrains.python.newProject.steps.PyAddExistingSdkPanel
 import com.jetbrains.python.newProject.steps.PyAddNewEnvironmentPanel
 import com.jetbrains.python.sdk.add.PyAddSdkGroupPanel
 import icons.AwsIcons
-import software.aws.toolkits.jetbrains.services.lambda.python.PythonRuntimeGroup
+import software.aws.toolkits.jetbrains.services.lambda.SdkBasedSdkSettings
+import software.aws.toolkits.jetbrains.services.lambda.SdkSettings
 import software.aws.toolkits.resources.message
+import java.io.File
 import javax.swing.Icon
+import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 
-class PyCharmSdkSelectionPanel(generator: SamProjectGenerator) : SdkSelectionPanelBase(generator) {
+class PyCharmSdkSelectionPanel(val step: SamProjectRuntimeSelectionStep) : SdkSelectionPanelBase() {
     private var documentListener: DocumentListener? = null
-    override lateinit var sdkSelectionPanel: PyAddSdkGroupPanel
 
-    private val callback = object : AbstractNewProjectStep.AbstractCallback<PyNewProjectSettings>() {}
+    override val sdkSelectionPanel: PyAddSdkGroupPanel by lazy { newSdkPanel() }
+
+    override val sdkSelectionLabel: JLabel? = null
 
     private fun newSdkPanel(): PyAddSdkGroupPanel =
     // construct a py-specific settings step and grab its sdk panel instance
@@ -35,10 +40,10 @@ class PyCharmSdkSelectionPanel(generator: SamProjectGenerator) : SdkSelectionPan
             override fun getLogo(): Icon? = AwsIcons.Logos.AWS
 
             override fun getName(): String = message("sam.init.name")
-        }, callback) {
+        }, AbstractNewProjectStep.AbstractCallback<PyNewProjectSettings>()) {
             // shim validation back to the user UI...
             override fun setErrorText(text: String?) {
-                generator.step.setErrorText(text)
+                step.setErrorText(text)
             }
 
             override fun createPanel(): JPanel {
@@ -57,14 +62,14 @@ class PyCharmSdkSelectionPanel(generator: SamProjectGenerator) : SdkSelectionPan
         }.createPanel() as PyAddSdkGroupPanel
 
     override fun registerListeners() {
-        val document = generator.step.getLocationField().textField.document
+        val document = step.getLocationField().textField.document
         // cleanup because generators are re-used
         if (documentListener != null) {
             document.removeDocumentListener(documentListener)
         }
 
         documentListener = object : DocumentAdapter() {
-            val locationField = generator.step.getLocationField()
+            val locationField = step.getLocationField()
             override fun textChanged(e: DocumentEvent) {
                 sdkSelectionPanel.newProjectPath = locationField.text.trim()
             }
@@ -73,37 +78,29 @@ class PyCharmSdkSelectionPanel(generator: SamProjectGenerator) : SdkSelectionPan
         document.addDocumentListener(documentListener)
 
         sdkSelectionPanel.addChangeListener(Runnable {
-            generator.step.checkValid()
+            step.checkValid()
         })
+
+        sdkSelectionPanel.newProjectPath = step.getLocationField().text.trim()
     }
 
-    override fun transformUI(panel: SamInitSelectionPanel) {
-        super.transformUI(panel)
-        // remove runtime panel
-        panel.hideRuntime()
-        // to save space, don't label the sdk selector
-        sdkSelectionPanel = newSdkPanel()
-        panel.addSdkPanel(null, sdkSelectionPanel)
-    }
+    override fun getSdkSettings(): SdkSettings =
+        getSdk()?.let {
+            SdkBasedSdkSettings(sdk = it)
+        } ?: throw RuntimeException(message("sam.init.python.bad_sdk"))
 
-    override fun getSdk(): Sdk? {
-        val panel = sdkSelectionPanel.selectedPanel
-        return when (panel) {
+    private fun getSdk(): Sdk? =
+        when (val panel = sdkSelectionPanel.selectedPanel) {
             // this list should be exhaustive
             is PyAddNewEnvironmentPanel -> {
-                val sdk = panel.getOrCreateSdk()?.let {
+                FileUtil.createDirectory(File(step.getLocationField().text.trim()))
+                panel.getOrCreateSdk()?.also {
                     SdkConfigurationUtil.addSdk(it)
-                    it
                 }
-                generator.settings.runtime = PythonRuntimeGroup.determineRuntimeForSdk(sdk
-                    ?: throw RuntimeException(message("sam.init.python.bad_sdk"))
-                ) ?: throw RuntimeException("Could not determine runtime for SDK")
-                return sdk
             }
             is PyAddExistingSdkPanel -> panel.sdk
             else -> null
         }
-    }
 
     override fun validateAll(): List<ValidationInfo>? = sdkSelectionPanel.validateAll()
 }

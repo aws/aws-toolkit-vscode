@@ -16,6 +16,8 @@ import com.intellij.testGuiFramework.util.scenarios.selectSdk
 import com.intellij.testGuiFramework.util.scenarios.typeProjectNameAndLocation
 import com.intellij.testGuiFramework.util.scenarios.waitLoadingTemplates
 import com.intellij.testGuiFramework.util.step
+import java.util.Arrays
+import kotlin.test.assertNotNull
 
 private const val AWS_GROUP = "AWS"
 
@@ -24,7 +26,7 @@ data class ServerlessProjectOptions(val runtime: String, val template: String)
 fun NewProjectDialogModel.createServerlessProject(
     projectPath: String,
     templateOptions: ServerlessProjectOptions,
-    projectSdk: String
+    sdkRegex: Regex
 ) {
     with(guiTestCase) {
         fileSystemUtils.assertProjectPathExists(projectPath)
@@ -56,9 +58,10 @@ fun NewProjectDialogModel.createServerlessProject(
                     combobox("SAM Template:").selectItem(templateOptions.template)
                 }
 
-                if (projectSdk.isNotEmpty()) {
-                    selectSdk(projectSdk)
-                }
+                val sdkCandidates = sdkChooser().contents()
+                val sdkChoice = sdkCandidates.firstOrNull { it.matches(sdkRegex) }
+                assertNotNull(sdkChoice, "No valid SDK found, choices are: ${Arrays.toString(sdkCandidates)}")
+                selectSdk(sdkChoice)
 
                 step("close New Project dialog with Finish") {
                     button(buttonFinish).click()

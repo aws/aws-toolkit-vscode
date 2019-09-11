@@ -1,3 +1,18 @@
+# _1.5_ (2019-07-29)
+- **(Feature)** Support Globals configuration in SAM template for serverless functions.
+- **(Feature)** Enable searching for `requirements.txt` when determining if a python method is a handler to match SAM build
+- **(Feature)** Enable toolkit in 2019.2 EAP
+- **(Feature)** Support building only the requested function when sam cli version is newer than 0.16
+- **(Bug Fix)** Upgraded AWS Java SDK to pull in latest model changes ([#1099](https://github.com/aws/aws-toolkit-jetbrains/issues/1099))
+- **(Bug Fix)** Fix DynamoDB template for Python does not create correctly.
+- **(Bug Fix)** Fix DaemonCodeAnalyzer restart not happening in a read action ([#1012](https://github.com/aws/aws-toolkit-jetbrains/issues/1012))
+- **(Bug Fix)** Fix the bug when project is in different drive than the temp folder drive for Windows. [#950](https://github.com/aws/aws-toolkit-jetbrains/issues/950)
+- **(Bug Fix)** Fix invalid credentials file reporting an IDE error
+- **(Bug Fix)** Fix issue where modifying a cloned run config results in mutation of the original
+- **(Bug Fix)** Fix runtime exceptions on project startup and run configuration validation
+- **(Bug Fix)** Fix read/write action issues when invoking a Lambda using SAM ([#1081](https://github.com/aws/aws-toolkit-jetbrains/issues/1081))
+- **(Bug Fix)** Make sure all STS assume role calls are not on the UI thread ([#1024](https://github.com/aws/aws-toolkit-jetbrains/issues/1024))
+
 # _1.4_ (2019-06-10)
 - **(Feature)** Usability enhancements to the CloudFormation UI
   - color coding status similar to the AWS Console

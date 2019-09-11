@@ -16,13 +16,13 @@ fun createRunConfiguration(
     regionId: AwsRegion? = MockRegionProvider.US_EAST_1,
     credentialId: String? = "MockCredentials",
     functionName: String? = "DummyFunction"
-): LambdaRemoteRunConfiguration {
+): RemoteLambdaRunConfiguration {
     val runManager = RunManager.getInstance(project)
     val factory = LambdaRunConfigurationType.getInstance()
         .configurationFactories
-        .first { it is LambdaRemoteRunConfigurationFactory }
+        .first { it is RemoteLambdaRunConfigurationFactory }
     val runConfigurationAndSettings = runManager.createConfiguration("Test", factory)
-    val runConfiguration = runConfigurationAndSettings.configuration as LambdaRemoteRunConfiguration
+    val runConfiguration = runConfigurationAndSettings.configuration as RemoteLambdaRunConfiguration
     runManager.addConfiguration(runConfigurationAndSettings)
 
     runConfiguration.credentialProviderId(credentialId)

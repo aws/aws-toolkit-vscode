@@ -13,12 +13,16 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.jetbrains.annotations.NotNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
+import software.aws.toolkits.jetbrains.services.cloudformation.LambdaFunction
+import software.aws.toolkits.jetbrains.services.cloudformation.SamFunction
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
+import software.aws.toolkits.resources.message
 import java.io.File
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -37,6 +41,14 @@ class YamlCloudFormationTemplateTest {
         val template = yamlTemplate()
         runInEdtAndWait {
             assertThat(template.resources().toList()).hasSize(2)
+        }
+    }
+
+    @Test
+    fun canListResourcesWithGlobals() {
+        val template = yamlTemplate(template = TEST_TEMPLATE_WITH_GLOBALS)
+        runInEdtAndWait {
+            assertThat(template.resources().toList()).hasSize(3)
         }
     }
 
@@ -166,6 +178,41 @@ Resources:
     }
 
     @Test
+    fun canUpdateAScalarValueWithGlobals() {
+        val updatedTemplate = runInEdtAndGet {
+            val template = yamlTemplate(template = TEST_TEMPLATE_WITH_GLOBALS)
+            val resource = template.getResourceByName("MyFunction")
+            resource!!.setScalarProperty("CodeUri", "new/uri.jar")
+            template.text()
+        }
+
+        assertThat(updatedTemplate).isEqualTo(
+            """
+Description: "Some description"
+Globals:
+    Function:
+        Runtime: java8
+        CodeUri: target/out.jar
+Resources:
+    MyFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            Handler: helloworld.App::handleRequest
+            Runtime: java12
+            CodeUri: new/uri.jar
+    FooFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            Handler: helloworld.App::handleRequest
+    LambdaFunction:
+        Type: AWS::Lambda::Function
+        Properties:
+            Handler: helloworld.App::handleRequest
+                """.trimIndent()
+        )
+    }
+
+    @Test
     fun canSaveToFile() {
         val template = yamlTemplate()
         val tempFile = File.createTempFile("tempTemplate", ".yaml")
@@ -213,6 +260,59 @@ Resources:
         }
     }
 
+    @Test
+    fun serverlessFunctionInheritsGlobalsProperties() {
+        val template = yamlTemplate(template = TEST_TEMPLATE_WITH_GLOBALS)
+
+        runInEdtAndWait {
+            val samFunction = template.getResourceByName("FooFunction") as SamFunction
+            assertThat(samFunction.runtime()).isEqualTo("java8")
+            assertThat(samFunction.codeLocation()).isEqualTo("target/out.jar")
+        }
+    }
+
+    @Test
+    fun serverlessFunctionOverridesGlobalsProperties() {
+        val template = yamlTemplate(template = TEST_TEMPLATE_WITH_GLOBALS)
+
+        runInEdtAndWait {
+            val samFunction = template.getResourceByName("MyFunction") as SamFunction
+            assertThat(samFunction.runtime()).isEqualTo("java12")
+            assertThat(samFunction.codeLocation()).isEqualTo("target/out.jar")
+        }
+    }
+
+    @Test
+    fun lambdaFunctionDoesNotInheritGlobalsProperties() {
+        val template = yamlTemplate(template = TEST_TEMPLATE_WITH_GLOBALS)
+
+        runInEdtAndWait {
+            val lambdaFunction = template.getResourceByName("LambdaFunction") as LambdaFunction
+            assertThatThrownBy { lambdaFunction.runtime() }.isInstanceOf(IllegalStateException::class.java).hasMessage(
+                message("cloudformation.missing_property", "Runtime", lambdaFunction.logicalName)
+            )
+        }
+    }
+
+    @Test
+    fun invalidTemplateIsHandledGracefully() {
+        val template = yamlTemplate(
+            """
+            foo:
+              bar
+            ---
+            hello:
+              world
+            """.trimIndent()
+        )
+
+        runInEdtAndWait {
+            assertThat(template.resources().toList()).isEmpty()
+            assertThat(template.parameters().toList()).isEmpty()
+            assertThat(template.globals().toList()).isEmpty()
+        }
+    }
+
     private fun yamlTemplate(template: String = TEST_TEMPLATE): CloudFormationTemplate = runInEdtAndGet {
         val file = projectRule.fixture.addFileToProject("template.yaml", template)
         CloudFormationTemplate.parse(projectRule.project, file.virtualFile)
@@ -252,6 +352,29 @@ Resources:
             ProvisionedThroughput:
                 ReadCapacityUnits: 1
                 WriteCapacityUnits: 1
+            """.trimIndent()
+
+        val TEST_TEMPLATE_WITH_GLOBALS =
+            """
+Description: "Some description"
+Globals:
+    Function:
+        Runtime: java8
+        CodeUri: target/out.jar
+Resources:
+    MyFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            Handler: helloworld.App::handleRequest
+            Runtime: java12
+    FooFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            Handler: helloworld.App::handleRequest
+    LambdaFunction:
+        Type: AWS::Lambda::Function
+        Properties:
+            Handler: helloworld.App::handleRequest
             """.trimIndent()
     }
 }

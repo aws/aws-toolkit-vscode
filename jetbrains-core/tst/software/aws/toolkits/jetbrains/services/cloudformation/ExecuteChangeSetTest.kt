@@ -22,7 +22,6 @@ import software.amazon.awssdk.services.cloudformation.model.ExecuteChangeSetResp
 import software.amazon.awssdk.services.cloudformation.model.Stack
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.utils.delegateMock
 
 class ExecuteChangeSetTest {
     @JvmField
@@ -33,7 +32,7 @@ class ExecuteChangeSetTest {
     @Rule
     val mockClientManagerRule = MockClientManagerRule(projectRule)
 
-    private val mockClient by lazy { mockClientManagerRule.register(CloudFormationClient::class, delegateMock()) }
+    private val mockClient by lazy { mockClientManagerRule.create<CloudFormationClient>() }
 
     @Test
     fun stackDoesNotExist() {

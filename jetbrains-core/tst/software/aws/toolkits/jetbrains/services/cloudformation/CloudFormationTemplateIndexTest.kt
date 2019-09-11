@@ -152,6 +152,81 @@ Resources:
     }
 
     @Test
+    fun handlerAndRuntimeInGlobals() {
+        val fixture = projectRule.fixture
+
+        fixture.openFile("template.yaml", """
+Globals:
+    Function:
+        Runtime: java8
+        Handler: bar
+Resources:
+  ServerlessFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: target/HelloWorld-1.0.jar
+""")
+
+        runInEdtAndWait {
+            val functions = CloudFormationTemplateIndex.listFunctions(projectRule.project)
+            assertThat(functions).hasSize(1)
+            val indexedFunction = functions.toList()[0]
+            assertThat(indexedFunction.handler()).isEqualTo("bar")
+            assertThat(indexedFunction.runtime()).isEqualTo("java8")
+        }
+    }
+
+    @Test
+    fun onlyHandlerInGlobals() {
+        val fixture = projectRule.fixture
+
+        fixture.openFile("template.yaml", """
+Globals:
+    Function:
+        Handler: bar
+Resources:
+  ServerlessFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: target/HelloWorld-1.0.jar
+""")
+
+        runInEdtAndWait {
+            val functions = CloudFormationTemplateIndex.listFunctions(projectRule.project)
+            assertThat(functions).hasSize(1)
+            val indexedFunction = functions.toList()[0]
+            assertThat(indexedFunction.handler()).isEqualTo("bar")
+            assertThat(indexedFunction.runtime()).isNull()
+        }
+    }
+
+    @Test
+    fun localRuntimeOverridesGlobals() {
+        val fixture = projectRule.fixture
+
+        fixture.openFile("template.yaml", """
+Globals:
+    Function:
+        Runtime: python2.7
+        Handler: bar
+Resources:
+  ServerlessFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: target/HelloWorld-1.0.jar
+      Runtime: python3.6
+""")
+
+        runInEdtAndWait {
+            val functions = CloudFormationTemplateIndex.listFunctions(projectRule.project)
+            assertThat(functions).hasSize(1)
+            val indexedFunction = functions.toList()[0]
+            assertThat(indexedFunction.handler()).isEqualTo("bar")
+            assertThat(indexedFunction.runtime()).isEqualTo("python3.6")
+        }
+    }
+
+    @Test
     fun emptyHandlerAndRuntime() {
         val fixture = projectRule.fixture
 
@@ -261,6 +336,27 @@ Resources:
 
             assertThat(resources1[0].type).isEqualTo("AWS::Serverless::Function")
             assertThat(resources2[0].type).isEqualTo("AWS::Serverless::SimpleTable")
+        }
+    }
+
+    @Test
+    fun invalidTemplateDoesntIndex() {
+        val fixture = projectRule.fixture
+
+        fixture.openFile(
+            "template.yaml",
+            """
+            foo:
+              bar
+            ---
+            hello:
+              world:
+            """.trimIndent()
+        )
+
+        runInEdtAndWait {
+            val functions = CloudFormationTemplateIndex.listFunctions(projectRule.project)
+            assertThat(functions).hasSize(0)
         }
     }
 }

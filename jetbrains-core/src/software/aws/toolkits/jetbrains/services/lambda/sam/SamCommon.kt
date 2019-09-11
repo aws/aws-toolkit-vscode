@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services.lambda.sam
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.util.SystemInfo
@@ -16,16 +15,19 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.EnvironmentUtil
 import com.intellij.util.text.SemVer
 import com.intellij.util.text.nullize
+import software.aws.toolkits.core.utils.error
+import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.cloudformation.SERVERLESS_FUNCTION_TYPE
 import software.aws.toolkits.jetbrains.settings.SamSettings
-import software.aws.toolkits.jetbrains.utils.FileInfoCache
 import software.aws.toolkits.resources.message
 import java.io.FileFilter
 import java.nio.file.Paths
 
 class SamCommon {
     companion object {
+        private val logger = getLogger<SamCommon>()
+
         val mapper = jacksonObjectMapper()
         const val SAM_BUILD_DIR = ".aws-sam"
         const val SAM_INFO_VERSION_KEY = "version"
@@ -36,32 +38,6 @@ class SamCommon {
 
         // Exclusive
         val expectedSamMaxVersion = SemVer("0.23.0", 0, 23, 0)
-
-        private val versionCache = object : FileInfoCache<SemVer>() {
-            override fun getFileInfo(path: String): SemVer {
-                val commandLine = getSamCommandLine(
-                    path
-                )
-                    .withParameters("--info")
-
-                val process = CapturingProcessHandler(commandLine).runProcess()
-
-                if (process.exitCode != 0) {
-                    if (process.stderr.contains(SAM_INVALID_OPTION_SUBSTRING)) {
-                        throw IllegalStateException(message("sam.executable.unexpected_output", process.stderr))
-                    }
-                    throw IllegalStateException(process.stderr)
-                } else {
-                    if (process.stdout.isEmpty()) {
-                        throw IllegalStateException(message("sam.executable.empty_info"))
-                    }
-                    val tree = mapper.readTree(process.stdout)
-                    val version = tree.get(SAM_INFO_VERSION_KEY).asText()
-                    return SemVer.parseFromText(version)
-                        ?: throw IllegalStateException(message("sam.executable.version_parse_error", version))
-                }
-            }
-        }
 
         fun getSamCommandLine(path: String? = SamSettings.getInstance().executablePath): GeneralCommandLine {
             val sanitizedPath = path.nullize(true)
@@ -94,7 +70,10 @@ class SamCommon {
                 .withEnvironment(effectiveEnvironment)
         }
 
-        private fun checkVersion(semVer: SemVer): String? {
+        /**
+         * Check SAM CLI version and return an invalid message if version is not valid or <code>null</code> otherwise
+         */
+        fun getInvalidVersionMessage(semVer: SemVer): String? {
             val samVersionOutOfRangeMessage = message("sam.executable.version_wrong",
                 expectedSamMinVersion,
                 expectedSamMaxVersion, semVer)
@@ -115,8 +94,8 @@ class SamCommon {
                 ?: return message("sam.cli_not_configured")
 
             return try {
-                checkVersion(
-                    versionCache.getResult(
+                getInvalidVersionMessage(
+                    SamVersionCache.evaluateBlocking(
                         sanitizedPath
                     )
                 )
@@ -133,8 +112,9 @@ class SamCommon {
                 ?: return "UNKNOWN"
 
             return try {
-                versionCache.getResult(sanitizedPath).rawVersion
+                SamVersionCache.evaluateBlocking(sanitizedPath).rawVersion
             } catch (e: Exception) {
+                logger.error(e) { "Error while getting SAM executable version." }
                 return "UNKNOWN"
             }
         }

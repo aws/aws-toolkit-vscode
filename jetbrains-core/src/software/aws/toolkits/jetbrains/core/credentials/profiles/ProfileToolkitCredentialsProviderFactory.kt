@@ -11,11 +11,12 @@ import software.amazon.awssdk.profiles.ProfileFile
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProviderFactory
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProviderManager
 import software.aws.toolkits.core.region.ToolkitRegionProvider
-import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.core.utils.tryOrThrow
 import software.aws.toolkits.core.utils.tryOrThrowNullable
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileWatcher.ProfileChangeListener
 import software.aws.toolkits.jetbrains.utils.createNotificationExpiringAction
 import software.aws.toolkits.jetbrains.utils.createShowMoreInfoDialogAction
+import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 
@@ -41,9 +42,12 @@ class ProfileToolkitCredentialsProviderFactory(
      */
     @Synchronized
     private fun loadFromProfileFile() {
-        val profiles = LOG.tryOrNull(message("credentials.profile.failed_load")) {
-            ProfileFile.defaultProfileFile().profiles()
-        } ?: emptyMap()
+        val profilesFetchingResult = Result.runCatching {
+            LOG.tryOrThrow(message("credentials.profile.failed_load"), level = Level.WARN) {
+                ProfileFile.defaultProfileFile().profiles()
+            }
+        }
+        val profiles = profilesFetchingResult.getOrNull() ?: emptyMap()
 
         // Remove old ones
         profileHolder.list().forEach {
@@ -87,7 +91,18 @@ class ProfileToolkitCredentialsProviderFactory(
 
         val refreshTitle = message("credentials.profile.refresh_ok_title")
         val refreshBaseMessage = message("credentials.profile.refresh_ok_message", profiles.size)
-        if (errors.isNotEmpty()) {
+
+        if (profilesFetchingResult.isFailure) {
+            val loadingFailureMessage = message("credentials.profile.failed_load")
+            val detail = profilesFetchingResult.exceptionOrNull()?.message?.let {
+                ": $it"
+            } ?: ""
+            notifyError(
+                title = refreshTitle,
+                content = "$loadingFailureMessage$detail",
+                action = createNotificationExpiringAction(ActionManager.getInstance().getAction("aws.settings.upsertCredentials"))
+            )
+        } else if (errors.isNotEmpty()) {
             val message = errors.mapNotNull { it.exceptionOrNull()?.message }.reduce { acc, message ->
                 "$acc\n$message"
             }

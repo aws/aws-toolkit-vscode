@@ -21,6 +21,7 @@ import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADAT
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NOT_SET
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
+import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
@@ -123,19 +124,17 @@ class TelemetryServiceTest {
     @Test
     fun metricEventMetadataIsSet() {
         val accountSettings = MockProjectAccountSettingsManager.getInstance(projectRule.project)
+        MockResourceCache.getInstance(projectRule.project).addValidAwsCredential(accountSettings.activeRegion.id, "profile:admin", "111111111111")
 
         accountSettings.changeCredentialProvider(
-            MockCredentialsManager.getInstance().addCredentials(
-                "profile:admin",
-                AwsBasicCredentials.create("Access", "Secret"),
-                true,
-                awsAccountId = "111111111111"
-            )
+            MockCredentialsManager.getInstance().addCredentials("profile:admin", AwsBasicCredentials.create("Access", "Secret"))
         )
 
         val mockRegion = AwsRegion("foo-region", "foo-region")
         MockRegionProvider.getInstance().addRegion(mockRegion)
         accountSettings.changeRegion(mockRegion)
+
+        MockResourceCache.getInstance(projectRule.project).addValidAwsCredential("foo-region", "profile:admin", "111111111111")
 
         val eventCaptor = argumentCaptor<MetricEvent>()
         val telemetryService = DefaultTelemetryService(
@@ -154,14 +153,10 @@ class TelemetryServiceTest {
     @Test
     fun metricEventMetadataIsOverridden() {
         val accountSettings = MockProjectAccountSettingsManager.getInstance(projectRule.project)
+        MockResourceCache.getInstance(projectRule.project).addValidAwsCredential(accountSettings.activeRegion.id, "profile:admin", "111111111111")
 
         accountSettings.changeCredentialProvider(
-            MockCredentialsManager.getInstance().addCredentials(
-                "profile:admin",
-                AwsBasicCredentials.create("Access", "Secret"),
-                true,
-                awsAccountId = "111111111111"
-            )
+            MockCredentialsManager.getInstance().addCredentials("profile:admin", AwsBasicCredentials.create("Access", "Secret"))
         )
 
         val mockRegion = AwsRegion("foo-region", "foo-region")

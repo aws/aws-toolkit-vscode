@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Handle non-cloudformation yaml files gracefully"
+}

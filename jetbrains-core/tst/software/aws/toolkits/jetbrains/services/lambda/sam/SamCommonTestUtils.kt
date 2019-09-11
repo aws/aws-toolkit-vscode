@@ -35,7 +35,7 @@ object SamCommonTestUtils {
         val contents = if (SystemInfo.isWindows) {
             """
                 @echo off
-                echo $message ${if (stream != 1) "1>&$stream" else ""}
+                echo${if (message.isEmpty()) "." else " $message"} ${if (stream != 1) "1>&$stream" else ""}
                 exit $exitCode
             """.trimIndent()
         } else {

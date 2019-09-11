@@ -148,6 +148,13 @@ class LogUtilsTest {
         verify(log).debug("debug", null)
     }
 
+    @Test
+    fun logWhenNull() {
+        val result = log.logWhenNull("message", level = Level.WARN) { null }
+        verify(log).warn("message", null)
+        assertThat(result, equalTo(null))
+    }
+
     @Before
     fun setup() {
         reset(log)

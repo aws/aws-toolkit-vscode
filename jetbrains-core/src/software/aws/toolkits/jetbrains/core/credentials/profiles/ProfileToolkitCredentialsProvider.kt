@@ -29,6 +29,7 @@ import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.credentials.CorrectThreadCredentialsProvider
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileToolkitCredentialsProviderFactory.Companion.TYPE
 import software.aws.toolkits.resources.message
 import java.util.function.Supplier
@@ -103,17 +104,19 @@ class ProfileToolkitCredentialsProvider(
                     AwsClientManager.userAgent
                 )
 
-                StsAssumeRoleCredentialsProvider.builder()
-                    .stsClient(stsClient)
-                    .refreshRequest(Supplier {
-                        createAssumeRoleRequest(
-                            mfaSerial,
-                            roleArn,
-                            roleSessionName,
-                            externalId
-                        )
-                    })
-                    .build()
+                CorrectThreadCredentialsProvider(
+                    StsAssumeRoleCredentialsProvider.builder()
+                        .stsClient(stsClient)
+                        .refreshRequest(Supplier {
+                            createAssumeRoleRequest(
+                                mfaSerial,
+                                roleArn,
+                                roleSessionName,
+                                externalId
+                            )
+                        })
+                        .build()
+                )
             }
 
             propertyExists(ProfileProperty.AWS_SESSION_TOKEN) -> {
@@ -220,7 +223,7 @@ class ProfileToolkitCredentialsProvider(
 
     private fun profile() = profiles.getProfile(profileName)
 
-    override fun toString(): String = "ProfileToolkitCredentialsProvider(profile=${profile()})"
+    override fun toString(): String = "ProfileToolkitCredentialsProvider(profile=$profileName)"
 
     private companion object {
         val LOG = getLogger<ProfileToolkitCredentialsProvider>()
