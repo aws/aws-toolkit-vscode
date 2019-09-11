@@ -37,7 +37,11 @@ allprojects {
         systemProperty("aws.toolkits.enableTelemetry", false)
         intellij {
             if (System.env.ALTERNATIVE_IDE) {
-                alternativeIdePath = System.env.ALTERNATIVE_IDE
+                if(file(System.env.ALTERNATIVE_IDE).exists()) {
+                    alternativeIdePath = System.env.ALTERNATIVE_IDE
+                } else {
+                    throw new GradleException("ALTERNATIVE_IDE path ${System.env.ALTERNATIVE_IDE} not found")
+                }
             }
         }
     }
@@ -99,6 +103,10 @@ subprojects {
 
     testlogger {
         showFullStackTraces true
+        showStandardStreams true
+        showPassedStandardStreams false
+        showSkippedStandardStreams true
+        showFailedStandardStreams true
     }
 
     test {
@@ -106,6 +114,11 @@ subprojects {
             // don't instrument sdk, icons, ktlint, etc.
             includes = ["software.aws.toolkits.*"]
             excludes = ["software.aws.toolkits.ktlint"]
+        }
+
+        reports {
+            junitXml.enabled = false
+            html.enabled = true
         }
     }
 
@@ -133,13 +146,6 @@ subprojects {
         description = "Runs the integration tests."
         testClassesDirs = sourceSets.integrationTest.output.classesDirs
         classpath = sourceSets.integrationTest.runtimeClasspath
-
-        binResultsDir = file("$buildDir/integration-test-results/binary/integrationTest")
-
-        reports {
-            html.destination file("$buildDir/reports/integration-test")
-            junitXml.destination file("$buildDir/integration-test-results")
-        }
 
         jacoco {
             excludes = ["com.sun.*"] // See https://groups.google.com/forum/#!topic/jacoco/H0gDwxNuhK4
@@ -182,7 +188,7 @@ def removeTask(tasks, taskName) {
 
 wrapper {
     distributionType = Wrapper.DistributionType.ALL
-    gradleVersion '5.3'
+    gradleVersion '5.4.1'
 }
 
 apply plugin: 'org.jetbrains.intellij'
@@ -196,8 +202,7 @@ intellij {
 }
 
 publishPlugin {
-    username publishUsername
-    password publishPassword
+    token publishToken
     channels publishChannel
 }
 
@@ -223,7 +228,7 @@ task ktlint(type: JavaExec, group: "verification") {
 
     args "-v", toInclude, "!${toExclude}"
 
-    inputs.files(project.fileTree(dir: "src", include: "**/*.kt"))
+    inputs.files(project.fileTree(dir: ".", include: "**/*.kt"))
     outputs.dir("${project.buildDir}/reports/ktlint/")
 }
 check.dependsOn ktlint
@@ -259,8 +264,8 @@ if (gradle.startParameter.taskNames.contains("runIde")) {
                     it.enabled = false
                 }
             } else {
-                if (it.name == "runIde" && 
-                        it.project != project(':jetbrains-core') && 
+                if (it.name == "runIde" &&
+                        it.project != project(':jetbrains-core') &&
                         it.project != project(':jetbrains-rider')) {
                     it.enabled = false
                 }

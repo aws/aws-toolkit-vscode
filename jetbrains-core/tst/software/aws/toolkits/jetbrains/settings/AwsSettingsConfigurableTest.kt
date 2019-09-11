@@ -4,8 +4,11 @@
 package software.aws.toolkits.jetbrains.settings
 
 import com.intellij.openapi.options.ConfigurationException
+import com.intellij.openapi.util.SystemInfo
 import com.intellij.testFramework.ProjectRule
 import org.junit.Assert.assertNotNull
+import org.junit.Assume
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
@@ -20,6 +23,14 @@ class AwsSettingsConfigurableTest : SamExecutableDetectorTestBase() {
     @JvmField
     @Rule
     val expectedException: ExpectedException = ExpectedException.none()
+
+    @Before
+    override fun setUp() {
+        // TODO: Make work on Windows
+        Assume.assumeFalse(SystemInfo.isWindows)
+
+        super.setUp()
+    }
 
     @Test
     fun validate_ok_noOp() {
@@ -88,7 +99,12 @@ class AwsSettingsConfigurableTest : SamExecutableDetectorTestBase() {
     }
 
     private fun makeASam(version: String): Path {
-        val path = "/usr/local/bin/sam"
+        val path = if (SystemInfo.isWindows) {
+            "C:\\Program Files (x86)\\Amazon\\AWSSAMCLI\\bin\\sam.bat"
+        } else {
+            "/usr/local/bin/sam"
+        }
+
         val actualPath = touch(path)
 
         return SamCommonTestUtils.makeATestSam(path = actualPath, message = version)

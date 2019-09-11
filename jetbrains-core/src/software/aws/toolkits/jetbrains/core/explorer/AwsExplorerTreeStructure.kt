@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.core.explorer
 import com.intellij.ide.projectView.TreeStructureProvider
 import com.intellij.ide.util.treeView.AbstractTreeStructureBase
 import com.intellij.openapi.project.Project
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerRootNode
 
 class AwsExplorerTreeStructure(project: Project) : AbstractTreeStructureBase(project) {
 

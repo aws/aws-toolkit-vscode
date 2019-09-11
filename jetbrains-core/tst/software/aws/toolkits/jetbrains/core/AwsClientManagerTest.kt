@@ -74,11 +74,11 @@ class AwsClientManagerTest {
     fun oldClientsAreRemovedWhenProfilesAreRemoved() {
         val sut = getClientManager()
         val testSettings = MockProjectAccountSettingsManager.getInstance(projectRule.project)
+        MockResourceCache.getInstance(projectRule.project).addValidAwsCredential(testSettings.activeRegion.id, "profile:admin", "111111111111")
         testSettings.changeCredentialProvider(
             mockCredentialManager.addCredentials(
                 "profile:admin",
-                AwsBasicCredentials.create("Access", "Secret"),
-                true
+                AwsBasicCredentials.create("Access", "Secret")
             )
         )
 
@@ -205,7 +205,9 @@ class AwsClientManagerTest {
     private val SdkHttpClient.delegate: SdkHttpClient
         get() {
             val delegateProperty = this::class.declaredMemberProperties.find { it.name == "delegate" }
-                ?: throw IllegalArgumentException("Expected instance of software.amazon.awssdk.core.client.builder.SdkDefaultClientBuilder.NonManagedSdkHttpClient")
+                ?: throw IllegalArgumentException(
+                    "Expected instance of software.amazon.awssdk.core.client.builder.SdkDefaultClientBuilder.NonManagedSdkHttpClient"
+                )
             delegateProperty.isAccessible = true
             return delegateProperty.call(this) as SdkHttpClient
         }

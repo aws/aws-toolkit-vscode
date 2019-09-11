@@ -97,7 +97,11 @@ class DefaultTelemetryService(
         batcher.shutdown()
     }
 
-    override fun record(namespace: String, metricEventMetadata: TelemetryService.MetricEventMetadata, buildEvent: MetricEvent.Builder.() -> kotlin.Unit): MetricEvent {
+    override fun record(
+        namespace: String,
+        metricEventMetadata: TelemetryService.MetricEventMetadata,
+        buildEvent: MetricEvent.Builder.() -> kotlin.Unit
+    ): MetricEvent {
         val builder = DefaultMetricEvent.builder(namespace)
         buildEvent(builder)
         builder.awsAccount(metricEventMetadata.awsAccount)

@@ -8,50 +8,25 @@ import com.intellij.ide.util.projectWizard.WizardContext
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.projectRoots.SdkTypeId
 import com.intellij.openapi.ui.ValidationInfo
-import com.intellij.openapi.util.Condition
-import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
+import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
+import software.aws.toolkits.jetbrains.services.lambda.SdkBasedSdkSettings
+import software.aws.toolkits.jetbrains.services.lambda.SdkSettings
 import software.aws.toolkits.resources.message
-import java.awt.event.ItemEvent
 import javax.swing.JComponent
 import javax.swing.JLabel
 
-class IntelliJSdkSelectionPanel(generator: SamProjectGenerator) : SdkSelectionPanelBase(generator) {
+class IntelliJSdkSelectionPanel(val builder: SamProjectBuilder, val runtimeGroup: RuntimeGroup) : SdkSelectionPanelBase() {
     private var currentSdk: Sdk? = null
     private val dummyContext = object : WizardContext(null, {}) {
         override fun setProjectJdk(sdk: Sdk?) {
             currentSdk = sdk
         }
     }
+    private val currentSdkPanel: SdkSettingsStep = buildSdkSettingsPanel()
 
-    fun sdkPanelFilter(runtime: Runtime): Condition<SdkTypeId> = Condition { sdkTypeId ->
-        // runtime group cannot be null since we populated the list of runtimes from the list of supported runtime groups
-        val runtimeGroup = runtime.runtimeGroup
-        sdkTypeId == runtimeGroup?.getIdeSdkType()
-    }
+    override val sdkSelectionPanel: JComponent = currentSdkPanel.component
 
-    private fun buildSdkSettingsPanel(runtime: Runtime): SdkSettingsStep =
-        object : SdkSettingsStep(dummyContext, generator.builder, sdkPanelFilter(runtime), null) {}
-        // don't validate on init of the SettingsStep or weird things will happen if the user has no SDK
-
-    private var currentSdkPanel: SdkSettingsStep = buildSdkSettingsPanel(generator.settings.runtime)
-    override val sdkSelectionPanel: JComponent
-        get() = currentSdkPanel.component
-
-    override fun transformUI(panel: SamInitSelectionPanel) {
-        super.transformUI(panel)
-
-        val sdkLabel = JLabel(message("sam.init.project_sdk.label"))
-
-        panel.addSdkPanel(sdkLabel, sdkSelectionPanel)
-
-        panel.runtime.addItemListener {
-            if (it.stateChange == ItemEvent.SELECTED) {
-                currentSdkPanel = buildSdkSettingsPanel(it.item as Runtime)
-                panel.addSdkPanel(sdkLabel, sdkSelectionPanel)
-            }
-        }
-    }
+    override val sdkSelectionLabel: JLabel? = JLabel(message("sam.init.project_sdk.label"))
 
     override fun validateAll(): List<ValidationInfo>? {
         if (!currentSdkPanel.validate()) {
@@ -62,8 +37,23 @@ class IntelliJSdkSelectionPanel(generator: SamProjectGenerator) : SdkSelectionPa
         return null
     }
 
-    override fun getSdk(): Sdk? {
+    override fun getSdkSettings(): SdkSettings {
         currentSdkPanel.updateDataModel()
-        return currentSdk
+
+        return when (runtimeGroup) {
+            RuntimeGroup.JAVA, RuntimeGroup.PYTHON -> SdkBasedSdkSettings(sdk = currentSdk)
+            RuntimeGroup.DOTNET -> object : SdkSettings {}
+            // TODO add this line when supporting node
+//            else -> throw RuntimeException("Unrecognized runtime group: $runtimeGroup")
+        }
     }
+
+    // don't validate on init of the SettingsStep or weird things will happen if the user has no SDK
+    private fun buildSdkSettingsPanel(): SdkSettingsStep =
+        SdkSettingsStep(
+            dummyContext,
+            builder,
+            { t: SdkTypeId? -> t == runtimeGroup.getIdeSdkType() },
+            null
+        )
 }

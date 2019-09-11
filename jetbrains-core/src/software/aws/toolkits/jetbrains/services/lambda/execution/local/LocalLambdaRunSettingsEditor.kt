@@ -9,14 +9,13 @@ import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
-import software.aws.toolkits.jetbrains.services.lambda.HandlerCompletionProvider
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import javax.swing.JComponent
 
 class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LocalLambdaRunConfiguration>() {
-    private val view = LocalLambdaRunSettingsEditorPanel(project, HandlerCompletionProvider(project))
+    private val view = LocalLambdaRunSettingsEditorPanel(project)
     private val regionProvider = AwsRegionProvider.getInstance()
     private val credentialManager = CredentialManager.getInstance()
 
@@ -53,9 +52,11 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LocalLambd
         } else {
             view.setTemplateFile(null) // Also clears the functions selector
             view.runtime.model.selectedItem = configuration.runtime()
-            view.handler.setText(configuration.handler())
+            view.handler.text = configuration.handler()
         }
 
+        view.timeoutSlider.value = configuration.timeout()
+        view.memorySlider.value = configuration.memorySize()
         view.environmentVariables.envVars = configuration.environmentVariables()
         view.regionSelector.selectedRegion = regionProvider.lookupRegionById(configuration.regionId())
 
@@ -83,6 +84,8 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LocalLambd
             configuration.useHandler(view.runtime.selected(), view.handler.text)
         }
 
+        configuration.timeout(view.timeoutSlider.value)
+        configuration.memorySize(view.memorySlider.value)
         configuration.environmentVariables(view.environmentVariables.envVars)
         configuration.regionId(view.regionSelector.selectedRegion?.id)
         configuration.credentialProviderId(view.credentialSelector.getSelectedCredentialsProvider())

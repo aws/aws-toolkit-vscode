@@ -28,9 +28,7 @@ class ResourceOperationAgainstCodePipelineTest {
     @Rule
     val mockClientManagerRule = MockClientManagerRule(projectRule)
 
-    private val mockClient by lazy {
-        mockClientManagerRule.register(ResourceGroupsTaggingApiClient::class, delegateMock())
-    }
+    private val mockClient by lazy { mockClientManagerRule.create<ResourceGroupsTaggingApiClient>() }
 
     private val RESOURCE_ARN = "resourceARN"
     private val RESOURCE_TYPE_FILTER = "resourceTypeFilter"

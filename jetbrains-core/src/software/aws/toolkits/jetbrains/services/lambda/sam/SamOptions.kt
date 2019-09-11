@@ -3,12 +3,13 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.sam
 
-import com.intellij.openapi.components.BaseState
 import com.intellij.util.xmlb.annotations.Tag
 
 @Tag("sam")
-class SamOptions : BaseState() {
-    var dockerNetwork by string()
-    var buildInContainer by property(false)
-    var skipImagePull by property(false)
-}
+data class SamOptions(
+    var dockerNetwork: String? = null,
+    var buildInContainer: Boolean = false,
+    var skipImagePull: Boolean = false,
+    var additionalBuildArgs: String? = null,
+    var additionalLocalArgs: String? = null
+)

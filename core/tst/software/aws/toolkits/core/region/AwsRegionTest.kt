@@ -23,7 +23,8 @@ class AwsRegionTest(private val region: AwsRegion, private val expectedCategory:
             arrayOf(AwsRegion("us-east-1", "US East (N. Virginia)"), "North America", "N. Virginia (us-east-1)"),
             arrayOf(AwsRegion("us-west-1", "US West (N. California)"), "North America", "N. California (us-west-1)"),
             arrayOf(AwsRegion("cn-north-1", "China (Beijing)"), "China", "Beijing (cn-north-1)"),
-            arrayOf(AwsRegion("us-gov-west-1", "AWS GovCloud (US)"), "North America", "AWS GovCloud US (us-gov-west-1)")
+            arrayOf(AwsRegion("us-gov-west-1", "AWS GovCloud (US)"), "North America", "AWS GovCloud US (us-gov-west-1)"),
+            arrayOf(AwsRegion("me-south-1", "Middle East (Bahrain)"), "Middle East", "Bahrain (me-south-1)")
         )
     }
 

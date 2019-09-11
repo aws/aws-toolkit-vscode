@@ -15,7 +15,7 @@ import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 
 class SamRunningState(
     environment: ExecutionEnvironment,
-    val settings: LocalLambdaSettings
+    val settings: LocalLambdaRunSettings
 ) : CommandLineState(environment) {
     lateinit var builtLambda: BuiltLambda
 
@@ -50,6 +50,12 @@ class SamRunningState(
             if (it.isNotBlank()) {
                 commandLine.withParameters("--docker-network")
                     .withParameters(it.trim())
+            }
+        }
+
+        samOptions.additionalLocalArgs?.let {
+            if (it.isNotBlank()) {
+                commandLine.withParameters(*it.split(" ").toTypedArray())
             }
         }
 

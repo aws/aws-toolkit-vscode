@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fixing random AssertionError exception caused by Guava cache."
+}

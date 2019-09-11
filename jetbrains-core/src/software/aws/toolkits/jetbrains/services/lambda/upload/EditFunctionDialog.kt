@@ -17,7 +17,6 @@ import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.S3Client
-import software.aws.toolkits.core.utils.listBucketsByRegion
 import software.aws.toolkits.jetbrains.components.telemetry.LoggingDialogWrapper
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.awsClient
@@ -26,10 +25,11 @@ import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.services.iam.CreateIamRoleDialog
 import software.aws.toolkits.jetbrains.services.iam.IamRole
-import software.aws.toolkits.jetbrains.services.iam.listRolesFilter
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
+import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.DEFAULT_MEMORY_SIZE
+import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.DEFAULT_TIMEOUT
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode.NEW
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode.UPDATE_CODE
@@ -40,24 +40,12 @@ import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.jetbrains.utils.ui.blankAsNull
 import software.aws.toolkits.jetbrains.utils.ui.selected
+import software.aws.toolkits.jetbrains.utils.ui.validationInfo
 import software.aws.toolkits.resources.message
 import java.awt.event.ActionEvent
-import java.awt.event.FocusAdapter
-import java.awt.event.FocusEvent
-import java.util.concurrent.TimeUnit
-import java.util.function.Function
 import javax.swing.Action
 import javax.swing.JComponent
-import javax.swing.JSlider
-import javax.swing.JTextField
 
-private const val MIN_MEMORY = 128
-private const val MAX_MEMORY = 3008
-private const val MEMORY_INCREMENT = 64
-private const val DEFAULT_MEMORY = 128
-private val DEFAULT_TIMEOUT = TimeUnit.MINUTES.toSeconds(1).toInt()
-private val MAX_TIMEOUT = TimeUnit.MINUTES.toSeconds(15).toInt()
-private const val MIN_TIMEOUT = 1
 private val NOTIFICATION_TITLE = message("lambda.service_name")
 
 enum class EditFunctionMode {
@@ -73,7 +61,7 @@ class EditFunctionDialog(
     private val handlerName: String = "",
     private val envVariables: Map<String, String> = emptyMap(),
     private val timeout: Int = DEFAULT_TIMEOUT,
-    private val memorySize: Int = DEFAULT_MEMORY,
+    private val memorySize: Int = DEFAULT_MEMORY_SIZE,
     private val xrayEnabled: Boolean = false,
     private val role: IamRole? = null
 ) : LoggingDialogWrapper(project) {
@@ -115,8 +103,8 @@ class EditFunctionDialog(
         view.name.text = name
 
         view.handler.text = handlerName
-        view.timeout.text = timeout.toString()
-        view.memorySize.text = memorySize.toString()
+        view.timeoutSlider.value = timeout
+        view.memorySlider.value = memorySize
         view.description.text = description
         view.envVars.envVars = envVariables
 
@@ -124,14 +112,6 @@ class EditFunctionDialog(
             view.name.isEnabled = false
             view.deploySettings.isVisible = false
         } else {
-            view.sourceBucket.populateValues {
-                val activeRegionId = ProjectAccountSettingsManager.getInstance(project).activeRegion.id
-                s3Client.listBucketsByRegion(activeRegionId)
-                    .mapNotNull { it.name() }
-                    .sortedWith(String.CASE_INSENSITIVE_ORDER)
-                    .toList()
-            }
-
             view.createBucket.addActionListener {
                 val bucketDialog = CreateS3BucketDialog(
                     project = project,
@@ -140,7 +120,10 @@ class EditFunctionDialog(
                 )
 
                 if (bucketDialog.showAndGet()) {
-                    bucketDialog.bucketName().let { newBucket -> view.sourceBucket.addAndSelectValue { newBucket } }
+                    bucketDialog.bucketName().let {
+                        view.sourceBucket.reload(forceFetch = true)
+                        view.sourceBucket.selectedItem = it
+                    }
                 }
             }
         }
@@ -158,12 +141,7 @@ class EditFunctionDialog(
         val settings = ProjectAccountSettingsManager.getInstance(project)
         view.setXrayControlVisibility(mode != UPDATE_CODE && regionProvider.isServiceSupported(settings.activeRegion, "xray"))
 
-        view.iamRole.populateValues(default = role) {
-            iamClient.listRolesFilter { it.assumeRolePolicyDocument().contains(LAMBDA_PRINCIPAL) }
-                .map { IamRole(it.arn()) }
-                .sortedWith(Comparator.comparing<IamRole, String>(Function { it.toString() }, String.CASE_INSENSITIVE_ORDER))
-                .toList()
-        }
+        view.iamRole.selectedItem = role
 
         view.createRole.addActionListener {
             val iamRoleDialog = CreateIamRoleDialog(
@@ -174,16 +152,10 @@ class EditFunctionDialog(
                 defaultPolicyDocument = DEFAULT_POLICY
             )
             if (iamRoleDialog.showAndGet()) {
-                iamRoleDialog.iamRole?.let { newRole -> view.iamRole.addAndSelectValue { newRole } }
-            }
-        }
-
-        bindSliderToTextBox(view.memorySlider, view.memorySize, MIN_MEMORY, MAX_MEMORY, MEMORY_INCREMENT, MEMORY_INCREMENT * 5, true)
-        bindSliderToTextBox(view.timeoutSlider, view.timeout, 0, MAX_TIMEOUT, 10, 100, false) {
-            if (view.timeoutSlider.value < MIN_TIMEOUT) {
-                MIN_TIMEOUT
-            } else {
-                view.timeoutSlider.value
+                iamRoleDialog.iamRole?.let { newRole ->
+                    view.iamRole.reload(forceFetch = true)
+                    view.iamRole.selectedItem = newRole
+                }
             }
         }
     }
@@ -193,38 +165,10 @@ class EditFunctionDialog(
         runtime == view.runtime.selected() &&
         handlerName == view.handler.text &&
         envVariables.entries == view.envVars.envVars.entries &&
-        timeout == view.timeout.text.toIntOrNull() &&
-        memorySize == view.memorySize.text.toIntOrNull() &&
+        timeout == view.timeoutSlider.value &&
+        memorySize == view.memorySlider.value &&
         xrayEnabled == view.xrayEnabled.isSelected &&
         role == view.iamRole.selected())
-
-    private fun bindSliderToTextBox(
-        slider: JSlider,
-        textbox: JTextField,
-        min: Int,
-        max: Int,
-        minorTick: Int,
-        majorTick: Int,
-        snap: Boolean,
-        validate: (Int) -> Int = { it }
-    ) {
-        slider.majorTickSpacing = majorTick
-        slider.minorTickSpacing = minorTick
-        slider.maximum = max
-        slider.minimum = min
-        slider.paintLabels = true
-        slider.snapToTicks = snap
-        slider.labelTable
-        slider.value = textbox.text.toInt()
-        slider.addChangeListener {
-            textbox.text = validate(slider.value).toString()
-        }
-        textbox.addFocusListener(object : FocusAdapter() {
-            override fun focusLost(e: FocusEvent?) {
-                slider.value = textbox.text.toIntOrNull() ?: return
-            }
-        })
-    }
 
     override fun createCenterPanel(): JComponent? = view.content
 
@@ -310,8 +254,8 @@ class EditFunctionDialog(
         runtime = view.runtime.selected()!!,
         description = view.description.text,
         envVars = view.envVars.envVars,
-        timeout = view.timeout.text.toInt(),
-        memorySize = view.memorySize.text.toInt(),
+        timeout = view.timeoutSlider.value,
+        memorySize = view.memorySlider.value,
         xrayEnabled = view.xrayEnabled.isSelected
     )
 
@@ -361,27 +305,9 @@ class UploadToLambdaValidator {
             view.handler
         )
         view.runtime.selected() ?: return ValidationInfo(message("lambda.upload_validation.runtime"), view.runtime)
-        view.timeout.text.toIntOrNull().let {
-            if (it == null || it < MIN_TIMEOUT || it > MAX_TIMEOUT) {
-                return ValidationInfo(
-                    message("lambda.upload_validation.timeout", MIN_TIMEOUT, MAX_TIMEOUT),
-                    view.timeout
-                )
-            }
-        }
-        view.memorySize.text.toIntOrNull().let {
-            if (it == null || it < MIN_MEMORY || it > MAX_MEMORY || it.rem(MEMORY_INCREMENT) != 0) {
-                return ValidationInfo(
-                    message("lambda.upload_validation.memory", MIN_MEMORY, MAX_MEMORY, MEMORY_INCREMENT), view.memorySize
-                )
-            }
-        }
-        view.iamRole.selected() ?: return view.iamRole.toValidationInfo(
-            loading = message("lambda.upload_validation.iam_role.loading"),
-            notSelected = message("lambda.upload_validation.iam_role")
-        )
+        view.iamRole.selected() ?: return view.iamRole.validationInfo(message("lambda.upload_validation.iam_role"))
 
-        return null
+        return view.timeoutSlider.validate() ?: view.memorySlider.validate()
     }
 
     fun validateCodeSettings(project: Project, view: EditFunctionPanel): ValidationInfo? {
@@ -399,11 +325,7 @@ class UploadToLambdaValidator {
             view.handler
         )
 
-        view.sourceBucket.selected() ?: return view.sourceBucket.toValidationInfo(
-            loading = message("lambda.upload_validation.source_bucket.loading"),
-            notSelected = message("lambda.upload_validation.source_bucket")
-        )
-
+        view.sourceBucket.selected() ?: return view.sourceBucket.validationInfo(message("lambda.upload_validation.source_bucket"))
         return null
     }
 

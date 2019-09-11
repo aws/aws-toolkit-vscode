@@ -13,8 +13,8 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.Lambda
-import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
 
 class PythonLambdaHandlerResolverTest {
     @Rule
@@ -99,21 +99,31 @@ class PythonLambdaHandlerResolverTest {
     }
 
     @Test
-    fun findWorksIfParentIsASourceDirectory() {
+    fun findWorksIfHandlerRootIsASourceDirectory() {
         val virtualFile = createHandler("src/hello_world/foo_bar/app.py")
         createInitPy("src/hello_world/foo_bar")
+        createInitPy("src/hello_world")
 
-        markAsSourceRoot(virtualFile.parent.parent.parent)
+        markAsSourceRoot(virtualFile.parent.parent) // hello_world
 
-        assertHandler("hello_world.foo_bar.app.handle", false)
+        assertHandler("hello_world.foo_bar.app.handle", true)
     }
 
     @Test
     fun findDoesntWorkIfNotASourceOrContentRoot() {
         createHandler("src/hello_world/foo_bar/app.py")
+        createInitPy("src/hello_world")
         createInitPy("src/hello_world/foo_bar")
 
         assertHandler("hello_world.foo_bar.app.handle", false)
+    }
+
+    @Test
+    fun findDoesntWorkIfParentFolderDoesntExist() {
+        createHandler("src/hello_world/foo_bar/app.py")
+        createInitPy("src/hello_world/foo_bar")
+
+        assertHandler("doesnt_exist/foo_bar.app.handle", false)
     }
 
     @Test
@@ -128,6 +138,16 @@ class PythonLambdaHandlerResolverTest {
         createHandler("app.py")
 
         assertHandler("app.handle", true)
+    }
+
+    @Test
+    fun findWorkIfRequirementsFileIsFound() {
+        createHandler("src/hello_world/foo_bar/app.py")
+        createInitPy("src/hello_world")
+        createInitPy("src/hello_world/foo_bar")
+        projectRule.fixture.addFileToModule(projectRule.module, "src/requirements.txt", "")
+
+        assertHandler("hello_world.foo_bar.app.handle", true)
     }
 
     private fun createHandler(path: String): VirtualFile = projectRule.fixture.addFileToProject(

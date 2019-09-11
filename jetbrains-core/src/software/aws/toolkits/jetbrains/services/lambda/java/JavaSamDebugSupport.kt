@@ -22,8 +22,7 @@ class JavaSamDebugSupport : SamDebugSupport {
         state: SamRunningState,
         debugPort: Int
     ): XDebugProcessStarter? {
-        val connection =
-            RemoteConnection(true, "localhost", debugPort.toString(), false)
+        val connection = RemoteConnection(true, "localhost", debugPort.toString(), false)
         val debugEnvironment = DefaultDebugEnvironment(environment, state, connection, true)
         val debuggerManager = DebuggerManagerEx.getInstanceEx(environment.project)
         val debuggerSession = debuggerManager.attachVirtualMachine(debugEnvironment) ?: return null

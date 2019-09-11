@@ -6,8 +6,10 @@ package software.aws.toolkits.core.utils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
+import kotlin.reflect.KClass
 
-inline fun <reified T : Any> getLogger(): Logger = LoggerFactory.getLogger(T::class.java)
+inline fun <reified T : Any> getLogger(): Logger = getLogger(T::class)
+fun getLogger(clazz: KClass<*>): Logger = LoggerFactory.getLogger(clazz.java)
 
 /**
  * Execute the given [block] and log any exception that occurs at the [level] with the provided [message].
@@ -43,6 +45,17 @@ fun <T> Logger.tryOrThrowNullable(message: String, level: Level = Level.ERROR, b
 } catch (e: Exception) {
     log(level, e) { message }
     throw e
+}
+
+/**
+ * Execute the given block and return the result. Log a warning when the result is null
+ */
+fun <T> Logger.logWhenNull(message: String, level: Level = Level.WARN, block: () -> T?): T? {
+    val value = block()
+    if (value == null) {
+        log(level) { message }
+    }
+    return value
 }
 
 fun Logger.log(level: Level, exception: Throwable? = null, block: () -> String) {

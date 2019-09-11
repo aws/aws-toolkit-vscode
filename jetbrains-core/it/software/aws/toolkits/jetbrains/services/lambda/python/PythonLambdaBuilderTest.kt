@@ -64,6 +64,26 @@ class PythonLambdaBuilderTest : BaseLambdaBuilderTest() {
     }
 
     @Test
+    fun baseDirBasedOnRequirementsFileAtRootOfHandler() {
+        val module = projectRule.module
+        val handler = addPythonHandler("src")
+        addRequirementsFile("src")
+
+        val builtLambda = buildLambda(module, handler, Runtime.PYTHON3_6, "app.handle")
+        verifyEntries(
+            builtLambda,
+            "app.py",
+            "requirements.txt"
+        )
+        verifyPathMappings(
+            module,
+            builtLambda,
+            "%PROJECT_ROOT%/src" to "/",
+            "%BUILD_ROOT%" to "/"
+        )
+    }
+
+    @Test
     fun dependenciesAreAdded() {
         val module = projectRule.module
         val handler = addPythonHandler("hello_world")

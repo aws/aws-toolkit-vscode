@@ -11,22 +11,21 @@ import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.text.nullize
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
-import software.amazon.awssdk.services.cloudformation.model.StackStatus
 import software.amazon.awssdk.services.s3.S3Client
-import software.aws.toolkits.core.utils.listBucketsByRegion
 import software.aws.toolkits.jetbrains.components.telemetry.LoggingDialogWrapper
+import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.help.HelpIds
+import software.aws.toolkits.jetbrains.core.map
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.cloudformation.describeStack
-import software.aws.toolkits.jetbrains.services.cloudformation.listStackSummariesFilter
 import software.aws.toolkits.jetbrains.services.cloudformation.mergeRemoteParameters
+import software.aws.toolkits.jetbrains.services.cloudformation.resources.CloudFormationResources
 import software.aws.toolkits.jetbrains.services.s3.CreateS3BucketDialog
 import software.aws.toolkits.jetbrains.settings.DeploySettings
 import software.aws.toolkits.jetbrains.settings.relativeSamPath
 import software.aws.toolkits.jetbrains.utils.ui.find
-import software.aws.toolkits.jetbrains.utils.ui.selected
+import software.aws.toolkits.jetbrains.utils.ui.validationInfo
 import software.aws.toolkits.resources.message
 import javax.swing.JComponent
 
@@ -39,7 +38,7 @@ class DeployServerlessApplicationDialog(
     private val settings: DeploySettings? = module?.let { DeploySettings.getInstance(it) }
     private val samPath: String = module?.let { relativeSamPath(it, templateFile) } ?: templateFile.name
 
-    private val view = DeployServerlessApplicationPanel()
+    private val view = DeployServerlessApplicationPanel(project)
     private val validator = DeploySamApplicationValidator(view)
     private val s3Client: S3Client = project.awsClient()
     private val cloudFormationClient: CloudFormationClient = project.awsClient()
@@ -72,34 +71,26 @@ class DeployServerlessApplicationDialog(
             updateTemplateParameters()
         }
 
-        view.stacks.populateValues(default = settings?.samStackName(samPath)?.let { Stack(it) }, updateStatus = false) {
-            cloudFormationClient.listStackSummariesFilter { it.stackStatus() != StackStatus.DELETE_COMPLETE }
-                    .filterNotNull()
-                    .filter { it.stackName() != null }
-                    .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.stackName() })
-                    .map { Stack(it.stackName(), it.stackId()) }
-                    .toList()
+        settings?.samStackName(samPath)?.let {
+            view.stacks.selectedItem { s: Stack -> it == s.name }
         }
 
         updateTemplateParameters()
 
-        view.s3Bucket.populateValues(default = settings?.samBucketName(samPath)) {
-            val activeRegionId = ProjectAccountSettingsManager.getInstance(project).activeRegion.id
-            s3Client.listBucketsByRegion(activeRegionId)
-                    .mapNotNull { it.name() }
-                    .sortedWith(String.CASE_INSENSITIVE_ORDER)
-                    .toList()
-        }
+        view.s3Bucket.selectedItem = settings?.samBucketName(samPath)
 
         view.createS3BucketButton.addActionListener {
             val bucketDialog = CreateS3BucketDialog(
-                    project = project,
-                    s3Client = s3Client,
-                    parent = view.content
+                project = project,
+                s3Client = s3Client,
+                parent = view.content
             )
 
             if (bucketDialog.showAndGet()) {
-                bucketDialog.bucketName().let { newBucket -> view.s3Bucket.addAndSelectValue { newBucket } }
+                bucketDialog.bucketName().let {
+                    view.s3Bucket.reload(forceFetch = true)
+                    view.s3Bucket.selectedItem = it
+                }
             }
         }
 
@@ -111,7 +102,7 @@ class DeployServerlessApplicationDialog(
     override fun createCenterPanel(): JComponent? = view.content
 
     override fun getPreferredFocusedComponent(): JComponent? =
-            if (settings?.samStackName(samPath) == null) view.newStackName else view.updateStack
+        if (settings?.samStackName(samPath) == null) view.newStackName else view.updateStack
 
     override fun doValidate(): ValidationInfo? = validator.validateSettings()
 
@@ -138,7 +129,7 @@ class DeployServerlessApplicationDialog(
 
     val bucket: String
         get() = view.s3Bucket.selected()
-                ?: throw RuntimeException(message("serverless.application.deploy.validation.s3.bucket.empty"))
+            ?: throw RuntimeException(message("serverless.application.deploy.validation.s3.bucket.empty"))
 
     val autoExecute: Boolean
         get() = !view.requireReview.isSelected
@@ -176,6 +167,10 @@ class DeployServerlessApplicationDialog(
             }
         }
     }
+    companion object {
+        @JvmField
+        internal val ACTIVE_STACKS: Resource<List<Stack>> = CloudFormationResources.ACTIVE_STACKS.map { Stack(it.stackName(), it.stackId()) }
+    }
 }
 
 class DeploySamApplicationValidator(private val view: DeployServerlessApplicationPanel) {
@@ -183,13 +178,10 @@ class DeploySamApplicationValidator(private val view: DeployServerlessApplicatio
     fun validateSettings(): ValidationInfo? {
         if (view.createStack.isSelected) {
             validateStackName(view.newStackName.text)?.let {
-                return ValidationInfo(it, view.newStackName)
+                return view.newStackName.validationInfo(it)
             }
         } else if (view.updateStack.isSelected && view.stacks.selected() == null) {
-            return view.stacks.toValidationInfo(
-                loading = message("serverless.application.deploy.validation.stack.loading"),
-                notSelected = message("serverless.application.deploy.validation.stack.missing")
-            )
+            return view.stacks.validationInfo(message("serverless.application.deploy.validation.stack.missing"))
         }
 
         // Are any Template Parameters missing
@@ -198,10 +190,7 @@ class DeploySamApplicationValidator(private val view: DeployServerlessApplicatio
         }
 
         // Has the user selected a bucket
-        view.s3Bucket.selected() ?: return view.s3Bucket.toValidationInfo(
-            loading = message("serverless.application.deploy.validation.s3.bucket.loading"),
-            notSelected = message("serverless.application.deploy.validation.s3.bucket.empty")
-        )
+        view.s3Bucket.selected() ?: return view.s3Bucket.validationInfo(message("serverless.application.deploy.validation.s3.bucket.empty"))
 
         return null
     }
@@ -210,9 +199,9 @@ class DeploySamApplicationValidator(private val view: DeployServerlessApplicatio
         val parameters = view.templateParameters
 
         val unsetParameters = parameters.entries
-                .filter { it.value.isNullOrBlank() }
-                .map { it.key }
-                .toList()
+            .filter { it.value.isNullOrBlank() }
+            .map { it.key }
+            .toList()
 
         if (unsetParameters.any()) {
             return ValidationInfo(

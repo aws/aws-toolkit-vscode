@@ -28,7 +28,6 @@ abstract class SamExecutableDetectorTestBase {
 
     @Before
     open fun setUp() {
-        Assume.assumeTrue(SystemInfo.isUnix)
         envHelper.remove("PATH")
 
         tempFolder = "${tempFolderRule.newFolder()}${File.separator}"
@@ -46,7 +45,7 @@ abstract class SamExecutableDetectorTestBase {
 
     private fun unsanitizePath(sanitized: String?): String? {
         val suffix = sanitized?.removePrefix(tempFolder)?.replace("^(\\w)_".toRegex()) { "${it.groupValues[1]}:" }
-        return suffix?.let { "${File.separator}$suffix" }
+        return suffix?.let { if (SystemInfo.isUnix) "${File.separator}$suffix" else suffix }
     }
 
     protected fun assertExecutable(expected: String?) {

@@ -8,6 +8,7 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.stub
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -32,7 +33,6 @@ import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRul
 import java.nio.file.Path
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
 abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUploadDetails) {
@@ -49,16 +49,14 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
         val s3Bucket = "TestBucket"
 
         val uploadCaptor = argumentCaptor<PutObjectRequest>()
-        val s3Client = delegateMock<S3Client> {
+        mockClientManager.create<S3Client>().stub {
             on { putObject(uploadCaptor.capture(), any<Path>()) } doReturn PutObjectResponse.builder()
                 .versionId("VersionFoo")
                 .build()
         }
 
-        mockClientManager.register(S3Client::class, s3Client)
-
         val createCaptor = argumentCaptor<CreateFunctionRequest>()
-        val lambdaClient = delegateMock<LambdaClient> {
+        mockClientManager.create<LambdaClient>().stub {
             on { createFunction(createCaptor.capture()) } doReturn CreateFunctionResponse.builder()
                 .functionName(functionDetails.name)
                 .functionArn("TestFunctionArn")
@@ -76,12 +74,10 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
                 .build()
         }
 
-        mockClientManager.register(LambdaClient::class, lambdaClient)
-
         val tempFile = FileUtil.createTempFile("lambda", ".zip")
 
         val lambdaBuilder = mock<LambdaBuilder> {
-            on { packageLambda(any(), any(), any(), any(), any(), any()) } doReturn CompletableFuture.completedFuture(tempFile.toPath())
+            on { packageLambda(any(), any(), any(), any(), any(), any()) } doReturn tempFile.toPath()
         }
 
         val psiFile = projectRule.fixture.addClass(
@@ -124,17 +120,15 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
         val s3Bucket = "TestBucket"
 
         val uploadCaptor = argumentCaptor<PutObjectRequest>()
-        val s3Client = delegateMock<S3Client> {
+        mockClientManager.create<S3Client>().stub {
             on { putObject(uploadCaptor.capture(), any<Path>()) } doReturn PutObjectResponse.builder()
                 .versionId("VersionFoo")
                 .build()
         }
 
-        mockClientManager.register(S3Client::class, s3Client)
-
         val updateConfigCaptor = argumentCaptor<UpdateFunctionConfigurationRequest>()
         val updateCodeCaptor = argumentCaptor<UpdateFunctionCodeRequest>()
-        val lambdaClient = delegateMock<LambdaClient> {
+        mockClientManager.create<LambdaClient>().stub {
             on { updateFunctionCode(updateCodeCaptor.capture()) } doReturn UpdateFunctionCodeResponse.builder()
                 .build()
 
@@ -153,12 +147,10 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
                 .build()
         }
 
-        mockClientManager.register(LambdaClient::class, lambdaClient)
-
         val tempFile = FileUtil.createTempFile("lambda", ".zip")
 
         val lambdaBuilder = mock<LambdaBuilder> {
-            on { packageLambda(any(), any(), any(), any(), any(), any()) } doReturn CompletableFuture.completedFuture(tempFile.toPath())
+            on { packageLambda(any(), any(), any(), any(), any(), any()) } doReturn tempFile.toPath()
         }
 
         val psiFile = projectRule.fixture.addClass(

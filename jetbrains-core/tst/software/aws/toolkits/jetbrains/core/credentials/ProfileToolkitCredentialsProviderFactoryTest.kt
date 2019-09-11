@@ -44,6 +44,7 @@ import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileHolder
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileToolkitCredentialsProvider
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileToolkitCredentialsProviderFactory
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileWatcher
+import software.aws.toolkits.jetbrains.utils.test.retryableAssert
 import java.io.File
 import java.time.Duration
 import java.time.ZonedDateTime
@@ -109,6 +110,25 @@ class ProfileToolkitCredentialsProviderFactoryTest {
             .has(correctProfile(FOO_PROFILE))
             .has(correctProfile(BAR_PROFILE))
             .has(correctProfile(BAZ_PROFILE))
+    }
+
+    @Test
+    fun testLoadingWithIllegalFormat() {
+        profileFile.writeText("""
+            [profile bar]
+            aws_access_key_id BarAccessKey
+            aws_secret_access_key=BarSecretKey
+
+            [profile foo]
+            aws_access_key_id=FooAccessKey
+            aws_secret_access_key=FooSecretKey
+            aws_session_token=FooSessionToken
+        """.trimIndent())
+
+        val providerFactory = createProviderFactory()
+
+        assertThat(providerFactory.listCredentialProviders())
+            .isEmpty()
     }
 
     @Test
@@ -388,18 +408,22 @@ class ProfileToolkitCredentialsProviderFactoryTest {
             """.trimIndent()
         )
 
-        assertAttempts(5, Duration.ofSeconds(5)) {
-            assertThat(credentialsProvider.resolveCredentials()).isInstanceOf(AwsSessionCredentials::class.java)
-                .satisfies {
-                    val sessionCredentials = it as AwsSessionCredentials
-                    assertThat(sessionCredentials.accessKeyId()).isEqualTo("FooAccessKey2")
-                    assertThat(sessionCredentials.secretAccessKey()).isEqualTo("FooSecretKey2")
-                    assertThat(sessionCredentials.sessionToken()).isEqualTo("FooSessionToken2")
-                }
-        }
+        retryableAssert(maxAttempts = 5, interval = Duration.ofSeconds(5)) {
+            try {
+                assertThat(credentialsProvider.resolveCredentials()).isInstanceOf(AwsSessionCredentials::class.java)
+                    .satisfies {
+                        val sessionCredentials = it as AwsSessionCredentials
+                        assertThat(sessionCredentials.accessKeyId()).isEqualTo("FooAccessKey2")
+                        assertThat(sessionCredentials.secretAccessKey()).isEqualTo("FooSecretKey2")
+                        assertThat(sessionCredentials.sessionToken()).isEqualTo("FooSessionToken2")
+                    }
+            } catch (e: Exception) {
+                throw AssertionError(e)
+            }
 
-        // TODO: Debug why on windows this is sometimes 1, sometimes 2
-        verify(mockProviderManager, atLeastOnce()).providerModified(credentialsProvider)
+            // TODO: Debug why on windows this is sometimes 1, sometimes 2
+            verify(mockProviderManager, atLeastOnce()).providerModified(credentialsProvider)
+        }
     }
 
     @Test
@@ -429,16 +453,16 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 
         profileFile.writeText("")
 
-        assertAttempts(5, Duration.ofSeconds(5)) {
+        retryableAssert(maxAttempts = 5, interval = Duration.ofSeconds(5)) {
             assertThat(providerFactory.get("profile:foo")).isNull()
-        }
 
-        assertThatThrownBy {
-            // Old references should now throw exceptions
-            credentialsProvider.resolveCredentials()
-        }
+            assertThatThrownBy {
+                // Old references should now throw exceptions
+                credentialsProvider.resolveCredentials()
+            }
 
-        verify(mockProviderManager).providerRemoved("profile:foo")
+            verify(mockProviderManager).providerRemoved("profile:foo")
+        }
     }
 
     @Test
@@ -462,7 +486,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
             """.trimIndent()
         )
 
-        assertAttempts(5, Duration.ofSeconds(5)) {
+        retryableAssert(maxAttempts = 5, interval = Duration.ofSeconds(5)) {
             assertThat(providerFactory.get("profile:foo")?.resolveCredentials())
                 .isInstanceOf(AwsSessionCredentials::class.java)
                 .satisfies {
@@ -471,22 +495,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
                     assertThat(sessionCredentials.secretAccessKey()).isEqualTo("FooSecretKey")
                     assertThat(sessionCredentials.sessionToken()).isEqualTo("FooSessionToken")
                 }
-        }
-
-        verify(mockProviderManager).providerAdded(providerFactory.get("profile:foo")!!)
-    }
-
-    private fun assertAttempts(maxAttempts: Int, pause: Duration, function: () -> Unit) {
-        for (i in 0..maxAttempts) {
-            try {
-                function()
-            } catch (e: Throwable) {
-                if (i == maxAttempts) {
-                    throw e
-                } else {
-                    Thread.sleep(pause.toMillis())
-                }
-            }
+            verify(mockProviderManager).providerAdded(providerFactory.get("profile:foo")!!)
         }
     }
 

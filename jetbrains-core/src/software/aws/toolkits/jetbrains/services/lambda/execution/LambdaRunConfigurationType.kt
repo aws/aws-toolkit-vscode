@@ -8,7 +8,7 @@ import com.intellij.execution.configurations.ConfigurationTypeUtil
 import icons.AwsIcons
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfigurationFactory
-import software.aws.toolkits.jetbrains.services.lambda.execution.remote.LambdaRemoteRunConfigurationFactory
+import software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaRunConfigurationFactory
 import software.aws.toolkits.resources.message
 
 class LambdaRunConfigurationType :
@@ -20,7 +20,7 @@ class LambdaRunConfigurationType :
     ) {
     init {
         addFactory(LocalLambdaRunConfigurationFactory(this))
-        addFactory(LambdaRemoteRunConfigurationFactory(this))
+        addFactory(RemoteLambdaRunConfigurationFactory(this))
     }
 
     override fun getHelpTopic(): String? = HelpIds.RUN_DEBUG_CONFIGURATIONS_DIALOG.id

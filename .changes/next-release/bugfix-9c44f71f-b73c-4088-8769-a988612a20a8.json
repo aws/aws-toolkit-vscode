@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix the bug that toolkit throws unhandled exception on startup when active credential is not configured"
+}
