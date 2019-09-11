@@ -3,6 +3,10 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.local;
 
+import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.addQuickSelect;
+import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.find;
+import static software.aws.toolkits.resources.Localization.message;
+
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
@@ -15,6 +19,15 @@ import com.intellij.ui.SortedComboBoxModel;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.util.ui.JBUI;
 import com.intellij.util.ui.UIUtil;
+import java.io.File;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.yaml.YAMLFileType;
@@ -25,24 +38,8 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaWidgets;
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupUtil;
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaInputPanel;
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils;
-import software.aws.toolkits.jetbrains.ui.CredentialProviderSelector;
 import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField;
-import software.aws.toolkits.jetbrains.ui.RegionSelector;
 import software.aws.toolkits.jetbrains.ui.SliderPanel;
-
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-import java.io.File;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-
-import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.addQuickSelect;
-import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.find;
-import static software.aws.toolkits.resources.Localization.message;
 
 public final class LocalLambdaRunSettingsEditorPanel {
     public JPanel panel;
@@ -50,8 +47,6 @@ public final class LocalLambdaRunSettingsEditorPanel {
     public EnvironmentVariablesTextField environmentVariables;
     private SortedComboBoxModel<Runtime> runtimeModel;
     public JComboBox<Runtime> runtime;
-    public RegionSelector regionSelector;
-    public CredentialProviderSelector credentialSelector;
     public LambdaInputPanel lambdaInput;
     public JCheckBox useTemplate;
     public JComboBox<Function> function;
