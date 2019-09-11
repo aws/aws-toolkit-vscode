@@ -8,6 +8,7 @@ import com.jetbrains.rd.util.reactive.IOptProperty
 import com.jetbrains.rd.util.reactive.OptProperty
 import com.jetbrains.rd.util.reactive.Property
 import com.jetbrains.rider.projectView.actions.projectTemplating.RiderProjectTemplate
+import com.jetbrains.rider.projectView.actions.projectTemplating.RiderProjectTemplateGenerator
 import com.jetbrains.rider.projectView.actions.projectTemplating.RiderProjectTemplateProvider
 import com.jetbrains.rider.projectView.actions.projectTemplating.RiderProjectTemplateState
 import com.jetbrains.rider.projectView.actions.projectTemplating.impl.ProjectTemplateDialogContext
@@ -15,7 +16,7 @@ import com.jetbrains.rider.projectView.actions.projectTemplating.impl.ProjectTem
 import icons.AwsIcons
 import software.aws.toolkits.resources.message
 
-class RiderSamProjectProvider : RiderProjectTemplateProvider {
+class DotNetSamProjectProvider : RiderProjectTemplateProvider {
 
     override val isReady = Property(true)
 
@@ -32,13 +33,17 @@ class RiderSamProjectProvider : RiderProjectTemplateProvider {
         override val icon = AwsIcons.Resources.SERVERLESS_APP
         override val name = message("sam.init.name")
 
-        override fun createGenerator(context: ProjectTemplateDialogContext, transferableModel: ProjectTemplateTransferableModel) =
-                RiderSamProjectGenerator(
-                        context = context,
-                        group = group,
-                        categoryName = name,
-                        model = transferableModel)
+        override fun createGenerator(
+            context: ProjectTemplateDialogContext,
+            transferableModel: ProjectTemplateTransferableModel
+        ): RiderProjectTemplateGenerator =
+            DotNetSamProjectGenerator(
+                context = context,
+                group = group,
+                categoryName = name,
+                model = transferableModel
+            )
 
-        override fun getKeywords() = arrayOf(name)
+        override fun getKeywords(): Array<String> = arrayOf(name)
     }
 }

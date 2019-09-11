@@ -3,7 +3,9 @@
 
 package software.aws.toolkits.jetbrains.ui.wizard
 
+import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.project.rootManager
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.ui.ColorUtil
@@ -20,7 +22,9 @@ import com.jetbrains.rider.projectView.actions.projectTemplating.backend.ReSharp
 import com.jetbrains.rider.projectView.actions.projectTemplating.impl.ProjectTemplateDialogContext
 import com.jetbrains.rider.projectView.actions.projectTemplating.impl.ProjectTemplateTransferableModel
 import com.jetbrains.rider.ui.themes.RiderTheme
-import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.services.lambda.SamNewProjectSettings
+import software.aws.toolkits.jetbrains.services.lambda.SdkSettings
+import software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetSamProjectTemplate
 import software.aws.toolkits.jetbrains.utils.DotNetRuntimeUtils
 import software.aws.toolkits.resources.message
 import java.awt.Dimension
@@ -29,7 +33,7 @@ import javax.swing.JScrollPane
 import javax.swing.JTabbedPane
 import javax.swing.JTextPane
 
-class RiderSamProjectGenerator(
+class DotNetSamProjectGenerator(
     private val context: ProjectTemplateDialogContext,
     group: String,
     categoryName: String,
@@ -41,12 +45,17 @@ class RiderSamProjectGenerator(
     item = context.item) {
 
     companion object {
-        private val logger = getLogger<RiderSamProjectGenerator>()
         private const val SAM_HELLO_WORLD_PROJECT_NAME = "HelloWorld"
     }
 
-    private val samSettings = SamNewProjectSettings()
-    private val samPanel = SamInitSelectionPanel(samSettings)
+    private val samSettings = SamNewProjectSettings(
+        runtime = DotNetRuntimeUtils.getCurrentDotNetCoreRuntime(),
+        template = DotNetSamProjectTemplate(),
+        sdkSettings = object : SdkSettings {}
+    )
+
+    private val generator = SamProjectGenerator()
+    private val samPanel = SamInitSelectionPanel(generator)
 
     private val projectStructurePanel: JTabbedPane
 
@@ -59,7 +68,6 @@ class RiderSamProjectGenerator(
 
     init {
         title.labels = arrayOf(group, categoryName)
-
         initProjectTextField()
         initSamPanel()
 
@@ -157,8 +165,11 @@ class RiderSamProjectGenerator(
         ) ?: throw Exception(message("sam.init.error.solution.create.fail"))
 
         val project = SolutionManager.openExistingSolution(context.project, false, solutionFile)
-
         vcsPanel?.initRepository(project)
+
+        project ?: return
+        val modifiableModel = ModuleManager.getInstance(project).modules.firstOrNull()?.rootManager?.modifiableModel ?: return
+        samSettings.template.postCreationAction(settings = samSettings, contentRoot = outDirVf, rootModel = modifiableModel)
     }
 
     override fun refreshUI() {
@@ -181,7 +192,8 @@ class RiderSamProjectGenerator(
     }
 
     private fun initSamPanel() {
-        samPanel.runtime.selectedItem = DotNetRuntimeUtils.getCurrentDotNetCoreRuntime()
+        val availableRuntime = DotNetRuntimeUtils.getCurrentDotNetCoreRuntime()
+        samPanel.setRuntime(availableRuntime)
     }
 
     private fun htmlText(baseDir: String, relativePath: String) =
