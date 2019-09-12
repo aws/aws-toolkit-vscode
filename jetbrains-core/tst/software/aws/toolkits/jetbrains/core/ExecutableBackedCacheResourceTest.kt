@@ -4,8 +4,6 @@
 package software.aws.toolkits.jetbrains.core
 
 import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.openapi.Disposable
-import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions
@@ -22,6 +20,7 @@ import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType
 import software.aws.toolkits.jetbrains.core.executables.Validatable
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.utils.rules.TestDisposableRule
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
@@ -34,7 +33,9 @@ class ExecutableBackedCacheResourceTest {
     @JvmField
     val tempFolder = TemporaryFolder()
 
-    private lateinit var testDisposable: Disposable
+    @Rule
+    @JvmField
+    val testDisposableRule = TestDisposableRule()
 
     private val mockCredentials: ToolkitCredentialsProvider
         get() = MockCredentialsManager.getInstance().addCredentials(
@@ -44,19 +45,16 @@ class ExecutableBackedCacheResourceTest {
 
     @Before
     fun setUp() {
-        testDisposable = Disposer.newDisposable()
-
         @Suppress("DEPRECATION") // Use overload with ExtensionsArea FIX_WHEN_MIN_IS_192
         PlatformTestUtil.registerExtension(
             ExecutableType.EP_NAME,
             MockExecutable,
-            testDisposable
+            testDisposableRule.testDisposable
         )
     }
 
     @After
     fun testDown() {
-        Disposer.dispose(testDisposable)
         MockCredentialsManager.getInstance().reset()
     }
 

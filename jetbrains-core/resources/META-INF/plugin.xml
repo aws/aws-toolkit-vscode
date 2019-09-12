@@ -123,6 +123,7 @@
 
         <extensionPoint name="executable" interface="software.aws.toolkits.jetbrains.core.executables.ExecutableType"/>
 
+        <extensionPoint name="explorer.nodeProcessor" interface="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerNodeProcessor"/>
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
