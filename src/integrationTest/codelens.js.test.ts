@@ -31,41 +31,66 @@ describe('CodeLenses (JS)', async () => {
         const appRoot = join(workspaceFolder, 'js-plain-sam-app')
         const appCodePath = join(appRoot, 'src', 'app.js')
         const samTemplatePath = join(appRoot, 'template.yaml')
+        const expectedHandlerName = 'app.handlerBesidePackageJson'
         const document = await vscode.workspace.openTextDocument(appCodePath)
 
         const codeLenses = await getCodeLenses(document.uri)
 
-        assertLocalInvokeCodeLensesExist(codeLenses, 'app.handlerBesidePackageJson', samTemplatePath)
+        assertDebugCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
+        assertRunCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
         assertConfigureCodeLensExists(codeLenses)
     }).timeout(CODELENS_TEST_TIMEOUT_MILLIS)
 
-    function assertLocalInvokeCodeLensesExist(
+    function assertDebugCodeLensExists(
         codeLenses: vscode.CodeLens[],
         expectedHandlerName: string,
         expectedSamTemplatePath: string
     ) {
-        // Look for the CodeLenses of interest
-        const invokeCodeLenses = codeLenses.filter(
+        const debugCodeLenses = getLocalInvokeCodeLenses(codeLenses).filter(codeLens =>
+            hasLocalInvokeArguments(codeLens, expectedHandlerName, expectedSamTemplatePath, true)
+        )
+
+        assert.strictEqual(debugCodeLenses.length, 1, 'Debug CodeLens was not found')
+    }
+
+    function assertRunCodeLensExists(
+        codeLenses: vscode.CodeLens[],
+        expectedHandlerName: string,
+        expectedSamTemplatePath: string
+    ) {
+        const debugCodeLenses = getLocalInvokeCodeLenses(codeLenses).filter(codeLens =>
+            hasLocalInvokeArguments(codeLens, expectedHandlerName, expectedSamTemplatePath, false)
+        )
+
+        assert.strictEqual(debugCodeLenses.length, 1, 'Run CodeLens was not found')
+    }
+
+    function getLocalInvokeCodeLenses(codeLenses: vscode.CodeLens[]): vscode.CodeLens[] {
+        return codeLenses.filter(
             codeLens =>
                 codeLens.command &&
                 codeLens.command.command === 'aws.lambda.local.invoke.javascript' &&
                 codeLens.command.arguments &&
                 codeLens.command.arguments.length === 1
         )
+    }
 
-        assert.strictEqual(invokeCodeLenses.length, 2, 'Expected two invoke CodeLenses (Run and Debug)')
+    function hasLocalInvokeArguments(
+        codeLens: vscode.CodeLens,
+        handlerName: string,
+        templatePath: string,
+        isDebug: boolean
+    ): boolean {
+        if (!codeLens.command || !codeLens.command.arguments || codeLens.command.arguments.length !== 1) {
+            return false
+        }
 
-        // Check the Command arguments
-        assert.ok(
-            invokeCodeLenses.every(codeLens => {
-                const commandArguments = codeLens.command!.arguments![0] as LambdaLocalInvokeParams
+        const commandArguments = codeLens.command.arguments[0] as LambdaLocalInvokeParams
 
-                return (
-                    commandArguments.handlerName === expectedHandlerName &&
-                    commandArguments.samTemplate.fsPath === expectedSamTemplatePath
-                )
-            }),
-            'The invoke CodeLenses did not have the expected command arguments'
+        return (
+            commandArguments.handlerName === handlerName &&
+            commandArguments.samTemplate.fsPath === templatePath &&
+            commandArguments.isDebug === isDebug
         )
     }
 
