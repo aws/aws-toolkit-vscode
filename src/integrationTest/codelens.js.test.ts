@@ -7,12 +7,19 @@ import * as assert from 'assert'
 import { join } from 'path'
 import * as vscode from 'vscode'
 import { LambdaLocalInvokeParams } from '../shared/codelens/localLambdaRunner'
-import { activateExtension, EXTENSION_NAME_AWS_TOOLKIT, getCodeLenses } from './integrationTestsUtilities'
+import {
+    activateExtension,
+    EXTENSION_NAME_AWS_TOOLKIT,
+    getCodeLenses,
+    getTestWorkspaceFolder
+} from './integrationTestsUtilities'
 
 const ACTIVATE_EXTENSION_TIMEOUT_MILLIS = 30000
 const CODELENS_TEST_TIMEOUT_MILLIS = 10000
 
-describe.only('CodeLenses (JS)', async () => {
+const workspaceFolder = getTestWorkspaceFolder()
+
+describe('CodeLenses (JS)', async () => {
     // TODO : Extend this test suite out to work for different projects with different file configurations
     before(async function() {
         // tslint:disable-next-line:no-invalid-this
@@ -21,7 +28,7 @@ describe.only('CodeLenses (JS)', async () => {
     })
 
     it('Debug, Run, and Configure CodeLenses Appear for a SAM App where the source and manifest are in the same folder', async () => {
-        const appRoot = join(vscode.workspace.workspaceFolders![0].uri.fsPath, 'js-plain-sam-app')
+        const appRoot = join(workspaceFolder, 'js-plain-sam-app')
         const appCodePath = join(appRoot, 'src', 'app.js')
         const samTemplatePath = join(appRoot, 'template.yaml')
         const document = await vscode.workspace.openTextDocument(appCodePath)

@@ -11,7 +11,13 @@ import { SamLambdaRuntime } from '../../src/lambda/models/samLambdaRuntime'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
-import { activateExtension, EXTENSION_NAME_AWS_TOOLKIT, sleep, TIMEOUT } from './integrationTestsUtilities'
+import {
+    activateExtension,
+    EXTENSION_NAME_AWS_TOOLKIT,
+    getTestWorkspaceFolder,
+    sleep,
+    TIMEOUT
+} from './integrationTestsUtilities'
 
 const projectFolder = getTestWorkspaceFolder()
 // Retry tests because CodeLenses do not reliably get produced in the tests
@@ -26,17 +32,6 @@ const runtimes = [
     { name: 'python3.7', path: 'testProject/hello_world/app.py', debuggerType: 'python' }
     // { name: 'dotnetcore2.1', path: 'testProject/src/HelloWorld/Function.cs', debuggerType: 'coreclr' }
 ]
-
-function getTestWorkspaceFolder(): string {
-    assert.ok(vscode.workspace.workspaceFolders, 'SAM Integration Test expects a workspace folder to be loaded')
-    assert.strictEqual(
-        vscode.workspace.workspaceFolders!.length,
-        1,
-        'SAM Integration Test expects only one workspace folder to be loaded'
-    )
-
-    return vscode.workspace.workspaceFolders![0].uri.fsPath
-}
 
 async function openSamProject(projectPath: string): Promise<vscode.Uri> {
     const documentPath = path.join(projectFolder, projectPath)

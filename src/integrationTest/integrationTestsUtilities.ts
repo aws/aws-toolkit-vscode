@@ -35,3 +35,14 @@ export async function getCodeLenses(uri: vscode.Uri): Promise<vscode.CodeLens[]>
 
     return codeLenses! // appease the linter
 }
+
+export function getTestWorkspaceFolder(): string {
+    assert.ok(vscode.workspace.workspaceFolders, 'Integration Tests expect a workspace folder to be loaded')
+    assert.strictEqual(
+        vscode.workspace.workspaceFolders!.length,
+        1,
+        'Integration Tests expect only one workspace folder to be loaded'
+    )
+
+    return vscode.workspace.workspaceFolders![0].uri.fsPath
+}
