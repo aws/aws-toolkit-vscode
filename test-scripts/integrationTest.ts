@@ -6,6 +6,7 @@
 import { join } from 'path'
 
 process.env.CODE_TESTS_PATH = join(process.cwd(), 'out', 'src', 'integrationTest')
+process.env.CODE_TESTS_WORKSPACE = join(process.cwd(), 'out', 'src', 'integrationTest-samples')
 process.env.CODE_EXTENSIONS_PATH = process.cwd()
 
 // Launch the VS Code Test Script

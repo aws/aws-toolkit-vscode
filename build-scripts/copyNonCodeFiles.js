@@ -12,7 +12,11 @@ const repoRoot = path.dirname(__dirname)
 const outRoot = path.join(repoRoot, 'out')
 
 // May be individual files or entire directories.
-const relativePaths = [path.join('src', 'schemas'), path.join('src', 'test', 'shared', 'cloudformation', 'yaml')]
+const relativePaths = [
+    path.join('src', 'schemas'),
+    path.join('src', 'test', 'shared', 'cloudformation', 'yaml'),
+    path.join('src', 'integrationTest-samples')
+]
 
 ;(async () => {
     for (const relativePath of relativePaths) {
