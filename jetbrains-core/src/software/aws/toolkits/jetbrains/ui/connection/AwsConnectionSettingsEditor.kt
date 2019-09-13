@@ -46,7 +46,7 @@ class AwsConnectionSettingsEditor<T : AwsConnectionsRunConfigurationBase<*>>(
     override fun createEditor(): JComponent = view.panel
 
     override fun resetEditorFrom(settings: T) {
-        view.region.selectedRegion = settings.regionId()?.let { regionProvider.lookupRegionById(it) }
+        settings.regionId()?.let { view.region.selectedRegion = regionProvider.lookupRegionById(it) }
 
         settings.credentialProviderId()?.let { credentialProviderId ->
             try {
