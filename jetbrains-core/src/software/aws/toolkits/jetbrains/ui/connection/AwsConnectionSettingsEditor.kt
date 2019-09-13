@@ -5,12 +5,14 @@ package software.aws.toolkits.jetbrains.ui.connection
 
 import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.execution.configurations.LocatableConfigurationBase
+import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.options.SettingsEditorGroup
 import com.intellij.openapi.project.Project
 import com.intellij.util.xmlb.XmlSerializer
 import com.intellij.util.xmlb.annotations.Property
 import org.jdom.Element
+import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
@@ -70,7 +72,7 @@ fun <T : AwsConnectionsRunConfigurationBase<*>> SettingsEditorGroup<T>.addAwsCon
 abstract class AwsConnectionsRunConfigurationBase<T : BaseAwsConnectionOptions>(
     project: Project,
     configFactory: ConfigurationFactory,
-    id: String
+    id: String?
 ) : LocatableConfigurationBase<T>(project, configFactory, id) {
 
     abstract val serializableOptions: T
@@ -86,6 +88,25 @@ abstract class AwsConnectionsRunConfigurationBase<T : BaseAwsConnectionOptions>(
     }
 
     fun regionId(): String? = serializableOptions.accountOptions.regionId
+
+    protected fun resolveCredentials() = credentialProviderId()?.let {
+        try {
+            CredentialManager.getInstance().getCredentialProvider(it)
+        } catch (e: CredentialProviderNotFound) {
+            throw RuntimeConfigurationError(message("lambda.run_configuration.credential_not_found_error", it))
+        } catch (e: Exception) {
+            throw RuntimeConfigurationError(
+                message(
+                    "lambda.run_configuration.credential_error",
+                    e.message ?: "Unknown"
+                )
+            )
+        }
+    } ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_credentials_specified"))
+
+    protected fun resolveRegion() = regionId()?.let {
+        AwsRegionProvider.getInstance().regions()[it]
+    } ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
 
     final override fun readExternal(element: Element) {
         super.readExternal(element)

@@ -14,9 +14,6 @@ import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.util.xmlb.annotations.Property
 import org.jdom.Element
-import software.aws.toolkits.core.credentials.CredentialProviderNotFound
-import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
-import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.ui.connection.AwsConnectionsRunConfigurationBase
 import software.aws.toolkits.jetbrains.ui.connection.BaseAwsConnectionOptions
 import software.aws.toolkits.resources.message
@@ -87,25 +84,6 @@ abstract class LambdaRunConfigurationBase<T : BaseLambdaOptions>(
             it
         }
     } ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_input_specified"))
-
-    protected fun resolveCredentials() = credentialProviderId()?.let {
-        try {
-            CredentialManager.getInstance().getCredentialProvider(it)
-        } catch (e: CredentialProviderNotFound) {
-            throw RuntimeConfigurationError(message("lambda.run_configuration.credential_not_found_error", it))
-        } catch (e: Exception) {
-            throw RuntimeConfigurationError(
-                message(
-                    "lambda.run_configuration.credential_error",
-                    e.message ?: "Unknown"
-                )
-            )
-        }
-    } ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_credentials_specified"))
-
-    protected fun resolveRegion() = regionId()?.let {
-        AwsRegionProvider.getInstance().regions()[it]
-    } ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
 }
 
 open class BaseLambdaOptions : BaseAwsConnectionOptions() {
