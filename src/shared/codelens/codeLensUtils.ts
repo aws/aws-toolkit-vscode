@@ -122,8 +122,8 @@ function makeConfigureCodeLens({
     workspaceFolder,
     samTemplate
 }: MakeConfigureCodeLensParams): vscode.CodeLens {
-    // Handler will be the fully-qualified name, so we also allow '.' & ':' despite it being forbidden in handler names.
-    if (/[^\w\-\.\:]/.test(handlerName)) {
+    // Handler will be the fully-qualified name, so we also allow '.' & ':' & '/' despite it being forbidden in handler names.
+    if (/[^\w\-\.\:\/]/.test(handlerName)) {
         throw new Error(`Invalid handler name: '${handlerName}'`)
     }
     const command = {
