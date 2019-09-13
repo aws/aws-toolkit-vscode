@@ -9,8 +9,8 @@ import * as vscode from 'vscode'
 import { LambdaLocalInvokeParams } from '../shared/codelens/localLambdaRunner'
 import {
     activateExtension,
+    expectCodeLenses,
     EXTENSION_NAME_AWS_TOOLKIT,
-    getCodeLenses,
     getTestWorkspaceFolder
 } from './integrationTestsUtilities'
 
@@ -34,7 +34,7 @@ describe('CodeLenses (JS)', async () => {
         const expectedHandlerName = 'app.handlerBesidePackageJson'
         const document = await vscode.workspace.openTextDocument(appCodePath)
 
-        const codeLenses = await getCodeLenses(document.uri)
+        const codeLenses = await expectCodeLenses(document.uri)
 
         assertDebugCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
         assertRunCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)

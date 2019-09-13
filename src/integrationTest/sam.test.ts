@@ -14,6 +14,7 @@ import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
 import {
     activateExtension,
     EXTENSION_NAME_AWS_TOOLKIT,
+    getCodeLenses,
     getTestWorkspaceFolder,
     sleep,
     TIMEOUT
@@ -46,15 +47,12 @@ function tryRemoveProjectFolder() {
     } catch (e) {}
 }
 
-async function getCodeLenses(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
+async function getSamCodeLenses(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
     while (true) {
         try {
             // this works without a sleep locally, but not on CodeBuild
             await sleep(200)
-            let codeLenses: vscode.CodeLens[] | undefined = await vscode.commands.executeCommand(
-                'vscode.executeCodeLensProvider',
-                documentUri
-            )
+            let codeLenses = await getCodeLenses(documentUri)
             if (!codeLenses || codeLenses.length === 0) {
                 continue
             }
@@ -69,7 +67,7 @@ async function getCodeLenses(documentUri: vscode.Uri): Promise<vscode.CodeLens[]
 }
 
 async function getCodeLensesOrFail(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
-    const codeLensPromise = getCodeLenses(documentUri)
+    const codeLensPromise = getSamCodeLenses(documentUri)
     const timeout = new Promise(resolve => {
         setTimeout(resolve, 10000, undefined)
     })
