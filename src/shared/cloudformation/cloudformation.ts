@@ -43,7 +43,7 @@ export namespace CloudFormation {
         CodeUri: string
         Runtime?: string
         MemorySize?: number
-        Timeout?: number
+        Timeout?: unknown
         Environment?: unknown
     }
 
@@ -199,9 +199,6 @@ export namespace CloudFormation {
             }
             if (!!resource.Properties.Runtime && typeof resource.Properties.Runtime !== 'string') {
                 throw new Error('Invalid value in Template for key: Runtime')
-            }
-            if (!!resource.Properties.Timeout && typeof resource.Properties.Timeout !== 'number') {
-                throw new Error('Invalid value in Template for key: Timeout')
             }
         }
     }
