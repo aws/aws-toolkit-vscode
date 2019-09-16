@@ -144,7 +144,7 @@ describe('CloudFormation', () => {
         Properties:
             Handler: handler
             Runtime: runtime
-            Timeout: not a number
+            Timeout: 1
             Environment:
                 Variables:
                     ENVVAR: envvar`
