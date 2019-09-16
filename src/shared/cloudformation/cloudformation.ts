@@ -44,7 +44,7 @@ export namespace CloudFormation {
         Runtime?: string
         MemorySize?: number
         Timeout?: number
-        Environment?: Environment
+        Environment?: unknown
     }
 
     export interface Resource {
@@ -202,13 +202,6 @@ export namespace CloudFormation {
             }
             if (!!resource.Properties.Timeout && typeof resource.Properties.Timeout !== 'number') {
                 throw new Error('Invalid value in Template for key: Timeout')
-            }
-            if (!!resource.Properties.Environment && !!resource.Properties.Environment.Variables) {
-                for (const variable in resource.Properties.Environment.Variables) {
-                    if (typeof resource.Properties.Environment.Variables[variable] !== 'string') {
-                        throw new Error(`Invalid value in Template for key: ${variable}: expected string`)
-                    }
-                }
             }
         }
     }
