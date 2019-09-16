@@ -136,8 +136,8 @@ describe('CloudFormation', () => {
             assert.deepStrictEqual(loadedTemplate, expectedTemplate)
         })
 
-        it('only loads YAML with valid types', async () => {
-            // timeout is not a number
+        it('only loads YAML with valid fields', async () => {
+            // codeuri is missing
             const badYamlStr: string = `Resources:
     TestResource:
         Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
