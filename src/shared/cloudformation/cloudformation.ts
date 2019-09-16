@@ -141,12 +141,6 @@ export namespace CloudFormation {
         [key: string]: Resource | undefined
     }
 
-    export interface Environment {
-        Variables?: {
-            [varName: string]: string
-        }
-    }
-
     export async function load(filename: string): Promise<Template> {
         if (!(await SystemUtilities.fileExists(filename))) {
             throw new Error(`Template file not found: ${filename}`)
