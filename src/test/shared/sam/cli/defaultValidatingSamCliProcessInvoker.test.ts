@@ -67,7 +67,7 @@ describe('DefaultValidatingSamCliProcessInvoker', async () => {
                     return {
                         samCliFound: true,
                         versionValidation: {
-                            version: '1.2.3',
+                            version: '999.999.999',
                             validation: test.versionValidation
                         }
                     }

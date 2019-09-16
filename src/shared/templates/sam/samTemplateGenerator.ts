@@ -44,7 +44,7 @@ export class SamTemplateGenerator {
         return this
     }
 
-    public withTimeout(timeout: unknown): SamTemplateGenerator {
+    public withTimeout(timeout: number): SamTemplateGenerator {
         this.properties.Timeout = timeout
 
         return this

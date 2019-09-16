@@ -70,7 +70,7 @@ describe('SamCliInfoInvocation', async () => {
         const invoker: TestSamCliProcessInvoker = new TestSamCliProcessInvoker(
             (spawnOptions, args: any[]): ChildProcessResult => {
                 return new FakeChildProcessResult({
-                    stdout: '{"version": "1.2.3"}'
+                    stdout: '{"version": "999.999.999"}'
                 })
             }
         )
@@ -78,7 +78,7 @@ describe('SamCliInfoInvocation', async () => {
 
         const response = await samInfo.execute()
         assert.ok(response)
-        assert.strictEqual(response.version, '1.2.3', 'unexpected sam info version')
+        assert.strictEqual(response.version, '999.999.999', 'unexpected sam info version')
     })
 
     it('handles successful errorcode with strange output', async () => {
