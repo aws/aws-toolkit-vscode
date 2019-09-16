@@ -68,7 +68,7 @@ describe('makeSamCliValidationNotification', async () => {
     versionValidationTestScenarios.forEach(test => {
         it(`handles InvalidSamCliVersionError - ${test.situation}`, async () => {
             const validatorResult: SamCliVersionValidatorResult = {
-                version: '999.999.999',
+                version: '1.2.3',
                 validation: test.versionValidation
             }
             const error = new InvalidSamCliVersionError(validatorResult)
