@@ -143,7 +143,6 @@ describe('CloudFormation', () => {
         Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
         Properties:
             Handler: handler
-            CodeUri: codeuri
             Runtime: runtime
             Timeout: not a number
             Environment:
