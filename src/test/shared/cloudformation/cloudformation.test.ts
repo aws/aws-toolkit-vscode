@@ -136,7 +136,7 @@ describe('CloudFormation', () => {
             assert.deepStrictEqual(loadedTemplate, expectedTemplate)
         })
 
-        it('only loads YAML with valid fields', async () => {
+        it('Does not load YAML with missing fields', async () => {
             // codeuri is missing
             const badYamlStr: string = `Resources:
                                             TestResource:
@@ -168,7 +168,7 @@ describe('CloudFormation', () => {
             await assertRejects(async () => await CloudFormation.load(filename))
         })
 
-        it('only loads valid YAML', async () => {
+        it('Loads YAML with references', async () => {
             // This one is valid, "!Ref" is valid!
             const badYamlStr: string = `Resources:
                                             TestResource:
