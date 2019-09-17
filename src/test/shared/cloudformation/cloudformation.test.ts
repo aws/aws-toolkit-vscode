@@ -167,6 +167,23 @@ describe('CloudFormation', () => {
             await strToYamlFile(badYamlStr, filename)
             await assertRejects(async () => await CloudFormation.load(filename))
         })
+
+        it('only loads valid YAML', async () => {
+            // This one is valid, "!Ref" is valid!
+            const badYamlStr: string = `Resources:
+    TestResource:
+        Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
+        Properties:
+           Handler: handler
+            CodeUri: codeuri
+            Runtime: runtime
+            Timeout: 12345
+            Environment:
+                Variables:
+                    ENVVAR: !Ref this_is_valid`
+            await strToYamlFile(badYamlStr, filename)
+            await CloudFormation.load(filename)
+        })
     })
 
     describe('save', async () => {
