@@ -136,19 +136,18 @@ describe('CloudFormation', () => {
             assert.deepStrictEqual(loadedTemplate, expectedTemplate)
         })
 
-        it('only loads YAML with valid types', async () => {
-            // timeout is not a number
+        it('Does not load YAML with missing fields', async () => {
+            // codeuri is missing
             const badYamlStr: string = `Resources:
-    TestResource:
-        Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
-        Properties:
-            Handler: handler
-            CodeUri: codeuri
-            Runtime: runtime
-            Timeout: not a number
-            Environment:
-                Variables:
-                    ENVVAR: envvar`
+                                            TestResource:
+                                                Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
+                                                Properties:
+                                                    Handler: handler
+                                                    Runtime: runtime
+                                                    Timeout: 1
+                                                    Environment:
+                                                        Variables:
+                                                            ENVVAR: envvar`
             await strToYamlFile(badYamlStr, filename)
             await assertRejects(async () => await CloudFormation.load(filename))
         })
@@ -156,17 +155,34 @@ describe('CloudFormation', () => {
         it('only loads valid YAML', async () => {
             // same as above, minus the handler
             const badYamlStr: string = `Resources:
-    TestResource:
-        Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
-        Properties:
-            CodeUri: codeuri
-            Runtime: runtime
-            Timeout: 12345
-            Environment:
-                Variables:
-                    ENVVAR: envvar`
+                                            TestResource:
+                                                Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
+                                                Properties:
+                                                    CodeUri: codeuri
+                                                    Runtime: runtime
+                                                    Timeout: 12345
+                                                    Environment:
+                                                        Variables:
+                                                            ENVVAR: envvar`
             await strToYamlFile(badYamlStr, filename)
             await assertRejects(async () => await CloudFormation.load(filename))
+        })
+
+        it('Loads YAML with references', async () => {
+            // This one is valid, "!Ref" is valid!
+            const badYamlStr: string = `Resources:
+                                            TestResource:
+                                                Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
+                                                Properties:
+                                                    Handler: handler
+                                                    CodeUri: codeuri
+                                                    Runtime: runtime
+                                                    Timeout: 12345
+                                                    Environment:
+                                                        Variables:
+                                                            ENVVAR: !Ref this_is_valid`
+            await strToYamlFile(badYamlStr, filename)
+            await CloudFormation.load(filename)
         })
     })
 
