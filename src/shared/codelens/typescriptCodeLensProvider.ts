@@ -17,8 +17,9 @@ import { getChannelLogger, getDebugPort, localize } from '../utilities/vsCodeUti
 
 import { getLogger } from '../logger'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
+import { normalizeSeparator } from '../utilities/pathUtils'
 import { CodeLensProviderParams, getInvokeCmdKey, getMetricDatum, makeCodeLenses } from './codeLensUtils'
-import { LambdaLocalInvokeParams, LocalLambdaRunner } from './localLambdaRunner'
+import { getHandlerRelativePath, LambdaLocalInvokeParams, LocalLambdaRunner } from './localLambdaRunner'
 
 const supportedNodeJsRuntimes: Set<string> = new Set<string>(['nodejs8.10', 'nodejs10.x'])
 
@@ -137,6 +138,12 @@ export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
             const search: TypescriptLambdaHandlerSearch = new TypescriptLambdaHandlerSearch(document.uri)
             const handlers: LambdaHandlerCandidate[] = await search.findCandidateLambdaHandlers()
 
+            // For Javascript CodeLenses, store the complete relative pathed handler name
+            // (eg: src/app.handler) instead of only the pure handler name (eg: app.handler)
+            // Without this, the CodeLens command is unable to resolve a match back to a sam template.
+            // This is done to address https://github.com/aws/aws-toolkit-vscode/issues/757
+            await decorateHandlerNames(handlers, document.uri.fsPath)
+
             return makeCodeLenses({
                 document,
                 handlers,
@@ -145,4 +152,29 @@ export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
             })
         }
     }
+}
+
+/**
+ * Applies a full relative path to the Javascript handler that will be stored in the CodeLens commands.
+ * @param handlers Handlers to apply relative paths to
+ * @param parentDocumentPath Path to the file containing these Lambda Handlers
+ */
+async function decorateHandlerNames(handlers: LambdaHandlerCandidate[], parentDocumentPath: string): Promise<void> {
+    const parentDir = path.dirname(parentDocumentPath)
+    const packageJsonPath = await findFileInParentPaths(parentDir, 'package.json')
+
+    if (!packageJsonPath) {
+        return
+    }
+
+    const relativePath = getHandlerRelativePath({
+        codeRoot: path.dirname(packageJsonPath),
+        filePath: parentDocumentPath
+    })
+
+    handlers.forEach(handler => {
+        const handlerName = handler.handlerName
+
+        handler.handlerName = normalizeSeparator(path.join(relativePath, handlerName))
+    })
 }

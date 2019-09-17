@@ -136,22 +136,12 @@ export class LocalLambdaRunner {
     private async generateInputTemplate(rootCodeFolder: string): Promise<string> {
         const buildFolder: string = await this.getBaseBuildFolder()
 
-        // Make function handler relative to baseDir
-        const handlerFileRelativePath = path.relative(
-            rootCodeFolder,
-            path.dirname(this.localInvokeParams.document.uri.fsPath)
-        )
-
-        const relativeFunctionHandler = path
-            .join(handlerFileRelativePath, this.localInvokeParams.handlerName)
-            .replace('\\', '/')
-
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(this.localInvokeParams.workspaceFolder.uri)
         let properties: CloudFormation.ResourceProperties | undefined
         let globals: CloudFormation.TemplateGlobals | undefined
         if (workspaceFolder) {
             const lambdas = await detectLocalLambdas([workspaceFolder])
-            const existingLambda = lambdas.find(lambda => lambda.handler === relativeFunctionHandler)
+            const existingLambda = lambdas.find(lambda => lambda.handler === this.localInvokeParams.handlerName)
 
             if (existingLambda) {
                 if (existingLambda.resource && existingLambda.resource.Properties) {
@@ -167,7 +157,7 @@ export class LocalLambdaRunner {
         return await makeInputTemplate({
             baseBuildDir: buildFolder,
             codeDir: rootCodeFolder,
-            relativeFunctionHandler,
+            relativeFunctionHandler: this.localInvokeParams.handlerName,
             globals,
             properties,
             runtime: this.runtime

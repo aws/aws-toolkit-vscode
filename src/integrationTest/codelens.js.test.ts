@@ -19,7 +19,7 @@ const CODELENS_TEST_TIMEOUT_MILLIS = 10000
 
 const workspaceFolder = getTestWorkspaceFolder()
 
-describe('CodeLenses (JS)', async () => {
+describe('SAM Local CodeLenses (JS)', async () => {
     // TODO : Extend this test suite out to work for different projects with different file configurations
     before(async function() {
         // tslint:disable-next-line:no-invalid-this
@@ -27,11 +27,39 @@ describe('CodeLenses (JS)', async () => {
         await activateExtension(EXTENSION_NAME_AWS_TOOLKIT)
     })
 
-    it('Debug, Run, and Configure CodeLenses Appear for a SAM App where the source and manifest are in the same folder', async () => {
+    it('appear when manifest in subfolder and app is beside manifest', async () => {
         const appRoot = join(workspaceFolder, 'js-plain-sam-app')
         const appCodePath = join(appRoot, 'src', 'app.js')
         const samTemplatePath = join(appRoot, 'template.yaml')
         const expectedHandlerName = 'app.handlerBesidePackageJson'
+        const document = await vscode.workspace.openTextDocument(appCodePath)
+
+        const codeLenses = await expectCodeLenses(document.uri)
+
+        assertDebugCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
+        assertRunCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
+        assertConfigureCodeLensExists(codeLenses)
+    }).timeout(CODELENS_TEST_TIMEOUT_MILLIS)
+
+    it('appear when manifest in root', async () => {
+        const appRoot = join(workspaceFolder, 'js-manifest-in-root')
+        const appCodePath = join(appRoot, 'src', 'subfolder', 'app.js')
+        const samTemplatePath = join(appRoot, 'template.yaml')
+        const expectedHandlerName = 'src/subfolder/app.handlerTwoFoldersDeep'
+        const document = await vscode.workspace.openTextDocument(appCodePath)
+
+        const codeLenses = await expectCodeLenses(document.uri)
+
+        assertDebugCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
+        assertRunCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
+        assertConfigureCodeLensExists(codeLenses)
+    }).timeout(CODELENS_TEST_TIMEOUT_MILLIS)
+
+    it('appear when manifest in subfolder and app in subfolder to manifest', async () => {
+        const appRoot = join(workspaceFolder, 'js-manifest-in-subfolder')
+        const appCodePath = join(appRoot, 'src', 'subfolder', 'app.js')
+        const samTemplatePath = join(appRoot, 'template.yaml')
+        const expectedHandlerName = 'subfolder/app.handlerInManifestSubfolder'
         const document = await vscode.workspace.openTextDocument(appCodePath)
 
         const codeLenses = await expectCodeLenses(document.uri)
