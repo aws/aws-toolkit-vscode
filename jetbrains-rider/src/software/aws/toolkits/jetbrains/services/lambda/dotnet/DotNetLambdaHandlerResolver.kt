@@ -10,10 +10,8 @@ import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
 import com.jetbrains.rd.framework.impl.RpcTimeouts
-import com.jetbrains.rd.framework.impl.startAndAdviseSuccess
 import com.jetbrains.rd.util.lifetime.Lifetime
 import com.jetbrains.rd.util.threading.SpinWait
-import com.jetbrains.rdclient.util.idea.pumpMessages
 import com.jetbrains.rider.model.MethodExistingRequest
 import com.jetbrains.rider.model.backendPsiHelperModel
 import com.jetbrains.rider.model.publishableProjectsModel
@@ -92,19 +90,17 @@ class DotNetLambdaHandlerResolver : LambdaHandlerResolver {
         val publishableProjects = project.solution.publishableProjectsModel.publishableProjects.values.toList()
         val projectToProcess = publishableProjects.find { it.projectName == assemblyName } ?: return -1
 
-        var fieldId: Int? = null
-        project.solution.backendPsiHelperModel.findPublicMethod
-            .startAndAdviseSuccess(
-                MethodExistingRequest(
-                    className = type,
-                    methodName = methodName,
-                    targetFramework = "",
-                    projectId = projectModelViewHost.getProjectModeId(projectToProcess.projectFilePath)
-                )) { methodForHandler -> fieldId = methodForHandler?.fileId }
+        val model = project.solution.backendPsiHelperModel
+        val fileIdResponse = model.findPublicMethod.sync(
+            request = MethodExistingRequest(
+                className = type,
+                methodName = methodName,
+                targetFramework = "",
+                projectId = projectModelViewHost.getProjectModeId(projectToProcess.projectFilePath)),
+            timeouts = RpcTimeouts(findMethodTimeoutMs, findMethodTimeoutMs)
+        )
 
-        pumpMessages(findMethodTimeoutMs) { fieldId != null }
-
-        return fieldId ?: -1
+        return fileIdResponse?.fileId ?: -1
     }
 
     private fun isMethodExists(project: Project, assemblyName: String, type: String, methodName: String): Boolean {

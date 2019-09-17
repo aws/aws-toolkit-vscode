@@ -37,7 +37,7 @@ static def ideProfiles() {
                             ]
                     ],
                     "RD": [
-                            version: "RD-2019.2-SNAPSHOT",
+                            version: "RD-2019.2",
                             plugins: [
                                     "yaml"
                             ]
@@ -47,7 +47,7 @@ static def ideProfiles() {
 }
 
 def idePlugins(String productCode) {
-    def product = ideProfile().getAt(productCode)
+    def product = ideProfile()[productCode]
     if (product == null) {
         throw IllegalArgumentException("Unknown IDE product `$productCode` for ${resolveIdeProfileName()}")
     }
