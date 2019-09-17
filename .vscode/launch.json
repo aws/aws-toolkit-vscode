@@ -32,7 +32,7 @@
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "args": [
-                "${workspaceFolder}/out/src/integrationTest/",
+                "${workspaceFolder}/out/src/integrationTest-samples/",
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionTestsPath=${workspaceFolder}/out/src/integrationTest"
             ],
