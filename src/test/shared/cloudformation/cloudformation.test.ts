@@ -139,15 +139,15 @@ describe('CloudFormation', () => {
         it('only loads YAML with valid fields', async () => {
             // codeuri is missing
             const badYamlStr: string = `Resources:
-    TestResource:
-        Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
-        Properties:
-            Handler: handler
-            Runtime: runtime
-            Timeout: 1
-            Environment:
-                Variables:
-                    ENVVAR: envvar`
+                                            TestResource:
+                                                Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
+                                                Properties:
+                                                    Handler: handler
+                                                    Runtime: runtime
+                                                    Timeout: 1
+                                                    Environment:
+                                                        Variables:
+                                                            ENVVAR: envvar`
             await strToYamlFile(badYamlStr, filename)
             await assertRejects(async () => await CloudFormation.load(filename))
         })
@@ -155,15 +155,15 @@ describe('CloudFormation', () => {
         it('only loads valid YAML', async () => {
             // same as above, minus the handler
             const badYamlStr: string = `Resources:
-    TestResource:
-        Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
-        Properties:
-            CodeUri: codeuri
-            Runtime: runtime
-            Timeout: 12345
-            Environment:
-                Variables:
-                    ENVVAR: envvar`
+                                            TestResource:
+                                                Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
+                                                Properties:
+                                                    CodeUri: codeuri
+                                                    Runtime: runtime
+                                                    Timeout: 12345
+                                                    Environment:
+                                                        Variables:
+                                                            ENVVAR: envvar`
             await strToYamlFile(badYamlStr, filename)
             await assertRejects(async () => await CloudFormation.load(filename))
         })
