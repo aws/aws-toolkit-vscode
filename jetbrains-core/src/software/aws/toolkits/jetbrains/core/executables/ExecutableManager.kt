@@ -38,14 +38,14 @@ inline fun <reified T : ExecutableType<*>> ExecutableManager.getExecutable() = g
 inline fun <reified T : ExecutableType<*>> ExecutableManager.getExecutableIfPresent() = getExecutableIfPresent(ExecutableType.getInstance<T>())
 
 @State(name = "executables", storages = [Storage("aws.xml")])
-class DefaultExecutableManager : PersistentStateComponent<List<ExecutableState>>, ExecutableManager {
+class DefaultExecutableManager : PersistentStateComponent<ExecutableStateList>, ExecutableManager {
     private val internalState = mutableMapOf<String, Triple<ExecutableState, ExecutableInstance?, FileTime?>>()
 
-    override fun getState(): List<ExecutableState>? = internalState.values.map { it.first }.toList()
+    override fun getState(): ExecutableStateList = ExecutableStateList(internalState.values.map { it.first }.toList())
 
-    override fun loadState(state: List<ExecutableState>) {
+    override fun loadState(state: ExecutableStateList) {
         internalState.clear()
-        state.forEach {
+        state.value.forEach {
             val id = it.id ?: return@forEach
             internalState[id] = Triple(it, null, null)
         }
@@ -219,6 +219,11 @@ sealed class ExecutableInstance {
 
     class UnresolvedExecutable(val resolutionError: String? = null) : ExecutableInstance()
 }
+
+// PersistentStateComponent requires a bean, so we wrap the List
+data class ExecutableStateList(
+    var value: List<ExecutableState> = listOf()
+)
 
 data class ExecutableState(
     var id: String? = null,
