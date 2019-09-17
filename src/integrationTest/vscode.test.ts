@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { activateExtension, TIMEOUT } from './integrationTestsUtilities'
+import { activateExtension, EXTENSION_NAME_AWS_TOOLKIT, TIMEOUT } from './integrationTestsUtilities'
 
 describe('VSCode tests', async () => {
     it('activates the extension', async () => {
-        await activateExtension('amazonwebservices.aws-toolkit-vscode')
+        await activateExtension(EXTENSION_NAME_AWS_TOOLKIT)
     }).timeout(TIMEOUT)
 })
