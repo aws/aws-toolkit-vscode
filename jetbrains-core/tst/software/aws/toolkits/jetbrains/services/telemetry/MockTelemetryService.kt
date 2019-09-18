@@ -8,9 +8,9 @@ import software.aws.toolkits.core.telemetry.MetricEvent
 
 class MockTelemetryService : TelemetryService {
     override fun record(
-        namespace: String,
+        namespace: String?,
         metricEventMetadata: TelemetryService.MetricEventMetadata,
-        buildEvent: MetricEvent.Builder.() -> kotlin.Unit
+        buildEvent: MetricEvent.Builder.() -> Unit
     ): MetricEvent {
         val builder = DefaultMetricEvent.builder(namespace)
         buildEvent(builder)

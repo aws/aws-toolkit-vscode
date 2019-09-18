@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.core.telemetry
 
+@Deprecated("TelemetryNamespace should not be used")
 interface TelemetryNamespace {
     fun getNamespace(): String = javaClass.simpleName
 }
