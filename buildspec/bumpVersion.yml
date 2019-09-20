@@ -32,6 +32,8 @@ phases:
                 else
                   npm version minor
                 fi
+                # Call npm install because 'createRelease' uses ts-node
+                npm install
                 npm run createRelease
                 git commit -m "Update version to $VERSION"
                 echo "tagging commit"
