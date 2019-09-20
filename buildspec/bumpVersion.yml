@@ -32,6 +32,7 @@ phases:
                 else
                   npm version minor
                 fi
+                npm install
                 npm run createRelease
                 git commit -m "Update version to $VERSION"
                 echo "tagging commit"
