@@ -1,7 +1,3 @@
-# Change Log
-
-All notable changes to the "aws-vscode-tools" extension will be documented in this file.
-
 ## 1.0.0
 
 * A toast greets the user upon launching a new version of the toolkit for the first time which provides a link to a quick start page. This quick start page can be re-accessed through the explorer's context menu. (#610-612)
