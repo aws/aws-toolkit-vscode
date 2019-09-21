@@ -21,6 +21,13 @@ Users can Locally Debug SAM Applications in the following ways:
 -   Local SAM Templates View - One UI Location to see and act on all SAM Applications / Functions
 -   CodeLenses on Lambda Handlers - Locally run and debug a Lambda handler function without any SAM Template associations
 
+### Terminology
+
+TODO : Fill this section
+CodeLens
+Debug Configuration
+SAM Template
+
 ## Debug Configurations
 
 Debug Configurations are entries in a `launch.json` file that VS Code and Extensions use to define Debug sessions. TODO provide link to VS Code Debugging. By supporting Debug Configuration, users can press F5 (or the Debug button) to start a Debugging session.
@@ -103,7 +110,31 @@ This View resides next to the AWS Explorer View in the Side Bar for the AWS Pane
 
 ## CodeLenses on Lambda Handlers
 
-Debug Configurations and the SAM Templates View operate against resources in the SAM Template. Users might want to prototype or iterate on a specific Lambda function before incorporating it into a SAM Template. CodeLenses provide way to run or debug a function without requiring any SAM Template definitions.
+A set of CodeLenses appear above function signatures that are recognized as Lambda handlers. The CodeLenses are detailed below. These CodeLenses allow users to locally invoke the current function code as a Lambda handler.
+
+This debugging experience differs from the other ones in that the Lambda handler is run independently of any SAM Templates. All other debugging experiences invoke a resource that is already defined in a SAM Template. When these CodeLenses are used, a temporary SAM Template is produced that only contains the function of interest. When the debugging session is completed, the temporary SAM Template is deleted.
+
+### Run Locally
+
+The function associated with this CodeLens is placed into a new (temporary) SAM Application and then invoked without attaching a debugger.
+
+### Debug Locally
+
+The function associated with this CodeLens is placed into a new (temporary) SAM Application, and then invoked. A debugger is then attached to the invoked program.
+
+### Configure
+
+Allows users to configure the environment that the associated function can be locally run or debugged in.
+
+Examples of what can be configured include:
+
+-   Environment variables
+-   Event payload (the object passed into the Lambda function when it is invoked)
+-   Runtime
+-   Root folder - This is the folder that is used as the root folder when the function is invoked. By default, it uses the folder containing the code file
+-   Path to Manifest file relative to the root folder
+    -   For a Javascript program, the `package.json` file
+    -   For a Python program, the `requirements.txt` file
 
 ---
 
@@ -111,4 +142,4 @@ Additional Ideas
 
 -   CodeLenses on SAM Templates - Template-level operations (create Debug Configurations for a Resource?)
 
-TODO : Section comparing proposal to existing feature
+TODO : Appendix: Section comparing proposal to existing feature
