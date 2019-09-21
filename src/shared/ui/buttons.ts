@@ -15,8 +15,8 @@ import { ext } from '../extensionGlobals'
 export function createHelpButton(tooltip?: string): QuickInputButton {
     return {
         iconPath: {
-            light: Uri.file(ext.iconPaths.helpLight),
-            dark: Uri.file(ext.iconPaths.helpDark)
+            light: Uri.file(ext.iconPaths.light.help),
+            dark: Uri.file(ext.iconPaths.dark.help)
         },
         tooltip
     }

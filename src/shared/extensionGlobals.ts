@@ -25,7 +25,17 @@ export namespace ext {
     export let telemetry: TelemetryService
 
     export namespace iconPaths {
-        export let helpLight: string
-        export let helpDark: string
+        export const dark: IconPaths = makeIconPathsObject()
+        export const light: IconPaths = makeIconPathsObject()
+    }
+}
+
+export interface IconPaths {
+    help: string
+}
+
+function makeIconPathsObject(): IconPaths {
+    return {
+        help: ''
     }
 }

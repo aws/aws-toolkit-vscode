@@ -8,18 +8,18 @@ import * as vscode from 'vscode'
 import { ext } from '../../../shared/extensionGlobals'
 import * as buttons from '../../../shared/ui/buttons'
 
-describe.only('UI buttons', () => {
+describe('UI buttons', () => {
     const expectedHelpDarkPath = '/icons/dark/help'
     const expectedHelpLightPath = '/icons/light/help'
 
     before(() => {
-        ext.iconPaths.helpDark = expectedHelpDarkPath
-        ext.iconPaths.helpLight = expectedHelpLightPath
+        ext.iconPaths.dark.help = expectedHelpDarkPath
+        ext.iconPaths.light.help = expectedHelpLightPath
     })
 
     after(() => {
-        delete ext.iconPaths.helpDark
-        delete ext.iconPaths.helpLight
+        ext.iconPaths.dark.help = ''
+        ext.iconPaths.light.help = ''
     })
 
     it('creates a help button without a tooltip', () => {
