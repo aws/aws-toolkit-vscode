@@ -4,29 +4,24 @@
  */
 
 import * as assert from 'assert'
-import * as vscode from 'vscode'
 import { ext } from '../../../shared/extensionGlobals'
 import * as buttons from '../../../shared/ui/buttons'
+import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../utilities/iconPathUtils'
 
 describe('UI buttons', () => {
-    const expectedHelpDarkPath = '/icons/dark/help'
-    const expectedHelpLightPath = '/icons/light/help'
-
     before(() => {
-        ext.iconPaths.dark.help = expectedHelpDarkPath
-        ext.iconPaths.light.help = expectedHelpLightPath
+        setupTestIconPaths()
     })
 
     after(() => {
-        ext.iconPaths.dark.help = ''
-        ext.iconPaths.light.help = ''
+        clearTestIconPaths()
     })
 
     it('creates a help button without a tooltip', () => {
         const help = buttons.createHelpButton()
 
         assert.strictEqual(help.tooltip, undefined)
-        assertIconPath(help.iconPath as { light: vscode.Uri; dark: vscode.Uri })
+        assertIconPath(help.iconPath as IconPath)
     })
 
     it('creates a help button with a tooltip', () => {
@@ -34,11 +29,11 @@ describe('UI buttons', () => {
         const help = buttons.createHelpButton(tooltip)
 
         assert.strictEqual(help.tooltip, tooltip)
-        assertIconPath(help.iconPath as { light: vscode.Uri; dark: vscode.Uri })
+        assertIconPath(help.iconPath as IconPath)
     })
 
-    function assertIconPath(iconPath: { light: vscode.Uri; dark: vscode.Uri }) {
-        assert.strictEqual(iconPath.dark.path, expectedHelpDarkPath)
-        assert.strictEqual(iconPath.light.path, expectedHelpLightPath)
+    function assertIconPath(iconPath: IconPath) {
+        assert.strictEqual(iconPath.dark.path, ext.iconPaths.dark.help)
+        assert.strictEqual(iconPath.light.path, ext.iconPaths.light.help)
     }
 })

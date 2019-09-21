@@ -22,6 +22,7 @@ import { TestLogger } from '../../../shared/loggerUtils'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { MockLambdaClient } from '../../shared/clients/mockClients'
+import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 
 // TODO : Consolidate all asyncGenerator calls into a shared utility method
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
@@ -34,6 +35,7 @@ describe('DefaultLambdaFunctionNode', () => {
     let logger: TestLogger
 
     before(async () => {
+        setupTestIconPaths()
         logger = await TestLogger.createTestLogger()
         fakeFunctionConfig = {
             FunctionName: 'testFunctionName',
@@ -42,6 +44,7 @@ describe('DefaultLambdaFunctionNode', () => {
     })
 
     after(async () => {
+        clearTestIconPaths()
         await logger.cleanupLogger()
     })
 
@@ -59,7 +62,10 @@ describe('DefaultLambdaFunctionNode', () => {
     it('initializes icon', async () => {
         const testNode = generateTestNode()
 
-        validateIconPath(testNode)
+        const iconPath = testNode.iconPath as IconPath
+
+        assert.strictEqual(iconPath.dark.path, ext.iconPaths.dark.lambda, 'Unexpected dark icon path')
+        assert.strictEqual(iconPath.light.path, ext.iconPaths.light.lambda, 'Unexpected light icon path')
     })
 
     // Validates we don't yield some unexpected value that our command triggers
@@ -79,51 +85,10 @@ describe('DefaultLambdaFunctionNode', () => {
         assert.strictEqual(childNodes.length, 0)
     })
 
-    function validateIconPath(node: TreeItem) {
-        const fileScheme: string = 'file'
-        const expectedPrefix = `/${fakeIconPathPrefix}/`
-
-        assert(node.iconPath !== undefined)
-        const iconPath = node.iconPath! as {
-            light: Uri
-            dark: Uri
-        }
-
-        assert(iconPath.light !== undefined)
-        assert(iconPath.light instanceof Uri)
-        assert.strictEqual(iconPath.light.scheme, fileScheme)
-        const lightResourcePath: string = iconPath.light.path
-        assert(
-            lightResourcePath.indexOf(expectedPrefix) >= 0,
-            `expected light resource path ${lightResourcePath} to contain ${expectedPrefix}`
-        )
-        assert(
-            lightResourcePath.indexOf('/light/') >= 0,
-            `expected light resource path ${lightResourcePath} to contain '/light/'`
-        )
-
-        assert(iconPath.dark !== undefined)
-        assert(iconPath.dark instanceof Uri)
-        assert.strictEqual(iconPath.dark.scheme, fileScheme)
-        const darkResourcePath: string = iconPath.dark.path
-        assert(
-            darkResourcePath.indexOf(expectedPrefix) >= 0,
-            `expected dark resource path ${darkResourcePath} to contain ${expectedPrefix}`
-        )
-        assert(
-            darkResourcePath.indexOf('/dark/') >= 0,
-            `expected light resource path ${darkResourcePath} to contain '/dark/'`
-        )
-    }
-
     function generateTestNode(): DefaultLambdaFunctionNode {
         return new DefaultLambdaFunctionNode(
-            new DefaultLambdaFunctionGroupNode(
-                new DefaultRegionNode(new RegionInfo('code', 'name'), iconPathMaker),
-                iconPathMaker
-            ),
-            fakeFunctionConfig,
-            iconPathMaker
+            new DefaultLambdaFunctionGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'), iconPathMaker)),
+            fakeFunctionConfig
         )
     }
 
@@ -168,7 +133,7 @@ describe('DefaultLambdaFunctionGroupNode', () => {
 
     class ThrowErrorDefaultLambdaFunctionGroupNode extends DefaultLambdaFunctionGroupNode {
         public constructor(public readonly parent: DefaultRegionNode) {
-            super(parent, unusedPathResolver)
+            super(parent)
         }
 
         public async updateChildren(): Promise<void> {
@@ -199,8 +164,7 @@ describe('DefaultLambdaFunctionGroupNode', () => {
         }
 
         const functionGroupNode = new DefaultLambdaFunctionGroupNode(
-            new DefaultRegionNode(new RegionInfo('code', 'name'), stubPathResolver),
-            stubPathResolver
+            new DefaultRegionNode(new RegionInfo('code', 'name'), stubPathResolver)
         )
 
         const children = await functionGroupNode.getChildren()

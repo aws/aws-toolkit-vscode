@@ -155,10 +155,7 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
             this.functionNodes,
             intersection(resources, functions.keys()),
             key => this.functionNodes.get(key)!.update(functions.get(key)!),
-            key =>
-                new DefaultCloudFormationFunctionNode(this, functions.get(key)!, relativeExtensionPath =>
-                    this.getExtensionAbsolutePath(relativeExtensionPath)
-                )
+            key => new DefaultCloudFormationFunctionNode(this, functions.get(key)!)
         )
     }
 
@@ -185,12 +182,8 @@ export class DefaultCloudFormationFunctionNode extends FunctionNodeBase {
         return this.parent.regionCode
     }
 
-    public constructor(
-        public readonly parent: CloudFormationStackNode,
-        configuration: Lambda.FunctionConfiguration,
-        getExtensionAbsolutePath: (relativeExtensionPath: string) => string
-    ) {
-        super(configuration, getExtensionAbsolutePath)
+    public constructor(public readonly parent: CloudFormationStackNode, configuration: Lambda.FunctionConfiguration) {
+        super(configuration)
         this.contextValue = 'awsCloudFormationFunctionNode'
     }
 }

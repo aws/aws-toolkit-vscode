@@ -34,7 +34,7 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
         this.update(info)
 
         this.cloudFormationNode = new DefaultCloudFormationNode(this, getExtensionAbsolutePath)
-        this.lambdaFunctionGroupNode = new DefaultLambdaFunctionGroupNode(this, getExtensionAbsolutePath)
+        this.lambdaFunctionGroupNode = new DefaultLambdaFunctionGroupNode(this)
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
