@@ -98,8 +98,7 @@ async function registerServerlessCommands(params: {
             command: 'aws.lambda.createNewSamApp',
             callback: async (): Promise<{ datum: Datum }> => {
                 const createNewSamApplicationResults: CreateNewSamApplicationResults = await createNewSamApplication(
-                    params.channelLogger,
-                    params.extensionContext
+                    params.channelLogger
                 )
                 const datum = defaultMetricDatum('new')
                 datum.metadata = new Map()

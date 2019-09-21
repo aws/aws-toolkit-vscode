@@ -121,9 +121,9 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public readonly onDetectLocalTemplates = detectLocalTemplates
     public readonly getParameters = getParameters
     public readonly getOverriddenParameters = getOverriddenParameters
-    private readonly helpButton = createHelpButton(this.extContext, localize('AWS.command.help', 'View Documentation'))
+    private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Documentation'))
 
-    public constructor(private readonly extContext: Pick<vscode.ExtensionContext, 'asAbsolutePath'>) {}
+    public constructor() {}
 
     public get workspaceFolders(): vscode.Uri[] | undefined {
         return (vscode.workspace.workspaceFolders || []).map(f => f.uri)
