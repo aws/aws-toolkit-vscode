@@ -186,4 +186,10 @@ function getExtensionAbsolutePath(context: vscode.ExtensionContext, relativeExte
 function initializeIconPaths(context: vscode.ExtensionContext) {
     ext.iconPaths.dark.help = context.asAbsolutePath('resources/dark/help.svg')
     ext.iconPaths.light.help = context.asAbsolutePath('resources/light/help.svg')
+
+    ext.iconPaths.dark.cloudFormation = context.asAbsolutePath('resources/dark/cloudformation.svg')
+    ext.iconPaths.light.cloudFormation = context.asAbsolutePath('resources/light/cloudformation.svg')
+
+    ext.iconPaths.dark.lambda = context.asAbsolutePath('resources/dark/lambda.svg')
+    ext.iconPaths.light.lambda = context.asAbsolutePath('resources/light/lambda.svg')
 }

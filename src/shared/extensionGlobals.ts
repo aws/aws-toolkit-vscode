@@ -32,10 +32,14 @@ export namespace ext {
 
 export interface IconPaths {
     help: string
+    cloudFormation: string
+    lambda: string
 }
 
 function makeIconPathsObject(): IconPaths {
     return {
-        help: ''
+        help: '',
+        cloudFormation: '',
+        lambda: ''
     }
 }
