@@ -23,4 +23,9 @@ export namespace ext {
     export let toolkitClientBuilder: ToolkitClientBuilder
     export let statusBar: AWSStatusBar
     export let telemetry: TelemetryService
+
+    export namespace iconPaths {
+        export let helpLight: string
+        export let helpDark: string
+    }
 }

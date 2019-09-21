@@ -48,6 +48,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     try {
         await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
+        initializeIconPaths(context)
 
         const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
         const awsContext = new DefaultAwsContext(toolkitSettings, context)
@@ -180,4 +181,9 @@ export async function deactivate() {
 
 function getExtensionAbsolutePath(context: vscode.ExtensionContext, relativeExtensionPath: string): string {
     return context.asAbsolutePath(relativeExtensionPath)
+}
+
+function initializeIconPaths(context: vscode.ExtensionContext) {
+    ext.iconPaths.helpDark = context.asAbsolutePath('resources/dark/help.svg')
+    ext.iconPaths.helpLight = context.asAbsolutePath('resources/light/help.svg')
 }
