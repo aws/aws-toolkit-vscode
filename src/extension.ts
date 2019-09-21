@@ -143,11 +143,7 @@ export async function activate(context: vscode.ExtensionContext) {
             }
         })
 
-        const providers = [
-            new AwsExplorer(awsContext, awsContextTrees, regionProvider, resourceFetcher, relativeExtensionPath =>
-                getExtensionAbsolutePath(context, relativeExtensionPath)
-            )
-        ]
+        const providers = [new AwsExplorer(awsContext, awsContextTrees, regionProvider, resourceFetcher)]
 
         providers.forEach(p => {
             p.initialize(context)
@@ -177,10 +173,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
 export async function deactivate() {
     await ext.telemetry.shutdown()
-}
-
-function getExtensionAbsolutePath(context: vscode.ExtensionContext, relativeExtensionPath: string): string {
-    return context.asAbsolutePath(relativeExtensionPath)
 }
 
 function initializeIconPaths(context: vscode.ExtensionContext) {

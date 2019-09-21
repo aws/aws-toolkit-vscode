@@ -37,10 +37,7 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
         return this.parent.regionCode
     }
 
-    public constructor(
-        public readonly parent: RegionNode,
-        private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
-    ) {
+    public constructor(public readonly parent: RegionNode) {
         super('CloudFormation', vscode.TreeItemCollapsibleState.Collapsed)
         this.stackNodes = new Map<string, CloudFormationStackNode>()
     }
@@ -64,10 +61,7 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
             this.stackNodes,
             stacks.keys(),
             key => this.stackNodes.get(key)!.update(stacks.get(key)!),
-            key =>
-                new DefaultCloudFormationStackNode(this, stacks.get(key)!, relativeExtensionPath =>
-                    this.getExtensionAbsolutePath(relativeExtensionPath)
-                )
+            key => new DefaultCloudFormationStackNode(this, stacks.get(key)!)
         )
     }
 }
@@ -91,19 +85,15 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
         return this.parent.regionCode
     }
 
-    public constructor(
-        public readonly parent: CloudFormationNode,
-        private stackSummary: CloudFormation.StackSummary,
-        private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string
-    ) {
+    public constructor(public readonly parent: CloudFormationNode, private stackSummary: CloudFormation.StackSummary) {
         super('', vscode.TreeItemCollapsibleState.Collapsed)
 
         this.update(stackSummary)
         this.contextValue = 'awsCloudFormationNode'
         this.functionNodes = new Map<string, CloudFormationFunctionNode>()
         this.iconPath = {
-            dark: vscode.Uri.file(this.getExtensionAbsolutePath('resources/dark/cloudformation.svg')),
-            light: vscode.Uri.file(this.getExtensionAbsolutePath('resources/light/cloudformation.svg'))
+            dark: vscode.Uri.file(ext.iconPaths.dark.cloudFormation),
+            light: vscode.Uri.file(ext.iconPaths.light.cloudFormation)
         }
     }
 

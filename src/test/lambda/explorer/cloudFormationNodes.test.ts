@@ -6,7 +6,6 @@
 import * as assert from 'assert'
 import { CloudFormation, Lambda } from 'aws-sdk'
 import * as os from 'os'
-import { TreeItem, Uri } from 'vscode'
 import { DefaultRegionNode } from '../../../awsexplorer/defaultRegionNode'
 import {
     CloudFormationStackNode,
@@ -24,6 +23,7 @@ import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { MockCloudFormationClient } from '../../shared/clients/mockClients'
+import { IconPath } from '../../shared/utilities/iconPathUtils'
 
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
@@ -31,7 +31,6 @@ async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
 
 describe('DefaultCloudFormationStackNode', () => {
     let fakeStackSummary: CloudFormation.StackSummary
-    const fakeIconPathPrefix: string = 'DefaultCloudFormationStackNode'
     let logger: TestLogger
 
     before(async () => {
@@ -59,7 +58,10 @@ describe('DefaultCloudFormationStackNode', () => {
     it('initializes icon', async () => {
         const testNode: CloudFormationStackNode = generateTestNode()
 
-        validateIconPath(testNode)
+        const iconPath = testNode.iconPath as IconPath
+
+        assert.strictEqual(iconPath.dark.path, ext.iconPaths.dark.cloudFormation, 'Unexpected dark icon path')
+        assert.strictEqual(iconPath.light.path, ext.iconPaths.light.cloudFormation, 'Unexpected light icon path')
     })
 
     it('returns placeholder node if no children are present', async () => {
@@ -200,56 +202,11 @@ describe('DefaultCloudFormationStackNode', () => {
         assert.strictEqual((childNodes[1] as DefaultCloudFormationFunctionNode).label, lambda3Name)
     })
 
-    function validateIconPath(node: TreeItem) {
-        const fileScheme: string = 'file'
-        const expectedPrefix = `/${fakeIconPathPrefix}/`
-
-        assert(node.iconPath !== undefined)
-        const iconPath = node.iconPath! as {
-            light: Uri
-            dark: Uri
-        }
-
-        assert(iconPath.light !== undefined)
-        assert(iconPath.light instanceof Uri)
-        assert.strictEqual(iconPath.light.scheme, fileScheme)
-        const lightResourcePath: string = iconPath.light.path
-        assert(
-            lightResourcePath.indexOf(expectedPrefix) >= 0,
-            `expected light resource path ${lightResourcePath} to contain ${expectedPrefix}`
-        )
-        assert(
-            lightResourcePath.indexOf('/light/') >= 0,
-            `expected light resource path ${lightResourcePath} to contain '/light/'`
-        )
-
-        assert(iconPath.dark !== undefined)
-        assert(iconPath.dark instanceof Uri)
-        assert.strictEqual(iconPath.dark.scheme, fileScheme)
-        const darkResourcePath: string = iconPath.dark.path
-        assert(
-            darkResourcePath.indexOf(expectedPrefix) >= 0,
-            `expected dark resource path ${darkResourcePath} to contain ${expectedPrefix}`
-        )
-        assert(
-            darkResourcePath.indexOf('/dark/') >= 0,
-            `expected light resource path ${darkResourcePath} to contain '/dark/'`
-        )
-    }
-
     function generateTestNode(): CloudFormationStackNode {
         return new DefaultCloudFormationStackNode(
-            new DefaultCloudFormationNode(
-                new DefaultRegionNode(new RegionInfo('code', 'name'), iconPathMaker),
-                iconPathMaker
-            ),
-            fakeStackSummary,
-            iconPathMaker
+            new DefaultCloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
+            fakeStackSummary
         )
-    }
-
-    function iconPathMaker(relativePath: string): string {
-        return `${fakeIconPathPrefix}/${relativePath}`
     }
 })
 
@@ -263,8 +220,6 @@ describe('DefaultCloudFormationNode', () => {
     after(async () => {
         await logger.cleanupLogger()
     })
-
-    const stubPathResolver = (path: string): string => path
 
     class StackNamesMockCloudFormationClient extends MockCloudFormationClient {
         public constructor(
@@ -310,10 +265,7 @@ describe('DefaultCloudFormationNode', () => {
             }
         }
 
-        const cloudFormationNode = new DefaultCloudFormationNode(
-            new DefaultRegionNode(new RegionInfo('code', 'name'), stubPathResolver),
-            stubPathResolver
-        )
+        const cloudFormationNode = new DefaultCloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name')))
 
         const children = await cloudFormationNode.getChildren()
 
@@ -349,13 +301,9 @@ describe('DefaultCloudFormationNode', () => {
     })
 
     it('handles error', async () => {
-        const unusedPathResolver = () => {
-            throw new Error('unused')
-        }
-
         class ThrowErrorDefaultCloudFormationNode extends DefaultCloudFormationNode {
             public constructor(public readonly regionNode: DefaultRegionNode) {
-                super(regionNode, unusedPathResolver)
+                super(regionNode)
             }
 
             public async updateChildren(): Promise<void> {
@@ -364,7 +312,7 @@ describe('DefaultCloudFormationNode', () => {
         }
 
         const testNode: ThrowErrorDefaultCloudFormationNode = new ThrowErrorDefaultCloudFormationNode(
-            new DefaultRegionNode(new RegionInfo('code', 'name'), unusedPathResolver)
+            new DefaultRegionNode(new RegionInfo('code', 'name'))
         )
 
         const childNodes = await testNode.getChildren()

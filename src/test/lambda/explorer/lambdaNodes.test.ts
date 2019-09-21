@@ -6,7 +6,6 @@
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
 import * as os from 'os'
-import { TreeItem, Uri } from 'vscode'
 import { DefaultRegionNode } from '../../../awsexplorer/defaultRegionNode'
 import {
     DefaultLambdaFunctionGroupNode,
@@ -31,7 +30,6 @@ async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
 
 describe('DefaultLambdaFunctionNode', () => {
     let fakeFunctionConfig: Lambda.FunctionConfiguration
-    const fakeIconPathPrefix: string = 'DefaultLambdaFunctionNode'
     let logger: TestLogger
 
     before(async () => {
@@ -87,13 +85,9 @@ describe('DefaultLambdaFunctionNode', () => {
 
     function generateTestNode(): DefaultLambdaFunctionNode {
         return new DefaultLambdaFunctionNode(
-            new DefaultLambdaFunctionGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'), iconPathMaker)),
+            new DefaultLambdaFunctionGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
             fakeFunctionConfig
         )
-    }
-
-    function iconPathMaker(relativePath: string): string {
-        return `${fakeIconPathPrefix}/${relativePath}`
     }
 })
 
@@ -107,11 +101,6 @@ describe('DefaultLambdaFunctionGroupNode', () => {
     after(async () => {
         await logger.cleanupLogger()
     })
-
-    const stubPathResolver = (path: string): string => path
-    const unusedPathResolver = () => {
-        throw new Error('path resolver unused')
-    }
 
     class FunctionNamesMockLambdaClient extends MockLambdaClient {
         public constructor(
@@ -164,7 +153,7 @@ describe('DefaultLambdaFunctionGroupNode', () => {
         }
 
         const functionGroupNode = new DefaultLambdaFunctionGroupNode(
-            new DefaultRegionNode(new RegionInfo('code', 'name'), stubPathResolver)
+            new DefaultRegionNode(new RegionInfo('code', 'name'))
         )
 
         const children = await functionGroupNode.getChildren()
@@ -202,7 +191,7 @@ describe('DefaultLambdaFunctionGroupNode', () => {
 
     it('handles error', async () => {
         const testNode = new ThrowErrorDefaultLambdaFunctionGroupNode(
-            new DefaultRegionNode(new RegionInfo('code', 'name'), unusedPathResolver)
+            new DefaultRegionNode(new RegionInfo('code', 'name'))
         )
 
         const childNodes = await testNode.getChildren()

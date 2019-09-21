@@ -14,9 +14,7 @@ describe('DefaultRegionNode', () => {
 
     // Validates we tagged the node correctly
     it('initializes name and tooltip', async () => {
-        const testNode = new DefaultRegionNode(new RegionInfo(regionCode, regionName), () => {
-            throw new Error('unused')
-        })
+        const testNode = new DefaultRegionNode(new RegionInfo(regionCode, regionName))
 
         assert.strictEqual(testNode.label, regionName)
         assert.strictEqual(testNode.tooltip, `${regionName} [${regionCode}]`)
