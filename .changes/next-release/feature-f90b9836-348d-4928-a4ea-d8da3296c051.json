@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Move AWS Connection details into a common Run Configuration tab for remote and local Lambda execution."
-}

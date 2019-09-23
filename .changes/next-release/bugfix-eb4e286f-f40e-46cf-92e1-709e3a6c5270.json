@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Handle the \"me-\" region prefix Treat the \"me-\" region prefix as Middle East"
-}

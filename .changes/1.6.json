@@ -1,0 +1,65 @@
+{
+  "date" : "2019-09-23",
+  "version" : "1.6",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Open Stack Status UI on CloudFormation stack deletion."
+  }, {
+    "type" : "feature",
+    "description" : "Removed requirement of having to double-click to load more resources in AWS Explorer if there is more than one page returned"
+  }, {
+    "type" : "feature",
+    "description" : "Added a Copy Arn action to AWS Explorer"
+  }, {
+    "type" : "feature",
+    "description" : "Move AWS Connection details into a common Run Configuration tab for remote and local Lambda execution."
+  }, {
+    "type" : "feature",
+    "description" : "Enable caching of describe calls to avoid repeated network calls for already known resources."
+  }, {
+    "type" : "feature",
+    "description" : "Support timeout and memory size settings in run configuration"
+  }, {
+    "type" : "feature",
+    "description" : "Porting resource selector to use resource-cache so network won't be hit on each dialog load."
+  }, {
+    "type" : "feature",
+    "description" : "Add support to link Gradle project."
+  }, {
+    "type" : "feature",
+    "description" : "Additional SAM build and SAM local invocation args configurable from Run/Debug Configuration settings"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix the bug that PyCharm pipenv doesn't create the project location folder"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix the CloudFormation explorer node not showing Lambdas that belong to the stack"
+  }, {
+    "type" : "bugfix",
+    "description" : "Log errors to idea.log when we fail to swtich the active AWS credential profile"
+  }, {
+    "type" : "bugfix",
+    "description" : "Handle the \"me-\" region prefix Treat the \"me-\" region prefix as Middle East"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fixing issue where explorer does not load even with credentials/region selected."
+  }, {
+    "type" : "bugfix",
+    "description" : "Fixing random AssertionError exception caused by Guava cache."
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix the bug that underscores in profile names are not shown in AWS settings panel"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fixed bug in Pycharm's New Project pane where VirtualEnv path is not changed as project path is changed after switching Runtime"
+  }, {
+    "type" : "bugfix",
+    "description" : "Handle non-cloudformation yaml files gracefully"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix thread issue in PyCharm new project wizard"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix the bug that toolkit throws unhandled exception on startup when active credential is not configured"
+  } ]
+}
