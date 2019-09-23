@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Removed requirement of having to double-click to load more resources in AWS Explorer if there is more than one page returned"
-}

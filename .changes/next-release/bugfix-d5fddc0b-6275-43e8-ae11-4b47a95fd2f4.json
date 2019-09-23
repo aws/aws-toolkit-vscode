@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix the bug that underscores in profile names are not shown in AWS settings panel"
-}

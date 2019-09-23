@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix the CloudFormation explorer node not showing Lambdas that belong to the stack"
-}

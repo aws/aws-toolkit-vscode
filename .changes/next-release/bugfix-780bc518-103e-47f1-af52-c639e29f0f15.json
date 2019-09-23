@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix thread issue in PyCharm new project wizard"
-}
