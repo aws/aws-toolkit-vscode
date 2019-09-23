@@ -7,6 +7,7 @@ import com.intellij.ide.util.projectWizard.AbstractNewProjectStep
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.projectRoots.impl.SdkConfigurationUtil
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.ui.DocumentAdapter
 import com.intellij.util.ui.UIUtil
 import com.jetbrains.python.newProject.PyNewProjectSettings
@@ -19,6 +20,7 @@ import icons.AwsIcons
 import software.aws.toolkits.jetbrains.services.lambda.SdkBasedSdkSettings
 import software.aws.toolkits.jetbrains.services.lambda.SdkSettings
 import software.aws.toolkits.resources.message
+import java.io.File
 import javax.swing.Icon
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -78,6 +80,8 @@ class PyCharmSdkSelectionPanel(val step: SamProjectRuntimeSelectionStep) : SdkSe
         sdkSelectionPanel.addChangeListener(Runnable {
             step.checkValid()
         })
+
+        sdkSelectionPanel.newProjectPath = step.getLocationField().text.trim()
     }
 
     override fun getSdkSettings(): SdkSettings =
@@ -89,6 +93,7 @@ class PyCharmSdkSelectionPanel(val step: SamProjectRuntimeSelectionStep) : SdkSe
         when (val panel = sdkSelectionPanel.selectedPanel) {
             // this list should be exhaustive
             is PyAddNewEnvironmentPanel -> {
+                FileUtil.createDirectory(File(step.getLocationField().text.trim()))
                 panel.getOrCreateSdk()?.also {
                     SdkConfigurationUtil.addSdk(it)
                 }

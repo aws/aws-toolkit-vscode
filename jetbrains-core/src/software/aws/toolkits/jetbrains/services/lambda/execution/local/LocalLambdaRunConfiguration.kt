@@ -42,6 +42,8 @@ import software.aws.toolkits.jetbrains.services.lambda.sam.SamVersionCache
 import software.aws.toolkits.jetbrains.services.lambda.validOrNull
 import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
 import software.aws.toolkits.jetbrains.settings.SamSettings
+import software.aws.toolkits.jetbrains.ui.connection.AwsConnectionSettingsEditor
+import software.aws.toolkits.jetbrains.ui.connection.addAwsConnectionEditor
 import software.aws.toolkits.resources.message
 import java.nio.file.Path
 
@@ -54,16 +56,18 @@ class LocalLambdaRunConfigurationFactory(configuration: LambdaRunConfiguration) 
 class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactory) :
     LambdaRunConfigurationBase<LocalLambdaOptions>(project, factory, "SAM CLI"),
     RefactoringListenerProvider {
+
     companion object {
         private val logger = getLogger<LocalLambdaRunConfiguration>()
     }
 
-    override val lambdaOptions = LocalLambdaOptions()
+    override val serializableOptions = LocalLambdaOptions()
 
     override fun getConfigurationEditor(): SettingsEditor<LocalLambdaRunConfiguration> {
         val group = SettingsEditorGroup<LocalLambdaRunConfiguration>()
         group.addEditor(ExecutionBundle.message("run.configuration.configuration.tab.title"), LocalLambdaRunSettingsEditor(project))
         group.addEditor(message("lambda.run_configuration.sam"), SamSettingsEditor())
+        group.addAwsConnectionEditor(AwsConnectionSettingsEditor(project))
         return group
     }
 
@@ -109,12 +113,14 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
                 runtime,
                 handler,
                 resolveInput(),
+                timeout(),
+                memorySize(),
                 environmentVariables(),
                 resolveCredentials(),
                 resolveRegion(),
                 psiElement,
                 templateDetails,
-                lambdaOptions.samOptions.copy()
+                serializableOptions.samOptions.copy()
             )
 
             return SamRunningState(environment, samRunSettings)
@@ -133,16 +139,16 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
 
             if (PsiTreeUtil.isAncestor(element, handlerPsi, false)) {
                 return object : RefactoringElementAdapter() {
-                    private val originalHandler = lambdaOptions.functionOptions.handler
+                    private val originalHandler = serializableOptions.functionOptions.handler
 
                     override fun elementRenamedOrMoved(newElement: PsiElement) {
                         handlerResolver.determineHandler(handlerPsi)?.let { newHandler ->
-                            lambdaOptions.functionOptions.handler = newHandler
+                            serializableOptions.functionOptions.handler = newHandler
                         }
                     }
 
                     override fun undoElementMovedOrRenamed(newElement: PsiElement, oldQualifiedName: String) {
-                        lambdaOptions.functionOptions.handler = originalHandler
+                        serializableOptions.functionOptions.handler = originalHandler
                     }
                 }
             }
@@ -151,7 +157,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
     }
 
     fun useTemplate(templateLocation: String?, logicalId: String?) {
-        val functionOptions = lambdaOptions.functionOptions
+        val functionOptions = serializableOptions.functionOptions
         functionOptions.useTemplate = true
 
         functionOptions.templateFile = templateLocation
@@ -162,7 +168,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
     }
 
     fun useHandler(runtime: Runtime?, handler: String?) {
-        val functionOptions = lambdaOptions.functionOptions
+        val functionOptions = serializableOptions.functionOptions
         functionOptions.useTemplate = false
 
         functionOptions.templateFile = null
@@ -172,47 +178,71 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         functionOptions.runtime = runtime.toString()
     }
 
-    fun isUsingTemplate() = lambdaOptions.functionOptions.useTemplate
+    fun isUsingTemplate() = serializableOptions.functionOptions.useTemplate
 
-    fun templateFile() = lambdaOptions.functionOptions.templateFile
+    fun templateFile() = serializableOptions.functionOptions.templateFile
 
-    fun logicalId() = lambdaOptions.functionOptions.logicalId
+    fun logicalId() = serializableOptions.functionOptions.logicalId
 
-    fun handler() = lambdaOptions.functionOptions.handler
+    fun handler() = serializableOptions.functionOptions.handler
 
-    fun runtime(): Runtime? = Runtime.fromValue(lambdaOptions.functionOptions.runtime)?.validOrNull
+    fun runtime(): Runtime? = Runtime.fromValue(serializableOptions.functionOptions.runtime)?.validOrNull
 
-    fun environmentVariables() = lambdaOptions.functionOptions.environmentVariables
+    fun timeout() = serializableOptions.functionOptions.timeout
+
+    fun timeout(timeout: Int) {
+        serializableOptions.functionOptions.timeout = timeout
+    }
+
+    fun memorySize() = serializableOptions.functionOptions.memorySize
+
+    fun memorySize(memorySize: Int) {
+        serializableOptions.functionOptions.memorySize = memorySize
+    }
+
+    fun environmentVariables() = serializableOptions.functionOptions.environmentVariables
 
     fun environmentVariables(envVars: Map<String, String>) {
-        lambdaOptions.functionOptions.environmentVariables = envVars
+        serializableOptions.functionOptions.environmentVariables = envVars
     }
 
-    fun dockerNetwork(): String? = lambdaOptions.samOptions.dockerNetwork
+    fun dockerNetwork(): String? = serializableOptions.samOptions.dockerNetwork
 
     fun dockerNetwork(network: String?) {
-        lambdaOptions.samOptions.dockerNetwork = network
+        serializableOptions.samOptions.dockerNetwork = network
     }
 
-    fun skipPullImage(): Boolean = lambdaOptions.samOptions.skipImagePull
+    fun skipPullImage(): Boolean = serializableOptions.samOptions.skipImagePull
 
     fun skipPullImage(skip: Boolean) {
-        lambdaOptions.samOptions.skipImagePull = skip
+        serializableOptions.samOptions.skipImagePull = skip
     }
 
-    fun buildInContainer(): Boolean = lambdaOptions.samOptions.buildInContainer
+    fun buildInContainer(): Boolean = serializableOptions.samOptions.buildInContainer
 
     fun buildInContainer(useContainer: Boolean) {
-        lambdaOptions.samOptions.buildInContainer = useContainer
+        serializableOptions.samOptions.buildInContainer = useContainer
+    }
+
+    fun additionalBuildArgs(): String? = serializableOptions.samOptions.additionalBuildArgs
+
+    fun additionalBuildArgs(args: String?) {
+        serializableOptions.samOptions.additionalBuildArgs = args
+    }
+
+    fun additionalLocalArgs(): String? = serializableOptions.samOptions.additionalLocalArgs
+
+    fun additionalLocalArgs(args: String?) {
+        serializableOptions.samOptions.additionalLocalArgs = args
     }
 
     override fun suggestedName(): String? {
-        val subName = lambdaOptions.functionOptions.logicalId ?: handlerDisplayName()
+        val subName = serializableOptions.functionOptions.logicalId ?: handlerDisplayName()
         return "[${message("lambda.run_configuration.local")}] $subName"
     }
 
     private fun handlerDisplayName(): String? {
-        val handler = lambdaOptions.functionOptions.handler ?: return null
+        val handler = serializableOptions.functionOptions.handler ?: return null
         return runtime()
             ?.runtimeGroup
             ?.let { LambdaHandlerResolver.getInstance(it) }
@@ -273,6 +303,8 @@ data class LocalLambdaRunSettings(
     val runtime: Runtime,
     val handler: String,
     val input: String,
+    val timeout: Int,
+    val memorySize: Int,
     val environmentVariables: Map<String, String>,
     val credentials: ToolkitCredentialsProvider,
     val region: AwsRegion,

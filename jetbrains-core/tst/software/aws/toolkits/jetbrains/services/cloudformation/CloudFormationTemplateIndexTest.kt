@@ -338,4 +338,25 @@ Resources:
             assertThat(resources2[0].type).isEqualTo("AWS::Serverless::SimpleTable")
         }
     }
+
+    @Test
+    fun invalidTemplateDoesntIndex() {
+        val fixture = projectRule.fixture
+
+        fixture.openFile(
+            "template.yaml",
+            """
+            foo:
+              bar
+            ---
+            hello:
+              world:
+            """.trimIndent()
+        )
+
+        runInEdtAndWait {
+            val functions = CloudFormationTemplateIndex.listFunctions(projectRule.project)
+            assertThat(functions).hasSize(0)
+        }
+    }
 }

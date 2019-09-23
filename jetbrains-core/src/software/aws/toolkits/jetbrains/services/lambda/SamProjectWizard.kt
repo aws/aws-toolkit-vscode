@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.lambda
 
 import com.intellij.execution.RunManager
+import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
@@ -72,7 +73,9 @@ abstract class SamProjectTemplate {
 
         if (sdkSettings is SdkBasedSdkSettings) {
             // project sdk
-            ProjectRootManager.getInstance(rootModel.project).projectSdk = sdkSettings.sdk
+            runWriteAction {
+                ProjectRootManager.getInstance(rootModel.project).projectSdk = sdkSettings.sdk
+            }
             // module sdk
             rootModel.inheritSdk()
         }

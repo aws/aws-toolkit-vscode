@@ -54,6 +54,8 @@ object SamTemplateUtils {
         runtime: Runtime,
         codeUri: String,
         handler: String,
+        timeout: Int,
+        memorySize: Int,
         envVars: Map<String, String> = emptyMap()
     ) {
         tempFile.writeText(yamlWriter {
@@ -64,7 +66,8 @@ object SamTemplateUtils {
                         keyValue("Handler", handler)
                         keyValue("CodeUri", codeUri)
                         keyValue("Runtime", runtime.toString())
-                        keyValue("Timeout", "900")
+                        keyValue("Timeout", timeout.toString())
+                        keyValue("MemorySize", memorySize.toString())
 
                         if (envVars.isNotEmpty()) {
                             mapping("Environment") {

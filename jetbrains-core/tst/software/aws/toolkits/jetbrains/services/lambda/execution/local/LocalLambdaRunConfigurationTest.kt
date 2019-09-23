@@ -56,7 +56,7 @@ class LocalLambdaRunConfigurationTest {
         SamSettings.getInstance().savedExecutablePath = validSam
 
         // Pre-warm the SAM validation cache
-        SamVersionCache.evaluateBlocking(validSam)
+        SamVersionCache.evaluateBlocking(validSam, 2000)
 
         MockCredentialsManager.getInstance().addCredentials(mockId, mockCreds)
 
@@ -644,6 +644,8 @@ class LocalLambdaRunConfigurationTest {
                     <option name="buildInContainer" value="true" />
                     <option name="dockerNetwork" value="aws-lambda" />
                     <option name="skipImagePull" value="true" />
+                    <option name="additionalBuildArgs" value="--debug" />
+                    <option name="additionalLocalArgs" value="--skip-pull-image" />
                   </sam>
                   <method v="2" />
                 </configuration>
@@ -657,6 +659,8 @@ class LocalLambdaRunConfigurationTest {
             assertThat(runConfiguration.skipPullImage()).isTrue()
             assertThat(runConfiguration.buildInContainer()).isTrue()
             assertThat(runConfiguration.dockerNetwork()).isEqualTo("aws-lambda")
+            assertThat(runConfiguration.additionalBuildArgs()).isEqualTo("--debug")
+            assertThat(runConfiguration.additionalLocalArgs()).isEqualTo("--skip-pull-image")
         }
     }
 

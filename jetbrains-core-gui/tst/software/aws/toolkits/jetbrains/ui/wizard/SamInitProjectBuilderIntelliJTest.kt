@@ -109,6 +109,7 @@ class SamInitProjectBuilderIntelliJTest(private val testParameters: TestParamete
                 runtime = "java8",
                 templateName = "AWS SAM Hello World (Gradle)",
                 sdkRegex = """.*(1\.8|11).*""".toRegex(),
+                libraries = setOf("Gradle: com.amazonaws:aws-lambda-java-core:"),
                 runConfigNames = setOf("[Local] HelloWorldFunction")
             ),
             TestParameters(

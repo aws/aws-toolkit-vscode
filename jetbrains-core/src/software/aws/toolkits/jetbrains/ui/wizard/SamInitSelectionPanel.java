@@ -4,10 +4,17 @@
 package software.aws.toolkits.jetbrains.ui.wizard;
 
 import com.intellij.openapi.ui.ComboBox;
+import com.intellij.openapi.ui.FixedSizeButton;
 import com.intellij.openapi.ui.ValidationInfo;
 import com.intellij.ui.ColoredListCellRenderer;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.uiDesigner.core.GridConstraints;
+import com.intellij.uiDesigner.core.GridLayoutManager;
+import com.intellij.uiDesigner.core.Spacer;
+import java.awt.BorderLayout;
+import java.awt.Insets;
+import java.util.ResourceBundle;
+import javax.swing.DefaultComboBoxModel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.lambda.model.Runtime;
@@ -47,16 +54,17 @@ public class SamInitSelectionPanel implements ValidatablePanel {
         this.currentSdkSelector = null;
 
         LambdaBuilder.Companion.getSupportedRuntimeGroups()
-            .stream()
-            .flatMap(x -> x.getRuntimes().stream())
-            .sorted()
-            .forEach(y -> runtimeComboBox.addItem(y));
+                               .stream()
+                               .flatMap(x -> x.getRuntimes().stream())
+                               .sorted()
+                               .forEach(y -> runtimeComboBox.addItem(y));
 
         SamInitProjectBuilderCommon.setupSamSelectionElements(samExecutableField, editSamExecutableButton, samLabel);
 
         runtimeComboBox.addItemListener(l -> {
             if (l.getStateChange() == ItemEvent.SELECTED) {
                 runtimeUpdate();
+                sdkSelectionUi.registerListeners();
             }
         });
 
@@ -77,8 +85,8 @@ public class SamInitSelectionPanel implements ValidatablePanel {
         }
 
         SamProjectTemplate.SAM_TEMPLATES.stream()
-            .filter(template -> template.supportedRuntimes().contains(selectedRuntime))
-            .forEach(template -> templateComboBox.addItem(template));
+                                        .filter(template -> template.supportedRuntimes().contains(selectedRuntime))
+                                        .forEach(template -> templateComboBox.addItem(template));
         templateComboBox.setRenderer(new ColoredListCellRenderer<SamProjectTemplate>() {
             @Override
             protected void customizeCellRenderer(@NotNull JList<? extends SamProjectTemplate> list, SamProjectTemplate value, int index, boolean selected, boolean hasFocus) {
@@ -181,4 +189,5 @@ public class SamInitSelectionPanel implements ValidatablePanel {
             throw new RuntimeException("SDK selection panel is not initialized.");
         }
     }
+
 }

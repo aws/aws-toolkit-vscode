@@ -5,22 +5,23 @@
 package software.aws.toolkits.jetbrains.core.explorer
 
 import com.intellij.execution.Location
-import com.intellij.ide.util.treeView.AbstractTreeBuilder
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ide.util.treeView.NodeRenderer
 import com.intellij.openapi.actionSystem.ActionGroup
+import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.DataKey
+import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.ex.ActionManagerEx
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
-import com.intellij.openapi.util.Disposer
+import com.intellij.ui.DoubleClickListener
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TreeUIHelper
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.treeStructure.Tree
-import com.intellij.util.ui.JBSwingUtilities
 import com.intellij.util.ui.UIUtil
 import software.aws.toolkits.jetbrains.components.telemetry.ToolkitActionPlaces
 import software.aws.toolkits.jetbrains.core.SettingsSelector
@@ -29,19 +30,21 @@ import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsMa
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier.AccountSettingsEvent
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_SERVICE_NODE
+import software.aws.toolkits.jetbrains.core.explorer.actions.CopyArnAction
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 import software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaLocation
+import software.aws.toolkits.jetbrains.ui.tree.AsyncTreeModel
+import software.aws.toolkits.jetbrains.ui.tree.StructureTreeModel
 import software.aws.toolkits.resources.message
 import java.awt.Component
-import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.JPanel
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
-import javax.swing.tree.DefaultTreeModel
+import javax.swing.tree.TreeModel
 
 class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(true, true), AccountSettingsChangedNotifier {
     private val actionManager = ActionManagerEx.getInstanceEx()
@@ -49,7 +52,13 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
 
     private val treePanelWrapper: Wrapper = Wrapper()
     private val errorPanel: JPanel
-    private var awsTree: Tree? = null
+    private val awsTreeModel = AwsExplorerTreeStructure(project)
+    private val structureTreeModel = StructureTreeModel(
+        awsTreeModel,
+        compareBy(String.CASE_INSENSITIVE_ORDER) { it.toString() },
+        project)
+    private var awsTree = createTree(AsyncTreeModel(structureTreeModel, true, project))
+    private val awsTreePanel = ScrollPaneFactory.createScrollPane(awsTree)
     private val settingsSelector by lazy {
         SettingsSelector(project)
     }
@@ -65,70 +74,71 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
 
         project.messageBus.connect().subscribe(ProjectAccountSettingsManager.ACCOUNT_SETTINGS_CHANGED, this)
 
-        updateModel()
+        load()
     }
 
     override fun settingsChanged(event: AccountSettingsEvent) {
-        updateModel()
+        if (!event.isLoading) {
+            load()
+        }
     }
 
-    internal fun updateModel() {
-        if (!projectAccountSettingsManager.hasActiveCredentials()) {
-            treePanelWrapper.setContent(errorPanel)
-            return
-        }
-
-        val model = DefaultTreeModel(DefaultMutableTreeNode())
-        val newTree = createTree(model)
-        val builder = AwsExplorerTreeBuilder(newTree, model, project)
-        Disposer.register(project, builder)
-        treePanelWrapper.setContent(ScrollPaneFactory.createScrollPane(newTree))
-
-        awsTree?.let {
-            AbstractTreeBuilder.getBuilderFor(it)?.let {
-                Disposer.dispose(it)
+    private fun load() {
+        runInEdt {
+            if (!projectAccountSettingsManager.hasActiveCredentials()) {
+                treePanelWrapper.setContent(errorPanel)
+            } else {
+                invalidateTree()
+                treePanelWrapper.setContent(awsTreePanel)
             }
         }
-
-        awsTree = newTree
     }
 
-    private fun createTree(model: DefaultTreeModel): Tree {
-        val awsTree = Tree()
+    internal fun invalidateTree() {
+        structureTreeModel.invalidate()
+    }
+
+    private fun createTree(model: TreeModel): Tree {
+        val awsTree = Tree(model)
         TreeUIHelper.getInstance().installTreeSpeedSearch(awsTree)
         @Suppress("DEPRECATION") // TODO: Remove when we drop < 192 FIX_WHEN_MIN_IS_192
         UIUtil.setLineStyleAngled(awsTree)
         awsTree.isRootVisible = false
         awsTree.autoscrolls = true
         awsTree.cellRenderer = AwsTreeCellRenderer()
-        awsTree.addMouseListener(object : MouseAdapter() {
-            override fun mouseClicked(event: MouseEvent) {
-                if (JBSwingUtilities.isLeftMouseButton(event) && event.clickCount == 2) {
-                    val selectedElement = awsTree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode ?: return
-                    val awsExplorerNode = selectedElement.userObject as? AwsExplorerNode<*> ?: return
-                    awsExplorerNode.onDoubleClick(model, selectedElement)
-                }
+
+        object : DoubleClickListener() {
+            override fun onDoubleClick(event: MouseEvent): Boolean {
+                val path = awsTree.getClosestPathForLocation(event.x, event.y)
+                (path?.lastPathComponent as? AwsExplorerNode<*>)?.onDoubleClick()
+                return true
             }
-        })
+        }.installOn(awsTree)
 
         awsTree.addMouseListener(object : PopupHandler() {
             override fun invokePopup(comp: Component?, x: Int, y: Int) {
                 // Build a right click menu based on the selected first node
                 // All nodes must be the same type (e.g. all S3 buckets, or a service node)
                 val explorerNode = getSelectedNodesSameType<AwsExplorerNode<*>>()?.get(0) ?: return
+                val additionalActions = mutableListOf<AnAction>()
                 val actionGroupName = when (explorerNode) {
                     is AwsExplorerServiceRootNode ->
                         "aws.toolkit.explorer.${explorerNode.serviceId}"
                     is AwsExplorerResourceNode<*> -> {
+                        additionalActions.add(CopyArnAction())
                         val suffix = if (explorerNode.immutable) ".immutable" else ""
                         "aws.toolkit.explorer.${explorerNode.serviceId}.${explorerNode.resourceType()}$suffix"
                     }
-                    else ->
-                        return
+                    else -> null
                 }
-                val actionGroup = actionManager.getAction(actionGroupName) as? ActionGroup ?: return
-                val popupMenu = actionManager.createActionPopupMenu(ToolkitActionPlaces.EXPLORER_WINDOW, actionGroup)
-                popupMenu.component.show(comp, x, y)
+                val actionGroup = DefaultActionGroup()
+                (actionGroupName?.let { actionManager.getAction(it) } as? ActionGroup)?.let { actionGroup.addAll(it) }
+                additionalActions.forEach { actionGroup.add(it) }
+
+                if (actionGroup.childrenCount > 0) {
+                    val popupMenu = actionManager.createActionPopupMenu(ToolkitActionPlaces.EXPLORER_WINDOW, actionGroup)
+                    popupMenu.component.show(comp, x, y)
+                }
             }
         })
 
@@ -148,7 +158,7 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
                 return null
             }
 
-            return RemoteLambdaLocation(project, lambdas.first().function)
+            return RemoteLambdaLocation(project, lambdas.first().value)
         }
 
         return super.getData(dataId)
@@ -178,7 +188,7 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
         }
     }
 
-    private inline fun <reified T : AwsExplorerNode<*>> getSelectedNodes() = awsTree?.selectionPaths?.let {
+    private inline fun <reified T : AwsExplorerNode<*>> getSelectedNodes() = awsTree.selectionPaths?.let {
         it.map { it.lastPathComponent }
             .filterIsInstance<DefaultMutableTreeNode>()
             .map { it.userObject }

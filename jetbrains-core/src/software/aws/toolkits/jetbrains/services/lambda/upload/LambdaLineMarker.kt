@@ -25,6 +25,7 @@ import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTem
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
+import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.settings.LambdaSettings
 import software.aws.toolkits.resources.message
@@ -82,10 +83,10 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
     }
 
     private fun shouldShowLineMarker(psiFile: PsiFile, handler: String, runtimeGroup: RuntimeGroup): Boolean {
-            val project = psiFile.project
+        val project = psiFile.project
         return LambdaSettings.getInstance(project).showAllHandlerGutterIcons ||
-                handlerInTemplate(project, handler, runtimeGroup) ||
-                handlerInRemote(psiFile, handler, runtimeGroup)
+            handlerInTemplate(project, handler, runtimeGroup) ||
+            handlerInRemote(psiFile, handler, runtimeGroup)
     }
 
     // Handler defined in template with the same runtime group is valid
@@ -95,24 +96,21 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
         }
 
     // Handler defined in remote Lambda with the same runtime group is valid
-    private fun handlerInRemote(psiFile: PsiFile, handler: String, runtimeGroup: RuntimeGroup): Boolean =
-        try {
-            val result = AwsResourceCache.getInstance(psiFile.project).lambdaFunctions()
-            if (result.isDone) {
-                result.getNow(null)?.any {
-                    it.handler == handler && it.runtime.runtimeGroup == runtimeGroup
-                } ?: false
-            } else {
-                result.whenComplete { _, _ ->
+    private fun handlerInRemote(psiFile: PsiFile, handler: String, runtimeGroup: RuntimeGroup): Boolean {
+        val cache = AwsResourceCache.getInstance(psiFile.project)
+
+        return when (val functions = cache.getResourceIfPresent(LambdaResources.LIST_FUNCTIONS)) {
+            null -> {
+                cache.getResource(LambdaResources.LIST_FUNCTIONS).whenComplete { _, _ ->
                     runReadAction {
                         DaemonCodeAnalyzer.getInstance(psiFile.project).restart(psiFile)
                     }
                 }
                 false
             }
-        } catch (e: Exception) {
-            false
+            else -> functions.any { it.handler() == handler && it.runtime().runtimeGroup == runtimeGroup }
         }
+    }
 
     class LambdaGutterIcon(markerInfo: LineMarkerInfo<PsiElement>, private val actionGroup: ActionGroup) :
         LineMarkerInfo.LineMarkerGutterIconRenderer<PsiElement>(markerInfo) {

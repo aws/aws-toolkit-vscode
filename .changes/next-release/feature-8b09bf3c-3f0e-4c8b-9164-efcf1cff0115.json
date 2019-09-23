@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Additional SAM build and SAM local invocation args configurable from Run/Debug Configuration settings"
+}

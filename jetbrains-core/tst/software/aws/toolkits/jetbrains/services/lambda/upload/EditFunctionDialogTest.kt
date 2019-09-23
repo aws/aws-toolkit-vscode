@@ -27,7 +27,6 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
-import software.aws.toolkits.jetbrains.utils.delegateMock
 
 class EditFunctionDialogTest {
 
@@ -41,13 +40,13 @@ class EditFunctionDialogTest {
 
     private val mockSettingsManager by lazy { ProjectAccountSettingsManager.getInstance(projectRule.project) as MockProjectAccountSettingsManager }
 
-    private val s3Client: S3Client = delegateMock()
-    private val iamClient: IamClient = delegateMock()
+    private lateinit var s3Client: S3Client
+    private lateinit var iamClient: IamClient
 
     @Before
     fun setup() {
-        mockClientManager.register(S3Client::class, s3Client)
-        mockClientManager.register(IamClient::class, iamClient)
+        s3Client = mockClientManager.create()
+        iamClient = mockClientManager.create()
         mockSettingsManager.activeRegion = AwsRegion("us-west-1", "US West 1")
     }
 
@@ -95,8 +94,8 @@ class EditFunctionDialogTest {
         assertThat(dialog.getViewForTestAssertions().createRole.isVisible).isFalse()
         assertThat(dialog.getViewForTestAssertions().runtime.isVisible).isFalse()
         assertThat(dialog.getViewForTestAssertions().envVars.isVisible).isFalse()
-        assertThat(dialog.getViewForTestAssertions().timeout.isVisible).isFalse()
-        assertThat(dialog.getViewForTestAssertions().memorySize.isVisible).isFalse()
+        assertThat(dialog.getViewForTestAssertions().timeoutSlider.isVisible).isFalse()
+        assertThat(dialog.getViewForTestAssertions().memorySlider.isVisible).isFalse()
     }
 
     private fun mockBuckets() {

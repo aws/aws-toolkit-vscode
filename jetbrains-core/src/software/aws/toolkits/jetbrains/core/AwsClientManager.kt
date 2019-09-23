@@ -17,6 +17,7 @@ import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
@@ -61,8 +62,8 @@ open class AwsClientManager(project: Project, sdkClient: AwsSdkClient) :
         fun getInstance(project: Project): ToolkitClientManager = ServiceManager.getService(project, ToolkitClientManager::class.java)
 
         val userAgent: String by lazy {
-            val platformName = ApplicationNamesInfo.getInstance().fullProductNameWithEdition.replace(' ', '-')
-            val platformVersion = ApplicationInfoEx.getInstanceEx().fullVersion.replace(' ', '-')
+            val platformName = tryOrNull { ApplicationNamesInfo.getInstance().fullProductNameWithEdition.replace(' ', '-') }
+            val platformVersion = tryOrNull { ApplicationInfoEx.getInstanceEx().fullVersion.replace(' ', '-') }
             "AWS-Toolkit-For-JetBrains/${AwsToolkit.PLUGIN_VERSION} $platformName/$platformVersion"
         }
     }

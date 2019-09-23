@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fixing issue where explorer does not load even with credentials/region selected."
+}

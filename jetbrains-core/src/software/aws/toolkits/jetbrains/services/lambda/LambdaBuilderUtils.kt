@@ -133,6 +133,8 @@ object LambdaBuilderUtils {
                 request.handlerElement,
                 request.handler,
                 request.runtime,
+                request.timeout,
+                request.memorySize,
                 request.envVars,
                 request.samOptions
             ) { it.addProcessListener(processListener) }

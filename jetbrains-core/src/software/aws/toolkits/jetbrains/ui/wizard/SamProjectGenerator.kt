@@ -55,11 +55,12 @@ class SamProjectGenerator : ProjectTemplate,
         module: Module
     ) {
         runInEdt {
+            val rootModel = ModuleRootManager.getInstance(module).modifiableModel
+            val builder = createModuleBuilder()
+            builder.contentEntryPath = baseDir.path
+            builder.setupRootModel(rootModel)
+
             runWriteAction {
-                val rootModel = ModuleRootManager.getInstance(module).modifiableModel
-                val builder = createModuleBuilder()
-                builder.contentEntryPath = baseDir.path
-                builder.setupRootModel(rootModel)
                 rootModel.commit()
             }
         }

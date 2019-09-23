@@ -4,6 +4,7 @@ install: true
 matrix:
   include:
     - os: linux
+      dist: trusty
     - os: osx
       osx_image: xcode8
 

@@ -37,7 +37,11 @@ allprojects {
         systemProperty("aws.toolkits.enableTelemetry", false)
         intellij {
             if (System.env.ALTERNATIVE_IDE) {
-                alternativeIdePath = System.env.ALTERNATIVE_IDE
+                if(file(System.env.ALTERNATIVE_IDE).exists()) {
+                    alternativeIdePath = System.env.ALTERNATIVE_IDE
+                } else {
+                    throw new GradleException("ALTERNATIVE_IDE path ${System.env.ALTERNATIVE_IDE} not found")
+                }
             }
         }
     }
@@ -132,9 +136,6 @@ subprojects {
         tasks.withType(JavaCompile).all {
             options.compilerArgs << "-Werror"
         }
-        tasks.withType(KotlinCompile).all {
-            kotlinOptions.allWarningsAsErrors = true
-        }
     }
 
     task integrationTest(type: Test) {
@@ -198,8 +199,7 @@ intellij {
 }
 
 publishPlugin {
-    username publishUsername
-    password publishPassword
+    token publishToken
     channels publishChannel
 }
 
@@ -214,7 +214,7 @@ task ktlint(type: JavaExec, group: "verification") {
     main = "com.pinterest.ktlint.Main"
     args "-v", project.rootDir.absolutePath + "/**/*.kt"
 
-    inputs.files(project.fileTree(dir: "src", include: "**/*.kt"))
+    inputs.files(project.fileTree(dir: ".", include: "**/*.kt"))
     outputs.dir("${project.buildDir}/reports/ktlint/")
 }
 check.dependsOn ktlint

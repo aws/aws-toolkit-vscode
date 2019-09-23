@@ -3,7 +3,7 @@
   <grid id="27dc6" binding="content" layout-manager="GridLayoutManager" row-count="10" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
     <margin top="0" left="0" bottom="0" right="0"/>
     <constraints>
-      <xy x="20" y="20" width="761" height="388"/>
+      <xy x="20" y="20" width="786" height="388"/>
     </constraints>
     <properties>
       <preferredSize width="750" height="-1"/>
@@ -40,12 +40,12 @@
               <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="general.create_button"/>
             </properties>
           </component>
-          <component id="89882" class="software.aws.toolkits.jetbrains.ui.ResourceSelector" binding="sourceBucket">
+          <component id="89882" class="software.aws.toolkits.jetbrains.ui.ResourceSelector" binding="sourceBucket" custom-create="true">
             <constraints>
               <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <enabled value="false"/>
+              <enabled value="true"/>
               <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.sourceBucket.tooltip"/>
             </properties>
           </component>
@@ -166,15 +166,6 @@
               <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.timeout.tooltip"/>
             </properties>
           </component>
-          <component id="27470" class="javax.swing.JTextField" binding="timeout">
-            <constraints>
-              <grid row="4" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
-            </constraints>
-            <properties>
-              <horizontalAlignment value="0"/>
-              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.timeout.tooltip"/>
-            </properties>
-          </component>
           <component id="d67fc" class="javax.swing.JLabel">
             <constraints>
               <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
@@ -184,53 +175,14 @@
               <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.memory.tooltip"/>
             </properties>
           </component>
-          <component id="43a8" class="javax.swing.JTextField" binding="memorySize">
-            <constraints>
-              <grid row="5" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
-                <preferred-size width="75" height="-1"/>
-              </grid>
-            </constraints>
-            <properties>
-              <horizontalAlignment value="0"/>
-              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.memory.tooltip"/>
-            </properties>
-          </component>
-          <component id="9b2" class="javax.swing.JSlider" binding="memorySlider">
-            <constraints>
-              <grid row="5" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
-            </constraints>
-            <properties>
-              <inverted value="false"/>
-              <majorTickSpacing value="0"/>
-              <minorTickSpacing value="0"/>
-              <paintLabels value="false"/>
-              <paintTicks value="true"/>
-              <paintTrack value="false"/>
-              <snapToTicks value="false"/>
-              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.memory.tooltip"/>
-              <value value="50"/>
-              <valueIsAdjusting value="false"/>
-            </properties>
-          </component>
-          <component id="a50e9" class="javax.swing.JSlider" binding="timeoutSlider">
-            <constraints>
-              <grid row="4" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
-            </constraints>
-            <properties>
-              <paintLabels value="true"/>
-              <paintTicks value="true"/>
-              <paintTrack value="false"/>
-              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.timeout.tooltip"/>
-            </properties>
-          </component>
-          <component id="53f59" class="software.aws.toolkits.jetbrains.ui.ResourceSelector" binding="iamRole">
+          <component id="c69f3" class="software.aws.toolkits.jetbrains.ui.ResourceSelector" binding="iamRole" custom-create="true">
             <constraints>
               <grid row="7" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="7" anchor="0" fill="1" indent="0" use-parent-layout="false">
                 <preferred-size width="517" height="27"/>
               </grid>
             </constraints>
             <properties>
-              <enabled value="false"/>
+              <enabled value="true"/>
               <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.iamRole.tooltip"/>
             </properties>
           </component>
@@ -253,6 +205,16 @@
               <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.runtime.tooltip"/>
             </properties>
           </component>
+          <nested-form id="1b5f4" form-file="software/aws/toolkits/jetbrains/ui/SliderPanel.form" binding="timeoutSlider" custom-create="true">
+            <constraints>
+              <grid row="4" column="1" row-span="1" col-span="2" vsize-policy="3" hsize-policy="7" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+          </nested-form>
+          <nested-form id="9debf" form-file="software/aws/toolkits/jetbrains/ui/SliderPanel.form" binding="memorySlider" custom-create="true">
+            <constraints>
+              <grid row="5" column="1" row-span="1" col-span="2" vsize-policy="3" hsize-policy="7" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+          </nested-form>
         </children>
       </grid>
     </children>

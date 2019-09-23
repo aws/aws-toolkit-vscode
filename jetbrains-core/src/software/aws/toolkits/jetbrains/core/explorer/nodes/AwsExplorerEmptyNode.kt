@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.core.explorer.nodes
 
 import com.intellij.ide.projectView.PresentationData
-import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.project.Project
 import com.intellij.ui.SimpleTextAttributes
 import software.aws.toolkits.resources.message
@@ -16,7 +15,7 @@ import software.aws.toolkits.resources.message
 class AwsExplorerEmptyNode(project: Project, value: String = message("explorer.empty_node")) :
     AwsExplorerNode<String>(project, value, awsIcon = null) {
 
-    override fun getChildren(): Collection<AbstractTreeNode<Any>> = emptyList()
+    override fun getChildren(): List<AwsExplorerNode<*>> = emptyList()
 
     override fun update(presentation: PresentationData) {
         presentation.addText(displayName(), SimpleTextAttributes.GRAYED_ATTRIBUTES)

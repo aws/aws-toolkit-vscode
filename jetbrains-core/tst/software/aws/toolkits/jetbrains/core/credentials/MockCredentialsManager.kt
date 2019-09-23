@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.openapi.components.ServiceManager
 import software.amazon.awssdk.auth.credentials.AwsCredentials
-import software.amazon.awssdk.services.sts.StsClient
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 
@@ -22,8 +21,8 @@ class MockCredentialsManager : CredentialManager() {
         providers.clear()
     }
 
-    fun addCredentials(id: String, credentials: AwsCredentials, isValid: Boolean = true, awsAccountId: String = "111111111111"): ToolkitCredentialsProvider =
-        MockCredentialsProvider(id, id, credentials, isValid, awsAccountId).also {
+    fun addCredentials(id: String, credentials: AwsCredentials): ToolkitCredentialsProvider =
+        MockCredentialsProvider(id, id, credentials).also {
             incModificationCount()
             providers[id] = it
         }
@@ -35,17 +34,8 @@ class MockCredentialsManager : CredentialManager() {
     private inner class MockCredentialsProvider(
         override val id: String,
         override val displayName: String,
-        private val credentials: AwsCredentials,
-        private val isValid: Boolean,
-        private val awsAccountId: String
+        private val credentials: AwsCredentials
     ) : ToolkitCredentialsProvider() {
         override fun resolveCredentials(): AwsCredentials = credentials
-        override fun getAwsAccount(stsClient: StsClient): String {
-            if (!isValid) {
-                throw IllegalStateException("$displayName is not valid")
-            } else {
-                return awsAccountId
-            }
-        }
     }
 }

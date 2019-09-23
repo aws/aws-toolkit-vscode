@@ -40,7 +40,7 @@ abstract class BaseLambdaBuilderTest {
         val samOptions = SamOptions()
         samOptions.buildInContainer = useContainer
 
-        return lambdaBuilder.buildLambda(module, handlerElement, handler, runtime, emptyMap(), samOptions)
+        return lambdaBuilder.buildLambda(module, handlerElement, handler, runtime, 0, 0, emptyMap(), samOptions)
     }
 
     protected fun buildLambdaFromTemplate(
