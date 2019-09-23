@@ -23,7 +23,7 @@ import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { MockCloudFormationClient } from '../../shared/clients/mockClients'
-import { IconPath } from '../../shared/utilities/iconPathUtils'
+import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
@@ -34,6 +34,7 @@ describe('DefaultCloudFormationStackNode', () => {
     let logger: TestLogger
 
     before(async () => {
+        setupTestIconPaths()
         logger = await TestLogger.createTestLogger()
         fakeStackSummary = {
             CreationTime: new Date(),
@@ -44,6 +45,7 @@ describe('DefaultCloudFormationStackNode', () => {
     })
 
     after(async () => {
+        clearTestIconPaths()
         await logger.cleanupLogger()
     })
 
