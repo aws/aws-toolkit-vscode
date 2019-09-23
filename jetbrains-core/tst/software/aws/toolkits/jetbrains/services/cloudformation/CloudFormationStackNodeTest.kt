@@ -110,7 +110,7 @@ class CloudFormationStackNodeTest {
                 resources.map {
                     StackResourceSummary.builder()
                         .logicalResourceId(it.first)
-                        .physicalResourceId("arn:aws:lambda:us-west-2:0123456789:function:${it.first}")
+                        .physicalResourceId(it.first)
                         .resourceType(it.second)
                         .resourceStatus(it.third)
                         .build()

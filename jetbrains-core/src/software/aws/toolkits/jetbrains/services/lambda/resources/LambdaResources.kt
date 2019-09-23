@@ -13,5 +13,5 @@ object LambdaResources {
         listFunctionsPaginator().functions().filterNotNull().toList()
     }
 
-    fun function(arn: String) = LIST_FUNCTIONS.find { it.functionArn() == arn }
+    fun function(name: String) = LIST_FUNCTIONS.find { it.functionName() == name }
 }
