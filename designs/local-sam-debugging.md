@@ -26,15 +26,68 @@ Users can Locally Debug SAM Applications in the following ways:
 TODO : Fill this section
 CodeLens
 Debug Configuration
+
+    Debug Configurations are entries in a `launch.json` file that VS Code and Extensions use to define Debug sessions. TODO provide link to VS Code Debugging. By supporting Debug Configuration, users can press F5 (or the Debug button) to start a Debugging session.
+
 SAM Template
 
 ## Debug Configurations
 
-Debug Configurations are entries in a `launch.json` file that VS Code and Extensions use to define Debug sessions. TODO provide link to VS Code Debugging. By supporting Debug Configuration, users can press F5 (or the Debug button) to start a Debugging session.
+Debug Configurations allow users to press F5 (or the Debug button) to start a Debugging session. Debug Configurations of type `AWS-SAM-Local` can target a resource in a SAM Template, or directly target a Lambda handler in a code file. The Debug Configuration contains enough information to orchestrate a series of SAM CLI calls to build and invoke a SAM Application.
 
-A Debug Configuration type `AWS-SAM-Local` references a SAM Template, and a Resource name from that template. To handle these configurations, the Toolkit looks up the reeferenced template resource and starts a debug session. The resource's runtime affects pre-debug steps (such as installing the dotnetcode debugger), and which language debugger is used.
+The Debug Configuration is only way to invoke the debugger. All of the local SAM debugging experiences build on this facility.
 
-The Debug Configuration is only way to invoke the debugger. All of the design options build on this facility.
+### Debug Configuration Variants
+
+#### Debug Configurations that target a SAM Template & Resource
+
+This experience is suitable for projects that have already defined their resources in a SAM Template.
+
+When a Debug Configuration targets a resource in a SAM Template, it contains:
+
+-   a path to a SAM Template file
+-   the name of a resource within the template.
+
+The following take place when this debug session is started:
+
+-   the Debug Configuration is validated as follows. Failures prevent the debug session from proceeding:
+
+    -   the SAM Template exists
+    -   the Resource exists in the SAM Template
+    -   the Resource's Runtime is supported by Toolkit
+
+-   the SAM Application is built from the SAM Tempate
+-   the resource's runtime is used to prepare for debugging
+    -   Python: The lambda handler is wrapped by another method which starts the VS Code python debugger (ptvsd) and waits for a debugger to attach
+    -   dotnetcore: the dotnetcore debugger is installed
+-   the referenced SAM Application resource is invoked
+-   the appropriate language debugger is connected to the running program
+
+#### Debug Configurations that target a Lambda handler directly
+
+This experience is suitable for prototyping some code before adding it into the SAM Template, or for working with code that does not belong to a SAM Application.
+
+When a Debug Configuration targets a Lambda handler directly, it contains:
+
+-   a path to the file containing the handler
+-   a path representing the root of the application
+-   a path to the manifest file (eg: `package.json` for Javascript)
+-   the name of the handler
+    -   JS/Python: this is the function name
+    -   dotnetcore: this is the fully qualified assembly name
+-   the runtime to use
+
+The following takes place when this debug session is started:
+
+-   the Debug Configuration is validated as follows. Failures prevent the debug session from proceeding:
+
+    -   the code file exists
+    -   the manifest file exists
+    -   the Resource's Runtime is supported by Toolkit
+
+-   a temporary SAM Application is created, containing a single resource populated by the configuration details
+-   the SAM Application is handled in the same manner as above
+-   the temporary SAM Application is then disposed
 
 TODO : Unknown : Can we invoke local Run by other means?
 
@@ -42,12 +95,6 @@ TODO : Unknown : Can we invoke local Run by other means?
 
 TODO : Sample SAM Template
 TODO : Sample Debug Configuration
-
-Validations:
-
--   SAM Template exists
--   Resource exists in template
--   Runtime is supported by Toolkit
 
 TBD Future Proposal Stage:
 
