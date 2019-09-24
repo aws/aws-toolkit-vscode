@@ -1,0 +1,26 @@
+{
+	"date": "2019-09-20",
+	"version": "1.1.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Creating SAM Applications into a different folder than the current VS Code workspaces will now open an application file after app creation (#678)"
+		},
+		{
+			"type": "Feature",
+			"description": "Support credential_process (#317)"
+		},
+		{
+			"type": "Feature",
+			"description": "Improved the description of the selection item when picking a location for a new SAM Application (#673, #675)"
+		},
+		{
+			"type": "Feature",
+			"description": "Added JSON validation for ECS task definition intellisense"
+		},
+		{
+			"type": "Feature",
+			"description": "Bumped maximum (exclusive) supported SAM CLI version from 0.23.0 to 0.30.0."
+		}
+	]
+}

@@ -1,3 +1,11 @@
+## 1.1.0 2019-09-20
+
+- **Bug Fix** Creating SAM Applications into a different folder than the current VS Code workspaces will now open an application file after app creation (#678)
+- **Feature** Support credential_process (#317)
+- **Feature** Improved the description of the selection item when picking a location for a new SAM Application (#673, #675)
+- **Feature** Added JSON validation for ECS task definition intellisense
+- **Feature** Bumped maximum (exclusive) supported SAM CLI version from 0.23.0 to 0.30.0.
+
 ## 1.0.0
 
 * A toast greets the user upon launching a new version of the toolkit for the first time which provides a link to a quick start page. This quick start page can be re-accessed through the explorer's context menu. (#610-612)
