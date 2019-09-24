@@ -11,6 +11,30 @@ Previous Proposal Stages:
 
 -   None
 
+## Introduction
+
+TODO : Intro
+
+### Terminology
+
+TODO : Fill this section
+
+#### CodeLens
+
+CodeLenses are visual decorators anchored to a document location. They are used to convey information and/or provide a link that triggers an action. They are a presentation-only mechanic and are not inserted into a file. Additional information and examples about CodeLenses can be found [on the VS Code blog](https://code.visualstudio.com/blogs/2017/02/12/code-lens-roundup).
+
+#### Debug Configuration
+
+Debug Configurations are JSON entries in a VS Code workspace's `launch.json` file. These allow users to configure what they would like to Debug, then press F5 (or the Debug button) to start a Debugging session. VS Code extensions can provide additional Debug Configuration types, and implement behavior for these types.
+
+More information about VS Code Debugging can be found [in the VS Code Documentation](https://code.visualstudio.com/docs/editor/debugging).
+
+TODO : UNKNOWN: DEBUG VS Run WIThOUT DEBUGGING
+
+#### SAM Template
+
+TODO : Write
+
 ## Overview
 
 The Local Debugging features released in version 1.0 are limited, and have some design limitations. TODO Reference Issue. This proposal improves the user experience with additional ways to locally debug SAM Applications, and disambiguates some of the unspecified behaviors.
@@ -21,19 +45,9 @@ Users can Locally Debug SAM Applications in the following ways:
 -   Local SAM Templates View - One UI Location to see and act on all SAM Applications / Functions
 -   CodeLenses on Lambda Handlers - Locally run and debug a Lambda handler function without any SAM Template associations
 
-### Terminology
-
-TODO : Fill this section
-CodeLens
-Debug Configuration
-
-    Debug Configurations are entries in a `launch.json` file that VS Code and Extensions use to define Debug sessions. TODO provide link to VS Code Debugging. By supporting Debug Configuration, users can press F5 (or the Debug button) to start a Debugging session.
-
-SAM Template
-
 ## Debug Configurations
 
-Debug Configurations allow users to press F5 (or the Debug button) to start a Debugging session. Debug Configurations of type `AWS-SAM-Local` can target a resource in a SAM Template, or directly target a Lambda handler in a code file. The Debug Configuration contains enough information to orchestrate a series of SAM CLI calls to build and invoke a SAM Application.
+Debug Configurations of type `AWS-SAM-Local` can target a resource in a SAM Template, or directly target a Lambda handler in a code file. The Debug Configuration contains enough information to orchestrate a series of SAM CLI calls to build and invoke a SAM Application.
 
 The Debug Configuration is only way to invoke the debugger. All of the local SAM debugging experiences build on this facility.
 
@@ -47,6 +61,7 @@ When a Debug Configuration targets a resource in a SAM Template, it contains:
 
 -   a path to a SAM Template file
 -   the name of a resource within the template.
+-   Additional Options Id
 
 The following take place when this debug session is started:
 
@@ -75,7 +90,8 @@ When a Debug Configuration targets a Lambda handler directly, it contains:
 -   the name of the handler
     -   JS/Python: this is the function name
     -   dotnetcore: this is the fully qualified assembly name
--   the runtime to use
+-   Unknown: Override? the runtime to use
+-   Additional Options Id
 
 The following takes place when this debug session is started:
 
@@ -100,9 +116,29 @@ TBD Future Proposal Stage:
 
 -   configuring overrides for the template/resource
 
+Override
+
+-   Runtime
+-   env var
+-   event
+-   Unknown: Credentials + Region
+-   ? root path
+-   ? manifest path
+-   timeout
+-   memory
+-   SAM
+    -   Unknown: (Sam Template) Parameters
+    -   build inside container
+    -   skip newer image check
+    -   docker network
+    -   sam build args
+    -   sam local invoke args
+
 ### Defining Debug Configurations
 
 Multiple options are available for users to create and define Debug Configurations.
+
+TODO : SEE : https://code.visualstudio.com/docs/editor/debugging#_add-a-new-configuration
 
 #### Manual launch.json editing
 
