@@ -11,13 +11,15 @@ import * as logger from '../../shared/logger'
 
 describe('logger', () => {
     let tempFolder: string
+    let tempLogPath: string
     let testLogger: logger.Logger
 
     before(async () => {
         tempFolder = await filesystemUtilities.makeTemporaryToolkitFolder()
+        tempLogPath = path.join(tempFolder, 'temp.log')
         testLogger = logger.createLogger({
             // no output channel since we can't check the output channel's content...
-            logPath: path.join(tempFolder, 'temp.log'),
+            logPath: tempLogPath,
             logLevel: 'debug'
         })
     })
@@ -36,40 +38,40 @@ describe('logger', () => {
     it('logs debug info to a file', async () => {
         const text = 'logs debug info to a file'
         testLogger.debug(text)
-        await waitForLogFile(testLogger.logPath as string)
-        const logText = await filesystemUtilities.readFileAsString(testLogger.logPath as string)
+        await waitForLogFile(tempLogPath as string)
+        const logText = await filesystemUtilities.readFileAsString(tempLogPath as string)
         assert.strictEqual(logText.includes(`[DEBUG]: ${text}`), true)
     })
 
     it('logs verbose info to a file', async () => {
         const text = 'logs verbose info to a file'
         testLogger.verbose(text)
-        await waitForLogFile(testLogger.logPath as string)
-        const logText = await filesystemUtilities.readFileAsString(testLogger.logPath as string)
+        await waitForLogFile(tempLogPath as string)
+        const logText = await filesystemUtilities.readFileAsString(tempLogPath as string)
         assert.strictEqual(logText.includes(`[VERBOSE]: ${text}`), true)
     })
 
     it('logs info to a file', async () => {
         const text = 'logs info to a file'
         testLogger.info(text)
-        await waitForLogFile(testLogger.logPath as string)
-        const logText = await filesystemUtilities.readFileAsString(testLogger.logPath as string)
+        await waitForLogFile(tempLogPath as string)
+        const logText = await filesystemUtilities.readFileAsString(tempLogPath as string)
         assert.strictEqual(logText.includes(`[INFO]: ${text}`), true)
     })
 
     it('logs warnings to a file', async () => {
         const text = 'logs warning to a file'
         testLogger.warn(text)
-        await waitForLogFile(testLogger.logPath as string)
-        const logText = await filesystemUtilities.readFileAsString(testLogger.logPath as string)
+        await waitForLogFile(tempLogPath as string)
+        const logText = await filesystemUtilities.readFileAsString(tempLogPath as string)
         assert.strictEqual(logText.includes(`[WARN]: ${text}`), true)
     })
 
     it('logs errors to a file', async () => {
         const text = 'logs errors to a file'
         testLogger.error(new Error(text))
-        await waitForLogFile(testLogger.logPath as string)
-        const logText = await filesystemUtilities.readFileAsString(testLogger.logPath as string)
+        await waitForLogFile(tempLogPath as string)
+        const logText = await filesystemUtilities.readFileAsString(tempLogPath as string)
         assert.strictEqual(logText.includes(`[ERROR]: Error: ${text}`), true)
         // check stack trace
         assert.strictEqual(logText.includes('logger.test'), true)
@@ -77,8 +79,8 @@ describe('logger', () => {
 
     it('logs multiple pieces of info to a file', async () => {
         testLogger.info('logs', 'multiple', 'pieces', 'of', 'info', 'to', 'a', 'file')
-        await waitForLogFile(testLogger.logPath as string)
-        const logText = await filesystemUtilities.readFileAsString(testLogger.logPath as string)
+        await waitForLogFile(tempLogPath as string)
+        const logText = await filesystemUtilities.readFileAsString(tempLogPath as string)
         assert.strictEqual(logText.includes('[INFO]: logs multiple pieces of info to a file'), true)
     })
 
