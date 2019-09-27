@@ -1,6 +1,10 @@
-# Change Log
+## 1.1.0 2019-09-20
 
-All notable changes to the "aws-vscode-tools" extension will be documented in this file.
+- **Bug Fix** Creating SAM Applications into a different folder than the current VS Code workspaces will now open an application file after app creation (#678)
+- **Feature** Support credential_process (#317)
+- **Feature** Improved the description of the selection item when picking a location for a new SAM Application (#673, #675)
+- **Feature** Added JSON validation for ECS task definition intellisense
+- **Feature** Bumped maximum (exclusive) supported SAM CLI version from 0.23.0 to 0.30.0.
 
 ## 1.0.0
 
