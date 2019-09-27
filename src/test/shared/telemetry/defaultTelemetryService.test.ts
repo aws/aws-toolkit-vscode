@@ -4,6 +4,8 @@
  */
 
 import * as assert from 'assert'
+// tslint:disable-next-line:no-implicit-dependencies
+import * as lolex from 'lolex'
 import { DefaultTelemetryService } from '../../../shared/telemetry/defaultTelemetryService'
 import { TelemetryPublisher } from '../../../shared/telemetry/telemetryPublisher'
 import { AccountStatus } from '../../../shared/telemetry/telemetryTypes'
@@ -28,6 +30,17 @@ class MockTelemetryPublisher implements TelemetryPublisher {
 }
 
 describe('DefaultTelemetryService', () => {
+    const testFlushPeriod = 10
+    let clock: lolex.InstalledClock
+
+    before(() => {
+        clock = lolex.install()
+    })
+
+    after(() => {
+        clock.uninstall()
+    })
+
     it('publishes periodically if user has said ok', async () => {
         const mockContext = new FakeExtensionContext()
         const mockAws = new FakeAwsContext()
@@ -36,13 +49,13 @@ describe('DefaultTelemetryService', () => {
         service.clearRecords()
         service.telemetryEnabled = true
         service.notifyOptOutOptionMade()
-        service.flushPeriod = 10
+        service.flushPeriod = testFlushPeriod
         service.record({ namespace: 'name', createTime: new Date() })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
 
-        await new Promise<any>(resolve => setTimeout(resolve, 50))
+        clock.tick(testFlushPeriod + 1)
         await service.shutdown()
 
         assert.notStrictEqual(mockPublisher.flushCount, 0)
@@ -57,13 +70,13 @@ describe('DefaultTelemetryService', () => {
         const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
         service.clearRecords()
         service.telemetryEnabled = false
-        service.flushPeriod = 10
+        service.flushPeriod = testFlushPeriod
         service.record({ namespace: 'name', createTime: new Date() })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
 
-        await new Promise<any>(resolve => setTimeout(resolve, 50))
+        clock.tick(testFlushPeriod + 1)
         await service.shutdown()
 
         // events are never flushed
@@ -88,13 +101,13 @@ describe('DefaultTelemetryService', () => {
         const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
         service.clearRecords()
         service.telemetryEnabled = false
-        service.flushPeriod = 10
+        service.flushPeriod = testFlushPeriod
         service.record({ namespace: 'name', createTime: new Date() })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
 
-        await new Promise<any>(resolve => setTimeout(resolve, 50))
+        clock.tick(testFlushPeriod + 1)
         await service.shutdown()
 
         // events are never flushed
@@ -116,12 +129,12 @@ describe('DefaultTelemetryService', () => {
         const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
         service.clearRecords()
         service.telemetryEnabled = false
-        service.flushPeriod = 10
+        service.flushPeriod = testFlushPeriod
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
 
-        await new Promise<any>(resolve => setTimeout(resolve, 50))
+        clock.tick(testFlushPeriod + 1)
         await service.shutdown()
 
         // events are never flushed
@@ -147,13 +160,13 @@ describe('DefaultTelemetryService', () => {
         const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
         service.clearRecords()
         service.telemetryEnabled = false
-        service.flushPeriod = 10
+        service.flushPeriod = testFlushPeriod
         service.record({ namespace: 'name', createTime: new Date() })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
 
-        await new Promise<any>(resolve => setTimeout(resolve, 50))
+        clock.tick(testFlushPeriod + 1)
         await service.shutdown()
 
         // events are never flushed
@@ -175,13 +188,13 @@ describe('DefaultTelemetryService', () => {
         const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
         service.clearRecords()
         service.telemetryEnabled = false
-        service.flushPeriod = 10
+        service.flushPeriod = testFlushPeriod
         service.record({ namespace: 'name', createTime: new Date() })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
 
-        await new Promise<any>(resolve => setTimeout(resolve, 50))
+        clock.tick(testFlushPeriod + 1)
         await service.shutdown()
 
         // events are never flushed
@@ -204,14 +217,14 @@ describe('DefaultTelemetryService', () => {
         service.clearRecords()
         service.telemetryEnabled = false
         service.notifyOptOutOptionMade()
-        service.flushPeriod = 10
+        service.flushPeriod = testFlushPeriod
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
 
         // telemetry off: events are never recorded
         service.record({ namespace: 'name', createTime: new Date() })
 
-        await new Promise<any>(resolve => setTimeout(resolve, 50))
+        clock.tick(testFlushPeriod + 1)
         await service.shutdown()
 
         // events are never flushed
@@ -229,7 +242,7 @@ describe('DefaultTelemetryService', () => {
         const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
         service.clearRecords()
 
-        service.flushPeriod = 10
+        service.flushPeriod = testFlushPeriod
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
 
@@ -242,7 +255,7 @@ describe('DefaultTelemetryService', () => {
         service.notifyOptOutOptionMade()
         assert.strictEqual(service.records.length, 0)
 
-        await new Promise<any>(resolve => setTimeout(resolve, 50))
+        clock.tick(testFlushPeriod + 1)
         await service.shutdown()
 
         // events are never flushed
@@ -260,7 +273,7 @@ describe('DefaultTelemetryService', () => {
         const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
         service.clearRecords()
 
-        service.flushPeriod = 10
+        service.flushPeriod = testFlushPeriod
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
 
@@ -273,7 +286,7 @@ describe('DefaultTelemetryService', () => {
         service.notifyOptOutOptionMade()
         assert.notStrictEqual(service.records.length, 0)
 
-        await new Promise<any>(resolve => setTimeout(resolve, 50))
+        clock.tick(testFlushPeriod + 1)
         await service.shutdown()
 
         // events are flushed
