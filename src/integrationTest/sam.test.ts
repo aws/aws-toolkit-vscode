@@ -11,9 +11,16 @@ import { SamLambdaRuntime } from '../../src/lambda/models/samLambdaRuntime'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
-import { activateExtension, sleep, TIMEOUT } from './integrationTestsUtilities'
+import {
+    activateExtension,
+    EXTENSION_NAME_AWS_TOOLKIT,
+    getCodeLenses,
+    getTestWorkspaceFolder,
+    sleep,
+    TIMEOUT
+} from './integrationTestsUtilities'
 
-const projectFolder = `${__dirname}`
+const projectFolder = getTestWorkspaceFolder()
 // Retry tests because CodeLenses do not reliably get produced in the tests
 // TODO : Remove retries in future - https://github.com/aws/aws-toolkit-vscode/issues/737
 const maxCodeLensTestAttempts = 3
@@ -40,15 +47,12 @@ function tryRemoveProjectFolder() {
     } catch (e) {}
 }
 
-async function getCodeLenses(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
+async function getSamCodeLenses(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
     while (true) {
         try {
             // this works without a sleep locally, but not on CodeBuild
             await sleep(200)
-            let codeLenses: vscode.CodeLens[] | undefined = await vscode.commands.executeCommand(
-                'vscode.executeCodeLensProvider',
-                documentUri
-            )
+            let codeLenses = await getCodeLenses(documentUri)
             if (!codeLenses || codeLenses.length === 0) {
                 continue
             }
@@ -63,7 +67,7 @@ async function getCodeLenses(documentUri: vscode.Uri): Promise<vscode.CodeLens[]
 }
 
 async function getCodeLensesOrFail(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
-    const codeLensPromise = getCodeLenses(documentUri)
+    const codeLensPromise = getSamCodeLenses(documentUri)
     const timeout = new Promise(resolve => {
         setTimeout(resolve, 10000, undefined)
     })
@@ -121,7 +125,7 @@ for (const runtime of runtimes) {
             debugDisposable = vscode.debug.onDidChangeActiveDebugSession(async session =>
                 onDebugChanged(session, debuggerType)
             )
-            await activateExtension('amazonwebservices.aws-toolkit-vscode')
+            await activateExtension(EXTENSION_NAME_AWS_TOOLKIT)
             console.log(`Using SDK ${projectSDK} with project in path ${projectPath}`)
             tryRemoveProjectFolder()
             mkdirpSync(projectFolder)
