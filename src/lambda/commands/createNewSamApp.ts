@@ -63,7 +63,6 @@ export interface CreateNewSamApplicationResults {
  */
 export async function createNewSamApplication(
     channelLogger: ChannelLogger,
-    extensionContext: Pick<vscode.ExtensionContext, 'asAbsolutePath' | 'globalState'>,
     samCliContext: SamCliContext = getSamCliContext(),
     activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath()
 ): Promise<CreateNewSamApplicationResults> {
@@ -76,7 +75,7 @@ export async function createNewSamApplication(
     try {
         await validateSamCli(samCliContext.validator)
 
-        const wizardContext = new DefaultCreateNewSamAppWizardContext(extensionContext)
+        const wizardContext = new DefaultCreateNewSamAppWizardContext()
         const config: CreateNewSamAppWizardResponse | undefined = await new CreateNewSamAppWizard(wizardContext).run()
         if (!config) {
             results.result = 'cancel'

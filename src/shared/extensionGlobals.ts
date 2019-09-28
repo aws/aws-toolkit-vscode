@@ -23,4 +23,23 @@ export namespace ext {
     export let toolkitClientBuilder: ToolkitClientBuilder
     export let statusBar: AWSStatusBar
     export let telemetry: TelemetryService
+
+    export namespace iconPaths {
+        export const dark: IconPaths = makeIconPathsObject()
+        export const light: IconPaths = makeIconPathsObject()
+    }
+}
+
+export interface IconPaths {
+    help: string
+    cloudFormation: string
+    lambda: string
+}
+
+function makeIconPathsObject(): IconPaths {
+    return {
+        help: '',
+        cloudFormation: '',
+        lambda: ''
+    }
 }

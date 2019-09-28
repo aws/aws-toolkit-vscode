@@ -48,6 +48,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     try {
         await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
+        initializeIconPaths(context)
 
         const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
         const awsContext = new DefaultAwsContext(toolkitSettings, context)
@@ -142,11 +143,7 @@ export async function activate(context: vscode.ExtensionContext) {
             }
         })
 
-        const providers = [
-            new AwsExplorer(awsContext, awsContextTrees, regionProvider, resourceFetcher, relativeExtensionPath =>
-                getExtensionAbsolutePath(context, relativeExtensionPath)
-            )
-        ]
+        const providers = [new AwsExplorer(awsContext, awsContextTrees, regionProvider, resourceFetcher)]
 
         providers.forEach(p => {
             p.initialize(context)
@@ -178,6 +175,13 @@ export async function deactivate() {
     await ext.telemetry.shutdown()
 }
 
-function getExtensionAbsolutePath(context: vscode.ExtensionContext, relativeExtensionPath: string): string {
-    return context.asAbsolutePath(relativeExtensionPath)
+function initializeIconPaths(context: vscode.ExtensionContext) {
+    ext.iconPaths.dark.help = context.asAbsolutePath('resources/dark/help.svg')
+    ext.iconPaths.light.help = context.asAbsolutePath('resources/light/help.svg')
+
+    ext.iconPaths.dark.cloudFormation = context.asAbsolutePath('resources/dark/cloudformation.svg')
+    ext.iconPaths.light.cloudFormation = context.asAbsolutePath('resources/light/cloudformation.svg')
+
+    ext.iconPaths.dark.lambda = context.asAbsolutePath('resources/dark/lambda.svg')
+    ext.iconPaths.light.lambda = context.asAbsolutePath('resources/light/lambda.svg')
 }

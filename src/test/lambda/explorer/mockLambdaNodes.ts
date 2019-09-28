@@ -28,8 +28,6 @@ export class MockLambdaFunctionNode implements LambdaFunctionNode {
         public readonly parent: LambdaFunctionGroupNode = ({} as any) as LambdaFunctionGroupNode,
         public readonly configuration: Lambda.FunctionConfiguration = {},
         public readonly getChildren: () => Thenable<AWSTreeNodeBase[]> = async () => [],
-        public readonly update: (configuration: Lambda.FunctionConfiguration) => void = config => {},
-        public readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string = relativeExtensionPath =>
-            'MockLambdaFunctionNode'
+        public readonly update: (configuration: Lambda.FunctionConfiguration) => void = config => {}
     ) {}
 }
