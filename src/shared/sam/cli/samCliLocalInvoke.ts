@@ -8,6 +8,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { fileExists } from '../../filesystemUtilities'
 import { ChildProcess } from '../../utilities/childProcess'
+import { removeAnsi } from '../../utilities/textUtilities'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
 
@@ -128,7 +129,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
     private emitMessage(text: string): void {
         // From VS Code API: If no debug session is active, output sent to the debug console is not shown.
         // We send text to output channel and debug console to ensure no text is lost.
-        this.channelLogger.channel.append(text)
+        this.channelLogger.channel.append(removeAnsi(text))
         vscode.debug.activeDebugConsole.append(text)
     }
 }
