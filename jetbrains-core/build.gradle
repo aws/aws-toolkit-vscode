@@ -22,6 +22,7 @@ configurations {
 task testJar (type: Jar) {
     baseName = "${project.name}-test"
     from sourceSets.test.output
+    from sourceSets.integrationTest.output
 }
 
 task pluginChangeLog(type: GenerateChangeLog) {

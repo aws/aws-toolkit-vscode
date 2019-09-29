@@ -1,0 +1,7 @@
+<!-- Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<!-- WEBSTORM_LAUNCH When this goes GA this line can move to the plugin.xml; and the conditional logic in gradle can be removed -->
+<idea-plugin>
+    <depends optional="true" config-file="ext-nodejs.xml">JavaScriptDebugger</depends>
+</idea-plugin>

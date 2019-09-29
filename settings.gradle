@@ -8,3 +8,7 @@ include 'telemetry-client'
 include 'core'
 include 'jetbrains-core'
 include 'jetbrains-core-gui'
+// WEBSTORM_LAUNCH : remove this conditional on launch
+if (toolkitVersion.endsWith("SNAPSHOT")) {
+    include 'jetbrains-ultimate'
+}
