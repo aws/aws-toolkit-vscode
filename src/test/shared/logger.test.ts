@@ -38,40 +38,40 @@ describe('logger', () => {
     it('logs debug info to a file', async () => {
         const text = 'logs debug info to a file'
         testLogger.debug(text)
-        await waitForLogFile(tempLogPath as string)
-        const logText = await filesystemUtilities.readFileAsString(tempLogPath as string)
+        await waitForLogFile(tempLogPath)
+        const logText = await filesystemUtilities.readFileAsString(tempLogPath)
         assert.strictEqual(logText.includes(`[DEBUG]: ${text}`), true)
     })
 
     it('logs verbose info to a file', async () => {
         const text = 'logs verbose info to a file'
         testLogger.verbose(text)
-        await waitForLogFile(tempLogPath as string)
-        const logText = await filesystemUtilities.readFileAsString(tempLogPath as string)
+        await waitForLogFile(tempLogPath)
+        const logText = await filesystemUtilities.readFileAsString(tempLogPath)
         assert.strictEqual(logText.includes(`[VERBOSE]: ${text}`), true)
     })
 
     it('logs info to a file', async () => {
         const text = 'logs info to a file'
         testLogger.info(text)
-        await waitForLogFile(tempLogPath as string)
-        const logText = await filesystemUtilities.readFileAsString(tempLogPath as string)
+        await waitForLogFile(tempLogPath)
+        const logText = await filesystemUtilities.readFileAsString(tempLogPath)
         assert.strictEqual(logText.includes(`[INFO]: ${text}`), true)
     })
 
     it('logs warnings to a file', async () => {
         const text = 'logs warning to a file'
         testLogger.warn(text)
-        await waitForLogFile(tempLogPath as string)
-        const logText = await filesystemUtilities.readFileAsString(tempLogPath as string)
+        await waitForLogFile(tempLogPath)
+        const logText = await filesystemUtilities.readFileAsString(tempLogPath)
         assert.strictEqual(logText.includes(`[WARN]: ${text}`), true)
     })
 
     it('logs errors to a file', async () => {
         const text = 'logs errors to a file'
         testLogger.error(new Error(text))
-        await waitForLogFile(tempLogPath as string)
-        const logText = await filesystemUtilities.readFileAsString(tempLogPath as string)
+        await waitForLogFile(tempLogPath)
+        const logText = await filesystemUtilities.readFileAsString(tempLogPath)
         assert.strictEqual(logText.includes(`[ERROR]: Error: ${text}`), true)
         // check stack trace
         assert.strictEqual(logText.includes('logger.test'), true)
@@ -79,21 +79,22 @@ describe('logger', () => {
 
     it('logs multiple pieces of info to a file', async () => {
         testLogger.info('logs', 'multiple', 'pieces', 'of', 'info', 'to', 'a', 'file')
-        await waitForLogFile(tempLogPath as string)
-        const logText = await filesystemUtilities.readFileAsString(tempLogPath as string)
+        await waitForLogFile(tempLogPath)
+        const logText = await filesystemUtilities.readFileAsString(tempLogPath)
         assert.strictEqual(logText.includes('[INFO]: logs multiple pieces of info to a file'), true)
     })
 
     it('does not log levels lower than the designated level', async () => {
+        const errorLogPath = path.join(tempFolder, 'errorsOnly.log')
         const text = 'does not log levels lower than the designated level'
         const errorOnlyLogger = logger.createLogger({
             logLevel: 'error',
-            logPath: path.join(tempFolder, 'errorsOnly.log')
+            logPath: errorLogPath
         })
         errorOnlyLogger.verbose(text)
         errorOnlyLogger.error(new Error(text))
-        await waitForLogFile(errorOnlyLogger.logPath as string)
-        const logText = await filesystemUtilities.readFileAsString(errorOnlyLogger.logPath as string)
+        await waitForLogFile(errorLogPath)
+        const logText = await filesystemUtilities.readFileAsString(errorLogPath)
         assert.strictEqual(logText.includes(`[VERBOSE]: ${text}`), false)
         assert.strictEqual(logText.includes(`[ERROR]: Error: ${text}`), true)
         errorOnlyLogger.releaseLogger()
