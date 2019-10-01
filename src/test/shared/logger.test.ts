@@ -7,98 +7,150 @@ import * as assert from 'assert'
 import * as del from 'del'
 import * as path from 'path'
 import * as filesystemUtilities from '../../shared/filesystemUtilities'
-import * as logger from '../../shared/logger'
+import { createLogger, Logger, WinstonToolkitLogger } from '../../shared/logger'
+import { assertThrowsError } from './utilities/assertUtils'
 
 describe('logger', () => {
-    let tempFolder: string
-    let tempLogPath: string
-    let testLogger: logger.Logger
+    let testLogger: Logger | undefined
 
     before(async () => {
-        tempFolder = await filesystemUtilities.makeTemporaryToolkitFolder()
-        tempLogPath = path.join(tempFolder, 'temp.log')
-        testLogger = logger.createLogger({
-            // no output channel since we can't check the output channel's content...
-            logPath: tempLogPath,
+        testLogger = createLogger({
             logLevel: 'debug'
         })
     })
 
     after(async () => {
-        testLogger.releaseLogger()
+        testLogger = undefined
+    })
+
+    it('creates a logger object', () => {
+        assert.notStrictEqual(testLogger, undefined)
+        assert.ok(testLogger instanceof WinstonToolkitLogger)
+    })
+})
+
+describe('WinstonToolkitLogger', () => {
+    let tempFolder: string
+
+    before(async () => {
+        tempFolder = await filesystemUtilities.makeTemporaryToolkitFolder()
+    })
+
+    after(async () => {
         if (await filesystemUtilities.fileExists(tempFolder)) {
             await del(tempFolder, { force: true })
         }
     })
 
-    it('creates a logger object', () => {
-        assert.notStrictEqual(testLogger, undefined)
+    it('creates an object', () => {
+        assert.notStrictEqual(new WinstonToolkitLogger('info'), undefined)
     })
 
-    it('logs debug info to a file', async () => {
-        const text = 'logs debug info to a file'
-        testLogger.debug(text)
-        await waitForLogFile(tempLogPath)
-        const logText = await filesystemUtilities.readFileAsString(tempLogPath)
-        assert.strictEqual(logText.includes(`[DEBUG]: ${text}`), true)
+    it('throws when logging to a disposed object', async () => {
+        const logger = new WinstonToolkitLogger('info')
+        logger.dispose()
+
+        await assertThrowsError(async () => logger.info('This should not log'))
     })
 
-    it('logs verbose info to a file', async () => {
-        const text = 'logs verbose info to a file'
-        testLogger.verbose(text)
-        await waitForLogFile(tempLogPath)
-        const logText = await filesystemUtilities.readFileAsString(tempLogPath)
-        assert.strictEqual(logText.includes(`[VERBOSE]: ${text}`), true)
-    })
+    describe('logs to a file', async () => {
+        let tempLogPath: string
+        let tempFileCounter = 0
+        let testLogger: WinstonToolkitLogger | undefined
 
-    it('logs info to a file', async () => {
-        const text = 'logs info to a file'
-        testLogger.info(text)
-        await waitForLogFile(tempLogPath)
-        const logText = await filesystemUtilities.readFileAsString(tempLogPath)
-        assert.strictEqual(logText.includes(`[INFO]: ${text}`), true)
-    })
-
-    it('logs warnings to a file', async () => {
-        const text = 'logs warning to a file'
-        testLogger.warn(text)
-        await waitForLogFile(tempLogPath)
-        const logText = await filesystemUtilities.readFileAsString(tempLogPath)
-        assert.strictEqual(logText.includes(`[WARN]: ${text}`), true)
-    })
-
-    it('logs errors to a file', async () => {
-        const text = 'logs errors to a file'
-        testLogger.error(new Error(text))
-        await waitForLogFile(tempLogPath)
-        const logText = await filesystemUtilities.readFileAsString(tempLogPath)
-        assert.strictEqual(logText.includes(`[ERROR]: Error: ${text}`), true)
-        // check stack trace
-        assert.strictEqual(logText.includes('logger.test'), true)
-    })
-
-    it('logs multiple pieces of info to a file', async () => {
-        testLogger.info('logs', 'multiple', 'pieces', 'of', 'info', 'to', 'a', 'file')
-        await waitForLogFile(tempLogPath)
-        const logText = await filesystemUtilities.readFileAsString(tempLogPath)
-        assert.strictEqual(logText.includes('[INFO]: logs multiple pieces of info to a file'), true)
-    })
-
-    it('does not log levels lower than the designated level', async () => {
-        const errorLogPath = path.join(tempFolder, 'errorsOnly.log')
-        const text = 'does not log levels lower than the designated level'
-        const errorOnlyLogger = logger.createLogger({
-            logLevel: 'error',
-            logPath: errorLogPath
+        beforeEach(async () => {
+            tempLogPath = path.join(tempFolder, `temp-${++tempFileCounter}.log`)
         })
-        errorOnlyLogger.verbose(text)
-        errorOnlyLogger.error(new Error(text))
-        await waitForLogFile(errorLogPath)
-        const logText = await filesystemUtilities.readFileAsString(errorLogPath)
-        assert.strictEqual(logText.includes(`[VERBOSE]: ${text}`), false)
-        assert.strictEqual(logText.includes(`[ERROR]: Error: ${text}`), true)
-        errorOnlyLogger.releaseLogger()
+
+        afterEach(async () => {
+            if (testLogger) {
+                testLogger.dispose()
+                testLogger = undefined
+            }
+        })
+
+        it('does not log a lower level', async () => {
+            const debugMessage = 'debug message'
+            const errorMessage = 'error message'
+
+            testLogger = new WinstonToolkitLogger('error')
+            testLogger.logToFile(tempLogPath)
+
+            testLogger.debug(debugMessage)
+            testLogger.error(errorMessage)
+
+            assert.ok(await isTextInLogFile(tempLogPath, errorMessage), 'Expected error message to be logged')
+            assert.strictEqual(
+                await isTextInLogFile(tempLogPath, debugMessage),
+                false,
+                'Unexpected debug message was logged'
+            )
+        })
+
+        const happyLogScenarios = [
+            {
+                name: 'logs debug',
+                logMessage: (logger: WinstonToolkitLogger, message: string) => {
+                    logger.debug(message)
+                }
+            },
+            {
+                name: 'logs verbose',
+                logMessage: (logger: WinstonToolkitLogger, message: string) => {
+                    logger.verbose(message)
+                }
+            },
+            {
+                name: 'logs info',
+                logMessage: (logger: WinstonToolkitLogger, message: string) => {
+                    logger.info(message)
+                }
+            },
+            {
+                name: 'logs warn',
+                logMessage: (logger: WinstonToolkitLogger, message: string) => {
+                    logger.warn(message)
+                }
+            },
+            {
+                name: 'logs error',
+                logMessage: (logger: WinstonToolkitLogger, message: string) => {
+                    logger.error(message)
+                }
+            }
+        ]
+
+        happyLogScenarios.forEach(scenario => {
+            it(scenario.name, async () => {
+                const message = `message for ${scenario.name}`
+                testLogger = new WinstonToolkitLogger('debug')
+                testLogger.logToFile(tempLogPath)
+
+                scenario.logMessage(testLogger, message)
+
+                assert.ok(await isTextInLogFile(tempLogPath, message), 'Expected log message was missing')
+            })
+        })
+
+        async function isTextInLogFile(logPath: string, text: string): Promise<boolean> {
+            await waitForLogFile(logPath)
+            const logText = await filesystemUtilities.readFileAsString(logPath)
+
+            return logText.includes(text)
+        }
     })
+
+    // TODO : CC : tests for...
+    // logs to an OutputChannel
+    // does not log a lower level to an OutputChannel
+    // logs multiple pieces
+
+    // it('logs multiple pieces of info to a file', async () => {
+    //     testLogger.info('logs', 'multiple', 'pieces', 'of', 'info', 'to', 'a', 'file')
+    //     await waitForLogFile(tempLogPath)
+    //     const logText = await filesystemUtilities.readFileAsString(tempLogPath)
+    //     assert.strictEqual(logText.includes('[INFO]: logs multiple pieces of info to a file'), true)
+    // })
 
     async function waitForLogFile(logPath: string): Promise<void> {
         const timeoutPromise = new Promise<void>((resolve, reject) => {

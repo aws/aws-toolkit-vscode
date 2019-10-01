@@ -90,7 +90,7 @@ export interface Logger extends BasicLogger {
 }
 
 // TODO : CC : Phase out Logger retain only BasicLogger
-class WinstonToolkitLogger implements Logger {
+export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     // forces winston to output only pre-formatted message
     private static readonly LOG_FORMAT = winston.format.printf(({ message }) => {
         return message
@@ -99,6 +99,7 @@ class WinstonToolkitLogger implements Logger {
     public readonly level: LogLevel
 
     private readonly logger: winston.Logger
+    private disposed: boolean = false
 
     public constructor(logLevel: LogLevel) {
         this.logger = winston.createLogger({
@@ -150,7 +151,20 @@ class WinstonToolkitLogger implements Logger {
         this.writeToLogs(message, 'error')
     }
 
+    public dispose() {
+        if (!this.disposed) {
+            // todo : CC : onWillDispose hook?
+            this.logger.close()
+            this.logger.clear()
+            this.disposed = true
+        }
+    }
+
     private writeToLogs(message: ErrorOrString[], level: LogLevel): void {
+        if (this.disposed) {
+            throw new Error('Cannot write to disposed logger')
+        }
+
         const formattedMessage = formatMessage(level, message)
         this.logger.log(level, formattedMessage)
     }
