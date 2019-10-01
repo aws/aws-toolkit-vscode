@@ -83,10 +83,7 @@ export interface BasicLogger {
 export type LogLevel = keyof BasicLogger
 
 export interface Logger extends BasicLogger {
-    logPath?: string
-    outputChannel?: vscode.OutputChannel
     level: LogLevel
-    releaseLogger(): void
 }
 
 // TODO : CC : Phase out Logger retain only BasicLogger
@@ -108,15 +105,6 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         })
 
         this.level = logLevel
-    }
-
-    // logPath?: string | undefined
-    // outputChannel?: vscode.OutputChannel | undefined
-
-    // TODO : CC : Remove releaseLogger from interface
-    public releaseLogger(): void {
-        // Remove all transports from Winston logger, retain logger
-        this.logger.clear()
     }
 
     public logToFile(logPath: string): void {
@@ -253,8 +241,6 @@ export function getLogger(): Logger {
  * @param params: LoggerParams--nothing is required, but a LogPath is highly recommended so Winston doesn't throw errors
  *
  * Outputs a logger object that isn't stored anywhere--it's up to the caller to keep track of this.
- * No cleanup is REQUIRED, but if you wish to directly manipulate the log file while VSCode is still active,
- * you need to call releaseLogger. This will end the ability to write to the logfile with this logger instance.
  */
 export function createLogger(params: LoggerParams): Logger {
     // TODO : CC : Determine log level in this method's caller
