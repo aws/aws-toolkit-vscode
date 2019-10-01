@@ -29,9 +29,6 @@ runIde {
     }
 }
 
-publishPlugin.enabled = false
-buildSearchableOptions.enabled = false
-
 // don't run gui tests as part of check
 test.enabled = false
 

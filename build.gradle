@@ -138,6 +138,9 @@ subprojects {
         }
     }
 
+    project.tasks.findByName("buildSearchableOptions")?.enabled = false
+    project.tasks.findByName("publishPlugin")?.enabled = false
+
     task integrationTest(type: Test) {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Runs the integration tests."

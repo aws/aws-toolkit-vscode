@@ -12,9 +12,6 @@ intellij {
     plugins = idePlugins("IC")
 }
 
-publishPlugin.enabled = false
-buildSearchableOptions.enabled = false
-
 configurations {
     testArtifacts
 }
