@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as del from 'del'
 import * as path from 'path'
 import * as filesystemUtilities from '../../shared/filesystemUtilities'
-import { createLogger, Logger, WinstonToolkitLogger } from '../../shared/logger'
+import { createLogger, Logger, OutputChannelTransport, WinstonToolkitLogger } from '../../shared/logger'
 import { MockOutputChannel } from '../mockOutputChannel'
 import { assertThrowsError } from './utilities/assertUtils'
 
@@ -169,7 +169,7 @@ describe('WinstonToolkitLogger', () => {
         }
     })
 
-    describe.only('logs to an OutputChannel', async () => {
+    describe('logs to an OutputChannel', async () => {
         let testLogger: WinstonToolkitLogger | undefined
         let outputChannel: MockOutputChannel
 
@@ -258,5 +258,40 @@ describe('WinstonToolkitLogger', () => {
                 })
             })
         }
+    })
+})
+
+describe('OutputChannelTransport', async () => {
+    let outputChannel: MockOutputChannel
+
+    beforeEach(async () => {
+        outputChannel = new MockOutputChannel()
+    })
+
+    it('logs content', async () => {
+        const loggedMessage = 'This is my logged message'
+        const transport = new OutputChannelTransport({
+            outputChannel
+        })
+
+        // OutputChannel is logged to in async manner
+        const waitForLoggedText = new Promise<void>(resolve => {
+            outputChannel.onDidAppendText(loggedText => {
+                if (loggedText === loggedMessage) {
+                    resolve()
+                }
+            })
+        })
+
+        transport.log(
+            {
+                level: 'info',
+                message: loggedMessage
+            },
+            async () => {
+                // Test will timeout if expected text is not encountered
+                await waitForLoggedText
+            }
+        )
     })
 })
