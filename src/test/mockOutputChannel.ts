@@ -12,12 +12,19 @@ export class MockOutputChannel implements vscode.OutputChannel {
 
     public readonly name = 'Mock channel'
 
+    private readonly onDidAppendTextEmitter: vscode.EventEmitter<string> = new vscode.EventEmitter<string>()
+
+    public get onDidAppendText(): vscode.Event<string> {
+        return this.onDidAppendTextEmitter.event
+    }
+
     public append(value: string): void {
         this.value += value
+        this.onDidAppendTextEmitter.fire(value)
     }
 
     public appendLine(value: string) {
-        this.value += value + '\n'
+        this.append(value + '\n')
     }
 
     public clear(): void {

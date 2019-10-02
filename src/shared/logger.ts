@@ -30,45 +30,24 @@ interface LogEntry {
 }
 
 export class OutputChannelTransport extends Transport {
-    private static readonly DEFAULT_LOG_LEVEL = winston.config.cli.levels.info
-    private logLevel: number = OutputChannelTransport.DEFAULT_LOG_LEVEL
-    private levels?: winston.config.AbstractConfigSetLevels
+    private readonly outputChannel: vscode.OutputChannel
 
-    public constructor(options: Transport.TransportStreamOptions) {
+    public constructor(
+        options: Transport.TransportStreamOptions & {
+            outputChannel: vscode.OutputChannel
+        }
+    ) {
         super(options)
 
-        // TODO : CC : Make our own global log level lookup table & utility methods
-
-        // this.logLevel = this.levels[options.level]
-        this.once('pipe', (logger: winston.Logger) => {
-            // Remark (indexzero): this bookkeeping can only support multiple
-            // Logger parents with the same `levels`. This comes into play in
-            // the `winston.Container` code in which `container.add` takes
-            // a fully realized set of options with pre-constructed TransportStreams.
-            this.levels = logger.levels
-
-            this.logLevel = this.getLogLevel(options.level)
-        })
+        this.outputChannel = options.outputChannel
     }
 
     public log(info: LogEntry, next: () => void): void {
-        const messageLevel = this.getLogLevel(info.level)
-
-        if (messageLevel <= this.logLevel) {
-            setImmediate(() => {
-                DEFAULT_OUTPUT_CHANNEL.appendLine(info.message)
-            })
-        }
+        setImmediate(() => {
+            this.outputChannel.appendLine(info.message)
+        })
 
         next()
-    }
-
-    private getLogLevel(level?: string): number {
-        if (!this.levels || !level) {
-            return OutputChannelTransport.DEFAULT_LOG_LEVEL
-        }
-
-        return this.levels[level]
     }
 }
 
@@ -114,7 +93,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     public logToOutputChannel(outputChannel: vscode.OutputChannel): void {
         this.logger.add(
             new OutputChannelTransport({
-                level: this.level // TODO : CC : Is it necessary to pass in level?
+                outputChannel
             })
         )
     }

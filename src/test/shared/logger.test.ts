@@ -8,9 +8,10 @@ import * as del from 'del'
 import * as path from 'path'
 import * as filesystemUtilities from '../../shared/filesystemUtilities'
 import { createLogger, Logger, WinstonToolkitLogger } from '../../shared/logger'
+import { MockOutputChannel } from '../mockOutputChannel'
 import { assertThrowsError } from './utilities/assertUtils'
 
-describe.only('logger', () => {
+describe('logger', () => {
     let testLogger: Logger | undefined
 
     before(async () => {
@@ -29,7 +30,7 @@ describe.only('logger', () => {
     })
 })
 
-describe.only('WinstonToolkitLogger', () => {
+describe('WinstonToolkitLogger', () => {
     let tempFolder: string
 
     before(async () => {
@@ -168,8 +169,94 @@ describe.only('WinstonToolkitLogger', () => {
         }
     })
 
-    // TODO : CC : tests for...
-    // logs to an OutputChannel
-    // does not log a lower level to an OutputChannel
-    // logs multiple pieces
+    describe.only('logs to an OutputChannel', async () => {
+        let testLogger: WinstonToolkitLogger | undefined
+        let outputChannel: MockOutputChannel
+
+        beforeEach(async () => {
+            outputChannel = new MockOutputChannel()
+        })
+
+        afterEach(async () => {
+            if (testLogger) {
+                testLogger.dispose()
+                testLogger = undefined
+            }
+        })
+
+        it('does not log a lower level', async () => {
+            const debugMessage = 'debug message'
+            const errorMessage = 'error message'
+
+            testLogger = new WinstonToolkitLogger('error')
+            testLogger.logToOutputChannel(outputChannel)
+
+            const waitForMessage = waitForLoggedTextByCount(1)
+
+            testLogger.debug(debugMessage)
+            testLogger.error(errorMessage)
+
+            assert.ok((await waitForMessage).includes(errorMessage), 'Expected error message to be logged')
+        })
+
+        it('logs multiple inputs', async () => {
+            testLogger = new WinstonToolkitLogger('info')
+            testLogger.logToOutputChannel(outputChannel)
+            const expectedText = 'The quick brown fox'
+
+            const waitForMessage = waitForLoggedTextByContents(expectedText)
+
+            testLogger.info('The', 'quick', 'brown', 'fox')
+
+            assert.ok((await waitForMessage).includes('The quick brown fox'), 'Expected error message to be logged')
+        })
+
+        happyLogScenarios.forEach(scenario => {
+            it(scenario.name, async () => {
+                const message = `message for ${scenario.name}`
+                testLogger = new WinstonToolkitLogger('debug')
+                testLogger.logToOutputChannel(outputChannel)
+
+                const waitForMessage = waitForLoggedTextByCount(1)
+
+                scenario.logMessage(testLogger, message)
+
+                assert.ok((await waitForMessage).includes(message), 'Expected error message to be logged')
+            })
+        })
+
+        // Logger writes to OutputChannel in async manner.
+        async function waitForLoggedTextByCount(entries: number): Promise<string> {
+            return new Promise<string>((resolve, reject) => {
+                let loggedEntries = 0
+                let loggedText = ''
+
+                const appendTextEvent = outputChannel.onDidAppendText(text => {
+                    loggedText += text
+                    loggedEntries++
+
+                    if (loggedEntries >= entries) {
+                        appendTextEvent.dispose()
+                        resolve(loggedText)
+                    }
+                })
+            })
+        }
+
+        // Logger writes to OutputChannel in async manner.
+        async function waitForLoggedTextByContents(expectedText: string): Promise<string> {
+            return new Promise<string>((resolve, reject) => {
+                let loggedText = ''
+
+                const appendTextEvent = outputChannel.onDidAppendText(text => {
+                    loggedText += text
+
+                    if (text.includes(expectedText)) {
+                        appendTextEvent.dispose()
+                        resolve(loggedText)
+                    }
+                })
+            })
+        }
+    })
 })
