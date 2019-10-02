@@ -10,7 +10,7 @@ import com.intellij.execution.actions.RunConfigurationProducer
 import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiElement
-import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
 
 @Suppress("DEPRECATION") // LazyRunConfigurationProducer not added till 2019.1 FIX_WHEN_MIN_IS_192
 class RemoteLambdaRunConfigurationProducer : RunConfigurationProducer<RemoteLambdaRunConfiguration>(getFactory()) {
@@ -46,7 +46,7 @@ class RemoteLambdaRunConfigurationProducer : RunConfigurationProducer<RemoteLamb
     }
 
     companion object {
-        private fun getFactory(): ConfigurationFactory = LambdaRunConfiguration.getInstance()
+        private fun getFactory(): ConfigurationFactory = LambdaRunConfigurationType.getInstance()
             .configurationFactories
             .first { it is RemoteLambdaRunConfigurationFactory }
     }

@@ -29,6 +29,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -58,6 +59,7 @@ public final class LocalLambdaRunSettingsEditorPanel {
     public JPanel lambdaInputPanel;
     public SliderPanel timeoutSlider;
     public SliderPanel memorySlider;
+    public JCheckBox invalidator;
 
     private Runtime lastSelectedRuntime = null;
 
@@ -168,6 +170,10 @@ public final class LocalLambdaRunSettingsEditorPanel {
 
     public void setRuntimes(List<Runtime> runtimes) {
         runtimeModel.setAll(runtimes);
+    }
+
+    public void invalidateConfiguration() {
+        SwingUtilities.invokeLater(() -> invalidator.setSelected(!invalidator.isSelected()));
     }
 
     private class TemplateFileBrowseListener extends ComponentWithBrowseButton.BrowseFolderActionListener<JTextField> {
