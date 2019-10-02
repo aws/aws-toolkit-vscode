@@ -40,9 +40,6 @@ describe('AwsExplorer', () => {
             awsContextTreeCollection,
             regionProvider,
             resourceFetcher,
-            path => {
-                throw new Error('unused')
-            },
             mockChannel
         )
 

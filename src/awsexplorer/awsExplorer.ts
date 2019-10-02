@@ -39,7 +39,6 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
         private readonly awsContextTrees: AwsContextTreeCollection,
         private readonly regionProvider: RegionProvider,
         private readonly resourceFetcher: ResourceFetcher,
-        private readonly getExtensionAbsolutePath: (relativeExtensionPath: string) => string,
         private readonly lambdaOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda')
     ) {
         this._onDidChangeTreeData = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
@@ -160,10 +159,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
             this.regionNodes,
             intersection(regionMap.keys(), explorerRegionCodes),
             key => this.regionNodes.get(key)!.update(regionMap.get(key)!),
-            key =>
-                new DefaultRegionNode(regionMap.get(key)!, relativeExtensionPath =>
-                    this.getExtensionAbsolutePath(relativeExtensionPath)
-                )
+            key => new DefaultRegionNode(regionMap.get(key)!)
         )
 
         if (this.regionNodes.size > 0) {
