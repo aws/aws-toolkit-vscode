@@ -66,13 +66,10 @@ export async function initialize(params?: LoggerParams): Promise<Logger> {
         }
 
         // TODO : Determine log level here, then createLogger calls in this method can converge
-        const newLogger = createLogger({
+        defaultLogger = createLogger({
             outputChannel,
             logPath
         })
-
-        initializeDefaultLogger(newLogger)
-
         // only the default logger (with default params) gets a registered command
         // check list of registered commands to see if aws.viewLogs has already been registered.
         // if so, don't register again--this will cause an error visible to the user.
@@ -89,7 +86,7 @@ export async function initialize(params?: LoggerParams): Promise<Logger> {
         outputChannel = params.outputChannel
         logPath = params.logPath
 
-        initializeDefaultLogger(createLogger(params))
+        defaultLogger = createLogger(params)
     }
 
     if (outputChannel && logPath) {
@@ -99,10 +96,6 @@ export async function initialize(params?: LoggerParams): Promise<Logger> {
     }
 
     return defaultLogger
-}
-
-export function initializeDefaultLogger(logger: Logger) {
-    defaultLogger = logger
 }
 
 /**
