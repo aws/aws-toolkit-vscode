@@ -133,6 +133,8 @@
 
         <extensionPoint name="executable" interface="software.aws.toolkits.jetbrains.core.executables.ExecutableType"/>
 
+        <extensionPoint name="notice" interface="software.aws.toolkits.jetbrains.core.notification.NoticeType"/>
+
         <extensionPoint name="explorer.nodeProcessor" interface="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerNodeProcessor"/>
     </extensionPoints>
 
@@ -159,6 +161,7 @@
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsSettingsPanelInstaller"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsTelemetryPrompter"/>
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.notification.NoticeStartupActivity"/>
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsSdkClient"/>
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.services.telemetry.TelemetryService"
@@ -166,6 +169,8 @@
                             testServiceImplementation="software.aws.toolkits.jetbrains.services.telemetry.MockTelemetryService" />
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.executables.ExecutableManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.executables.DefaultExecutableManager"/>
+        <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.notification.NoticeManager"
+                            serviceImplementation="software.aws.toolkits.jetbrains.core.notification.DefaultNoticeManager"/>
         <projectService serviceInterface="software.aws.toolkits.core.ToolkitClientManager"
                         serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientManager"
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.MockClientManager"/>
@@ -202,6 +207,7 @@
 
     <extensions defaultExtensionNs="aws.toolkit">
         <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialProviderFactory"/>
+        <notice implementation="software.aws.toolkits.jetbrains.core.notification.JetBrainsMinimumVersionChange"/>
     </extensions>
 
     <actions>
