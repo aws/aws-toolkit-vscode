@@ -24,33 +24,6 @@ const DEFAULT_OUTPUT_CHANNEL: vscode.OutputChannel = vscode.window.createOutputC
 
 let defaultLogger: Logger
 
-interface LogEntry {
-    level: string
-    message: string
-}
-
-export class OutputChannelTransport extends Transport {
-    private readonly outputChannel: vscode.OutputChannel
-
-    public constructor(
-        options: Transport.TransportStreamOptions & {
-            outputChannel: vscode.OutputChannel
-        }
-    ) {
-        super(options)
-
-        this.outputChannel = options.outputChannel
-    }
-
-    public log(info: LogEntry, next: () => void): void {
-        setImmediate(() => {
-            this.outputChannel.appendLine(info.message)
-        })
-
-        next()
-    }
-}
-
 export interface BasicLogger {
     debug(...message: ErrorOrString[]): void
     verbose(...message: ErrorOrString[]): void
@@ -63,76 +36,6 @@ export type LogLevel = keyof BasicLogger
 
 // TODO : Logger has been collapsed. Converge Logger and BasicLogger in a standalone change
 export interface Logger extends BasicLogger {}
-
-export class WinstonToolkitLogger implements Logger, vscode.Disposable {
-    // forces winston to output only pre-formatted message
-    private static readonly LOG_FORMAT = winston.format.printf(({ message }) => {
-        return message
-    })
-
-    public readonly level: LogLevel
-
-    private readonly logger: winston.Logger
-    private disposed: boolean = false
-
-    public constructor(logLevel: LogLevel) {
-        this.logger = winston.createLogger({
-            format: winston.format.combine(WinstonToolkitLogger.LOG_FORMAT),
-            level: logLevel
-        })
-
-        this.level = logLevel
-    }
-
-    public logToFile(logPath: string): void {
-        this.logger.add(new winston.transports.File({ filename: logPath }))
-    }
-
-    public logToOutputChannel(outputChannel: vscode.OutputChannel): void {
-        this.logger.add(
-            new OutputChannelTransport({
-                outputChannel
-            })
-        )
-    }
-
-    public debug(...message: ErrorOrString[]): void {
-        this.writeToLogs(message, 'debug')
-    }
-
-    public verbose(...message: ErrorOrString[]): void {
-        this.writeToLogs(message, 'verbose')
-    }
-
-    public info(...message: ErrorOrString[]): void {
-        this.writeToLogs(message, 'info')
-    }
-
-    public warn(...message: ErrorOrString[]): void {
-        this.writeToLogs(message, 'warn')
-    }
-
-    public error(...message: ErrorOrString[]): void {
-        this.writeToLogs(message, 'error')
-    }
-
-    public dispose() {
-        if (!this.disposed) {
-            this.logger.close()
-            this.logger.clear()
-            this.disposed = true
-        }
-    }
-
-    private writeToLogs(message: ErrorOrString[], level: LogLevel): void {
-        if (this.disposed) {
-            throw new Error('Cannot write to disposed logger')
-        }
-
-        const formattedMessage = formatMessage(level, message)
-        this.logger.log(level, formattedMessage)
-    }
-}
 
 /**
  * logPath is not required (as Winston will work without a file path defined) but will output errors to stderr.
@@ -288,3 +191,100 @@ function padNumber(num: number): string {
 }
 
 export type ErrorOrString = Error | string // TODO: Consider renaming to Loggable & including number
+
+export class WinstonToolkitLogger implements Logger, vscode.Disposable {
+    // forces winston to output only pre-formatted message
+    private static readonly LOG_FORMAT = winston.format.printf(({ message }) => {
+        return message
+    })
+
+    public readonly level: LogLevel
+
+    private readonly logger: winston.Logger
+    private disposed: boolean = false
+
+    public constructor(logLevel: LogLevel) {
+        this.logger = winston.createLogger({
+            format: winston.format.combine(WinstonToolkitLogger.LOG_FORMAT),
+            level: logLevel
+        })
+
+        this.level = logLevel
+    }
+
+    public logToFile(logPath: string): void {
+        this.logger.add(new winston.transports.File({ filename: logPath }))
+    }
+
+    public logToOutputChannel(outputChannel: vscode.OutputChannel): void {
+        this.logger.add(
+            new OutputChannelTransport({
+                outputChannel
+            })
+        )
+    }
+
+    public debug(...message: ErrorOrString[]): void {
+        this.writeToLogs(message, 'debug')
+    }
+
+    public verbose(...message: ErrorOrString[]): void {
+        this.writeToLogs(message, 'verbose')
+    }
+
+    public info(...message: ErrorOrString[]): void {
+        this.writeToLogs(message, 'info')
+    }
+
+    public warn(...message: ErrorOrString[]): void {
+        this.writeToLogs(message, 'warn')
+    }
+
+    public error(...message: ErrorOrString[]): void {
+        this.writeToLogs(message, 'error')
+    }
+
+    public dispose() {
+        if (!this.disposed) {
+            this.logger.close()
+            this.logger.clear()
+            this.disposed = true
+        }
+    }
+
+    private writeToLogs(message: ErrorOrString[], level: LogLevel): void {
+        if (this.disposed) {
+            throw new Error('Cannot write to disposed logger')
+        }
+
+        const formattedMessage = formatMessage(level, message)
+        this.logger.log(level, formattedMessage)
+    }
+}
+
+interface LogEntry {
+    level: string
+    message: string
+}
+
+export class OutputChannelTransport extends Transport {
+    private readonly outputChannel: vscode.OutputChannel
+
+    public constructor(
+        options: Transport.TransportStreamOptions & {
+            outputChannel: vscode.OutputChannel
+        }
+    ) {
+        super(options)
+
+        this.outputChannel = options.outputChannel
+    }
+
+    public log(info: LogEntry, next: () => void): void {
+        setImmediate(() => {
+            this.outputChannel.appendLine(info.message)
+        })
+
+        next()
+    }
+}
