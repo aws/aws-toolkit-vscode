@@ -32,7 +32,7 @@ class ExecutableManagerTest {
     fun nonExistentExecutableIsNotResolved() {
         val type = DummyExecutableType("dummy")
 
-        sut.loadState(listOf(ExecutableState("dummy", "/foo/bar", true)))
+        sut.loadState(ExecutableStateList(listOf(ExecutableState("dummy", "/foo/bar", true))))
 
         assertThat(sut.getExecutable(type)).wait().isCompletedWithValueMatching { it is ExecutableInstance.UnresolvedExecutable }
     }
@@ -141,7 +141,7 @@ class ExecutableManagerTest {
             }
         }
 
-        sut.loadState(listOf(ExecutableState(type.id, executable.absolutePath)))
+        sut.loadState(ExecutableStateList(listOf(ExecutableState(type.id, executable.absolutePath))))
 
         assertThat(sut.getExecutable(type).value).isInstanceOfSatisfying(ExecutableInstance.InvalidExecutable::class.java) {
             assertThat(it.executablePath).isEqualTo(executable.toPath())

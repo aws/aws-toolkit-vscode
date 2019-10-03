@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Enable caching of describe calls to avoid repeated network calls for already known resources."
-}

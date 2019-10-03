@@ -1,3 +1,25 @@
+# _1.6_ (2019-09-23)
+- **(Feature)** Open Stack Status UI on CloudFormation stack deletion.
+- **(Feature)** Removed requirement of having to double-click to load more resources in AWS Explorer if there is more than one page returned
+- **(Feature)** Added a Copy Arn action to AWS Explorer
+- **(Feature)** Move AWS Connection details into a common Run Configuration tab for remote and local Lambda execution.
+- **(Feature)** Enable caching of describe calls to avoid repeated network calls for already known resources.
+- **(Feature)** Support timeout and memory size settings in run configuration
+- **(Feature)** Porting resource selector to use resource-cache so network won't be hit on each dialog load.
+- **(Feature)** Add support to link Gradle project.
+- **(Feature)** Additional SAM build and SAM local invocation args configurable from Run/Debug Configuration settings
+- **(Bug Fix)** Fix the bug that PyCharm pipenv doesn't create the project location folder
+- **(Bug Fix)** Fix the CloudFormation explorer node not showing Lambdas that belong to the stack
+- **(Bug Fix)** Log errors to idea.log when we fail to swtich the active AWS credential profile
+- **(Bug Fix)** Handle the "me-" region prefix Treat the "me-" region prefix as Middle East
+- **(Bug Fix)** Fixing issue where explorer does not load even with credentials/region selected.
+- **(Bug Fix)** Fixing random AssertionError exception caused by Guava cache.
+- **(Bug Fix)** Fix the bug that underscores in profile names are not shown in AWS settings panel
+- **(Bug Fix)** Fixed bug in Pycharm's New Project pane where VirtualEnv path is not changed as project path is changed after switching Runtime
+- **(Bug Fix)** Handle non-cloudformation yaml files gracefully
+- **(Bug Fix)** Fix thread issue in PyCharm new project wizard
+- **(Bug Fix)** Fix the bug that toolkit throws unhandled exception on startup when active credential is not configured
+
 # _1.5_ (2019-07-29)
 - **(Feature)** Support Globals configuration in SAM template for serverless functions.
 - **(Feature)** Enable searching for `requirements.txt` when determining if a python method is a handler to match SAM build

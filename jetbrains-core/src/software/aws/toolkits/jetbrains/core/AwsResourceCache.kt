@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core
 
+import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
@@ -16,6 +17,10 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
+import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
+import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
+import software.aws.toolkits.jetbrains.core.executables.ExecutableType
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -175,6 +180,35 @@ class ClientBackedCachedResource<ReturnType, ClientType : SdkClient>(
 
     override fun expiry(): Duration = expiry ?: super.expiry()
     override fun toString(): String = "ClientBackedCachedResource(id='$id')"
+}
+
+class ExecutableBackedCacheResource<ReturnType, ExecType : ExecutableType<*>>(
+    private val executableTypeClass: KClass<ExecType>,
+    override val id: String,
+    private val expiry: Duration? = null,
+    private val fetchCall: GeneralCommandLine.() -> ReturnType
+) : Resource.Cached<ReturnType>() {
+
+    override fun fetch(project: Project, region: AwsRegion, credentials: ToolkitCredentialsProvider): ReturnType {
+        val executableType = ExecutableType.getExecutable(executableTypeClass.java)
+
+        val executable = ExecutableManager.getInstance().getExecutableIfPresent(executableType).let {
+            when (it) {
+                is ExecutableInstance.Executable -> it
+                is ExecutableInstance.InvalidExecutable -> throw IllegalStateException(it.validationError)
+                is ExecutableInstance.UnresolvedExecutable -> throw IllegalStateException(it.resolutionError)
+            }
+        }
+
+        return fetchCall(
+            executable.getCommandLine()
+                .withEnvironment(region.toEnvironmentVariables())
+                .withEnvironment(credentials.resolveCredentials().toEnvironmentVariables())
+        )
+    }
+
+    override fun expiry(): Duration = expiry ?: super.expiry()
+    override fun toString(): String = "ExecutableBackedCacheResource(id='$id')"
 }
 
 class DefaultAwsResourceCache(

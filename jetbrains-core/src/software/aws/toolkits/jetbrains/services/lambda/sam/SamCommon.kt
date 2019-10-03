@@ -34,10 +34,10 @@ class SamCommon {
         const val SAM_INVALID_OPTION_SUBSTRING = "no such option"
 
         // Inclusive
-        val expectedSamMinVersion = SemVer("0.14.1", 0, 14, 1)
+        val expectedSamMinVersion = SemVer("0.16.0", 0, 16, 0)
 
         // Exclusive
-        val expectedSamMaxVersion = SemVer("0.23.0", 0, 23, 0)
+        val expectedSamMaxVersion = SemVer("0.30.0", 0, 30, 0)
 
         fun getSamCommandLine(path: String? = SamSettings.getInstance().executablePath): GeneralCommandLine {
             val sanitizedPath = path.nullize(true)
@@ -97,7 +97,7 @@ class SamCommon {
                 getInvalidVersionMessage(
                     SamVersionCache.evaluateBlocking(
                         sanitizedPath
-                    )
+                    ).result
                 )
             } catch (e: Exception) {
                 return e.message
@@ -112,7 +112,7 @@ class SamCommon {
                 ?: return "UNKNOWN"
 
             return try {
-                SamVersionCache.evaluateBlocking(sanitizedPath).rawVersion
+                SamVersionCache.evaluateBlocking(sanitizedPath).result.rawVersion
             } catch (e: Exception) {
                 logger.error(e) { "Error while getting SAM executable version." }
                 return "UNKNOWN"

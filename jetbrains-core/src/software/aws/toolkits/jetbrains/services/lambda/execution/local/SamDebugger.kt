@@ -9,6 +9,7 @@ import com.intellij.execution.ui.RunContentDescriptor
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
+import com.intellij.util.net.NetUtils.findAvailableSocketPort
 import com.intellij.xdebugger.XDebuggerManager
 import com.jetbrains.rd.util.spinUntil
 import org.jetbrains.concurrency.AsyncPromise
@@ -17,26 +18,13 @@ import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
-import java.net.ServerSocket
 
 internal class SamDebugger : SamRunner() {
-
     companion object {
         private val logger = getLogger<SamDebugger>()
     }
 
-    private val debugPort = findDebugPort()
-
-    private fun findDebugPort(): Int {
-        try {
-            ServerSocket(0).use {
-                it.reuseAddress = true
-                return it.localPort
-            }
-        } catch (e: Exception) {
-            throw IllegalStateException("Failed to find free port", e)
-        }
-    }
+    private val debugPort = findAvailableSocketPort()
 
     override fun patchCommandLine(state: SamRunningState, commandLine: GeneralCommandLine) {
         SamDebugSupport.getInstanceOrThrow(state.settings.runtimeGroup)

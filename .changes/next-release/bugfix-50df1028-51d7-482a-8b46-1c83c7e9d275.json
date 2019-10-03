@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fixed bug in Pycharm's New Project pane where VirtualEnv path is not changed as project path is changed after switching Runtime"
-}
