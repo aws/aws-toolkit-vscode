@@ -61,11 +61,9 @@ export interface BasicLogger {
 
 export type LogLevel = keyof BasicLogger
 
-export interface Logger extends BasicLogger {
-    level: LogLevel
-}
+// TODO : Logger has been collapsed. Converge Logger and BasicLogger in a standalone change
+export interface Logger extends BasicLogger {}
 
-// TODO : CC : Phase out Logger retain only BasicLogger
 export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     // forces winston to output only pre-formatted message
     private static readonly LOG_FORMAT = winston.format.printf(({ message }) => {
@@ -120,7 +118,6 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
 
     public dispose() {
         if (!this.disposed) {
-            // todo : CC : onWillDispose hook?
             this.logger.close()
             this.logger.clear()
             this.disposed = true
@@ -165,7 +162,7 @@ export async function initialize(params?: LoggerParams): Promise<Logger> {
             await mkdir(logFolder, { recursive: true })
         }
 
-        // TODO : CC : Determine log level here, then createLogger calls in this method can converge
+        // TODO : Determine log level here, then createLogger calls in this method can converge
         const newLogger = createLogger({
             outputChannel,
             logPath
@@ -189,7 +186,6 @@ export async function initialize(params?: LoggerParams): Promise<Logger> {
         outputChannel = params.outputChannel
         logPath = params.logPath
 
-        // TODO : CC :This isn't necessary if we use a MemoryLogger
         initializeDefaultLogger(createLogger(params))
     }
 
@@ -222,7 +218,7 @@ export function getLogger(): Logger {
  * Outputs a logger object that isn't stored anywhere--it's up to the caller to keep track of this.
  */
 export function createLogger(params: LoggerParams): Logger {
-    // TODO : CC : Determine log level in this method's caller
+    // TODO : log level should be a concern of the caller
     let level: LogLevel
     if (params.logLevel) {
         level = params.logLevel
@@ -231,56 +227,17 @@ export function createLogger(params: LoggerParams): Logger {
         const setLevel = configuration.readSetting<string>('logLevel')
         level = setLevel ? (setLevel as LogLevel) : DEFAULT_LOG_LEVEL
     }
-    // const transports: Transport[] = []
-    // if (params.logPath) {
-    //     transports.push(new winston.transports.File({ filename: params.logPath }))
-    // }
 
-    // transports.push(
-    //     new OutputChannelTransport({
-    //         level
-    //     })
-    // )
-
-    // const newLogger: winston.Logger = winston.createLogger({
-    //     format: winston.format.combine(logFormat),
-    //     level
-    //     //        transports
-    // })
-
-    const newLogger = new WinstonToolkitLogger(level)
+    const logger = new WinstonToolkitLogger(level)
     if (params.logPath) {
-        newLogger.logToFile(params.logPath)
+        logger.logToFile(params.logPath)
     }
 
     if (params.outputChannel) {
-        newLogger.logToOutputChannel(params.outputChannel)
+        logger.logToOutputChannel(params.outputChannel)
     }
 
-    // const fl = new winston.transports.File({ filename: params.logPath })
-    // newLogger.add(fl)
-    // newLogger.add(new OutputChannelTransport({ level }))
-    // newLogger.remove(fl)
-    // newLogger.remove(fl)
-
-    return newLogger
-
-    // return {
-    //     logPath: params.logPath,
-    //     level,
-    //     // outputChannel: params.outputChannel,
-    //     debug: (...message: ErrorOrString[]) =>
-    //         writeToLogs(generateWriteParams(newLogger, 'debug', message, params.outputChannel)),
-    //     verbose: (...message: ErrorOrString[]) =>
-    //         writeToLogs(generateWriteParams(newLogger, 'verbose', message, params.outputChannel)),
-    //     info: (...message: ErrorOrString[]) =>
-    //         writeToLogs(generateWriteParams(newLogger, 'info', message, params.outputChannel)),
-    //     warn: (...message: ErrorOrString[]) =>
-    //         writeToLogs(generateWriteParams(newLogger, 'warn', message, params.outputChannel)),
-    //     error: (...message: ErrorOrString[]) =>
-    //         writeToLogs(generateWriteParams(newLogger, 'error', message, params.outputChannel)),
-    //     releaseLogger: () => releaseLogger(newLogger)
-    // }
+    return logger
 }
 
 function getDefaultLogPath(): string {
@@ -292,16 +249,6 @@ function getDefaultLogPath(): string {
         return path.join(os.homedir(), '.config', LOG_RELATIVE_PATH, DEFAULT_LOG_NAME)
     }
 }
-
-// async function openLogFile(): Promise<void> {
-//     if (defaultLogger.logPath) {
-//         await vscode.window.showTextDocument(vscode.Uri.file(path.normalize(defaultLogger.logPath)))
-//     }
-// }
-
-// function releaseLogger(logger: winston.Logger): void {
-//     logger.clear()
-// }
 
 function formatMessage(level: LogLevel, message: ErrorOrString[]): string {
     // TODO : Look into winston custom formats - https://github.com/winstonjs/winston#creating-custom-formats
@@ -316,31 +263,6 @@ function formatMessage(level: LogLevel, message: ErrorOrString[]): string {
 
     return final
 }
-
-// function writeToLogs(params: WriteToLogParams): void {
-//     const message = formatMessage(params.level, params.message)
-//     params.logger.log(params.level, message)
-//     // if (params.outputChannel) {
-//     //     writeToOutputChannel(
-//     //         params.logger.levels[params.level],
-//     //         params.logger.levels[params.logger.level],
-//     //         message,
-//     //         params.outputChannel
-//     //     )
-//     // }
-// }
-
-// function writeToOutputChannel(
-//     messageLevel: number,
-//     logLevel: number,
-//     message: string,
-//     outputChannel: vscode.OutputChannel
-// ): void {
-//     // using default Winston log levels (mapped to numbers): https://github.com/winstonjs/winston#logging
-//     if (messageLevel <= logLevel) {
-//         outputChannel.appendLine(message)
-//     }
-// }
 
 // outputs a timestamp with the following formattings:
 // type: 'filename' = YYYYMMDDThhmmss (note the 'T' prior to time, matches VS Code's log file name format)
@@ -365,25 +287,4 @@ function padNumber(num: number): string {
     return num < 10 ? '0' + num.toString() : num.toString()
 }
 
-// function generateWriteParams(
-//     logger: winston.Logger,
-//     level: LogLevel,
-//     message: ErrorOrString[],
-//     outputChannel?: vscode.OutputChannel
-// ): WriteToLogParams {
-//     return { logger: logger, level: level, message: message, outputChannel: outputChannel }
-// }
-
-// interface WriteToLogParams {
-//     logger: winston.Logger
-//     level: LogLevel
-//     message: ErrorOrString[]
-//     outputChannel?: vscode.OutputChannel
-// }
-
 export type ErrorOrString = Error | string // TODO: Consider renaming to Loggable & including number
-
-// // forces winston to output only pre-formatted message
-// const logFormat = winston.format.printf(({ message }) => {
-//     return message
-// })
