@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as moment from 'moment'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -19,8 +20,17 @@ const localize = nls.loadMessageBundle()
 
 const LOG_RELATIVE_PATH: string = path.join('Code', 'logs', 'aws_toolkit')
 const DEFAULT_LOG_LEVEL: LogLevel = 'info'
-const DEFAULT_LOG_NAME: string = `aws_toolkit_${makeDateString('filename')}.log`
+const DEFAULT_LOG_NAME: string = makeDefaultLogName()
 const DEFAULT_OUTPUT_CHANNEL: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Toolkit Logs')
+
+function makeDefaultLogName(): string {
+    const m = moment()
+    const date = m.format('YYYYMMDD')
+    const time = m.format('HHmmss')
+    const datetime = `${date}T${time}`
+
+    return `aws_toolkit_${datetime}.log`
+}
 
 let defaultLogger: Logger
 
