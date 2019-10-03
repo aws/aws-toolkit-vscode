@@ -27,6 +27,7 @@ function makeDefaultLogName(): string {
     const m = moment()
     const date = m.format('YYYYMMDD')
     const time = m.format('HHmmss')
+    // the 'T' matches VS Code's log file name format
     const datetime = `${date}T${time}`
 
     return `aws_toolkit_${datetime}.log`
@@ -158,7 +159,7 @@ function getDefaultLogPath(): string {
 
 function formatMessage(level: LogLevel, message: ErrorOrString[]): string {
     // TODO : Look into winston custom formats - https://github.com/winstonjs/winston#creating-custom-formats
-    let final: string = `${makeDateString('logfile')} [${level.toUpperCase()}]:`
+    let final: string = `${makeLogTimestamp()} [${level.toUpperCase()}]:`
     for (const chunk of message) {
         if (chunk instanceof Error) {
             final = `${final} ${chunk.stack}`
@@ -170,27 +171,8 @@ function formatMessage(level: LogLevel, message: ErrorOrString[]): string {
     return final
 }
 
-// outputs a timestamp with the following formattings:
-// type: 'filename' = YYYYMMDDThhmmss (note the 'T' prior to time, matches VS Code's log file name format)
-// type: 'logFile' = YYYY-MM-DD HH:MM:SS
-// Uses local timezone
-function makeDateString(type: 'filename' | 'logfile'): string {
-    const d = new Date()
-    const isFilename: boolean = type === 'filename'
-
-    return (
-        `${d.getFullYear()}${isFilename ? '' : '-'}` +
-        // String.prototype.padStart() was introduced in ES7, but we target ES6.
-        `${padNumber(d.getMonth() + 1)}${isFilename ? '' : '-'}` +
-        `${padNumber(d.getDate())}${isFilename ? 'T' : ' '}` +
-        `${padNumber(d.getHours())}${isFilename ? '' : ':'}` +
-        `${padNumber(d.getMinutes())}${isFilename ? '' : ':'}` +
-        `${padNumber(d.getSeconds())}`
-    )
-}
-
-function padNumber(num: number): string {
-    return num < 10 ? '0' + num.toString() : num.toString()
+function makeLogTimestamp(): string {
+    return moment().format('YYYY-MM-DD HH:mm:ss')
 }
 
 export type ErrorOrString = Error | string // TODO: Consider renaming to Loggable & including number
