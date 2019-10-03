@@ -45,15 +45,17 @@ object CompatibilityUtils {
     @TestOnly
     fun <T> registerExtension(name: ExtensionPointName<T>, extension: T, disposable: Disposable) {
 
-        val newRegister = ExtensionPoint::class.java.getMethod("registerExtension", Object::class.java, Disposable::class.java)
+        val newRegister = tryOrNull { ExtensionPoint::class.java.getMethod("registerExtension", Object::class.java, Disposable::class.java) }
 
         if (newRegister != null) {
             val ep = name.getPoint(null)
             newRegister.invoke(ep, extension, disposable)
         } else {
-            val legacyRegister = PlatformTestUtil::class.staticFunctions.find { it.name == "registerExtension" }
-            legacyRegister ?: throw NoSuchMethodError("Can't find PlatformTestUtil.registerExtension")
-            legacyRegister.call(name, extension, disposable)
+            val legacyRegister = PlatformTestUtil::class.java.getMethod("registerExtension",
+                ExtensionPointName::class.java,
+                Object::class.java,
+                Disposable::class.java)
+            legacyRegister.invoke(null, name, extension, disposable)
         }
     }
 
