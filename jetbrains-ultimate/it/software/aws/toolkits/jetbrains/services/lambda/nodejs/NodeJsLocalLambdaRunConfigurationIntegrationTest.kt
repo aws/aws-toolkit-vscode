@@ -7,8 +7,10 @@ import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.xdebugger.XDebuggerUtil
 import org.assertj.core.api.Assertions.assertThat
+import org.jetbrains.ide.BuiltInServerManager
 import org.junit.After
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -34,6 +36,13 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
             arrayOf(Runtime.NODEJS8_10),
             arrayOf(Runtime.NODEJS10_X)
         )
+
+        @BeforeClass
+        @JvmStatic
+        private fun classSetUp() {
+            // Required because since 2019.2 the server does not get started in unit test mode
+            BuiltInServerManager.getInstance().waitForStart()
+        }
     }
 
     @Rule
