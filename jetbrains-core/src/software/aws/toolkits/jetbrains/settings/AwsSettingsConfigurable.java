@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.settings;
 import static software.aws.toolkits.resources.Localization.message;
 
 import com.intellij.ide.BrowserUtil;
-import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.options.SearchableConfigurable;
@@ -20,13 +19,12 @@ import com.intellij.ui.components.labels.LinkLabel;
 import java.util.Objects;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
-
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon;
-import software.aws.toolkits.jetbrains.services.telemetry.MessageBusService;
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryEnabledChangedNotifier;
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService;
 
 @SuppressWarnings("NullableProblems")
 public class AwsSettingsConfigurable implements SearchableConfigurable {
@@ -49,8 +47,7 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
         applicationLevelSettings.setBorder(IdeBorderFactory.createTitledBorder(message("aws.settings.global_level_label")));
         projectLevelSettings.setBorder(IdeBorderFactory.createTitledBorder(message("aws.settings.project_level_label")));
 
-        MessageBusService messageBusService = ServiceManager.getService(MessageBusService.class);
-        publisher = messageBusService.getMessageBus().syncPublisher(messageBusService.getTelemetryEnabledTopic());
+        publisher = TelemetryService.syncPublisher();
     }
 
     @Nullable

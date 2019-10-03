@@ -66,6 +66,29 @@ static def ideProfiles() {
                                     "PythonCore:2019.2.192.5728.98"
                             ]
                     ]
+            ],
+            "2019.3": [
+                "IC": [
+                    version: "IC-193-EAP-SNAPSHOT",
+                    plugins: [
+                        "yaml",
+                        "PythonCore:193.3793.14",
+                        "java",
+                        "gradle",
+                        "maven",
+                        "properties" // Used by Maven
+                    ]
+                ],
+                "IU": [
+                    version: "IU-193-EAP-SNAPSHOT",
+                    plugins: [
+                        "PythonCore:193.3793.14",
+                        "yaml",
+                        "JavaScriptLanguage",
+                        "JavaScriptDebugger",
+                        "CSS",
+                    ]
+                ]
             ]
     ]
 }

@@ -71,7 +71,7 @@ internal class PlatformPythonModuleType : PythonModuleTypeBase<EmptyModuleBuilde
 
     companion object {
         val instance: PlatformPythonModuleType
-            get() = ModuleTypeManager.getInstance().findByID(PYTHON_MODULE) as PlatformPythonModuleType
+            get() = ModuleTypeManager.getInstance().findByID("PYTHON_MODULE") as PlatformPythonModuleType
     }
 }
 
