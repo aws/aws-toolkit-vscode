@@ -12,17 +12,15 @@ export class TestLogger {
     /**
      * initializes a default logger. This persists through all tests.
      * initializing a default logger means that any tested files with logger statements will work.
-     * as a best practice, please initialize a TestLogger before running tests on a file with logger statements.
+     * Initialize a TestLogger before testing code that logs, and call cleanupLogger afterwards.
      *
      * @param logFolder - Folder to be managed by this object. Will be deleted on cleanup
      * @param logger - Logger to work with
      */
-    private constructor(private readonly logFolder: string, private readonly logger: l.Logger) {}
+    private constructor(private readonly logFolder: string, private readonly logger: l.WinstonToolkitLogger) {}
 
-    // cleanupLogger clears out the logger's transports, but the logger will still exist as a default
-    // this means that the default logger will still work for other files but will output an error
     public async cleanupLogger(): Promise<void> {
-        this.logger.releaseLogger()
+        this.logger.dispose()
         if (await filesystemUtilities.fileExists(this.logFolder)) {
             await del(this.logFolder, { force: true })
         }
@@ -39,7 +37,13 @@ export class TestLogger {
             logLevel: 'debug'
         })
 
-        return new TestLogger(logFolder, logger)
+        // In a future change, we will introduce a memory-based logger for testing usage.
+        // For now, we rely on (and expect) a winston logger that is writing to a test log file.
+        if (logger instanceof l.WinstonToolkitLogger) {
+            return new TestLogger(logFolder, logger)
+        }
+
+        throw new Error('This test logger was expecting a Winston Toolkit Logger')
     }
 
     private static getLogPath(logFolder: string): string {
