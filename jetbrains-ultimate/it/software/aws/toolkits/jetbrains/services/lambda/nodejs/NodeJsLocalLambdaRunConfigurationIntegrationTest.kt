@@ -39,7 +39,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
 
         @BeforeClass
         @JvmStatic
-        private fun classSetUp() {
+        fun classSetUp() {
             // Required because since 2019.2 the server does not get started in unit test mode
             BuiltInServerManager.getInstance().waitForStart()
         }
