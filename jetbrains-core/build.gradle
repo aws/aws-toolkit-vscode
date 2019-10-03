@@ -12,9 +12,6 @@ intellij {
     plugins = idePlugins("IC")
 }
 
-publishPlugin.enabled = false
-buildSearchableOptions.enabled = false
-
 configurations {
     testArtifacts
 }
@@ -22,6 +19,7 @@ configurations {
 task testJar (type: Jar) {
     baseName = "${project.name}-test"
     from sourceSets.test.output
+    from sourceSets.integrationTest.output
 }
 
 task pluginChangeLog(type: GenerateChangeLog) {

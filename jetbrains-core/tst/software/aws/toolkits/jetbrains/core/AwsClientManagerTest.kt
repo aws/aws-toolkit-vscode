@@ -28,6 +28,7 @@ import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.utils.CompatibilityUtils.createProject
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.jvm.isAccessible
 
@@ -98,7 +99,7 @@ class AwsClientManagerTest {
 
     @Test
     fun clientsAreClosedWhenProjectIsDisposed() {
-        val project = PlatformTestCase.createProject(temporaryDirectory.newFolder(), "Fake project")
+        val project = createProject(temporaryDirectory.newFolder().toPath())
         val sut = getClientManager(project)
         val client = sut.getClient<DummyServiceClient>()
 

@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.telemetry
 
 import com.intellij.testFramework.ProjectRule
-import com.intellij.util.messages.MessageBus
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.mock
@@ -32,7 +31,6 @@ import java.util.concurrent.TimeUnit
 
 class TelemetryServiceTest {
     private val batcher: TelemetryBatcher = mock()
-    private val messageBusService: MessageBusService = MockMessageBusService()
 
     @Rule
     @JvmField
@@ -57,7 +55,6 @@ class TelemetryServiceTest {
         }
 
         DefaultTelemetryService(
-                messageBusService,
                 MockAwsSettings(true, true, UUID.randomUUID()),
                 batcher
         )
@@ -80,15 +77,11 @@ class TelemetryServiceTest {
         }
 
         DefaultTelemetryService(
-                messageBusService,
                 MockAwsSettings(true, true, UUID.randomUUID()),
                 batcher
         )
 
-        val messageBus: MessageBus = messageBusService.messageBus
-        val messageBusPublisher: TelemetryEnabledChangedNotifier =
-                messageBus.syncPublisher(messageBusService.telemetryEnabledTopic)
-        messageBusPublisher.notify(false)
+        TelemetryService.syncPublisher().notify(false)
 
         changeCountDown.await(5, TimeUnit.SECONDS)
         verify(batcher).onTelemetryEnabledChanged(true)
@@ -106,7 +99,6 @@ class TelemetryServiceTest {
 
         val eventCaptor = argumentCaptor<MetricEvent>()
         val telemetryService = DefaultTelemetryService(
-            messageBusService,
             MockAwsSettings(true, true, UUID.randomUUID()),
             batcher
         )
@@ -138,7 +130,6 @@ class TelemetryServiceTest {
 
         val eventCaptor = argumentCaptor<MetricEvent>()
         val telemetryService = DefaultTelemetryService(
-            messageBusService,
             MockAwsSettings(true, true, UUID.randomUUID()),
             batcher
         )
@@ -165,7 +156,6 @@ class TelemetryServiceTest {
 
         val eventCaptor = argumentCaptor<MetricEvent>()
         val telemetryService = DefaultTelemetryService(
-            messageBusService,
             MockAwsSettings(true, true, UUID.randomUUID()),
             batcher
         )

@@ -30,12 +30,11 @@ public class CreateRolePanel {
     }
 
     private void createUIComponents() {
-        EditorTextFieldProvider textFieldProvider = ServiceManager.getService(project, EditorTextFieldProvider.class);
+        EditorTextFieldProvider textFieldProvider = ServiceManager.getService(EditorTextFieldProvider.class);
         Insets insets = JBUI.emptyInsets();
 
         policyDocument = textFieldProvider.getEditorField(JsonLanguage.INSTANCE, project, Collections.emptyList());
-        policyDocument.setBorder(
-            IdeBorderFactory.createTitledBorder(Localization.message("iam.create.role.policy.editor.name"), false, insets));
+        policyDocument.setBorder(IdeBorderFactory.createTitledBorder(Localization.message("iam.create.role.policy.editor.name"), false, insets));
 
         assumeRolePolicyDocument = textFieldProvider.getEditorField(JsonLanguage.INSTANCE, project, Collections.emptyList());
         assumeRolePolicyDocument.setBorder(IdeBorderFactory.createTitledBorder(Localization.message("iam.create.role.trust.editor.name"), false, insets));

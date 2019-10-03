@@ -3,10 +3,14 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.upload
 
+import com.intellij.openapi.application.runWriteAction
+import com.intellij.openapi.projectRoots.ProjectJdkTable
+import com.intellij.openapi.roots.ProjectRootManager
+import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.testFramework.EdtRule
+import com.intellij.testFramework.IdeaTestUtil
 import com.intellij.testFramework.RuleChain
 import com.intellij.testFramework.RunsInEdt
-import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.ui.MutableCollectionComboBoxModel
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -31,13 +35,20 @@ class UploadToLambdaValidatorTest {
 
     @Before
     fun wireMocksTogetherWithValidOptions() {
-        view = runInEdtAndGet {
-            EditFunctionPanel(projectRule.project)
+        val project = projectRule.project
+
+        val sdk = IdeaTestUtil.getMockJdk18()
+        runInEdtAndWait {
+            runWriteAction {
+                ProjectJdkTable.getInstance().addJdk(sdk, projectRule.fixture.projectDisposable)
+                ProjectRootManager.getInstance(project).projectSdk = sdk
+            }
+            view = EditFunctionPanel(project)
         }
 
         view.name.text = "name"
         view.description.text = "description"
-        view.handler.text = "com.example.LambdaHandler::handleRequest"
+        view.handlerPanel.handler.text = "com.example.LambdaHandler::handleRequest"
         val role = IamRole("DummyArn")
         view.iamRole.model = MutableCollectionComboBoxModel(listOf(role)).also { it.selectedItem = role }
         view.iamRole.forceLoaded()
@@ -85,7 +96,7 @@ class UploadToLambdaValidatorTest {
 
     @Test
     fun handlerCannotBeBlank() {
-        view.handler.text = ""
+        view.handlerPanel.handler.text = ""
         assertThat(sut.validateConfigurationSettings(view)?.message).contains("Handler must be specified")
     }
 
@@ -163,7 +174,7 @@ class UploadToLambdaValidatorTest {
 
     @Test
     fun handlerMustBeInProjectToDeploy() {
-        view.handler.text = "Foo"
+        view.handlerPanel.handler.text = "Foo"
         assertThat(sut.validateCodeSettings(projectRule.project, view)?.message).contains("Must be able to locate the handler")
     }
 

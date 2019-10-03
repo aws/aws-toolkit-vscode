@@ -74,18 +74,22 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
 
         project.messageBus.connect().subscribe(ProjectAccountSettingsManager.ACCOUNT_SETTINGS_CHANGED, this)
 
-        treePanelWrapper.setContent(errorPanel)
+        load()
     }
 
     override fun settingsChanged(event: AccountSettingsEvent) {
         if (!event.isLoading) {
-            runInEdt {
-                if (!projectAccountSettingsManager.hasActiveCredentials()) {
-                    treePanelWrapper.setContent(errorPanel)
-                } else {
-                    invalidateTree()
-                    treePanelWrapper.setContent(awsTreePanel)
-                }
+            load()
+        }
+    }
+
+    private fun load() {
+        runInEdt {
+            if (!projectAccountSettingsManager.hasActiveCredentials()) {
+                treePanelWrapper.setContent(errorPanel)
+            } else {
+                invalidateTree()
+                treePanelWrapper.setContent(awsTreePanel)
             }
         }
     }

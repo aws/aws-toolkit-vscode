@@ -9,6 +9,7 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
+import com.intellij.util.io.exists
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -20,6 +21,8 @@ import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommonTestUtils.ge
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommonTestUtils.makeATestSam
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.resources.message
+import java.nio.file.Files
+import java.nio.file.Paths
 import kotlin.test.assertNotNull
 
 class SamCommonTest {
@@ -148,8 +151,13 @@ class SamCommonTest {
 
     @Test(expected = java.lang.AssertionError::class)
     fun getTemplateFromDirectory_noYaml() {
-        val projectBase = LocalFileSystem.getInstance().findFileByPath(projectRule.project.basePath!!)
-        SamCommon.getTemplateFromDirectory(projectBase!!)
+        val basePath = projectRule.project.basePath?.let { Paths.get(it) } ?: throw NullPointerException("basepath is null")
+        if (!basePath.exists()) {
+            Files.createDirectory(basePath)
+        }
+        val projectBase = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(basePath.toFile())
+            ?: throw NullPointerException("project base is null ($basePath)")
+        SamCommon.getTemplateFromDirectory(projectBase)
     }
 
     @Test

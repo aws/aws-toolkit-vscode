@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix the bug that PyCharm pipenv doesn't create the project location folder"
-}
