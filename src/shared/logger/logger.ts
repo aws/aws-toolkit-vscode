@@ -10,11 +10,12 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as winston from 'winston'
 import * as Transport from 'winston-transport'
-import { extensionSettingsPrefix } from './constants'
-import { mkdir } from './filesystem'
-import { fileExists } from './filesystemUtilities'
-import { DefaultSettingsConfiguration, SettingsConfiguration } from './settingsConfiguration'
-import { registerCommand } from './telemetry/telemetryUtils'
+import { extensionSettingsPrefix } from '../constants'
+import { mkdir } from '../filesystem'
+import { fileExists } from '../filesystemUtilities'
+import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
+import { registerCommand } from '../telemetry/telemetryUtils'
+import { Loggable } from './loggableType'
 
 const localize = nls.loadMessageBundle()
 
@@ -35,18 +36,15 @@ function makeDefaultLogName(): string {
 
 let defaultLogger: Logger
 
-export interface BasicLogger {
-    debug(...message: ErrorOrString[]): void
-    verbose(...message: ErrorOrString[]): void
-    info(...message: ErrorOrString[]): void
-    warn(...message: ErrorOrString[]): void
-    error(...message: ErrorOrString[]): void
+export interface Logger {
+    debug(...message: Loggable[]): void
+    verbose(...message: Loggable[]): void
+    info(...message: Loggable[]): void
+    warn(...message: Loggable[]): void
+    error(...message: Loggable[]): void
 }
 
-export type LogLevel = keyof BasicLogger
-
-// TODO : Logger has been collapsed. Converge Logger and BasicLogger in a standalone change
-export interface Logger extends BasicLogger {}
+export type LogLevel = keyof Logger
 
 /**
  * logPath is not required (as Winston will work without a file path defined) but will output errors to stderr.
@@ -157,7 +155,7 @@ function getDefaultLogPath(): string {
     }
 }
 
-function formatMessage(level: LogLevel, message: ErrorOrString[]): string {
+function formatMessage(level: LogLevel, message: Loggable[]): string {
     // TODO : Look into winston custom formats - https://github.com/winstonjs/winston#creating-custom-formats
     let final: string = `${makeLogTimestamp()} [${level.toUpperCase()}]:`
     for (const chunk of message) {
@@ -174,8 +172,6 @@ function formatMessage(level: LogLevel, message: ErrorOrString[]): string {
 function makeLogTimestamp(): string {
     return moment().format('YYYY-MM-DD HH:mm:ss')
 }
-
-export type ErrorOrString = Error | string // TODO: Consider renaming to Loggable & including number
 
 export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     // forces winston to output only pre-formatted message
@@ -209,23 +205,23 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         )
     }
 
-    public debug(...message: ErrorOrString[]): void {
+    public debug(...message: Loggable[]): void {
         this.writeToLogs(message, 'debug')
     }
 
-    public verbose(...message: ErrorOrString[]): void {
+    public verbose(...message: Loggable[]): void {
         this.writeToLogs(message, 'verbose')
     }
 
-    public info(...message: ErrorOrString[]): void {
+    public info(...message: Loggable[]): void {
         this.writeToLogs(message, 'info')
     }
 
-    public warn(...message: ErrorOrString[]): void {
+    public warn(...message: Loggable[]): void {
         this.writeToLogs(message, 'warn')
     }
 
-    public error(...message: ErrorOrString[]): void {
+    public error(...message: Loggable[]): void {
         this.writeToLogs(message, 'error')
     }
 
@@ -237,7 +233,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         }
     }
 
-    private writeToLogs(message: ErrorOrString[], level: LogLevel): void {
+    private writeToLogs(message: Loggable[], level: LogLevel): void {
         if (this.disposed) {
             throw new Error('Cannot write to disposed logger')
         }

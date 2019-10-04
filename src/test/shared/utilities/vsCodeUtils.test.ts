@@ -4,8 +4,8 @@
  */
 
 import * as assert from 'assert'
-import * as vscode from 'vscode'
-import { BasicLogger, ErrorOrString, initialize, LogLevel } from '../../../shared/logger'
+import { Loggable, Logger, LogLevel } from '../../../shared/logger'
+import { initialize } from '../../../shared/logger/logger'
 import {
     ChannelLogger,
     getChannelLogger,
@@ -16,7 +16,7 @@ import {
 } from '../../../shared/utilities/vsCodeUtils'
 import { MockOutputChannel } from '../../mockOutputChannel'
 
-class MockLogger implements BasicLogger {
+class MockLogger implements Logger {
     public logs: { [level: string]: Set<string> } = {
         verbose: new Set<string>(),
         debug: new Set<string>(),
@@ -24,23 +24,22 @@ class MockLogger implements BasicLogger {
         warn: new Set<string>(),
         error: new Set<string>()
     }
-    public outputChannel?: vscode.OutputChannel
-    public verbose(...messages: ErrorOrString[]) {
+    public verbose(...messages: Loggable[]) {
         this.logs.verbose.add(MockLogger.format(messages))
     }
-    public debug(...messages: ErrorOrString[]) {
+    public debug(...messages: Loggable[]) {
         this.logs.debug.add(MockLogger.format(messages))
     }
-    public info(...messages: ErrorOrString[]) {
+    public info(...messages: Loggable[]) {
         this.logs.info.add(MockLogger.format(messages))
     }
-    public warn(...messages: ErrorOrString[]) {
+    public warn(...messages: Loggable[]) {
         this.logs.warn.add(MockLogger.format(messages))
     }
-    public error(...messages: ErrorOrString[]) {
+    public error(...messages: Loggable[]) {
         this.logs.error.add(MockLogger.format(messages))
     }
-    public static format(messages: ErrorOrString[]): string {
+    public static format(messages: Loggable[]): string {
         return JSON.stringify(messages.map(msg => (msg instanceof Error ? msg.message : msg)))
     }
 }
@@ -125,7 +124,7 @@ describe('vsCodeUtils getChannelLogger', function() {
                 outputChannel = new MockOutputChannel()
                 channelLogger = getChannelLogger(outputChannel, logger)
                 console.debug(`         input ${JSON.stringify({ logLevel, ...testDataCase })}`)
-                const expectedPrettyTokens: Exclude<ErrorOrString, Error>[] = []
+                const expectedPrettyTokens: Exclude<Loggable, Error>[] = []
                 const expectedErrorTokens: Error[] = []
                 if (testDataCase.templateTokens) {
                     testDataCase.templateTokens.forEach(token => {
