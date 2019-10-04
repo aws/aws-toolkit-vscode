@@ -7,6 +7,7 @@ import * as del from 'del'
 import * as path from 'path'
 import * as filesystemUtilities from './filesystemUtilities'
 import * as l from './logger/logger'
+import { WinstonToolkitLogger } from './logger/winstonToolkitLogger'
 
 export class TestLogger {
     /**
@@ -17,7 +18,7 @@ export class TestLogger {
      * @param logFolder - Folder to be managed by this object. Will be deleted on cleanup
      * @param logger - Logger to work with
      */
-    private constructor(private readonly logFolder: string, private readonly logger: l.WinstonToolkitLogger) {}
+    private constructor(private readonly logFolder: string, private readonly logger: WinstonToolkitLogger) {}
 
     public async cleanupLogger(): Promise<void> {
         this.logger.dispose()
@@ -39,7 +40,7 @@ export class TestLogger {
 
         // In a future change, we will introduce a memory-based logger for testing usage.
         // For now, we rely on (and expect) a winston logger that is writing to a test log file.
-        if (logger instanceof l.WinstonToolkitLogger) {
+        if (logger instanceof WinstonToolkitLogger) {
             return new TestLogger(logFolder, logger)
         }
 
