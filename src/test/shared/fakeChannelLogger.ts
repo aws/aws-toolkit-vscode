@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { Loggable } from '../../shared/logger'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { MockOutputChannel } from '../mockOutputChannel'
-import { FakeBasicLogger } from './fakeBasicLogger'
+import { FakeLogger } from './fakeLogger'
 
 export class FakeChannelLogger implements ChannelLogger {
     public readonly loggedInfoKeys: Set<string> = new Set<string>()
@@ -15,7 +15,7 @@ export class FakeChannelLogger implements ChannelLogger {
     public readonly loggedDebugKeys: Set<string> = new Set<string>()
     public readonly loggedWarnKeys: Set<string> = new Set<string>()
     public readonly loggedVerboseKeys: Set<string> = new Set<string>()
-    public readonly logger: FakeBasicLogger = new FakeBasicLogger()
+    public readonly logger: FakeLogger = new FakeLogger()
 
     public channel: vscode.OutputChannel = new MockOutputChannel()
 

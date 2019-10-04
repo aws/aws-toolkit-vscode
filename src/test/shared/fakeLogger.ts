@@ -5,8 +5,8 @@
 
 import { Loggable, Logger } from '../../shared/logger'
 
-// TODO : Rename (FakeLogger) and consolidate all Test Loggers in a separate change
-export class FakeBasicLogger implements Logger {
+// TODO : Consolidate all Test Loggers in a separate change
+export class FakeLogger implements Logger {
     public readonly debugEntries: Loggable[] = []
     public readonly verboseEntries: Loggable[] = []
     public readonly infoEntries: Loggable[] = []
