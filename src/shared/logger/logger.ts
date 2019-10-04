@@ -15,7 +15,7 @@ import { mkdir } from '../filesystem'
 import { fileExists } from '../filesystemUtilities'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import { registerCommand } from '../telemetry/telemetryUtils'
-import { Loggable as ErrorOrString } from './loggableType'
+import { Loggable } from './loggableType'
 
 const localize = nls.loadMessageBundle()
 
@@ -37,11 +37,11 @@ function makeDefaultLogName(): string {
 let defaultLogger: Logger
 
 export interface Logger {
-    debug(...message: ErrorOrString[]): void
-    verbose(...message: ErrorOrString[]): void
-    info(...message: ErrorOrString[]): void
-    warn(...message: ErrorOrString[]): void
-    error(...message: ErrorOrString[]): void
+    debug(...message: Loggable[]): void
+    verbose(...message: Loggable[]): void
+    info(...message: Loggable[]): void
+    warn(...message: Loggable[]): void
+    error(...message: Loggable[]): void
 }
 
 export type LogLevel = keyof Logger
@@ -155,7 +155,7 @@ function getDefaultLogPath(): string {
     }
 }
 
-function formatMessage(level: LogLevel, message: ErrorOrString[]): string {
+function formatMessage(level: LogLevel, message: Loggable[]): string {
     // TODO : Look into winston custom formats - https://github.com/winstonjs/winston#creating-custom-formats
     let final: string = `${makeLogTimestamp()} [${level.toUpperCase()}]:`
     for (const chunk of message) {
@@ -205,23 +205,23 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         )
     }
 
-    public debug(...message: ErrorOrString[]): void {
+    public debug(...message: Loggable[]): void {
         this.writeToLogs(message, 'debug')
     }
 
-    public verbose(...message: ErrorOrString[]): void {
+    public verbose(...message: Loggable[]): void {
         this.writeToLogs(message, 'verbose')
     }
 
-    public info(...message: ErrorOrString[]): void {
+    public info(...message: Loggable[]): void {
         this.writeToLogs(message, 'info')
     }
 
-    public warn(...message: ErrorOrString[]): void {
+    public warn(...message: Loggable[]): void {
         this.writeToLogs(message, 'warn')
     }
 
-    public error(...message: ErrorOrString[]): void {
+    public error(...message: Loggable[]): void {
         this.writeToLogs(message, 'error')
     }
 
@@ -233,7 +233,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         }
     }
 
-    private writeToLogs(message: ErrorOrString[], level: LogLevel): void {
+    private writeToLogs(message: Loggable[], level: LogLevel): void {
         if (this.disposed) {
             throw new Error('Cannot write to disposed logger')
         }

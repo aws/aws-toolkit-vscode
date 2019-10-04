@@ -11,7 +11,7 @@ import { DebugConfiguration } from '../../../lambda/local/debugConfiguration'
 import * as localLambdaRunner from '../../../shared/codelens/localLambdaRunner'
 import * as fs from '../../../shared/filesystem'
 import * as fsUtils from '../../../shared/filesystemUtilities'
-import { ErrorOrString, Logger } from '../../../shared/logger'
+import { Loggable, Logger } from '../../../shared/logger'
 import { TestLogger } from '../../../shared/loggerUtils'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { ExtensionDisposableFiles } from '../../../shared/utilities/disposableFiles'
@@ -24,35 +24,35 @@ class FakeChannelLogger implements Pick<ChannelLogger, 'info' | 'error' | 'logge
     public readonly loggedErrorKeys: Set<string> = new Set<string>()
     public readonly logger: FakeLogger = new FakeLogger()
 
-    public info(nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]): void {
+    public info(nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]): void {
         this.loggedInfoKeys.add(nlsKey)
     }
 
-    public error(nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]): void {
+    public error(nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]): void {
         this.loggedErrorKeys.add(nlsKey)
     }
 }
 
 class FakeLogger implements Logger {
-    public readonly loggedDebugEntries: ErrorOrString[] = []
+    public readonly loggedDebugEntries: Loggable[] = []
 
-    public debug(...message: ErrorOrString[]): void {
+    public debug(...message: Loggable[]): void {
         this.loggedDebugEntries.push(...message)
     }
 
-    public verbose(...message: ErrorOrString[]): void {
+    public verbose(...message: Loggable[]): void {
         throw new Error('verbose() not used')
     }
 
-    public info(...message: ErrorOrString[]): void {
+    public info(...message: Loggable[]): void {
         throw new Error('info() not used')
     }
 
-    public warn(...message: ErrorOrString[]): void {
+    public warn(...message: Loggable[]): void {
         throw new Error('warn() not used')
     }
 
-    public error(...message: ErrorOrString[]): void {
+    public error(...message: Loggable[]): void {
         throw new Error('error() not used')
     }
 }

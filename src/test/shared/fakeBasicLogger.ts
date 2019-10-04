@@ -3,33 +3,33 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ErrorOrString, Logger } from '../../shared/logger'
+import { Loggable, Logger } from '../../shared/logger'
 
 // TODO : Rename (FakeLogger) and consolidate all Test Loggers in a separate change
 export class FakeBasicLogger implements Logger {
-    public readonly debugEntries: ErrorOrString[] = []
-    public readonly verboseEntries: ErrorOrString[] = []
-    public readonly infoEntries: ErrorOrString[] = []
-    public readonly warnEntries: ErrorOrString[] = []
-    public readonly errorEntries: ErrorOrString[] = []
+    public readonly debugEntries: Loggable[] = []
+    public readonly verboseEntries: Loggable[] = []
+    public readonly infoEntries: Loggable[] = []
+    public readonly warnEntries: Loggable[] = []
+    public readonly errorEntries: Loggable[] = []
 
-    public debug(...message: ErrorOrString[]): void {
+    public debug(...message: Loggable[]): void {
         this.debugEntries.push(...message)
     }
 
-    public verbose(...message: ErrorOrString[]): void {
+    public verbose(...message: Loggable[]): void {
         this.verboseEntries.push(...message)
     }
 
-    public info(...message: ErrorOrString[]): void {
+    public info(...message: Loggable[]): void {
         this.infoEntries.push(...message)
     }
 
-    public warn(...message: ErrorOrString[]): void {
+    public warn(...message: Loggable[]): void {
         this.warnEntries.push(...message)
     }
 
-    public error(...message: ErrorOrString[]): void {
+    public error(...message: Loggable[]): void {
         this.errorEntries.push(...message)
     }
 }
