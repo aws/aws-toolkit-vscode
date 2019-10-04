@@ -3,4 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * Loggable types: Error, string
+ */
 export type Loggable = Error | string
