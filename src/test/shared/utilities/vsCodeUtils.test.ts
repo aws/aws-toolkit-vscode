@@ -4,8 +4,8 @@
  */
 
 import * as assert from 'assert'
-import * as vscode from 'vscode'
-import { BasicLogger, ErrorOrString, initialize, LogLevel } from '../../../shared/logger'
+import { ErrorOrString, Logger, LogLevel } from '../../../shared/logger'
+import { initialize } from '../../../shared/logger/logger'
 import {
     ChannelLogger,
     getChannelLogger,
@@ -16,7 +16,7 @@ import {
 } from '../../../shared/utilities/vsCodeUtils'
 import { MockOutputChannel } from '../../mockOutputChannel'
 
-class MockLogger implements BasicLogger {
+class MockLogger implements Logger {
     public logs: { [level: string]: Set<string> } = {
         verbose: new Set<string>(),
         debug: new Set<string>(),
@@ -24,7 +24,6 @@ class MockLogger implements BasicLogger {
         warn: new Set<string>(),
         error: new Set<string>()
     }
-    public outputChannel?: vscode.OutputChannel
     public verbose(...messages: ErrorOrString[]) {
         this.logs.verbose.add(MockLogger.format(messages))
     }

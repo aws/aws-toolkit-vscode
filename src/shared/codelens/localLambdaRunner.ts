@@ -25,7 +25,7 @@ import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { getFamily, SamLambdaRuntimeFamily } from '../../lambda/models/samLambdaRuntime'
-import { BasicLogger } from '../logger'
+import { Logger } from '../logger'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { Timeout } from '../utilities/timeoutUtils'
@@ -680,7 +680,7 @@ async function showDebugConsole({
     ...params
 }: {
     executeVsCodeCommand?: typeof vscode.commands.executeCommand
-    logger: BasicLogger
+    logger: Logger
 }): Promise<void> {
     try {
         await executeVsCodeCommand('workbench.debug.action.toggleRepl')

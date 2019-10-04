@@ -10,11 +10,12 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as winston from 'winston'
 import * as Transport from 'winston-transport'
-import { extensionSettingsPrefix } from './constants'
-import { mkdir } from './filesystem'
-import { fileExists } from './filesystemUtilities'
-import { DefaultSettingsConfiguration, SettingsConfiguration } from './settingsConfiguration'
-import { registerCommand } from './telemetry/telemetryUtils'
+import { extensionSettingsPrefix } from '../constants'
+import { mkdir } from '../filesystem'
+import { fileExists } from '../filesystemUtilities'
+import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
+import { registerCommand } from '../telemetry/telemetryUtils'
+import { Loggable as ErrorOrString } from './loggableType'
 
 const localize = nls.loadMessageBundle()
 
@@ -35,7 +36,7 @@ function makeDefaultLogName(): string {
 
 let defaultLogger: Logger
 
-export interface BasicLogger {
+export interface Logger {
     debug(...message: ErrorOrString[]): void
     verbose(...message: ErrorOrString[]): void
     info(...message: ErrorOrString[]): void
@@ -43,10 +44,7 @@ export interface BasicLogger {
     error(...message: ErrorOrString[]): void
 }
 
-export type LogLevel = keyof BasicLogger
-
-// TODO : Logger has been collapsed. Converge Logger and BasicLogger in a standalone change
-export interface Logger extends BasicLogger {}
+export type LogLevel = keyof Logger
 
 /**
  * logPath is not required (as Winston will work without a file path defined) but will output errors to stderr.
@@ -174,8 +172,6 @@ function formatMessage(level: LogLevel, message: ErrorOrString[]): string {
 function makeLogTimestamp(): string {
     return moment().format('YYYY-MM-DD HH:mm:ss')
 }
-
-export type ErrorOrString = Error | string // TODO: Consider renaming to Loggable & including number
 
 export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     // forces winston to output only pre-formatted message

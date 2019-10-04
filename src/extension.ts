@@ -20,7 +20,8 @@ import { DefaultAWSStatusBar } from './shared/defaultStatusBar'
 import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
 import { safeGet, showQuickStartWebview, toastNewUser } from './shared/extensionUtilities'
-import * as logFactory from './shared/logger'
+import { getLogger } from './shared/logger'
+import { initialize as activateLogger } from './shared/logger/logger'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import { activate as activateServerless } from './shared/sam/activation'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
@@ -43,7 +44,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const localize = nls.loadMessageBundle()
 
     ext.context = context
-    await logFactory.initialize()
+    await activateLogger()
     const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', 'AWS Toolkit'))
 
     try {
@@ -163,7 +164,7 @@ export async function activate(context: vscode.ExtensionContext) {
             toolkitSettings
         })
 
-        toastNewUser(context, logFactory.getLogger())
+        toastNewUser(context, getLogger())
     } catch (error) {
         const channelLogger = getChannelLogger(toolkitOutputChannel)
         channelLogger.error('AWS.channel.aws.toolkit.activation.error', 'Error Activating AWS Toolkit', error as Error)

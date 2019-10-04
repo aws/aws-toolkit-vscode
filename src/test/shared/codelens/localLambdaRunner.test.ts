@@ -11,7 +11,7 @@ import { DebugConfiguration } from '../../../lambda/local/debugConfiguration'
 import * as localLambdaRunner from '../../../shared/codelens/localLambdaRunner'
 import * as fs from '../../../shared/filesystem'
 import * as fsUtils from '../../../shared/filesystemUtilities'
-import { BasicLogger, ErrorOrString } from '../../../shared/logger'
+import { ErrorOrString, Logger } from '../../../shared/logger'
 import { TestLogger } from '../../../shared/loggerUtils'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { ExtensionDisposableFiles } from '../../../shared/utilities/disposableFiles'
@@ -22,7 +22,7 @@ import { assertRejects } from '../utilities/assertUtils'
 class FakeChannelLogger implements Pick<ChannelLogger, 'info' | 'error' | 'logger'> {
     public readonly loggedInfoKeys: Set<string> = new Set<string>()
     public readonly loggedErrorKeys: Set<string> = new Set<string>()
-    public readonly logger: FakeBasicLogger = new FakeBasicLogger()
+    public readonly logger: FakeLogger = new FakeLogger()
 
     public info(nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]): void {
         this.loggedInfoKeys.add(nlsKey)
@@ -33,7 +33,7 @@ class FakeChannelLogger implements Pick<ChannelLogger, 'info' | 'error' | 'logge
     }
 }
 
-class FakeBasicLogger implements BasicLogger {
+class FakeLogger implements Logger {
     public readonly loggedDebugEntries: ErrorOrString[] = []
 
     public debug(...message: ErrorOrString[]): void {

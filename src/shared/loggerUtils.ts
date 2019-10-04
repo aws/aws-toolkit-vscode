@@ -6,7 +6,7 @@
 import * as del from 'del'
 import * as path from 'path'
 import * as filesystemUtilities from './filesystemUtilities'
-import * as l from './logger'
+import * as l from './logger/logger'
 
 export class TestLogger {
     /**

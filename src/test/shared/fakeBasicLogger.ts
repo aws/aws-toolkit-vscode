@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BasicLogger, ErrorOrString } from '../../shared/logger'
+import { ErrorOrString, Logger } from '../../shared/logger'
 
-export class FakeBasicLogger implements BasicLogger {
+// TODO : Rename (FakeLogger) and consolidate all Test Loggers in a separate change
+export class FakeBasicLogger implements Logger {
     public readonly debugEntries: ErrorOrString[] = []
     public readonly verboseEntries: ErrorOrString[] = []
     public readonly infoEntries: ErrorOrString[] = []
