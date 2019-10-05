@@ -6,7 +6,7 @@
 import * as del from 'del'
 import * as path from 'path'
 import * as filesystemUtilities from './filesystemUtilities'
-import * as l from './logger/logger'
+import { initialize } from './logger/activation'
 import { WinstonToolkitLogger } from './logger/winstonToolkitLogger'
 
 export class TestLogger {
@@ -33,7 +33,7 @@ export class TestLogger {
 
     public static async createTestLogger(): Promise<TestLogger> {
         const logFolder = await filesystemUtilities.makeTemporaryToolkitFolder()
-        const logger = await l.initialize({
+        const logger = await initialize({
             logPath: TestLogger.getLogPath(logFolder),
             logLevel: 'debug'
         })

@@ -5,10 +5,10 @@
 
 import * as assert from 'assert'
 import { Logger } from '../../../shared/logger'
-import { createLogger } from '../../../shared/logger/logger'
+import { createLogger } from '../../../shared/logger/activation'
 import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogger'
 
-describe('logger', () => {
+describe('createLogger', () => {
     let testLogger: Logger | undefined
 
     before(async () => {
