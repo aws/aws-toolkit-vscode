@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package protocol.model
+package protocol.model.daemon
 
 import com.jetbrains.rd.generator.nova.Ext
 import com.jetbrains.rd.generator.nova.doc

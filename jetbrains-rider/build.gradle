@@ -79,7 +79,16 @@ compileKotlin.dependsOn(generateModel)
 
 test {
     useTestNG()
-    ignoreFailures = true
+
+    // TODO: Disable Rider tests until switching to 2019.3 SDK.
+    // Please see https://youtrack.jetbrains.com/issue/RIDER-19506.
+    def testClassToExclude = [ "DotNetLambdaHandlerResolverTest",
+                               "LambdaGutterMarkHighlightingTest",
+                               "DotNetLocalLambdaRunConfigurationTest" ]
+
+    testClassToExclude.forEach { classToExclude ->
+        exclude "**/${classToExclude}.class"
+    }
 }
 
 runIde {

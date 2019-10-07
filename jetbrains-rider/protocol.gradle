@@ -3,14 +3,15 @@
 
 def protocolGroup = 'protocol'
 
-ext.csGeneratedOutput = new File(resharperPluginPath, "src/AWS.Daemon/Protocol")
+ext.csDaemonGeneratedOutput = new File(resharperPluginPath, "src/AWS.Daemon/Protocol")
+ext.csPsiGeneratedOutput = new File(resharperPluginPath, "src/AWS.Psi/Protocol")
+
 ext.ktGeneratedOutput = new File(projectDir, "src/software/aws/toolkits/jetbrains/protocol")
 
-task generateModel(type: tasks.getByName("rdgen").class) {
-    group = protocolGroup
-    description = 'Generates protocol models'
+ext.modelDir = new File(projectDir, "protocol/model")
 
-    def modelDir = new File(projectDir, "protocol/model")
+task generateDaemonModel(type: tasks.getByName("rdgen").class) {
+    def daemonModelSource = new File(modelDir, "daemon").canonicalPath
 
     // NOTE: classpath is evaluated lazily, at execution time, because it comes from the unzipped
     // intellij SDK, which is extracted in afterEvaluate
@@ -26,8 +27,8 @@ task generateModel(type: tasks.getByName("rdgen").class) {
 
             "$rdLibDirectory/rider-model.jar"
         }
-        sources modelDir.canonicalPath
-        packages = "protocol.model"
+        sources daemonModelSource
+        packages = "protocol.model.daemon"
 
         generator {
             language = "kotlin"
@@ -42,21 +43,66 @@ task generateModel(type: tasks.getByName("rdgen").class) {
             transform = "reversed"
             root = "com.jetbrains.rider.model.nova.ide.IdeRoot"
             namespace = "JetBrains.Rider.Model"
-            directory = "$csGeneratedOutput"
+            directory = "$csDaemonGeneratedOutput"
         }
     }
+}
+
+task generatePsiModel(type: tasks.getByName("rdgen").class) {
+    def psiModelSource = new File(modelDir, "psi").canonicalPath
+
+    // NOTE: classpath is evaluated lazily, at execution time, because it comes from the unzipped
+    // intellij SDK, which is extracted in afterEvaluate
+    params {
+        verbose = true
+        hashFolder = "build/rdgen"
+
+        logger.info("Configuring rdgen params")
+        classpath {
+            logger.info("Calculating classpath for rdgen, intellij.ideaDependency is: ${intellij.ideaDependency}")
+            def sdkPath = intellij.ideaDependency.classes
+            def rdLibDirectory = new File(sdkPath, "lib/rd").canonicalFile
+
+            "$rdLibDirectory/rider-model.jar"
+        }
+        sources psiModelSource
+        packages = "protocol.model.psi"
+
+        generator {
+            language = "kotlin"
+            transform = "asis"
+            root = "com.jetbrains.rider.model.nova.ide.IdeRoot"
+            namespace = "com.jetbrains.rider.model"
+            directory = "$ktGeneratedOutput"
+        }
+
+        generator {
+            language = "csharp"
+            transform = "reversed"
+            root = "com.jetbrains.rider.model.nova.ide.IdeRoot"
+            namespace = "JetBrains.Rider.Model"
+            directory = "$csPsiGeneratedOutput"
+        }
+    }
+}
+
+task generateModel(type: tasks.getByName("rdgen").class) {
+    group = protocolGroup
+    description = 'Generates protocol models'
+
+    dependsOn generateDaemonModel, generatePsiModel
 }
 
 task cleanProtocolModels {
     group = protocolGroup
     description = 'Clean up generated protocol models'
 
-    if (csGeneratedOutput.isDirectory()) {
-        csGeneratedOutput.deleteDir()
-    }
+    def protocolOutDirs = [ ktGeneratedOutput, csDaemonGeneratedOutput, csPsiGeneratedOutput ]
 
-    if (ktGeneratedOutput.isDirectory()) {
-        ktGeneratedOutput.deleteDir()
+    for (dir in protocolOutDirs) {
+        if (dir.isDirectory()) {
+            dir.deleteDir()
+        }
     }
 }
 

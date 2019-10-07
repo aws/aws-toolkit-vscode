@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit
 abstract class CachingAsyncEvaluator<TEntry, TReturn> {
 
     companion object {
-        private const val EVALUATE_BLOCKING_TIMEOUT_MS = 500
+        private const val EVALUATE_BLOCKING_TIMEOUT_MS = 1000
     }
 
     private val logger: Logger = LoggerFactory.getLogger(this::class.java)

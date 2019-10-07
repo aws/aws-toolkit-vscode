@@ -7,6 +7,9 @@
         <component>
             <implementation-class>software.aws.toolkits.jetbrains.services.lambda.LambdaHost</implementation-class>
         </component>
+        <component>
+            <implementation-class>software.aws.toolkits.jetbrains.services.lambda.LambdaPsiHost</implementation-class>
+        </component>
     </project-components>
 
     <extensions defaultExtensionNs="com.intellij">

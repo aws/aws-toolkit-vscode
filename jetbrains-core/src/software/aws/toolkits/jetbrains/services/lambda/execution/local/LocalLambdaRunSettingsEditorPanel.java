@@ -75,7 +75,10 @@ public final class LocalLambdaRunSettingsEditorPanel {
 
         runtime.addActionListener(e -> {
             int index = runtime.getSelectedIndex();
-            if (index < 0) return;
+            if (index < 0) {
+                lastSelectedRuntime = null;
+                return;
+            }
             Runtime selectedRuntime = runtime.getItemAt(index);
             if (selectedRuntime == lastSelectedRuntime) return;
             lastSelectedRuntime = selectedRuntime;
