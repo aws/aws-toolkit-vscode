@@ -7,29 +7,9 @@ import * as assert from 'assert'
 import * as del from 'del'
 import * as path from 'path'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
-import { Logger } from '../../../shared/logger'
-import { createLogger, OutputChannelTransport, WinstonToolkitLogger } from '../../../shared/logger/logger'
+import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogger'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { assertThrowsError } from '../utilities/assertUtils'
-
-describe('logger', () => {
-    let testLogger: Logger | undefined
-
-    before(async () => {
-        testLogger = createLogger({
-            logLevel: 'debug'
-        })
-    })
-
-    after(async () => {
-        testLogger = undefined
-    })
-
-    it('creates a logger object', () => {
-        assert.notStrictEqual(testLogger, undefined)
-        assert.ok(testLogger instanceof WinstonToolkitLogger)
-    })
-})
 
 describe('WinstonToolkitLogger', () => {
     let tempFolder: string
@@ -259,40 +239,5 @@ describe('WinstonToolkitLogger', () => {
                 })
             })
         }
-    })
-})
-
-describe('OutputChannelTransport', async () => {
-    let outputChannel: MockOutputChannel
-
-    beforeEach(async () => {
-        outputChannel = new MockOutputChannel()
-    })
-
-    it('logs content', async () => {
-        const loggedMessage = 'This is my logged message'
-        const transport = new OutputChannelTransport({
-            outputChannel
-        })
-
-        // OutputChannel is logged to in async manner
-        const waitForLoggedText = new Promise<void>(resolve => {
-            outputChannel.onDidAppendText(loggedText => {
-                if (loggedText === loggedMessage) {
-                    resolve()
-                }
-            })
-        })
-
-        transport.log(
-            {
-                level: 'info',
-                message: loggedMessage
-            },
-            async () => {
-                // Test will timeout if expected text is not encountered
-                await waitForLoggedText
-            }
-        )
     })
 })
