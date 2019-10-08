@@ -5,7 +5,7 @@
 
 import { Loggable } from './loggableType'
 
-let toolkitLogger: Logger
+let toolkitLogger: Logger | undefined
 
 export interface Logger {
     debug(...message: Loggable[]): void
@@ -21,12 +21,14 @@ export type LogLevel = keyof Logger
  * Gets the default logger if it has been initialized with the initialize() function
  */
 export function getLogger(): Logger {
-    if (toolkitLogger) {
-        return toolkitLogger
+    if (!toolkitLogger) {
+        // TODO : CC : Test Guidance missing
+        throw new Error('Default Logger not initialized. Call logger.initialize() first.')
     }
-    throw new Error('Default Logger not initialized. Call logger.initialize() first.')
+
+    return toolkitLogger
 }
 
-export function setLogger(logger: Logger) {
+export function setLogger(logger: Logger | undefined) {
     toolkitLogger = logger
 }
