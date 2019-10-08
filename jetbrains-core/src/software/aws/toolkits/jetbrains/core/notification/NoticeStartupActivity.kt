@@ -4,10 +4,11 @@
 package software.aws.toolkits.jetbrains.core.notification
 
 import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupActivity
 
-class NoticeStartupActivity : StartupActivity {
+class NoticeStartupActivity : StartupActivity, DumbAware {
     override fun runActivity(project: Project) {
         val noticeManager =
             ServiceManager.getService(NoticeManager::class.java)
