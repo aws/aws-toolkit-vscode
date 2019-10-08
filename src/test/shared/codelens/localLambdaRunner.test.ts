@@ -12,7 +12,6 @@ import * as localLambdaRunner from '../../../shared/codelens/localLambdaRunner'
 import * as fs from '../../../shared/filesystem'
 import * as fsUtils from '../../../shared/filesystemUtilities'
 import { Loggable, Logger } from '../../../shared/logger'
-import { TestLogger } from '../../../shared/loggerUtils'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { ExtensionDisposableFiles } from '../../../shared/utilities/disposableFiles'
 import { ChannelLogger } from '../../../shared/utilities/vsCodeUtils'
@@ -33,6 +32,7 @@ class FakeChannelLogger implements Pick<ChannelLogger, 'info' | 'error' | 'logge
     }
 }
 
+// TODO : CC : Consolidate test loggers
 class FakeLogger implements Logger {
     public readonly loggedDebugEntries: Loggable[] = []
 
@@ -58,10 +58,8 @@ class FakeLogger implements Logger {
 }
 
 describe('localLambdaRunner', async () => {
-    let logger: TestLogger
     let tempDir: string
     before(async () => {
-        logger = await TestLogger.createTestLogger()
         await ExtensionDisposableFiles.initialize(new FakeExtensionContext())
     })
 
@@ -71,10 +69,6 @@ describe('localLambdaRunner', async () => {
 
     afterEach(async () => {
         await del(tempDir, { force: true })
-    })
-
-    after(async () => {
-        await logger.cleanupLogger()
     })
 
     describe('attachDebugger', async () => {

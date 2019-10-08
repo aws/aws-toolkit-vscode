@@ -4,8 +4,8 @@
  */
 
 import * as assert from 'assert'
-import { TestLogger } from '../../../../shared/loggerUtils'
 import { runSamCliPackage } from '../../../../shared/sam/cli/samCliPackage'
+import { getTestLogger } from '../../../globalSetup.test'
 import { assertThrowsError } from '../../utilities/assertUtils'
 import { assertArgsContainArgument, MockSamCliProcessInvoker } from './samCliTestUtils'
 import {
@@ -15,19 +15,10 @@ import {
 } from './testSamCliProcessInvoker'
 
 describe('SamCliPackageInvocation', async () => {
-    let logger: TestLogger
     let invokeCount: number
-
-    before(async () => {
-        logger = await TestLogger.createTestLogger()
-    })
 
     beforeEach(() => {
         invokeCount = 0
-    })
-
-    after(async () => {
-        await logger.cleanupLogger()
     })
 
     it('includes a template, s3 bucket, output template file, region, and profile ', async () => {
@@ -71,6 +62,10 @@ describe('SamCliPackageInvocation', async () => {
         }, 'Expected an error to be thrown')
 
         assertErrorContainsBadExitMessage(error, badExitCodeProcessInvoker.error.message)
-        await assertLogContainsBadExitInformation(logger, badExitCodeProcessInvoker.makeChildProcessResult(), 0)
+        await assertLogContainsBadExitInformation(
+            getTestLogger(),
+            badExitCodeProcessInvoker.makeChildProcessResult(),
+            0
+        )
     })
 })

@@ -18,7 +18,6 @@ import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { StsClient } from '../../../shared/clients/stsClient'
 import { ext } from '../../../shared/extensionGlobals'
-import { TestLogger } from '../../../shared/loggerUtils'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
@@ -31,11 +30,9 @@ async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
 
 describe('DefaultCloudFormationStackNode', () => {
     let fakeStackSummary: CloudFormation.StackSummary
-    let logger: TestLogger
 
     before(async () => {
         setupTestIconPaths()
-        logger = await TestLogger.createTestLogger()
         fakeStackSummary = {
             CreationTime: new Date(),
             StackId: '1',
@@ -46,7 +43,6 @@ describe('DefaultCloudFormationStackNode', () => {
 
     after(async () => {
         clearTestIconPaths()
-        await logger.cleanupLogger()
     })
 
     // Validates we tagged the node correctly.
@@ -213,16 +209,6 @@ describe('DefaultCloudFormationStackNode', () => {
 })
 
 describe('DefaultCloudFormationNode', () => {
-    let logger: TestLogger
-
-    before(async () => {
-        logger = await TestLogger.createTestLogger()
-    })
-
-    after(async () => {
-        await logger.cleanupLogger()
-    })
-
     class StackNamesMockCloudFormationClient extends MockCloudFormationClient {
         public constructor(
             public readonly stackNames: string[] = [],

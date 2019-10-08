@@ -5,10 +5,10 @@
 
 import * as assert from 'assert'
 import { SpawnOptions } from 'child_process'
-import { TestLogger } from '../../../../shared/loggerUtils'
 import { runSamCliInit, SamCliInitArgs } from '../../../../shared/sam/cli/samCliInit'
 import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
+import { getTestLogger } from '../../../globalSetup.test'
 import { assertThrowsError } from '../../utilities/assertUtils'
 import { assertArgsContainArgument } from './samCliTestUtils'
 import {
@@ -37,20 +37,11 @@ describe('runSamCliInit', async () => {
         }
     }
 
-    let logger: TestLogger
     const sampleSamInitArgs: SamCliInitArgs = {
         name: 'qwerty',
         location: '/some/path/to/code.js',
         runtime: 'nodejs8.10'
     }
-
-    before(async () => {
-        logger = await TestLogger.createTestLogger()
-    })
-
-    after(async () => {
-        await logger.cleanupLogger()
-    })
 
     it('Passes init command to sam cli', async () => {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
@@ -101,6 +92,10 @@ describe('runSamCliInit', async () => {
         }, 'Expected an error to be thrown')
 
         assertErrorContainsBadExitMessage(error, badExitCodeProcessInvoker.error.message)
-        await assertLogContainsBadExitInformation(logger, badExitCodeProcessInvoker.makeChildProcessResult(), 0)
+        await assertLogContainsBadExitInformation(
+            getTestLogger(),
+            badExitCodeProcessInvoker.makeChildProcessResult(),
+            0
+        )
     })
 })

@@ -16,6 +16,7 @@ import {
 } from '../../../shared/utilities/vsCodeUtils'
 import { MockOutputChannel } from '../../mockOutputChannel'
 
+// TODO : CC : Consolidate test loggers
 class MockLogger implements Logger {
     public logs: { [level: string]: Set<string> } = {
         verbose: new Set<string>(),

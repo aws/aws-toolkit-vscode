@@ -14,14 +14,12 @@ import { loadSharedConfigFiles, SharedConfigFiles } from '../../../shared/creden
 import { CredentialsValidationResult, UserCredentialsUtils } from '../../../shared/credentials/userCredentialsUtils'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { TestLogger } from '../../../shared/loggerUtils'
 import { DEFAULT_TEST_ACCOUNT_ID, DEFAULT_TEST_PROFILE_NAME, FakeAwsContext } from '../../utilities/fakeAwsContext'
 import { MockStsClient } from '../clients/mockClients'
 import { assertThrowsError } from '../utilities/assertUtils'
 
 describe('UserCredentialsUtils', () => {
     let tempFolder: string
-    let logger: TestLogger
 
     const fakeCredentials = new AWS.Credentials('fakeaccess', 'fakesecret')
     const fakeCredentialsWithToken = new AWS.Credentials('fakeaccess', 'fakesecret', 'faketoken')
@@ -29,13 +27,11 @@ describe('UserCredentialsUtils', () => {
     before(async () => {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
-        logger = await TestLogger.createTestLogger()
         tempFolder = await makeTemporaryToolkitFolder()
     })
 
     after(async () => {
         del.sync([tempFolder], { force: true })
-        await logger.cleanupLogger()
     })
 
     describe('getCredentialsFilename', () => {
