@@ -53,6 +53,7 @@ task classesJar(type: Jar, dependsOn: classes) {
     classifier = 'classes'
     from sourceSets.main.output
     from project(':jetbrains-core').sourceSets.main.output
+    from project(':core').sourceSets.test.output
     exclude 'META-INF/plugin.xml'
     exclude 'testData/*'
 }
