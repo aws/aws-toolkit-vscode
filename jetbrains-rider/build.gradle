@@ -84,7 +84,8 @@ test {
     // Please see https://youtrack.jetbrains.com/issue/RIDER-19506.
     def testClassToExclude = [ "DotNetLambdaHandlerResolverTest",
                                "LambdaGutterMarkHighlightingTest",
-                               "DotNetLocalLambdaRunConfigurationTest" ]
+                               "DotNetLocalLambdaRunConfigurationTest",
+                               "DotNetHandlerCompletionTest" ]
 
     testClassToExclude.forEach { classToExclude ->
         exclude "**/${classToExclude}.class"
