@@ -13,6 +13,7 @@ class JetBrainsMinimumVersionChange : NoticeType {
         message("notice.title.jetbrains.minimum.version.2019.2"),
         message(
             "notice.message.jetbrains.minimum.version.2019.2",
+            ApplicationInfo.getInstance().fullVersion,
             ApplicationNamesInfo.getInstance().fullProductName
         )
     )
@@ -29,7 +30,7 @@ class JetBrainsMinimumVersionChange : NoticeType {
     override fun isNotificationRequired(): Boolean {
         val appInfo = ApplicationInfo.getInstance()
         val majorVersion = appInfo.majorVersion.toIntOrNull()
-        val minorVersion = appInfo.minorVersion.toIntOrNull()
+        val minorVersion = appInfo.minorVersion.toFloatOrNull()
 
         majorVersion?.let {
             minorVersion?.let {
