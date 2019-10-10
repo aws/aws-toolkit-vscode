@@ -4,8 +4,9 @@
  */
 
 import * as assert from 'assert'
-import { Loggable, Logger, LogLevel } from '../../../shared/logger'
+import { Loggable, LogLevel } from '../../../shared/logger'
 import { initialize } from '../../../shared/logger/activation'
+import { isLoggableError } from '../../../shared/logger/loggableType'
 import {
     ChannelLogger,
     getChannelLogger,
@@ -15,38 +16,39 @@ import {
     TemplateParams
 } from '../../../shared/utilities/vsCodeUtils'
 import { MockOutputChannel } from '../../mockOutputChannel'
+import { TestLogger } from '../../testLogger'
 
 // TODO : CC : Consolidate test loggers
-class MockLogger implements Logger {
-    public logs: { [level: string]: Set<string> } = {
-        verbose: new Set<string>(),
-        debug: new Set<string>(),
-        info: new Set<string>(),
-        warn: new Set<string>(),
-        error: new Set<string>()
-    }
-    public verbose(...messages: Loggable[]) {
-        this.logs.verbose.add(MockLogger.format(messages))
-    }
-    public debug(...messages: Loggable[]) {
-        this.logs.debug.add(MockLogger.format(messages))
-    }
-    public info(...messages: Loggable[]) {
-        this.logs.info.add(MockLogger.format(messages))
-    }
-    public warn(...messages: Loggable[]) {
-        this.logs.warn.add(MockLogger.format(messages))
-    }
-    public error(...messages: Loggable[]) {
-        this.logs.error.add(MockLogger.format(messages))
-    }
-    public static format(messages: Loggable[]): string {
-        return JSON.stringify(messages.map(msg => (msg instanceof Error ? msg.message : msg)))
-    }
-}
+// class MockLogger implements Logger {
+//     public logs: { [level: string]: Set<string> } = {
+//         verbose: new Set<string>(),
+//         debug: new Set<string>(),
+//         info: new Set<string>(),
+//         warn: new Set<string>(),
+//         error: new Set<string>()
+//     }
+//     public verbose(...messages: Loggable[]) {
+//         this.logs.verbose.add(MockLogger.format(messages))
+//     }
+//     public debug(...messages: Loggable[]) {
+//         this.logs.debug.add(MockLogger.format(messages))
+//     }
+//     public info(...messages: Loggable[]) {
+//         this.logs.info.add(MockLogger.format(messages))
+//     }
+//     public warn(...messages: Loggable[]) {
+//         this.logs.warn.add(MockLogger.format(messages))
+//     }
+//     public error(...messages: Loggable[]) {
+//         this.logs.error.add(MockLogger.format(messages))
+//     }
+//     public static format(messages: Loggable[]): string {
+//         return JSON.stringify(messages.map(msg => (msg instanceof Error ? msg.message : msg)))
+//     }
+// }
 
 interface TestCaseParams {
-    logLevel: string
+    logLevel: LogLevel
     testDataCase: TestData
     expectedPrettyMsg: string
     expectedPrettyTokens: string[]
@@ -109,7 +111,7 @@ const testData: TestData[] = [
 ]
 
 describe('vsCodeUtils getChannelLogger', function() {
-    let logger: MockLogger
+    let logger: TestLogger
     let outputChannel: MockOutputChannel
     let channelLogger: ChannelLogger
 
@@ -121,7 +123,7 @@ describe('vsCodeUtils getChannelLogger', function() {
         for (const logLevel of logLevels) {
             for (const testDataCase of testData) {
                 // Reset loggers for each test case
-                logger = new MockLogger()
+                logger = new TestLogger()
                 outputChannel = new MockOutputChannel()
                 channelLogger = getChannelLogger(outputChannel, logger)
                 console.debug(`         input ${JSON.stringify({ logLevel, ...testDataCase })}`)
@@ -157,6 +159,7 @@ describe('vsCodeUtils getChannelLogger', function() {
     const assertCommonLoggerWorks: TestRunner = async ({
         logLevel,
         expectedPrettyMsg,
+        expectedPrettyTokens,
         expectedErrorTokens,
         testDataCase
     }: TestCaseParams) => {
@@ -166,17 +169,34 @@ describe('vsCodeUtils getChannelLogger', function() {
             testDataCase.nlsTemplate,
             ...(testDataCase.templateTokens || [])
         )
-        const expectedLogMsg = MockLogger.format([expectedPrettyMsg, ...expectedErrorTokens])
-        assert(
-            logger.logs[logLevel].has(expectedLogMsg),
-            `
-            expectedLogMsg:
-                ${expectedLogMsg}
-            error.logs:
-                ${JSON.stringify(Array.from(logger.logs[logLevel]))}
-            input:
-                ${JSON.stringify({ ...testDataCase, expectedPrettyMsg, expectedErrorTokens }, undefined, 2)}`
-        )
+        // TODO : CC : Get logger text and errors
+        // const expectedLogMsg = MockLogger.format([expectedPrettyMsg, ...expectedErrorTokens])
+        // const expectedLogMsg = 'hi'
+        // console.log(expectedPrettyTokens)
+        // const expectedErrorCount = testDataCase.templateTokens
+        //     ? testDataCase.templateTokens.filter(isLoggableError).length
+        //     : 0
+        const actualLogEntries = logger.getLoggedEntries([logLevel])
+        const loggedErrors = actualLogEntries.filter(isLoggableError)
+        const loggedText = actualLogEntries.filter(x => !isLoggableError(x))
+
+        assert.strictEqual(loggedText.length, 1)
+        assert.strictEqual(loggedErrors.length, expectedErrorTokens.length)
+        assert.strictEqual(loggedText[0], expectedPrettyMsg)
+
+        // assert.strictEqual(loggedErrors.length, expectedErrorCount, 'Unexpected amount of errors logged')
+        // assert.strictEqual(actualLogEntries.length - loggedErrors.length, 1, 'Expected one text entry to be logged')
+        // assert.strictEqual(
+        //     actualLogEntries[0],
+        //     expectedLogMsg,
+        //     `
+        //     expectedLogMsg:
+        //         ${expectedLogMsg}
+        //     error.logs:
+        //         ${JSON.stringify(actualLogEntries)}
+        //     input:
+        //         ${JSON.stringify({ ...testDataCase, expectedPrettyMsg, expectedErrorTokens }, undefined, 2)}`
+        // )
     }
 
     const assertChannelLoggerWorks: TestRunner = async ({
