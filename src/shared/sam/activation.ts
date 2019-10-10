@@ -17,7 +17,6 @@ import { CodeLensProviderParams } from '../codelens/codeLensUtils'
 import * as csLensProvider from '../codelens/csharpCodeLensProvider'
 import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
 import * as tsLensProvider from '../codelens/typescriptCodeLensProvider'
-import { getLogger } from '../logger'
 import { RegionProvider } from '../regions/regionProvider'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
@@ -39,12 +38,10 @@ export async function activate(activateArguments: {
     outputChannel: vscode.OutputChannel
     telemetryService: TelemetryService
 }): Promise<void> {
-    const logger = getLogger()
-    const channelLogger = getChannelLogger(activateArguments.outputChannel, logger)
+    const channelLogger = getChannelLogger(activateArguments.outputChannel)
 
     initializeSamCliContext({
-        settingsConfiguration: activateArguments.toolkitSettings,
-        logger
+        settingsConfiguration: activateArguments.toolkitSettings
     })
 
     activateArguments.extensionContext.subscriptions.push(
