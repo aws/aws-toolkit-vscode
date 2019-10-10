@@ -354,9 +354,9 @@ function assertGeneralErrorLogged(channelLogger: FakeChannelLogger) {
 
 function assertErrorLogsContain(text: string, channelLogger: FakeChannelLogger, exactMatch: boolean) {
     assert.ok(
-        channelLogger.logger.errorEntries.some(
-            e => e instanceof Error && (exactMatch ? e.message === text : e.message.indexOf(text) !== -1)
-        ),
+        channelLogger.logger
+            .getLoggedEntries('error')
+            .some(e => e instanceof Error && (exactMatch ? e.message === text : e.message.indexOf(text) !== -1)),
         `Expected to find ${text} in the error logs`
     )
 }

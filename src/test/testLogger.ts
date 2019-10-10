@@ -28,7 +28,7 @@ export class TestLogger implements Logger {
         throw new Error('Method not implemented.')
     }
 
-    public getLoggedEntries(logLevels?: LogLevel[]): Loggable[] {
+    public getLoggedEntries(...logLevels: LogLevel[]): Loggable[] {
         return []
     }
 

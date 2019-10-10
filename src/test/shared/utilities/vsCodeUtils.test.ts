@@ -176,7 +176,7 @@ describe('vsCodeUtils getChannelLogger', function() {
         // const expectedErrorCount = testDataCase.templateTokens
         //     ? testDataCase.templateTokens.filter(isLoggableError).length
         //     : 0
-        const actualLogEntries = logger.getLoggedEntries([logLevel])
+        const actualLogEntries = logger.getLoggedEntries(logLevel)
         const loggedErrors = actualLogEntries.filter(isLoggableError)
         const loggedText = actualLogEntries.filter(x => !isLoggableError(x))
 
