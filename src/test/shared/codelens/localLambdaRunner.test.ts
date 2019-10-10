@@ -11,51 +11,11 @@ import { DebugConfiguration } from '../../../lambda/local/debugConfiguration'
 import * as localLambdaRunner from '../../../shared/codelens/localLambdaRunner'
 import * as fs from '../../../shared/filesystem'
 import * as fsUtils from '../../../shared/filesystemUtilities'
-import { Loggable, Logger } from '../../../shared/logger'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { ExtensionDisposableFiles } from '../../../shared/utilities/disposableFiles'
-import { ChannelLogger } from '../../../shared/utilities/vsCodeUtils'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
+import { FakeChannelLogger } from '../fakeChannelLogger'
 import { assertRejects } from '../utilities/assertUtils'
-
-class FakeChannelLogger implements Pick<ChannelLogger, 'info' | 'error' | 'logger'> {
-    public readonly loggedInfoKeys: Set<string> = new Set<string>()
-    public readonly loggedErrorKeys: Set<string> = new Set<string>()
-    public readonly logger: FakeLogger = new FakeLogger()
-
-    public info(nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]): void {
-        this.loggedInfoKeys.add(nlsKey)
-    }
-
-    public error(nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]): void {
-        this.loggedErrorKeys.add(nlsKey)
-    }
-}
-
-// TODO : CC : Consolidate test loggers
-class FakeLogger implements Logger {
-    public readonly loggedDebugEntries: Loggable[] = []
-
-    public debug(...message: Loggable[]): void {
-        this.loggedDebugEntries.push(...message)
-    }
-
-    public verbose(...message: Loggable[]): void {
-        throw new Error('verbose() not used')
-    }
-
-    public info(...message: Loggable[]): void {
-        throw new Error('info() not used')
-    }
-
-    public warn(...message: Loggable[]): void {
-        throw new Error('warn() not used')
-    }
-
-    public error(...message: Loggable[]): void {
-        throw new Error('error() not used')
-    }
-}
 
 describe('localLambdaRunner', async () => {
     let tempDir: string
