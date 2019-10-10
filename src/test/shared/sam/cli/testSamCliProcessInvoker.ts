@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import { SpawnOptions } from 'child_process'
 
+import { isLoggableError } from '../../../../shared/logger/loggableType'
 import {
     makeRequiredSamCliProcessInvokeOptions,
     SamCliProcessInvokeOptions,
@@ -100,8 +101,10 @@ export async function assertLogContainsBadExitInformation(
         { text: `stdout: ${errantChildProcessResult.stdout}`, verifyMessage: 'Log message missing for stdout' }
     ]
 
-    // TODO : CC : Get log text
-    const logText = 'hi'
+    const logText = logger
+        .getLoggedEntries()
+        .filter(isLoggableError)
+        .join('\n')
     expectedTexts.forEach(expectedText => {
         assert.ok(logText.includes(expectedText.text), expectedText.verifyMessage)
     })
