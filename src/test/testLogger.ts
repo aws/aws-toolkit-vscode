@@ -7,32 +7,46 @@ import { Loggable, Logger, LogLevel } from '../shared/logger'
 import { setLogger } from '../shared/logger/logger'
 
 export class TestLogger implements Logger {
+    private readonly loggedEntries: {
+        logLevel: LogLevel
+        entry: Loggable
+    }[] = []
+
     // TODO : CC : Implement
     public debug(...message: Loggable[]): void {
-        throw new Error('Method not implemented.')
+        this.addLoggedEntries('debug', message)
     }
 
     public verbose(...message: Loggable[]): void {
-        throw new Error('Method not implemented.')
+        this.addLoggedEntries('verbose', message)
     }
 
     public info(...message: Loggable[]): void {
-        throw new Error('Method not implemented.')
+        this.addLoggedEntries('info', message)
     }
 
     public warn(...message: Loggable[]): void {
-        throw new Error('Method not implemented.')
+        this.addLoggedEntries('warn', message)
     }
 
     public error(...message: Loggable[]): void {
-        throw new Error('Method not implemented.')
+        this.addLoggedEntries('error', message)
     }
 
     public getLoggedEntries(...logLevels: LogLevel[]): Loggable[] {
-        return []
+        return this.loggedEntries
+            .filter(loggedEntry => logLevels.length === 0 || logLevels.indexOf(loggedEntry.logLevel) !== -1)
+            .map(loggedEntry => loggedEntry.entry)
     }
 
-    // function to filter only errors from Loggables
+    private addLoggedEntries(logLevel: LogLevel, entries: Loggable[]) {
+        entries.forEach(entry => {
+            this.loggedEntries.push({
+                logLevel,
+                entry
+            })
+        })
+    }
 }
 
 export function setupTestLogger(): TestLogger {
