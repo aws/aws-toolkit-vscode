@@ -144,9 +144,9 @@ describe('vsCodeUtils getChannelLogger', function() {
         const loggedErrors = actualLogEntries.filter(isLoggableError)
         const loggedText = actualLogEntries.filter(x => !isLoggableError(x))
 
-        assert.strictEqual(loggedText.length, 1)
-        assert.strictEqual(loggedErrors.length, expectedErrorTokens.length)
-        assert.strictEqual(loggedText[0], expectedPrettyMsg)
+        assert.strictEqual(loggedText.length, 1, 'Expected to log only one string')
+        assert.strictEqual(loggedErrors.length, expectedErrorTokens.length, 'Unexpected amount of Error objects logged')
+        assert.strictEqual(loggedText[0], expectedPrettyMsg, 'Unexpected formatted message')
     }
 
     const assertChannelLoggerWorks: TestRunner = async ({
