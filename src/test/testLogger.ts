@@ -12,7 +12,6 @@ export class TestLogger implements Logger {
         entry: Loggable
     }[] = []
 
-    // TODO : CC : Implement
     public debug(...message: Loggable[]): void {
         this.addLoggedEntries('debug', message)
     }
