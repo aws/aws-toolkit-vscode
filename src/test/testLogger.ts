@@ -4,8 +4,10 @@
  */
 
 import { Loggable, Logger, LogLevel } from '../shared/logger'
-import { setLogger } from '../shared/logger/logger'
 
+/**
+ * In-memory Logger implementation suitable for use by tests.
+ */
 export class TestLogger implements Logger {
     private readonly loggedEntries: {
         logLevel: LogLevel
@@ -46,15 +48,4 @@ export class TestLogger implements Logger {
             })
         })
     }
-}
-
-export function setupTestLogger(): TestLogger {
-    const logger = new TestLogger()
-    setLogger(logger)
-
-    return logger
-}
-
-export function teardownTestLogger() {
-    setLogger(undefined)
 }

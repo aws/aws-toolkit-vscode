@@ -18,17 +18,23 @@ export interface Logger {
 export type LogLevel = keyof Logger
 
 /**
- * Gets the default logger if it has been initialized with the initialize() function
+ * Gets the logger if it has been initialized
  */
 export function getLogger(): Logger {
     if (!toolkitLogger) {
-        // TODO : CC : Test Guidance missing
-        throw new Error('Default Logger not initialized. Call logger.initialize() first.')
+        throw new Error(
+            'Logger not initialized. Extension code should call initialize() from shared/logger/activation, test code should call setLogger().'
+        )
     }
 
     return toolkitLogger
 }
 
+/**
+ * Sets (or clears) the logger that is accessible to code.
+ * The Extension is expected to call this only once.
+ * Tests should call this to set up a logger prior to executing code that accesses a logger.
+ */
 export function setLogger(logger: Logger | undefined) {
     toolkitLogger = logger
 }
