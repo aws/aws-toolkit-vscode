@@ -81,14 +81,10 @@ const testData: TestData[] = [
     }
 ]
 
-describe('vsCodeUtils getChannelLogger', function() {
+describe('getChannelLogger', function() {
     let logger: TestLogger
     let outputChannel: MockOutputChannel
     let channelLogger: ChannelLogger
-
-    before(async () => {
-        await initialize()
-    })
 
     const runEachTestCase = async (onRunTest: TestRunner) => {
         for (const logLevel of logLevels) {
