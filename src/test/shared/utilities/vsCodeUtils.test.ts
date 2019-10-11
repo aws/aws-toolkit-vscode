@@ -5,7 +5,6 @@
 
 import * as assert from 'assert'
 import { Loggable, LogLevel } from '../../../shared/logger'
-import { initialize } from '../../../shared/logger/activation'
 import { isLoggableError } from '../../../shared/logger/loggableType'
 import {
     ChannelLogger,
