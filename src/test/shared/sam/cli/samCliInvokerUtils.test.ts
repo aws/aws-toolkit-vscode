@@ -3,22 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TestLogger } from '../../../../shared/loggerUtils'
 import { logAndThrowIfUnexpectedExitCode } from '../../../../shared/sam/cli/samCliInvokerUtils'
+import { getTestLogger } from '../../../globalSetup.test'
 import { assertThrowsError } from '../../utilities/assertUtils'
 import { assertErrorContainsBadExitMessage, assertLogContainsBadExitInformation } from './testSamCliProcessInvoker'
 
 describe('logAndThrowIfUnexpectedExitCode', async () => {
-    let logger: TestLogger
-
-    before(async () => {
-        logger = await TestLogger.createTestLogger()
-    })
-
-    after(async () => {
-        await logger.cleanupLogger()
-    })
-
     it('does not throw on expected exit code', async () => {
         logAndThrowIfUnexpectedExitCode(
             {
@@ -45,6 +35,6 @@ describe('logAndThrowIfUnexpectedExitCode', async () => {
         }, 'Expected an error to be thrown')
 
         assertErrorContainsBadExitMessage(error, exitError.message)
-        await assertLogContainsBadExitInformation(logger, childProcessResult, 456)
+        await assertLogContainsBadExitInformation(getTestLogger(), childProcessResult, 456)
     })
 })

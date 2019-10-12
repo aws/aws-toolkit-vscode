@@ -4,8 +4,8 @@
  */
 
 import * as assert from 'assert'
-import { TestLogger } from '../../../../shared/loggerUtils'
 import { runSamCliDeploy } from '../../../../shared/sam/cli/samCliDeploy'
+import { getTestLogger } from '../../../globalSetup.test'
 import { assertThrowsError } from '../../utilities/assertUtils'
 import {
     assertArgIsPresent,
@@ -20,23 +20,14 @@ import {
 } from './testSamCliProcessInvoker'
 
 describe('runSamCliDeploy', async () => {
-    let logger: TestLogger
     const fakeProfile = 'profile'
     const fakeRegion = 'region'
     const fakeStackName = 'stackName'
     const fakeTemplateFile = 'template'
     let invokeCount: number
 
-    before(async () => {
-        logger = await TestLogger.createTestLogger()
-    })
-
     beforeEach(() => {
         invokeCount = 0
-    })
-
-    after(async () => {
-        await logger.cleanupLogger()
     })
 
     it('does not include --parameter-overrides if there are no overrides', async () => {
@@ -124,6 +115,10 @@ describe('runSamCliDeploy', async () => {
         }, 'Expected an error to be thrown')
 
         assertErrorContainsBadExitMessage(error, badExitCodeProcessInvoker.error.message)
-        await assertLogContainsBadExitInformation(logger, badExitCodeProcessInvoker.makeChildProcessResult(), 0)
+        await assertLogContainsBadExitInformation(
+            getTestLogger(),
+            badExitCodeProcessInvoker.makeChildProcessResult(),
+            0
+        )
     })
 })

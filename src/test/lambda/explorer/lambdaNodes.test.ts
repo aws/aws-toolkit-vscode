@@ -17,7 +17,6 @@ import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { StsClient } from '../../../shared/clients/stsClient'
 import { ext } from '../../../shared/extensionGlobals'
-import { TestLogger } from '../../../shared/loggerUtils'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { MockLambdaClient } from '../../shared/clients/mockClients'
@@ -30,11 +29,9 @@ async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
 
 describe('DefaultLambdaFunctionNode', () => {
     let fakeFunctionConfig: Lambda.FunctionConfiguration
-    let logger: TestLogger
 
     before(async () => {
         setupTestIconPaths()
-        logger = await TestLogger.createTestLogger()
         fakeFunctionConfig = {
             FunctionName: 'testFunctionName',
             FunctionArn: 'testFunctionARN'
@@ -43,7 +40,6 @@ describe('DefaultLambdaFunctionNode', () => {
 
     after(async () => {
         clearTestIconPaths()
-        await logger.cleanupLogger()
     })
 
     // Validates we tagged the node correctly
@@ -92,16 +88,6 @@ describe('DefaultLambdaFunctionNode', () => {
 })
 
 describe('DefaultLambdaFunctionGroupNode', () => {
-    let logger: TestLogger
-
-    before(async () => {
-        logger = await TestLogger.createTestLogger()
-    })
-
-    after(async () => {
-        await logger.cleanupLogger()
-    })
-
     class FunctionNamesMockLambdaClient extends MockLambdaClient {
         public constructor(
             public readonly functionNames: string[] = [],

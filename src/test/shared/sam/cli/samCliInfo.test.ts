@@ -4,9 +4,9 @@
  */
 
 import * as assert from 'assert'
-import { TestLogger } from '../../../../shared/loggerUtils'
 import { SamCliInfoInvocation, SamCliInfoResponse } from '../../../../shared/sam/cli/samCliInfo'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
+import { getTestLogger } from '../../../globalSetup.test'
 import { assertThrowsError } from '../../utilities/assertUtils'
 import {
     assertErrorContainsBadExitMessage,
@@ -22,16 +22,6 @@ describe('SamCliInfoInvocation', async () => {
             return super.convertOutput(text)
         }
     }
-
-    let logger: TestLogger
-
-    before(async () => {
-        logger = await TestLogger.createTestLogger()
-    })
-
-    after(async () => {
-        await logger.cleanupLogger()
-    })
 
     it('converts sam info response to SamCliInfoResponse', async () => {
         const response: SamCliInfoResponse | undefined = new TestSamCliInfoCommand().convertOutput(
@@ -105,6 +95,10 @@ describe('SamCliInfoInvocation', async () => {
         }, 'Expected an error to be thrown')
 
         assertErrorContainsBadExitMessage(error, badExitCodeProcessInvoker.error.message)
-        await assertLogContainsBadExitInformation(logger, badExitCodeProcessInvoker.makeChildProcessResult(), 0)
+        await assertLogContainsBadExitInformation(
+            getTestLogger(),
+            badExitCodeProcessInvoker.makeChildProcessResult(),
+            0
+        )
     })
 })

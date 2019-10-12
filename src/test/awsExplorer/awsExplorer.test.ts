@@ -6,7 +6,6 @@
 import * as assert from 'assert'
 import { AwsExplorer } from '../../awsexplorer/awsExplorer'
 import { AwsContextTreeCollection } from '../../shared/awsContextTreeCollection'
-import { TestLogger } from '../../shared/loggerUtils'
 import { RegionNode } from '../../shared/treeview/nodes/regionNode'
 import { MockOutputChannel } from '../mockOutputChannel'
 import {
@@ -18,16 +17,6 @@ import {
 } from '../utilities/fakeAwsContext'
 
 describe('AwsExplorer', () => {
-    let logger: TestLogger
-
-    before(async () => {
-        logger = await TestLogger.createTestLogger()
-    })
-
-    after(async () => {
-        await logger.cleanupLogger()
-    })
-
     it('displays region nodes with user-friendly region names', async () => {
         const awsContext = new FakeAwsContext()
         const regionProvider = new FakeRegionProvider()

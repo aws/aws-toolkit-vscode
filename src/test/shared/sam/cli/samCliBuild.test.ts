@@ -9,10 +9,10 @@ import * as del from 'del'
 import * as path from 'path'
 import { writeFile } from '../../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
-import { TestLogger } from '../../../../shared/loggerUtils'
 import { FileFunctions, SamCliBuildInvocation } from '../../../../shared/sam/cli/samCliBuild'
 import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
+import { getTestLogger } from '../../../globalSetup.test'
 import { assertThrowsError } from '../../utilities/assertUtils'
 import { assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
 import {
@@ -41,7 +41,6 @@ describe('SamCliBuildInvocation', async () => {
         }
     }
 
-    let logger: TestLogger
     let tempFolder: string
     let placeholderTemplateFile: string
     const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
@@ -50,18 +49,10 @@ describe('SamCliBuildInvocation', async () => {
         fileExists: async (filePath: string): Promise<boolean> => true
     }
 
-    before(async () => {
-        logger = await TestLogger.createTestLogger()
-    })
-
     beforeEach(async () => {
         tempFolder = await makeTemporaryToolkitFolder()
         placeholderTemplateFile = path.join(tempFolder, 'template.yaml')
         await writeFile(placeholderTemplateFile, '')
-    })
-
-    after(async () => {
-        await logger.cleanupLogger()
     })
 
     afterEach(async () => {
@@ -282,6 +273,10 @@ describe('SamCliBuildInvocation', async () => {
         }, 'Expected an error to be thrown')
 
         assertErrorContainsBadExitMessage(error, badExitCodeProcessInvoker.error.message)
-        await assertLogContainsBadExitInformation(logger, badExitCodeProcessInvoker.makeChildProcessResult(), 0)
+        await assertLogContainsBadExitInformation(
+            getTestLogger(),
+            badExitCodeProcessInvoker.makeChildProcessResult(),
+            0
+        )
     })
 })

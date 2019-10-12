@@ -7,3 +7,7 @@
  * Loggable types: Error, string
  */
 export type Loggable = Error | string
+
+export function isLoggableError(loggable: Loggable): boolean {
+    return loggable instanceof Error
+}

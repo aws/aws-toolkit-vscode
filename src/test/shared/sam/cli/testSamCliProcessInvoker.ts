@@ -6,15 +6,14 @@
 import * as assert from 'assert'
 import { SpawnOptions } from 'child_process'
 
-import { access } from '../../../../shared/filesystem'
-import { readFileAsString } from '../../../../shared/filesystemUtilities'
-import { TestLogger } from '../../../../shared/loggerUtils'
+import { isLoggableError } from '../../../../shared/logger/loggableType'
 import {
     makeRequiredSamCliProcessInvokeOptions,
     SamCliProcessInvokeOptions,
     SamCliProcessInvoker
 } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
+import { TestLogger } from '../../../testLogger'
 
 export class TestSamCliProcessInvoker implements SamCliProcessInvoker {
     public constructor(private readonly onInvoke: (spawnOptions: SpawnOptions, ...args: any[]) => ChildProcessResult) {}
@@ -92,7 +91,6 @@ export async function assertLogContainsBadExitInformation(
     errantChildProcessResult: ChildProcessResult,
     expectedExitCode: number
 ): Promise<void> {
-    const logPath = logger.logPath
     const expectedTexts = [
         {
             text: `Unexpected exitcode (${errantChildProcessResult.exitCode}), expecting (${expectedExitCode})`,
@@ -103,62 +101,11 @@ export async function assertLogContainsBadExitInformation(
         { text: `stdout: ${errantChildProcessResult.stdout}`, verifyMessage: 'Log message missing for stdout' }
     ]
 
-    // Give the log a chance to get created/flushed
-    await retryOnError({
-        description: 'Wait for log file to exist',
-        fn: async () => await access(logPath),
-        retries: 20,
-        delayMilliseconds: 50,
-        failureMessage: `Could not find log file: ${logPath}`
+    const logText = logger
+        .getLoggedEntries()
+        .filter(x => !isLoggableError(x))
+        .join('\n')
+    expectedTexts.forEach(expectedText => {
+        assert.ok(logText.includes(expectedText.text), expectedText.verifyMessage)
     })
-
-    await retryOnError({
-        description: 'Wait for expected text to appear in log',
-        fn: async () => {
-            const logText = await readFileAsString(logPath)
-            const verifyMessage = verifyLogText(logText, expectedTexts)
-            if (verifyMessage) {
-                console.log(verifyMessage)
-                throw new Error(verifyMessage)
-            }
-        },
-        retries: 20,
-        delayMilliseconds: 50,
-        failureMessage: 'Did not find expected log contents'
-    })
-}
-
-function verifyLogText(text: string, expectedTexts: { text: string; verifyMessage: string }[]): string | undefined {
-    for (const entry of expectedTexts) {
-        if (!text.includes(entry.text)) {
-            return entry.verifyMessage
-        }
-    }
-
-    return undefined
-}
-
-async function retryOnError(parameters: {
-    description: string
-    retries: number
-    delayMilliseconds: number
-    failureMessage: string
-    fn(): Promise<void>
-}): Promise<void> {
-    for (let attempt = 0; attempt < parameters.retries; attempt++) {
-        try {
-            console.log(`${parameters.description}: Attempt ${attempt + 1}`)
-            await parameters.fn()
-
-            return
-        } catch (err) {
-            if (attempt + 1 >= parameters.retries) {
-                assert.fail(parameters.failureMessage)
-            }
-        }
-
-        await new Promise<any>(resolve => setTimeout(resolve, parameters.delayMilliseconds))
-    }
-
-    assert.fail(parameters.failureMessage)
 }

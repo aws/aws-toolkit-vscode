@@ -4,8 +4,8 @@
  */
 
 import * as assert from 'assert'
-import { Loggable, Logger, LogLevel } from '../../../shared/logger'
-import { initialize } from '../../../shared/logger/activation'
+import { Loggable, LogLevel } from '../../../shared/logger'
+import { isLoggableError } from '../../../shared/logger/loggableType'
 import {
     ChannelLogger,
     getChannelLogger,
@@ -15,37 +15,10 @@ import {
     TemplateParams
 } from '../../../shared/utilities/vsCodeUtils'
 import { MockOutputChannel } from '../../mockOutputChannel'
-
-class MockLogger implements Logger {
-    public logs: { [level: string]: Set<string> } = {
-        verbose: new Set<string>(),
-        debug: new Set<string>(),
-        info: new Set<string>(),
-        warn: new Set<string>(),
-        error: new Set<string>()
-    }
-    public verbose(...messages: Loggable[]) {
-        this.logs.verbose.add(MockLogger.format(messages))
-    }
-    public debug(...messages: Loggable[]) {
-        this.logs.debug.add(MockLogger.format(messages))
-    }
-    public info(...messages: Loggable[]) {
-        this.logs.info.add(MockLogger.format(messages))
-    }
-    public warn(...messages: Loggable[]) {
-        this.logs.warn.add(MockLogger.format(messages))
-    }
-    public error(...messages: Loggable[]) {
-        this.logs.error.add(MockLogger.format(messages))
-    }
-    public static format(messages: Loggable[]): string {
-        return JSON.stringify(messages.map(msg => (msg instanceof Error ? msg.message : msg)))
-    }
-}
+import { TestLogger } from '../../testLogger'
 
 interface TestCaseParams {
-    logLevel: string
+    logLevel: LogLevel
     testDataCase: TestData
     expectedPrettyMsg: string
     expectedPrettyTokens: string[]
@@ -107,20 +80,16 @@ const testData: TestData[] = [
     }
 ]
 
-describe('vsCodeUtils getChannelLogger', function() {
-    let logger: MockLogger
+describe('getChannelLogger', function() {
+    let logger: TestLogger
     let outputChannel: MockOutputChannel
     let channelLogger: ChannelLogger
-
-    before(async () => {
-        await initialize()
-    })
 
     const runEachTestCase = async (onRunTest: TestRunner) => {
         for (const logLevel of logLevels) {
             for (const testDataCase of testData) {
                 // Reset loggers for each test case
-                logger = new MockLogger()
+                logger = new TestLogger()
                 outputChannel = new MockOutputChannel()
                 channelLogger = getChannelLogger(outputChannel, logger)
                 console.debug(`         input ${JSON.stringify({ logLevel, ...testDataCase })}`)
@@ -156,6 +125,7 @@ describe('vsCodeUtils getChannelLogger', function() {
     const assertCommonLoggerWorks: TestRunner = async ({
         logLevel,
         expectedPrettyMsg,
+        expectedPrettyTokens,
         expectedErrorTokens,
         testDataCase
     }: TestCaseParams) => {
@@ -165,17 +135,13 @@ describe('vsCodeUtils getChannelLogger', function() {
             testDataCase.nlsTemplate,
             ...(testDataCase.templateTokens || [])
         )
-        const expectedLogMsg = MockLogger.format([expectedPrettyMsg, ...expectedErrorTokens])
-        assert(
-            logger.logs[logLevel].has(expectedLogMsg),
-            `
-            expectedLogMsg:
-                ${expectedLogMsg}
-            error.logs:
-                ${JSON.stringify(Array.from(logger.logs[logLevel]))}
-            input:
-                ${JSON.stringify({ ...testDataCase, expectedPrettyMsg, expectedErrorTokens }, undefined, 2)}`
-        )
+        const actualLogEntries = logger.getLoggedEntries(logLevel)
+        const loggedErrors = actualLogEntries.filter(isLoggableError)
+        const loggedText = actualLogEntries.filter(x => !isLoggableError(x))
+
+        assert.strictEqual(loggedText.length, 1, 'Expected to log only one string')
+        assert.strictEqual(loggedErrors.length, expectedErrorTokens.length, 'Unexpected amount of Error objects logged')
+        assert.strictEqual(loggedText[0], expectedPrettyMsg, 'Unexpected formatted message')
     }
 
     const assertChannelLoggerWorks: TestRunner = async ({
