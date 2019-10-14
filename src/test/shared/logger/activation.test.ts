@@ -4,21 +4,30 @@
  */
 
 import * as assert from 'assert'
+import * as del from 'del'
+import { join } from 'path'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { Logger } from '../../../shared/logger'
-import { createLogger } from '../../../shared/logger/activation'
+import { makeLogger } from '../../../shared/logger/activation'
 import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogger'
+import { MockOutputChannel } from '../../mockOutputChannel'
 
-describe('createLogger', () => {
+describe('makeLogger', () => {
+    let tempFolder: string
     let testLogger: Logger | undefined
 
     before(async () => {
-        testLogger = createLogger({
-            logLevel: 'debug'
-        })
+        tempFolder = await makeTemporaryToolkitFolder()
+        testLogger = makeLogger('debug', join(tempFolder, 'log.txt'), new MockOutputChannel())
     })
 
     after(async () => {
+        if (testLogger && testLogger instanceof WinstonToolkitLogger) {
+            testLogger.dispose()
+        }
+
         testLogger = undefined
+        await del([tempFolder], { force: true })
     })
 
     it('creates a logger object', () => {
