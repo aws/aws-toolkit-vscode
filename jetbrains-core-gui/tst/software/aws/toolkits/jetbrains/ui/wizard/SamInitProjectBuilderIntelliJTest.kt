@@ -15,6 +15,7 @@ import com.intellij.testGuiFramework.util.step
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import software.aws.toolkits.core.utils.test.retryableAssert
 import software.aws.toolkits.jetbrains.fixtures.ServerlessProjectOptions
 import software.aws.toolkits.jetbrains.fixtures.checkLibraryPrefixPresent
 import software.aws.toolkits.jetbrains.fixtures.checkProject
@@ -85,7 +86,9 @@ class SamInitProjectBuilderIntelliJTest(private val testParameters: TestParamete
             }
 
             step("check the run configuration is created") {
-                assertTrue(runConfigurationList.getRunConfigurationList().containsAll(testParameters.runConfigNames))
+                retryableAssert {
+                    assertTrue(runConfigurationList.getRunConfigurationList().containsAll(testParameters.runConfigNames))
+                }
             }
 
             step("check the default README.md file is open in editor") {

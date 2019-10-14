@@ -24,10 +24,10 @@ import org.junit.Test
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.utils.test.retryableAssert
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.utils.hasException
 import software.aws.toolkits.jetbrains.utils.hasValue
-import software.aws.toolkits.jetbrains.utils.test.retryableAssert
 import software.aws.toolkits.jetbrains.utils.value
 import software.aws.toolkits.jetbrains.utils.wait
 import java.time.Clock

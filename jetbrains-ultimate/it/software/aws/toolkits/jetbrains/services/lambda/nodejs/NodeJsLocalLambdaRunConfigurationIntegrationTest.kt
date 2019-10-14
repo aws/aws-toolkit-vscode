@@ -7,6 +7,7 @@ import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.xdebugger.XDebuggerUtil
 import org.assertj.core.api.Assertions.assertThat
+import org.jetbrains.ide.BuiltInServerManager
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -24,6 +25,7 @@ import software.aws.toolkits.jetbrains.services.lambda.sam.executeLambda
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import softwere.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
 import softwere.aws.toolkits.jetbrains.utils.rules.addPackageJsonFile
+import java.util.concurrent.atomic.AtomicReference
 
 @RunWith(Parameterized::class)
 class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtime) {
@@ -42,6 +44,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
 
     private val mockId = "MockCredsId"
     private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
+    private val serverStarted = AtomicReference<Boolean>(false)
 
     @Before
     fun setUp() {
@@ -63,6 +66,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         }
 
         MockCredentialsManager.getInstance().addCredentials(mockId, mockCreds)
+        ensureServerStarted()
     }
 
     @After
@@ -209,6 +213,15 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         assertThat(executeLambda.stdout).contains("Hello World")
 
         assertThat(debuggerIsHit.get()).isTrue()
+    }
+
+    private fun ensureServerStarted() {
+        serverStarted.getAndUpdate { started ->
+            if (!started) {
+                BuiltInServerManager.getInstance().waitForStart()
+            }
+            true
+        }
     }
 
     private fun addBreakpoint(lineNumber: Int) {
