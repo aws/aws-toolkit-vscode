@@ -7,6 +7,7 @@ import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.util.text.SemVer
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.resources.message
@@ -39,6 +40,12 @@ object SamInitRunner {
                 dependencyManager?.let {
                     this.withParameters("--dependency-manager")
                         .withParameters(it)
+                }
+
+                SemVer.parseFromText(SamCommon.getVersionString())?.let {
+                    if (it.isGreaterOrEqualThan(0, 30, 0)) {
+                        this.withParameters("--no-interactive")
+                    }
                 }
             }
 
