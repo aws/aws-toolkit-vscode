@@ -3,8 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as semver from 'semver'
 import { SamLambdaRuntime } from '../../../lambda/models/samLambdaRuntime'
-import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
+import { getSamCliVersion, SamCliContext } from './samCliContext'
+import { logAndThrowIfUnexpectedExitCode } from './samCliInvokerUtils'
 
 export interface SamCliInitArgs {
     runtime: SamLambdaRuntime
@@ -12,10 +14,17 @@ export interface SamCliInitArgs {
     name: string
 }
 
-export async function runSamCliInit(initArguments: SamCliInitArgs, invoker: SamCliProcessInvoker): Promise<void> {
-    const childProcessResult = await invoker.invoke({
+export async function runSamCliInit(initArguments: SamCliInitArgs, context: SamCliContext): Promise<void> {
+    const args = ['init', '--name', initArguments.name, '--runtime', initArguments.runtime]
+    const samCliVersion = await getSamCliVersion(context)
+
+    if (semver.gte(samCliVersion, '0.30.0')) {
+        args.push('--no-interactive')
+    }
+
+    const childProcessResult = await context.invoker.invoke({
         spawnOptions: { cwd: initArguments.location },
-        arguments: ['init', '--name', initArguments.name, '--runtime', initArguments.runtime]
+        arguments: args
     })
 
     logAndThrowIfUnexpectedExitCode(childProcessResult, 0)

@@ -136,7 +136,7 @@ for (const runtime of runtimes) {
                 runtime: projectSDK as SamLambdaRuntime
             }
             const samCliContext = getSamCliContext()
-            await runSamCliInit(initArguments, samCliContext.invoker)
+            await runSamCliInit(initArguments, samCliContext)
             // Activate the relevent extensions if needed
             if (projectSDK.includes('dotnet')) {
                 await activateExtension('ms-vscode.csharp')
@@ -165,7 +165,7 @@ for (const runtime of runtimes) {
             }
             console.log(initArguments.location)
             const samCliContext = getSamCliContext()
-            const err = await assertThrowsError(async () => runSamCliInit(initArguments, samCliContext.invoker))
+            const err = await assertThrowsError(async () => runSamCliInit(initArguments, samCliContext))
             assert(err.message.includes('directory already exists'))
         }).timeout(TIMEOUT)
 

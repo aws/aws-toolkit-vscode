@@ -1,0 +1,4 @@
+{
+    "type": "Bug Fix",
+    "description": "Add '--no-interactive' flag to 'sam init' calls when SAM CLI version is greater than or equal to 0.30.0"
+}

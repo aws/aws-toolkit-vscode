@@ -91,7 +91,7 @@ export async function createNewSamApplication(
             location: config.location.fsPath,
             runtime: config.runtime
         }
-        await runSamCliInit(initArguments, samCliContext.invoker)
+        await runSamCliInit(initArguments, samCliContext)
 
         results.result = 'pass'
 
