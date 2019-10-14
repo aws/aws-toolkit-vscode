@@ -32,6 +32,8 @@ class HandlerPanel(private val project: Project) : JPanel(MigLayout("novisualpad
             add(simpleHandler, "growx")
             add(handlerWithCompletion, "growx")
         }
+
+        switchCompletion()
     }
 
     override fun setVisible(isVisible: Boolean) {
@@ -42,12 +44,12 @@ class HandlerPanel(private val project: Project) : JPanel(MigLayout("novisualpad
             return
         }
 
-        switchCompletion(handlerCompletionProvider.isCompletionSupported)
+        switchCompletion()
     }
 
     fun setRuntime(runtime: Runtime) {
         handlerCompletionProvider = HandlerCompletionProvider(project, runtime)
-        switchCompletion(handlerCompletionProvider.isCompletionSupported)
+        switchCompletion()
     }
 
     private fun initSimpleHandler() {
@@ -70,7 +72,8 @@ class HandlerPanel(private val project: Project) : JPanel(MigLayout("novisualpad
         })
     }
 
-    private fun switchCompletion(isCompletionSupported: Boolean) {
+    private fun switchCompletion() {
+        val isCompletionSupported = handlerCompletionProvider.isCompletionSupported
         handlerWithCompletion.isVisible = isCompletionSupported
         simpleHandler.isVisible = !isCompletionSupported
     }

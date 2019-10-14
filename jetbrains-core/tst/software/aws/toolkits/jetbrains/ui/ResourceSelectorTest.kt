@@ -12,9 +12,9 @@ import org.junit.Test
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.utils.test.retryableAssert
 import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.Resource
-import software.aws.toolkits.jetbrains.utils.test.retryableAssert
 import software.aws.toolkits.resources.message
 import java.util.concurrent.CompletableFuture
 
