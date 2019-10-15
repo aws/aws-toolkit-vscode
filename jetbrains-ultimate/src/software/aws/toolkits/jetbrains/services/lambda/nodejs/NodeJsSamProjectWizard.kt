@@ -17,6 +17,8 @@ import software.aws.toolkits.jetbrains.services.lambda.SamNewProjectSettings
 import software.aws.toolkits.jetbrains.services.lambda.SamProjectTemplate
 import software.aws.toolkits.jetbrains.services.lambda.SamProjectWizard
 import software.aws.toolkits.jetbrains.services.lambda.SdkSettings
+import software.aws.toolkits.jetbrains.services.lambda.TemplateParameters
+import software.aws.toolkits.jetbrains.services.lambda.TemplateParameters.AppBasedTemplate
 import software.aws.toolkits.jetbrains.ui.wizard.SamProjectGenerator
 import software.aws.toolkits.jetbrains.ui.wizard.SdkSelectionPanel
 import software.aws.toolkits.resources.message
@@ -75,4 +77,6 @@ class SamHelloWorldNodeJs : SamNodeJsProjectTemplate() {
     override fun getName() = message("sam.init.template.hello_world.name")
 
     override fun getDescription() = message("sam.init.template.hello_world.description")
+
+    override fun templateParameters(): TemplateParameters = AppBasedTemplate("hello-world", "npm")
 }

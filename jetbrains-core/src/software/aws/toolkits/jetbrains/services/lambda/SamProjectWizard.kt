@@ -61,6 +61,11 @@ data class SdkBasedSdkSettings(
     val sdk: Sdk?
 ) : SdkSettings
 
+sealed class TemplateParameters {
+    data class LocationBasedTemplate(val location: String) : TemplateParameters()
+    data class AppBasedTemplate(val appTemplate: String, val dependencyManager: String) : TemplateParameters()
+}
+
 abstract class SamProjectTemplate {
     abstract fun getName(): String
 
@@ -137,14 +142,11 @@ abstract class SamProjectTemplate {
             AwsModuleType.ID,
             outputDir,
             runtime,
-            location(),
-            dependencyManager()
+            templateParameters()
         )
     }
 
-    protected open fun location(): String? = null
-
-    protected open fun dependencyManager(): String? = null
+    protected abstract fun templateParameters(): TemplateParameters
 
     abstract fun supportedRuntimes(): Set<Runtime>
 
