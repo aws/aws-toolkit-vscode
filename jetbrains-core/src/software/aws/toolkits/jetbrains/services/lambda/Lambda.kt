@@ -32,8 +32,9 @@ object Lambda {
     }
 
     fun isHandlerValid(project: Project, runtime: Runtime, handler: String): Boolean = ReadAction.compute<Boolean, Throwable> {
-        val resolver = runtime.runtimeGroup?.let { LambdaHandlerResolver.getInstance(it) } ?: return@compute false
-        resolver.isHandlerValid(project, handler)
+        runtime.runtimeGroup?.let {
+            LambdaHandlerResolver.getInstance(it)
+        }?.isHandlerValid(project, handler) == true
     }
 }
 
