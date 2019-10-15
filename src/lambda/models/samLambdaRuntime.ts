@@ -18,6 +18,22 @@ export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set(
     'dotnetcore2.1'
 ] as SamLambdaRuntime[])
 
+export type DependencyManager = 'cli-package' | 'mod' | 'gradle' | 'pip' | 'npm' | 'maven' | 'bundler'
+
+// TODO: Make this return an array of DependencyManagers when we add runtimes with multiple dependency managers
+export function getDependencyManager (runtime: SamLambdaRuntime): DependencyManager {
+        switch (runtime) {
+            case 'nodejs10.x' || 'nodejs8.10':
+                return 'npm'
+            case 'python2.7' || 'pyhton3.6' || 'python3.7':
+                return 'pip'
+            case 'dotnetcore2.1':
+                return 'cli-package'
+            default:
+                throw new Error(`Runtime ${runtime} does not have an associated DependencyManager`)
+        }
+}
+
 export enum SamLambdaRuntimeFamily {
     Python,
     NodeJS,

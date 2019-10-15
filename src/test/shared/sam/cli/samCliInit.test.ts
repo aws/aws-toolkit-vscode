@@ -66,7 +66,8 @@ describe('runSamCliInit', async () => {
     const sampleSamInitArgs: SamCliInitArgs = {
         name: 'qwerty',
         location: '/some/path/to/code.js',
-        runtime: 'nodejs8.10'
+        runtime: 'nodejs8.10',
+        dependencyManager: 'npm'
     }
 
     it('Passes init command to sam cli', async () => {

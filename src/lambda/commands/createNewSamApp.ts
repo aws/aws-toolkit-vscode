@@ -18,6 +18,7 @@ import { METADATA_FIELD_NAME, MetadataResult } from '../../shared/telemetry/tele
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
+import { getDependencyManager } from '../models/samLambdaRuntime'
 import {
     CreateNewSamAppWizard,
     CreateNewSamAppWizardResponse,
@@ -86,11 +87,16 @@ export async function createNewSamApplication(
 
         results.runtime = config.runtime
 
+        // TODO: Make this selectable in the wizard to account for runtimes with multiple dependency managers
+        const dependencyManager = getDependencyManager(config.runtime)
+
         const initArguments: SamCliInitArgs = {
             name: config.name,
             location: config.location.fsPath,
-            runtime: config.runtime
+            runtime: config.runtime,
+            dependencyManager
         }
+
         await runSamCliInit(initArguments, samCliContext)
 
         results.result = 'pass'

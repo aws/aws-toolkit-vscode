@@ -4,7 +4,7 @@
  */
 
 import * as semver from 'semver'
-import { SamLambdaRuntime } from '../../../lambda/models/samLambdaRuntime'
+import { DependencyManager, SamLambdaRuntime } from '../../../lambda/models/samLambdaRuntime'
 import { getSamCliVersion, SamCliContext } from './samCliContext'
 import { logAndThrowIfUnexpectedExitCode } from './samCliInvokerUtils'
 import { SAM_CLI_VERSION_0_30 } from './samCliValidator'
@@ -13,6 +13,7 @@ export interface SamCliInitArgs {
     runtime: SamLambdaRuntime
     location: string
     name: string
+    dependencyManager: DependencyManager
 }
 
 export async function runSamCliInit(initArguments: SamCliInitArgs, context: SamCliContext): Promise<void> {
@@ -21,6 +22,8 @@ export async function runSamCliInit(initArguments: SamCliInitArgs, context: SamC
 
     if (semver.gte(samCliVersion, SAM_CLI_VERSION_0_30)) {
         args.push('--no-interactive')
+        args.push('--app-template', 'hello-world')
+        args.push('--dependency-manager', initArguments.dependencyManager)
     }
 
     const childProcessResult = await context.invoker.invoke({
