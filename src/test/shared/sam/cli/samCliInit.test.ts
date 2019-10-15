@@ -10,6 +10,7 @@ import { runSamCliInit, SamCliInitArgs } from '../../../../shared/sam/cli/samCli
 import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import {
     MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
+    SAM_CLI_VERSION_0_30,
     SamCliValidator,
     SamCliValidatorResult,
     SamCliVersionValidation
@@ -156,7 +157,7 @@ describe('runSamCliInit', async () => {
         )
 
         const context: SamCliContext = {
-            validator: new FakeSamCliValidator('0.30.0'),
+            validator: new FakeSamCliValidator(SAM_CLI_VERSION_0_30),
             invoker: processInvoker
         }
 

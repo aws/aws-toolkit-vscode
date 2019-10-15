@@ -7,6 +7,7 @@ import * as semver from 'semver'
 import { SamLambdaRuntime } from '../../../lambda/models/samLambdaRuntime'
 import { getSamCliVersion, SamCliContext } from './samCliContext'
 import { logAndThrowIfUnexpectedExitCode } from './samCliInvokerUtils'
+import { SAM_CLI_VERSION_0_30 } from './samCliValidator'
 
 export interface SamCliInitArgs {
     runtime: SamLambdaRuntime
@@ -18,7 +19,7 @@ export async function runSamCliInit(initArguments: SamCliInitArgs, context: SamC
     const args = ['init', '--name', initArguments.name, '--runtime', initArguments.runtime]
     const samCliVersion = await getSamCliVersion(context)
 
-    if (semver.gte(samCliVersion, '0.30.0')) {
+    if (semver.gte(samCliVersion, SAM_CLI_VERSION_0_30)) {
         args.push('--no-interactive')
     }
 
