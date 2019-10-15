@@ -5,12 +5,20 @@
 
 import * as assert from 'assert'
 import { SpawnOptions } from 'child_process'
+import { SamCliContext } from '../../../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../../../shared/sam/cli/samCliInit'
 import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
+import {
+    MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
+    SAM_CLI_VERSION_0_30,
+    SamCliValidator,
+    SamCliValidatorResult,
+    SamCliVersionValidation
+} from '../../../../shared/sam/cli/samCliValidator'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 import { getTestLogger } from '../../../globalSetup.test'
 import { assertThrowsError } from '../../utilities/assertUtils'
-import { assertArgsContainArgument } from './samCliTestUtils'
+import { assertArgIsPresent, assertArgsContainArgument } from './samCliTestUtils'
 import {
     assertErrorContainsBadExitMessage,
     assertLogContainsBadExitInformation,
@@ -37,6 +45,24 @@ describe('runSamCliInit', async () => {
         }
     }
 
+    class FakeSamCliValidator implements SamCliValidator {
+        private readonly version: string
+        public constructor(version: string = MINIMUM_SAM_CLI_VERSION_INCLUSIVE) {
+            this.version = version
+        }
+        public async detectValidSamCli(): Promise<SamCliValidatorResult> {
+            return {
+                samCliFound: true,
+                versionValidation: {
+                    version: this.version,
+                    validation: SamCliVersionValidation.Valid
+                }
+            }
+        }
+    }
+
+    const defaultFakeValidator = new FakeSamCliValidator()
+
     const sampleSamInitArgs: SamCliInitArgs = {
         name: 'qwerty',
         location: '/some/path/to/code.js',
@@ -51,7 +77,12 @@ describe('runSamCliInit', async () => {
             }
         )
 
-        await runSamCliInit(sampleSamInitArgs, processInvoker)
+        const context: SamCliContext = {
+            validator: defaultFakeValidator,
+            invoker: processInvoker
+        }
+
+        await runSamCliInit(sampleSamInitArgs, context)
     })
 
     it('Passes name to sam cli', async () => {
@@ -61,7 +92,12 @@ describe('runSamCliInit', async () => {
             }
         )
 
-        await runSamCliInit(sampleSamInitArgs, processInvoker)
+        const context: SamCliContext = {
+            validator: defaultFakeValidator,
+            invoker: processInvoker
+        }
+
+        await runSamCliInit(sampleSamInitArgs, context)
     })
 
     it('Passes location to sam cli', async () => {
@@ -71,7 +107,12 @@ describe('runSamCliInit', async () => {
             }
         )
 
-        await runSamCliInit(sampleSamInitArgs, processInvoker)
+        const context: SamCliContext = {
+            validator: defaultFakeValidator,
+            invoker: processInvoker
+        }
+
+        await runSamCliInit(sampleSamInitArgs, context)
     })
 
     it('Passes runtime to sam cli', async () => {
@@ -81,14 +122,23 @@ describe('runSamCliInit', async () => {
             }
         )
 
-        await runSamCliInit(sampleSamInitArgs, processInvoker)
+        const context: SamCliContext = {
+            validator: defaultFakeValidator,
+            invoker: processInvoker
+        }
+
+        await runSamCliInit(sampleSamInitArgs, context)
     })
 
     it('throws on unexpected exit code', async () => {
         const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
+        const context: SamCliContext = {
+            validator: defaultFakeValidator,
+            invoker: badExitCodeProcessInvoker
+        }
 
         const error = await assertThrowsError(async () => {
-            await runSamCliInit(sampleSamInitArgs, badExitCodeProcessInvoker)
+            await runSamCliInit(sampleSamInitArgs, context)
         }, 'Expected an error to be thrown')
 
         assertErrorContainsBadExitMessage(error, badExitCodeProcessInvoker.error.message)
@@ -97,5 +147,20 @@ describe('runSamCliInit', async () => {
             badExitCodeProcessInvoker.makeChildProcessResult(),
             0
         )
+    })
+
+    it('Passes --no-interactive if version >= 0.30.0', async () => {
+        const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
+            (spawnOptions: SpawnOptions, args: any[]) => {
+                assertArgIsPresent(args, '--no-interactive')
+            }
+        )
+
+        const context: SamCliContext = {
+            validator: new FakeSamCliValidator(SAM_CLI_VERSION_0_30),
+            invoker: processInvoker
+        }
+
+        await runSamCliInit(sampleSamInitArgs, context)
     })
 })
