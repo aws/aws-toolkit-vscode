@@ -25,7 +25,7 @@ export function getDependencyManager (runtime: SamLambdaRuntime): DependencyMana
         switch (runtime) {
             case 'nodejs10.x' || 'nodejs8.10':
                 return 'npm'
-            case 'python2.7' || 'pyhton3.6' || 'python3.7':
+            case 'python2.7' || 'python3.6' || 'python3.7':
                 return 'pip'
             case 'dotnetcore2.1':
                 return 'cli-package'
