@@ -420,7 +420,8 @@ export async function invokeLambdaFunction(
         templatePath: invokeArgs.samTemplatePath,
         eventPath,
         environmentVariablePath,
-        invoker: samLocalInvokeCommand
+        invoker: samLocalInvokeCommand,
+        dockerNetwork: config.dockerNetwork
     }
 
     const debugArgs = invokeArgs.debugArgs
