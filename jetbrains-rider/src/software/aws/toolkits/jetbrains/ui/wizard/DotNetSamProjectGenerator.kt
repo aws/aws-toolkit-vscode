@@ -25,6 +25,7 @@ import com.jetbrains.rider.ui.themes.RiderTheme
 import software.aws.toolkits.jetbrains.services.lambda.SamNewProjectSettings
 import software.aws.toolkits.jetbrains.services.lambda.SdkSettings
 import software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetSamProjectTemplate
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.utils.DotNetRuntimeUtils
 import software.aws.toolkits.resources.message
 import java.awt.Dimension
@@ -67,6 +68,7 @@ class DotNetSamProjectGenerator(
     }
 
     init {
+        solutionNameField.text = getPossibleName(SAM_HELLO_WORLD_PROJECT_NAME)
         title.labels = arrayOf(group, categoryName)
         initProjectTextField()
         initSamPanel()
@@ -90,7 +92,13 @@ class DotNetSamProjectGenerator(
         addAdditionPane(projectStructurePanel)
     }
 
+    override fun validateData() {
+        super.validateData()
+        SamCommon.validate()?.let { validationError.set(it) }
+    }
+
     override fun updateInfo() {
+        super.updateInfo()
         val sep = File.separator
         val builder = StringBuilder()
         val font = JBUI.Fonts.label()
@@ -105,8 +113,8 @@ class DotNetSamProjectGenerator(
         val vcsMarker = vcsPanel?.getVcsMarker()
         if (solutionDirectory != null && vcsMarker != null) {
             builder.appendln(htmlText(
-                    "$sep${solutionDirectory.parentFile.name}$sep",
-                    "${solutionDirectory.name}$sep$vcsMarker"))
+                "$sep${solutionDirectory.parentFile.name}$sep",
+                "${solutionDirectory.name}$sep$vcsMarker"))
         }
 
         if (solutionDirectory != null) {
@@ -128,13 +136,13 @@ class DotNetSamProjectGenerator(
 
         builder.appendln("</span></html>")
         structurePane.text = builder.toString()
-        super.updateInfo()
+        validateData()
     }
 
     override fun expand() {
         val selectedRuntime = samSettings.runtime
         val solutionDirectory = getSolutionDirectory()
-                ?: throw Exception(message("sam.init.error.no.solution.basepath"))
+            ?: throw Exception(message("sam.init.error.no.solution.basepath"))
 
         val fileSystem = LocalFileSystem.getInstance()
         if (!solutionDirectory.exists()) {
@@ -142,7 +150,7 @@ class DotNetSamProjectGenerator(
         }
 
         val outDirVf = fileSystem.refreshAndFindFileByIoFile(solutionDirectory)
-                ?: throw Exception(message("sam.init.error.no.virtual.file"))
+            ?: throw Exception(message("sam.init.error.no.virtual.file"))
 
         ProgressManager.getInstance().runProcessWithProgressSynchronously({
             samSettings.template.build(context.project, selectedRuntime, outDirVf)
@@ -151,7 +159,7 @@ class DotNetSamProjectGenerator(
         // Create solution file
         val projectFiles =
             File(solutionDirectory, "src").walk().filter { it.extension == CsprojFileType.defaultExtension } +
-                    File(solutionDirectory, "test").walk().filter { it.extension == CsprojFileType.defaultExtension }
+                File(solutionDirectory, "test").walk().filter { it.extension == CsprojFileType.defaultExtension }
 
         // Get the rest of generated files and copy to "SolutionItems" default folder in project structure
         val solutionFiles = solutionDirectory.listFiles()?.filter { it.isFile }?.toList() ?: emptyList()
@@ -164,7 +172,11 @@ class DotNetSamProjectGenerator(
             solutionFiles = solutionFiles
         ) ?: throw Exception(message("sam.init.error.solution.create.fail"))
 
-        val project = SolutionManager.openExistingSolution(context.project, false, solutionFile)
+        val project = SolutionManager.openExistingSolution(
+            projectToClose = null,
+            forceOpenInNewFrame = false,
+            solutionFile = solutionFile
+        )
         vcsPanel?.initRepository(project)
 
         project ?: return
@@ -175,6 +187,7 @@ class DotNetSamProjectGenerator(
     override fun refreshUI() {
         super.refreshUI()
         validationError.set(null)
+        validateData()
     }
 
     /**
