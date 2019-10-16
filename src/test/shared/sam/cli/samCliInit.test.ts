@@ -63,11 +63,13 @@ describe('runSamCliInit', async () => {
 
     const defaultFakeValidator = new FakeSamCliValidator()
 
+    const sampleDependencyManager = 'npm'
+
     const sampleSamInitArgs: SamCliInitArgs = {
         name: 'qwerty',
         location: '/some/path/to/code.js',
         runtime: 'nodejs8.10',
-        dependencyManager: 'npm'
+        dependencyManager: sampleDependencyManager
     }
 
     it('Passes init command to sam cli', async () => {
@@ -154,6 +156,38 @@ describe('runSamCliInit', async () => {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
             (spawnOptions: SpawnOptions, args: any[]) => {
                 assertArgIsPresent(args, '--no-interactive')
+            }
+        )
+
+        const context: SamCliContext = {
+            validator: new FakeSamCliValidator(SAM_CLI_VERSION_0_30),
+            invoker: processInvoker
+        }
+
+        await runSamCliInit(sampleSamInitArgs, context)
+    })
+
+    it('Passes --app-template if version >= 0.30.0', async () => {
+        const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
+            (spawnOptions: SpawnOptions, args: any[]) => {
+                assertArgIsPresent(args, '--app-template')
+                assertArgIsPresent(args, 'hello-world')
+            }
+        )
+
+        const context: SamCliContext = {
+            validator: new FakeSamCliValidator(SAM_CLI_VERSION_0_30),
+            invoker: processInvoker
+        }
+
+        await runSamCliInit(sampleSamInitArgs, context)
+    })
+
+    it('Passes --app-template if version >= 0.30.0', async () => {
+        const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
+            (spawnOptions: SpawnOptions, args: any[]) => {
+                assertArgIsPresent(args, '--dependency-manager')
+                assertArgIsPresent(args, sampleDependencyManager)
             }
         )
 
