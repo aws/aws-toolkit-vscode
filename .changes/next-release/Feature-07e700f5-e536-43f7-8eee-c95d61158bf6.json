@@ -1,4 +1,4 @@
 {
-    "type": "Bug Fix",
-    "description": "Added docker network option support for deploying sam applications"
+    "type": "Feature",
+    "description": "Added docker network option support for invoking sam applications"
 }
