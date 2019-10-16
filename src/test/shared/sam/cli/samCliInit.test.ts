@@ -183,7 +183,7 @@ describe('runSamCliInit', async () => {
         await runSamCliInit(sampleSamInitArgs, context)
     })
 
-    it('Passes --app-template if version >= 0.30.0', async () => {
+    it('Passes --dependency-manager if version >= 0.30.0', async () => {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
             (spawnOptions: SpawnOptions, args: any[]) => {
                 assertArgIsPresent(args, '--dependency-manager')
