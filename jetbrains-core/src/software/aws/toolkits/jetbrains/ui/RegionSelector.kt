@@ -1,8 +1,6 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-@file:Suppress("DEPRECATION") // TODO: Migrate to SimpleListCellRenderer when we drop < 192 FIX_WHEN_MIN_IS_192
-
 package software.aws.toolkits.jetbrains.ui
 
 import com.intellij.openapi.ui.ComboBox
@@ -10,7 +8,6 @@ import com.intellij.ui.CollectionComboBoxModel
 import com.intellij.ui.SimpleListCellRenderer
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.utils.ui.selected
-import javax.swing.JList
 
 /**
  * Combo box used to select a region
@@ -28,7 +25,7 @@ class RegionSelector : ComboBox<AwsRegion>() {
 
     init {
         model = comboBoxModel
-        setRenderer(Renderer()) // use the setter, not protected field
+        setRenderer(RENDERER) // use the setter, not protected field
     }
 
     fun setRegions(regions: List<AwsRegion>) {
@@ -41,15 +38,9 @@ class RegionSelector : ComboBox<AwsRegion>() {
             selectedItem = value
         }
 
-    private inner class Renderer : SimpleListCellRenderer<AwsRegion>() {
-        override fun customize(
-            list: JList<out AwsRegion>,
-            value: AwsRegion?,
-            index: Int,
-            selected: Boolean,
-            hasFocus: Boolean
-        ) {
-            text = value?.displayName
+    private companion object {
+        val RENDERER = SimpleListCellRenderer.create<AwsRegion>("") {
+            it.displayName
         }
     }
 }

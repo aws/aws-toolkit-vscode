@@ -12,7 +12,6 @@ import org.fest.swing.timing.Timeout
 import java.awt.Container
 import javax.swing.JPanel
 
-// TODO: They re-did the tabs in 2019.2, so we are using hacks to attempt to hide that. Switch back to TabLabel / TabInfo FIX_WHEN_MIN_IS_192
 class JBTabsFixture(private val robot: Robot, private val tabLabel: JPanel) {
     fun selectTab() {
         robot.click(tabLabel)

@@ -11,6 +11,9 @@ import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.SamNewProjectSettings
 import software.aws.toolkits.jetbrains.services.lambda.SamProjectTemplate
 import software.aws.toolkits.jetbrains.services.lambda.SamProjectWizard
+import software.aws.toolkits.jetbrains.services.lambda.TemplateParameters
+import software.aws.toolkits.jetbrains.services.lambda.TemplateParameters.AppBasedTemplate
+import software.aws.toolkits.jetbrains.services.lambda.TemplateParameters.LocationBasedTemplate
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.ui.wizard.IntelliJSdkSelectionPanel
 import software.aws.toolkits.jetbrains.ui.wizard.PyCharmSdkSelectionPanel
@@ -44,6 +47,8 @@ class SamHelloWorldPython : PythonSamProjectTemplate() {
     override fun getName() = message("sam.init.template.hello_world.name")
 
     override fun getDescription() = message("sam.init.template.hello_world.description")
+
+    override fun templateParameters(): TemplateParameters = AppBasedTemplate("hello-world", "pip")
 }
 
 class SamDynamoDBCookieCutter : PythonSamProjectTemplate() {
@@ -51,5 +56,5 @@ class SamDynamoDBCookieCutter : PythonSamProjectTemplate() {
 
     override fun getDescription() = message("sam.init.template.dynamodb_cookiecutter.description")
 
-    override fun location(): String? = "gh:aws-samples/cookiecutter-aws-sam-dynamodb-python"
+    override fun templateParameters(): TemplateParameters = LocationBasedTemplate("gh:aws-samples/cookiecutter-aws-sam-dynamodb-python")
 }

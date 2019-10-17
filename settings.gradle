@@ -8,8 +8,5 @@ include 'telemetry-client'
 include 'core'
 include 'jetbrains-core'
 include 'jetbrains-core-gui'
-// WEBSTORM_LAUNCH : remove this conditional on launch, the WebStorm launch will increase the minimum version of the IDE to 2019.1
-if (toolkitVersion.endsWith("SNAPSHOT") && System.env.ALTERNATIVE_IDE_PROFILE_NAME != "2018.3") {
-    include 'jetbrains-ultimate'
-}
+include 'jetbrains-ultimate'
 include 'jetbrains-rider'
