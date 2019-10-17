@@ -79,11 +79,7 @@
     <depends optional="true">com.intellij.modules.externalSystem</depends>>
     <depends optional="true" config-file="ext-java.xml">com.intellij.modules.java</depends>
     <depends optional="true" config-file="ext-python.xml">com.intellij.modules.python</depends>
-
-    <!-- WEBSTORM_LAUNCH remove this block and replace with <depends optional="true" config-file="ext-nodejs.xml">JavaScriptDebugger</depends> -->
-    <xi:include href="/META-INF/enable-webstorm.xml" xpointer="xpointer(/idea-plugin/*)">
-        <xi:fallback/>
-    </xi:include>
+    <depends optional="true" config-file="ext-nodejs.xml">JavaScriptDebugger</depends>
 
     <xi:include href="/META-INF/change-notes.xml" xpointer="xpointer(/idea-plugin/*)">
         <xi:fallback/>
