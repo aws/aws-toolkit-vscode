@@ -17,7 +17,6 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.psi.PsiElement
 import com.intellij.util.io.Compressor
-import com.intellij.util.text.SemVer
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
@@ -123,12 +122,7 @@ abstract class LambdaBuilder {
                 }
             }
 
-            // TODO: FIX_WHEN_SAM_MIN_IS_0.16
-            SemVer.parseFromText(SamCommon.getVersionString())?.let {
-                if (it.isGreaterOrEqualThan(0, 16, 0)) {
-                    commandLine.withParameters(logicalId)
-                }
-            }
+            commandLine.withParameters(logicalId)
 
             val pathMappings = listOf(
                 PathMapping(templateLocation.parent.resolve(codeLocation).toString(), "/"),

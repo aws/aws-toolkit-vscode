@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.core
 
 import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
@@ -20,6 +19,7 @@ import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType
 import software.aws.toolkits.jetbrains.core.executables.Validatable
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.utils.CompatibilityUtils.registerExtension
 import software.aws.toolkits.jetbrains.utils.rules.TestDisposableRule
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
@@ -45,8 +45,7 @@ class ExecutableBackedCacheResourceTest {
 
     @Before
     fun setUp() {
-        @Suppress("DEPRECATION") // Use overload with ExtensionsArea FIX_WHEN_MIN_IS_192
-        PlatformTestUtil.registerExtension(
+        registerExtension(
             ExecutableType.EP_NAME,
             MockExecutable,
             testDisposableRule.testDisposable

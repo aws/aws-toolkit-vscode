@@ -10,6 +10,16 @@ static def ideProfiles() {
                                     "maven",
                                     "properties" // Used by Maven
                             ]
+                    ],
+                    "IU": [
+                            version: "IU-2018.3.5",
+                            plugins: [
+                                    "yaml",
+                                    "JavaScriptLanguage",
+                                    "JavaScriptDebugger",
+                                    "CSS",
+                                    "PythonCore:2018.3.183.4284.148"
+                            ]
                     ]
             ],
             "2019.1": [ // TODO: Marker comment: FIX_WHEN_MIN_IS_192
@@ -21,6 +31,16 @@ static def ideProfiles() {
                                     "gradle",
                                     "maven",
                                     "properties" // Used by Maven
+                            ]
+                    ],
+                    "IU": [
+                            version: "IU-2019.1.3",
+                            plugins: [
+                                    "yaml",
+                                    "JavaScriptLanguage",
+                                    "JavaScriptDebugger",
+                                    "CSS",
+                                    "PythonCore:2019.1.191.6183.53"
                             ]
                     ]
             ],
@@ -35,7 +55,40 @@ static def ideProfiles() {
                                     "maven",
                                     "properties" // Used by Maven
                             ]
+                    ],
+                    "IU": [
+                            version: "IU-2019.2",
+                            plugins: [
+                                    "yaml",
+                                    "JavaScriptLanguage",
+                                    "JavaScriptDebugger",
+                                    "CSS",
+                                    "PythonCore:2019.2.192.5728.98"
+                            ]
                     ]
+            ],
+            "2019.3": [
+                "IC": [
+                    version: "IC-193.4099-EAP-CANDIDATE-SNAPSHOT", // Update to actual version when it gets released
+                    plugins: [
+                        "yaml",
+                        "PythonCore:193.4099.13",
+                        "java",
+                        "gradle",
+                        "maven",
+                        "properties" // Used by Maven
+                    ]
+                ],
+                "IU": [
+                    version: "IU-193.4099-EAP-CANDIDATE-SNAPSHOT",
+                    plugins: [
+                        "PythonCore:193.4099.13",
+                        "yaml",
+                        "JavaScriptLanguage",
+                        "JavaScriptDebugger",
+                        "CSS",
+                    ]
+                ]
             ]
     ]
 }

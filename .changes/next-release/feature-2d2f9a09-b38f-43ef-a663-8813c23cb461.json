@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "A notification is shown on startup indicating that JetBrains 2019.2 or greater will be required in an upcoming AWS Toolkit release"
+}

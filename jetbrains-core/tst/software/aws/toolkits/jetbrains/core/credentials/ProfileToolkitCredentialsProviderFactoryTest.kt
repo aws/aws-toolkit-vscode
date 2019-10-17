@@ -40,11 +40,11 @@ import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProviderManager
 import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.rules.SystemPropertyHelper
+import software.aws.toolkits.core.utils.test.retryableAssert
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileHolder
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileToolkitCredentialsProvider
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileToolkitCredentialsProviderFactory
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileWatcher
-import software.aws.toolkits.jetbrains.utils.test.retryableAssert
 import java.io.File
 import java.time.Duration
 import java.time.ZonedDateTime

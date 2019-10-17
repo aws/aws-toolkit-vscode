@@ -4,37 +4,6 @@
 // Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package software.aws.toolkits.jetbrains.ui.tree;
 
-import com.intellij.openapi.Disposable;
-import com.intellij.openapi.progress.ProcessCanceledException;
-import com.intellij.openapi.util.Disposer;
-import com.intellij.ui.tree.TreePathUtil;
-import com.intellij.ui.tree.TreeVisitor;
-import com.intellij.util.ArrayUtilRt;
-import com.intellij.util.concurrency.Invoker;
-import com.intellij.util.concurrency.InvokerSupplier;
-import com.intellij.util.ui.tree.AbstractTreeModel;
-import com.intellij.util.ui.tree.TreeModelAdapter;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.concurrency.AsyncPromise;
-import org.junit.Test;
-
-import javax.swing.JTree;
-import javax.swing.SwingUtilities;
-import javax.swing.event.TreeModelEvent;
-import javax.swing.event.TreeModelListener;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.MutableTreeNode;
-import javax.swing.tree.TreeModel;
-import javax.swing.tree.TreeNode;
-import javax.swing.tree.TreePath;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Objects;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
 import static com.intellij.diagnostic.ThreadDumper.dumpThreadsToString;
 import static com.intellij.util.ui.tree.TreeUtil.expandAll;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -45,6 +14,40 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.intellij.openapi.Disposable;
+import com.intellij.openapi.progress.ProcessCanceledException;
+import com.intellij.openapi.util.Disposer;
+import com.intellij.testFramework.ProjectRule;
+import com.intellij.ui.tree.TreePathUtil;
+import com.intellij.ui.tree.TreeVisitor;
+import com.intellij.util.ArrayUtilRt;
+import com.intellij.util.concurrency.Invoker;
+import com.intellij.util.concurrency.InvokerSupplier;
+import com.intellij.util.ui.tree.AbstractTreeModel;
+import com.intellij.util.ui.tree.TreeModelAdapter;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Objects;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import javax.swing.JTree;
+import javax.swing.SwingUtilities;
+import javax.swing.event.TreeModelEvent;
+import javax.swing.event.TreeModelListener;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.MutableTreeNode;
+import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.concurrency.AsyncPromise;
+import org.junit.Rule;
+import org.junit.Test;
+
 public final class AsyncTreeModelTest {
   /**
    * A bigger threshold increases a probability of restarting current task.
@@ -54,6 +57,9 @@ public final class AsyncTreeModelTest {
    * Set to true to print some debugging information.
    */
   private static final boolean PRINT = false;
+
+  @Rule
+  public ProjectRule projectRule = new ProjectRule();
 
   @Test
   public void testAggressiveUpdating() {

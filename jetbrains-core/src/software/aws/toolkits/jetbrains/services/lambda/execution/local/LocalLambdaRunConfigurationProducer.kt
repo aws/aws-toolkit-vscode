@@ -16,7 +16,7 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
-import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.functionFromElement
 
@@ -99,7 +99,7 @@ class LocalLambdaRunConfigurationProducer : RunConfigurationProducer<LocalLambda
     }
 
     companion object {
-        fun getFactory() = LambdaRunConfiguration.getInstance().configurationFactories.first { it is LocalLambdaRunConfigurationFactory }
+        fun getFactory() = LambdaRunConfigurationType.getInstance().configurationFactories.first { it is LocalLambdaRunConfigurationFactory }
 
         private fun accountSettings(project: Project): Pair<String?, AwsRegion?> {
             val settingsManager = ProjectAccountSettingsManager.getInstance(project)

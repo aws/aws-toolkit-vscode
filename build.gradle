@@ -5,9 +5,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
     repositories {
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
+        maven { url "https://plugins.gradle.org/m2/" }
         mavenCentral()
         jcenter()
     }
@@ -22,6 +20,10 @@ apply from: 'intellijJVersions.gradle'
 
 group 'software.aws.toolkits'
 version toolkitVersion
+
+repositories {
+    maven { url "https://www.jetbrains.com/intellij-repository/snapshots/" }
+}
 
 allprojects {
     repositories {
@@ -165,6 +167,7 @@ subprojects {
     project.afterEvaluate {
         removeTask(tasks, 'publishPlugin')
         removeTask(tasks, 'verifyPlugin')
+        removeTask(tasks, 'buildSearchableOptions')
         if (!isReleaseVersion) {
             removeTask(tasks, "signArchives")
         }
@@ -263,7 +266,7 @@ task guiTest(type: Test) {
 }
 
 dependencies {
-    compile project(':jetbrains-core')
+    compile project.findProject(':jetbrains-ultimate') ?: project(':jetbrains-core')
 
     ktlint "com.pinterest:ktlint:$ktlintVersion"
     ktlint project(":ktlint-rules")

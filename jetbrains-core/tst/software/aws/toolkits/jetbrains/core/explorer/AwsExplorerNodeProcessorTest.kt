@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.core.explorer
 
 import com.intellij.ide.projectView.PresentationData
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.ProjectRule
 import com.intellij.util.ui.tree.TreeUtil
 import com.nhaarman.mockitokotlin2.any
@@ -18,6 +17,7 @@ import org.junit.Test
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.ui.tree.AsyncTreeModel
 import software.aws.toolkits.jetbrains.ui.tree.StructureTreeModel
+import software.aws.toolkits.jetbrains.utils.CompatibilityUtils.registerExtension
 import software.aws.toolkits.jetbrains.utils.rules.TestDisposableRule
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -37,12 +37,7 @@ class AwsExplorerNodeProcessorTest {
     fun testNodePostProcessorIsInvoked() {
         val mockExtension = mock<AwsExplorerNodeProcessor>()
 
-        @Suppress("DEPRECATION") // TODO: Use overload with ExtensionsArea FIX_WHEN_MIN_IS_192
-        PlatformTestUtil.registerExtension(
-            AwsExplorerNodeProcessor.EP_NAME,
-            mockExtension,
-            testDisposableRule.testDisposable
-        )
+        registerExtension(AwsExplorerNodeProcessor.EP_NAME, mockExtension, testDisposableRule.testDisposable)
 
         val countDownLatch = CountDownLatch(1)
 
@@ -60,8 +55,7 @@ class AwsExplorerNodeProcessorTest {
         var ranOnCorrectThread = true
         var ran = false
 
-        @Suppress("DEPRECATION") // TODO: Use overload with ExtensionsArea FIX_WHEN_MIN_IS_192
-        PlatformTestUtil.registerExtension(
+        registerExtension(
             AwsExplorerNodeProcessor.EP_NAME,
             object : AwsExplorerNodeProcessor {
                 override fun postProcessPresentation(node: AwsExplorerNode<*>, presentation: PresentationData) {

@@ -65,7 +65,7 @@
     ]]></description>
 
     <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://aws.amazon.com/">Amazon Web Services</vendor>
-    <idea-version since-build="183.4284.*" until-build="192.*"/>
+    <idea-version since-build="183.4284.*" until-build="193.*"/>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
@@ -79,6 +79,11 @@
     <depends optional="true">com.intellij.modules.externalSystem</depends>>
     <depends optional="true" config-file="ext-java.xml">com.intellij.modules.java</depends>
     <depends optional="true" config-file="ext-python.xml">com.intellij.modules.python</depends>
+
+    <!-- WEBSTORM_LAUNCH remove this block and replace with <depends optional="true" config-file="ext-nodejs.xml">JavaScriptDebugger</depends> -->
+    <xi:include href="/META-INF/enable-webstorm.xml" xpointer="xpointer(/idea-plugin/*)">
+        <xi:fallback/>
+    </xi:include>
 
     <xi:include href="/META-INF/change-notes.xml" xpointer="xpointer(/idea-plugin/*)">
         <xi:fallback/>
@@ -121,7 +126,14 @@
             <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
         </extensionPoint>
 
+        <extensionPoint qualifiedName="aws.toolkit.lambda.handlerCompletion" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
+            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.completion.HandlerCompletion"/>
+            <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
+        </extensionPoint>
+
         <extensionPoint name="executable" interface="software.aws.toolkits.jetbrains.core.executables.ExecutableType"/>
+
+        <extensionPoint name="notice" interface="software.aws.toolkits.jetbrains.core.notification.NoticeType"/>
 
         <extensionPoint name="explorer.nodeProcessor" interface="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerNodeProcessor"/>
     </extensionPoints>
@@ -149,16 +161,16 @@
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsSettingsPanelInstaller"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsTelemetryPrompter"/>
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.notification.NoticeStartupActivity"/>
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.AwsSdkClient"/>
-        <applicationService serviceInterface="software.aws.toolkits.jetbrains.services.telemetry.MessageBusService"
-                            serviceImplementation="software.aws.toolkits.jetbrains.services.telemetry.DefaultMessageBusService"
-                            testServiceImplementation="software.aws.toolkits.jetbrains.services.telemetry.MockMessageBusService"/>
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.services.telemetry.TelemetryService"
                             serviceImplementation="software.aws.toolkits.jetbrains.services.telemetry.DefaultTelemetryService"
                             testServiceImplementation="software.aws.toolkits.jetbrains.services.telemetry.MockTelemetryService" />
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.executables.ExecutableManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.executables.DefaultExecutableManager"/>
+        <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.notification.NoticeManager"
+                            serviceImplementation="software.aws.toolkits.jetbrains.core.notification.DefaultNoticeManager"/>
         <projectService serviceInterface="software.aws.toolkits.core.ToolkitClientManager"
                         serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientManager"
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.MockClientManager"/>
@@ -166,6 +178,7 @@
                         serviceImplementation="software.aws.toolkits.jetbrains.core.DefaultAwsResourceCache"
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.MockResourceCache"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.stack.StackWindowManager"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.lambda.validation.LambdaHandlerValidator" />
         <toolWindow id="aws.explorer" anchor="left" secondary="true"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
                     icon="AwsIcons.Logos.AWS"/>
@@ -180,7 +193,7 @@
 
         <codeInsight.lineMarkerProvider language="" implementationClass="software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker"/>
         <runLineMarkerContributor language="yaml" implementationClass="software.aws.toolkits.jetbrains.services.lambda.execution.template.YamlLambdaRunLineMarkerContributor"/>
-        <configurationType implementation="software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration"/>
+        <configurationType implementation="software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType"/>
         <runConfigurationProducer implementation="software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfigurationProducer"/>
         <runConfigurationProducer implementation="software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaRunConfigurationProducer"/>
 
@@ -194,6 +207,7 @@
 
     <extensions defaultExtensionNs="aws.toolkit">
         <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialProviderFactory"/>
+        <notice implementation="software.aws.toolkits.jetbrains.core.notification.JetBrainsMinimumVersionChange"/>
     </extensions>
 
     <actions>

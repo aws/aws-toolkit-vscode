@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.utils.test
+package software.aws.toolkits.core.utils.test
 
 import java.time.Duration
 import java.time.Instant
