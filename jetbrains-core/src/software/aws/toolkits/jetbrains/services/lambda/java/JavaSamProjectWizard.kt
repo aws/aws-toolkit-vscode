@@ -22,6 +22,8 @@ import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.SamNewProjectSettings
 import software.aws.toolkits.jetbrains.services.lambda.SamProjectTemplate
 import software.aws.toolkits.jetbrains.services.lambda.SamProjectWizard
+import software.aws.toolkits.jetbrains.services.lambda.TemplateParameters
+import software.aws.toolkits.jetbrains.services.lambda.TemplateParameters.AppBasedTemplate
 import software.aws.toolkits.jetbrains.ui.wizard.IntelliJSdkSelectionPanel
 import software.aws.toolkits.jetbrains.ui.wizard.SamProjectGenerator
 import software.aws.toolkits.jetbrains.ui.wizard.SdkSelectionPanel
@@ -66,7 +68,7 @@ class SamHelloWorldMaven : JavaSamProjectTemplate() {
 
     override fun getDescription() = message("sam.init.template.hello_world.description")
 
-    override fun dependencyManager(): String? = "maven"
+    override fun templateParameters(): TemplateParameters = AppBasedTemplate("hello-world", "maven")
 
     override fun postCreationAction(settings: SamNewProjectSettings, contentRoot: VirtualFile, rootModel: ModifiableRootModel) {
         super.postCreationAction(settings, contentRoot, rootModel)
@@ -81,7 +83,7 @@ class SamHelloWorldGradle : JavaSamProjectTemplate() {
 
     override fun getDescription() = message("sam.init.template.hello_world.description")
 
-    override fun dependencyManager(): String? = "gradle"
+    override fun templateParameters(): TemplateParameters = AppBasedTemplate("hello-world", "gradle")
 
     override fun postCreationAction(settings: SamNewProjectSettings, contentRoot: VirtualFile, rootModel: ModifiableRootModel) {
         super.postCreationAction(settings, contentRoot, rootModel)

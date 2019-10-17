@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda
 
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.project.Project
 import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.search.GlobalSearchScope
@@ -30,9 +31,10 @@ object Lambda {
         return resolver.findPsiElements(project, handler, GlobalSearchScope.allScope(project))
     }
 
-    fun isHandlerValid(project: Project, runtime: Runtime, handler: String): Boolean {
-        val resolver = runtime.runtimeGroup?.let { LambdaHandlerResolver.getInstance(it) } ?: return false
-        return resolver.isHandlerValid(project, handler)
+    fun isHandlerValid(project: Project, runtime: Runtime, handler: String): Boolean = ReadAction.compute<Boolean, Throwable> {
+        runtime.runtimeGroup?.let {
+            LambdaHandlerResolver.getInstance(it)
+        }?.isHandlerValid(project, handler) == true
     }
 }
 

@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.core.explorer
 
 import com.intellij.ide.projectView.PresentationData
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.util.Ref
 import com.intellij.testFramework.ProjectRule
 import com.intellij.util.ui.tree.TreeUtil
 import com.nhaarman.mockitokotlin2.any
@@ -52,15 +53,15 @@ class AwsExplorerNodeProcessorTest {
 
     @Test
     fun testNodesArePostProcessedInBackground() {
-        var ranOnCorrectThread = true
-        var ran = false
+        val ranOnCorrectThread = Ref(true)
+        val ran = Ref(false)
 
         registerExtension(
             AwsExplorerNodeProcessor.EP_NAME,
             object : AwsExplorerNodeProcessor {
                 override fun postProcessPresentation(node: AwsExplorerNode<*>, presentation: PresentationData) {
-                    ran = true
-                    ranOnCorrectThread = ranOnCorrectThread && !ApplicationManager.getApplication().isDispatchThread
+                    ran.set(true)
+                    ran.set(ranOnCorrectThread.get() && !ApplicationManager.getApplication().isDispatchThread)
                 }
             },
             testDisposableRule.testDisposable
@@ -74,8 +75,8 @@ class AwsExplorerNodeProcessorTest {
 
         countDownLatch.await(1, TimeUnit.SECONDS)
 
-        assertThat(ran).isTrue()
-        assertThat(ranOnCorrectThread).isTrue()
+        assertThat(ran.get()).isTrue()
+        assertThat(ranOnCorrectThread.get()).isTrue()
     }
 
     private fun createTreeModel(): TreeModel {

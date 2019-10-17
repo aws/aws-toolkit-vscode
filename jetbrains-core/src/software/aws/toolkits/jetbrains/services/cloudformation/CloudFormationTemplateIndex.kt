@@ -1,8 +1,6 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-@file:Suppress("DEPRECATION") // TODO: Remove PsiDependentIndex when we drop < 192 FIX_WHEN_MIN_IS_192
-
 package software.aws.toolkits.jetbrains.services.cloudformation
 
 import com.intellij.openapi.project.Project
@@ -15,7 +13,6 @@ import com.intellij.util.indexing.DefaultFileTypeSpecificInputFilter
 import com.intellij.util.indexing.FileBasedIndex
 import com.intellij.util.indexing.FileBasedIndexExtension
 import com.intellij.util.indexing.FileContent
-import com.intellij.util.indexing.FileContentImpl
 import com.intellij.util.indexing.ID
 import com.intellij.util.io.DataExternalizer
 import com.intellij.util.io.EnumeratorStringDescriptor
@@ -56,7 +53,7 @@ class CloudFormationTemplateIndex : FileBasedIndexExtension<String, MutableList<
     override fun getIndexer(): DataIndexer<String, MutableList<IndexedResource>, FileContent> = DataIndexer { fileContent ->
         val indexedResources = mutableMapOf<String, MutableList<IndexedResource>>()
 
-        (fileContent as FileContentImpl).psiFile.acceptNode(object : PsiElementVisitor() {
+        fileContent.psiFile.acceptNode(object : PsiElementVisitor() {
             override fun visitElement(element: PsiElement?) {
                 super.visitElement(element)
                 element?.run {

@@ -37,7 +37,7 @@ class SamCommon {
         val expectedSamMinVersion = SemVer("0.16.0", 0, 16, 0)
 
         // Exclusive
-        val expectedSamMaxVersion = SemVer("0.30.0", 0, 30, 0)
+        val expectedSamMaxVersion = SemVer("0.40.0", 0, 40, 0)
 
         fun getSamCommandLine(path: String? = SamSettings.getInstance().executablePath): GeneralCommandLine {
             val sanitizedPath = path.nullize(true)

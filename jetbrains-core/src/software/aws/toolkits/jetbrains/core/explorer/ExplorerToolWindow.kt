@@ -22,7 +22,6 @@ import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TreeUIHelper
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.treeStructure.Tree
-import com.intellij.util.ui.UIUtil
 import software.aws.toolkits.jetbrains.components.telemetry.ToolkitActionPlaces
 import software.aws.toolkits.jetbrains.core.SettingsSelector
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
@@ -101,8 +100,6 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
     private fun createTree(model: TreeModel): Tree {
         val awsTree = Tree(model)
         TreeUIHelper.getInstance().installTreeSpeedSearch(awsTree)
-        @Suppress("DEPRECATION") // TODO: Remove when we drop < 192 FIX_WHEN_MIN_IS_192
-        UIUtil.setLineStyleAngled(awsTree)
         awsTree.isRootVisible = false
         awsTree.autoscrolls = true
         awsTree.cellRenderer = AwsTreeCellRenderer()
