@@ -36,6 +36,12 @@ class HandlerPanel(private val project: Project) : JPanel(MigLayout("novisualpad
         switchCompletion()
     }
 
+    override fun setEnabled(enabled: Boolean) {
+        super.setEnabled(enabled)
+        simpleHandler.isEnabled = enabled
+        handlerWithCompletion.isEnabled = enabled
+    }
+
     override fun setVisible(isVisible: Boolean) {
         super.setVisible(isVisible)
         if (!isVisible) {

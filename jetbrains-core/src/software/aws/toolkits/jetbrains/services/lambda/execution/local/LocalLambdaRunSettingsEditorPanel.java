@@ -102,7 +102,7 @@ public final class LocalLambdaRunSettingsEditorPanel {
     private void updateComponents() {
         EditorTextField handler = handlerPanel.getHandler();
 
-        handlerPanel.setVisible(!useTemplate.isSelected());
+        handlerPanel.setEnabled(!useTemplate.isSelected());
         runtime.setEnabled(!useTemplate.isSelected());
         templateFile.setEnabled(useTemplate.isSelected());
         timeoutSlider.setEnabled(!useTemplate.isSelected());
