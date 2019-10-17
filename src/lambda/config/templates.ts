@@ -38,12 +38,14 @@ export interface HandlerConfig {
     environmentVariables: {
         [name: string]: string
     }
+    dockerNetwork?: string
 }
 
 export function generateDefaultHandlerConfig(): HandlerConfig {
     return {
         event: {},
-        environmentVariables: {}
+        environmentVariables: {},
+        dockerNetwork: undefined
     }
 }
 
