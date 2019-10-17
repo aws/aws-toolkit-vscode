@@ -188,7 +188,8 @@ export class LocalLambdaRunner {
             eventPath,
             environmentVariablePath,
             debugPort: !!this._debugPort ? this._debugPort.toString() : undefined,
-            invoker: this.localInvokeCommand
+            invoker: this.localInvokeCommand,
+            dockerNetwork: config.dockerNetwork
         })
 
         const timer = createInvokeTimer(this.configuration)
@@ -420,7 +421,8 @@ export async function invokeLambdaFunction(
         templatePath: invokeArgs.samTemplatePath,
         eventPath,
         environmentVariablePath,
-        invoker: samLocalInvokeCommand
+        invoker: samLocalInvokeCommand,
+        dockerNetwork: config.dockerNetwork
     }
 
     const debugArgs = invokeArgs.debugArgs

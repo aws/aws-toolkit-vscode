@@ -38,6 +38,11 @@
                                             "type": "object",
                                             "default": {},
                                             "description": "Overrides the environment variable values defined in the SAM Template when running the Lambda function locally."
+                                        },
+                                        "dockerNetwork": {
+                                            "type": "string",
+                                            "default": null,
+                                            "description": "If specified, adds a --docker-network parameter to the SAM CLI.  If not specified, no parameter will be sent."
                                         }
                                     }
                                 }
