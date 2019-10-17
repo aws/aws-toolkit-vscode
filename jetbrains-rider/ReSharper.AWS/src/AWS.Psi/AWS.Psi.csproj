@@ -2,6 +2,7 @@
 
     <PropertyGroup>
         <TargetFramework>net461</TargetFramework>
+        <RootNamespace>AWS.Psi</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

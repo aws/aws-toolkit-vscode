@@ -1,3 +1,5 @@
+using AWS.Daemon.Lambda;
+using AWS.Daemon.Settings;
 using JetBrains.Application.Settings;
 using JetBrains.ReSharper.Feature.Services.Daemon;
 using JetBrains.ReSharper.Host.Features.RunMarkers;
@@ -6,10 +8,9 @@ using JetBrains.ReSharper.Psi.Caches.SymbolCache;
 using JetBrains.ReSharper.Psi.CSharp;
 using JetBrains.ReSharper.Psi.CSharp.Tree;
 using JetBrains.ReSharper.Psi.Tree;
-using ReSharper.AWS.Lambda;
 using IMethodDeclaration = JetBrains.ReSharper.Psi.CSharp.Tree.IMethodDeclaration;
 
-namespace ReSharper.AWS.RunMarkers
+namespace AWS.Daemon.RunMarkers
 {
     [Language(typeof(CSharpLanguage))]
     public class LambdaRunMarkerProvider : IRunMarkerProvider
@@ -18,8 +19,10 @@ namespace ReSharper.AWS.RunMarkers
 
         public void CollectRunMarkers(IFile file, IContextBoundSettingsStore settings, IHighlightingConsumer consumer)
         {
-            if (!LambdaFinder.IsLambdaProjectType(file.GetProject())) return;
+            var isLambdaGutterMarksEnabled = settings.GetValue((LambdaGutterMarkSettings s) => s.Enabled);
+            if (!isLambdaGutterMarksEnabled) return;
             if (!(file is ICSharpFile csharpFile)) return;
+            if (!LambdaFinder.IsLambdaProjectType(file.GetProject())) return;
 
             foreach (var declaration in CachedDeclarationsCollector.Run<IMethodDeclaration>(csharpFile))
             {

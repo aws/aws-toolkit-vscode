@@ -16,13 +16,6 @@ buildscript {
 
 ext.resharperPluginPath = new File(projectDir, "ReSharper.AWS")
 
-def buildConfiguration = ext.properties["BuildConfiguration"] ?: "Debug"
-def pluginFiles = [
-        "AWS.Localization/bin/$buildConfiguration/net461/AWS.Localization",
-        "AWS.Daemon/bin/$buildConfiguration/net461/AWS.Daemon",
-        "AWS.Psi/bin/$buildConfiguration/net461/AWS.Psi"
-]
-
 apply plugin: 'org.jetbrains.intellij'
 apply plugin: 'com.jetbrains.rdgen'
 
@@ -59,9 +52,8 @@ intellij {
 tasks.withType(prepareSandbox.class).all {
     dependsOn buildReSharperPlugin
 
-    def files = pluginFiles.collect { "$resharperPluginPath/src/${it}.dll" } +
-                pluginFiles.collect { "$resharperPluginPath/src/${it}.pdb" }
-
+    def config = ext.properties["BuildConfiguration"] ?: "Debug"
+    def files = getBackendProjectsOut(resharperPluginPath, config)
     files.each {
         from(it, { into("${intellij.pluginName}/dotnet") })
     }
@@ -98,4 +90,36 @@ runIde {
 
 jar {
     archiveBaseName = 'aws-intellij-toolkit-rider'
+}
+
+private static int compareVersions(String version, String withVersion) {
+    List versionList = version.tokenize('.')
+    List withVersionList = withVersion.tokenize('.')
+
+    def minIndices = Math.min(versionList.size(), withVersionList.size())
+
+    for (int i = 0; i < minIndices; i++) {
+        def partInt = versionList[i].toInteger()
+        def withPartInt = withVersionList[i].toInteger()
+
+        if (partInt != withPartInt) {
+            return partInt <=> withPartInt
+        }
+    }
+
+    return 0
+}
+
+private static String[] getBackendProjectsOut(File resharperPluginDir, String buildConfiguration) {
+    def pluginFiles = [
+        "AWS.Daemon/bin/$buildConfiguration/net461/AWS.Daemon",
+        "AWS.Localization/bin/$buildConfiguration/net461/AWS.Localization",
+        "AWS.Psi/bin/$buildConfiguration/net461/AWS.Psi",
+        "AWS.Settings/bin/$buildConfiguration/net461/AWS.Settings"
+    ]
+
+    def files = pluginFiles.collect { "$resharperPluginDir/src/${it}.dll" } +
+        pluginFiles.collect { "$resharperPluginDir/src/${it}.pdb" }
+
+    return files
 }

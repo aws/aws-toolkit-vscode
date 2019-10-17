@@ -5,12 +5,12 @@ package protocol.model.daemon
 
 import com.jetbrains.rd.generator.nova.Ext
 import com.jetbrains.rd.generator.nova.async
+import com.jetbrains.rd.generator.nova.call
 import com.jetbrains.rd.generator.nova.doc
 import com.jetbrains.rd.generator.nova.field
 import com.jetbrains.rd.generator.nova.immutableList
 import com.jetbrains.rd.generator.nova.nullable
 import com.jetbrains.rd.generator.nova.sink
-import com.jetbrains.rd.generator.nova.call
 import com.jetbrains.rd.generator.nova.PredefinedType.string
 import com.jetbrains.rd.generator.nova.PredefinedType.void
 import com.jetbrains.rider.model.nova.ide.SolutionModel

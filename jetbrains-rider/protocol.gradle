@@ -5,6 +5,7 @@ def protocolGroup = 'protocol'
 
 ext.csDaemonGeneratedOutput = new File(resharperPluginPath, "src/AWS.Daemon/Protocol")
 ext.csPsiGeneratedOutput = new File(resharperPluginPath, "src/AWS.Psi/Protocol")
+ext.csAwsSettingGeneratedOutput = new File(resharperPluginPath, "src/AWS.Settings/Protocol")
 
 ext.ktGeneratedOutput = new File(projectDir, "src/software/aws/toolkits/jetbrains/protocol")
 
@@ -86,18 +87,56 @@ task generatePsiModel(type: tasks.getByName("rdgen").class) {
     }
 }
 
+task generateAwsSettingModel(type: tasks.getByName("rdgen").class) {
+    def settingModelSource = new File(modelDir, "setting").canonicalPath
+
+    // NOTE: classpath is evaluated lazily, at execution time, because it comes from the unzipped
+    // intellij SDK, which is extracted in afterEvaluate
+    params {
+        verbose = true
+        hashFolder = "build/rdgen"
+
+        logger.info("Configuring rdgen params")
+        classpath {
+            logger.info("Calculating classpath for rdgen, intellij.ideaDependency is: ${intellij.ideaDependency}")
+            def sdkPath = intellij.ideaDependency.classes
+            def rdLibDirectory = new File(sdkPath, "lib/rd").canonicalFile
+
+            "$rdLibDirectory/rider-model.jar"
+        }
+        sources settingModelSource
+        packages = "protocol.model.setting"
+
+        generator {
+            language = "kotlin"
+            transform = "asis"
+            root = "com.jetbrains.rider.model.nova.ide.IdeRoot"
+            namespace = "com.jetbrains.rider.model"
+            directory = "$ktGeneratedOutput"
+        }
+
+        generator {
+            language = "csharp"
+            transform = "reversed"
+            root = "com.jetbrains.rider.model.nova.ide.IdeRoot"
+            namespace = "JetBrains.Rider.Model"
+            directory = "$csAwsSettingGeneratedOutput"
+        }
+    }
+}
+
 task generateModel(type: tasks.getByName("rdgen").class) {
     group = protocolGroup
     description = 'Generates protocol models'
 
-    dependsOn generateDaemonModel, generatePsiModel
+    dependsOn generateDaemonModel, generatePsiModel, generateAwsSettingModel
 }
 
 task cleanProtocolModels {
     group = protocolGroup
     description = 'Clean up generated protocol models'
 
-    def protocolOutDirs = [ ktGeneratedOutput, csDaemonGeneratedOutput, csPsiGeneratedOutput ]
+    def protocolOutDirs = [ ktGeneratedOutput, csDaemonGeneratedOutput, csPsiGeneratedOutput, csAwsSettingGeneratedOutput ]
 
     for (dir in protocolOutDirs) {
         if (dir.isDirectory()) {

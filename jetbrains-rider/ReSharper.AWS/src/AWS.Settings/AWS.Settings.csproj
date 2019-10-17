@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFramework>net461</TargetFramework>
-        <RootNamespace>AWS.Daemon</RootNamespace>
+        <RootNamespace>AWS.Settings</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -10,7 +10,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\AWS.Localization\AWS.Localization.csproj" />
+        <ProjectReference Include="..\AWS.Daemon\AWS.Daemon.csproj" />
     </ItemGroup>
 
 </Project>

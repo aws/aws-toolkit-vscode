@@ -1,5 +1,5 @@
+using AWS.Daemon.RunMarkers;
 using JetBrains.TextControl.DocumentMarkup;
-using ReSharper.AWS.RunMarkers;
 
 [assembly:
     RegisterHighlighter(
@@ -10,7 +10,7 @@ using ReSharper.AWS.RunMarkers;
     )
 ]
 
-namespace ReSharper.AWS.RunMarkers
+namespace AWS.Daemon.RunMarkers
 {
     public static class LambdaRunMarkerAttributeIds
     {

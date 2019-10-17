@@ -10,6 +10,9 @@
         <component>
             <implementation-class>software.aws.toolkits.jetbrains.services.lambda.LambdaPsiHost</implementation-class>
         </component>
+        <component>
+            <implementation-class>software.aws.toolkits.jetbrains.settings.LambdaGutterMarkSettings</implementation-class>
+        </component>
     </project-components>
 
     <extensions defaultExtensionNs="com.intellij">

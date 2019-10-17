@@ -10,24 +10,24 @@ using JetBrains.ReSharper.Psi.Modules;
 using JetBrains.ReSharper.Resources.Shell;
 using JetBrains.Rider.Model;
 
-namespace ReSharper.AWS.Lambda
+namespace AWS.Daemon.Lambda
 {
     [SolutionComponent]
     public class LambdaHost
     {
-        private readonly LambdaModel myModel;
-        private readonly ISymbolCache mySymbolCache;
-        private readonly PsiIconManager myPsiIconManager;
-        private readonly IconHost myIconHost;
+        private readonly LambdaModel _model;
+        private readonly ISymbolCache _symbolCache;
+        private readonly PsiIconManager _psiIconManager;
+        private readonly IconHost _iconHost;
 
         public LambdaHost(ISolution solution, ISymbolCache symbolCache, PsiIconManager psiIconManager, IconHost iconHost)
         {
-            myModel = solution.GetProtocolSolution().GetLambdaModel();
-            mySymbolCache = symbolCache;
-            myPsiIconManager = psiIconManager;
-            myIconHost = iconHost;
+            _model = solution.GetProtocolSolution().GetLambdaModel();
+            _symbolCache = symbolCache;
+            _psiIconManager = psiIconManager;
+            _iconHost = iconHost;
 
-            myModel.DetermineHandlers.Set((lifetime, unit) =>
+            _model.DetermineHandlers.Set((lifetime, unit) =>
             {
                 var task = new RdTask<List<HandlerCompletionItem>>();
                 task.Set(DetermineHandlers(solution));
@@ -37,17 +37,17 @@ namespace ReSharper.AWS.Lambda
 
         public void RunLambda(string methodName, string handler)
         {
-            myModel.RunLambda(new LambdaRequest(methodName, handler));
+            _model.RunLambda(new LambdaRequest(methodName, handler));
         }
 
         public void DebugLambda(string methodName, string handler)
         {
-            myModel.DebugLambda(new LambdaRequest(methodName, handler));
+            _model.DebugLambda(new LambdaRequest(methodName, handler));
         }
 
         public void CreateNewLambda(string methodName, string handler)
         {
-            myModel.CreateNewLambda(new LambdaRequest(methodName, handler));
+            _model.CreateNewLambda(new LambdaRequest(methodName, handler));
         }
 
         private List<HandlerCompletionItem> DetermineHandlers(ISolution solution)
@@ -67,7 +67,7 @@ namespace ReSharper.AWS.Lambda
                     {
                         using (CompilationContextCookie.OverrideOrCreate(psiModule.GetContextFromModule()))
                         {
-                            var scope = mySymbolCache.GetSymbolScope(psiModule, false, true);
+                            var scope = _symbolCache.GetSymbolScope(psiModule, false, true);
                             var namespaces = scope.GlobalNamespace.GetNestedNamespaces(scope);
 
                             foreach (var @namespace in namespaces)
@@ -120,8 +120,8 @@ namespace ReSharper.AWS.Lambda
             if (!LambdaFinder.IsSuitableLambdaMethod(method)) return;
 
             var handlerString = LambdaHandlerUtils.ComposeHandlerString(method);
-            var iconId = myPsiIconManager.GetImage(method.GetElementType());
-            var iconModel = myIconHost.Transform(iconId);
+            var iconId = _psiIconManager.GetImage(method.GetElementType());
+            var iconModel = _iconHost.Transform(iconId);
             handlers.Add(new HandlerCompletionItem(handlerString, iconModel));
         }
     }

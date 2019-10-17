@@ -13,7 +13,7 @@ using JetBrains.UI.ThemedIcons;
 using JetBrains.Util;
 using JetBrains.Util.Logging;
 
-namespace ReSharper.AWS.Lambda
+namespace AWS.Daemon.Lambda
 {
     public static class LambdaFinder
     {

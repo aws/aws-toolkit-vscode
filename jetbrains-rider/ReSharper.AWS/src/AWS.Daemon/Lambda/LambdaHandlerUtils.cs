@@ -4,7 +4,7 @@ using JetBrains.ReSharper.Psi;
 using JetBrains.ReSharper.Psi.Modules;
 using JetBrains.RiderTutorials.Utils;
 
-namespace ReSharper.AWS.Lambda
+namespace AWS.Daemon.Lambda
 {
     public static class LambdaHandlerUtils
     {
