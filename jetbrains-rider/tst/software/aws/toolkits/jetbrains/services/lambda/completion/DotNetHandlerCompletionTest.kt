@@ -41,14 +41,14 @@ class DotNetHandlerCompletionTest : BaseTestWithSolution() {
     @Test
     @TestEnvironment(solution = "SamMultipleHandlersApp")
     fun testDetermineHandlers_MultipleHandlers() {
-        val handlers = project.solution.lambdaModel.determineHandlers.sync(Unit, RpcTimeouts.default)
+        val handlers = project.solution.lambdaModel.determineHandlers.sync(Unit, RpcTimeouts.default).sortedBy { it.handler }
 
         assertThat(handlers.size).isEqualTo(2)
 
-        assertThat(handlers[0].handler).isEqualTo("HelloWorld::HelloWorld.Function::FunctionHandler")
+        assertThat(handlers[0].handler).isEqualTo("HelloWorld::HelloWorld.Function2::FunctionHandler2")
         assertIconPath(handlers[0].iconId, "/resharper/PsiSymbols/Method.svg")
 
-        assertThat(handlers[1].handler).isEqualTo("HelloWorld::HelloWorld.Function2::FunctionHandler2")
+        assertThat(handlers[1].handler).isEqualTo("HelloWorld::HelloWorld.Function::FunctionHandler")
         assertIconPath(handlers[1].iconId, "/resharper/PsiSymbols/Method.svg")
     }
 

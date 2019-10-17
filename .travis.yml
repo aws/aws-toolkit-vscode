@@ -1,6 +1,10 @@
 language: java
 install: true
 
+env:
+  global:
+    - LOCAL_ENV_RUN=true
+
 matrix:
   include:
     - os: linux

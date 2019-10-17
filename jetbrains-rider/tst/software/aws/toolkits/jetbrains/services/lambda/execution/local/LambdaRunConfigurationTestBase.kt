@@ -15,7 +15,7 @@ import software.aws.toolkits.jetbrains.settings.SamSettings
 abstract class LambdaRunConfigurationTestBase : BaseTestWithSolution() {
 
     companion object {
-        protected const val HANDLER_EVALUATE_TIMEOUT_MS = 10000
+        protected const val HANDLER_EVALUATE_TIMEOUT_MS = 20000
     }
 
     protected val mockId = "MockCredsId"

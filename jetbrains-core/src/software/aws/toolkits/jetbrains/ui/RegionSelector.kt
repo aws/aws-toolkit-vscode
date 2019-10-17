@@ -43,7 +43,7 @@ class RegionSelector : ComboBox<AwsRegion>() {
 
     private inner class Renderer : SimpleListCellRenderer<AwsRegion>() {
         override fun customize(
-            list: JList<out AwsRegion>?,
+            list: JList<out AwsRegion>,
             value: AwsRegion?,
             index: Int,
             selected: Boolean,

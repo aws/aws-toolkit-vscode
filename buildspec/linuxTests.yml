@@ -8,6 +8,7 @@ cache:
 env:
   variables:
     CI: true
+    LOCAL_ENV_RUN: true
 
 phases:
   install:

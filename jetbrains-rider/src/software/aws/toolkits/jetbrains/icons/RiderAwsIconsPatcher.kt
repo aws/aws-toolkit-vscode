@@ -33,11 +33,10 @@ internal class RiderAwsIconsPatcher : IconPathPatcher() {
         }
     }
 
-    override fun patchPath(path: String?, classLoader: ClassLoader?): String? =
-        if (path != null) myIconsOverrideMap[path] else null
+    override fun patchPath(path: String, classLoader: ClassLoader?): String? = myIconsOverrideMap[path]
 
-    override fun getContextClassLoader(path: String?, originalClassLoader: ClassLoader?): ClassLoader? =
-        if (path != null && myIconsOverrideMap.containsKey(path)) javaClass.classLoader
+    override fun getContextClassLoader(path: String, originalClassLoader: ClassLoader?): ClassLoader? =
+        if (myIconsOverrideMap.containsKey(path)) javaClass.classLoader
         else originalClassLoader
 
     private val myIconsOverrideMap = mapOf(

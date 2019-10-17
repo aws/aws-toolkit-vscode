@@ -75,10 +75,10 @@ static def ideProfiles() {
             ],
             "2019.3": [
                 "IC": [
-                    version: "IC-193.4099-EAP-CANDIDATE-SNAPSHOT", // Update to actual version when it gets released
+                    version: "IC-193.4386-EAP-CANDIDATE-SNAPSHOT", // Update to actual version when it gets released
                     plugins: [
                         "yaml",
-                        "PythonCore:193.4099.13",
+                        "PythonCore:193.4386.10",
                         "java",
                         "gradle",
                         "maven",
@@ -86,13 +86,19 @@ static def ideProfiles() {
                     ]
                 ],
                 "IU": [
-                    version: "IU-193.4099-EAP-CANDIDATE-SNAPSHOT",
+                    version: "IU-193.4386-EAP-CANDIDATE-SNAPSHOT",
                     plugins: [
-                        "PythonCore:193.4099.13",
+                        "PythonCore:193.4386.10",
                         "yaml",
                         "JavaScriptLanguage",
                         "JavaScriptDebugger",
                         "CSS",
+                    ]
+                ],
+                "RD": [
+                    version: "RD-2019.3-SNAPSHOT",
+                    plugins: [
+                        "yaml"
                     ]
                 ]
             ]

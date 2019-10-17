@@ -71,16 +71,19 @@ compileKotlin.dependsOn(generateModel)
 
 test {
     useTestNG()
+    println("Configuring Rider tests. Environment variable LOCAL_ENV_RUN: ${System.getenv("LOCAL_ENV_RUN")}")
 
-    // TODO: Disable Rider tests until switching to 2019.3 SDK.
-    // Please see https://youtrack.jetbrains.com/issue/RIDER-19506.
-    def testClassToExclude = [ "DotNetLambdaHandlerResolverTest",
-                               "LambdaGutterMarkHighlightingTest",
-                               "DotNetLocalLambdaRunConfigurationTest",
-                               "DotNetHandlerCompletionTest" ]
+    def compare = compareVersions(ideProfileName, "2019.3")
+    if (compare == -1) {
+        println("Current SDK version: ${ideProfileName}. Rider tests require 193 SDK or higher. Exclude Rider tests.")
+        def testClassToExclude = [ "DotNetLambdaHandlerResolverTest",
+                                   "LambdaGutterMarkHighlightingTest",
+                                   "DotNetLocalLambdaRunConfigurationTest",
+                                   "DotNetHandlerCompletionTest" ]
 
-    testClassToExclude.forEach { classToExclude ->
-        exclude "**/${classToExclude}.class"
+        testClassToExclude.forEach { classToExclude ->
+            exclude "**/${classToExclude}.class"
+        }
     }
 }
 

@@ -10,8 +10,6 @@ import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.runners.ExecutionEnvironment
-import com.intellij.execution.ui.ConsoleView
-import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.execution.ui.ExecutionConsole
 import com.intellij.openapi.rd.defineNestedLifetime
 import com.intellij.xdebugger.XDebugProcess
@@ -40,7 +38,6 @@ import com.jetbrains.rider.model.debuggerWorker.DotNetCoreInfo
 import com.jetbrains.rider.model.debuggerWorker.DotNetDebuggerSessionModel
 import com.jetbrains.rider.model.debuggerWorkerConnectionHelperModel
 import com.jetbrains.rider.projectView.solution
-import com.jetbrains.rider.run.ConsoleKind
 import com.jetbrains.rider.run.IDebuggerOutputListener
 import com.jetbrains.rider.run.bindToSettings
 import org.jetbrains.concurrency.AsyncPromise
@@ -280,17 +277,12 @@ class DotNetSamDebugSupport : SamDebugSupport {
         sessionModel: DotNetDebuggerSessionModel,
         outputEventsListener: IDebuggerOutputListener
     ): XDebugProcessStarter {
-        val consoleKind = ConsoleKind.ExternalConsole
-        (executionConsole as? ConsoleView)
-            ?.print(
-                "Input/Output redirection disabled: ${consoleKind.message}${System.lineSeparator()}",
-                ConsoleViewContentType.SYSTEM_OUTPUT
-            )
 
         val fireInitializedManually = env.getUserData(DotNetDebugRunner.FIRE_INITIALIZED_MANUALLY) ?: false
 
         return object : XDebugProcessStarter() {
             override fun start(session: XDebugSession): XDebugProcess =
+                // TODO: Update to use 'sessionId' parameter in ctr when min SDK version is 193.
                 DotNetDebugProcess(
                     sessionLifetime = sessionLifetime,
                     session = session,
