@@ -1,0 +1,26 @@
+{
+	"date": "2019-10-17",
+	"version": "1.2.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Add '--no-interactive' flag to 'sam init' calls when SAM CLI version is greater than or equal to 0.30.0"
+		},
+		{
+			"type": "Feature",
+			"description": "Added docker network option support for invoking sam applications"
+		},
+		{
+			"type": "Feature",
+			"description": "Ansi codes are removed from text shown in the Output tab when Locally Invoking Lambda handlers"
+		},
+		{
+			"type": "Feature",
+			"description": "Adding support for SAM CLI 0.30.0 features in `sam init`: --app-template and --dependency-manager"
+		},
+		{
+			"type": "Feature",
+			"description": "Bumped maximum (exclusive) supported SAM CLI version from 0.30.0 to 0.40.0."
+		}
+	]
+}

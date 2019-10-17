@@ -1,4 +1,0 @@
-{
-    "type": "Feature",
-    "description": "Added docker network option support for invoking sam applications"
-}
