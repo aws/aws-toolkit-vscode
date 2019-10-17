@@ -69,7 +69,7 @@ object LambdaBuilderUtils {
     private inline fun <T> runSamBuildInBackground(
         buildViewManager: BuildViewManager,
         module: Module,
-        requestObject: Any,
+        request: Any,
         crossinline task: () -> T
     ): CompletionStage<T> {
         val future = CompletableFuture<T>()
@@ -79,14 +79,13 @@ object LambdaBuilderUtils {
 
             val workingDir = ModuleRootManager.getInstance(module).contentRoots.getOrNull(0)?.path ?: ""
             val descriptor = DefaultBuildDescriptor(
-                requestObject,
+                request,
                 message("sam.build.title"),
                 workingDir,
                 System.currentTimeMillis()
             )
 
-            @Suppress("DEPRECATION") // TODO: switch to BuildProgressListener(Object, Event)  FIX_WHEN_MIN_IS_192
-            buildViewManager.onEvent(StartBuildEventImpl(descriptor, message("sam.build.title")))
+            buildViewManager.onEvent(request, StartBuildEventImpl(descriptor, message("sam.build.title")))
 
             // TODO: Make cancellable
             ProgressManager.getInstance().run(
@@ -148,8 +147,7 @@ object LambdaBuilderUtils {
 
         override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
             val stdError = outputType == ProcessOutputTypes.STDERR
-            @Suppress("DEPRECATION") // TODO: switch to BuildProgressListener(Object, Event)  FIX_WHEN_MIN_IS_192
-            progressListener.onEvent(OutputBuildEventImpl(request, event.text, !stdError))
+            progressListener.onEvent(request, OutputBuildEventImpl(request, event.text, !stdError))
         }
 
         override fun processTerminated(event: ProcessEvent) {
@@ -171,8 +169,7 @@ object LambdaBuilderUtils {
                 )
             }
 
-            @Suppress("DEPRECATION") // TODO: switch to BuildProgressListener(Object, Event)  FIX_WHEN_MIN_IS_192
-            progressListener.onEvent(buildEvent)
+            progressListener.onEvent(request, buildEvent)
         }
     }
 }

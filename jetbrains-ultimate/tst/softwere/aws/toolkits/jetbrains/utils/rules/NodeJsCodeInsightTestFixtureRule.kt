@@ -11,6 +11,7 @@ import com.intellij.lang.javascript.dialects.JSLanguageLevel
 import com.intellij.lang.javascript.psi.JSFile
 import com.intellij.lang.javascript.settings.JSRootConfiguration
 import com.intellij.openapi.module.ModuleType
+import com.intellij.openapi.module.WebModuleTypeBase
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.util.Ref
@@ -23,7 +24,6 @@ import com.intellij.testFramework.fixtures.IdeaTestFixtureFactory
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.util.text.SemVer
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.utils.CompatibilityUtils.getWebModule
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
 
 /**
@@ -48,7 +48,7 @@ class NodeJsCodeInsightTestFixtureRule : CodeInsightTestFixtureRule() {
 }
 
 class NodeJsLightProjectDescriptor : LightProjectDescriptor() {
-    override fun getModuleType(): ModuleType<*> = getWebModule() ?: throw NullPointerException("module not found")
+    override fun getModuleType(): ModuleType<*> = WebModuleTypeBase.getInstance()
     override fun getSdk(): Sdk? = null
 }
 

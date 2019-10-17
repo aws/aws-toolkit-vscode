@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.upload
 
-import com.intellij.codeHighlighting.Pass
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.codeInsight.daemon.LineMarkerInfo
 import com.intellij.codeInsight.daemon.LineMarkerProviderDescriptor
@@ -38,7 +37,6 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
 
     override fun getIcon(): Icon? = AwsIcons.Resources.LAMBDA_FUNCTION
 
-    @Suppress("DEPRECATION") // Non-deprecated constructor for LineMarkerInfo not introduced till 2019.1 FIX_WHEN_MIN_IS_192
     override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<*>? {
         // Only process leaf elements
         if (element.firstChild != null) {
@@ -67,7 +65,6 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
                 element,
                 element.textRange,
                 icon,
-                Pass.LINE_MARKERS,
                 null,
                 null,
                 GutterIconRenderer.Alignment.CENTER
