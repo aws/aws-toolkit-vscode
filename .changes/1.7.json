@@ -1,0 +1,23 @@
+{
+  "date" : "2019-10-17",
+  "version" : "1.7",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "A notification is shown on startup indicating that JetBrains 2019.2 or greater will be required in an upcoming AWS Toolkit release"
+  }, {
+    "type" : "feature",
+    "description" : "Add --no-interactive to SAM init when running a version of SAM >= 0.30.0"
+  }, {
+    "type" : "feature",
+    "description" : "Bump minimum SAM CLI version from 0.14.1 to 0.16.0"
+  }, {
+    "type" : "feature",
+    "description" : "Adding support for JetBrains Platform version 2019.3."
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix error thrown adding Lambda gutter icons and not having any active credentials"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix validating a Lambda handler not under a ReadAction"
+  } ]
+}

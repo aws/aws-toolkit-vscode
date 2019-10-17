@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix validating a Lambda handler not under a ReadAction"
-}
