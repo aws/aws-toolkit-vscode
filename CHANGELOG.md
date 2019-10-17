@@ -1,3 +1,11 @@
+# _1.7_ (2019-10-17)
+- **(Feature)** A notification is shown on startup indicating that JetBrains 2019.2 or greater will be required in an upcoming AWS Toolkit release
+- **(Feature)** Add --no-interactive to SAM init when running a version of SAM >= 0.30.0
+- **(Feature)** Bump minimum SAM CLI version from 0.14.1 to 0.16.0
+- **(Feature)** Adding support for JetBrains Platform version 2019.3.
+- **(Bug Fix)** Fix error thrown adding Lambda gutter icons and not having any active credentials
+- **(Bug Fix)** Fix validating a Lambda handler not under a ReadAction
+
 # _1.6_ (2019-09-23)
 - **(Feature)** Open Stack Status UI on CloudFormation stack deletion.
 - **(Feature)** Removed requirement of having to double-click to load more resources in AWS Explorer if there is more than one page returned

@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix error thrown adding Lambda gutter icons and not having any active credentials"
-}

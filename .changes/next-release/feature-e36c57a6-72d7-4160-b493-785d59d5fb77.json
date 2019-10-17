@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Add --no-interactive to SAM init when running a version of SAM >= 0.30.0"
-}
