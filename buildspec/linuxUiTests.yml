@@ -9,6 +9,7 @@ env:
   variables:
     CI: true
     RECORD_UI: true
+    LOCAL_ENV_RUN: true
 
 phases:
   install:
@@ -16,8 +17,9 @@ phases:
       java: openjdk8
 
     commands:
+      - echo "deb https://download.mono-project.com/repo/ubuntu stable-bionic main" | tee /etc/apt/sources.list.d/mono-official-stable.list
       - apt-get update
-      - apt-get install -y xvfb icewm procps ffmpeg libswt-gtk-3-java
+      - apt-get install -y xvfb icewm procps ffmpeg libswt-gtk-3-java mono-complete
       - pip install --user aws-sam-cli
 
   build:
