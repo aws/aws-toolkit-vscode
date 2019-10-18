@@ -279,7 +279,7 @@ task guiTest(type: Test) {
 }
 
 dependencies {
-    compile project.findProject(':jetbrains-ultimate') ?: project(':jetbrains-core')
+    compile project(':jetbrains-ultimate')
     compile project(':jetbrains-rider')
 
     ktlint "com.pinterest:ktlint:$ktlintVersion"
