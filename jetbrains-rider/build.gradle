@@ -69,48 +69,18 @@ tasks.withType(prepareSandbox.class).all {
 
 compileKotlin.dependsOn(generateModel)
 
+tasks.findByName("compileTestKotlin").onlyIf { resolveIdeProfileName() != "2019.2" /* Tests require 2019.3 to build and run */ }
 test {
     useTestNG()
     println("Configuring Rider tests. Environment variable LOCAL_ENV_RUN: ${System.getenv("LOCAL_ENV_RUN")}")
-
-    def compare = compareVersions(ideProfileName, "2019.3")
-    if (compare == -1) {
-        println("Current SDK version: ${ideProfileName}. Rider tests require 193 SDK or higher. Exclude Rider tests.")
-        def testClassToExclude = [ "DotNetLambdaHandlerResolverTest",
-                                   "LambdaGutterMarkHighlightingTest",
-                                   "DotNetLocalLambdaRunConfigurationTest",
-                                   "DotNetHandlerCompletionTest" ]
-
-        testClassToExclude.forEach { classToExclude ->
-            exclude "**/${classToExclude}.class"
-        }
-    }
-}
+}.onlyIf { resolveIdeProfileName() != "2019.2" /* Tests require 2019.3 to build and run */ }
 
 runIde {
     systemProperty("aws.toolkits.enableTelemetry", false)
 }
 
 jar {
-    archiveBaseName = 'aws-intellij-toolkit-rider'
-}
-
-private static int compareVersions(String version, String withVersion) {
-    List versionList = version.tokenize('.')
-    List withVersionList = withVersion.tokenize('.')
-
-    def minIndices = Math.min(versionList.size(), withVersionList.size())
-
-    for (int i = 0; i < minIndices; i++) {
-        def partInt = versionList[i].toInteger()
-        def withPartInt = withVersionList[i].toInteger()
-
-        if (partInt != withPartInt) {
-            return partInt <=> withPartInt
-        }
-    }
-
-    return 0
+    archiveBaseName.set('aws-intellij-toolkit-rider')
 }
 
 private static String[] getBackendProjectsOut(File resharperPluginDir, String buildConfiguration) {
