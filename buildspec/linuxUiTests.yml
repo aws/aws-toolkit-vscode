@@ -15,11 +15,11 @@ phases:
   install:
     runtime-versions:
       java: openjdk8
+      dotnet: 2.2
 
     commands:
-      - echo "deb https://download.mono-project.com/repo/ubuntu stable-bionic main" | tee /etc/apt/sources.list.d/mono-official-stable.list
       - apt-get update
-      - apt-get install -y xvfb icewm procps ffmpeg libswt-gtk-3-java mono-complete
+      - apt-get install -y xvfb icewm procps ffmpeg libswt-gtk-3-java msbuild
       - pip install --user aws-sam-cli
 
   build:
