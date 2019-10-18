@@ -6,7 +6,6 @@ package software.aws.toolkits.core.utils.test
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.math.roundToLong
 
 fun retryableAssert(
     timeout: Duration? = null,
@@ -14,7 +13,7 @@ fun retryableAssert(
     interval: Duration = Duration.ofMillis(100),
     assertion: () -> Unit
 ) {
-    val calculatedTimeout = timeout ?: maxAttempts?.let { Duration.ofMillis(it * (interval.toMillis() * 1.5).roundToLong()) } ?: Duration.ofSeconds(1)
+    val calculatedTimeout = timeout ?: maxAttempts?.let { Duration.ofMillis(it * (interval.toMillis() * 2)) } ?: Duration.ofSeconds(1)
     val expiry = Instant.now().plus(calculatedTimeout)
     val attempts = AtomicInteger(0)
     while (true) {
