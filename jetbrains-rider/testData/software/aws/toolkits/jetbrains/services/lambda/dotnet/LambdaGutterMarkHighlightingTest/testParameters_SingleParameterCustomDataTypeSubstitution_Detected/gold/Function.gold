@@ -1,0 +1,18 @@
+using System.Collections;
+using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.Core;
+
+[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
+
+namespace HelloWorld
+{
+    public class Function
+    {
+        public APIGatewayProxyResponse <AWS_LAMBDA_RUN_METHOD_GUTTER_MARK>FunctionHandler</AWS_LAMBDA_RUN_METHOD_GUTTER_MARK>(MyCustomDictionary inputData)
+        {
+            return new APIGatewayProxyResponse();
+        }
+    }
+
+    public class MyCustomDictionary<T> : IDictionary<String, T> {}
+}

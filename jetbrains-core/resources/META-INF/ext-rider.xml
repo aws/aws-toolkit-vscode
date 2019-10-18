@@ -1,0 +1,32 @@
+<!-- Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin>
+
+    <project-components>
+        <component>
+            <implementation-class>software.aws.toolkits.jetbrains.services.lambda.LambdaHost</implementation-class>
+        </component>
+        <component>
+            <implementation-class>software.aws.toolkits.jetbrains.services.lambda.LambdaPsiHost</implementation-class>
+        </component>
+        <component>
+            <implementation-class>software.aws.toolkits.jetbrains.settings.LambdaGutterMarkSettings</implementation-class>
+        </component>
+    </project-components>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <projectTemplateProvider implementation="software.aws.toolkits.jetbrains.ui.wizard.DotNetSamProjectProvider" order="last"/>
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.icons.RiderAwsIconsPatcherRegistrar"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="aws.toolkit.lambda">
+        <runtimeGroup runtimeGroup="DOTNET" implementation="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetRuntimeGroup"/>
+        <builder runtimeGroup="DOTNET" implementation="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetLambdaBuilder"/>
+        <handlerResolver runtimeGroup="DOTNET" implementation="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetLambdaHandlerResolver"/>
+        <handlerCompletion runtimeGroup="DOTNET" implementation="software.aws.toolkits.jetbrains.services.lambda.completion.DotNetHandlerCompletion"/>
+        <sam.debugSupport runtimeGroup="DOTNET" implementation="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetSamDebugSupport"/>
+        <sam.projectWizard runtimeGroup="DOTNET" implementation="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetSamProjectWizard"/>
+    </extensions>
+
+</idea-plugin>

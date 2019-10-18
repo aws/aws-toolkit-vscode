@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net461</TargetFramework>
+        <RootNamespace>AWS.Psi</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="JetBrains.Rider.SDK" Version="$(RiderSDKVersion)" />
+    </ItemGroup>
+
+</Project>

@@ -10,7 +10,6 @@ import com.intellij.javascript.nodejs.interpreter.local.NodeJsLocalInterpreterMa
 import com.intellij.lang.javascript.dialects.JSLanguageLevel
 import com.intellij.lang.javascript.psi.JSFile
 import com.intellij.lang.javascript.settings.JSRootConfiguration
-import com.intellij.openapi.module.ModuleType
 import com.intellij.openapi.module.WebModuleTypeBase
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.Sdk
@@ -48,7 +47,7 @@ class NodeJsCodeInsightTestFixtureRule : CodeInsightTestFixtureRule() {
 }
 
 class NodeJsLightProjectDescriptor : LightProjectDescriptor() {
-    override fun getModuleType(): ModuleType<*> = WebModuleTypeBase.getInstance()
+    override fun getModuleTypeId(): String = WebModuleTypeBase.getInstance().id
     override fun getSdk(): Sdk? = null
 }
 

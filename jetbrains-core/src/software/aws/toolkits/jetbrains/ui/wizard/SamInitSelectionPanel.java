@@ -4,17 +4,21 @@
 package software.aws.toolkits.jetbrains.ui.wizard;
 
 import com.intellij.openapi.ui.ComboBox;
-import com.intellij.openapi.ui.FixedSizeButton;
 import com.intellij.openapi.ui.ValidationInfo;
 import com.intellij.ui.ColoredListCellRenderer;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.uiDesigner.core.GridConstraints;
-import com.intellij.uiDesigner.core.GridLayoutManager;
-import com.intellij.uiDesigner.core.Spacer;
-import java.awt.BorderLayout;
-import java.awt.Insets;
-import java.util.ResourceBundle;
-import javax.swing.DefaultComboBoxModel;
+
+import java.awt.Dimension;
+import java.awt.event.ItemEvent;
+import java.util.List;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.lambda.model.Runtime;
@@ -22,16 +26,6 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder;
 import software.aws.toolkits.jetbrains.services.lambda.SamNewProjectSettings;
 import software.aws.toolkits.jetbrains.services.lambda.SamProjectTemplate;
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon;
-
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-import java.awt.Dimension;
-import java.awt.event.ItemEvent;
-import java.util.List;
 
 @SuppressWarnings("NullableProblems")
 public class SamInitSelectionPanel implements ValidatablePanel {
@@ -73,6 +67,17 @@ public class SamInitSelectionPanel implements ValidatablePanel {
         mainPanel.validate();
     }
 
+    public void setRuntime(Runtime runtime) {
+        int itemCount = runtimeComboBox.getItemCount();
+
+        for (int itemIndex = 0; itemIndex < itemCount; itemIndex++) {
+            if (runtimeComboBox.getItemAt(itemIndex) == runtime) {
+                runtimeComboBox.setSelectedItem(runtime);
+                return;
+            }
+        }
+    }
+
     private void runtimeUpdate() {
         Runtime selectedRuntime = (Runtime) runtimeComboBox.getSelectedItem();
 
@@ -90,6 +95,7 @@ public class SamInitSelectionPanel implements ValidatablePanel {
         templateComboBox.setRenderer(new ColoredListCellRenderer<SamProjectTemplate>() {
             @Override
             protected void customizeCellRenderer(@NotNull JList<? extends SamProjectTemplate> list, SamProjectTemplate value, int index, boolean selected, boolean hasFocus) {
+                if (value == null) return;
                 setIcon(value.getIcon());
                 append(value.getName());
             }

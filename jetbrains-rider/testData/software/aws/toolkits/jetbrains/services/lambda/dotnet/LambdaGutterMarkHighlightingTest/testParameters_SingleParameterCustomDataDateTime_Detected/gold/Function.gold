@@ -1,0 +1,15 @@
+using System;
+using Amazon.Lambda.Core;
+
+[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
+
+namespace HelloWorld
+{
+    public class Function
+    {
+        public DateTime <AWS_LAMBDA_RUN_METHOD_GUTTER_MARK>FunctionHandler</AWS_LAMBDA_RUN_METHOD_GUTTER_MARK>(DateTime inputData)
+        {
+            return DateTime.Now;
+        }
+    }
+}

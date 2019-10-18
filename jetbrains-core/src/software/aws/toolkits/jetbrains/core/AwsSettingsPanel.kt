@@ -30,7 +30,7 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
 import software.aws.toolkits.jetbrains.components.telemetry.ComboBoxActionWrapper
-import software.aws.toolkits.jetbrains.components.telemetry.ToogleActionWrapper
+import software.aws.toolkits.jetbrains.components.telemetry.ToggleActionWrapper
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier
@@ -208,7 +208,7 @@ class ChangeAccountSettingsAction(
     }
 }
 
-private class ChangeRegionAction(val region: AwsRegion) : ToogleActionWrapper(region.displayName), DumbAware {
+private class ChangeRegionAction(val region: AwsRegion) : ToggleActionWrapper(region.displayName), DumbAware {
 
     override fun doIsSelected(e: AnActionEvent): Boolean = getAccountSetting(e).activeRegion == region
 
@@ -219,7 +219,7 @@ private class ChangeRegionAction(val region: AwsRegion) : ToogleActionWrapper(re
     }
 }
 
-private class ChangeCredentialsAction(val credentialsProvider: ToolkitCredentialsProvider) : ToogleActionWrapper(credentialsProvider.displayName), DumbAware {
+private class ChangeCredentialsAction(val credentialsProvider: ToolkitCredentialsProvider) : ToggleActionWrapper(credentialsProvider.displayName), DumbAware {
 
     override fun doIsSelected(e: AnActionEvent): Boolean =
         tryOrNull { getAccountSetting(e).activeCredentialProvider == credentialsProvider } ?: false

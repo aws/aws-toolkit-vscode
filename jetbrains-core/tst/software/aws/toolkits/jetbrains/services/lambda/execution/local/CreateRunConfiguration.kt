@@ -104,12 +104,12 @@ fun samRunConfiguration(project: Project): LocalLambdaRunConfiguration {
     return runConfiguration
 }
 
-fun preWarmSamVersionCache(path: String?) {
+fun preWarmSamVersionCache(path: String?, timeoutMs: Int = TEST_EVALUATE_BLOCKING_TIMEOUT_MS) {
     path ?: throw InvalidParameterException("Test SAM CLI executable path is not set")
-    SamVersionCache.evaluateBlocking(path, TEST_EVALUATE_BLOCKING_TIMEOUT_MS)
+    SamVersionCache.evaluateBlocking(path, timeoutMs)
 }
 
-fun preWarmLambdaHandlerValidation(project: Project, runtime: Runtime, handler: String) {
+fun preWarmLambdaHandlerValidation(project: Project, runtime: Runtime, handler: String, timeoutMs: Int = TEST_EVALUATE_BLOCKING_TIMEOUT_MS) {
     val handlerValidator = project.service<LambdaHandlerValidator>()
-    handlerValidator.evaluateBlocking(LambdaHandlerValidator.LambdaEntry(project, runtime, handler), TEST_EVALUATE_BLOCKING_TIMEOUT_MS)
+    handlerValidator.evaluateBlocking(LambdaHandlerValidator.LambdaEntry(project, runtime, handler), timeoutMs)
 }

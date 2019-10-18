@@ -19,7 +19,7 @@ class SamRunningState(
 ) : CommandLineState(environment) {
     lateinit var builtLambda: BuiltLambda
 
-    internal val runner = if (environment.executor.id == DefaultDebugExecutor.EXECUTOR_ID) {
+    val runner = if (environment.executor.id == DefaultDebugExecutor.EXECUTOR_ID) {
         SamDebugger()
     } else {
         SamRunner()

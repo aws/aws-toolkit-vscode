@@ -1,0 +1,128 @@
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+buildscript {
+    ext.rd_version = "0.192.36"
+
+    repositories {
+        maven { url 'https://www.myget.org/F/rd-snapshots/maven/' }
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath "com.jetbrains.rd:rd-gen:$rd_version"
+    }
+}
+
+ext.resharperPluginPath = new File(projectDir, "ReSharper.AWS")
+
+apply plugin: 'org.jetbrains.intellij'
+apply plugin: 'com.jetbrains.rdgen'
+
+apply from: 'protocol.gradle'
+apply from: 'backend.gradle'
+
+dependencies {
+    compile project(":jetbrains-core")
+    testCompile project(path: ":jetbrains-core", configuration: 'testArtifacts')
+}
+
+intellij {
+    def parentIntellijTask = project(':jetbrains-core').intellij
+    version ideVersion("RD")
+    pluginName parentIntellijTask.pluginName
+    updateSinceUntilBuild parentIntellijTask.updateSinceUntilBuild
+
+    // Workaround for https://youtrack.jetbrains.com/issue/IDEA-179607
+    def extraPlugins = [ "rider-plugins-appender" ]
+    plugins = idePlugins("RD") + extraPlugins
+
+    // Disable downloading source to avoid issues related to Rider SDK naming that is missed in Idea
+    // snapshots repository. The task is failed because if is unable to find related IC sources.
+    downloadSources = false
+    instrumentCode = false
+}
+
+// Tasks:
+//
+// `buildPlugin` depends on `prepareSandbox` task and then zips up the sandbox dir and puts the file in rider/build/distributions
+// `runIde` depends on `prepareSandbox` task and then executes IJ inside the sandbox dir
+// `prepareSandbox` depends on the standard Java `jar` and then copies everything into the sandbox dir
+
+tasks.withType(prepareSandbox.class).all {
+    dependsOn buildReSharperPlugin
+
+    def config = ext.properties["BuildConfiguration"] ?: "Debug"
+    def files = getBackendProjectsOut(resharperPluginPath, config)
+    files.each {
+        from(it, { into("${intellij.pluginName}/dotnet") })
+    }
+
+    doLast {
+        files.each {
+            def file = new File(it)
+            if (!file.isFile()) throw new GradleException("File $file does not exist")
+            logger.warn("$name: ${file.name} -> ${destinationDir}/${intellij.pluginName}/dotnet")
+        }
+    }
+}
+
+compileKotlin.dependsOn(generateModel)
+
+test {
+    useTestNG()
+    println("Configuring Rider tests. Environment variable LOCAL_ENV_RUN: ${System.getenv("LOCAL_ENV_RUN")}")
+
+    def compare = compareVersions(ideProfileName, "2019.3")
+    if (compare == -1) {
+        println("Current SDK version: ${ideProfileName}. Rider tests require 193 SDK or higher. Exclude Rider tests.")
+        def testClassToExclude = [ "DotNetLambdaHandlerResolverTest",
+                                   "LambdaGutterMarkHighlightingTest",
+                                   "DotNetLocalLambdaRunConfigurationTest",
+                                   "DotNetHandlerCompletionTest" ]
+
+        testClassToExclude.forEach { classToExclude ->
+            exclude "**/${classToExclude}.class"
+        }
+    }
+}
+
+runIde {
+    systemProperty("aws.toolkits.enableTelemetry", false)
+}
+
+jar {
+    archiveBaseName = 'aws-intellij-toolkit-rider'
+}
+
+private static int compareVersions(String version, String withVersion) {
+    List versionList = version.tokenize('.')
+    List withVersionList = withVersion.tokenize('.')
+
+    def minIndices = Math.min(versionList.size(), withVersionList.size())
+
+    for (int i = 0; i < minIndices; i++) {
+        def partInt = versionList[i].toInteger()
+        def withPartInt = withVersionList[i].toInteger()
+
+        if (partInt != withPartInt) {
+            return partInt <=> withPartInt
+        }
+    }
+
+    return 0
+}
+
+private static String[] getBackendProjectsOut(File resharperPluginDir, String buildConfiguration) {
+    def pluginFiles = [
+        "AWS.Daemon/bin/$buildConfiguration/net461/AWS.Daemon",
+        "AWS.Localization/bin/$buildConfiguration/net461/AWS.Localization",
+        "AWS.Psi/bin/$buildConfiguration/net461/AWS.Psi",
+        "AWS.Settings/bin/$buildConfiguration/net461/AWS.Settings"
+    ]
+
+    def files = pluginFiles.collect { "$resharperPluginDir/src/${it}.dll" } +
+        pluginFiles.collect { "$resharperPluginDir/src/${it}.pdb" }
+
+    return files
+}

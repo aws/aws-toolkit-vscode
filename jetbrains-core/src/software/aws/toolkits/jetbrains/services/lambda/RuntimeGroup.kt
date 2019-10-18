@@ -32,7 +32,7 @@ enum class RuntimeGroup {
     JAVA,
     PYTHON,
     NODEJS,
-    ;
+    DOTNET;
 
     private val info by lazy {
         RuntimeGroupInformation.getInstances(this)

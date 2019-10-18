@@ -88,8 +88,9 @@ abstract class SamProjectTemplate {
 
     open fun postCreationAction(settings: SamNewProjectSettings, contentRoot: VirtualFile, rootModel: ModifiableRootModel) {
         SamCommon.excludeSamDirectory(contentRoot, rootModel)
-        openReadmeFile(contentRoot, rootModel.project)
-        createRunConfigurations(contentRoot, rootModel.project)
+        val project = rootModel.project
+        openReadmeFile(contentRoot, project)
+        createRunConfigurations(contentRoot, project)
     }
 
     private fun openReadmeFile(contentRoot: VirtualFile, project: Project) {
@@ -118,7 +119,7 @@ abstract class SamProjectTemplate {
 
     fun getIcon() = AwsIcons.Resources.SERVERLESS_APP
 
-    fun build(project: Project, runtime: Runtime, outputDir: VirtualFile) {
+    fun build(project: Project?, runtime: Runtime, outputDir: VirtualFile) {
         var hasException = false
         try {
             doBuild(runtime, outputDir)

@@ -10,7 +10,7 @@ import com.intellij.openapi.components.Storage
 import com.intellij.openapi.project.Project
 
 @State(name = "lambda", storages = [Storage("aws.xml")])
-class LambdaSettings : PersistentStateComponent<LambdaConfiguration> {
+class LambdaSettings(private val project: Project) : PersistentStateComponent<LambdaConfiguration> {
     private var state = LambdaConfiguration()
 
     override fun getState(): LambdaConfiguration = state
@@ -23,6 +23,7 @@ class LambdaSettings : PersistentStateComponent<LambdaConfiguration> {
         get() = state.showAllHandlerGutterIcons
         set(value) {
             state.showAllHandlerGutterIcons = value
+            project.messageBus.syncPublisher(LambdaSettingsChangeListener.TOPIC).samShowAllHandlerGutterIconsSettingsChange(value)
         }
 
     companion object {

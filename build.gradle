@@ -215,7 +215,18 @@ task ktlint(type: JavaExec, group: "verification") {
     description = "Check Kotlin code style."
     classpath = configurations.ktlint
     main = "com.pinterest.ktlint.Main"
-    args "-v", project.rootDir.absolutePath + "/**/*.kt"
+
+    def isWindows = System.properties['os.name'].toLowerCase().contains('windows')
+
+    def toInclude = project.rootDir.relativePath(project.projectDir) + "/**/*.kt"
+    def toExclude = project.rootDir.relativePath(new File(project.projectDir, "jetbrains-rider")) + "/**/*.Generated.kt"
+
+    if (isWindows) {
+        toInclude = toInclude.replace("/", "\\")
+        toExclude = toExclude.replace("/", "\\")
+    }
+
+    args "-v", toInclude, "!${toExclude}"
 
     inputs.files(project.fileTree(dir: ".", include: "**/*.kt"))
     outputs.dir("${project.buildDir}/reports/ktlint/")
@@ -253,7 +264,9 @@ if (gradle.startParameter.taskNames.contains("runIde")) {
                     it.enabled = false
                 }
             } else {
-                if (it.name == "runIde" && it.project != project(':jetbrains-core')) {
+                if (it.name == "runIde" &&
+                        it.project != project(':jetbrains-core') &&
+                        it.project != project(':jetbrains-rider')) {
                     it.enabled = false
                 }
             }
@@ -267,6 +280,7 @@ task guiTest(type: Test) {
 
 dependencies {
     compile project.findProject(':jetbrains-ultimate') ?: project(':jetbrains-core')
+    compile project(':jetbrains-rider')
 
     ktlint "com.pinterest:ktlint:$ktlintVersion"
     ktlint project(":ktlint-rules")
