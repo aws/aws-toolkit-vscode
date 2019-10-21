@@ -71,11 +71,6 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
         return "AWS: $statusLine"
     }
 
-    @Suppress("OverridingDeprecatedMember") // No choice, part of interface contract with no default
-    override fun getMaxValue(): String {
-        TODO("not implemented")
-    }
-
     override fun getPopupStep() = settingsSelector.settingsPopup(statusBar.component)
 
     override fun getClickConsumer(): Consumer<MouseEvent>? = null

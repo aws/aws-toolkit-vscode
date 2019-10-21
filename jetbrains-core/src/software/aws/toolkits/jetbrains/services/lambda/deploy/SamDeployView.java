@@ -16,16 +16,16 @@ import com.intellij.ui.IdeBorderFactory;
 import com.intellij.ui.components.JBTabbedPane;
 import com.intellij.util.ui.JBUI;
 import com.intellij.util.ui.UIUtil;
+
 import java.awt.AWTEvent;
 import java.awt.BorderLayout;
-import java.awt.Insets;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
-import org.jetbrains.annotations.NotNull;
+
 import software.aws.toolkits.jetbrains.ui.ProgressPanel;
 
 public class SamDeployView implements Disposable {
@@ -46,13 +46,8 @@ public class SamDeployView implements Disposable {
 
     private void createUIComponents() {
         progressPanel = new ProgressPanel(progressIndicator);
-        logTabs = new JBTabbedPane() {
-            @NotNull
-            @Override
-            protected Insets getInsetsForTabComponent() {
-                return JBUI.emptyInsets();
-            }
-        };
+        logTabs = new JBTabbedPane();
+        logTabs.setTabComponentInsets(JBUI.emptyInsets());
     }
 
     public ConsoleView addLogTab(String title) {
