@@ -12,6 +12,7 @@ import software.amazon.awssdk.services.toolkittelemetry.model.Unit
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NA
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NOT_SET
+import software.aws.toolkits.core.telemetry.DefaultTelemetryBatcher
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
 import software.aws.toolkits.core.utils.getLogger
@@ -75,12 +76,13 @@ interface TelemetryEnabledChangedNotifier {
     fun notify(isTelemetryEnabled: Boolean)
 }
 
-class DefaultTelemetryService(settings: AwsSettings, private val batcher: TelemetryBatcher) : TelemetryService, TelemetryEnabledChangedNotifier {
+class DefaultTelemetryService(settings: AwsSettings, private val batcher: TelemetryBatcher = DefaultTelemetryBatcher(DefaultTelemetryPublisher())) :
+    TelemetryService, TelemetryEnabledChangedNotifier {
     private val isDisposing: AtomicBoolean = AtomicBoolean(false)
     private val startTime: Instant
 
     @Suppress("unused")
-    constructor(settings: AwsSettings) : this(settings, DefaultToolkitTelemetryBatcher())
+    constructor(settings: AwsSettings) : this(settings, DefaultTelemetryBatcher(DefaultTelemetryPublisher()))
 
     init {
         TelemetryService.subscribe(this)

@@ -55,8 +55,8 @@ class TelemetryServiceTest {
         }
 
         DefaultTelemetryService(
-                MockAwsSettings(true, true, UUID.randomUUID()),
-                batcher
+            MockAwsSettings(true, true, UUID.randomUUID()),
+            batcher
         )
 
         changeCountDown.await(5, TimeUnit.SECONDS)
@@ -77,8 +77,8 @@ class TelemetryServiceTest {
         }
 
         DefaultTelemetryService(
-                MockAwsSettings(true, true, UUID.randomUUID()),
-                batcher
+            MockAwsSettings(true, true, UUID.randomUUID()),
+            batcher
         )
 
         TelemetryService.syncPublisher().notify(false)
