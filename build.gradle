@@ -35,6 +35,10 @@ allprojects {
     apply plugin: "com.adarshr.test-logger"
     apply plugin: 'jacoco'
 
+    tasks.withType(JavaExec) {
+        systemProperty("aws.toolkits.enableTelemetry", false)
+    }
+
     tasks.withType(org.jetbrains.intellij.tasks.RunIdeTask) {
         systemProperty("aws.toolkits.enableTelemetry", false)
         intellij {
