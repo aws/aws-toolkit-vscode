@@ -44,13 +44,15 @@ To send us a pull request, please:
 1. Fork the repository
 2. Modify the source; please focus on the specific change you are contributing. *(note: all changes must have associated automated tests)*
 3. Ensure local tests pass by running:
-   
-   ```./gradlew check```
-   
-4. Generate a change log entry for your change using 
+   ```
+   ./gradlew check
+   ```
 
-   ```./gradlew newChange --console plain``` 
-   
+4. Generate a change log entry for your change using 
+   ```
+   ./gradlew newChange --console plain
+   ```
+
    and following the prompts. Change log entries should describe the change
    succinctly and may include Git-Flavored Markdown ([GFM](https://github.github.com/gfm/)). Reference the Github Issue # if relevant.
 5. Commit to your fork using clear commit messages. Again, reference the Issue # if relevant.
@@ -61,25 +63,44 @@ To send us a pull request, please:
 GitHub provides additional documentation on [forking a repository](https://help.github.com/articles/fork-a-repo/) and 
 [creating a pull request](https://help.github.com/articles/creating-a-pull-request/).
 
-### Testing Locally
+### Debugging/Running Locally
 
-You can run up your changes locally to test them in a few different ways.
+To test your changes locally, you can run the project from IntelliJ or gradle.
 
-- The **simplest approach** is from the top-level of the repository run 
-
-  ```./gradlew runIde```
-  
-  This will automatically download the correct version of IntelliJ Community Edition, build and install the plugin and fire up the IDE.
+- **Simple approach:** from the top-level of the repository, run:
+  ```
+  ./gradlew runIde --info
+  ```
+  The `runIde` task automatically downloads the correct version of IntelliJ
+  Community Edition, builds and installs the plugin, and starts a _new_
+  instance of IntelliJ with the built extension.
 - If you need to run the plugin in a specific JetBrains IDE (and you have it installed) you can do so by specifying the `ALTERNATIVE_IDE` environment variable. For example run:
- 
-  ```ALTERNATIVE_IDE=$(PATH_TO_ALTERNATIVE_IDE) ./gradlew runIde``` 
-  
+  ```
+  ALTERNATIVE_IDE=$(PATH_TO_ALTERNATIVE_IDE) ./gradlew runIde
+  ```
+
   (see `alternativeIdePath` in the Gradle IntelliJ Plugin [documentation](https://github.com/JetBrains/gradle-intellij-plugin) for more details)
 
 - If you wish to run the integration tests, they require valid AWS credentials to run. Take care, as it will respect any credentials currently defined in your environmental variables, and fallback to your default AWS profile otherwise.
 You will also need to have SAM CLI available in your path.
+  ```
+  ./gradlew integrationTest
+  ```
 
-  ```./gradlew integrationTest```
+
+### Logging
+
+- Log messages (`LOG.info`, `LOG.error()`, …) by default are written to:
+  ```
+  jetbrains-core/build/idea-sandbox/system/log/idea.log
+  ```
+- DEBUG-level log messages are skipped by default. To enable them, add the
+  following line to the _Help_ \> _Debug Log Settings_ dialog in the IDE
+  instance started by the `runIde` task:
+  ```
+  software.aws.toolkits
+  ```
+
 
 ## Finding contributions to work on
 
