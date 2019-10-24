@@ -21,6 +21,8 @@ import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DeleteObjectAction
 import software.aws.toolkits.jetbrains.utils.delegateMock
 import java.time.Instant
+import javax.swing.JButton
+import javax.swing.JTextField
 
 class DeleteObjectTest {
 
@@ -38,9 +40,12 @@ class DeleteObjectTest {
         val deleteCaptor = argumentCaptor<DeleteObjectsRequest>()
         val mockFileSystem = S3VirtualFileSystem(s3Client)
         val mockTreeTable = delegateMock<S3TreeTable>()
+        val mockButton = delegateMock<JButton>()
+        val mockTextField = delegateMock<JTextField>()
         val mockVirtualBucket = S3VirtualBucket(mockFileSystem, S3Bucket("TestBucket", s3Client, Instant.parse("1995-10-23T10:12:35Z")))
 
-        val mockDeleteObject = DeleteObjectAction(mockTreeTable, mockVirtualBucket)
+        val mockDeleteObject = DeleteObjectAction(mockTreeTable, mockVirtualBucket, mockButton, mockTextField)
+
         val objectsToDelete = mutableListOf<ObjectIdentifier>()
         objectsToDelete.add(ObjectIdentifier.builder().key("testKey").build())
 

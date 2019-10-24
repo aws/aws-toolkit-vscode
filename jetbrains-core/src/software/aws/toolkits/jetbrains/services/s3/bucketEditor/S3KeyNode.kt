@@ -7,6 +7,9 @@ import com.intellij.ui.treeStructure.SimpleNode
 import software.aws.toolkits.jetbrains.services.s3.S3VirtualBucket
 import software.aws.toolkits.jetbrains.services.s3.S3VirtualDirectory
 
+/**
+ * Paginated S3KeyNode for TreeTable
+ */
 class S3KeyNode(val virtualFile: VirtualFile) : SimpleNode() {
     var prev = 0
     var next = Math.min(UPDATE_LIMIT, virtualFile.children.size)
@@ -54,13 +57,22 @@ class S3KeyNode(val virtualFile: VirtualFile) : SimpleNode() {
             if (next < currSize) prev = next
             next = Math.min(next + UPDATE_LIMIT, currSize)
         } else {
-            if (prev > MIN_SIZE) next = prev
-            prev = Math.max(prev - UPDATE_LIMIT, MIN_SIZE)
+            if (prev > START_SIZE) next = prev
+            prev = Math.max(prev - UPDATE_LIMIT, START_SIZE)
         }
     }
 
+    fun resetLimitsForSearch() {
+        updateLimitsOnSizeChange()
+        prev = START_SIZE
+        next = currSize
+    }
+
     companion object {
+        /**
+         * Page Limits
+         */
         const val UPDATE_LIMIT = 10
-        const val MIN_SIZE = 0
+        const val START_SIZE = 0
     }
 }

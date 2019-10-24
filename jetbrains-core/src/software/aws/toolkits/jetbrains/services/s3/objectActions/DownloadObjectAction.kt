@@ -24,15 +24,13 @@ import software.aws.toolkits.jetbrains.services.s3.S3VirtualBucket
 import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3KeyNode
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
+import java.io.File
 import javax.swing.tree.DefaultMutableTreeNode
 
 class DownloadObjectAction(
     private val treeTable: TreeTable,
-    val bucket: S3VirtualBucket,
-    private val fileChooser: FileChooserFactory
+    val bucket: S3VirtualBucket
 ) : ActionButtonWrapper(message("s3.download.object.action"), null, AllIcons.Actions.Download) {
-
-    constructor(treeTable: TreeTable, bucket: S3VirtualBucket) : this(treeTable, bucket, FileChooserFactory.getInstance())
 
     @Suppress("unused")
     override fun doActionPerformed(e: AnActionEvent) {
@@ -41,15 +39,26 @@ class DownloadObjectAction(
         val descriptor = FileSaverDescriptor(
             message("s3.download.object.action"), message("s3.download.object.description")
         )
-        val saveFileDialog = fileChooser.createSaveFileDialog(descriptor, project)
+        val saveFileDialog = FileChooserFactory.getInstance().createSaveFileDialog(descriptor, project)
         val baseDir = VfsUtil.getUserHomeDir()
         val rows = treeTable.selectedRows
+        var baseFilePath: String? = ""
 
         for (row in rows) {
-            val path = treeTable.tree.getPathForRow(row)
+            val path = treeTable.tree.getPathForRow(treeTable.convertRowIndexToModel(row))
             val node = (path.lastPathComponent as DefaultMutableTreeNode).userObject as S3KeyNode
             val fileSelected = node.virtualFile
-            val fileWrapper = saveFileDialog.save(baseDir, fileSelected.name)
+            val fileWrapper: VirtualFileWrapper?
+            /**
+             * A single file saver dialog appears for first selection. All other objects
+             * are saved in the same root location selected with the dialog.
+             */
+            if (row == rows.first()) {
+                fileWrapper = saveFileDialog.save(baseDir, fileSelected.name)
+                baseFilePath = fileWrapper?.file?.toString()?.substringBefore(fileSelected.name)
+            } else {
+                fileWrapper = VirtualFileWrapper(File("$baseFilePath${fileSelected.name}"))
+            }
             if (fileWrapper != null) {
                 ApplicationManager.getApplication().executeOnPooledThread {
                     try {
@@ -72,15 +81,15 @@ class DownloadObjectAction(
             .key(file.name)
             .build()
         ProgressManager.getInstance().run(object : Task.Backgroundable(project, message("s3.download.object.progress", file.name), true) {
-            override fun run(indicator: ProgressIndicator) {
-                val fileOutputStream = fileWrapper.file.outputStream()
-                val progressStream = ProgressOutputStream(
-                    fileOutputStream,
-                    file.length,
-                    indicator
-                )
-                client.getObject(request, ResponseTransformer.toOutputStream(progressStream))
-            }
-        })
+                override fun run(indicator: ProgressIndicator) {
+                    val fileOutputStream = fileWrapper.file.outputStream()
+                    val progressStream = ProgressOutputStream(
+                        fileOutputStream,
+                        file.length,
+                        indicator
+                    )
+                    client.getObject(request, ResponseTransformer.toOutputStream(progressStream))
+                }
+            })
     }
 }

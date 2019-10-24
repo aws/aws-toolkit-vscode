@@ -36,7 +36,7 @@ class S3ServiceNode(project: Project) : AwsExplorerServiceRootNode(project, AwsE
 }
 
 class S3BucketNode(project: Project, val bucket: S3Bucket, val client: S3Client) :
-    AwsExplorerResourceNode<String>(project, S3Client.SERVICE_NAME, bucket.bucket, AwsIcons.Resources.CLOUDFORMATION_STACK) {
+    AwsExplorerResourceNode<String>(project, S3Client.SERVICE_NAME, bucket.bucket, AwsIcons.Resources.S3_BUCKET) {
 
     override fun resourceType(): String = "bucket"
 
