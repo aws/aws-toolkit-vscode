@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.core.region
 
 import com.intellij.openapi.components.ServiceManager
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.Partition
 import software.aws.toolkits.core.region.PartitionParser
@@ -12,7 +13,7 @@ import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.utils.inputStream
 import software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider
 
-class AwsRegionProvider private constructor(remoteResourceResolverProvider: RemoteResourceResolverProvider) : ToolkitRegionProvider {
+class AwsRegionProvider constructor(remoteResourceResolverProvider: RemoteResourceResolverProvider) : ToolkitRegionProvider {
     private val regions: Map<String, AwsRegion>
     private val partition: Partition?
 
@@ -27,7 +28,8 @@ class AwsRegionProvider private constructor(remoteResourceResolverProvider: Remo
 
     override fun regions() = regions
 
-    override fun defaultRegion() = regions[DEFAULT_REGION]!!
+    override fun defaultRegion(): AwsRegion = DefaultAwsRegionProviderChain().region?.id()?.let { regions[it] }
+        ?: regions.getOrElse(DEFAULT_REGION) { throw IllegalStateException("Region provider data is missing default region") }
 
     override fun isServiceSupported(region: AwsRegion, serviceName: String): Boolean {
         val currentPartition = partition ?: return false
