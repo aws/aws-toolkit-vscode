@@ -32,14 +32,14 @@ class UploadObjectAction(
     private val treeTable: S3TreeTable,
     private val searchButton: JButton,
     private val searchTextField: JTextField
-) : ActionButtonWrapper(message("s3.upload.object.action"), null, AllIcons.Actions.Upload) {
+) : ActionButtonWrapper(message("s3.upload.object.action", bucket.s3Bucket.bucket), null, AllIcons.Actions.Upload) {
 
     @Suppress("unused")
     override fun doActionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(LangDataKeys.PROJECT)
         val client: S3Client = bucket.s3Bucket.client
         val descriptor = FileChooserDescriptorFactory.createMultipleFilesNoJarsDescriptor()
-            .withDescription(message("s3.upload.object.action"))
+            .withDescription(message("s3.upload.object.action", bucket.s3Bucket.bucket))
 
         val row = treeTable.selectedRow
         var nodeFile: VirtualFile? = null

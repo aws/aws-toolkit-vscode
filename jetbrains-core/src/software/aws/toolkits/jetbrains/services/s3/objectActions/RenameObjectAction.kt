@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.services.s3.objectActions
 
-import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.application.ApplicationManager
@@ -22,7 +21,7 @@ import software.aws.toolkits.resources.message
 import javax.swing.tree.DefaultMutableTreeNode
 
 class RenameObjectAction(private var treeTable: S3TreeTable, val bucket: S3VirtualBucket) :
-    ActionButtonWrapper(message("s3.rename.object.action"), null, AllIcons.Actions.RefactoringBulb) {
+    ActionButtonWrapper(message("s3.rename.object.action"), null, null) {
 
     @Suppress("unused")
     override fun doActionPerformed(e: AnActionEvent) {
