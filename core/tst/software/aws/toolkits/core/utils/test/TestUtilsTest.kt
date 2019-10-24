@@ -22,19 +22,6 @@ class TestUtilsTest {
     }
 
     @Test
-    fun retryableAssertionErrorsBubbleAfterMaxAttempts() {
-        val mock = mock<Runnable> {
-            on { run() }.thenThrow(AssertionError("Boom"))
-        }
-        assertThatThrownBy {
-            retryableAssert(maxAttempts = 3, interval = Duration.ofMillis(5)) {
-                mock.run()
-            }
-        }.isInstanceOf(AssertionError::class.java)
-        verify(mock, times(3)).run()
-    }
-
-    @Test
     fun nonAssertionErrorsBubbleImmediately() {
         val mock = mock<Runnable> {
             on { run() }.thenThrow(RuntimeException("Boom"))
