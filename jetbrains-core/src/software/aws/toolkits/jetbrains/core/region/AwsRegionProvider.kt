@@ -10,7 +10,9 @@ import software.aws.toolkits.core.region.Partition
 import software.aws.toolkits.core.region.PartitionParser
 import software.aws.toolkits.core.region.ServiceEndpointResource
 import software.aws.toolkits.core.region.ToolkitRegionProvider
+import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.inputStream
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider
 
 class AwsRegionProvider constructor(remoteResourceResolverProvider: RemoteResourceResolverProvider) : ToolkitRegionProvider {
@@ -28,8 +30,16 @@ class AwsRegionProvider constructor(remoteResourceResolverProvider: RemoteResour
 
     override fun regions() = regions
 
-    override fun defaultRegion(): AwsRegion = DefaultAwsRegionProviderChain().region?.id()?.let { regions[it] }
-        ?: regions.getOrElse(DEFAULT_REGION) { throw IllegalStateException("Region provider data is missing default region") }
+    override fun defaultRegion(): AwsRegion = try {
+            DefaultAwsRegionProviderChain().region.id().let { regions[it] } ?: fallbackRegion()
+        } catch (e: Exception) {
+            LOG.warn(e) { "Failed to find default region" }
+            fallbackRegion()
+        }
+
+    private fun fallbackRegion(): AwsRegion = regions.getOrElse(DEFAULT_REGION) {
+        throw IllegalStateException("Region provider data is missing default region")
+    }
 
     override fun isServiceSupported(region: AwsRegion, serviceName: String): Boolean {
         val currentPartition = partition ?: return false
@@ -39,6 +49,7 @@ class AwsRegionProvider constructor(remoteResourceResolverProvider: RemoteResour
 
     companion object {
         private const val DEFAULT_REGION = "us-east-1"
+        private val LOG = getLogger<AwsRegionProvider>()
 
         @JvmStatic
         fun getInstance(): ToolkitRegionProvider = ServiceManager.getService(ToolkitRegionProvider::class.java)

@@ -5,8 +5,10 @@ package software.aws.toolkits.jetbrains.core.region
 
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import software.aws.toolkits.core.rules.EnvironmentVariableHelper
 import software.aws.toolkits.core.rules.SystemPropertyHelper
 import software.aws.toolkits.core.utils.RemoteResource
 import software.aws.toolkits.core.utils.RemoteResourceResolver
@@ -21,6 +23,19 @@ class AwsRegionProviderTest {
     @Rule
     @JvmField
     val systemPropertyHelper = SystemPropertyHelper()
+
+    @Rule
+    @JvmField
+    val environmentVariableHelper = EnvironmentVariableHelper()
+
+    @Before
+    fun setUp() {
+        // Isolate our tests
+        System.getProperties().setProperty("aws.configFile", Files.createTempFile("dummy", null).toAbsolutePath().toString())
+        System.getProperties().setProperty("aws.sharedCredentialsFile", Files.createTempFile("dummy", null).toAbsolutePath().toString())
+        System.getProperties().remove("aws.region")
+        environmentVariableHelper.remove("AWS_REGION")
+    }
 
     @Test
     fun nonAwsPartitionIsIgnored() {
@@ -122,7 +137,7 @@ class AwsRegionProviderTest {
         configFile.writeText(
             """
             [default]
-            region = us-west-2
+            region = us-west-2001
             """.trimIndent()
         )
 
@@ -141,8 +156,8 @@ class AwsRegionProviderTest {
                         "partitionName": "AWS Standard",
                         "regionRegex": "^(us|eu|ap|sa|ca|me)\\-\\w+\\-\\d+$",
                         "regions": {
-                            "us-west-2": {
-                                "description": "US West (Oregon)"
+                            "us-west-2001": {
+                                "description": "US West (Cascadia)"
                             }
                         },
                         "services": {}
@@ -154,7 +169,7 @@ class AwsRegionProviderTest {
         )
 
         val awsRegionProvider = AwsRegionProvider(regionProvider)
-        assertThat(awsRegionProvider.defaultRegion().id).isEqualTo("us-west-2")
+        assertThat(awsRegionProvider.defaultRegion().id).isEqualTo("us-west-2001")
     }
 
     private fun createRegionDataProvider(endpointsData: String) = object : RemoteResourceResolverProvider {
