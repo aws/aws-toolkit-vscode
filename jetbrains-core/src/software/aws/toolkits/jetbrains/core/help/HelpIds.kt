@@ -11,33 +11,33 @@ enum class HelpIds(shortId: String, val url: String) {
     // Lambda
     CREATE_FUNCTION_DIALOG(
         "createFunctionDialog",
-        "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/create-function-dialog.html"
+        "https://docs.aws.amazon.com/console/toolkit-for-jetbrains/create-function-dialog"
     ),
     UPDATE_FUNCTION_CONFIGURATION_DIALOG(
         "updateFunctionConfigurationDialog",
-        "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/update-configuration-dialog.html"
+        "https://docs.aws.amazon.com/console/toolkit-for-jetbrains/update-configuration-dialog"
     ),
     UPDATE_FUNCTION_CODE_DIALOG(
         "updateFunctionCodeDialog",
-        "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/update-code-dialog.html"
+        "https://docs.aws.amazon.com/console/toolkit-for-jetbrains/update-code-dialog"
     ),
     // Serverless
     NEW_SERVERLESS_PROJECT_DIALOG(
         "newServerlessProjectDialog",
-        "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/new-project-dialog.html"
+        "https://docs.aws.amazon.com/console/toolkit-for-jetbrains/new-project-dialog"
     ),
     RUN_DEBUG_CONFIGURATIONS_DIALOG(
         "runDebugConfigurationsDialog",
-        "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/run-debug-configurations-dialog.html"
+        "https://docs.aws.amazon.com/console/toolkit-for-jetbrains/run-debug-configurations-dialog"
     ),
     DEPLOY_SERVERLESS_APPLICATION_DIALOG(
         "deployServerlessApplicationDialog",
-        "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/deploy-serverless-application-dialog.html"
+        "https://docs.aws.amazon.com/console/toolkit-for-jetbrains/deploy-serverless-application-dialog"
     ),
     // Others
     SETUP_CREDENTIALS(
         "setupCredentials",
-        "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/setup-credentials.html"
+        "https://docs.aws.amazon.com/console/toolkit-for-jetbrains/credentials"
     ),
     ;
 
