@@ -14,7 +14,6 @@ import com.intellij.icons.AllIcons;
 import com.intellij.json.JsonFileType;
 import com.intellij.json.JsonLanguage;
 import com.intellij.openapi.application.ModalityState;
-import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.project.Project;
@@ -32,6 +31,7 @@ import com.intellij.ui.EditorTextFieldProvider;
 import com.intellij.ui.ListCellRendererWrapper;
 import com.intellij.ui.SortedComboBoxModel;
 import com.intellij.util.ui.UIUtil;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
@@ -40,6 +40,7 @@ import javax.swing.JComboBox;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.aws.toolkits.core.lambda.LambdaSampleEvent;
@@ -120,8 +121,7 @@ public class LambdaInputPanel {
     }
 
     private void createUIComponents() {
-        EditorTextFieldProvider textFieldProvider = ServiceManager.getService(project, EditorTextFieldProvider.class);
-        inputText = textFieldProvider.getEditorField(JsonLanguage.INSTANCE, project, Collections.emptyList());
+        inputText = EditorTextFieldProvider.getInstance().getEditorField(JsonLanguage.INSTANCE, project, Collections.emptyList());
 
         eventComboBoxModel = new SortedComboBoxModel<>(Comparator.comparing(LambdaSampleEvent::getName));
         eventComboBox = new ComboBox<>(eventComboBoxModel);
