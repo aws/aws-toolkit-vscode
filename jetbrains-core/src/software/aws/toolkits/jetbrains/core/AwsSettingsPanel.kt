@@ -13,15 +13,13 @@ import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.actionSystem.Separator
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.startup.StartupActivity
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.openapi.ui.popup.ListPopup
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
-import com.intellij.openapi.wm.WindowManager
+import com.intellij.openapi.wm.StatusBarWidgetProvider
 import com.intellij.psi.util.CachedValueProvider
 import com.intellij.util.Consumer
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
@@ -41,10 +39,8 @@ import java.awt.Component
 import java.awt.event.MouseEvent
 import javax.swing.JComponent
 
-class AwsSettingsPanelInstaller : StartupActivity, DumbAware {
-    override fun runActivity(project: Project) {
-        WindowManager.getInstance().getStatusBar(project).addWidget(AwsSettingsPanel(project), project)
-    }
+class AwsSettingsPanelInstaller : StatusBarWidgetProvider {
+    override fun getWidget(project: Project): StatusBarWidget = AwsSettingsPanel(project)
 }
 
 private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
@@ -91,11 +87,7 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
         statusBar.updateWidget(ID())
     }
 
-    override fun dispose() {
-        if (::statusBar.isInitialized) {
-            ApplicationManager.getApplication().invokeLater({ statusBar.removeWidget(ID()) }, { project.isDisposed })
-        }
-    }
+    override fun dispose() {}
 }
 
 class SettingsSelectorAction(private val showRegions: Boolean = true) : AnActionWrapper(message("configure.toolkit")), DumbAware {
