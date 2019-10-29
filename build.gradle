@@ -198,6 +198,12 @@ intellij {
     downloadSources = System.getenv("CI") == null
 }
 
+prepareSandbox {
+    from(tasks.getByPath(":jetbrains-rider:buildReSharperPlugin"), {
+        into("${intellij.pluginName}/dotnet")
+    })
+}
+
 publishPlugin {
     token publishToken
     channels publishChannel

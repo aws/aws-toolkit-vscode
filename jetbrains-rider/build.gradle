@@ -60,19 +60,9 @@ intellij {
 tasks.withType(prepareSandbox.class).all {
     dependsOn buildReSharperPlugin
 
-    def config = ext.properties["BuildConfiguration"] ?: "Debug"
-    def files = getBackendProjectsOut(resharperPluginPath, config)
-    files.each {
-        from(it, { into("${intellij.pluginName}/dotnet") })
-    }
-
-    doLast {
-        files.each {
-            def file = new File(it)
-            if (!file.isFile()) throw new GradleException("File $file does not exist")
-            logger.warn("$name: ${file.name} -> ${destinationDir}/${intellij.pluginName}/dotnet")
-        }
-    }
+    from(buildReSharperPlugin.outputs, {
+        into("${intellij.pluginName}/dotnet")
+    })
 }
 
 compileKotlin.dependsOn(generateModel)
