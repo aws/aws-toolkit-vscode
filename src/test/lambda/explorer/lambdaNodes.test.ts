@@ -6,7 +6,6 @@
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
 import * as os from 'os'
-import { DefaultRegionNode } from '../../../awsexplorer/defaultRegionNode'
 import {
     DefaultLambdaFunctionGroupNode,
     DefaultLambdaFunctionNode,
@@ -17,9 +16,9 @@ import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { StsClient } from '../../../shared/clients/stsClient'
 import { ext } from '../../../shared/extensionGlobals'
-import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { MockLambdaClient } from '../../shared/clients/mockClients'
+import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 
 // TODO : Consolidate all asyncGenerator calls into a shared utility method
@@ -80,10 +79,9 @@ describe('DefaultLambdaFunctionNode', () => {
     })
 
     function generateTestNode(): DefaultLambdaFunctionNode {
-        return new DefaultLambdaFunctionNode(
-            new DefaultLambdaFunctionGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
-            fakeFunctionConfig
-        )
+        const parentNode = new TestAWSTreeNode('test node')
+
+        return new DefaultLambdaFunctionNode(parentNode, 'someregioncode', fakeFunctionConfig)
     }
 })
 
@@ -107,8 +105,8 @@ describe('DefaultLambdaFunctionGroupNode', () => {
     }
 
     class ThrowErrorDefaultLambdaFunctionGroupNode extends DefaultLambdaFunctionGroupNode {
-        public constructor(public readonly parent: DefaultRegionNode) {
-            super(parent)
+        public constructor() {
+            super('someregioncode')
         }
 
         public async updateChildren(): Promise<void> {
@@ -138,9 +136,7 @@ describe('DefaultLambdaFunctionGroupNode', () => {
             }
         }
 
-        const functionGroupNode = new DefaultLambdaFunctionGroupNode(
-            new DefaultRegionNode(new RegionInfo('code', 'name'))
-        )
+        const functionGroupNode = new DefaultLambdaFunctionGroupNode('someregioncode')
 
         const children = await functionGroupNode.getChildren()
 
@@ -176,9 +172,7 @@ describe('DefaultLambdaFunctionGroupNode', () => {
     })
 
     it('handles error', async () => {
-        const testNode = new ThrowErrorDefaultLambdaFunctionGroupNode(
-            new DefaultRegionNode(new RegionInfo('code', 'name'))
-        )
+        const testNode = new ThrowErrorDefaultLambdaFunctionGroupNode()
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)

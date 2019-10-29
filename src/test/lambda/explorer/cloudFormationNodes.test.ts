@@ -6,7 +6,6 @@
 import * as assert from 'assert'
 import { CloudFormation, Lambda } from 'aws-sdk'
 import * as os from 'os'
-import { DefaultRegionNode } from '../../../awsexplorer/defaultRegionNode'
 import {
     CloudFormationStackNode,
     DefaultCloudFormationFunctionNode,
@@ -18,10 +17,10 @@ import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { StsClient } from '../../../shared/clients/stsClient'
 import { ext } from '../../../shared/extensionGlobals'
-import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { MockCloudFormationClient } from '../../shared/clients/mockClients'
+import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
@@ -201,10 +200,9 @@ describe('DefaultCloudFormationStackNode', () => {
     })
 
     function generateTestNode(): CloudFormationStackNode {
-        return new DefaultCloudFormationStackNode(
-            new DefaultCloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
-            fakeStackSummary
-        )
+        const parentNode = new TestAWSTreeNode('test node')
+
+        return new DefaultCloudFormationStackNode(parentNode, 'someregioncode', fakeStackSummary)
     }
 })
 
@@ -253,7 +251,7 @@ describe('DefaultCloudFormationNode', () => {
             }
         }
 
-        const cloudFormationNode = new DefaultCloudFormationNode(new DefaultRegionNode(new RegionInfo('code', 'name')))
+        const cloudFormationNode = new DefaultCloudFormationNode('someregioncode')
 
         const children = await cloudFormationNode.getChildren()
 
@@ -290,8 +288,8 @@ describe('DefaultCloudFormationNode', () => {
 
     it('handles error', async () => {
         class ThrowErrorDefaultCloudFormationNode extends DefaultCloudFormationNode {
-            public constructor(public readonly regionNode: DefaultRegionNode) {
-                super(regionNode)
+            public constructor() {
+                super('someregioncode')
             }
 
             public async updateChildren(): Promise<void> {
@@ -299,9 +297,7 @@ describe('DefaultCloudFormationNode', () => {
             }
         }
 
-        const testNode: ThrowErrorDefaultCloudFormationNode = new ThrowErrorDefaultCloudFormationNode(
-            new DefaultRegionNode(new RegionInfo('code', 'name'))
-        )
+        const testNode: ThrowErrorDefaultCloudFormationNode = new ThrowErrorDefaultCloudFormationNode()
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)
