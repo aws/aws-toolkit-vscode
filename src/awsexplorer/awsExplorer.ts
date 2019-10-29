@@ -22,11 +22,10 @@ import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
 import { AWSCommandTreeNode } from '../shared/treeview/nodes/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../shared/treeview/nodes/errorNode'
-import { RegionNode } from '../shared/treeview/nodes/regionNode'
 import { showErrorDetails } from '../shared/treeview/webviews/showErrorDetails'
 import { intersection, toMap, updateInPlace } from '../shared/utilities/collectionUtils'
 import { localize } from '../shared/utilities/vsCodeUtils'
-import { DefaultRegionNode } from './defaultRegionNode'
+import { RegionNode } from './regionNode'
 
 export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
     public viewProviderId: string = 'aws.explorer'
@@ -159,7 +158,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
             this.regionNodes,
             intersection(regionMap.keys(), explorerRegionCodes),
             key => this.regionNodes.get(key)!.update(regionMap.get(key)!),
-            key => new DefaultRegionNode(regionMap.get(key)!)
+            key => new RegionNode(regionMap.get(key)!)
         )
 
         if (this.regionNodes.size > 0) {
