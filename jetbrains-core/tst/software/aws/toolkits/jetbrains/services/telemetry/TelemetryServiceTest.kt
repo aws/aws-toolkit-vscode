@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.telemetry
 
 import com.intellij.testFramework.ProjectRule
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.mock
@@ -18,8 +19,8 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NA
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NOT_SET
+import software.aws.toolkits.core.telemetry.DefaultTelemetryBatcher
 import software.aws.toolkits.core.telemetry.MetricEvent
-import software.aws.toolkits.core.telemetry.TelemetryBatcher
 import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
@@ -30,7 +31,12 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 class TelemetryServiceTest {
-    private val batcher: TelemetryBatcher = mock()
+    private val batcher = mock<DefaultTelemetryBatcher> {
+        on { enqueue(any<MetricEvent>()) }.then {
+            mock.enqueue(listOf(it.getArgument<MetricEvent>(0)))
+            null
+        }
+    }
 
     @Rule
     @JvmField
@@ -55,9 +61,10 @@ class TelemetryServiceTest {
         }
 
         DefaultTelemetryService(
-            MockAwsSettings(true, true, UUID.randomUUID()),
-            batcher
-        )
+            MockAwsSettings(true, true, UUID.randomUUID())
+        ).also {
+            it.batcher = batcher
+        }
 
         changeCountDown.await(5, TimeUnit.SECONDS)
         verify(batcher).onTelemetryEnabledChanged(true)
@@ -77,9 +84,10 @@ class TelemetryServiceTest {
         }
 
         DefaultTelemetryService(
-            MockAwsSettings(true, true, UUID.randomUUID()),
-            batcher
-        )
+            MockAwsSettings(true, true, UUID.randomUUID())
+        ).also {
+            it.batcher = batcher
+        }
 
         TelemetryService.syncPublisher().notify(false)
 
@@ -97,20 +105,21 @@ class TelemetryServiceTest {
 
         accountSettings.changeCredentialProvider(null)
 
-        val eventCaptor = argumentCaptor<MetricEvent>()
+        val eventCaptor = argumentCaptor<Collection<MetricEvent>>()
         val telemetryService = DefaultTelemetryService(
-            MockAwsSettings(true, true, UUID.randomUUID()),
-            batcher
-        )
+            MockAwsSettings(true, true, UUID.randomUUID())
+        ).also {
+            it.batcher = batcher
+        }
 
         telemetryService.record(projectRule.project, "Foo").join()
         telemetryService.dispose()
 
         verify(batcher, times(3)).enqueue(eventCaptor.capture())
 
-        assertMetricEventsContains(eventCaptor.allValues, "ToolkitStart", METADATA_NA, METADATA_NA)
-        assertMetricEventsContains(eventCaptor.allValues, "Foo", METADATA_NOT_SET, "us-east-1")
-        assertMetricEventsContains(eventCaptor.allValues, "ToolkitEnd", METADATA_NA, METADATA_NA)
+        assertMetricEventsContains(eventCaptor.allValues.flatten(), "ToolkitStart", METADATA_NA, METADATA_NA)
+        assertMetricEventsContains(eventCaptor.allValues.flatten(), "Foo", METADATA_NOT_SET, "us-east-1")
+        assertMetricEventsContains(eventCaptor.allValues.flatten(), "ToolkitEnd", METADATA_NA, METADATA_NA)
     }
 
     @Test
@@ -128,17 +137,18 @@ class TelemetryServiceTest {
 
         MockResourceCache.getInstance(projectRule.project).addValidAwsCredential("foo-region", "profile:admin", "111111111111")
 
-        val eventCaptor = argumentCaptor<MetricEvent>()
+        val eventCaptor = argumentCaptor<Collection<MetricEvent>>()
         val telemetryService = DefaultTelemetryService(
-            MockAwsSettings(true, true, UUID.randomUUID()),
-            batcher
-        )
+            MockAwsSettings(true, true, UUID.randomUUID())
+        ).also {
+            it.batcher = batcher
+        }
 
         telemetryService.record(projectRule.project, "Foo").join()
         telemetryService.dispose()
 
         verify(batcher, times(3)).enqueue(eventCaptor.capture())
-        assertMetricEventsContains(eventCaptor.allValues, "Foo", "111111111111", "foo-region")
+        assertMetricEventsContains(eventCaptor.allValues.flatten(), "Foo", "111111111111", "foo-region")
     }
 
     @Test
@@ -154,11 +164,12 @@ class TelemetryServiceTest {
         MockRegionProvider.getInstance().addRegion(mockRegion)
         accountSettings.changeRegion(mockRegion)
 
-        val eventCaptor = argumentCaptor<MetricEvent>()
+        val eventCaptor = argumentCaptor<Collection<MetricEvent>>()
         val telemetryService = DefaultTelemetryService(
-            MockAwsSettings(true, true, UUID.randomUUID()),
-            batcher
-        )
+            MockAwsSettings(true, true, UUID.randomUUID())
+        ).also {
+            it.batcher = batcher
+        }
 
         telemetryService.record("Foo", TelemetryService.MetricEventMetadata(
             awsAccount = "222222222222",
@@ -167,10 +178,10 @@ class TelemetryServiceTest {
         telemetryService.dispose()
 
         verify(batcher, times(3)).enqueue(eventCaptor.capture())
-        assertMetricEventsContains(eventCaptor.allValues, "Foo", "222222222222", "bar-region")
+        assertMetricEventsContains(eventCaptor.allValues.flatten(), "Foo", "222222222222", "bar-region")
     }
 
-    private fun assertMetricEventsContains(events: List<MetricEvent>, namespace: String, awsAccount: String, awsRegion: String) {
+    private fun assertMetricEventsContains(events: Collection<MetricEvent>, namespace: String, awsAccount: String, awsRegion: String) {
         val event = events.find {
             it.namespace == namespace && it.awsAccount == awsAccount && it.awsRegion == awsRegion
         }

@@ -23,12 +23,10 @@ interface RemoteResourceResolverProvider {
     }
 }
 
-class DefaultRemoteResourceResolverProvider @JvmOverloads constructor(private val resolver: RemoteResourceResolver = RESOLVER_INSTANCE) :
-    RemoteResourceResolverProvider {
-    override fun get() = resolver
+class DefaultRemoteResourceResolverProvider : RemoteResourceResolverProvider {
+    override fun get() = RESOLVER_INSTANCE
 
     companion object {
-
         private val RESOLVER_INSTANCE by lazy {
             val cachePath = Paths.get(PathManager.getSystemPath(), "aws-static-resources").createDirectories()
 

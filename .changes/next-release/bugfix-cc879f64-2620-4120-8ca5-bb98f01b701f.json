@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Resolve initialization errors on 2019.3 EAP"
+}

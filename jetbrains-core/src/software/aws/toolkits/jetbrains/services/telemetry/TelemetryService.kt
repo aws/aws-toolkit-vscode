@@ -76,13 +76,16 @@ interface TelemetryEnabledChangedNotifier {
     fun notify(isTelemetryEnabled: Boolean)
 }
 
-class DefaultTelemetryService(settings: AwsSettings, private val batcher: TelemetryBatcher = DefaultTelemetryBatcher(DefaultTelemetryPublisher())) :
+class DefaultTelemetryService(settings: AwsSettings) :
     TelemetryService, TelemetryEnabledChangedNotifier {
+    var batcher: TelemetryBatcher = DefaultTelemetryBatcher(DefaultTelemetryPublisher())
+        set(value) {
+            batcher.setBatcher(value)
+            field = value
+        }
+
     private val isDisposing: AtomicBoolean = AtomicBoolean(false)
     private val startTime: Instant
-
-    @Suppress("unused")
-    constructor(settings: AwsSettings) : this(settings, DefaultTelemetryBatcher(DefaultTelemetryPublisher()))
 
     init {
         TelemetryService.subscribe(this)
