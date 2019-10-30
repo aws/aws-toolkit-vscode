@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.lambda.execution.local
 
 import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.ui.RunContentDescriptor
 import com.intellij.openapi.progress.ProgressIndicator
@@ -35,20 +34,6 @@ internal class SamDebugger : SamRunner() {
     override fun run(environment: ExecutionEnvironment, state: SamRunningState): Promise<RunContentDescriptor> {
         val debugSupport = SamDebugSupport.getInstanceOrThrow(state.settings.runtimeGroup)
         val promise = AsyncPromise<RunContentDescriptor>()
-
-        try {
-            val processHandler = OSProcessHandler(GeneralCommandLine("docker", "ps"))
-            processHandler.startNotify()
-            processHandler.waitFor()
-            val exitValue = processHandler.exitCode
-            if (exitValue != 0) {
-                promise.setError(message("lambda.debug.docker.not_connected"))
-                return promise
-            }
-        } catch (t: Throwable) {
-            promise.setError(t)
-            return promise
-        }
 
         var isDebuggerAttachDone = false
 

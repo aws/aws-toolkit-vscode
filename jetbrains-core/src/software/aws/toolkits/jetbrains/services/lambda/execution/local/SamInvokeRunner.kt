@@ -101,6 +101,7 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
 
         LambdaBuilderUtils.buildAndReport(module, runtimeGroup, buildRequest)
             .thenAccept {
+                samState.runner.checkDockerInstalled()
                 runInEdt {
                     samState.builtLambda = it
                     samState.runner.run(environment, samState)
