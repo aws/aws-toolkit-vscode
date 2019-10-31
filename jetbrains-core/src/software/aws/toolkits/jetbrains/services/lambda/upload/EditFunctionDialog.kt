@@ -10,6 +10,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.util.ExceptionUtil
 import com.intellij.util.text.nullize
 import com.intellij.util.ui.UIUtil
 import org.jetbrains.annotations.TestOnly
@@ -235,15 +236,15 @@ class EditFunctionDialog(
 
             ApplicationManager.getApplication().executeOnPooledThread {
                 LambdaFunctionCreator(lambdaClient).update(functionDetails)
-                    .thenAccept { runInEdt(ModalityState.any()) { close(OK_EXIT_CODE) } }
-                    .whenComplete { _, error ->
-                        when (error) {
-                            null -> notifyInfo(
-                                title = NOTIFICATION_TITLE,
-                                content = message("lambda.function.configuration_updated.notification", functionDetails.name)
-                            )
-                            is Exception -> error.notifyError(title = NOTIFICATION_TITLE)
-                        }
+                    .thenAccept {
+                        notifyInfo(
+                            title = NOTIFICATION_TITLE,
+                            content = message("lambda.function.configuration_updated.notification", functionDetails.name)
+                        )
+                        runInEdt(ModalityState.any()) { close(OK_EXIT_CODE) }
+                    }.exceptionally { error ->
+                        setErrorText(ExceptionUtil.getNonEmptyMessage(error, error.toString()))
+                        null
                     }
             }
         }
