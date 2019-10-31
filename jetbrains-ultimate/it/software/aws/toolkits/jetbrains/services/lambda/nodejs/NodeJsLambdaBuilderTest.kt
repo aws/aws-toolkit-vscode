@@ -5,11 +5,15 @@ package software.aws.toolkits.jetbrains.services.lambda.nodejs
 
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
 import com.intellij.testFramework.PsiTestUtil
+import com.intellij.testFramework.runInEdtAndWait
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.jetbrains.services.lambda.Lambda
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.java.BaseLambdaBuilderTest
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import softwere.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
 import softwere.aws.toolkits.jetbrains.utils.rules.addLambdaHandler
 import softwere.aws.toolkits.jetbrains.utils.rules.addPackageJsonFile
@@ -23,6 +27,29 @@ class NodeJsLambdaBuilderTest : BaseLambdaBuilderTest() {
 
     override val lambdaBuilder: LambdaBuilder
         get() = NodeJsLambdaBuilder()
+
+    @Test
+    fun findHandlerElementsIgnoresSamBuildLocation() {
+        val sampleHandler = """
+            exports.myLambdaHandler = async (event, context) => {}
+            """.trimIndent()
+
+        // Set up the actual project contents
+        val expectedHandlerFile = projectRule.fixture.addFileToProject("hello-world/app.js", sampleHandler)
+        projectRule.fixture.addPackageJsonFile("hello-world")
+
+        // Populate some SAM Build contents
+        projectRule.fixture.addFileToProject("${SamCommon.SAM_BUILD_DIR}/build/hello-world/app.js", sampleHandler)
+        projectRule.fixture.addPackageJsonFile("${SamCommon.SAM_BUILD_DIR}/build/hello-world")
+
+        runInEdtAndWait {
+            val foundElements = Lambda.findPsiElementsForHandler(projectRule.project, Runtime.NODEJS10_X, "app.myLambdaHandler")
+            assertThat(foundElements).hasSize(1)
+            assertThat(foundElements).allMatch {
+                it.containingFile.isEquivalentTo(expectedHandlerFile)
+            }
+        }
+    }
 
     @Test
     fun contentRootIsAdded() {
