@@ -174,5 +174,9 @@ class DeployServerlessApplicationAction : AnActionWrapper(
     }
 
     private fun validateTemplateFile(project: Project, templateFile: VirtualFile): String? =
-        project.validateSamTemplateHasResources(templateFile) ?: project.validateSamTemplateLambdaRuntimes(templateFile)
+        try {
+            project.validateSamTemplateHasResources(templateFile) ?: project.validateSamTemplateLambdaRuntimes(templateFile)
+        } catch (e: Exception) {
+            message("serverless.application.deploy.error.bad_parse", templateFile.path, e)
+        }
 }
