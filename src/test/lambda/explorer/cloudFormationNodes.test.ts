@@ -26,7 +26,7 @@ async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
 }
 
-describe('DefaultCloudFormationStackNode', () => {
+describe('CloudFormationStackNode', () => {
     let fakeStackSummary: CloudFormation.StackSummary
 
     before(async () => {
@@ -205,7 +205,7 @@ describe('DefaultCloudFormationStackNode', () => {
     }
 })
 
-describe('DefaultCloudFormationNode', () => {
+describe('CloudFormationNode', () => {
     class StackNamesMockCloudFormationClient extends MockCloudFormationClient {
         public constructor(
             public readonly stackNames: string[] = [],
@@ -286,7 +286,7 @@ describe('DefaultCloudFormationNode', () => {
     })
 
     it('handles error', async () => {
-        class ThrowErrorDefaultCloudFormationNode extends CloudFormationNode {
+        class ThrowErrorCloudFormationNode extends CloudFormationNode {
             public constructor() {
                 super('someregioncode')
             }
@@ -296,7 +296,7 @@ describe('DefaultCloudFormationNode', () => {
             }
         }
 
-        const testNode: ThrowErrorDefaultCloudFormationNode = new ThrowErrorDefaultCloudFormationNode()
+        const testNode: ThrowErrorCloudFormationNode = new ThrowErrorCloudFormationNode()
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)
