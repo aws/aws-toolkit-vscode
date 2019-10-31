@@ -20,13 +20,7 @@ import { intersection, toArrayAsync, toMap, toMapAsync, updateInPlace } from '..
 import { listCloudFormationStacks, listLambdaFunctions } from '../utils'
 import { FunctionNodeBase } from './functionNode'
 
-export interface CloudFormationNode extends AWSTreeErrorHandlerNode {
-    getChildren(): Thenable<(CloudFormationStackNode | ErrorNode)[]>
-
-    updateChildren(): Thenable<void>
-}
-
-export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implements CloudFormationNode {
+export class CloudFormationNode extends AWSTreeErrorHandlerNode {
     private readonly stackNodes: Map<string, CloudFormationStackNode>
 
     public constructor(private readonly regionCode: string) {
@@ -53,24 +47,12 @@ export class DefaultCloudFormationNode extends AWSTreeErrorHandlerNode implement
             this.stackNodes,
             stacks.keys(),
             key => this.stackNodes.get(key)!.update(stacks.get(key)!),
-            key => new DefaultCloudFormationStackNode(this, this.regionCode, stacks.get(key)!)
+            key => new CloudFormationStackNode(this, this.regionCode, stacks.get(key)!)
         )
     }
 }
 
-export interface CloudFormationStackNode extends AWSTreeErrorHandlerNode {
-    readonly regionCode: string
-    readonly stackId?: CloudFormation.StackId
-    readonly stackName: CloudFormation.StackName
-
-    readonly parent: AWSTreeNodeBase
-
-    getChildren(): Thenable<(CloudFormationFunctionNode | PlaceholderNode)[]>
-
-    update(stackSummary: CloudFormation.StackSummary): void
-}
-
-export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode implements CloudFormationStackNode {
+export class CloudFormationStackNode extends AWSTreeErrorHandlerNode {
     private readonly functionNodes: Map<string, CloudFormationFunctionNode>
 
     public constructor(
@@ -137,7 +119,7 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
             this.functionNodes,
             intersection(resources, functions.keys()),
             key => this.functionNodes.get(key)!.update(functions.get(key)!),
-            key => new DefaultCloudFormationFunctionNode(this, this.regionCode, functions.get(key)!)
+            key => new CloudFormationFunctionNode(this, this.regionCode, functions.get(key)!)
         )
     }
 
@@ -155,11 +137,7 @@ export class DefaultCloudFormationStackNode extends AWSTreeErrorHandlerNode impl
     }
 }
 
-export interface CloudFormationFunctionNode extends FunctionNodeBase {
-    readonly parent: CloudFormationStackNode
-}
-
-export class DefaultCloudFormationFunctionNode extends FunctionNodeBase {
+export class CloudFormationFunctionNode extends FunctionNodeBase {
     public constructor(
         public readonly parent: AWSTreeNodeBase,
         public readonly regionCode: string,

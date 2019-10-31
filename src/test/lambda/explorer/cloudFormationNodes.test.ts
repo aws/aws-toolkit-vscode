@@ -7,10 +7,9 @@ import * as assert from 'assert'
 import { CloudFormation, Lambda } from 'aws-sdk'
 import * as os from 'os'
 import {
-    CloudFormationStackNode,
-    DefaultCloudFormationFunctionNode,
-    DefaultCloudFormationNode,
-    DefaultCloudFormationStackNode
+    CloudFormationFunctionNode,
+    CloudFormationNode,
+    CloudFormationStackNode
 } from '../../../lambda/explorer/cloudFormationNodes'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { EcsClient } from '../../../shared/clients/ecsClient'
@@ -192,17 +191,17 @@ describe('DefaultCloudFormationStackNode', () => {
         assert(childNodes !== undefined)
         assert.strictEqual(childNodes.length, 2)
 
-        assert(childNodes[0] instanceof DefaultCloudFormationFunctionNode)
-        assert.strictEqual((childNodes[0] as DefaultCloudFormationFunctionNode).label, lambda1Name)
+        assert(childNodes[0] instanceof CloudFormationFunctionNode)
+        assert.strictEqual((childNodes[0] as CloudFormationFunctionNode).label, lambda1Name)
 
-        assert(childNodes[1] instanceof DefaultCloudFormationFunctionNode)
-        assert.strictEqual((childNodes[1] as DefaultCloudFormationFunctionNode).label, lambda3Name)
+        assert(childNodes[1] instanceof CloudFormationFunctionNode)
+        assert.strictEqual((childNodes[1] as CloudFormationFunctionNode).label, lambda3Name)
     })
 
     function generateTestNode(): CloudFormationStackNode {
         const parentNode = new TestAWSTreeNode('test node')
 
-        return new DefaultCloudFormationStackNode(parentNode, 'someregioncode', fakeStackSummary)
+        return new CloudFormationStackNode(parentNode, 'someregioncode', fakeStackSummary)
     }
 })
 
@@ -251,7 +250,7 @@ describe('DefaultCloudFormationNode', () => {
             }
         }
 
-        const cloudFormationNode = new DefaultCloudFormationNode('someregioncode')
+        const cloudFormationNode = new CloudFormationNode('someregioncode')
 
         const children = await cloudFormationNode.getChildren()
 
@@ -267,12 +266,12 @@ describe('DefaultCloudFormationNode', () => {
             expectedNodeText: string
         ) {
             assert.strictEqual(
-                actualChildNode instanceof DefaultCloudFormationStackNode,
+                actualChildNode instanceof CloudFormationStackNode,
                 true,
                 'Child node was not a Stack Node'
             )
 
-            const node: DefaultCloudFormationStackNode = actualChildNode as DefaultCloudFormationStackNode
+            const node = actualChildNode as CloudFormationStackNode
             assert.strictEqual(
                 node.stackName,
                 expectedNodeText,
@@ -287,7 +286,7 @@ describe('DefaultCloudFormationNode', () => {
     })
 
     it('handles error', async () => {
-        class ThrowErrorDefaultCloudFormationNode extends DefaultCloudFormationNode {
+        class ThrowErrorDefaultCloudFormationNode extends CloudFormationNode {
             public constructor() {
                 super('someregioncode')
             }

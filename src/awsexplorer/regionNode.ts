@@ -4,7 +4,7 @@
  */
 
 import { TreeItemCollapsibleState } from 'vscode'
-import { CloudFormationNode, DefaultCloudFormationNode } from '../lambda/explorer/cloudFormationNodes'
+import { CloudFormationNode } from '../lambda/explorer/cloudFormationNodes'
 import { DefaultLambdaFunctionGroupNode, LambdaFunctionGroupNode } from '../lambda/explorer/lambdaNodes'
 import { RegionInfo } from '../shared/regions/regionInfo'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
@@ -34,7 +34,7 @@ export class RegionNode extends AWSTreeNodeBase {
         this.info = info
         this.update(info)
 
-        this.cloudFormationNode = new DefaultCloudFormationNode(this.regionCode)
+        this.cloudFormationNode = new CloudFormationNode(this.regionCode)
         this.lambdaFunctionGroupNode = new DefaultLambdaFunctionGroupNode(this.regionCode)
     }
 
