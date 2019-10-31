@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
 import * as os from 'os'
-import { LambdaFunctionGroupNode, LambdaFunctionNode } from '../../../lambda/explorer/lambdaNodes'
+import { LambdaFunctionNode, LambdaNode } from '../../../lambda/explorer/lambdaNodes'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
@@ -81,7 +81,7 @@ describe('DefaultLambdaFunctionNode', () => {
     }
 })
 
-describe('DefaultLambdaFunctionGroupNode', () => {
+describe('LambdaNode', () => {
     class FunctionNamesMockLambdaClient extends MockLambdaClient {
         public constructor(
             public readonly functionNames: string[] = [],
@@ -100,7 +100,7 @@ describe('DefaultLambdaFunctionGroupNode', () => {
         }
     }
 
-    class ThrowErrorDefaultLambdaFunctionGroupNode extends LambdaFunctionGroupNode {
+    class ThrowErrorLambdaNode extends LambdaNode {
         public constructor() {
             super('someregioncode')
         }
@@ -132,9 +132,9 @@ describe('DefaultLambdaFunctionGroupNode', () => {
             }
         }
 
-        const functionGroupNode = new LambdaFunctionGroupNode('someregioncode')
+        const lambdaNode = new LambdaNode('someregioncode')
 
-        const children = await functionGroupNode.getChildren()
+        const children = await lambdaNode.getChildren()
 
         assert.ok(children, 'Expected to get Lambda function nodes as children')
         assert.strictEqual(
@@ -168,7 +168,7 @@ describe('DefaultLambdaFunctionGroupNode', () => {
     })
 
     it('handles error', async () => {
-        const testNode = new ThrowErrorDefaultLambdaFunctionGroupNode()
+        const testNode = new ThrowErrorLambdaNode()
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)

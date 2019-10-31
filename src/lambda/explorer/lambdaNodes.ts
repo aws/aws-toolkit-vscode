@@ -17,7 +17,11 @@ import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/colle
 import { listLambdaFunctions } from '../utils'
 import { FunctionNodeBase } from './functionNode'
 
-export class LambdaFunctionGroupNode extends AWSTreeErrorHandlerNode {
+/**
+ * An AWS Explorer node representing the Lambda Service.
+ * Contains Lambda Functions for a specific region as child nodes.
+ */
+export class LambdaNode extends AWSTreeErrorHandlerNode {
     private readonly functionNodes: Map<string, LambdaFunctionNode>
 
     public constructor(private readonly regionCode: string) {
