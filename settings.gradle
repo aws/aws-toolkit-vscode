@@ -9,4 +9,6 @@ include 'core'
 include 'jetbrains-core'
 include 'jetbrains-core-gui'
 include 'jetbrains-ultimate'
-include 'jetbrains-rider'
+if (!startParameter.properties.containsKey("skipRider")) {
+    include 'jetbrains-rider'
+}

@@ -199,9 +199,11 @@ intellij {
 }
 
 prepareSandbox {
-    from(tasks.getByPath(":jetbrains-rider:buildReSharperPlugin"), {
-        into("${intellij.pluginName}/dotnet")
-    })
+    tasks.findByPath(":jetbrains-rider:buildReSharperPlugin")?.collect {
+        from(it, {
+            into("${intellij.pluginName}/dotnet")
+        })
+    }
 }
 
 publishPlugin {
@@ -285,7 +287,9 @@ task guiTest(type: Test) {
 
 dependencies {
     compile project(':jetbrains-ultimate')
-    compile project(':jetbrains-rider')
+    project.findProject(':jetbrains-rider')?.collect {
+        compile it
+    }
 
     ktlint "com.pinterest:ktlint:$ktlintVersion"
     ktlint project(":ktlint-rules")

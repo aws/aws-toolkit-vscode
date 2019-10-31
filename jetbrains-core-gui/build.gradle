@@ -54,7 +54,11 @@ task classesJar(type: Jar, dependsOn: classes) {
     from sourceSets.main.output
     from project(':jetbrains-core').sourceSets.main.output
     from project(':jetbrains-ultimate').sourceSets.main.output
-    from project(':jetbrains-rider').sourceSets.main.output
+
+    project.findProject(':jetbrains-rider')?.collect {
+        from it.sourceSets.main.output
+    }
+
     from project(':core').sourceSets.test.output
     exclude 'META-INF/plugin.xml'
     exclude 'testData/*'
