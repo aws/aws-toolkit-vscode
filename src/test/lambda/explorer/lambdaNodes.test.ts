@@ -6,11 +6,7 @@
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
 import * as os from 'os'
-import {
-    DefaultLambdaFunctionGroupNode,
-    DefaultLambdaFunctionNode,
-    LambdaFunctionNode
-} from '../../../lambda/explorer/lambdaNodes'
+import { LambdaFunctionGroupNode, LambdaFunctionNode } from '../../../lambda/explorer/lambdaNodes'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
@@ -78,10 +74,10 @@ describe('DefaultLambdaFunctionNode', () => {
         assert.strictEqual(childNodes.length, 0)
     })
 
-    function generateTestNode(): DefaultLambdaFunctionNode {
+    function generateTestNode(): LambdaFunctionNode {
         const parentNode = new TestAWSTreeNode('test node')
 
-        return new DefaultLambdaFunctionNode(parentNode, 'someregioncode', fakeFunctionConfig)
+        return new LambdaFunctionNode(parentNode, 'someregioncode', fakeFunctionConfig)
     }
 })
 
@@ -104,7 +100,7 @@ describe('DefaultLambdaFunctionGroupNode', () => {
         }
     }
 
-    class ThrowErrorDefaultLambdaFunctionGroupNode extends DefaultLambdaFunctionGroupNode {
+    class ThrowErrorDefaultLambdaFunctionGroupNode extends LambdaFunctionGroupNode {
         public constructor() {
             super('someregioncode')
         }
@@ -136,7 +132,7 @@ describe('DefaultLambdaFunctionGroupNode', () => {
             }
         }
 
-        const functionGroupNode = new DefaultLambdaFunctionGroupNode('someregioncode')
+        const functionGroupNode = new LambdaFunctionGroupNode('someregioncode')
 
         const children = await functionGroupNode.getChildren()
 
@@ -157,7 +153,7 @@ describe('DefaultLambdaFunctionGroupNode', () => {
                 'Child node expected to contain functionName property'
             )
 
-            const node: DefaultLambdaFunctionNode = actualChildNode as DefaultLambdaFunctionNode
+            const node = actualChildNode as LambdaFunctionNode
             assert.strictEqual(
                 node.functionName,
                 expectedNodeText,

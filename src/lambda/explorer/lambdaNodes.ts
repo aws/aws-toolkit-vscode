@@ -17,13 +17,7 @@ import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/colle
 import { listLambdaFunctions } from '../utils'
 import { FunctionNodeBase } from './functionNode'
 
-export interface LambdaFunctionGroupNode extends AWSTreeErrorHandlerNode {
-    getChildren(): Thenable<(LambdaFunctionNode | ErrorNode)[]>
-
-    updateChildren(): Thenable<void>
-}
-
-export class DefaultLambdaFunctionGroupNode extends AWSTreeErrorHandlerNode implements LambdaFunctionGroupNode {
+export class LambdaFunctionGroupNode extends AWSTreeErrorHandlerNode {
     private readonly functionNodes: Map<string, LambdaFunctionNode>
 
     public constructor(private readonly regionCode: string) {
@@ -55,16 +49,12 @@ export class DefaultLambdaFunctionGroupNode extends AWSTreeErrorHandlerNode impl
             this.functionNodes,
             functions.keys(),
             key => this.functionNodes.get(key)!.update(functions.get(key)!),
-            key => new DefaultLambdaFunctionNode(this, this.regionCode, functions.get(key)!)
+            key => new LambdaFunctionNode(this, this.regionCode, functions.get(key)!)
         )
     }
 }
 
-export interface LambdaFunctionNode extends FunctionNodeBase {
-    readonly parent: AWSTreeNodeBase
-}
-
-export class DefaultLambdaFunctionNode extends FunctionNodeBase implements LambdaFunctionNode {
+export class LambdaFunctionNode extends FunctionNodeBase {
     public constructor(
         public readonly parent: AWSTreeNodeBase,
         public readonly regionCode: string,
