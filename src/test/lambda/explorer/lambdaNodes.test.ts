@@ -6,11 +6,7 @@
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
 import * as os from 'os'
-import {
-    DefaultLambdaFunctionGroupNode,
-    DefaultLambdaFunctionNode,
-    LambdaFunctionNode
-} from '../../../lambda/explorer/lambdaNodes'
+import { LambdaFunctionNode, LambdaNode } from '../../../lambda/explorer/lambdaNodes'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
@@ -26,7 +22,7 @@ async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
 }
 
-describe('DefaultLambdaFunctionNode', () => {
+describe('LambdaFunctionNode', () => {
     let fakeFunctionConfig: Lambda.FunctionConfiguration
 
     before(async () => {
@@ -78,14 +74,14 @@ describe('DefaultLambdaFunctionNode', () => {
         assert.strictEqual(childNodes.length, 0)
     })
 
-    function generateTestNode(): DefaultLambdaFunctionNode {
+    function generateTestNode(): LambdaFunctionNode {
         const parentNode = new TestAWSTreeNode('test node')
 
-        return new DefaultLambdaFunctionNode(parentNode, 'someregioncode', fakeFunctionConfig)
+        return new LambdaFunctionNode(parentNode, 'someregioncode', fakeFunctionConfig)
     }
 })
 
-describe('DefaultLambdaFunctionGroupNode', () => {
+describe('LambdaNode', () => {
     class FunctionNamesMockLambdaClient extends MockLambdaClient {
         public constructor(
             public readonly functionNames: string[] = [],
@@ -104,7 +100,7 @@ describe('DefaultLambdaFunctionGroupNode', () => {
         }
     }
 
-    class ThrowErrorDefaultLambdaFunctionGroupNode extends DefaultLambdaFunctionGroupNode {
+    class ThrowErrorLambdaNode extends LambdaNode {
         public constructor() {
             super('someregioncode')
         }
@@ -136,9 +132,9 @@ describe('DefaultLambdaFunctionGroupNode', () => {
             }
         }
 
-        const functionGroupNode = new DefaultLambdaFunctionGroupNode('someregioncode')
+        const lambdaNode = new LambdaNode('someregioncode')
 
-        const children = await functionGroupNode.getChildren()
+        const children = await lambdaNode.getChildren()
 
         assert.ok(children, 'Expected to get Lambda function nodes as children')
         assert.strictEqual(
@@ -157,7 +153,7 @@ describe('DefaultLambdaFunctionGroupNode', () => {
                 'Child node expected to contain functionName property'
             )
 
-            const node: DefaultLambdaFunctionNode = actualChildNode as DefaultLambdaFunctionNode
+            const node = actualChildNode as LambdaFunctionNode
             assert.strictEqual(
                 node.functionName,
                 expectedNodeText,
@@ -172,7 +168,7 @@ describe('DefaultLambdaFunctionGroupNode', () => {
     })
 
     it('handles error', async () => {
-        const testNode = new ThrowErrorDefaultLambdaFunctionGroupNode()
+        const testNode = new ThrowErrorLambdaNode()
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)

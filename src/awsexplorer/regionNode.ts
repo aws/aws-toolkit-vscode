@@ -5,7 +5,7 @@
 
 import { TreeItemCollapsibleState } from 'vscode'
 import { CloudFormationNode } from '../lambda/explorer/cloudFormationNodes'
-import { DefaultLambdaFunctionGroupNode, LambdaFunctionGroupNode } from '../lambda/explorer/lambdaNodes'
+import { LambdaNode } from '../lambda/explorer/lambdaNodes'
 import { RegionInfo } from '../shared/regions/regionInfo'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { toMap, updateInPlace } from '../shared/utilities/collectionUtils'
@@ -18,7 +18,7 @@ import { toMap, updateInPlace } from '../shared/utilities/collectionUtils'
 export class RegionNode extends AWSTreeNodeBase {
     private info: RegionInfo
     private readonly cloudFormationNode: CloudFormationNode
-    private readonly lambdaFunctionGroupNode: LambdaFunctionGroupNode
+    private readonly lambdaNode: LambdaNode
 
     public get regionCode(): string {
         return this.info.regionCode
@@ -35,11 +35,11 @@ export class RegionNode extends AWSTreeNodeBase {
         this.update(info)
 
         this.cloudFormationNode = new CloudFormationNode(this.regionCode)
-        this.lambdaFunctionGroupNode = new DefaultLambdaFunctionGroupNode(this.regionCode)
+        this.lambdaNode = new LambdaNode(this.regionCode)
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
-        return [this.cloudFormationNode, this.lambdaFunctionGroupNode]
+        return [this.cloudFormationNode, this.lambdaNode]
     }
 
     public update(info: RegionInfo): void {
