@@ -30,6 +30,8 @@ import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.utils.DotNetRuntimeUtils
 import software.aws.toolkits.resources.message
 import java.awt.Dimension
+import java.awt.event.KeyAdapter
+import java.awt.event.KeyEvent
 import java.io.File
 import javax.swing.JScrollPane
 import javax.swing.JTabbedPane
@@ -70,7 +72,6 @@ class DotNetSamProjectGenerator(
     }
 
     init {
-        solutionNameField.text = getPossibleName(SAM_HELLO_WORLD_PROJECT_NAME)
         title.labels = arrayOf(group, categoryName)
         initProjectTextField()
         initSamPanel()
@@ -89,6 +90,9 @@ class DotNetSamProjectGenerator(
         updateInfo()
         super.initialize()
         super.layout()
+
+        // Call this init method after super.initialize() to make sure solutionNameField override a base listener
+        initSolutionTextField()
 
         addAdditionPane(samPanel.mainPanel)
         addAdditionPane(projectStructurePanel)
@@ -191,8 +195,23 @@ class DotNetSamProjectGenerator(
 
     override fun refreshUI() {
         super.refreshUI()
+        // This restore project name when user change a solution name and switch between templates
+        projectNameField.text = SAM_HELLO_WORLD_PROJECT_NAME
         validationError.set(null)
         validateData()
+    }
+
+    private fun initSolutionTextField() {
+        solutionNameField.text = getPossibleName(SAM_HELLO_WORLD_PROJECT_NAME)
+
+        // "ReSharperTemplateGeneratorBase" base class has a logic that synchronize solution and project names.
+        // Project name has a constant value for SAM template. This is a workaround to persist project name unchanged.
+        // Please use "changeProjectName" flags when switch to 193 min version FIX_WHEN_MIN_IS_193
+        solutionNameField.addKeyListener(object : KeyAdapter() {
+            override fun keyReleased(e: KeyEvent?) {
+                projectNameField.text = SAM_HELLO_WORLD_PROJECT_NAME
+            }
+        })
     }
 
     /**
@@ -202,9 +221,6 @@ class DotNetSamProjectGenerator(
     private fun initProjectTextField() {
         projectNameField.text = SAM_HELLO_WORLD_PROJECT_NAME
         projectNameField.isEnabled = false
-
-        solutionNameSetByUser = true
-        projectNameSetByUser = true
 
         sameDirectoryCheckBox.isEnabled = false
     }
