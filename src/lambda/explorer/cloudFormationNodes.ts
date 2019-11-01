@@ -18,7 +18,9 @@ import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { intersection, toArrayAsync, toMap, toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listCloudFormationStacks, listLambdaFunctions } from '../utils'
-import { FunctionNodeBase } from './functionNode'
+import { LambdaFunctionNode } from './lambdaFunctionNode'
+
+export const CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION = 'awsCloudFormationFunctionNode'
 
 export class CloudFormationNode extends AWSTreeErrorHandlerNode {
     private readonly stackNodes: Map<string, CloudFormationStackNode>
@@ -53,7 +55,7 @@ export class CloudFormationNode extends AWSTreeErrorHandlerNode {
 }
 
 export class CloudFormationStackNode extends AWSTreeErrorHandlerNode {
-    private readonly functionNodes: Map<string, CloudFormationFunctionNode>
+    private readonly functionNodes: Map<string, LambdaFunctionNode>
 
     public constructor(
         public readonly parent: AWSTreeNodeBase,
@@ -64,7 +66,7 @@ export class CloudFormationStackNode extends AWSTreeErrorHandlerNode {
 
         this.update(stackSummary)
         this.contextValue = 'awsCloudFormationNode'
-        this.functionNodes = new Map<string, CloudFormationFunctionNode>()
+        this.functionNodes = new Map<string, LambdaFunctionNode>()
         this.iconPath = {
             dark: vscode.Uri.file(ext.iconPaths.dark.cloudFormation),
             light: vscode.Uri.file(ext.iconPaths.light.cloudFormation)
@@ -79,7 +81,7 @@ export class CloudFormationStackNode extends AWSTreeErrorHandlerNode {
         return this.stackSummary.StackName
     }
 
-    public async getChildren(): Promise<(CloudFormationFunctionNode | PlaceholderNode)[]> {
+    public async getChildren(): Promise<(LambdaFunctionNode | PlaceholderNode)[]> {
         await this.handleErrorProneOperation(
             async () => this.updateChildren(),
             localize('AWS.explorerNode.cloudFormation.error', 'Error loading CloudFormation resources')
@@ -119,7 +121,7 @@ export class CloudFormationStackNode extends AWSTreeErrorHandlerNode {
             this.functionNodes,
             intersection(resources, functions.keys()),
             key => this.functionNodes.get(key)!.update(functions.get(key)!),
-            key => new CloudFormationFunctionNode(this, this.regionCode, functions.get(key)!)
+            key => makeCloudFormationLambdaFunctionNode(this, this.regionCode, functions.get(key)!)
         )
     }
 
@@ -137,13 +139,13 @@ export class CloudFormationStackNode extends AWSTreeErrorHandlerNode {
     }
 }
 
-export class CloudFormationFunctionNode extends FunctionNodeBase {
-    public constructor(
-        public readonly parent: AWSTreeNodeBase,
-        public readonly regionCode: string,
-        configuration: Lambda.FunctionConfiguration
-    ) {
-        super(parent, configuration)
-        this.contextValue = 'awsCloudFormationFunctionNode'
-    }
+function makeCloudFormationLambdaFunctionNode(
+    parent: AWSTreeNodeBase,
+    regionCode: string,
+    configuration: Lambda.FunctionConfiguration
+): LambdaFunctionNode {
+    const node = new LambdaFunctionNode(parent, regionCode, configuration)
+    node.contextValue = CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION
+
+    return node
 }

@@ -8,8 +8,7 @@ import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { deleteLambda } from '../lambda/commands/deleteLambda'
 import { invokeLambda } from '../lambda/commands/invokeLambda'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
-import { FunctionNodeBase } from '../lambda/explorer/functionNode'
-import { LambdaFunctionNode } from '../lambda/explorer/lambdaNodes'
+import { LambdaFunctionNode } from '../lambda/explorer/lambdaFunctionNode'
 import { configureLocalLambda } from '../lambda/local/configureLocalLambda'
 import { AwsContext } from '../shared/awsContext'
 import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
@@ -83,7 +82,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
 
         registerCommand({
             command: 'aws.invokeLambda',
-            callback: async (node: FunctionNodeBase) =>
+            callback: async (node: LambdaFunctionNode) =>
                 await invokeLambda({
                     awsContext: this.awsContext,
                     functionNode: node,
