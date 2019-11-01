@@ -10,16 +10,13 @@ import static software.aws.toolkits.resources.Localization.message;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
-import com.intellij.openapi.ui.ComponentWithBrowseButton;
 import com.intellij.openapi.ui.TextComponentAccessor;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.EditorTextField;
 import com.intellij.ui.IdeBorderFactory;
 import com.intellij.ui.SortedComboBoxModel;
 import com.intellij.util.ui.JBUI;
 import com.intellij.util.ui.UIUtil;
-
 import java.io.File;
 import java.util.Collections;
 import java.util.Comparator;
@@ -28,10 +25,7 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
-
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.yaml.YAMLFileType;
 import software.amazon.awssdk.services.lambda.model.Runtime;
@@ -43,6 +37,7 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaInputPane
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils;
 import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField;
 import software.aws.toolkits.jetbrains.ui.HandlerPanel;
+import software.aws.toolkits.jetbrains.ui.ProjectFileBrowseListener;
 import software.aws.toolkits.jetbrains.ui.SliderPanel;
 
 public final class LocalLambdaRunSettingsEditorPanel {
@@ -71,7 +66,12 @@ public final class LocalLambdaRunSettingsEditorPanel {
         lambdaInputPanel.setBorder(IdeBorderFactory.createTitledBorder(message("lambda.input.label"), false, JBUI.emptyInsets()));
         useTemplate.addActionListener(e -> updateComponents());
         addQuickSelect(templateFile.getTextField(), useTemplate, this::updateComponents);
-        templateFile.addActionListener(new TemplateFileBrowseListener());
+        templateFile.addActionListener(new ProjectFileBrowseListener<>(
+            project,
+            templateFile,
+            FileChooserDescriptorFactory.createSingleFileDescriptor(YAMLFileType.YML),
+            TextComponentAccessor.TEXT_FIELD_WHOLE_TEXT
+        ));
 
         runtime.addActionListener(e -> {
             int index = runtime.getSelectedIndex();
@@ -177,23 +177,5 @@ public final class LocalLambdaRunSettingsEditorPanel {
 
     public void invalidateConfiguration() {
         SwingUtilities.invokeLater(() -> invalidator.setSelected(!invalidator.isSelected()));
-    }
-
-    private class TemplateFileBrowseListener extends ComponentWithBrowseButton.BrowseFolderActionListener<JTextField> {
-        TemplateFileBrowseListener() {
-            super(null,
-                  null,
-                  templateFile,
-                  project,
-                  FileChooserDescriptorFactory.createSingleFileDescriptor(YAMLFileType.YML),
-                  TextComponentAccessor.TEXT_FIELD_SELECTED_TEXT);
-        }
-
-        @Override
-        protected void onFileChosen(@NotNull VirtualFile chosenFile) {
-            templateFile.setText(chosenFile.getPath());
-            List<Function> functions = SamTemplateUtils.findFunctionsFromTemplate(project, chosenFile);
-            updateFunctionModel(functions, true);
-        }
     }
 }

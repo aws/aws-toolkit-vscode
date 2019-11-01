@@ -18,13 +18,11 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
-import com.intellij.openapi.ui.ComponentWithBrowseButton;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.ui.TextComponentAccessor;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VfsUtil;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.ComboboxWithBrowseButton;
 import com.intellij.ui.EditorTextField;
 import com.intellij.ui.EditorTextFieldProvider;
@@ -35,7 +33,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
-import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import org.jetbrains.annotations.NotNull;
@@ -43,6 +40,7 @@ import org.jetbrains.annotations.Nullable;
 import software.aws.toolkits.core.lambda.LambdaSampleEvent;
 import software.aws.toolkits.core.lambda.LambdaSampleEventProvider;
 import software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider;
+import software.aws.toolkits.jetbrains.ui.ProjectFileBrowseListener;
 
 public class LambdaInputPanel {
     private static final Logger LOG = Logger.getInstance(LambdaInputPanel.class);
@@ -101,8 +99,12 @@ public class LambdaInputPanel {
         addQuickSelect(inputTemplates.getButton(), useInputText, this::updateComponents);
         addQuickSelect(inputText.getComponent(), useInputText, this::updateComponents);
 
-        inputFile.addBrowseFolderListener(null, null, project,
-                                          FileChooserDescriptorFactory.createSingleFileDescriptor(JsonFileType.INSTANCE));
+        inputFile.addActionListener(new ProjectFileBrowseListener<>(
+            project,
+            inputFile,
+            FileChooserDescriptorFactory.createSingleFileDescriptor(JsonFileType.INSTANCE),
+            TextComponentAccessor.TEXT_FIELD_WHOLE_TEXT
+        ));
 
         LambdaSampleEventProvider eventProvider = new LambdaSampleEventProvider(RemoteResourceResolverProvider.Companion.getInstance().get());
 
@@ -112,7 +114,26 @@ public class LambdaInputPanel {
             return null;
         }));
 
-        inputTemplates.addActionListener(new InputTemplateBrowseAction());
+        inputTemplates.addActionListener(new ProjectFileBrowseListener<>(
+            project,
+            inputTemplates,
+            FileChooserDescriptorFactory.createSingleFileDescriptor(JsonFileType.INSTANCE),
+            TextComponentAccessor.STRING_COMBOBOX_WHOLE_TEXT,
+            chosenFile -> {
+                try {
+                    String contents = VfsUtil.loadText(chosenFile);
+                    String cleanedUp = StringUtil.convertLineSeparators(contents);
+                    LambdaSampleEvent fileEvent = new LocalLambdaSampleEvent(chosenFile.getName(), cleanedUp);
+                    eventComboBoxModel.add(fileEvent);
+                    eventComboBoxModel.setSelectedItem(fileEvent);
+                } catch (IOException e) {
+                    LOG.error(e);
+                }
+
+                return null; // Required since lambda is defined in Kotlin
+            }
+        ));
+
 
         updateComponents();
     }
@@ -168,30 +189,6 @@ public class LambdaInputPanel {
 
     public String getInputText() {
         return StringUtil.nullize(inputText.getText().trim(), true);
-    }
-
-    private class InputTemplateBrowseAction extends ComponentWithBrowseButton.BrowseFolderActionListener<JComboBox> {
-        InputTemplateBrowseAction() {
-            super(null,
-                  null,
-                  inputTemplates,
-                  project,
-                  FileChooserDescriptorFactory.createSingleFileDescriptor(JsonFileType.INSTANCE),
-                  TextComponentAccessor.STRING_COMBOBOX_WHOLE_TEXT);
-        }
-
-        @Override
-        protected void onFileChosen(@NotNull VirtualFile chosenFile) {
-            try {
-                String contents = VfsUtil.loadText(chosenFile);
-                String cleanedUp = StringUtil.convertLineSeparators(contents);
-                LambdaSampleEvent fileEvent = new LocalLambdaSampleEvent(chosenFile.getName(), cleanedUp);
-                eventComboBoxModel.add(fileEvent);
-                eventComboBoxModel.setSelectedItem(fileEvent);
-            } catch (IOException e) {
-                LOG.error(e);
-            }
-        }
     }
 
     private class LocalLambdaSampleEvent extends LambdaSampleEvent {
