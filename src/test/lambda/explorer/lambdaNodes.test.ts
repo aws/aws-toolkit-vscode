@@ -22,7 +22,7 @@ async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
 }
 
-describe('DefaultLambdaFunctionNode', () => {
+describe('LambdaFunctionNode', () => {
     let fakeFunctionConfig: Lambda.FunctionConfiguration
 
     before(async () => {
