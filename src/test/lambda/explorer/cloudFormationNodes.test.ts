@@ -7,15 +7,17 @@ import * as assert from 'assert'
 import { CloudFormation, Lambda } from 'aws-sdk'
 import * as os from 'os'
 import {
-    CloudFormationFunctionNode,
     CloudFormationNode,
-    CloudFormationStackNode
+    CloudFormationStackNode,
+    CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION
 } from '../../../lambda/explorer/cloudFormationNodes'
+import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { StsClient } from '../../../shared/clients/stsClient'
 import { ext } from '../../../shared/extensionGlobals'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { MockCloudFormationClient } from '../../shared/clients/mockClients'
@@ -188,20 +190,27 @@ describe('CloudFormationStackNode', () => {
         const testNode: CloudFormationStackNode = generateTestNode()
 
         const childNodes = await testNode.getChildren()
-        assert(childNodes !== undefined)
+        assert.ok(childNodes)
         assert.strictEqual(childNodes.length, 2)
 
-        assert(childNodes[0] instanceof CloudFormationFunctionNode)
-        assert.strictEqual((childNodes[0] as CloudFormationFunctionNode).label, lambda1Name)
-
-        assert(childNodes[1] instanceof CloudFormationFunctionNode)
-        assert.strictEqual((childNodes[1] as CloudFormationFunctionNode).label, lambda3Name)
+        assertCloudFormationLambdaFunctionNode(childNodes[0], lambda1Name)
+        assertCloudFormationLambdaFunctionNode(childNodes[1], lambda3Name)
     })
 
     function generateTestNode(): CloudFormationStackNode {
         const parentNode = new TestAWSTreeNode('test node')
 
         return new CloudFormationStackNode(parentNode, 'someregioncode', fakeStackSummary)
+    }
+
+    function assertCloudFormationLambdaFunctionNode(actualNode: AWSTreeNodeBase, expectedLabel: string) {
+        assert.ok(actualNode instanceof LambdaFunctionNode)
+        assert.strictEqual(actualNode.label, expectedLabel, 'unexpected label for Lambda Function Node')
+        assert.strictEqual(
+            actualNode.contextValue,
+            CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION,
+            'expected the node to have a CloudFormation contextValue'
+        )
     }
 })
 

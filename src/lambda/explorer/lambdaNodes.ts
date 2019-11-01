@@ -15,7 +15,9 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listLambdaFunctions } from '../utils'
-import { FunctionNodeBase } from './functionNode'
+import { LambdaFunctionNode } from './lambdaFunctionNode'
+
+export const CONTEXT_VALUE_LAMBDA_FUNCTION = 'awsRegionFunctionNode'
 
 /**
  * An AWS Explorer node representing the Lambda Service.
@@ -53,18 +55,18 @@ export class LambdaNode extends AWSTreeErrorHandlerNode {
             this.functionNodes,
             functions.keys(),
             key => this.functionNodes.get(key)!.update(functions.get(key)!),
-            key => new LambdaFunctionNode(this, this.regionCode, functions.get(key)!)
+            key => makeLambdaFunctionNode(this, this.regionCode, functions.get(key)!)
         )
     }
 }
 
-export class LambdaFunctionNode extends FunctionNodeBase {
-    public constructor(
-        public readonly parent: AWSTreeNodeBase,
-        public readonly regionCode: string,
-        configuration: Lambda.FunctionConfiguration
-    ) {
-        super(parent, configuration)
-        this.contextValue = 'awsRegionFunctionNode'
-    }
+function makeLambdaFunctionNode(
+    parent: AWSTreeNodeBase,
+    regionCode: string,
+    configuration: Lambda.FunctionConfiguration
+): LambdaFunctionNode {
+    const node = new LambdaFunctionNode(parent, regionCode, configuration)
+    node.contextValue = CONTEXT_VALUE_LAMBDA_FUNCTION
+
+    return node
 }

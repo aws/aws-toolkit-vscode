@@ -9,10 +9,12 @@ import { Uri } from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
-export abstract class FunctionNodeBase extends AWSTreeNodeBase {
-    public abstract readonly regionCode: string
-
-    protected constructor(public readonly parent: AWSTreeNodeBase, public configuration: Lambda.FunctionConfiguration) {
+export class LambdaFunctionNode extends AWSTreeNodeBase {
+    public constructor(
+        public readonly parent: AWSTreeNodeBase,
+        public readonly regionCode: string,
+        public configuration: Lambda.FunctionConfiguration
+    ) {
         super('')
         this.update(configuration)
         this.iconPath = {
