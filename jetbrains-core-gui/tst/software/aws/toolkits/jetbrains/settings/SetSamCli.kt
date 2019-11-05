@@ -10,12 +10,10 @@ import com.intellij.testGuiFramework.impl.button
 import com.intellij.testGuiFramework.impl.findComponentWithTimeout
 import com.intellij.testGuiFramework.impl.jTree
 import com.intellij.testGuiFramework.impl.textfield
-import com.intellij.testGuiFramework.util.Key
-import com.intellij.testGuiFramework.util.Modifier
-import com.intellij.testGuiFramework.util.plus
 import com.intellij.testGuiFramework.util.step
 import com.intellij.ui.SearchTextField
 import org.junit.Test
+import software.aws.toolkits.jetbrains.fixtures.openSettingsDialog
 
 class SetSamCli : GuiTestCase() {
     @Test
@@ -23,7 +21,7 @@ class SetSamCli : GuiTestCase() {
         val samPath = System.getenv("SAM_CLI_EXEC") ?: SamExecutableDetector().detect() ?: "sam"
         welcomeFrame {
             step("Open preferences page") {
-                shortcut(Modifier.CONTROL + Modifier.ALT + Key.S, Modifier.META + Key.COMMA)
+                openSettingsDialog()
 
                 dialog(defaultSettingsTitle) {
                     // Search for AWS because sometimes it is off the screen
