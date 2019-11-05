@@ -1,35 +1,40 @@
 static def ideProfiles() {
     return [
-            "2019.2": [
-                    "IC": [
-                            version: "IC-2019.2",
-                            plugins: [
-                                    "yaml",
-                                    "PythonCore:2019.2.192.5728.98",
-                                    "java",
-                                    "gradle",
-                                    "maven",
-                                    "properties" // Used by Maven
-                            ]
-                    ],
-                    "IU": [
-                            version: "IU-2019.2",
-                            plugins: [
-                                    "yaml",
-                                    "JavaScriptLanguage",
-                                    "JavaScriptDebugger",
-                                    "CSS",
-                                    "PythonCore:2019.2.192.5728.98"
-                            ]
-                    ],
-                    "RD": [
-                        version: "RD-2019.2",
-                        plugins: [
-                            "yaml"
-                        ]
+        "2019.2": [
+            "guiTestFramework": "com.intellij.testGuiFramework:0.9.44.1@nightly",
+            "products" : [
+                "IC": [
+                    version: "IC-2019.2",
+                    plugins: [
+                        "yaml",
+                        "PythonCore:2019.2.192.5728.98",
+                        "java",
+                        "gradle",
+                        "maven",
+                        "properties" // Used by Maven
                     ]
-            ],
-            "2019.3": [
+                ],
+                "IU": [
+                    version: "IU-2019.2",
+                    plugins: [
+                        "yaml",
+                        "JavaScriptLanguage",
+                        "JavaScriptDebugger",
+                        "CSS",
+                        "PythonCore:2019.2.192.5728.98"
+                    ]
+                ],
+                "RD": [
+                    version: "RD-2019.2",
+                    plugins: [
+                        "yaml"
+                    ]
+                ]
+            ]
+        ],
+        "2019.3": [
+            "guiTestFramework": "com.intellij.testGuiFramework:193.SNAPSHOT.1@nightly",
+            "products": [
                 "IC": [
                     version: "IC-193.4386-EAP-CANDIDATE-SNAPSHOT", // Update to actual version when it gets released
                     plugins: [
@@ -58,30 +63,39 @@ static def ideProfiles() {
                     ]
                 ]
             ]
+        ]
     ]
 }
 
 def idePlugins(String productCode) {
-    def product = ideProfile()[productCode]
+    def product = ideProfile()["products"][productCode]
     if (product == null) {
-        throw IllegalArgumentException("Unknown IDE product `$productCode` for ${resolveIdeProfileName()}")
+        throw new IllegalArgumentException("Unknown IDE product `$productCode` for ${resolveIdeProfileName()}")
     }
     return product.plugins
 }
 
 def ideVersion(String productCode) {
-    def product = ideProfile()[productCode]
+    def product = ideProfile()["products"][productCode]
     if (product == null) {
-        throw IllegalArgumentException("Unknown IDE product `$productCode` for ${resolveIdeProfileName()}")
+        throw new IllegalArgumentException("Unknown IDE product `$productCode` for ${resolveIdeProfileName()}")
     }
     return product.version
+}
+
+def guiTestFramework() {
+    def guiVersion = ideProfile()["guiTestFramework"]
+    if (guiVersion == null) {
+        throw new IllegalArgumentException("Missing 'guiTestFramework' key for ${resolveIdeProfileName()}")
+    }
+    return guiVersion
 }
 
 def ideProfile() {
     def profileName = resolveIdeProfileName()
     def profile = ideProfiles()[profileName]
     if (profile == null) {
-        throw IllegalArgumentException("Unknown ideProfile `$profileName`")
+        throw new IllegalArgumentException("Unknown ideProfile `$profileName`")
     }
 
     return profile
@@ -100,5 +114,6 @@ ext {
     idePlugins = this.&idePlugins
     ideVersion = this.&ideVersion
     ideProfile = this.&ideProfile
+    guiTestFramework = this.&guiTestFramework
     resolveIdeProfileName = this.&resolveIdeProfileName
 }

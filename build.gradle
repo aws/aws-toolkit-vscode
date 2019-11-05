@@ -33,7 +33,11 @@ allprojects {
     }
 
     apply plugin: "com.adarshr.test-logger"
+    apply plugin: 'java'
     apply plugin: 'jacoco'
+
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 
     tasks.withType(JavaExec) {
         systemProperty("aws.toolkits.enableTelemetry", false)
@@ -154,9 +158,6 @@ subprojects {
 
         mustRunAfter tasks.test
     }
-
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
 
     tasks.withType(KotlinCompile).all {
         kotlinOptions.jvmTarget = "1.8"

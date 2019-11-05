@@ -5,23 +5,28 @@ apply plugin: 'org.jetbrains.intellij'
 apply plugin: 'jacoco'
 
 dependencies {
-    compile project(":jetbrains-core")
+    compile project(":")
     compile project(path: ":core", configuration: 'testArtifacts')
 }
 
 intellij {
-    def rootIntelliJTask = project(':jetbrains-core').intellij
-    version rootIntelliJTask.version
-    pluginName rootIntelliJTask.pluginName
-    updateSinceUntilBuild rootIntelliJTask.updateSinceUntilBuild
-    downloadSources = rootIntelliJTask.downloadSources
-    plugins = rootIntelliJTask.plugins + ['com.intellij.testGuiFramework:0.9.44.1@nightly']
+    version ideVersion("IC")
+    updateSinceUntilBuild false
+    downloadSources false
+    instrumentCode false
+    plugins = idePlugins("IC") + [guiTestFramework(), project(":")]
 }
 
 jacoco.applyTo(runIde)
 runIde {
     systemProperties System.properties.findAll {(it.key as String).startsWith("idea") || (it.key as String).startsWith("jb")}
-    systemProperty("aws.toolkits.enableTelemetry", false)
+    debugOptions {
+        enabled = false
+        port = 5005
+        server = true
+        suspend = true
+    }
+
     /* Need to split the space-delimited value in the exec.args */
     args System.getProperty("exec.args", "").split(",")
     jacoco {
@@ -34,15 +39,10 @@ runIde {
 test.enabled = false
 
 task guiTest(type: Test) {
-    workingDir = file("..")
-    def sysProps = System.properties.findAll { (it.key as String).startsWith("idea") || (it.key as String).startsWith("jb") }
-    sysProps.put("idea.gui.tests.gradle.runner", true) //Use Gradle Launcher to run GUI tests
-    systemProperties sysProps
+    workingDir = project.rootDir
+    systemProperty("idea.gui.tests.gradle.runner", true)
     include '**/*TestSuite*'
 }
-
-// TODO: DISABLED_UI_TEST_ON_193 re-enable when we get compatible guiTestFramework from JB
-guiTest.onlyIf { resolveIdeProfileName() != "2019.3" }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
@@ -74,11 +74,11 @@ prepareSandbox {
     from(classesJar) {
         into "testGuiFramework/lib"
     }
-    from (sourceSets.main.resources) {
+    from(sourceSets.main.resources) {
         exclude 'META-INF'
         into "testGuiFramework/lib"
     }
-    from (sourceSets.test.resources) {
+    from(sourceSets.test.resources) {
         exclude 'META-INF'
         into "testGuiFramework/lib"
     }
