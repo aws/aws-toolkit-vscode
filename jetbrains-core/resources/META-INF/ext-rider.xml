@@ -29,15 +29,10 @@
         <sam.projectWizard runtimeGroup="DOTNET" implementation="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetSamProjectWizard"/>
     </extensions>
 
-    <!-- This is copied here because in non-rider SolutionExplorerPopupMenu isn't a group so it gets added to the default group -->
     <actions>
-        <group id="aws.toolkit.serverless.template">
+        <group>
             <add-to-group group-id="SolutionExplorerPopupMenu" anchor="last"/>
-
-            <separator/>
-            <action id="serverless.application.deploy"
-                    class="software.aws.toolkits.jetbrains.services.lambda.actions.DeployServerlessApplicationAction"/>
-            <separator/>
+            <reference ref="aws.toolkit.serverless.template"/>
         </group>
     </actions>
 
