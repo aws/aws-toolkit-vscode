@@ -4,24 +4,32 @@
 package software.aws.toolkits.jetbrains.services.lambda.dotnet
 
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.rd.defineNestedLifetime
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
 import com.jetbrains.rd.framework.impl.RpcTimeouts
-import com.jetbrains.rider.model.backendPsiHelperModel
-import com.jetbrains.rider.model.publishableProjectsModel
+import com.jetbrains.rd.util.AtomicInteger
+import com.jetbrains.rd.util.spinUntil
+import com.jetbrains.rd.util.threading.SynchronousScheduler
 import com.jetbrains.rider.model.HandlerExistRequest
 import com.jetbrains.rider.model.MethodExistingRequest
+import com.jetbrains.rider.model.backendPsiHelperModel
+import com.jetbrains.rider.model.lambdaPsiModel
+import com.jetbrains.rider.model.publishableProjectsModel
 import com.jetbrains.rider.projectView.ProjectModelViewHost
 import com.jetbrains.rider.projectView.solution
 import com.jetbrains.rider.run.configurations.method.getProjectModeId
-import com.jetbrains.rider.util.idea.getComponent
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
-import software.aws.toolkits.jetbrains.services.lambda.LambdaPsiHost
 import software.aws.toolkits.jetbrains.services.lambda.dotnet.element.RiderLambdaHandlerFakePsiElement
 
 class DotNetLambdaHandlerResolver : LambdaHandlerResolver {
+
+    companion object {
+        val handlerExistRequestId = AtomicInteger(1)
+        val handlerExistTimeoutMs = RpcTimeouts.default.errorAwaitTime
+    }
 
     override fun version(): Int = 1
 
@@ -84,12 +92,31 @@ class DotNetLambdaHandlerResolver : LambdaHandlerResolver {
         val projects = project.solution.publishableProjectsModel.publishableProjects.values.toList()
         val projectToProcess = projects.find { it.projectName == assemblyName } ?: return false
 
-        val model = project.getComponent<LambdaPsiHost>().model
+        val model = project.solution.lambdaPsiModel
+        val lifetime = project.defineNestedLifetime()
 
-        return model.isHandlerExists.sync(HandlerExistRequest(
+        val handlerExistRequest = HandlerExistRequest(
+            requestId = handlerExistRequestId.getAndIncrement(),
             className = type,
             methodName = methodName,
             projectId = projectModelViewHost.getProjectModeId(projectToProcess.projectFilePath)
-        ))
+        )
+
+        var isHandlerExistValue: Boolean? = null
+        model.isHandlerExistResponse.adviseOn(lifetime, SynchronousScheduler) { handler ->
+            if (handler.requestId == handlerExistRequest.requestId) {
+                isHandlerExistValue = handler.value
+            }
+        }
+
+        model.isHandlerExistRequest.fire(handlerExistRequest)
+
+        spinUntil(handlerExistTimeoutMs) { isHandlerExistValue != null }
+
+        val isHandlerExist = isHandlerExistValue
+            ?: throw IllegalStateException("Timeout after $handlerExistTimeoutMs ms waiting for checking if handler with name '$type.$methodName' exists.")
+
+        lifetime.terminate()
+        return isHandlerExist
     }
 }

@@ -1,5 +1,5 @@
-using AWS.Daemon.Lambda;
 using AWS.Daemon.Settings;
+using AWS.Psi.Lambda;
 using JetBrains.Application.Settings;
 using JetBrains.ReSharper.Feature.Services.Daemon;
 using JetBrains.ReSharper.Host.Features.RunMarkers;

@@ -17,7 +17,7 @@ import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.project.Project
 import com.intellij.psi.SmartPointerManager
 import com.jetbrains.rdclient.util.idea.LifetimedProjectComponent
-import com.jetbrains.rider.model.lambdaModel
+import com.jetbrains.rider.model.lambdaDaemonModel
 import com.jetbrains.rider.projectView.solution
 import software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetLambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.dotnet.element.RiderLambdaHandlerFakePsiElement
@@ -32,9 +32,9 @@ import software.aws.toolkits.jetbrains.utils.DotNetRuntimeUtils
  * for all operation related to AWS Lambda.
  */
 @Suppress("ComponentNotRegistered")
-class LambdaHost(project: Project) : LifetimedProjectComponent(project) {
+class LambdaDaemonHost(project: Project) : LifetimedProjectComponent(project) {
 
-    val model = project.solution.lambdaModel
+    val model = project.solution.lambdaDaemonModel
 
     init {
         initRunLambdaHandler()

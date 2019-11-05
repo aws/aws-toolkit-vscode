@@ -7,7 +7,7 @@ import com.intellij.openapi.util.IconLoader
 import com.jetbrains.rd.framework.impl.RpcTimeouts
 import com.jetbrains.rdclient.icons.toIdeaIcon
 import com.jetbrains.rider.model.IconModel
-import com.jetbrains.rider.model.lambdaModel
+import com.jetbrains.rider.model.lambdaPsiModel
 import com.jetbrains.rider.projectView.solution
 import com.jetbrains.rider.test.annotations.TestEnvironment
 import com.jetbrains.rider.test.base.BaseTestWithSolution
@@ -31,7 +31,7 @@ class DotNetHandlerCompletionTest : BaseTestWithSolution() {
     @Test
     @TestEnvironment(solution = "SamHelloWorldApp")
     fun testDetermineHandlers_SingleHandler() {
-        val handlers = project.solution.lambdaModel.determineHandlers.sync(Unit, RpcTimeouts.default)
+        val handlers = project.solution.lambdaPsiModel.determineHandlers.sync(Unit, RpcTimeouts.default)
 
         assertThat(handlers.size).isEqualTo(1)
         assertThat(handlers.first().handler).isEqualTo("HelloWorld::HelloWorld.Function::FunctionHandler")
@@ -41,7 +41,7 @@ class DotNetHandlerCompletionTest : BaseTestWithSolution() {
     @Test
     @TestEnvironment(solution = "SamMultipleHandlersApp")
     fun testDetermineHandlers_MultipleHandlers() {
-        val handlers = project.solution.lambdaModel.determineHandlers.sync(Unit, RpcTimeouts.default).sortedBy { it.handler }
+        val handlers = project.solution.lambdaPsiModel.determineHandlers.sync(Unit, RpcTimeouts.default).sortedBy { it.handler }
 
         assertThat(handlers.size).isEqualTo(2)
 

@@ -13,7 +13,7 @@ using JetBrains.UI.ThemedIcons;
 using JetBrains.Util;
 using JetBrains.Util.Logging;
 
-namespace AWS.Daemon.Lambda
+namespace AWS.Psi.Lambda
 {
     public static class LambdaFinder
     {

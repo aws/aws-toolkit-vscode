@@ -5,7 +5,7 @@
 
     <project-components>
         <component>
-            <implementation-class>software.aws.toolkits.jetbrains.services.lambda.LambdaHost</implementation-class>
+            <implementation-class>software.aws.toolkits.jetbrains.services.lambda.LambdaDaemonHost</implementation-class>
         </component>
         <component>
             <implementation-class>software.aws.toolkits.jetbrains.services.lambda.LambdaPsiHost</implementation-class>

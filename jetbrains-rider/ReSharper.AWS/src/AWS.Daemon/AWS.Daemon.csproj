@@ -11,6 +11,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\AWS.Localization\AWS.Localization.csproj" />
+        <ProjectReference Include="..\AWS.Psi\AWS.Psi.csproj" />
     </ItemGroup>
 
 </Project>

@@ -47,7 +47,7 @@ namespace AWS.Daemon.RunMarkers
         private IEnumerable<BulbMenuItem> GetRunMethodItems(ISolution solution,
             [NotNull] RunMarkerHighlighting runMarker)
         {
-            var lambdaHost = solution.GetComponent<LambdaHost>();
+            var lambdaHost = solution.GetComponent<LambdaDaemonHost>();
             var javaPropertiesLoader = solution.GetComponent<JavaPropertiesLoader>();
 
             var methodName = runMarker.Method.ShortName;
