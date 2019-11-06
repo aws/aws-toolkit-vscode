@@ -59,7 +59,7 @@ class DotNetLambdaHandlerResolver : LambdaHandlerResolver {
         val type = handlerParts[1]
         val methodName = handlerParts[2]
 
-        return isMethodExists(project, assemblyName, type, methodName)
+        return doesMethodExist(project, assemblyName, type, methodName)
     }
 
     fun getFieldIdByHandlerName(project: Project, handler: String): Int {
@@ -87,7 +87,7 @@ class DotNetLambdaHandlerResolver : LambdaHandlerResolver {
         return fileIdResponse?.fileId ?: -1
     }
 
-    private fun isMethodExists(project: Project, assemblyName: String, type: String, methodName: String): Boolean {
+    private fun doesMethodExist(project: Project, assemblyName: String, type: String, methodName: String): Boolean {
         val projectModelViewHost = ProjectModelViewHost.getInstance(project)
         val projects = project.solution.publishableProjectsModel.publishableProjects.values.toList()
         val projectToProcess = projects.find { it.projectName == assemblyName } ?: return false
@@ -102,21 +102,24 @@ class DotNetLambdaHandlerResolver : LambdaHandlerResolver {
             projectId = projectModelViewHost.getProjectModeId(projectToProcess.projectFilePath)
         )
 
-        var isHandlerExistValue: Boolean? = null
-        model.isHandlerExistResponse.adviseOn(lifetime, SynchronousScheduler) { handler ->
-            if (handler.requestId == handlerExistRequest.requestId) {
-                isHandlerExistValue = handler.value
+        try {
+            var isHandlerExistValue: Boolean? = null
+            model.isHandlerExistResponse.adviseOn(lifetime, SynchronousScheduler) { handler ->
+                if (handler.requestId == handlerExistRequest.requestId) {
+                    isHandlerExistValue = handler.value
+                }
             }
+
+            model.isHandlerExistRequest.fire(handlerExistRequest)
+
+            spinUntil(handlerExistTimeoutMs) { isHandlerExistValue != null }
+
+            return isHandlerExistValue
+                ?: throw IllegalStateException(
+                    "Timeout after $handlerExistTimeoutMs ms waiting for checking if handler with the name '$type.$methodName' exists."
+                )
+        } finally {
+            lifetime.terminate()
         }
-
-        model.isHandlerExistRequest.fire(handlerExistRequest)
-
-        spinUntil(handlerExistTimeoutMs) { isHandlerExistValue != null }
-
-        val isHandlerExist = isHandlerExistValue
-            ?: throw IllegalStateException("Timeout after $handlerExistTimeoutMs ms waiting for checking if handler with name '$type.$methodName' exists.")
-
-        lifetime.terminate()
-        return isHandlerExist
     }
 }
