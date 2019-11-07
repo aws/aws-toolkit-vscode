@@ -20,7 +20,7 @@ task generateModel(type: tasks.getByName("rdgen").class) {
     // intellij SDK, which is extracted in afterEvaluate
     params {
         verbose = true
-        hashFolder = "build/rdgen"
+        hashFolder = "${project.buildDir}/rdgen/"
 
         logger.info("Configuring rdgen params")
         classpath {

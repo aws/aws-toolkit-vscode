@@ -70,10 +70,12 @@ task buildReSharperPlugin {
         }
     }
 
-    outputs.files(fileTree(file("${resharperPluginPath.absolutePath}/src")).matching {
-        include "**/bin/Debug/**/AWS*.dll"
-        include "**/bin/Debug/**/AWS*.pdb"
-    }.collect())
+    outputs.files({
+        fileTree(file("${resharperPluginPath.absolutePath}/src")).matching {
+            include "**/bin/Debug/**/AWS*.dll"
+            include "**/bin/Debug/**/AWS*.pdb"
+        }.collect()
+    })
 }
 
 private File getReSharperSdkPath() {
