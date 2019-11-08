@@ -17,11 +17,10 @@ import { CloudFormationClient } from '../../../shared/clients/cloudFormationClie
 import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { StsClient } from '../../../shared/clients/stsClient'
+import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import { ext } from '../../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { MockCloudFormationClient } from '../../shared/clients/mockClients'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 import { assertChildNodesOnlyContainErrorNode } from './explorerNodeAssertions'
@@ -228,83 +227,45 @@ describe('CloudFormationNode', () => {
         sandbox.restore()
     })
 
-    class StackNamesMockCloudFormationClient extends MockCloudFormationClient {
-        public constructor(
-            public readonly stackNames: string[] = [],
-            listStacks: (statusFilter?: string[]) => AsyncIterableIterator<CloudFormation.StackSummary> = (
-                statusFilter?: string[]
-            ) => {
-                return asyncGenerator<CloudFormation.StackSummary>(
-                    stackNames.map<CloudFormation.StackSummary>(name => {
-                        return {
-                            StackId: name,
-                            StackName: name,
-                            CreationTime: new Date(),
-                            StackStatus: 'CREATE_COMPLETE'
-                        }
-                    })
-                )
-            }
-        ) {
-            super(undefined, undefined, listStacks)
-        }
-    }
+    it('has CloudFormationStackNode child nodes', async () => {
+        const inputStackNames: string[] = ['stack123']
 
-    it('Sorts Stacks', async () => {
-        const inputStackNames: string[] = ['zebra', 'Antelope', 'aardvark', 'elephant']
+        const cloudFormationClient = makeCloudFormationClient(inputStackNames)
 
-        // TODO: Move to MockToolkitClientBuilder
-        ext.toolkitClientBuilder = {
-            createCloudFormationClient(regionCode: string): CloudFormationClient {
-                return new StackNamesMockCloudFormationClient(inputStackNames)
-            },
-
-            createEcsClient(regionCode: string): EcsClient {
-                throw new Error('ecs client unused')
-            },
-
-            createLambdaClient(regionCode: string): LambdaClient {
-                throw new Error('lambda client unused')
-            },
-
-            createStsClient(regionCode: string): StsClient {
-                throw new Error('sts client unused')
-            }
+        const clientBuilder = {
+            createCloudFormationClient: sandbox.stub().returns(cloudFormationClient)
         }
 
-        const cloudFormationNode = new CloudFormationNode('someregioncode')
+        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+
+        const cloudFormationNode = new CloudFormationNode(FAKE_REGION_CODE)
 
         const children = await cloudFormationNode.getChildren()
 
-        assert.ok(children, 'Expected to get CloudFormation node children')
-        assert.strictEqual(
-            inputStackNames.length,
-            children.length,
-            `Expected ${inputStackNames.length} CloudFormation children, got ${children.length}`
+        children.forEach(node =>
+            assert.ok(node instanceof CloudFormationStackNode, 'Expected child node to be CloudFormationStackNode')
         )
+    })
 
-        function assertChildNodeStackName(
-            actualChildNode: CloudFormationStackNode | ErrorNode,
-            expectedNodeText: string
-        ) {
-            assert.strictEqual(
-                actualChildNode instanceof CloudFormationStackNode,
-                true,
-                'Child node was not a Stack Node'
-            )
+    it('has sorted child nodes', async () => {
+        const inputStackNames = ['zebra', 'Antelope', 'aardvark', 'elephant']
+        const expectedChildOrder = ['aardvark', 'Antelope', 'elephant', 'zebra']
 
-            const node = actualChildNode as CloudFormationStackNode
-            assert.strictEqual(
-                node.stackName,
-                expectedNodeText,
-                `Expected child node to have stack ${expectedNodeText} but got ${node.stackName}`
-            )
+        const cloudFormationClient = makeCloudFormationClient(inputStackNames)
+
+        const clientBuilder = {
+            createCloudFormationClient: sandbox.stub().returns(cloudFormationClient)
         }
 
-        assertChildNodeStackName(children[0], 'aardvark')
-        assertChildNodeStackName(children[1], 'Antelope')
-        assertChildNodeStackName(children[2], 'elephant')
-        assertChildNodeStackName(children[3], 'zebra')
+        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+
+        const cloudFormationNode = new CloudFormationNode(FAKE_REGION_CODE)
+
+        const children = await cloudFormationNode.getChildren()
+
+        const actualChildOrder = children.map(node => (node as CloudFormationStackNode).stackName)
+
+        assert.deepStrictEqual(actualChildOrder, expectedChildOrder, 'Unexpected child sort order')
     })
 
     it('handles error', async () => {
@@ -316,4 +277,21 @@ describe('CloudFormationNode', () => {
         const childNodes: AWSTreeNodeBase[] = await testNode.getChildren()
         assertChildNodesOnlyContainErrorNode(childNodes)
     })
+
+    function makeCloudFormationClient(stackNames: string[]): any {
+        return {
+            listStacks: sandbox.stub().callsFake(() => {
+                return asyncGenerator<CloudFormation.StackSummary>(
+                    stackNames.map<CloudFormation.StackSummary>(name => {
+                        return {
+                            StackId: name,
+                            StackName: name,
+                            CreationTime: new Date(),
+                            StackStatus: 'CREATE_COMPLETE'
+                        }
+                    })
+                )
+            })
+        }
+    }
 })
