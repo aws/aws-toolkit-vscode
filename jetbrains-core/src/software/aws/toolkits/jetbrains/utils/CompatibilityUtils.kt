@@ -3,10 +3,12 @@
 
 package software.aws.toolkits.jetbrains.utils
 
+import com.google.common.collect.BiMap
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.extensions.ExtensionPoint
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.PlatformTestCase
 import org.jetbrains.annotations.TestOnly
 import software.aws.toolkits.core.utils.tryOrNull
@@ -49,5 +51,19 @@ object CompatibilityUtils {
         }
         val legacyCreate = PlatformTestCase::class.java.getMethod("createProject", File::class.java, String::class.java)
         return legacyCreate.invoke(null, path.toFile(), "Fake") as Project
+    }
+
+    /**
+     * Can be removed when min-version is 19.3 FIX_WHEN_MIN_IS_193
+     *
+     * Can be replaced with RemoteDebuggingFileFinder(mappings, LocalFileSystemFileFinder(false)) at the call-site
+     */
+    inline fun <reified Remote : Any> createRemoteDebuggingFileFinder(
+        mappings: BiMap<String, VirtualFile>,
+        localFileFinder: Any
+    ): Remote {
+        val parentClass = localFileFinder::class.java.superclass.takeIf { it != Any::class.java } ?: localFileFinder::class.java.interfaces.first()
+        val constructor = Remote::class.java.getConstructor(BiMap::class.java, parentClass)
+        return constructor.newInstance(mappings, localFileFinder)
     }
 }

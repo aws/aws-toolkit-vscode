@@ -21,6 +21,7 @@ import org.jetbrains.io.LocalFileFinder
 import software.aws.toolkits.jetbrains.services.lambda.execution.PathMapping
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamRunningState
+import software.aws.toolkits.jetbrains.utils.CompatibilityUtils.createRemoteDebuggingFileFinder
 import java.net.InetSocketAddress
 
 class NodeJsSamDebugSupport : SamDebugSupport {
@@ -31,7 +32,9 @@ class NodeJsSamDebugSupport : SamDebugSupport {
     ): XDebugProcessStarter? = object : XDebugProcessStarter() {
         override fun start(session: XDebugSession): XDebugProcess {
             val mappings = createBiMapMappings(state.builtLambda.mappings)
-            val fileFinder = RemoteDebuggingFileFinder(mappings, LocalFileSystemFileFinder(false))
+            val fileFinder =
+                createRemoteDebuggingFileFinder<RemoteDebuggingFileFinder>(mappings, LocalFileSystemFileFinder(false))
+
             val connection = WipLocalVmConnection()
             val executionResult = state.execute(environment.executor, environment.runner)
 
