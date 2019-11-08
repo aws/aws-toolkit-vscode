@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import { CloudFormation, Lambda } from 'aws-sdk'
 import * as os from 'os'
+import * as sinon from 'sinon'
 import {
     CloudFormationNode,
     CloudFormationStackNode,
@@ -23,10 +24,13 @@ import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { MockCloudFormationClient } from '../../shared/clients/mockClients'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
+import { assertChildNodesOnlyContainErrorNode } from './explorerNodeAssertions'
 
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
 }
+
+const FAKE_REGION_CODE = 'someregioncode'
 
 describe('CloudFormationStackNode', () => {
     let fakeStackSummary: CloudFormation.StackSummary
@@ -215,6 +219,15 @@ describe('CloudFormationStackNode', () => {
 })
 
 describe('CloudFormationNode', () => {
+    let sandbox: sinon.SinonSandbox
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
     class StackNamesMockCloudFormationClient extends MockCloudFormationClient {
         public constructor(
             public readonly stackNames: string[] = [],
@@ -295,21 +308,12 @@ describe('CloudFormationNode', () => {
     })
 
     it('handles error', async () => {
-        class ThrowErrorCloudFormationNode extends CloudFormationNode {
-            public constructor() {
-                super('someregioncode')
-            }
+        const testNode = new CloudFormationNode(FAKE_REGION_CODE)
+        sandbox.stub(testNode, 'updateChildren').callsFake(() => {
+            throw new Error('Update Children error!')
+        })
 
-            public async updateChildren(): Promise<void> {
-                throw new Error('Hello there!')
-            }
-        }
-
-        const testNode: ThrowErrorCloudFormationNode = new ThrowErrorCloudFormationNode()
-
-        const childNodes = await testNode.getChildren()
-        assert(childNodes !== undefined)
-        assert.strictEqual(childNodes.length, 1)
-        assert.strictEqual(childNodes[0] instanceof ErrorNode, true)
+        const childNodes: AWSTreeNodeBase[] = await testNode.getChildren()
+        assertChildNodesOnlyContainErrorNode(childNodes)
     })
 })

@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
+import * as sinon from 'sinon'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { CONTEXT_VALUE_LAMBDA_FUNCTION, LambdaNode } from '../../../lambda/explorer/lambdaNodes'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
@@ -14,13 +15,25 @@ import { StsClient } from '../../../shared/clients/stsClient'
 import { ext } from '../../../shared/extensionGlobals'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { MockLambdaClient } from '../../shared/clients/mockClients'
+import { assertChildNodesOnlyContainErrorNode } from './explorerNodeAssertions'
 
 // TODO : Consolidate all asyncGenerator calls into a shared utility method
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
 }
 
+const FAKE_REGION_CODE = 'someregioncode'
+
 describe('LambdaNode', () => {
+    let sandbox: sinon.SinonSandbox
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
     class FunctionNamesMockLambdaClient extends MockLambdaClient {
         public constructor(
             public readonly functionNames: string[] = [],
@@ -36,16 +49,6 @@ describe('LambdaNode', () => {
             super({
                 listFunctions
             })
-        }
-    }
-
-    class ThrowErrorLambdaNode extends LambdaNode {
-        public constructor() {
-            super('someregioncode')
-        }
-
-        public async updateChildren(): Promise<void> {
-            throw new Error('Hello there!')
         }
     }
 
@@ -113,11 +116,12 @@ describe('LambdaNode', () => {
     })
 
     it('handles error', async () => {
-        const testNode = new ThrowErrorLambdaNode()
+        const testNode = new LambdaNode(FAKE_REGION_CODE)
+        sandbox.stub(testNode, 'updateChildren').callsFake(() => {
+            throw new Error('Update Children error!')
+        })
 
         const childNodes = await testNode.getChildren()
-        assert(childNodes !== undefined)
-        assert.strictEqual(childNodes.length, 1)
-        assert.strictEqual(childNodes[0] instanceof ErrorNode, true)
+        assertChildNodesOnlyContainErrorNode(childNodes)
     })
 })
