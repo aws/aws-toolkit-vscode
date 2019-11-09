@@ -124,7 +124,7 @@ describe('CloudFormationStackNode', () => {
             'Unexpected child node count'
         )
 
-        assert.deepEqual(
+        assert.deepStrictEqual(
             new Set<string>(childNodes.map(node => node.label!)),
             new Set<string>(cloudFormationStacklambdaFunctionNames),
             'Unexpected child sort order'
