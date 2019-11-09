@@ -5,11 +5,16 @@ apply plugin: 'org.jetbrains.intellij'
 
 intellij {
     def rootIntelliJTask = rootProject.intellij
-    version ideVersion("IC")
+    version ideSdkVersion("IC")
     pluginName rootIntelliJTask.pluginName
     updateSinceUntilBuild rootIntelliJTask.updateSinceUntilBuild
     downloadSources = rootIntelliJTask.downloadSources
     plugins = idePlugins("IC")
+}
+
+patchPluginXml {
+    sinceBuild ideSinceVersion()
+    untilBuild ideUntilVersion()
 }
 
 configurations {

@@ -40,7 +40,7 @@ dependencies {
 
 intellij {
     def parentIntellijTask = project(':jetbrains-core').intellij
-    version ideVersion("RD")
+    version ideSdkVersion("RD")
     pluginName parentIntellijTask.pluginName
     updateSinceUntilBuild parentIntellijTask.updateSinceUntilBuild
 

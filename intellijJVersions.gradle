@@ -2,9 +2,11 @@ static def ideProfiles() {
     return [
         "2019.2": [
             "guiTestFramework": "com.intellij.testGuiFramework:0.9.44.1@nightly",
+            "sinceVersion": "192",
+            "untilVersion": "192.*",
             "products" : [
                 "IC": [
-                    version: "IC-2019.2",
+                    sdkVersion: "IC-2019.2",
                     plugins: [
                         "yaml",
                         "PythonCore:2019.2.192.5728.98",
@@ -15,7 +17,7 @@ static def ideProfiles() {
                     ]
                 ],
                 "IU": [
-                    version: "IU-2019.2",
+                    sdkVersion: "IU-2019.2",
                     plugins: [
                         "yaml",
                         "JavaScriptLanguage",
@@ -25,7 +27,7 @@ static def ideProfiles() {
                     ]
                 ],
                 "RD": [
-                    version: "RD-2019.2",
+                    sdkVersion: "RD-2019.2",
                     plugins: [
                         "yaml"
                     ]
@@ -34,9 +36,11 @@ static def ideProfiles() {
         ],
         "2019.3": [
             "guiTestFramework": "com.intellij.testGuiFramework:193.SNAPSHOT.1@nightly",
+            "sinceVersion": "193",
+            "untilVersion": "193.*",
             "products": [
                 "IC": [
-                    version: "IC-193.4386-EAP-CANDIDATE-SNAPSHOT", // Update to actual version when it gets released
+                    sdkVersion: "IC-193.4386-EAP-CANDIDATE-SNAPSHOT", // Update to actual version when it gets released
                     plugins: [
                         "yaml",
                         "PythonCore:193.4386.10",
@@ -47,7 +51,7 @@ static def ideProfiles() {
                     ]
                 ],
                 "IU": [
-                    version: "IU-193.4386-EAP-CANDIDATE-SNAPSHOT",
+                    sdkVersion: "IU-193.4386-EAP-CANDIDATE-SNAPSHOT",
                     plugins: [
                         "PythonCore:193.4386.10",
                         "yaml",
@@ -57,7 +61,7 @@ static def ideProfiles() {
                     ]
                 ],
                 "RD": [
-                    version: "RD-2019.3-SNAPSHOT",
+                    sdkVersion: "RD-2019.3-SNAPSHOT",
                     plugins: [
                         "yaml"
                     ]
@@ -68,19 +72,35 @@ static def ideProfiles() {
 }
 
 def idePlugins(String productCode) {
-    def product = ideProfile()["products"][productCode]
-    if (product == null) {
-        throw new IllegalArgumentException("Unknown IDE product `$productCode` for ${resolveIdeProfileName()}")
-    }
-    return product.plugins
+    return ideProduct(productCode).plugins
 }
 
-def ideVersion(String productCode) {
+def ideSdkVersion(String productCode) {
+    return ideProduct(productCode).sdkVersion
+}
+
+private def ideProduct(String productCode) {
     def product = ideProfile()["products"][productCode]
     if (product == null) {
         throw new IllegalArgumentException("Unknown IDE product `$productCode` for ${resolveIdeProfileName()}")
     }
-    return product.version
+    return product
+}
+
+def ideSinceVersion() {
+    def guiVersion = ideProfile()["sinceVersion"]
+    if (guiVersion == null) {
+        throw new IllegalArgumentException("Missing 'sinceVersion' key for ${resolveIdeProfileName()}")
+    }
+    return guiVersion
+}
+
+def ideUntilVersion() {
+    def guiVersion = ideProfile()["untilVersion"]
+    if (guiVersion == null) {
+        throw new IllegalArgumentException("Missing 'untilVersion' key for ${resolveIdeProfileName()}")
+    }
+    return guiVersion
 }
 
 def guiTestFramework() {
@@ -112,7 +132,9 @@ def resolveIdeProfileName() {
 ext {
     ideProfiles = this.&ideProfiles
     idePlugins = this.&idePlugins
-    ideVersion = this.&ideVersion
+    ideSdkVersion = this.&ideSdkVersion
+    ideSinceVersion = this.&ideSinceVersion
+    ideUntilVersion = this.&ideUntilVersion
     ideProfile = this.&ideProfile
     guiTestFramework = this.&guiTestFramework
     resolveIdeProfileName = this.&resolveIdeProfileName

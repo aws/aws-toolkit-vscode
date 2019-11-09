@@ -11,7 +11,7 @@ dependencies {
 
 intellij {
     def parentIntellijTask = project(':jetbrains-core').intellij
-    version ideVersion("IU")
+    version ideSdkVersion("IU")
     pluginName parentIntellijTask.pluginName
     updateSinceUntilBuild parentIntellijTask.updateSinceUntilBuild
     downloadSources = parentIntellijTask.downloadSources

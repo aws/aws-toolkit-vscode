@@ -10,7 +10,7 @@ dependencies {
 }
 
 intellij {
-    version ideVersion("IC")
+    version ideSdkVersion("IC")
     updateSinceUntilBuild false
     downloadSources false
     instrumentCode false
