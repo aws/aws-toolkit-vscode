@@ -8,13 +8,9 @@ import { Lambda } from 'aws-sdk'
 import * as sinon from 'sinon'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { CONTEXT_VALUE_LAMBDA_FUNCTION, LambdaNode } from '../../../lambda/explorer/lambdaNodes'
-import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
-import { EcsClient } from '../../../shared/clients/ecsClient'
-import { LambdaClient } from '../../../shared/clients/lambdaClient'
-import { StsClient } from '../../../shared/clients/stsClient'
+import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import { ext } from '../../../shared/extensionGlobals'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
-import { MockLambdaClient } from '../../shared/clients/mockClients'
 import { assertNodeListOnlyContainsErrorNode } from './explorerNodeAssertions'
 
 // TODO : Consolidate all asyncGenerator calls into a shared utility method
@@ -34,51 +30,29 @@ describe('LambdaNode', () => {
         sandbox.restore()
     })
 
-    class FunctionNamesMockLambdaClient extends MockLambdaClient {
-        public constructor(
-            public readonly functionNames: string[] = [],
-            listFunctions: () => AsyncIterableIterator<Lambda.FunctionConfiguration> = () =>
-                asyncGenerator<Lambda.FunctionConfiguration>(
-                    functionNames.map<Lambda.FunctionConfiguration>(name => {
+    it('Sorts Lambda Function Nodes', async () => {
+        const inputFunctionNames: string[] = ['zebra', 'Antelope', 'aardvark', 'elephant']
+
+        const lambdaClient = {
+            listFunctions: sandbox.stub().callsFake(() => {
+                return asyncGenerator<Lambda.FunctionConfiguration>(
+                    inputFunctionNames.map<Lambda.FunctionConfiguration>(name => {
                         return {
                             FunctionName: name
                         }
                     })
                 )
-        ) {
-            super({
-                listFunctions
             })
         }
-    }
 
-    it('Sorts Lambda Function Nodes', async () => {
-        const inputFunctionNames: string[] = ['zebra', 'Antelope', 'aardvark', 'elephant']
+        ext.toolkitClientBuilder = ({
+            createLambdaClient: sandbox.stub().returns(lambdaClient)
+        } as any) as ToolkitClientBuilder
 
-        // TODO: Move to MockToolkitClientBuilder
-        ext.toolkitClientBuilder = {
-            createCloudFormationClient(regionCode: string): CloudFormationClient {
-                throw new Error('cloudformation client unused')
-            },
-
-            createEcsClient(regionCode: string): EcsClient {
-                throw new Error('ecs client unused')
-            },
-
-            createLambdaClient(regionCode: string): LambdaClient {
-                return new FunctionNamesMockLambdaClient(inputFunctionNames)
-            },
-
-            createStsClient(regionCode: string): StsClient {
-                throw new Error('sts client unused')
-            }
-        }
-
-        const lambdaNode = new LambdaNode('someregioncode')
+        const lambdaNode = new LambdaNode(FAKE_REGION_CODE)
 
         const children = await lambdaNode.getChildren()
 
-        assert.ok(children, 'Expected to get Lambda function nodes as children')
         assert.strictEqual(
             inputFunctionNames.length,
             children.length,
