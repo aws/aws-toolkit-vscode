@@ -142,6 +142,30 @@ describe('CloudFormationStackNode', () => {
     //     assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
     // })
 
+    it('has an error node for a child if an error happens during loading', async () => {
+        const lambdaClient = {
+            listFunctions: sandbox.stub().callsFake(() => {
+                throw new Error('loading failure')
+            })
+        }
+
+        const cloudFormationClient = {
+            describeStackResources: sandbox.stub().callsFake(() => {
+                throw new Error('loading failure')
+            })
+        }
+
+        const clientBuilder = {
+            createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
+            createLambdaClient: sandbox.stub().returns(lambdaClient)
+        }
+
+        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+
+        const childNodes = await testNode.getChildren()
+        assertNodeListOnlyContainsErrorNode(childNodes)
+    })
+
     function generateTestNode(): CloudFormationStackNode {
         const parentNode = new TestAWSTreeNode('test node')
 
