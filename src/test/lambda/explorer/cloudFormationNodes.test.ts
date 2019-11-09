@@ -19,7 +19,7 @@ import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
-import { assertChildNodesOnlyContainErrorNode } from './explorerNodeAssertions'
+import { assertNodeListOnlyContainsErrorNode } from './explorerNodeAssertions'
 
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
@@ -241,7 +241,7 @@ describe('CloudFormationNode', () => {
         })
 
         const childNodes: AWSTreeNodeBase[] = await testNode.getChildren()
-        assertChildNodesOnlyContainErrorNode(childNodes)
+        assertNodeListOnlyContainsErrorNode(childNodes)
     })
 
     function makeCloudFormationClient(stackNames: string[]): any {

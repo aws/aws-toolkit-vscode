@@ -15,7 +15,7 @@ import { StsClient } from '../../../shared/clients/stsClient'
 import { ext } from '../../../shared/extensionGlobals'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { MockLambdaClient } from '../../shared/clients/mockClients'
-import { assertChildNodesOnlyContainErrorNode } from './explorerNodeAssertions'
+import { assertNodeListOnlyContainsErrorNode } from './explorerNodeAssertions'
 
 // TODO : Consolidate all asyncGenerator calls into a shared utility method
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
@@ -122,6 +122,6 @@ describe('LambdaNode', () => {
         })
 
         const childNodes = await testNode.getChildren()
-        assertChildNodesOnlyContainErrorNode(childNodes)
+        assertNodeListOnlyContainsErrorNode(childNodes)
     })
 })

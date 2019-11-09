@@ -7,8 +7,8 @@ import * as assert from 'assert'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 
-export function assertChildNodesOnlyContainErrorNode(childNodes: AWSTreeNodeBase[]) {
-    assert(childNodes !== undefined)
-    assert.strictEqual(childNodes.length, 1)
-    assert.ok(childNodes[0] instanceof ErrorNode, 'Expected ErrorNode as child')
+export function assertNodeListOnlyContainsErrorNode(nodes: AWSTreeNodeBase[]) {
+    assert(nodes !== undefined)
+    assert.strictEqual(nodes.length, 1)
+    assert.ok(nodes[0] instanceof ErrorNode, 'Expected ErrorNode as child')
 }
