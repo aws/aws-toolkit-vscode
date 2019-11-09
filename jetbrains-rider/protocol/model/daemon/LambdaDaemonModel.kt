@@ -3,29 +3,12 @@
 
 package protocol.model.daemon
 
-import java.io.File
 import com.jetbrains.rd.generator.nova.Ext
-import com.jetbrains.rd.generator.nova.csharp.CSharp50Generator
 import com.jetbrains.rd.generator.nova.doc
 import com.jetbrains.rd.generator.nova.field
-import com.jetbrains.rd.generator.nova.kotlin.Kotlin11Generator
-import com.jetbrains.rd.generator.nova.setting
 import com.jetbrains.rd.generator.nova.sink
-import com.jetbrains.rd.generator.nova.util.syspropertyOrInvalid
-import com.jetbrains.rd.generator.nova.ExternalGenerator
-import com.jetbrains.rd.generator.nova.GeneratorBase
-import com.jetbrains.rd.generator.nova.FlowTransform
 import com.jetbrains.rd.generator.nova.PredefinedType.string
-import com.jetbrains.rider.model.nova.ide.IdeRoot
 import com.jetbrains.rider.model.nova.ide.SolutionModel
-
-object DaemonKotlinGenerator : ExternalGenerator(
-    Kotlin11Generator(FlowTransform.AsIs, "com.jetbrains.rider.model", File(syspropertyOrInvalid("ktGeneratedOutput"))),
-    IdeRoot)
-
-object DaemonCSharpGenerator : ExternalGenerator(
-    CSharp50Generator(FlowTransform.Reversed, "JetBrains.Rider.Model", File(syspropertyOrInvalid("csDaemonGeneratedOutput"))),
-    IdeRoot)
 
 @Suppress("unused")
 object LambdaDaemonModel : Ext(SolutionModel.Solution) {
@@ -36,11 +19,6 @@ object LambdaDaemonModel : Ext(SolutionModel.Solution) {
     }
 
     init {
-        setting(GeneratorBase.AcceptsGenerator) { generator ->
-            generator == DaemonKotlinGenerator.generator ||
-            generator == DaemonCSharpGenerator.generator
-        }
-
         sink("runLambda", LambdaRequest)
             .doc("Signal from backend to run lambda on local environment")
 

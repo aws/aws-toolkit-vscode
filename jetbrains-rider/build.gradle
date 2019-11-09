@@ -1,11 +1,16 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+def ideProfileName = resolveIdeProfileName()
+
 buildscript {
-    // FIX_WHEN_MIN_IS_193: Please note that this version is a max available to be backward compatible with Rider 192 SDK.
-    // Next versions implements "deepClone()" method that does not exists in 192 SDK.
-    // If you need to bump the version, please make sure you have min support version is 193.
-    ext.rd_version = "0.193.51"
+    if(ideProfileName == "2019.2") {
+        ext.rd_version = "0.192.36"
+    } else if(ideProfileName == "2019.3") {
+        ext.rd_version = "0.193.51"
+    } else {
+        throw new IllegalStateException("rdgen version not set for $ideProfileName")
+    }
 
     repositories {
         maven { url 'https://www.myget.org/F/rd-snapshots/maven/' }

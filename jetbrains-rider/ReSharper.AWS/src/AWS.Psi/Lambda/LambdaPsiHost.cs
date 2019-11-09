@@ -6,6 +6,7 @@ using JetBrains.Application.Threading;
 using JetBrains.Diagnostics;
 using JetBrains.Lifetimes;
 using JetBrains.ProjectModel;
+using JetBrains.Rd.Tasks;
 using JetBrains.ReSharper.Host.Features;
 using JetBrains.ReSharper.Host.Features.ProjectModel.View;
 using JetBrains.ReSharper.Host.Platform.Icons;
@@ -28,7 +29,7 @@ namespace AWS.Psi.Lambda
         private readonly IShellLocks _locks;
         private readonly ILogger _logger;
 
-        public LambdaPsiHost(Lifetime lifetime, ISolution solution, ISymbolCache symbolCache, PsiIconManager psiIconManager, IconHost iconHost,
+        public LambdaPsiHost(ISolution solution, ISymbolCache symbolCache, PsiIconManager psiIconManager, IconHost iconHost,
             ProjectModelViewHost projectModelViewHost, IShellLocks locks, ILogger logger)
         {
             _symbolCache = symbolCache;
@@ -40,21 +41,23 @@ namespace AWS.Psi.Lambda
 
             var model = solution.GetProtocolSolution().GetLambdaPsiModel();
 
-            model.DetermineHandlersRequest.Advise(lifetime, request =>
+            model.DetermineHandlers.Set((lifetime, unit) =>
             {
-                var handlers = DetermineHandlers(solution);
-                model.DetermineHandlersResponse(new DetermineHandlersResponse(request.RequestId, handlers));
+                var task = new RdTask<List<HandlerCompletionItem>>();
+                task.Set(DetermineHandlers(solution));
+                return task;
             });
 
-            model.IsHandlerExistRequest.Advise(lifetime, request =>
+            model.IsHandlerExists.Set((lifetime, request) =>
             {
+                var task = new RdTask<bool>();
                 var className = request.ClassName;
                 var methodName = request.MethodName;
                 var projectId = request.ProjectId;
 
                 var handlerExists = IsHandlerExists(lifetime, projectId, className, methodName);
-                model.IsHandlerExistResponse(new HandlerExistResponse(request.RequestId, handlerExists));
-
+                task.Set(handlerExists);
+                return task;
             });
         }
 
