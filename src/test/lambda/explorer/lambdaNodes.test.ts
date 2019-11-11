@@ -5,89 +5,22 @@
 
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
-import * as os from 'os'
-import { DefaultRegionNode } from '../../../awsexplorer/defaultRegionNode'
-import {
-    DefaultLambdaFunctionGroupNode,
-    DefaultLambdaFunctionNode,
-    LambdaFunctionNode
-} from '../../../lambda/explorer/lambdaNodes'
+import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
+import { CONTEXT_VALUE_LAMBDA_FUNCTION, LambdaNode } from '../../../lambda/explorer/lambdaNodes'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { StsClient } from '../../../shared/clients/stsClient'
 import { ext } from '../../../shared/extensionGlobals'
-import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { MockLambdaClient } from '../../shared/clients/mockClients'
-import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 
 // TODO : Consolidate all asyncGenerator calls into a shared utility method
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
 }
 
-describe('DefaultLambdaFunctionNode', () => {
-    let fakeFunctionConfig: Lambda.FunctionConfiguration
-
-    before(async () => {
-        setupTestIconPaths()
-        fakeFunctionConfig = {
-            FunctionName: 'testFunctionName',
-            FunctionArn: 'testFunctionARN'
-        }
-    })
-
-    after(async () => {
-        clearTestIconPaths()
-    })
-
-    // Validates we tagged the node correctly
-    it('initializes name and tooltip', async () => {
-        const testNode = generateTestNode()
-
-        assert.strictEqual(testNode.label, fakeFunctionConfig.FunctionName)
-        assert.strictEqual(
-            testNode.tooltip,
-            `${fakeFunctionConfig.FunctionName}${os.EOL}${fakeFunctionConfig.FunctionArn}`
-        )
-    })
-
-    it('initializes icon', async () => {
-        const testNode = generateTestNode()
-
-        const iconPath = testNode.iconPath as IconPath
-
-        assert.strictEqual(iconPath.dark.path, ext.iconPaths.dark.lambda, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light.path, ext.iconPaths.light.lambda, 'Unexpected light icon path')
-    })
-
-    // Validates we don't yield some unexpected value that our command triggers
-    // don't recognize
-    it('returns expected context value', async () => {
-        const testNode = generateTestNode()
-
-        assert.strictEqual(testNode.contextValue, 'awsRegionFunctionNode')
-    })
-
-    // Validates function nodes are leaves
-    it('has no children', async () => {
-        const testNode = generateTestNode()
-
-        const childNodes = await testNode.getChildren()
-        assert(childNodes !== undefined)
-        assert.strictEqual(childNodes.length, 0)
-    })
-
-    function generateTestNode(): DefaultLambdaFunctionNode {
-        return new DefaultLambdaFunctionNode(
-            new DefaultLambdaFunctionGroupNode(new DefaultRegionNode(new RegionInfo('code', 'name'))),
-            fakeFunctionConfig
-        )
-    }
-})
-
-describe('DefaultLambdaFunctionGroupNode', () => {
+describe('LambdaNode', () => {
     class FunctionNamesMockLambdaClient extends MockLambdaClient {
         public constructor(
             public readonly functionNames: string[] = [],
@@ -106,9 +39,9 @@ describe('DefaultLambdaFunctionGroupNode', () => {
         }
     }
 
-    class ThrowErrorDefaultLambdaFunctionGroupNode extends DefaultLambdaFunctionGroupNode {
-        public constructor(public readonly parent: DefaultRegionNode) {
-            super(parent)
+    class ThrowErrorLambdaNode extends LambdaNode {
+        public constructor() {
+            super('someregioncode')
         }
 
         public async updateChildren(): Promise<void> {
@@ -138,11 +71,9 @@ describe('DefaultLambdaFunctionGroupNode', () => {
             }
         }
 
-        const functionGroupNode = new DefaultLambdaFunctionGroupNode(
-            new DefaultRegionNode(new RegionInfo('code', 'name'))
-        )
+        const lambdaNode = new LambdaNode('someregioncode')
 
-        const children = await functionGroupNode.getChildren()
+        const children = await lambdaNode.getChildren()
 
         assert.ok(children, 'Expected to get Lambda function nodes as children')
         assert.strictEqual(
@@ -156,12 +87,18 @@ describe('DefaultLambdaFunctionGroupNode', () => {
             expectedNodeText: string
         ) {
             assert.strictEqual(
+                actualChildNode.contextValue,
+                CONTEXT_VALUE_LAMBDA_FUNCTION,
+                'Expected child node to be marked as a Lambda Function'
+            )
+
+            assert.strictEqual(
                 'functionName' in actualChildNode,
                 true,
                 'Child node expected to contain functionName property'
             )
 
-            const node: DefaultLambdaFunctionNode = actualChildNode as DefaultLambdaFunctionNode
+            const node = actualChildNode as LambdaFunctionNode
             assert.strictEqual(
                 node.functionName,
                 expectedNodeText,
@@ -176,9 +113,7 @@ describe('DefaultLambdaFunctionGroupNode', () => {
     })
 
     it('handles error', async () => {
-        const testNode = new ThrowErrorDefaultLambdaFunctionGroupNode(
-            new DefaultRegionNode(new RegionInfo('code', 'name'))
-        )
+        const testNode = new ThrowErrorLambdaNode()
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)

@@ -11,30 +11,22 @@ import * as vscode from 'vscode'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
+import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
-import { RegionNode } from '../../shared/treeview/nodes/regionNode'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listLambdaFunctions } from '../utils'
-import { FunctionNodeBase } from './functionNode'
+import { LambdaFunctionNode } from './lambdaFunctionNode'
 
-export interface LambdaFunctionGroupNode extends AWSTreeErrorHandlerNode {
-    readonly regionCode: string
+export const CONTEXT_VALUE_LAMBDA_FUNCTION = 'awsRegionFunctionNode'
 
-    readonly parent: RegionNode
-
-    getChildren(): Thenable<(LambdaFunctionNode | ErrorNode)[]>
-
-    updateChildren(): Thenable<void>
-}
-
-export class DefaultLambdaFunctionGroupNode extends AWSTreeErrorHandlerNode implements LambdaFunctionGroupNode {
+/**
+ * An AWS Explorer node representing the Lambda Service.
+ * Contains Lambda Functions for a specific region as child nodes.
+ */
+export class LambdaNode extends AWSTreeErrorHandlerNode {
     private readonly functionNodes: Map<string, LambdaFunctionNode>
 
-    public get regionCode(): string {
-        return this.parent.regionCode
-    }
-
-    public constructor(public readonly parent: RegionNode) {
+    public constructor(private readonly regionCode: string) {
         super('Lambda', vscode.TreeItemCollapsibleState.Collapsed)
         this.functionNodes = new Map<string, LambdaFunctionNode>()
     }
@@ -63,22 +55,18 @@ export class DefaultLambdaFunctionGroupNode extends AWSTreeErrorHandlerNode impl
             this.functionNodes,
             functions.keys(),
             key => this.functionNodes.get(key)!.update(functions.get(key)!),
-            key => new DefaultLambdaFunctionNode(this, functions.get(key)!)
+            key => makeLambdaFunctionNode(this, this.regionCode, functions.get(key)!)
         )
     }
 }
 
-export interface LambdaFunctionNode extends FunctionNodeBase {
-    readonly parent: LambdaFunctionGroupNode
-}
+function makeLambdaFunctionNode(
+    parent: AWSTreeNodeBase,
+    regionCode: string,
+    configuration: Lambda.FunctionConfiguration
+): LambdaFunctionNode {
+    const node = new LambdaFunctionNode(parent, regionCode, configuration)
+    node.contextValue = CONTEXT_VALUE_LAMBDA_FUNCTION
 
-export class DefaultLambdaFunctionNode extends FunctionNodeBase implements LambdaFunctionNode {
-    public get regionCode(): string {
-        return this.parent.regionCode
-    }
-
-    public constructor(public readonly parent: LambdaFunctionGroupNode, configuration: Lambda.FunctionConfiguration) {
-        super(configuration)
-        this.contextValue = 'awsRegionFunctionNode'
-    }
+    return node
 }
