@@ -16,10 +16,12 @@ import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import { ext } from '../../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
-import { assertNodeListOnlyContainsErrorNode } from './explorerNodeAssertions'
+import {
+    assertNodeListOnlyContainsErrorNode,
+    assertNodeListOnlyContainsPlaceholderNode
+} from './explorerNodeAssertions'
 
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
@@ -87,8 +89,7 @@ describe('CloudFormationStackNode', () => {
 
         const childNodes = await testNode.getChildren()
 
-        assert.strictEqual(childNodes.length, 1)
-        assert.ok(childNodes[0] instanceof PlaceholderNode, 'Expected child node to be placeholder')
+        assertNodeListOnlyContainsPlaceholderNode(childNodes)
     })
 
     it('has LambdaFunctionNode child nodes', async () => {
