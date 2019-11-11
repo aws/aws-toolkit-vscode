@@ -1,3 +1,11 @@
+## 1.2.0 2019-10-17
+
+- **Bug Fix** Add '--no-interactive' flag to 'sam init' calls when SAM CLI version is greater than or equal to 0.30.0
+- **Feature** Added docker network option support for invoking sam applications
+- **Feature** Ansi codes are removed from text shown in the Output tab when Locally Invoking Lambda handlers
+- **Feature** Adding support for SAM CLI 0.30.0 features in `sam init`: --app-template and --dependency-manager
+- **Feature** Bumped maximum (exclusive) supported SAM CLI version from 0.30.0 to 0.40.0.
+
 ## 1.1.0 2019-09-20
 
 - **Bug Fix** Creating SAM Applications into a different folder than the current VS Code workspaces will now open an application file after app creation (#678)
