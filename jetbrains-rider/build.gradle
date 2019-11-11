@@ -1,16 +1,16 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-def ideProfileName = resolveIdeProfileName()
-
 buildscript {
-    if(ideProfileName == "2019.2") {
+    if(resolveIdeProfileName() == "2019.2") {
         ext.rd_version = "0.192.36"
-    } else if(ideProfileName == "2019.3") {
+    } else if(resolveIdeProfileName() == "2019.3") {
         ext.rd_version = "0.193.51"
     } else {
-        throw new IllegalStateException("rdgen version not set for $ideProfileName")
+        throw new IllegalStateException("rdgen version not set for $resolveIdeProfileName()")
     }
+
+    println("Using rd-gen: $rd_version")
 
     repositories {
         maven { url 'https://www.myget.org/F/rd-snapshots/maven/' }

@@ -11,6 +11,8 @@ ext.csAwsSettingGeneratedOutput = new File(resharperPluginPath, "src/AWS.Setting
 ext.ktGeneratedOutput = new File(projectDir, "src/software/aws/toolkits/jetbrains/protocol")
 
 ext.modelDir = new File(projectDir, "protocol/model")
+ext.rdgenDir = file("${project.buildDir}/rdgen/")
+rdgenDir.mkdirs()
 
 task generateDaemonModel(type: tasks.getByName("rdgen").class) {
     def daemonModelSource = new File(modelDir, "daemon").canonicalPath
@@ -19,7 +21,7 @@ task generateDaemonModel(type: tasks.getByName("rdgen").class) {
     // intellij SDK, which is extracted in afterEvaluate
     params {
         verbose = true
-        hashFolder = "build/rdgen"
+        hashFolder = rdgenDir
 
         logger.info("Configuring rdgen params")
         classpath {
@@ -57,7 +59,7 @@ task generatePsiModel(type: tasks.getByName("rdgen").class) {
     // intellij SDK, which is extracted in afterEvaluate
     params {
         verbose = true
-        hashFolder = "build/rdgen"
+        hashFolder = rdgenDir
 
         logger.info("Configuring rdgen params")
         classpath {
@@ -95,7 +97,7 @@ task generateAwsSettingModel(type: tasks.getByName("rdgen").class) {
     // intellij SDK, which is extracted in afterEvaluate
     params {
         verbose = true
-        hashFolder = "build/rdgen"
+        hashFolder = rdgenDir
 
         logger.info("Configuring rdgen params")
         classpath {
