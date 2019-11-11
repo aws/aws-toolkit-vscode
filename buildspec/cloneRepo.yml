@@ -12,6 +12,9 @@ phases:
         commands:
             - git clone $REPO_URL aws-toolkit-vscode
             - cd aws-toolkit-vscode && git checkout $CODEBUILD_RESOLVED_SOURCE_VERSION
+            # remove the repo URL since it is stored in S3
+            - git remote rm origin
+
 artifacts:
     base-directory: aws-toolkit-vscode
     files:
