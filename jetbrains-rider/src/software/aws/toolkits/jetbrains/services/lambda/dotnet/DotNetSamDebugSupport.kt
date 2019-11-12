@@ -135,7 +135,6 @@ class DotNetSamDebugSupport : SamDebugSupport {
             .withParameters(debuggerBinDirectory.path)
             .withParameters("--debug-args")
             .withParameters(debugArgs)
-            .withParameters("--debug-port").withParameters(frontendPort.toString())
 
         super.patchCommandLine(debugPorts, commandLine)
     }
