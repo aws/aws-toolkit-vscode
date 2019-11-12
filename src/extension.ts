@@ -8,6 +8,8 @@ import * as nls from 'vscode-nls'
 
 import { AwsExplorer } from './awsexplorer/awsExplorer'
 import { RegionNode } from './awsexplorer/regionNode'
+import { activate as activateCdk } from './cdk/activation'
+import { AwsCdkExplorer } from './cdk/explorer/awsCdkExplorer'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
@@ -144,7 +146,14 @@ export async function activate(context: vscode.ExtensionContext) {
             }
         })
 
-        const providers = [new AwsExplorer(awsContext, awsContextTrees, regionProvider, resourceFetcher)]
+        await activateCdk({
+            extensionContext: context
+        })
+
+        const providers = [
+            new AwsExplorer(awsContext, awsContextTrees, regionProvider, resourceFetcher),
+            new AwsCdkExplorer()
+        ]
 
         providers.forEach(p => {
             p.initialize(context)
