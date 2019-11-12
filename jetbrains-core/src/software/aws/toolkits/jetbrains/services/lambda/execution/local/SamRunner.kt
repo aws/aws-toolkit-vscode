@@ -13,7 +13,7 @@ import org.jetbrains.concurrency.resolvedPromise
 import software.aws.toolkits.resources.message
 
 open class SamRunner {
-    open fun patchCommandLine(state: SamRunningState, commandLine: GeneralCommandLine) {}
+    open fun patchCommandLine(commandLine: GeneralCommandLine) {}
 
     open fun run(environment: ExecutionEnvironment, state: SamRunningState): Promise<RunContentDescriptor> {
         val executionResult = state.execute(environment.executor, environment.runner)

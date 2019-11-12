@@ -28,7 +28,7 @@ class NodeJsSamDebugSupport : SamDebugSupport {
     override fun createDebugProcess(
         environment: ExecutionEnvironment,
         state: SamRunningState,
-        debugPort: Int
+        debugPorts: List<Int>
     ): XDebugProcessStarter? = object : XDebugProcessStarter() {
         override fun start(session: XDebugSession): XDebugProcess {
             val mappings = createBiMapMappings(state.builtLambda.mappings)
@@ -41,7 +41,7 @@ class NodeJsSamDebugSupport : SamDebugSupport {
             val process = NodeChromeDebugProcess(session, fileFinder, connection, executionResult)
 
             val processHandler = executionResult.processHandler
-            val socketAddress = InetSocketAddress("localhost", debugPort)
+            val socketAddress = InetSocketAddress("localhost", debugPorts.first())
 
             if (processHandler == null || processHandler.isStartNotified) {
                 connection.open(socketAddress)

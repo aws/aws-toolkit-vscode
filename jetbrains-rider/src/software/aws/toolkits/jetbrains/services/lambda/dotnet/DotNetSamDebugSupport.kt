@@ -12,6 +12,8 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.ui.ExecutionConsole
 import com.intellij.openapi.rd.defineNestedLifetime
+import com.intellij.util.net.NetUtils
+import com.intellij.util.text.SemVer
 import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugProcessStarter
 import com.intellij.xdebugger.XDebugSession
@@ -47,6 +49,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.trace
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamRunningState
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.resources.message
 import java.io.File
 import java.io.OutputStream
@@ -87,10 +90,19 @@ class DotNetSamDebugSupport : SamDebugSupport {
         private const val REMOTE_LAMBDA_COMPILED_PATH = "/var/runtime/MockBootstraps.dll"
     }
 
-    private val debuggerAssemblyFile =
-        RiderEnvironment.getBundledFile(DebuggerWorkerPlatform.AnyCpu.assemblyName)
+    private val debuggerAssemblyFile = RiderEnvironment.getBundledFile(DebuggerWorkerPlatform.AnyCpu.assemblyName)
 
     private val debuggerBinDirectory = debuggerAssemblyFile.parentFile
+
+    override fun getDebugPorts(): List<Int> {
+        // TODO: Switch to always use 2 ports FIX_WHEN_SAM_MIN_IS_0_30
+        val useSeparatePorts = SemVer.parseFromText(SamCommon.getVersionString())
+            ?.isGreaterOrEqualThan(0, 30, 0) ?: false
+
+        val numberOfPorts = if (useSeparatePorts) 2 else 1
+
+        return NetUtils.findAvailableSocketPorts(numberOfPorts).toList()
+    }
 
     /**
      * Check whether the JatBrains.Rider.Worker.Launcher app (that is required to run Debugger) is downloaded into Rider SDK.
@@ -105,28 +117,33 @@ class DotNetSamDebugSupport : SamDebugSupport {
         return debuggerLauncherExists
     }
 
-    override fun patchCommandLine(debugPort: Int, state: SamRunningState, commandLine: GeneralCommandLine) {
+    override fun patchCommandLine(debugPorts: List<Int>, commandLine: GeneralCommandLine) {
+        // TODO: Switch to always use 2 ports FIX_WHEN_SAM_MIN_IS_0_30
+        val frontendPort = debugPorts.first()
+        val backendPort = debugPorts.getOrNull(1) ?: debugPorts.first()
+
         val debugArgs = StringBuilder()
             .append("$REMOTE_DEBUGGER_DIR/$DEBUGGER_LAUNCHER_NAME.dll ")
             .append("$REMOTE_DEBUGGER_DIR/runtime.sh ")
             .append("$REMOTE_DEBUGGER_DIR/${debuggerAssemblyFile.name} ")
             .append("$DEBUGGER_MODE ")
-            .append("$debugPort ")
-            .append("$debugPort")
+            .append("$frontendPort ")
+            .append("$backendPort")
             .toString()
 
         commandLine.withParameters("--debugger-path")
-                .withParameters(debuggerBinDirectory.path)
-                .withParameters("--debug-args")
-                .withParameters(debugArgs)
+            .withParameters(debuggerBinDirectory.path)
+            .withParameters("--debug-args")
+            .withParameters(debugArgs)
+            .withParameters("--debug-port").withParameters(frontendPort.toString())
 
-        super.patchCommandLine(debugPort, state, commandLine)
+        super.patchCommandLine(debugPorts, commandLine)
     }
 
     override fun createDebugProcess(
         environment: ExecutionEnvironment,
         state: SamRunningState,
-        debugPort: Int
+        debugPorts: List<Int>
     ): XDebugProcessStarter? {
         throw UnsupportedOperationException("Use 'createDebugProcessAsync' instead")
     }
@@ -134,8 +151,12 @@ class DotNetSamDebugSupport : SamDebugSupport {
     override fun createDebugProcessAsync(
         environment: ExecutionEnvironment,
         state: SamRunningState,
-        debugPort: Int
+        debugPorts: List<Int>
     ): Promise<XDebugProcessStarter?> {
+        // TODO: Switch to always use 2 ports FIX_WHEN_SAM_MIN_IS_0_30
+        val frontendPort = debugPorts.first()
+        val backendPort = debugPorts.getOrNull(1) ?: debugPorts.first()
+
         val promise = AsyncPromise<XDebugProcessStarter?>()
         val project = environment.project
 
@@ -150,7 +171,7 @@ class DotNetSamDebugSupport : SamDebugSupport {
             serializers = Serializers(),
             identity = Identities(IdKind.Client),
             scheduler = scheduler,
-            wire = SocketWire.Client(debuggerLifetime, scheduler, port = debugPort, optId = "FrontendToDebugWorker"),
+            wire = SocketWire.Client(debuggerLifetime, scheduler, port = frontendPort, optId = "FrontendToDebugWorker"),
             lifetime = debuggerLifetime
         )
 
@@ -173,7 +194,7 @@ class DotNetSamDebugSupport : SamDebugSupport {
                     environment.project.solution.debuggerWorkerConnectionHelperModel.ports.put(
                         debuggerLifetime,
                         environment.executionId,
-                        debugPort
+                        backendPort
                     )
 
                     val sessionModel = DotNetDebuggerSessionModel(startInfo)

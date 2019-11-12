@@ -20,7 +20,7 @@ class SamRunningState(
     lateinit var builtLambda: BuiltLambda
 
     val runner = if (environment.executor.id == DefaultDebugExecutor.EXECUTOR_ID) {
-        SamDebugger()
+        SamDebugger(settings.runtimeGroup)
     } else {
         SamRunner()
     }
@@ -59,7 +59,7 @@ class SamRunningState(
             }
         }
 
-        runner.patchCommandLine(this, commandLine)
+        runner.patchCommandLine(commandLine)
 
         return ProcessHandlerFactory.getInstance().createColoredProcessHandler(commandLine)
     }

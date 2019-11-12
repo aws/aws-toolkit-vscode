@@ -19,11 +19,11 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamDebugS
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamRunningState
 
 class PythonSamDebugSupport : SamDebugSupport {
-    override fun patchCommandLine(debugPort: Int, state: SamRunningState, commandLine: GeneralCommandLine) {
-        super.patchCommandLine(debugPort, state, commandLine)
+    override fun patchCommandLine(debugPorts: List<Int>, commandLine: GeneralCommandLine) {
+        super.patchCommandLine(debugPorts, commandLine)
 
         // Note: To debug pydevd, pass '--DEBUG'
-        val debugArgs = "-u $DEBUGGER_VOLUME_PATH/pydevd.py --multiprocess --port $debugPort --file"
+        val debugArgs = "-u $DEBUGGER_VOLUME_PATH/pydevd.py --multiprocess --port ${debugPorts.first()} --file"
 
         commandLine.withParameters("--debugger-path")
             .withParameters(PythonHelper.DEBUGGER.pythonPathEntry) // Mount pydevd from PyCharm into docker
@@ -34,7 +34,7 @@ class PythonSamDebugSupport : SamDebugSupport {
     override fun createDebugProcess(
         environment: ExecutionEnvironment,
         state: SamRunningState,
-        debugPort: Int
+        debugPorts: List<Int>
     ): XDebugProcessStarter? = object : XDebugProcessStarter() {
         override fun start(session: XDebugSession): XDebugProcess {
             val mappings = state.builtLambda.mappings.map {
@@ -57,7 +57,7 @@ class PythonSamDebugSupport : SamDebugSupport {
                 executionResult.executionConsole,
                 executionResult.processHandler,
                 "localhost",
-                debugPort
+                debugPorts.first()
             ).also {
                 it.positionConverter = PositionConverter(PathMapper(mappings))
             }

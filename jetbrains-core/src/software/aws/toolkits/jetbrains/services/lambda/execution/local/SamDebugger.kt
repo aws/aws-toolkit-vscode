@@ -9,37 +9,37 @@ import com.intellij.execution.ui.RunContentDescriptor
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
-import com.intellij.util.net.NetUtils.findAvailableSocketPort
 import com.intellij.xdebugger.XDebuggerManager
 import com.jetbrains.rd.util.spinUntil
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 
-internal class SamDebugger : SamRunner() {
+internal class SamDebugger(runtimeGroup: RuntimeGroup) : SamRunner() {
     companion object {
         private val logger = getLogger<SamDebugger>()
     }
 
-    private val debugPort = findAvailableSocketPort()
+    private val debugExtension = SamDebugSupport.getInstanceOrThrow(runtimeGroup)
 
-    override fun patchCommandLine(state: SamRunningState, commandLine: GeneralCommandLine) {
-        SamDebugSupport.getInstanceOrThrow(state.settings.runtimeGroup)
-            .patchCommandLine(debugPort, state, commandLine)
+    private val debugPorts = debugExtension.getDebugPorts()
+
+    override fun patchCommandLine(commandLine: GeneralCommandLine) {
+        debugExtension.patchCommandLine(debugPorts, commandLine)
     }
 
     override fun run(environment: ExecutionEnvironment, state: SamRunningState): Promise<RunContentDescriptor> {
-        val debugSupport = SamDebugSupport.getInstanceOrThrow(state.settings.runtimeGroup)
         val promise = AsyncPromise<RunContentDescriptor>()
 
         var isDebuggerAttachDone = false
 
         ProgressManager.getInstance().run(object : Task.Backgroundable(environment.project, message("lambda.debug.waiting"), false) {
             override fun run(indicator: ProgressIndicator) {
-                val debugAttachedResult = spinUntil(debugSupport.debuggerAttachTimeoutMs) { isDebuggerAttachDone }
+                val debugAttachedResult = spinUntil(debugExtension.debuggerAttachTimeoutMs) { isDebuggerAttachDone }
                 if (!debugAttachedResult) {
                     val message = message("lambda.debug.attach.fail")
                     logger.error { message }
@@ -48,7 +48,7 @@ internal class SamDebugger : SamRunner() {
             }
         })
 
-        debugSupport.createDebugProcessAsync(environment, state, debugPort)
+        debugExtension.createDebugProcessAsync(environment, state, debugPorts)
             .onSuccess { debugProcessStarter ->
                 val debugManager = XDebuggerManager.getInstance(environment.project)
                 val runContentDescriptor = debugProcessStarter?.let {
