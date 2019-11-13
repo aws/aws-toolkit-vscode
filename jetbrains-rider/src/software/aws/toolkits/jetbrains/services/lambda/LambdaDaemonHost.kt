@@ -115,8 +115,11 @@ class LambdaDaemonHost(project: Project) : LifetimedProjectComponent(project) {
             val configurationToAdd = factory.createConfiguration("[Local] $methodName", configuration)
             settings = runManager.createConfiguration(configurationToAdd, factory)
 
-            runManager.addConfiguration(settings)
+            runManager.setTemporaryConfiguration(settings)
+            runManager.addConfiguration(settings, isShared = false) // Match platform default of not saving run configs by default
         }
+
+        runManager.selectedConfiguration = settings
 
         ProgramRunnerUtil.executeConfiguration(settings, executor)
     }
