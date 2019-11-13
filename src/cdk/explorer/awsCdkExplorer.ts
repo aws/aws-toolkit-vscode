@@ -10,7 +10,7 @@ import * as vscode from 'vscode'
 import { registerCommand } from '../../shared/telemetry/telemetryUtils'
 import { RefreshableAwsTreeProvider } from '../../shared/treeview/awsTreeProvider'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { detectCdkProjects } from './detectCdkProjects'
+import { CdkProject, detectCdkProjects } from './detectCdkProjects'
 import { ConstructNode } from './nodes/constructNode'
 import { ConstructTree, ConstructTreeEntity } from './tree/types'
 
@@ -21,7 +21,6 @@ export class AwsCdkExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>,
     public viewProviderId: string = 'aws.cdk.explorer'
     public readonly onDidChangeTreeData: vscode.Event<AWSTreeNodeBase | undefined>
     private readonly _onDidChangeTreeData: vscode.EventEmitter<AWSTreeNodeBase | undefined>
-    private readonly workspaceFolders: vscode.WorkspaceFolder[] | undefined = vscode.workspace.workspaceFolders
 
     public constructor() {
         this._onDidChangeTreeData = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
@@ -40,23 +39,15 @@ export class AwsCdkExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>,
     }
 
     public async getChildren(element?: AWSTreeNodeBase): Promise<AWSTreeNodeBase[]> {
-        if (!(this.workspaceFolders && this.workspaceFolders[0])) {
-            // TODO temporary - what should be returned when there's an empty workspace?
-            vscode.window.showInformationMessage('empty workspace!')
-
-            return Promise.resolve([])
-        }
-
         if (!!element) {
             return Promise.resolve(element.getChildren())
         } else {
             const projects = await detectCdkProjects(vscode.workspace.workspaceFolders)
-            for (const project of projects) {
-                return Promise.resolve(this.getConstructTree(project.treePath))
-            }
+
+            return await Promise.all(projects.map(getConstructTree))
         }
 
-        // TODO temporary - what should be returned when no projects are found
+        // TODO temporary - what should be returned when no projects are found? placeholder? error? other?
         vscode.window.showInformationMessage('No AWS CDK projects detected in workspace! Build your application')
 
         return Promise.resolve([])
@@ -65,21 +56,18 @@ export class AwsCdkExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>,
     public refresh(node?: AWSTreeNodeBase) {
         this._onDidChangeTreeData.fire()
     }
+}
 
-    /**
-     * Given the path to tree.json, read all its id's.
-     */
-    private getConstructTree(treeJsonPath: string): ConstructNode[] {
-        const cdkTree = <ConstructTree>JSON.parse(fs.readFileSync(treeJsonPath, 'utf-8'))
-        const treeContent = <ConstructTreeEntity>cdkTree.tree
+/**
+ * Given the path to tree.json, read all its id's.
+ */
+function getConstructTree(project: CdkProject): ConstructNode {
+    const cdkTree = JSON.parse(fs.readFileSync(project.treePath, 'utf-8')) as ConstructTree
+    const treeContent = cdkTree.tree as ConstructTreeEntity
 
-        return [
-            new ConstructNode(
-                treeContent.id,
-                treeContent.path,
-                vscode.TreeItemCollapsibleState.Collapsed,
-                treeContent.children
-            )
-        ]
-    }
+    return new ConstructNode(
+        `${treeContent.id} (${project.cdkJsonPath})`,
+        vscode.TreeItemCollapsibleState.Collapsed,
+        treeContent
+    )
 }

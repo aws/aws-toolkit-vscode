@@ -17,11 +17,11 @@ export class ConstructNode extends AWSTreeNodeBase {
     private readonly properties: { [key: string]: any } | undefined
 
     get tooltip(): string {
-        return this.type || this.treePath
+        return this.type || this.construct.path
     }
 
     get id(): string {
-        return this.treePath
+        return this.construct.path
     }
 
     get iconPath(): string | vscode.Uri | { light: string | vscode.Uri; dark: string | vscode.Uri } | vscode.ThemeIcon {
@@ -40,16 +40,16 @@ export class ConstructNode extends AWSTreeNodeBase {
 
     public constructor(
         public readonly label: string,
-        public readonly treePath: string,
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-        public readonly children?: { [key: string]: any },
-        public readonly attributes?: { [key: string]: any }
+        public readonly construct: ConstructTreeEntity
     ) {
-        super(label, collapsibleState)
+        super(construct.id, collapsibleState)
         this.contextValue = 'awsCdkNode'
 
-        this.type = attributes ? <string>attributes[CfnResourceKeys.TYPE] : ''
-        this.properties = attributes ? <{ [key: string]: any }>attributes[CfnResourceKeys.PROPS] : undefined
+        this.type = construct.attributes ? (construct.attributes[CfnResourceKeys.TYPE] as string) : ''
+        this.properties = construct.attributes
+            ? <{ [key: string]: any }>construct.attributes[CfnResourceKeys.PROPS]
+            : undefined
     }
 
     public async getChildren(): Promise<(ConstructNode | PropertyNode)[]> {
@@ -64,24 +64,26 @@ export class ConstructNode extends AWSTreeNodeBase {
             return entities
         }
 
-        if (!this.children) {
+        if (!this.construct.children) {
             return []
         }
 
-        for (const key of Object.keys(this.children)) {
-            const child = <ConstructTreeEntity>this.children[key]
+        for (const key of Object.keys(this.construct.children)) {
+            const child = this.construct.children[key] as ConstructTreeEntity
 
-            entities.push(
-                new ConstructNode(
-                    child.id,
-                    child.path,
-                    child.children || child.attributes
-                        ? vscode.TreeItemCollapsibleState.Collapsed
-                        : vscode.TreeItemCollapsibleState.None,
-                    child.children,
-                    child.attributes
+            // TODO tree should not be encoded in the CDK tree spec and should be removed
+            if (child.id !== 'Tree' && child.path !== 'Tree') {
+                const cfnResourceType = child.attributes && (child.attributes[CfnResourceKeys.TYPE] as string)
+                entities.push(
+                    new ConstructNode(
+                        child.id === 'Resource' && cfnResourceType ? `${child.id} (${cfnResourceType})` : child.id,
+                        child.children || child.attributes
+                            ? vscode.TreeItemCollapsibleState.Collapsed
+                            : vscode.TreeItemCollapsibleState.None,
+                        child
+                    )
                 )
-            )
+            }
         }
 
         return entities

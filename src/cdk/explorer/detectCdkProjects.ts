@@ -10,6 +10,7 @@ import { readDirAsString } from '../../shared/filesystemUtilities'
 
 export interface CdkProject {
     workspaceFolder: vscode.WorkspaceFolder
+    cdkJsonPath: string
     treePath: string
 }
 
@@ -33,8 +34,9 @@ export async function detectCdkProjects(
 async function detectCdkProjectsFromWorkspaceFolder(workspaceFolder: vscode.WorkspaceFolder): Promise<CdkProject[]> {
     const result = []
 
-    for await (const projectJson of detectLocalCdkProjects({ workspaceUris: [workspaceFolder.uri] })) {
-        const project = { workspaceFolder: workspaceFolder, treePath: projectJson.fsPath }
+    for await (const treeJson of detectLocalCdkProjects({ workspaceUris: [workspaceFolder.uri] })) {
+        const cdkJsonPath = path.join(treeJson.fsPath, '../', 'cdk.json')
+        const project = { workspaceFolder: workspaceFolder, cdkJsonPath: cdkJsonPath, treePath: treeJson.fsPath }
         result.push(project)
     }
 
@@ -84,10 +86,10 @@ async function* detectCdkProjectsInFolder(
     context: DetectCdkProjectsContext,
     folder: string
 ): AsyncIterableIterator<vscode.Uri> {
-    for (const cdkJsonPath of [path.join(folder, 'cdk.out', 'tree.json')]) {
+    for (const treeJsonPath of [path.join(folder, 'cdk.out/tree.json')]) {
         try {
-            await context.access(cdkJsonPath)
-            yield vscode.Uri.file(cdkJsonPath)
+            await context.access(treeJsonPath)
+            yield vscode.Uri.file(treeJsonPath)
         } catch (err) {
             // This is usually because the file doesn't exist, but could also be a permissions issue.
             // TODO: Log at most verbose (i.e. 'silly') logging level.
