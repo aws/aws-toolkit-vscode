@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Adding support for SAM CLI 0.30.0 features in `sam init`: --app-template and --dependency-manager"
-}
