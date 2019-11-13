@@ -6,23 +6,24 @@
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { ConstructNode } from '../../cdk/explorer/nodes/constructNode'
+import { ConstructTreeEntity } from '../../cdk/explorer/tree/types'
 import { cdk } from '../../cdk/globals'
 import { IconPath } from '../shared/utilities/iconPathUtils'
 
 describe('ConstructNode', () => {
-    const label = 'MyStack'
-    const treePath = 'MyStack/MyQueue'
+    const label = 'MyConstruct'
+    const path = 'Path/To/MyConstruct'
 
     it('initializes label and tooltip', async () => {
-        const testNode = generateTestNode()
+        const testNode = generateTestNode(label, path)
         assert.strictEqual(testNode.label, label)
         assert.strictEqual(testNode.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
-        assert.strictEqual(testNode.id, treePath)
-        assert.strictEqual(testNode.tooltip, treePath)
+        assert.strictEqual(testNode.id, path)
+        assert.strictEqual(testNode.tooltip, path)
     })
 
     it('initializes icon paths for CloudFormation resources', async () => {
-        const testNode = generateTestNode()
+        const testNode = generateTestNode(label, path)
         const iconPath = testNode.iconPath as IconPath
 
         assert.strictEqual(iconPath.dark, cdk.iconPaths.dark.cloudFormation, 'Unexpected dark icon path')
@@ -30,7 +31,11 @@ describe('ConstructNode', () => {
     })
 
     it('initializes icon paths for CDK constructs', async () => {
-        const testNode = new ConstructNode(label, treePath, vscode.TreeItemCollapsibleState.Collapsed)
+        const testNode = new ConstructNode(
+            label,
+            vscode.TreeItemCollapsibleState.Collapsed,
+            generateConstructTreeEntity(label, path)
+        )
         const iconPath = testNode.iconPath as IconPath
 
         assert.strictEqual(iconPath.dark, cdk.iconPaths.dark.cdk, 'Unexpected dark icon path')
@@ -38,19 +43,23 @@ describe('ConstructNode', () => {
     })
 
     it('returns no child nodes if construct does not have any', async () => {
-        const testNode = new ConstructNode(label, treePath, vscode.TreeItemCollapsibleState.Collapsed)
+        const testNode = new ConstructNode(
+            label,
+            vscode.TreeItemCollapsibleState.Collapsed,
+            generateConstructTreeEntity(label, path)
+        )
 
         const childNodes = await testNode.getChildren()
         assert.strictEqual(childNodes.length, 0, 'Unexpected child nodes')
     })
 
-    it('child node has no collapsible state if construct has no children or attributes', async () => {
-        const testNode = new ConstructNode(
-            label,
-            treePath,
-            vscode.TreeItemCollapsibleState.Collapsed,
-            generateTestChildResource()
-        )
+    it('child node has no collapsible state if it has no children or attributes', async () => {
+        const treeEntity: ConstructTreeEntity = {
+            id: label,
+            path: path,
+            children: generateTestChildResource()
+        }
+        const testNode = new ConstructNode(label, vscode.TreeItemCollapsibleState.Collapsed, treeEntity)
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)
@@ -59,10 +68,16 @@ describe('ConstructNode', () => {
     })
 
     it('child node is collapsed if construct has child with attributes', async () => {
-        const child = generateTestChildResource()
-        child.Resource.attributes = generateTestAttributes()
+        const childWithAttributes = generateTestChildResource()
+        childWithAttributes.Resource.attributes = generateAttributes()
 
-        const testNode = new ConstructNode(label, treePath, vscode.TreeItemCollapsibleState.Collapsed, child)
+        const treeEntity: ConstructTreeEntity = {
+            id: label,
+            path: path,
+            children: childWithAttributes
+        }
+
+        const testNode = new ConstructNode(label, vscode.TreeItemCollapsibleState.Collapsed, treeEntity)
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)
@@ -71,10 +86,11 @@ describe('ConstructNode', () => {
     })
 
     it('returns child node if a construct has grandchildren', async () => {
-        const child = generateTestChildResource()
-        child.Resource.children = generateTestChildResource()
-
-        const testNode = new ConstructNode(label, treePath, vscode.TreeItemCollapsibleState.Collapsed, child)
+        const testNode = new ConstructNode(
+            label,
+            vscode.TreeItemCollapsibleState.Collapsed,
+            generateConstructTreeEntity(label, path, true)
+        )
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)
@@ -83,8 +99,16 @@ describe('ConstructNode', () => {
     })
 })
 
-function generateTestNode(): ConstructNode {
-    return new ConstructNode('MyStack', 'MyStack/MyQueue', vscode.TreeItemCollapsibleState.Collapsed)
+function generateTestNode(label: string, path: string): ConstructNode {
+    return new ConstructNode(label, vscode.TreeItemCollapsibleState.Collapsed, generateConstructTreeEntity(label, path))
+}
+
+function generateConstructTreeEntity(label: string, path: string, children?: boolean): ConstructTreeEntity {
+    return {
+        id: label,
+        path: path,
+        children: children ? generateTestChildResource() : {}
+    }
 }
 
 function generateTestChildResource(): { [key: string]: any } {
@@ -96,12 +120,12 @@ function generateTestChildResource(): { [key: string]: any } {
     }
 }
 
-function generateTestAttributes(): { [key: string]: any } {
+function generateAttributes(): { [key: string]: any } {
     return {
-        'aws:cdk:cloudformation:type': 'AWS::SQS::Queue',
-        'aws:cdk:cloudformation:properties': {
-            queueName: 'MyAwesomeQueue',
-            visibilityTimeout: 120
+        'aws:cdk:cloudformation:type': 'AWS::SNS::Topic',
+        'aws:cdk:cloudformation:props': {
+            displayName: 'DisplayName',
+            topicName: 'CoolTopic'
         }
     }
 }
