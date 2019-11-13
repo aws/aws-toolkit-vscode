@@ -15,7 +15,6 @@ import org.jdom.Element
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.resources.message
 import javax.swing.JComponent
@@ -24,44 +23,18 @@ class AwsConnectionSettingsEditor<T : AwsConnectionsRunConfigurationBase<*>>(
     project: Project,
     private val settingsChangedListener: (AwsRegion?, String?) -> Unit = { _, _ -> }
 ) : SettingsEditor<T>() {
-    private val regionProvider = AwsRegionProvider.getInstance()
-    private val credentialManager = CredentialManager.getInstance()
-    private val view = AwsConnectionSettings()
+    private val awsConnectionSelector = AwsConnectionSettingsSelector(project, settingsChangedListener)
 
-    init {
-        view.region.setRegions(regionProvider.regions().values.toMutableList())
-        view.credentialProvider.setCredentialsProviders(credentialManager.getCredentialProviders())
-
-        val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
-        view.region.selectedRegion = accountSettingsManager.activeRegion
-        if (accountSettingsManager.hasActiveCredentials()) {
-            view.credentialProvider.setSelectedCredentialsProvider(accountSettingsManager.activeCredentialProvider)
-        }
-        view.region.addActionListener { fireChange() }
-        view.credentialProvider.addActionListener { fireChange() }
-    }
-
-    private fun fireChange() {
-        settingsChangedListener(view.region.selectedRegion, view.credentialProvider.getSelectedCredentialsProvider())
-    }
-
-    override fun createEditor(): JComponent = view.panel
+    override fun createEditor(): JComponent = awsConnectionSelector.selectorPanel()
 
     override fun resetEditorFrom(settings: T) {
-        settings.regionId()?.let { view.region.selectedRegion = regionProvider.lookupRegionById(it) }
-
-        settings.credentialProviderId()?.let { credentialProviderId ->
-            try {
-                view.credentialProvider.setSelectedCredentialsProvider(credentialManager.getCredentialProvider(credentialProviderId))
-            } catch (_: Exception) {
-                view.credentialProvider.setSelectedInvalidCredentialsProvider(credentialProviderId)
-            }
-        }
+        val accountOptions = settings.serializableOptions.accountOptions
+        awsConnectionSelector.resetAwsConnectionOptions(accountOptions.regionId, accountOptions.credentialProviderId)
     }
 
     override fun applyEditorTo(settings: T) {
-        settings.credentialProviderId(view.credentialProvider.getSelectedCredentialsProvider())
-        settings.regionId(view.region.selectedRegion?.id)
+        settings.credentialProviderId(awsConnectionSelector.selectedCredentialProvider())
+        settings.regionId(awsConnectionSelector.selectedRegion()?.id)
     }
 }
 
