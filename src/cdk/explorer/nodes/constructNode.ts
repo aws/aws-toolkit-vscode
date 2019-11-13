@@ -7,14 +7,12 @@ import * as vscode from 'vscode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { cdk } from '../../globals'
 import { CfnResourceKeys, ConstructTreeEntity } from '../tree/types'
-import { PropertyNode } from './propertyNode'
 
 /**
  * Represents a CDK construct
  */
 export class ConstructNode extends AWSTreeNodeBase {
     private readonly type: string
-    private readonly properties: { [key: string]: any } | undefined
 
     get tooltip(): string {
         return this.type || this.construct.path
@@ -47,22 +45,10 @@ export class ConstructNode extends AWSTreeNodeBase {
         this.contextValue = 'awsCdkNode'
 
         this.type = construct.attributes ? (construct.attributes[CfnResourceKeys.TYPE] as string) : ''
-        this.properties = construct.attributes
-            ? <{ [key: string]: any }>construct.attributes[CfnResourceKeys.PROPS]
-            : undefined
     }
 
-    public async getChildren(): Promise<(ConstructNode | PropertyNode)[]> {
+    public async getChildren(): Promise<(ConstructNode)[]> {
         const entities = []
-
-        if (this.properties) {
-            const propertyNodes: PropertyNode[] = PropertyNode.extractProps(this.properties)
-            for (const node of propertyNodes) {
-                entities.push(node)
-            }
-
-            return entities
-        }
 
         if (!this.construct.children) {
             return []
