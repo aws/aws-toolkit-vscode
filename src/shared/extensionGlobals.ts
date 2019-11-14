@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ExtensionContext, OutputChannel } from 'vscode'
+import { ExtensionContext, OutputChannel, Uri } from 'vscode'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AWSContextCommands } from './awsContextCommands'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
@@ -27,6 +27,11 @@ export namespace ext {
     export namespace iconPaths {
         export const dark: IconPaths = makeIconPathsObject()
         export const light: IconPaths = makeIconPathsObject()
+    }
+
+    export namespace visualizationResourcePaths {
+        export let localScriptsPath: Uri
+        export let webviewScript: Uri
     }
 }
 
