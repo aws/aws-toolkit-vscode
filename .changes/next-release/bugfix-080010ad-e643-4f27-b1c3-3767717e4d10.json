@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix getting SAM version timing out in some circumstances which caused SAM related commands to fail"
+}

@@ -30,4 +30,9 @@ object SamVersionCache : FileInfoCache<SemVer>() {
                 ?: throw IllegalStateException(message("sam.executable.version_parse_error", version))
         }
     }
+
+    // This is the timeout to evaluate SAM version. On slow computers, or computers that have security scanners,
+    // this can take longer than the default 500ms timeout of FileInfoCache. Since this is run in the background,
+    // we can afford to bump it much higher.
+    val DEFAULT_TIMEOUT_MS = 5000
 }
