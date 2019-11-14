@@ -12,7 +12,7 @@ import { RefreshableAwsTreeProvider } from '../../shared/treeview/awsTreeProvide
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { CdkProject, detectCdkProjects } from './detectCdkProjects'
 import { ConstructNode } from './nodes/constructNode'
-import { ConstructTree, ConstructTreeEntity } from './tree/types'
+import { ConstructTree } from './tree/types'
 
 /**
  * Provides data for the AWS CDK Explorer view
@@ -39,18 +39,18 @@ export class AwsCdkExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>,
     }
 
     public async getChildren(element?: AWSTreeNodeBase): Promise<AWSTreeNodeBase[]> {
-        if (!!element) {
-            return Promise.resolve(element.getChildren())
+        if (element) {
+            return element.getChildren()
         } else {
             const projects = await detectCdkProjects(vscode.workspace.workspaceFolders)
 
-            return await Promise.all(projects.map(getConstructTree))
+            return projects.map(getConstructTree)
         }
 
         // TODO temporary - what should be returned when no projects are found? placeholder? error? other?
         vscode.window.showInformationMessage('No AWS CDK projects detected in workspace! Build your application')
 
-        return Promise.resolve([])
+        return []
     }
 
     public refresh(node?: AWSTreeNodeBase) {
@@ -63,7 +63,7 @@ export class AwsCdkExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>,
  */
 function getConstructTree(project: CdkProject): ConstructNode {
     const cdkTree = JSON.parse(fs.readFileSync(project.treePath, 'utf-8')) as ConstructTree
-    const treeContent = cdkTree.tree as ConstructTreeEntity
+    const treeContent = cdkTree.tree
 
     return new ConstructNode(
         `${treeContent.id} (${project.cdkJsonPath})`,
