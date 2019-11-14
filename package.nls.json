@@ -40,6 +40,8 @@
     "AWS.command.quickStart": "View Quick Start",
     "AWS.command.quickStart.title": "AWS Toolkit - Quick Start",
     "AWS.command.quickStart.error": "There was an error retrieving the Quick Start page",
+    "AWS.command.stepFunctions.renderStateMachine": "Render state machine graph",
+    "AWS.stepFunctions.graph.titlePrefix": "Graph: {0}",
     "AWS.error.during.sam.local": "An error occurred trying to run SAM Application locally: {0}",
     "AWS.command.showErrorDetails": "Show error details",
     "AWS.error.mfa.userCancelled": "User cancelled entering authentication code",

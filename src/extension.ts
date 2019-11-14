@@ -32,6 +32,7 @@ import { registerCommand } from './shared/telemetry/telemetryUtils'
 import { RegionNode } from './shared/treeview/nodes/regionNode'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
+import { activate as activateStepFunctions } from './stepFunctions/activation'
 
 export async function activate(context: vscode.ExtensionContext) {
     const env = process.env as EnvironmentVariables
@@ -163,6 +164,8 @@ export async function activate(context: vscode.ExtensionContext) {
             telemetryService: ext.telemetry,
             toolkitSettings
         })
+
+        await activateStepFunctions(context)
 
         toastNewUser(context, getLogger())
     } catch (error) {

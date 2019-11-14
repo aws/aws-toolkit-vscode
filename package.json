@@ -46,7 +46,8 @@
         "onCommand:aws.viewLogs",
         "onCommand:aws.quickStart",
         "onCommand:aws.help",
-        "onCommand:aws.github"
+        "onCommand:aws.github",
+        "onCommand:aws.renderStateMachine"
     ],
     "main": "./out/src/extension",
     "contributes": {
@@ -324,6 +325,11 @@
             {
                 "command": "aws.quickStart",
                 "title": "%AWS.command.quickStart%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.renderStateMachine",
+                "title": "%AWS.command.stepFunctions.renderStateMachine%",
                 "category": "AWS"
             }
         ],
