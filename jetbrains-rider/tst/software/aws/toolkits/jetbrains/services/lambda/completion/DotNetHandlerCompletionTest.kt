@@ -38,7 +38,7 @@ class DotNetHandlerCompletionTest : BaseTestWithSolution() {
     @Test
     @TestEnvironment(solution = "SamMultipleHandlersApp")
     fun testDetermineHandlers_MultipleHandlers() {
-        val handlers = DotNetHandlerCompletion().getHandlersFromBackend(project)
+        val handlers = DotNetHandlerCompletion().getHandlersFromBackend(project).sortedBy { it.handler }
 
         assertThat(handlers.size).isEqualTo(2)
 
