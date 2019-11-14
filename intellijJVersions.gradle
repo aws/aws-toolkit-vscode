@@ -23,7 +23,7 @@ static def ideProfiles() {
                         "JavaScriptLanguage",
                         "JavaScriptDebugger",
                         "CSS",
-                        "PythonCore:2019.2.192.5728.98"
+                        "Pythonid:2019.2.192.5728.98"
                     ]
                 ],
                 "RD": [
@@ -40,10 +40,10 @@ static def ideProfiles() {
             "untilVersion": "193.*",
             "products": [
                 "IC": [
-                    sdkVersion: "IC-193.4386-EAP-CANDIDATE-SNAPSHOT", // Update to actual version when it gets released
+                    sdkVersion: "IC-193.5233-EAP-CANDIDATE-SNAPSHOT", // Update to actual version when it gets released
                     plugins: [
                         "yaml",
-                        "PythonCore:193.4386.10",
+                        "PythonCore:193.5233.18",
                         "java",
                         "gradle",
                         "maven",
@@ -51,9 +51,9 @@ static def ideProfiles() {
                     ]
                 ],
                 "IU": [
-                    sdkVersion: "IU-193.4386-EAP-CANDIDATE-SNAPSHOT",
+                    sdkVersion: "IU-193.5233-EAP-CANDIDATE-SNAPSHOT",
                     plugins: [
-                        "PythonCore:193.4386.10",
+                        "Pythonid:193.5233.12",
                         "yaml",
                         "JavaScriptLanguage",
                         "JavaScriptDebugger",
