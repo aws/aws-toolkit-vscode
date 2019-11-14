@@ -19,7 +19,4 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 
     cdk.iconPaths.dark.cloudFormation = context.asAbsolutePath('resources/dark/cdk/cloudformation.svg')
     cdk.iconPaths.light.cloudFormation = context.asAbsolutePath('resources/light/cdk/cloudformation.svg')
-
-    cdk.iconPaths.dark.settings = context.asAbsolutePath('resources/dark/cdk/settings.svg')
-    cdk.iconPaths.light.settings = context.asAbsolutePath('resources/light/cdk/settings.svg')
 }

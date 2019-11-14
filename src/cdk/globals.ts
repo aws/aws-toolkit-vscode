@@ -17,13 +17,11 @@ export namespace cdk {
 export interface IconPaths {
     cdk: string
     cloudFormation: string
-    settings: string
 }
 
 function makeIconPathsObject(): IconPaths {
     return {
         cdk: '',
-        cloudFormation: '',
-        settings: ''
+        cloudFormation: ''
     }
 }

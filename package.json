@@ -351,7 +351,7 @@
             {
                 "command": "aws.refreshCdkExplorer",
                 "title": "%AWS.command.refreshCdkExplorer%",
-                "category": "AWS CDK",
+                "category": "AWS",
                 "icon": {
                     "dark": "third-party/resources/from-vscode/dark/refresh.svg",
                     "light": "third-party/resources/from-vscode/light/refresh.svg"
