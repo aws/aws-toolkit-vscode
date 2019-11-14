@@ -133,6 +133,7 @@ describe('CloudFormationStackNode', () => {
     })
 
     // TODO : CloudFormation Stack Nodes don't sort their child nodes
+    // TODO : https://github.com/aws/aws-toolkit-vscode/issues/813
     // it('sorts child nodes', async () => {
     //     lambdaFunctionNames = UNSORTED_TEXT
     //     cloudFormationStacklambdaFunctionNames = UNSORTED_TEXT

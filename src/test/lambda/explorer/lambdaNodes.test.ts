@@ -43,6 +43,7 @@ describe('LambdaNode', () => {
     })
 
     // TODO : Lambda Nodes do not show a placeholder when no Functions could be found
+    // TODO : https://github.com/aws/aws-toolkit-vscode/issues/812
     // it('returns placeholder node if no children are present', async () => {
     //     lambdaFunctionNames = []
 
