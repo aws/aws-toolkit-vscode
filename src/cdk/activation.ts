@@ -4,19 +4,35 @@
  */
 
 import * as vscode from 'vscode'
+import { registerCommand } from '../shared/telemetry/telemetryUtils'
+import { AwsCdkExplorer } from './explorer/awsCdkExplorer'
 import { cdk } from './globals'
 
 /**
  * Activate AWS CDK related functionality for the extension.
  */
 export async function activate(activateArguments: { extensionContext: vscode.ExtensionContext }): Promise<void> {
-    initializeIconPaths(activateArguments.extensionContext)
+    const explorer = new AwsCdkExplorer()
+
+    await initializeIconPaths(activateArguments.extensionContext)
+
+    await registerCdkCommands(explorer)
+    activateArguments.extensionContext.subscriptions.push(
+        vscode.window.registerTreeDataProvider(explorer.viewProviderId, explorer)
+    )
 }
 
-function initializeIconPaths(context: vscode.ExtensionContext) {
+async function initializeIconPaths(context: vscode.ExtensionContext) {
     cdk.iconPaths.dark.cdk = context.asAbsolutePath('resources/dark/cdk/cdk.svg')
     cdk.iconPaths.light.cdk = context.asAbsolutePath('resources/light/cdk/cdk.svg')
 
     cdk.iconPaths.dark.cloudFormation = context.asAbsolutePath('resources/dark/cdk/cloudformation.svg')
     cdk.iconPaths.light.cloudFormation = context.asAbsolutePath('resources/light/cdk/cloudformation.svg')
+}
+
+async function registerCdkCommands(explorer: AwsCdkExplorer): Promise<void> {
+    registerCommand({
+        command: 'aws.refreshCdkExplorer',
+        callback: async () => explorer.refresh()
+    })
 }
