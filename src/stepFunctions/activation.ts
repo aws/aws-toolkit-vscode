@@ -24,13 +24,39 @@ async function registerStepFunctionCommands(extensionContext: vscode.ExtensionCo
         registerCommand({
             command: 'aws.renderStateMachine',
             callback: async () => {
-                return await visualizeStateMachine()
+                return await visualizeStateMachine(extensionContext.globalState)
             }
         })
     )
 }
 
 function initalizeWebviewPaths(context: vscode.ExtensionContext) {
+    ext.visualizationResourcePaths.visualizationCache =
+        vscode.Uri.file(
+            join(
+                context.globalStoragePath,
+                'visualization'
+            )
+        )
+
+    ext.visualizationResourcePaths.visualizationScript =
+        vscode.Uri.file(
+            join(
+                context.globalStoragePath,
+                'visualization',
+                'graph.js'
+            )
+        )
+
+    ext.visualizationResourcePaths.visualizationCSS =
+        vscode.Uri.file(
+            join(
+                context.globalStoragePath,
+                'visualization',
+                'graph.css'
+            )
+        )
+
     ext.visualizationResourcePaths.localScriptsPath =
         vscode.Uri.file(
             join(

@@ -9,6 +9,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../shared/logger'
+import { updateCache } from '../utils'
 
 export interface messageObject {
     command: string,
@@ -20,7 +21,7 @@ export interface messageObject {
 /**
  * Graphs the state machine defined in the current active editor
  */
-export async function visualizeStateMachine(): Promise<vscode.WebviewPanel> {
+export async function visualizeStateMachine(globalStorage: vscode.Memento): Promise<vscode.WebviewPanel | void> {
     const logger: Logger = getLogger()
 
     /* TODO: Determine behaviour when command is run against bad input, or
@@ -41,7 +42,13 @@ export async function visualizeStateMachine(): Promise<vscode.WebviewPanel> {
         throw new Error('Could not grab active text editor for state machine render.')
     }
 
-    return setupWebviewPanel(documentUri, documentText)
+    return updateCache(globalStorage).then( async () => {
+        return setupWebviewPanel(documentUri, documentText)
+    }).catch( () => {
+        logger.debug('Didnt setup webview panel due to error pulling files from CloudFront')
+
+        return
+    })
 }
 
 async function setupWebviewPanel(
@@ -57,14 +64,19 @@ async function setupWebviewPanel(
         vscode.ViewColumn.Beside,
         {
             enableScripts: true,
-            localResourceRoots: [ext.visualizationResourcePaths.localScriptsPath],
+            localResourceRoots: [
+                ext.visualizationResourcePaths.localScriptsPath,
+                ext.visualizationResourcePaths.visualizationCache
+            ],
             retainContextWhenHidden: true
         }
     )
 
     // Set the initial html for the webpage
     panel.webview.html = getWebviewContent(
-        ext.visualizationResourcePaths.webviewScript.with({ scheme: 'vscode-resource' })
+        ext.visualizationResourcePaths.webviewScript.with({ scheme: 'vscode-resource' }),
+        ext.visualizationResourcePaths.visualizationScript.with({ scheme: 'vscode-resource' }),
+        ext.visualizationResourcePaths.visualizationCSS.with({ scheme: 'vscode-resource' })
     )
 
     // Add listener function to update the graph on document save
@@ -112,15 +124,17 @@ function makeWebviewTitle(sourceDocumentUri: vscode.Uri): string {
 }
 
 function getWebviewContent(
-    graphStateMachineScriptPath: vscode.Uri
+    graphStateMachineScriptPath: vscode.Uri,
+    graphStateMachineScriptPath2: vscode.Uri,
+    graphStateMachineCSS: vscode.Uri
 ): string {
     return `
 	 <!DOCTYPE html>
 	 <html>
 	     <head>
 	         <meta charset="UTF-8">
-	         <link rel="stylesheet" href="https://d19z89qxwgm7w9.cloudfront.net/graph-0.0.1.css">
-	         <script src="https://d19z89qxwgm7w9.cloudfront.net/sfn-0.0.3.js"></script>
+	         <link rel="stylesheet" href='${graphStateMachineCSS}'>
+             <script src='${graphStateMachineScriptPath2}'></script>
 	     </head>
 	     <body>
 	         <div id="svgcontainer" class="workflowgraph" style="background-color: white;">

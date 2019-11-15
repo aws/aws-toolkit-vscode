@@ -10,7 +10,7 @@ import { spy } from 'sinon'
 import * as vscode from 'vscode'
 import { writeFile } from '../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { messageObject, visualizeStateMachine } from '../../stepFunctions/commands/visualizeStateMachine'
+import { messageObject } from '../../stepFunctions/commands/visualizeStateMachine'
 
 const sampleStateMachine = `
 	 {
@@ -102,9 +102,9 @@ describe('visualizeStateMachine', async () => {
         const fileName = 'mysamplestatemachine.json'
         await openATextEditorWithText(stateMachineFileText, fileName)
 
-        const webviewPanel = await visualizeStateMachine()
+        const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.renderStateMachine')
 
-        assert.ok(webviewPanel)
+        assert.ok(result)
     })
 
     it('correctly displays content when given a sample state machine', async () => {
@@ -172,7 +172,7 @@ describe('visualizeStateMachine', async () => {
         await vscode.commands.executeCommand('workbench.action.closeAllEditors')
 
         try {
-            await visualizeStateMachine()
+            await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.renderStateMachine')
             // Putting assert.fail here. Otherwise, if the call does not throw an exception
             // the test would still pass.
             assert.fail()
