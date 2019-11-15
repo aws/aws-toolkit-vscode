@@ -12,7 +12,6 @@ describe('AwsCdkExplorer', () => {
 
         const treeNodesPromise = awsCdkExplorer.getChildren()
 
-        assert(treeNodesPromise)
         const treeNodes = await treeNodesPromise
         assert(treeNodes)
         assert.strictEqual(treeNodes.length, 0)
