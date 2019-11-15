@@ -94,7 +94,6 @@ describe('ConstructNode', () => {
         )
 
         const childNodes = await testNode.getChildren()
-        assert(childNodes !== undefined)
         assert.strictEqual(childNodes.length, 1)
         assert.strictEqual(childNodes[0] instanceof ConstructNode, true)
     })
