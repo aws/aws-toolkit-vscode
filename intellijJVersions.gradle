@@ -55,6 +55,7 @@ static def ideProfiles() {
                     plugins: [
                         "Pythonid:193.5233.12",
                         "yaml",
+                        "stats-collector", // Transitive, used by JavaScriptLanguage
                         "JavaScriptLanguage",
                         "JavaScriptDebugger",
                         "CSS",
