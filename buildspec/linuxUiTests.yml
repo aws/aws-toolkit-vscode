@@ -1,15 +1,16 @@
 version: 0.2
 
-cache:
-  paths:
-    - '/root/.gradle/caches/**/*'
-    - '/root/.gradle/wrapper/**/*'
+#cache:
+#  paths:
+#    - 'gradle-home/caches/**/*'
+#    - 'gradle-home/wrapper/**/*'
 
 env:
   variables:
     CI: true
     RECORD_UI: true
     LOCAL_ENV_RUN: true
+    GRADLE_USER_HOME: gradle-home
 
 phases:
   install:
@@ -30,12 +31,12 @@ phases:
       - icewm &
       - export SAM_CLI_EXEC=$(python -m site --user-base)/bin/sam
       - chmod +x gradlew
-      - ./gradlew buildPlugin --console plain
+      - ./gradlew buildPlugin --console plain --info
       - >
         if [ "$RECORD_UI" ]; then
-        ffmpeg -f x11grab -video_size 1920x1080 -i :99 -codec:v libx264 -r 12 /tmp/screen_recording.mp4 &
+        ffmpeg -loglevel warning -f x11grab -video_size 1920x1080 -i :99 -codec:v libx264 -r 12 /tmp/screen_recording.mp4 &
         fi
-      - ./gradlew guiTest coverageReport --info --console plain
+      - ./gradlew guiTest coverageReport --console plain --info
 
   post_build:
     commands:
