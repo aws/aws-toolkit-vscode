@@ -84,13 +84,12 @@ async function* detectCdkProjectsInFolder(
     context: DetectCdkProjectsContext,
     folder: string
 ): AsyncIterableIterator<vscode.Uri> {
-    for (const treeJsonPath of [path.join(folder, 'cdk.out', 'tree.json')]) {
-        try {
-            await context.access(treeJsonPath)
-            yield vscode.Uri.file(treeJsonPath)
-        } catch (err) {
-            // This is usually because the file doesn't exist, but could also be a permissions issue.
-            getLogger().debug(`Error detecting CDK Projects in ${folder}`, err as Error)
-        }
+    const treeJsonPath = path.join(folder, 'cdk.out', 'tree.json')
+    try {
+        await context.access(treeJsonPath)
+        yield vscode.Uri.file(treeJsonPath)
+    } catch (err) {
+        // This is usually because the file doesn't exist, but could also be a permissions issue.
+        getLogger().debug(`Error detecting CDK Projects in ${folder}`, err as Error)
     }
 }
