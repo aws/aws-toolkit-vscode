@@ -5,14 +5,13 @@
 
 'use strict'
 
-import * as fs from 'fs'
 import * as vscode from 'vscode'
 import { registerCommand } from '../../shared/telemetry/telemetryUtils'
 import { RefreshableAwsTreeProvider } from '../../shared/treeview/awsTreeProvider'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { CdkProject, detectCdkProjects } from './detectCdkProjects'
+import { CdkProject, getProject } from './cdkProject'
+import { detectCdkProjects } from './detectCdkProjects'
 import { ConstructNode } from './nodes/constructNode'
-import { ConstructTree } from './tree/types'
 
 /**
  * Provides data for the AWS CDK Explorer view
@@ -42,15 +41,12 @@ export class AwsCdkExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>,
         if (element) {
             return element.getChildren()
         } else {
-            const projects = await detectCdkProjects(vscode.workspace.workspaceFolders)
+            const projectLocations = await detectCdkProjects(vscode.workspace.workspaceFolders)
+            const projects = await Promise.all(projectLocations.map(getProject))
 
-            return projects.map(getConstructTree)
+            //TODO if there are no projects, return an empty / placeholder node
+            return projects.map(getConstructNode)
         }
-
-        // TODO temporary - what should be returned when no projects are found? placeholder? error? other?
-        vscode.window.showInformationMessage('No AWS CDK projects detected in workspace! Build your application')
-
-        return []
     }
 
     public refresh(node?: AWSTreeNodeBase) {
@@ -61,13 +57,10 @@ export class AwsCdkExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>,
 /**
  * Given the path to tree.json, read all its id's.
  */
-function getConstructTree(project: CdkProject): ConstructNode {
-    const cdkTree = JSON.parse(fs.readFileSync(project.treePath, 'utf-8')) as ConstructTree
-    const treeContent = cdkTree.tree
-
+function getConstructNode(project: CdkProject): ConstructNode {
     return new ConstructNode(
-        `${treeContent.id} (${project.cdkJsonPath})`,
+        `${project.metadata.tree.id} (${project.location.cdkJsonPath})`,
         vscode.TreeItemCollapsibleState.Collapsed,
-        treeContent
+        project.metadata.tree
     )
 }

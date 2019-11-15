@@ -7,22 +7,18 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { access, stat } from '../../shared/filesystem'
 import { readDirAsString } from '../../shared/filesystemUtilities'
-
-export interface CdkProject {
-    workspaceFolder: vscode.WorkspaceFolder
-    cdkJsonPath: string
-    treePath: string
-}
+import { getLogger } from '../../shared/logger'
+import { CdkProjectLocation } from './cdkProject'
 
 export async function detectCdkProjects(
     workspaceFolders: vscode.WorkspaceFolder[] | undefined = vscode.workspace.workspaceFolders
-): Promise<CdkProject[]> {
+): Promise<CdkProjectLocation[]> {
     if (!workspaceFolders) {
         return []
     }
 
     return (await Promise.all(workspaceFolders.map(detectCdkProjectsFromWorkspaceFolder))).reduce(
-        (accumulator: CdkProject[], current: CdkProject[]) => {
+        (accumulator: CdkProjectLocation[], current: CdkProjectLocation[]) => {
             accumulator.push(...current)
 
             return accumulator
@@ -31,7 +27,9 @@ export async function detectCdkProjects(
     )
 }
 
-async function detectCdkProjectsFromWorkspaceFolder(workspaceFolder: vscode.WorkspaceFolder): Promise<CdkProject[]> {
+async function detectCdkProjectsFromWorkspaceFolder(
+    workspaceFolder: vscode.WorkspaceFolder
+): Promise<CdkProjectLocation[]> {
     const result = []
 
     for await (const treeJson of detectLocalCdkProjects({ workspaceUris: [workspaceFolder.uri] })) {
@@ -92,7 +90,7 @@ async function* detectCdkProjectsInFolder(
             yield vscode.Uri.file(treeJsonPath)
         } catch (err) {
             // This is usually because the file doesn't exist, but could also be a permissions issue.
-            // TODO: Log at most verbose (i.e. 'silly') logging level.
+            getLogger().debug(`Error detecting CDK Projects in ${folder}`, err as Error)
         }
     }
 }
