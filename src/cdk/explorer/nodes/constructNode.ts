@@ -22,20 +22,6 @@ export class ConstructNode extends AWSTreeNodeBase {
         return this.construct.path
     }
 
-    get iconPath(): string | vscode.Uri | { light: string | vscode.Uri; dark: string | vscode.Uri } | vscode.ThemeIcon {
-        if (this.type) {
-            return {
-                light: cdk.iconPaths.light.cloudFormation,
-                dark: cdk.iconPaths.dark.cloudFormation
-            }
-        }
-
-        return {
-            light: cdk.iconPaths.light.cdk,
-            dark: cdk.iconPaths.dark.cdk
-        }
-    }
-
     public constructor(
         public readonly label: string,
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
@@ -45,6 +31,18 @@ export class ConstructNode extends AWSTreeNodeBase {
         this.contextValue = 'awsCdkNode'
 
         this.type = construct.attributes ? (construct.attributes[CfnResourceKeys.TYPE] as string) : ''
+        // TODO move icon logic to global utility
+        if (this.type) {
+            this.iconPath = {
+                dark: vscode.Uri.file(cdk.iconPaths.dark.cloudFormation),
+                light: vscode.Uri.file(cdk.iconPaths.light.cloudFormation)
+            }
+        } else {
+            this.iconPath = {
+                dark: vscode.Uri.file(cdk.iconPaths.dark.cdk),
+                light: vscode.Uri.file(cdk.iconPaths.light.cdk)
+            }
+        }
     }
 
     public async getChildren(): Promise<(ConstructNode)[]> {
