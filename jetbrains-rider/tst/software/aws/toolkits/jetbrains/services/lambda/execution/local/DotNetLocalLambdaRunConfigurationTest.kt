@@ -15,6 +15,8 @@ class DotNetLocalLambdaRunConfigurationTest : LambdaRunConfigurationTestBase() {
 
     override fun getSolutionDirectoryName(): String = "SamHelloWorldApp"
 
+    override val waitForCaches = true
+
     @Test
     fun testHandler_ValidHandler() {
         preWarmSamVersionCache(SamSettings.getInstance().executablePath)
