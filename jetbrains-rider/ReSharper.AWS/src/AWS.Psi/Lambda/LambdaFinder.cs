@@ -69,8 +69,7 @@ namespace AWS.Psi.Lambda
             return method != null &&
                    method.GetAccessRights() == AccessRights.PUBLIC &&
                    IsValidInstanceOrStaticMethod(method) &&
-                   HasRequiredParameters(method) &&
-                   HasRequiredReturnType(method);
+                   HasRequiredParameters(method);
         }
 
         private static bool IsValidInstanceOrStaticMethod(IMethod method)
@@ -311,26 +310,6 @@ namespace AWS.Psi.Lambda
         {
             var clrName = (type as IDeclaredType)?.GetClrName();
             return clrName != null && clrName.Equals(LambdaContextTypeName);
-        }
-
-        private static bool HasRequiredReturnType(IMethod method)
-        {
-            var returnType = method.ReturnType;
-
-            if (method.IsAsync)
-            {
-                if (returnType.IsVoid() || returnType.IsTask()) return true;
-
-                if (returnType.IsGenericTask())
-                {
-                    var underlyingType = returnType.GetGenericUnderlyingType(returnType.GetTypeElement());
-                    return (IsAmazonEventType(underlyingType) || IsCustomDataType(underlyingType)) && IsSerializerDefined(method);
-                }
-
-                return false;
-            }
-
-            return IsStreamType(returnType) || (IsAmazonEventType(returnType) || IsCustomDataType(returnType)) && IsSerializerDefined(method);
         }
     }
 }
