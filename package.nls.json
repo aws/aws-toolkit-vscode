@@ -50,6 +50,7 @@
     "AWS.explorerNode.addRegion.tooltip": "Click to add a region to view functions...",
     "AWS.explorerNode.lambda.noFunctions": "[No Functions found]",
     "AWS.explorerNode.cloudFormation.noFunctions": "[no functions in this CloudFormation]",
+    "AWS.explorerNode.cloudformation.noStacks": "[No Stacks found]",
     "AWS.explorerNode.cloudFormation.error": "Error loading CloudFormation resources",
     "AWS.explorerNode.container.noItems": "[no items]",
     "AWS.explorerNode.lambda.retry": "Unable to load Lambda Functions, click here to retry",

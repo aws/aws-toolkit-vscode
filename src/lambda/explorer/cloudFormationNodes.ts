@@ -16,13 +16,14 @@ import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErro
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
+import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { intersection, toArrayAsync, toMap, toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listCloudFormationStacks, listLambdaFunctions } from '../utils'
 import { LambdaFunctionNode } from './lambdaFunctionNode'
 
 export const CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION = 'awsCloudFormationFunctionNode'
 
-export class CloudFormationNode extends AWSTreeErrorHandlerNode {
+export class CloudFormationNode extends AWSTreeNodeBase {
     private readonly stackNodes: Map<string, CloudFormationStackNode>
 
     public constructor(private readonly regionCode: string) {
@@ -30,15 +31,24 @@ export class CloudFormationNode extends AWSTreeErrorHandlerNode {
         this.stackNodes = new Map<string, CloudFormationStackNode>()
     }
 
-    public async getChildren(): Promise<(CloudFormationStackNode | ErrorNode)[]> {
-        await this.handleErrorProneOperation(
-            async () => this.updateChildren(),
-            localize('AWS.explorerNode.cloudFormation.error', 'Error loading CloudFormation resources')
-        )
+    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+        return await makeChildrenNodes({
+            getChildNodes: async () => {
+                await this.updateChildren()
 
-        return !!this.errorNode
-            ? [this.errorNode]
-            : [...this.stackNodes.values()].sort((nodeA, nodeB) => nodeA.stackName.localeCompare(nodeB.stackName))
+                return [...this.stackNodes.values()]
+            },
+            getErrorNode: async (error: Error) =>
+                new ErrorNode(
+                    this,
+                    error,
+                    localize('AWS.explorerNode.cloudFormation.error', 'Error loading CloudFormation resources')
+                ),
+            getNoChildrenPlaceholderNode: async () =>
+                new PlaceholderNode(this, localize('AWS.explorerNode.cloudformation.noStacks', '[No Stacks found]')),
+            sort: (nodeA: CloudFormationStackNode, nodeB: CloudFormationStackNode) =>
+                nodeA.stackName.localeCompare(nodeB.stackName)
+        })
     }
 
     public async updateChildren(): Promise<void> {
