@@ -33,7 +33,7 @@ async function detectCdkProjectsFromWorkspaceFolder(
     const result = []
 
     for await (const treeJson of detectLocalCdkProjects({ workspaceUris: [workspaceFolder.uri] })) {
-        const cdkJsonPath = path.join(treeJson.fsPath, '../', 'cdk.json')
+        const cdkJsonPath = path.join(path.dirname(treeJson.path), '..', 'cdk.json')
         const project = { workspaceFolder: workspaceFolder, cdkJsonPath: cdkJsonPath, treePath: treeJson.fsPath }
         result.push(project)
     }
@@ -84,7 +84,7 @@ async function* detectCdkProjectsInFolder(
     context: DetectCdkProjectsContext,
     folder: string
 ): AsyncIterableIterator<vscode.Uri> {
-    for (const treeJsonPath of [path.join(folder, 'cdk.out/tree.json')]) {
+    for (const treeJsonPath of [path.join(folder, 'cdk.out', 'tree.json')]) {
         try {
             await context.access(treeJsonPath)
             yield vscode.Uri.file(treeJsonPath)
