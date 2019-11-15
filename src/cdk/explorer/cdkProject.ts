@@ -21,7 +21,6 @@ export interface CdkProjectLocation {
 export async function getProject(location: CdkProjectLocation): Promise<CdkProject> {
     // TODO add guardrails around loading data
     const constructTree = JSON.parse(fs.readFileSync(location.treePath, 'utf-8')) as ConstructTree
-    const project = { location: location, metadata: constructTree }
 
-    return Promise.resolve(project as CdkProject)
+    return { location: location, metadata: constructTree }
 }

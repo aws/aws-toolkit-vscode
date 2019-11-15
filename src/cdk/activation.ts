@@ -14,7 +14,7 @@ import { cdk } from './globals'
 export async function activate(activateArguments: { extensionContext: vscode.ExtensionContext }): Promise<void> {
     const explorer = new AwsCdkExplorer()
 
-    await initializeIconPaths(activateArguments.extensionContext)
+    initializeIconPaths(activateArguments.extensionContext)
 
     await registerCdkCommands(explorer)
     activateArguments.extensionContext.subscriptions.push(
@@ -22,7 +22,7 @@ export async function activate(activateArguments: { extensionContext: vscode.Ext
     )
 }
 
-async function initializeIconPaths(context: vscode.ExtensionContext) {
+function initializeIconPaths(context: vscode.ExtensionContext) {
     cdk.iconPaths.dark.cdk = context.asAbsolutePath('resources/dark/cdk/cdk.svg')
     cdk.iconPaths.light.cdk = context.asAbsolutePath('resources/light/cdk/cdk.svg')
 
