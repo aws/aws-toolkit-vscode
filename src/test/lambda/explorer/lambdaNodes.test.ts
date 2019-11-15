@@ -10,7 +10,10 @@ import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { CONTEXT_VALUE_LAMBDA_FUNCTION, LambdaNode } from '../../../lambda/explorer/lambdaNodes'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import { ext } from '../../../shared/extensionGlobals'
-import { assertNodeListOnlyContainsErrorNode } from './explorerNodeAssertions'
+import {
+    assertNodeListOnlyContainsErrorNode,
+    assertNodeListOnlyContainsPlaceholderNode
+} from './explorerNodeAssertions'
 
 // TODO : Consolidate all asyncGenerator calls into a shared utility method
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
@@ -42,15 +45,13 @@ describe('LambdaNode', () => {
         sandbox.restore()
     })
 
-    // TODO : Lambda Nodes do not show a placeholder when no Functions could be found
-    // TODO : https://github.com/aws/aws-toolkit-vscode/issues/812
-    // it('returns placeholder node if no children are present', async () => {
-    //     lambdaFunctionNames = []
+    it('returns placeholder node if no children are present', async () => {
+        lambdaFunctionNames = []
 
-    //     const childNodes = await testNode.getChildren()
+        const childNodes = await testNode.getChildren()
 
-    //     assertNodeListOnlyContainsPlaceholderNode(childNodes)
-    // })
+        assertNodeListOnlyContainsPlaceholderNode(childNodes)
+    })
 
     it('has LambdaFunctionNode child nodes', async () => {
         const childNodes = await testNode.getChildren()

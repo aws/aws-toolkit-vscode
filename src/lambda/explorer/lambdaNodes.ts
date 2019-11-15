@@ -10,9 +10,10 @@ import { Lambda } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
-import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
+import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
+import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listLambdaFunctions } from '../utils'
 import { LambdaFunctionNode } from './lambdaFunctionNode'
@@ -23,7 +24,7 @@ export const CONTEXT_VALUE_LAMBDA_FUNCTION = 'awsRegionFunctionNode'
  * An AWS Explorer node representing the Lambda Service.
  * Contains Lambda Functions for a specific region as child nodes.
  */
-export class LambdaNode extends AWSTreeErrorHandlerNode {
+export class LambdaNode extends AWSTreeNodeBase {
     private readonly functionNodes: Map<string, LambdaFunctionNode>
 
     public constructor(private readonly regionCode: string) {
@@ -31,17 +32,20 @@ export class LambdaNode extends AWSTreeErrorHandlerNode {
         this.functionNodes = new Map<string, LambdaFunctionNode>()
     }
 
-    public async getChildren(): Promise<(LambdaFunctionNode | ErrorNode)[]> {
-        await this.handleErrorProneOperation(
-            async () => this.updateChildren(),
-            localize('AWS.explorerNode.lambda.error', 'Error loading Lambda resources')
-        )
+    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+        return await makeChildrenNodes({
+            getChildNodes: async () => {
+                await this.updateChildren()
 
-        return !!this.errorNode
-            ? [this.errorNode]
-            : [...this.functionNodes.values()].sort((nodeA, nodeB) =>
-                  nodeA.functionName.localeCompare(nodeB.functionName)
-              )
+                return [...this.functionNodes.values()]
+            },
+            getErrorNode: async (error: Error) =>
+                new ErrorNode(this, error, localize('AWS.explorerNode.lambda.error', 'Error loading Lambda resources')),
+            getNoChildrenPlaceholderNode: async () =>
+                new PlaceholderNode(this, localize('AWS.explorerNode.lambda.noFunctions', '[No Functions found]')),
+            sort: (nodeA: LambdaFunctionNode, nodeB: LambdaFunctionNode) =>
+                nodeA.functionName.localeCompare(nodeB.functionName)
+        })
     }
 
     public async updateChildren(): Promise<void> {
