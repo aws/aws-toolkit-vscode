@@ -17,9 +17,11 @@ export async function activate(activateArguments: { extensionContext: vscode.Ext
     initializeIconPaths(activateArguments.extensionContext)
 
     await registerCdkCommands(explorer)
-    activateArguments.extensionContext.subscriptions.push(
-        vscode.window.registerTreeDataProvider(explorer.viewProviderId, explorer)
-    )
+    const view = vscode.window.createTreeView(explorer.viewProviderId, {
+        treeDataProvider: explorer,
+        showCollapseAll: true
+    })
+    activateArguments.extensionContext.subscriptions.push(view)
 }
 
 function initializeIconPaths(context: vscode.ExtensionContext) {
