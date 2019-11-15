@@ -8,9 +8,17 @@ import * as vscode from 'vscode'
 import { ConstructNode } from '../../cdk/explorer/nodes/constructNode'
 import { ConstructTreeEntity } from '../../cdk/explorer/tree/types'
 import { cdk } from '../../cdk/globals'
-import { IconPath } from '../shared/utilities/iconPathUtils'
+import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../cdk/utilities/iconPathUtils'
 
 describe('ConstructNode', () => {
+    before(async () => {
+        setupTestIconPaths()
+    })
+
+    after(async () => {
+        clearTestIconPaths()
+    })
+
     const label = 'MyConstruct'
     const path = 'Path/To/MyConstruct'
 
@@ -23,11 +31,19 @@ describe('ConstructNode', () => {
     })
 
     it('initializes icon paths for CloudFormation resources', async () => {
-        const testNode = generateTestNode(label, path)
+        const treeEntity: ConstructTreeEntity = {
+            id: label,
+            path: path,
+            children: generateTestChildResource(),
+            attributes: generateAttributes()
+        }
+
+        const testNode = new ConstructNode(label, vscode.TreeItemCollapsibleState.Collapsed, treeEntity)
+
         const iconPath = testNode.iconPath as IconPath
 
-        assert.strictEqual(iconPath.dark, cdk.iconPaths.dark.cloudFormation, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light, cdk.iconPaths.light.cloudFormation, 'Unexpected light icon path')
+        assert.strictEqual(iconPath.dark.path, cdk.iconPaths.dark.cloudFormation, 'Unexpected dark icon path')
+        assert.strictEqual(iconPath.light.path, cdk.iconPaths.light.cloudFormation, 'Unexpected light icon path')
     })
 
     it('initializes icon paths for CDK constructs', async () => {
@@ -38,8 +54,8 @@ describe('ConstructNode', () => {
         )
         const iconPath = testNode.iconPath as IconPath
 
-        assert.strictEqual(iconPath.dark, cdk.iconPaths.dark.cdk, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light, cdk.iconPaths.light.cdk, 'Unexpected light icon path')
+        assert.strictEqual(iconPath.dark.path, cdk.iconPaths.dark.cdk, 'Unexpected dark icon path')
+        assert.strictEqual(iconPath.light.path, cdk.iconPaths.light.cdk, 'Unexpected light icon path')
     })
 
     it('returns no child nodes if construct does not have any', async () => {
