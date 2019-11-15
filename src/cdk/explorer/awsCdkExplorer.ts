@@ -18,12 +18,14 @@ import { ConstructNode } from './nodes/constructNode'
  */
 export class AwsCdkExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
     public viewProviderId: string = 'aws.cdk.explorer'
-    public readonly onDidChangeTreeData: vscode.Event<AWSTreeNodeBase | undefined>
-    private readonly _onDidChangeTreeData: vscode.EventEmitter<AWSTreeNodeBase | undefined>
+    private readonly onDidChangeTreeDataEventEmitter: vscode.EventEmitter<AWSTreeNodeBase | undefined>
+
+    public get onDidChangeTreeData(): vscode.Event<AWSTreeNodeBase | undefined> {
+        return this.onDidChangeTreeDataEventEmitter.event
+    }
 
     public constructor() {
-        this._onDidChangeTreeData = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
-        this.onDidChangeTreeData = this._onDidChangeTreeData.event
+        this.onDidChangeTreeDataEventEmitter = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
     }
 
     public initialize(context: Pick<vscode.ExtensionContext, 'asAbsolutePath' | 'globalState'>): void {
@@ -50,7 +52,7 @@ export class AwsCdkExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>,
     }
 
     public refresh(node?: AWSTreeNodeBase) {
-        this._onDidChangeTreeData.fire()
+        this.onDidChangeTreeDataEventEmitter.fire()
     }
 }
 
