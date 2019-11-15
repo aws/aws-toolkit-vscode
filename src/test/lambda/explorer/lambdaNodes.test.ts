@@ -5,119 +5,110 @@
 
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
+import * as sinon from 'sinon'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { CONTEXT_VALUE_LAMBDA_FUNCTION, LambdaNode } from '../../../lambda/explorer/lambdaNodes'
-import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
-import { EcsClient } from '../../../shared/clients/ecsClient'
-import { LambdaClient } from '../../../shared/clients/lambdaClient'
-import { StsClient } from '../../../shared/clients/stsClient'
+import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import { ext } from '../../../shared/extensionGlobals'
-import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
-import { MockLambdaClient } from '../../shared/clients/mockClients'
+import { assertNodeListOnlyContainsErrorNode } from './explorerNodeAssertions'
 
 // TODO : Consolidate all asyncGenerator calls into a shared utility method
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
 }
 
+const FAKE_REGION_CODE = 'someregioncode'
+const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
+const SORTED_TEXT = ['aardvark', 'Antelope', 'elephant', 'zebra']
+
 describe('LambdaNode', () => {
-    class FunctionNamesMockLambdaClient extends MockLambdaClient {
-        public constructor(
-            public readonly functionNames: string[] = [],
-            listFunctions: () => AsyncIterableIterator<Lambda.FunctionConfiguration> = () =>
-                asyncGenerator<Lambda.FunctionConfiguration>(
-                    functionNames.map<Lambda.FunctionConfiguration>(name => {
+    let sandbox: sinon.SinonSandbox
+    let testNode: LambdaNode
+
+    // Mocked Lambda Client returns Lambda Functions for anything listed in lambdaFunctionNames
+    let lambdaFunctionNames: string[]
+
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+
+        lambdaFunctionNames = ['function1', 'function2']
+
+        initializeClientBuilders()
+
+        testNode = new LambdaNode(FAKE_REGION_CODE)
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
+    // TODO : Lambda Nodes do not show a placeholder when no Functions could be found
+    // TODO : https://github.com/aws/aws-toolkit-vscode/issues/812
+    // it('returns placeholder node if no children are present', async () => {
+    //     lambdaFunctionNames = []
+
+    //     const childNodes = await testNode.getChildren()
+
+    //     assertNodeListOnlyContainsPlaceholderNode(childNodes)
+    // })
+
+    it('has LambdaFunctionNode child nodes', async () => {
+        const childNodes = await testNode.getChildren()
+
+        assert.strictEqual(childNodes.length, lambdaFunctionNames.length, 'Unexpected child count')
+
+        childNodes.forEach(node =>
+            assert.ok(node instanceof LambdaFunctionNode, 'Expected child node to be LambdaFunctionNode')
+        )
+    })
+
+    it('has child nodes with Lambda Function contextValue', async () => {
+        const childNodes = await testNode.getChildren()
+
+        childNodes.forEach(node =>
+            assert.strictEqual(
+                node.contextValue,
+                CONTEXT_VALUE_LAMBDA_FUNCTION,
+                'expected the node to have a CloudFormation contextValue'
+            )
+        )
+    })
+
+    it('sorts child nodes', async () => {
+        lambdaFunctionNames = UNSORTED_TEXT
+
+        const childNodes = await testNode.getChildren()
+
+        const actualChildOrder = childNodes.map(node => node.label)
+        assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
+    })
+
+    it('has an error node for a child if an error happens during loading', async () => {
+        sandbox.stub(testNode, 'updateChildren').callsFake(() => {
+            throw new Error('Update Children error!')
+        })
+
+        const childNodes = await testNode.getChildren()
+        assertNodeListOnlyContainsErrorNode(childNodes)
+    })
+
+    function initializeClientBuilders() {
+        const lambdaClient = {
+            listFunctions: sandbox.stub().callsFake(() => {
+                return asyncGenerator<Lambda.FunctionConfiguration>(
+                    lambdaFunctionNames.map<Lambda.FunctionConfiguration>(name => {
                         return {
                             FunctionName: name
                         }
                     })
                 )
-        ) {
-            super({
-                listFunctions
             })
         }
+
+        const clientBuilder = {
+            createLambdaClient: sandbox.stub().returns(lambdaClient)
+        }
+
+        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
     }
-
-    class ThrowErrorLambdaNode extends LambdaNode {
-        public constructor() {
-            super('someregioncode')
-        }
-
-        public async updateChildren(): Promise<void> {
-            throw new Error('Hello there!')
-        }
-    }
-
-    it('Sorts Lambda Function Nodes', async () => {
-        const inputFunctionNames: string[] = ['zebra', 'Antelope', 'aardvark', 'elephant']
-
-        // TODO: Move to MockToolkitClientBuilder
-        ext.toolkitClientBuilder = {
-            createCloudFormationClient(regionCode: string): CloudFormationClient {
-                throw new Error('cloudformation client unused')
-            },
-
-            createEcsClient(regionCode: string): EcsClient {
-                throw new Error('ecs client unused')
-            },
-
-            createLambdaClient(regionCode: string): LambdaClient {
-                return new FunctionNamesMockLambdaClient(inputFunctionNames)
-            },
-
-            createStsClient(regionCode: string): StsClient {
-                throw new Error('sts client unused')
-            }
-        }
-
-        const lambdaNode = new LambdaNode('someregioncode')
-
-        const children = await lambdaNode.getChildren()
-
-        assert.ok(children, 'Expected to get Lambda function nodes as children')
-        assert.strictEqual(
-            inputFunctionNames.length,
-            children.length,
-            `Expected ${inputFunctionNames.length} Function children, got ${children.length}`
-        )
-
-        function assertChildNodeFunctionName(
-            actualChildNode: LambdaFunctionNode | ErrorNode,
-            expectedNodeText: string
-        ) {
-            assert.strictEqual(
-                actualChildNode.contextValue,
-                CONTEXT_VALUE_LAMBDA_FUNCTION,
-                'Expected child node to be marked as a Lambda Function'
-            )
-
-            assert.strictEqual(
-                'functionName' in actualChildNode,
-                true,
-                'Child node expected to contain functionName property'
-            )
-
-            const node = actualChildNode as LambdaFunctionNode
-            assert.strictEqual(
-                node.functionName,
-                expectedNodeText,
-                `Expected child node to have function name ${expectedNodeText} but got ${node.functionName}`
-            )
-        }
-
-        assertChildNodeFunctionName(children[0], 'aardvark')
-        assertChildNodeFunctionName(children[1], 'Antelope')
-        assertChildNodeFunctionName(children[2], 'elephant')
-        assertChildNodeFunctionName(children[3], 'zebra')
-    })
-
-    it('handles error', async () => {
-        const testNode = new ThrowErrorLambdaNode()
-
-        const childNodes = await testNode.getChildren()
-        assert(childNodes !== undefined)
-        assert.strictEqual(childNodes.length, 1)
-        assert.strictEqual(childNodes[0] instanceof ErrorNode, true)
-    })
 })

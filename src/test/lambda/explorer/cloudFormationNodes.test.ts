@@ -6,30 +6,41 @@
 import * as assert from 'assert'
 import { CloudFormation, Lambda } from 'aws-sdk'
 import * as os from 'os'
+import * as sinon from 'sinon'
 import {
     CloudFormationNode,
     CloudFormationStackNode,
     CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION
 } from '../../../lambda/explorer/cloudFormationNodes'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
-import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
-import { EcsClient } from '../../../shared/clients/ecsClient'
-import { LambdaClient } from '../../../shared/clients/lambdaClient'
-import { StsClient } from '../../../shared/clients/stsClient'
+import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import { ext } from '../../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
-import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { MockCloudFormationClient } from '../../shared/clients/mockClients'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
+import {
+    assertNodeListOnlyContainsErrorNode,
+    assertNodeListOnlyContainsPlaceholderNode
+} from './explorerNodeAssertions'
 
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
 }
 
+const FAKE_REGION_CODE = 'someregioncode'
+const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
+const SORTED_TEXT = ['aardvark', 'Antelope', 'elephant', 'zebra']
+
 describe('CloudFormationStackNode', () => {
     let fakeStackSummary: CloudFormation.StackSummary
+    let sandbox: sinon.SinonSandbox
+    let testNode: CloudFormationStackNode
+
+    // Mocked Lambda Client returns Lambda Functions for anything listed in lambdaFunctionNames
+    let lambdaFunctionNames: string[]
+
+    // Mocked CloudFormation Client returns Lambda Function Stack Resources for anything listed in cloudFormationStacklambdaFunctionNames
+    let cloudFormationStacklambdaFunctionNames: string[]
 
     before(async () => {
         setupTestIconPaths()
@@ -41,21 +52,31 @@ describe('CloudFormationStackNode', () => {
         }
     })
 
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+
+        lambdaFunctionNames = ['function1', 'function2']
+        cloudFormationStacklambdaFunctionNames = ['function1', 'function2']
+
+        initializeClientBuilders()
+
+        testNode = generateTestNode()
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
     after(async () => {
         clearTestIconPaths()
     })
 
-    // Validates we tagged the node correctly.
     it('initializes name and tooltip', async () => {
-        const testNode: CloudFormationStackNode = generateTestNode()
-
         assert.strictEqual(testNode.label, `${fakeStackSummary.StackName} [${fakeStackSummary.StackStatus}]`)
         assert.strictEqual(testNode.tooltip, `${fakeStackSummary.StackName}${os.EOL}${fakeStackSummary.StackId}`)
     })
 
     it('initializes icon', async () => {
-        const testNode: CloudFormationStackNode = generateTestNode()
-
         const iconPath = testNode.iconPath as IconPath
 
         assert.strictEqual(iconPath.dark.path, ext.iconPaths.dark.cloudFormation, 'Unexpected dark icon path')
@@ -63,164 +84,195 @@ describe('CloudFormationStackNode', () => {
     })
 
     it('returns placeholder node if no children are present', async () => {
-        const cloudFormationClient = ({
-            regionCode: 'code',
-
-            async describeStackResources(name: string): Promise<CloudFormation.DescribeStackResourcesOutput> {
-                return {
-                    StackResources: []
-                }
-            }
-        } as any) as CloudFormationClient
-
-        const lambdaClient = ({
-            regionCode: 'code',
-
-            async *listFunctions(): AsyncIterableIterator<Lambda.FunctionConfiguration> {
-                yield* []
-            }
-        } as any) as LambdaClient
-
-        // TODO: Move this to MockToolkitClientBuilder
-        ext.toolkitClientBuilder = {
-            createCloudFormationClient(regionCode: string): CloudFormationClient {
-                return cloudFormationClient
-            },
-
-            createEcsClient(regionCode: string): EcsClient {
-                throw new Error('ecs client unused')
-            },
-
-            createLambdaClient(regionCode: string): LambdaClient {
-                return lambdaClient
-            },
-
-            createStsClient(regionCode: string): StsClient {
-                throw new Error('sts client unused')
-            }
-        }
-        const testNode = generateTestNode()
+        lambdaFunctionNames = []
+        cloudFormationStacklambdaFunctionNames = []
 
         const childNodes = await testNode.getChildren()
-        assert(childNodes !== undefined)
-        assert.strictEqual(childNodes.length, 1)
-        assert.strictEqual(childNodes[0] instanceof PlaceholderNode, true)
+
+        assertNodeListOnlyContainsPlaceholderNode(childNodes)
+    })
+
+    it('has LambdaFunctionNode child nodes', async () => {
+        const childNodes = await testNode.getChildren()
+
+        assert.strictEqual(childNodes.length, cloudFormationStacklambdaFunctionNames.length, 'Unexpected child count')
+
+        childNodes.forEach(node =>
+            assert.ok(node instanceof LambdaFunctionNode, 'Expected child node to be LambdaFunctionNode')
+        )
+    })
+
+    it('has child nodes with CloudFormation contextValue', async () => {
+        const childNodes = await testNode.getChildren()
+
+        childNodes.forEach(node =>
+            assert.strictEqual(
+                node.contextValue,
+                CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION,
+                'expected the node to have a CloudFormation contextValue'
+            )
+        )
     })
 
     it('only includes functions which are in a CloudFormation stack', async () => {
-        class TestMockCloudFormationClient implements CloudFormationClient {
-            private readonly resources: CloudFormation.StackResource[] = []
-
-            public constructor(public readonly regionCode: string) {}
-
-            public async deleteStack(name: string): Promise<void> {}
-
-            public async *listStacks(statusFilter?: string[]): AsyncIterableIterator<CloudFormation.StackSummary> {
-                yield* []
-            }
-
-            public async describeStackResources(name: string): Promise<CloudFormation.DescribeStackResourcesOutput> {
-                return {
-                    StackResources: this.resources
-                }
-            }
-
-            public addLambdaResource(name: string): void {
-                this.resources.push(({
-                    ResourceType: 'Lambda::Function',
-                    PhysicalResourceId: name
-                } as any) as CloudFormation.StackResource)
-            }
-        }
-
-        class MockLambdaClient implements LambdaClient {
-            private readonly lambdas: Lambda.FunctionConfiguration[] = []
-
-            public constructor(public readonly regionCode: string) {}
-
-            public async deleteFunction(name: string): Promise<void> {}
-
-            public async invoke(name: string, payload?: Lambda._Blob): Promise<Lambda.InvocationResponse> {
-                return ({} as any) as Lambda.InvocationResponse
-            }
-
-            public async *listFunctions(): AsyncIterableIterator<Lambda.FunctionConfiguration> {
-                yield* this.lambdas
-            }
-
-            public addLambdaResource(name: string): void {
-                this.lambdas.push(({
-                    FunctionName: name
-                } as any) as Lambda.FunctionConfiguration)
-            }
-        }
-
-        const lambda1Name = 'lambda1Name'
-        const lambda2Name = 'lambda2Name'
-        const lambda3Name = 'lambda3Name'
-
-        const cloudFormationClient = new TestMockCloudFormationClient('code')
-        cloudFormationClient.addLambdaResource(lambda1Name)
-        cloudFormationClient.addLambdaResource(lambda3Name)
-
-        const lambdaClient = new MockLambdaClient('code')
-        lambdaClient.addLambdaResource(lambda1Name)
-        lambdaClient.addLambdaResource(lambda2Name)
-        lambdaClient.addLambdaResource(lambda3Name)
-
-        // TODO: Move to MockToolkitClientBuilder
-        ext.toolkitClientBuilder = {
-            createCloudFormationClient(regionCode: string): CloudFormationClient {
-                return cloudFormationClient
-            },
-
-            createEcsClient(regionCode: string): EcsClient {
-                throw new Error('ecs client unused')
-            },
-
-            createLambdaClient(regionCode: string): LambdaClient {
-                return lambdaClient
-            },
-
-            createStsClient(regionCode: string): StsClient {
-                throw new Error('sts client unused')
-            }
-        }
-
-        const testNode: CloudFormationStackNode = generateTestNode()
+        lambdaFunctionNames = ['lambda1', 'lambda2', 'lambda3']
+        cloudFormationStacklambdaFunctionNames = ['lambda1', 'lambda3']
 
         const childNodes = await testNode.getChildren()
-        assert.ok(childNodes)
-        assert.strictEqual(childNodes.length, 2)
+        assert.strictEqual(
+            childNodes.length,
+            cloudFormationStacklambdaFunctionNames.length,
+            'Unexpected child node count'
+        )
 
-        assertCloudFormationLambdaFunctionNode(childNodes[0], lambda1Name)
-        assertCloudFormationLambdaFunctionNode(childNodes[1], lambda3Name)
+        assert.deepStrictEqual(
+            new Set<string>(childNodes.map(node => node.label!)),
+            new Set<string>(cloudFormationStacklambdaFunctionNames),
+            'Unexpected child sort order'
+        )
+    })
+
+    // TODO : CloudFormation Stack Nodes don't sort their child nodes
+    // TODO : https://github.com/aws/aws-toolkit-vscode/issues/813
+    // it('sorts child nodes', async () => {
+    //     lambdaFunctionNames = UNSORTED_TEXT
+    //     cloudFormationStacklambdaFunctionNames = UNSORTED_TEXT
+
+    //     const childNodes = await testNode.getChildren()
+
+    //     const actualChildOrder = childNodes.map(node => node.label)
+    //     assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
+    // })
+
+    it('has an error node for a child if an error happens during loading', async () => {
+        const lambdaClient = {
+            listFunctions: sandbox.stub().callsFake(() => {
+                throw new Error('loading failure')
+            })
+        }
+
+        const cloudFormationClient = {
+            describeStackResources: sandbox.stub().callsFake(() => {
+                throw new Error('loading failure')
+            })
+        }
+
+        const clientBuilder = {
+            createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
+            createLambdaClient: sandbox.stub().returns(lambdaClient)
+        }
+
+        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+
+        const childNodes = await testNode.getChildren()
+        assertNodeListOnlyContainsErrorNode(childNodes)
     })
 
     function generateTestNode(): CloudFormationStackNode {
         const parentNode = new TestAWSTreeNode('test node')
 
-        return new CloudFormationStackNode(parentNode, 'someregioncode', fakeStackSummary)
+        return new CloudFormationStackNode(parentNode, FAKE_REGION_CODE, fakeStackSummary)
     }
 
-    function assertCloudFormationLambdaFunctionNode(actualNode: AWSTreeNodeBase, expectedLabel: string) {
-        assert.ok(actualNode instanceof LambdaFunctionNode)
-        assert.strictEqual(actualNode.label, expectedLabel, 'unexpected label for Lambda Function Node')
-        assert.strictEqual(
-            actualNode.contextValue,
-            CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION,
-            'expected the node to have a CloudFormation contextValue'
-        )
+    function initializeClientBuilders() {
+        const lambdaClient = {
+            listFunctions: sandbox.stub().callsFake(() => {
+                return asyncGenerator<Lambda.FunctionConfiguration>(
+                    lambdaFunctionNames.map<Lambda.FunctionConfiguration>(name => {
+                        return {
+                            FunctionName: name
+                        }
+                    })
+                )
+            })
+        }
+
+        const cloudFormationClient = {
+            describeStackResources: sandbox.stub().callsFake(() => {
+                return {
+                    StackResources: cloudFormationStacklambdaFunctionNames.map(name => {
+                        return {
+                            ResourceType: 'Lambda::Function',
+                            PhysicalResourceId: name
+                        }
+                    })
+                }
+            })
+        }
+
+        const clientBuilder = {
+            createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
+            createLambdaClient: sandbox.stub().returns(lambdaClient)
+        }
+
+        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
     }
 })
 
 describe('CloudFormationNode', () => {
-    class StackNamesMockCloudFormationClient extends MockCloudFormationClient {
-        public constructor(
-            public readonly stackNames: string[] = [],
-            listStacks: (statusFilter?: string[]) => AsyncIterableIterator<CloudFormation.StackSummary> = (
-                statusFilter?: string[]
-            ) => {
+    let sandbox: sinon.SinonSandbox
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
+    it('has CloudFormationStackNode child nodes', async () => {
+        const inputStackNames: string[] = ['stack123']
+
+        const cloudFormationClient = makeCloudFormationClient(inputStackNames)
+
+        const clientBuilder = {
+            createCloudFormationClient: sandbox.stub().returns(cloudFormationClient)
+        }
+
+        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+
+        const cloudFormationNode = new CloudFormationNode(FAKE_REGION_CODE)
+
+        const children = await cloudFormationNode.getChildren()
+
+        children.forEach(node =>
+            assert.ok(node instanceof CloudFormationStackNode, 'Expected child node to be CloudFormationStackNode')
+        )
+    })
+
+    it('has sorted child nodes', async () => {
+        const inputStackNames = UNSORTED_TEXT
+        const expectedChildOrder = SORTED_TEXT
+
+        const cloudFormationClient = makeCloudFormationClient(inputStackNames)
+
+        const clientBuilder = {
+            createCloudFormationClient: sandbox.stub().returns(cloudFormationClient)
+        }
+
+        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+
+        const cloudFormationNode = new CloudFormationNode(FAKE_REGION_CODE)
+
+        const children = await cloudFormationNode.getChildren()
+
+        const actualChildOrder = children.map(node => (node as CloudFormationStackNode).stackName)
+
+        assert.deepStrictEqual(actualChildOrder, expectedChildOrder, 'Unexpected child sort order')
+    })
+
+    it('handles error', async () => {
+        const testNode = new CloudFormationNode(FAKE_REGION_CODE)
+        sandbox.stub(testNode, 'updateChildren').callsFake(() => {
+            throw new Error('Update Children error!')
+        })
+
+        const childNodes: AWSTreeNodeBase[] = await testNode.getChildren()
+        assertNodeListOnlyContainsErrorNode(childNodes)
+    })
+
+    function makeCloudFormationClient(stackNames: string[]): any {
+        return {
+            listStacks: sandbox.stub().callsFake(() => {
                 return asyncGenerator<CloudFormation.StackSummary>(
                     stackNames.map<CloudFormation.StackSummary>(name => {
                         return {
@@ -231,85 +283,7 @@ describe('CloudFormationNode', () => {
                         }
                     })
                 )
-            }
-        ) {
-            super(undefined, undefined, listStacks)
+            })
         }
     }
-
-    it('Sorts Stacks', async () => {
-        const inputStackNames: string[] = ['zebra', 'Antelope', 'aardvark', 'elephant']
-
-        // TODO: Move to MockToolkitClientBuilder
-        ext.toolkitClientBuilder = {
-            createCloudFormationClient(regionCode: string): CloudFormationClient {
-                return new StackNamesMockCloudFormationClient(inputStackNames)
-            },
-
-            createEcsClient(regionCode: string): EcsClient {
-                throw new Error('ecs client unused')
-            },
-
-            createLambdaClient(regionCode: string): LambdaClient {
-                throw new Error('lambda client unused')
-            },
-
-            createStsClient(regionCode: string): StsClient {
-                throw new Error('sts client unused')
-            }
-        }
-
-        const cloudFormationNode = new CloudFormationNode('someregioncode')
-
-        const children = await cloudFormationNode.getChildren()
-
-        assert.ok(children, 'Expected to get CloudFormation node children')
-        assert.strictEqual(
-            inputStackNames.length,
-            children.length,
-            `Expected ${inputStackNames.length} CloudFormation children, got ${children.length}`
-        )
-
-        function assertChildNodeStackName(
-            actualChildNode: CloudFormationStackNode | ErrorNode,
-            expectedNodeText: string
-        ) {
-            assert.strictEqual(
-                actualChildNode instanceof CloudFormationStackNode,
-                true,
-                'Child node was not a Stack Node'
-            )
-
-            const node = actualChildNode as CloudFormationStackNode
-            assert.strictEqual(
-                node.stackName,
-                expectedNodeText,
-                `Expected child node to have stack ${expectedNodeText} but got ${node.stackName}`
-            )
-        }
-
-        assertChildNodeStackName(children[0], 'aardvark')
-        assertChildNodeStackName(children[1], 'Antelope')
-        assertChildNodeStackName(children[2], 'elephant')
-        assertChildNodeStackName(children[3], 'zebra')
-    })
-
-    it('handles error', async () => {
-        class ThrowErrorCloudFormationNode extends CloudFormationNode {
-            public constructor() {
-                super('someregioncode')
-            }
-
-            public async updateChildren(): Promise<void> {
-                throw new Error('Hello there!')
-            }
-        }
-
-        const testNode: ThrowErrorCloudFormationNode = new ThrowErrorCloudFormationNode()
-
-        const childNodes = await testNode.getChildren()
-        assert(childNodes !== undefined)
-        assert.strictEqual(childNodes.length, 1)
-        assert.strictEqual(childNodes[0] instanceof ErrorNode, true)
-    })
 })
