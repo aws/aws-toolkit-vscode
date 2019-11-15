@@ -6,7 +6,6 @@
 'use strict'
 
 import * as vscode from 'vscode'
-import { registerCommand } from '../../shared/telemetry/telemetryUtils'
 import { RefreshableAwsTreeProvider } from '../../shared/treeview/awsTreeProvider'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { CdkProject, getProject } from './cdkProject'
@@ -26,13 +25,6 @@ export class AwsCdkExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>,
 
     public constructor() {
         this.onDidChangeTreeDataEventEmitter = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
-    }
-
-    public initialize(context: Pick<vscode.ExtensionContext, 'asAbsolutePath' | 'globalState'>): void {
-        registerCommand({
-            command: 'aws.refreshCdkExplorer',
-            callback: async () => this.refresh()
-        })
     }
 
     public getTreeItem(element: AWSTreeNodeBase): vscode.TreeItem {
