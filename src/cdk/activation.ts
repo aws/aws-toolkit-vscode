@@ -24,7 +24,7 @@ export async function activate(activateArguments: { extensionContext: vscode.Ext
     activateArguments.extensionContext.subscriptions.push(view)
 }
 
-async function initializeIconPaths(context: vscode.ExtensionContext) {
+function initializeIconPaths(context: vscode.ExtensionContext) {
     cdk.iconPaths.dark.cdk = context.asAbsolutePath('resources/dark/cdk/cdk.svg')
     cdk.iconPaths.light.cdk = context.asAbsolutePath('resources/light/cdk/cdk.svg')
 
