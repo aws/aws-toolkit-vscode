@@ -78,7 +78,6 @@ describe('ConstructNode', () => {
         const testNode = new ConstructNode(label, vscode.TreeItemCollapsibleState.Collapsed, treeEntity)
 
         const childNodes = await testNode.getChildren()
-        assert(childNodes !== undefined)
         assert.strictEqual(childNodes.length, 1)
         assert.strictEqual(childNodes[0].collapsibleState, vscode.TreeItemCollapsibleState.None)
     })
@@ -97,7 +96,6 @@ describe('ConstructNode', () => {
         const testNode = new ConstructNode(label, vscode.TreeItemCollapsibleState.Collapsed, treeEntity)
 
         const childNodes = await testNode.getChildren()
-        assert(childNodes !== undefined)
         assert.strictEqual(childNodes.length, 1)
         assert.strictEqual(childNodes[0].collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
     })
