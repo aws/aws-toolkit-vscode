@@ -260,7 +260,23 @@ describe('CloudFormationNode', () => {
         assert.deepStrictEqual(actualChildOrder, expectedChildOrder, 'Unexpected child sort order')
     })
 
-    it('handles error', async () => {
+    it('returns placeholder node if no children are present', async () => {
+        const cloudFormationClient = makeCloudFormationClient([])
+
+        const clientBuilder = {
+            createCloudFormationClient: sandbox.stub().returns(cloudFormationClient)
+        }
+
+        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+
+        const cloudFormationNode = new CloudFormationNode(FAKE_REGION_CODE)
+
+        const children = await cloudFormationNode.getChildren()
+
+        assertNodeListOnlyContainsPlaceholderNode(children)
+    })
+
+    it('has an error node for a child if an error happens during loading', async () => {
         const testNode = new CloudFormationNode(FAKE_REGION_CODE)
         sandbox.stub(testNode, 'updateChildren').callsFake(() => {
             throw new Error('Update Children error!')
