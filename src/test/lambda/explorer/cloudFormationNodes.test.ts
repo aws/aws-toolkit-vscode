@@ -132,17 +132,15 @@ describe('CloudFormationStackNode', () => {
         )
     })
 
-    // TODO : CloudFormation Stack Nodes don't sort their child nodes
-    // TODO : https://github.com/aws/aws-toolkit-vscode/issues/813
-    // it('sorts child nodes', async () => {
-    //     lambdaFunctionNames = UNSORTED_TEXT
-    //     cloudFormationStacklambdaFunctionNames = UNSORTED_TEXT
+    it('sorts child nodes', async () => {
+        lambdaFunctionNames = UNSORTED_TEXT
+        cloudFormationStacklambdaFunctionNames = UNSORTED_TEXT
 
-    //     const childNodes = await testNode.getChildren()
+        const childNodes = await testNode.getChildren()
 
-    //     const actualChildOrder = childNodes.map(node => node.label)
-    //     assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
-    // })
+        const actualChildOrder = childNodes.map(node => node.label)
+        assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
+    })
 
     it('has an error node for a child if an error happens during loading', async () => {
         const lambdaClient = {

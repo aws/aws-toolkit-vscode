@@ -12,7 +12,6 @@ import * as vscode from 'vscode'
 import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
-import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
@@ -64,7 +63,7 @@ export class CloudFormationNode extends AWSTreeNodeBase {
     }
 }
 
-export class CloudFormationStackNode extends AWSTreeErrorHandlerNode {
+export class CloudFormationStackNode extends AWSTreeNodeBase {
     private readonly functionNodes: Map<string, LambdaFunctionNode>
 
     public constructor(
@@ -91,26 +90,27 @@ export class CloudFormationStackNode extends AWSTreeErrorHandlerNode {
         return this.stackSummary.StackName
     }
 
-    public async getChildren(): Promise<(LambdaFunctionNode | PlaceholderNode)[]> {
-        await this.handleErrorProneOperation(
-            async () => this.updateChildren(),
-            localize('AWS.explorerNode.cloudFormation.error', 'Error loading CloudFormation resources')
-        )
+    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+        return await makeChildrenNodes({
+            getChildNodes: async () => {
+                await this.updateChildren()
 
-        if (!!this.errorNode) {
-            return [this.errorNode]
-        }
-
-        if (this.functionNodes.size > 0) {
-            return [...this.functionNodes.values()]
-        }
-
-        return [
-            new PlaceholderNode(
-                this,
-                localize('AWS.explorerNode.cloudFormation.noFunctions', '[no functions in this CloudFormation]')
-            )
-        ]
+                return [...this.functionNodes.values()]
+            },
+            getErrorNode: async (error: Error) =>
+                new ErrorNode(
+                    this,
+                    error,
+                    localize('AWS.explorerNode.cloudFormation.error', 'Error loading CloudFormation resources')
+                ),
+            getNoChildrenPlaceholderNode: async () =>
+                new PlaceholderNode(
+                    this,
+                    localize('AWS.explorerNode.cloudFormation.noFunctions', '[Stack has no Lambda Functions]')
+                ),
+            sort: (nodeA: LambdaFunctionNode, nodeB: LambdaFunctionNode) =>
+                nodeA.functionName.localeCompare(nodeB.functionName)
+        })
     }
 
     public update(stackSummary: CloudFormation.StackSummary): void {
