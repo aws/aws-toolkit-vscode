@@ -29,7 +29,7 @@ export async function makeChildrenNodes(parameters: {
         }
     } catch (err) {
         const error = err as Error
-        getLogger().error(`Error whlie getting Child nodes: ${error.message}`)
+        getLogger().error(`Error while getting Child nodes: ${error.message}`)
 
         childNodes.push(await parameters.getErrorNode(error))
     }
