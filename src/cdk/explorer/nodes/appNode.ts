@@ -24,6 +24,7 @@ export class AppNode extends AWSTreeNodeBase {
         return this.app.cdkJsonPath
     }
 
+    // TODO add path so we can guarantee id values are unique
     get id(): string {
         return this.app.treePath
     }
@@ -65,7 +66,10 @@ export class AppNode extends AWSTreeNodeBase {
             // indicate that App exists, but it is empty
             if (constructs.length === 0) {
                 return [
-                    new PlaceholderNode(this, localize('Aws.cdk.explorerNode.app.noStacks', '[no stacks in this app]'))
+                    new PlaceholderNode(
+                        this,
+                        localize('Aws.cdk.explorerNode.app.noStacks', '[No stacks in this CDK App]')
+                    )
                 ]
             }
 
@@ -74,7 +78,10 @@ export class AppNode extends AWSTreeNodeBase {
             return [
                 new PlaceholderNode(
                     this,
-                    localize('Aws.cdk.explorerNode.app.noConstructTree', '[no constructs in this app. run `cdk synth`]')
+                    localize(
+                        'Aws.cdk.explorerNode.app.noConstructTree',
+                        '[There was an error loading the construct tree for this App. run `cdk synth`]'
+                    )
                 )
             ]
         }

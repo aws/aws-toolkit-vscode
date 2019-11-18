@@ -25,8 +25,8 @@ export interface ConstructTree {
 
 /**
  * Represents a construct in the CDK construct tree.
- * The tree is produced by a consruct which visits every construct in an application and adds an
- * entry for it.
+ * The tree is produced by a construct called `Tree` which visits every construct in an application
+ * and adds an entry for it.
  *
  * @attribute id - identifier in the tree. At the top level every CDK application will have a construct called "App"
  * The children of "App" will include 'Tree'
