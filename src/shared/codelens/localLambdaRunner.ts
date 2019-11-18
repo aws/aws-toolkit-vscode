@@ -176,7 +176,11 @@ export class LocalLambdaRunner {
 
         const eventPath: string = path.join(await this.getBaseBuildFolder(), 'event.json')
         const environmentVariablePath = path.join(await this.getBaseBuildFolder(), 'env-vars.json')
-        const config = await this.getConfig()
+        const config = await getConfig({
+            handlerName: this.localInvokeParams.handlerName,
+            documentUri: this.localInvokeParams.document.uri,
+            samTemplate: this.localInvokeParams.samTemplate
+        })
         const maxRetries: number = getAttachDebuggerMaxRetryLimit(this.configuration, MAX_DEBUGGER_RETRIES_DEFAULT)
 
         await writeFile(eventPath, JSON.stringify(config.event || {}))
@@ -233,21 +237,6 @@ export class LocalLambdaRunner {
                 })
             }
         }
-    }
-
-    private async getConfig(): Promise<HandlerConfig> {
-        const workspaceFolder = vscode.workspace.getWorkspaceFolder(this.localInvokeParams.document.uri)
-        if (!workspaceFolder) {
-            return generateDefaultHandlerConfig()
-        }
-
-        const config: HandlerConfig = await getLocalLambdaConfiguration(
-            workspaceFolder,
-            this.localInvokeParams.handlerName,
-            this.localInvokeParams.samTemplate
-        )
-
-        return config
     }
 } // end class LocalLambdaRunner
 
