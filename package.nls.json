@@ -5,7 +5,7 @@
     "AWS.title.selectCredentialProfile": "Select an AWS credential profile",
     "AWS.cdk.explorerTitle": "Explorer",
     "Aws.cdk.explorerNode.noApps": "[No CDK Apps found in Workspaces]",
-    "Aws.cdk.explorerNode.app.noConstructTree": "[There was an error loading the construct tree for this App. run `cdk synth`]",
+    "Aws.cdk.explorerNode.app.noConstructTree": "[Unable to load construct tree for this App. Run `cdk synth`]",
     "Aws.cdk.explorerNode.app.noStacks": "[No stacks in this App]",
     "AWS.cdk.title": "AWS CDK (Preview)",
     "AWS.channel.aws.toolkit": "AWS Toolkit",

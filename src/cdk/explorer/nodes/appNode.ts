@@ -82,7 +82,7 @@ export class AppNode extends AWSTreeNodeBase {
                     this,
                     localize(
                         'Aws.cdk.explorerNode.app.noConstructTree',
-                        '[There was an error loading the construct tree for this App. run `cdk synth`]'
+                        '[Unable to load construct tree for this App. Run `cdk synth`]'
                     )
                 )
             ]
