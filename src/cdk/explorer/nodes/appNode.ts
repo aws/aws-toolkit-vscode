@@ -8,6 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { getLogger } from '../../../shared/logger'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { cdk } from '../../globals'
@@ -24,7 +25,6 @@ export class AppNode extends AWSTreeNodeBase {
         return this.app.cdkJsonPath
     }
 
-    // TODO add path so we can guarantee id values are unique
     get id(): string {
         return this.app.treePath
     }
@@ -75,6 +75,8 @@ export class AppNode extends AWSTreeNodeBase {
 
             return constructs
         } catch (error) {
+            getLogger().error(`Could not load the construct tree located at '${this.id}'`, error as Error)
+
             return [
                 new PlaceholderNode(
                     this,

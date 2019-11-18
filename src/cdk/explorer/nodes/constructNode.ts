@@ -19,6 +19,7 @@ export class ConstructNode extends AWSTreeNodeBase {
         return this.type || this.construct.path
     }
 
+    // TODO add tree path so we can guarantee id values are unique
     get id(): string {
         return this.construct.path
     }
