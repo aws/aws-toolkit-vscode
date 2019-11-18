@@ -1,14 +1,15 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { ConstructNode } from '../../cdk/explorer/nodes/constructNode'
-import { ConstructTreeEntity } from '../../cdk/explorer/tree/types'
-import { cdk } from '../../cdk/globals'
-import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../cdk/utilities/iconPathUtils'
+import { ConstructNode } from '../../../cdk/explorer/nodes/constructNode'
+import { ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
+import { cdk } from '../../../cdk/globals'
+import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../utilities/iconPathUtils'
+import * as treeUtils from '../utilities/treeTestUtils'
 
 describe('ConstructNode', () => {
     before(async () => {
@@ -34,8 +35,8 @@ describe('ConstructNode', () => {
         const treeEntity: ConstructTreeEntity = {
             id: label,
             path: path,
-            children: generateTestChildResource(),
-            attributes: generateAttributes()
+            children: treeUtils.generateTreeChildResource(),
+            attributes: treeUtils.generateAttributes()
         }
 
         const testNode = new ConstructNode(label, vscode.TreeItemCollapsibleState.Collapsed, treeEntity)
@@ -50,7 +51,7 @@ describe('ConstructNode', () => {
         const testNode = new ConstructNode(
             label,
             vscode.TreeItemCollapsibleState.Collapsed,
-            generateConstructTreeEntity(label, path)
+            treeUtils.generateConstructTreeEntity(label, path)
         )
         const iconPath = testNode.iconPath as IconPath
 
@@ -62,7 +63,7 @@ describe('ConstructNode', () => {
         const testNode = new ConstructNode(
             label,
             vscode.TreeItemCollapsibleState.Collapsed,
-            generateConstructTreeEntity(label, path)
+            treeUtils.generateConstructTreeEntity(label, path)
         )
 
         const childNodes = await testNode.getChildren()
@@ -73,7 +74,7 @@ describe('ConstructNode', () => {
         const treeEntity: ConstructTreeEntity = {
             id: label,
             path: path,
-            children: generateTestChildResource()
+            children: treeUtils.generateTreeChildResource()
         }
         const testNode = new ConstructNode(label, vscode.TreeItemCollapsibleState.Collapsed, treeEntity)
 
@@ -83,9 +84,9 @@ describe('ConstructNode', () => {
     })
 
     it('child node is collapsed if construct has child with attributes', async () => {
-        const childWithAttributes = generateTestChildResource()
+        const childWithAttributes = treeUtils.generateTreeChildResource()
         // tslint:disable-next-line: no-unsafe-any
-        childWithAttributes.Resource.attributes = generateAttributes()
+        childWithAttributes.Resource.attributes = treeUtils.generateAttributes()
 
         const treeEntity: ConstructTreeEntity = {
             id: label,
@@ -104,7 +105,7 @@ describe('ConstructNode', () => {
         const testNode = new ConstructNode(
             label,
             vscode.TreeItemCollapsibleState.Collapsed,
-            generateConstructTreeEntity(label, path, true)
+            treeUtils.generateConstructTreeEntity(label, path, true)
         )
 
         const childNodes = await testNode.getChildren()
@@ -114,32 +115,9 @@ describe('ConstructNode', () => {
 })
 
 function generateTestNode(label: string, path: string): ConstructNode {
-    return new ConstructNode(label, vscode.TreeItemCollapsibleState.Collapsed, generateConstructTreeEntity(label, path))
-}
-
-function generateConstructTreeEntity(label: string, path: string, children?: boolean): ConstructTreeEntity {
-    return {
-        id: label,
-        path: path,
-        children: children ? generateTestChildResource() : {}
-    }
-}
-
-function generateTestChildResource(): { [key: string]: any } {
-    return {
-        Resource: {
-            id: 'Resource',
-            path: 'MyStack/MyQueue/Resource'
-        }
-    }
-}
-
-function generateAttributes(): { [key: string]: any } {
-    return {
-        'aws:cdk:cloudformation:type': 'AWS::SNS::Topic',
-        'aws:cdk:cloudformation:props': {
-            displayName: 'DisplayName',
-            topicName: 'CoolTopic'
-        }
-    }
+    return new ConstructNode(
+        label,
+        vscode.TreeItemCollapsibleState.Collapsed,
+        treeUtils.generateConstructTreeEntity(label, path)
+    )
 }

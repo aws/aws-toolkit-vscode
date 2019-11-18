@@ -6,7 +6,8 @@
 import * as vscode from 'vscode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { cdk } from '../../globals'
-import { CfnResourceKeys, ConstructTreeEntity } from '../tree/types'
+import * as treeInspector from '../tree/treeInspector'
+import { ConstructTreeEntity } from '../tree/types'
 
 /**
  * Represents a CDK construct
@@ -28,9 +29,9 @@ export class ConstructNode extends AWSTreeNodeBase {
         public readonly construct: ConstructTreeEntity
     ) {
         super(construct.id, collapsibleState)
-        this.contextValue = 'awsCdkNode'
+        this.contextValue = 'awsCdkConstructNode'
 
-        this.type = construct.attributes ? (construct.attributes[CfnResourceKeys.TYPE] as string) : ''
+        this.type = treeInspector.getTypeAttributeOrDefault(construct, '')
         // TODO move icon logic to global utility
         if (this.type) {
             this.iconPath = {
@@ -55,12 +56,10 @@ export class ConstructNode extends AWSTreeNodeBase {
         for (const key of Object.keys(this.construct.children)) {
             const child = this.construct.children[key] as ConstructTreeEntity
 
-            // TODO tree should not be encoded in the CDK tree spec and should be removed
-            if (child.id !== 'Tree' && child.path !== 'Tree') {
-                const cfnResourceType = child.attributes && (child.attributes[CfnResourceKeys.TYPE] as string)
+            if (treeInspector.includeConstructInTree(child)) {
                 entities.push(
                     new ConstructNode(
-                        child.id === 'Resource' && cfnResourceType ? `${child.id} (${cfnResourceType})` : child.id,
+                        treeInspector.getDisplayLabel(child),
                         child.children || child.attributes
                             ? vscode.TreeItemCollapsibleState.Collapsed
                             : vscode.TreeItemCollapsibleState.None,

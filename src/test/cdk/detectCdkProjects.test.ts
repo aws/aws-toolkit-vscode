@@ -7,22 +7,18 @@ import * as assert from 'assert'
 import * as del from 'del'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { detectCdkProjects, detectLocalCdkProjects } from '../../cdk/explorer/detectCdkProjects'
-import * as filesystem from '../../shared/filesystem'
-import { createWorkspaceFolder } from './util'
-
-function normalizePath(...paths: string[]): string {
-    return vscode.Uri.file(path.join(...paths)).fsPath
-}
+import { detectCdkProjects } from '../../cdk/explorer/detectCdkProjects'
+import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { createWorkspaceFolder, saveCdkJson } from './utilities/treeTestUtils'
 
 describe('detectCdkProjects', () => {
     const workspacePaths: string[] = []
     const workspaceFolders: vscode.WorkspaceFolder[] = []
 
     beforeEach(async () => {
-        const { workspacePath, workspaceFolder } = await createWorkspaceFolder('vsctk-shiv')
+        const { workspaceFolder } = await createWorkspaceFolder('vsctk-cdk')
 
-        workspacePaths.push(workspacePath)
+        workspacePaths.push(workspaceFolder.uri.path)
         workspaceFolders.push(workspaceFolder)
     })
 
@@ -47,148 +43,56 @@ describe('detectCdkProjects', () => {
         assert.strictEqual(actual.length, 0)
     })
 
-    it('detects no projects when tree.json does not exist', async () => {
+    it('detects no projects when cdk.json does not exist', async () => {
         const actual = await detectCdkProjects(workspaceFolders)
 
         assert.ok(actual)
         assert.strictEqual(actual.length, 0)
     })
 
-    it('Detects projects at the root of each workspace folder', async () => {
-        const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
+    it('detects CDK project when cdk.json exists', async () => {
+        const cdkJsonPath = path.join(workspaceFolders[0].uri.fsPath, 'cdk.json')
+        await saveCdkJson(cdkJsonPath)
+        const actual = await detectCdkProjects(workspaceFolders)
 
-        const result = detectLocalCdkProjects({
-            workspaceUris: [vscode.Uri.file(workspaceFolderPath)],
-            context: {
-                async access(_path: filesystem.PathLike): Promise<void> {
-                    if (_path !== normalizePath(workspaceFolderPath, 'cdk.out/tree.json')) {
-                        throw new Error(`No file found at path: '${_path}'`)
-                    }
-                },
+        assert.ok(actual)
 
-                async readDir(
-                    _path: filesystem.PathLike,
-                    options?:
-                        | {
-                              encoding: BufferEncoding | null
-                              withFileTypes?: false
-                          }
-                        | BufferEncoding
-                        | undefined
-                        | null
-                ): Promise<string[]> {
-                    return ['cdk.out/tree.json']
-                },
-
-                async stat(_path: filesystem.PathLike): Promise<filesystem.Stats> {
-                    return ({
-                        isDirectory() {
-                            return true
-                        }
-                    } as any) as filesystem.Stats
-                }
-            }
-        })
-
-        const projects: vscode.Uri[] = []
-        for await (const project of result) {
-            projects.push(project)
-        }
-
-        assert.strictEqual(projects.length, 1)
-        assert.strictEqual(projects[0].fsPath, normalizePath(workspaceFolderPath, 'cdk.out/tree.json'))
+        const project = actual[0]
+        assert.ok(project)
+        assert.strictEqual(project.cdkJsonPath, cdkJsonPath)
+        assert.strictEqual(project.workspaceFolder.uri.path, workspaceFolders[0].uri.fsPath)
+        assert.strictEqual(project.treePath, path.join(cdkJsonPath, '..', 'cdk.out', 'tree.json'))
     })
 
-    it('Detects projects in child folders of each workspace folder', async () => {
-        const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
-        const workspaceFolderChildPath = normalizePath(workspaceFolderPath, 'child')
+    it('detects CDK projects in multi-folder workspace', async () => {
+        assert.strictEqual(workspacePaths.length, 1)
 
-        const result = detectLocalCdkProjects({
-            workspaceUris: [vscode.Uri.file(workspaceFolderPath)],
-            context: {
-                async access(_path: filesystem.PathLike): Promise<void> {
-                    if (_path !== normalizePath(workspaceFolderChildPath, 'cdk.out/tree.json')) {
-                        throw new Error(`No project found at path: '${_path}'`)
-                    }
-                },
-
-                async readDir(_path: filesystem.PathLike): Promise<string[]> {
-                    switch (_path) {
-                        case workspaceFolderPath:
-                            return ['child']
-                        case workspaceFolderChildPath:
-                            return ['cdk.out/tree.json']
-                        default:
-                            throw new Error(`Unexpected path: '${_path}'`)
-                    }
-                },
-
-                async stat(_path: filesystem.PathLike): Promise<filesystem.Stats> {
-                    return ({
-                        isDirectory() {
-                            return true
-                        }
-                    } as any) as filesystem.Stats
-                }
-            }
+        workspacePaths.push(await makeTemporaryToolkitFolder('vsctk2'))
+        workspaceFolders.push({
+            uri: vscode.Uri.file(workspacePaths[1]),
+            name: path.basename(workspacePaths[1]),
+            index: 1
         })
 
-        const projects: vscode.Uri[] = []
-        for await (const project of result) {
-            projects.push(project)
-        }
+        const projectPath1 = path.join(workspaceFolders[0].uri.fsPath, 'cdk.json')
+        const projectPath2 = path.join(workspaceFolders[1].uri.fsPath, 'cdk.json')
 
-        assert.strictEqual(projects.length, 1)
-        assert.strictEqual(projects[0].fsPath, normalizePath(workspaceFolderChildPath, 'cdk.out/tree.json'))
-    })
+        await saveCdkJson(projectPath1)
+        await saveCdkJson(projectPath2)
+        const actual = await detectCdkProjects(workspaceFolders)
+        assert.ok(actual)
+        assert.strictEqual(actual.length, 2)
 
-    it('Detects multiple CDK projects when multiple folders contain CDK projects', async () => {
-        const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
-        const workspaceFolderChildPath1 = normalizePath(workspaceFolderPath, 'child1')
-        const workspaceFolderChildPath2 = normalizePath(workspaceFolderPath, 'child2')
+        const project1 = actual[0]
+        const project2 = actual[1]
 
-        const result = detectLocalCdkProjects({
-            workspaceUris: [vscode.Uri.file(workspaceFolderPath)],
-            context: {
-                async access(_path: filesystem.PathLike): Promise<void> {
-                    switch (_path) {
-                        case normalizePath(workspaceFolderChildPath1, 'cdk.out/tree.json'):
-                        case normalizePath(workspaceFolderChildPath2, 'cdk.out/tree.json'):
-                            return
-                        default:
-                            throw new Error(`No file found at path: '${_path}'`)
-                    }
-                },
-
-                async readDir(_path: filesystem.PathLike): Promise<string[]> {
-                    switch (_path) {
-                        case workspaceFolderPath:
-                            return ['child1', 'child2']
-                        case workspaceFolderChildPath1:
-                        case workspaceFolderChildPath2:
-                            return ['cdk.out/tree.json']
-                        default:
-                            throw new Error(`Unexpected path: '${_path}'`)
-                    }
-                },
-
-                async stat(_path: filesystem.PathLike): Promise<filesystem.Stats> {
-                    return ({
-                        isDirectory() {
-                            return true
-                        }
-                    } as any) as filesystem.Stats
-                }
-            }
-        })
-
-        const projects: vscode.Uri[] = []
-        for await (const project of result) {
-            projects.push(project)
-        }
-
-        assert.strictEqual(projects.length, 2)
-        assert.ok(projects.some(t => t.fsPath === normalizePath(workspaceFolderChildPath1, 'cdk.out/tree.json')))
-        assert.ok(projects.some(t => t.fsPath === normalizePath(workspaceFolderChildPath2, 'cdk.out/tree.json')))
+        assert.ok(project1)
+        assert.strictEqual(project1.cdkJsonPath, projectPath1)
+        assert.strictEqual(project1.workspaceFolder.uri.path, workspaceFolders[0].uri.fsPath)
+        assert.strictEqual(project1.treePath, path.join(projectPath1, '..', 'cdk.out', 'tree.json'))
+        assert.ok(project2)
+        assert.strictEqual(project2.cdkJsonPath, projectPath2)
+        assert.strictEqual(project2.workspaceFolder.uri.path, workspaceFolders[1].uri.fsPath)
+        assert.strictEqual(project2.treePath, path.join(projectPath2, '..', 'cdk.out', 'tree.json'))
     })
 })

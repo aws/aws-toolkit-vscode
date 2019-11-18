@@ -8,9 +8,10 @@
 import * as vscode from 'vscode'
 import { RefreshableAwsTreeProvider } from '../../shared/treeview/awsTreeProvider'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { CdkProject, getProject } from './cdkProject'
+import { localize } from '../../shared/utilities/vsCodeUtils'
 import { detectCdkProjects } from './detectCdkProjects'
-import { ConstructNode } from './nodes/constructNode'
+import { AppNode } from './nodes/appNode'
+import { CdkErrorNode } from './nodes/errorNode'
 
 /**
  * Provides data for the AWS CDK Explorer view
@@ -35,26 +36,17 @@ export class AwsCdkExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>,
         if (element) {
             return element.getChildren()
         } else {
-            const projectLocations = await detectCdkProjects(vscode.workspace.workspaceFolders)
-            const projects = await Promise.all(projectLocations.map(getProject))
+            const appsFound = await detectCdkProjects(vscode.workspace.workspaceFolders)
 
-            //TODO if there are no projects, return an empty / placeholder node
-            return projects.map(getConstructNode)
+            if (appsFound.length === 0) {
+                return [new CdkErrorNode(localize('Aws.cdk.explorerNode.noApps', '[no apps]'))]
+            }
+
+            return appsFound.map(appLocation => new AppNode(appLocation))
         }
     }
 
     public refresh(node?: AWSTreeNodeBase) {
         this.onDidChangeTreeDataEventEmitter.fire()
     }
-}
-
-/**
- * Given the path to tree.json, read all its id's.
- */
-function getConstructNode(project: CdkProject): ConstructNode {
-    return new ConstructNode(
-        `${project.metadata.tree.id} (${project.location.cdkJsonPath})`,
-        vscode.TreeItemCollapsibleState.Collapsed,
-        project.metadata.tree
-    )
 }

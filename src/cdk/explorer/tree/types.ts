@@ -4,7 +4,19 @@
  */
 
 /**
- * Represents the CDK construct tree
+ * The CDK construct tree is the hierarchy of a CDK application. Every time a CDK application
+ * is built and `cdk synth` is called on it from the CLI, the construct tree is written to a
+ * file named `tree.json`.
+ *
+ * The tree includes all of the resources that are encapsulated by the CDK.
+ * A motivation for sharing this tree is to provide a design-time view of the resources that are
+ * contained with a CDK application
+ *
+ * The intial RFC around the construct tree can be found here:
+ * https://github.com/aws/aws-cdk/pull/4053
+ *
+ * @attribute version - version of the tree to leverage if the spec changes
+ * @attribute tree - every construct in the tree adheres to this schema
  */
 export interface ConstructTree {
     readonly version: string
@@ -13,11 +25,22 @@ export interface ConstructTree {
 
 /**
  * Represents a construct in the CDK construct tree.
+ * The tree is produced by a consruct which visits every construct in an application and adds an
+ * entry for it.
+ *
+ * @attribute id - identifier in the tree. At the top level every CDK application will have a construct called "App"
+ * The children of "App" will include 'Tree'
+ * @attribute path - path in the tree. All application start with a path of ''. The path represents the depth of a
+ * construct in a CDK application (i.e Apps contain Stacks which contain Resource - the path would be Stack/Resource)
+ * @attribute children - All of the chidren encapsulated by the current level in the tree. Children are keyed on their ids
+ * @attribute attributes - An Attribute bag that constructs can voluntarily contribute towards. All CloudFormation
+ * resources contribute their type and properties. Attributes will be keyed on convention. i.e. CloudFormation properties
+ * are prefixed `aws:cdk:cloudformation`
  */
 export interface ConstructTreeEntity {
     readonly id: string
     readonly path: string
-    readonly children: { [key: string]: ConstructTreeEntity }
+    readonly children?: { [key: string]: ConstructTreeEntity }
     readonly attributes?: { [key: string]: any }
 }
 
