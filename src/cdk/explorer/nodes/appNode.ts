@@ -25,7 +25,6 @@ export class AppNode extends AWSTreeNodeBase {
         return this.app.cdkJsonPath
     }
 
-    // TODO add path so we can guarantee id values are unique
     get id(): string {
         return this.app.treePath
     }
