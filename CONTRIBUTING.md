@@ -24,8 +24,13 @@ reported the issue. Please try to include as much information as you can. Detail
 
 * [Java 8](https://docs.aws.amazon.com/corretto/latest/corretto-8-ug/downloads-list.html)
 * [Git](https://git-scm.com/)
-* Dotnet Framework if on Windows / Mono if on Linux/Mac
-  * Note: You can skip this if you do not want to build Rider support by adding `-PskipRider` to any Gradle command 
+* Dotnet Framework (Windows) or Mono (Linux, macOS)
+  * macOS steps:
+    ```
+    brew install mono
+    brew cask install dotnet-sdk
+    ```
+  * Note: You can skip this if you do not want to build Rider support by adding `-PskipRider` to any Gradle command.
 
 #### Instructions
 
@@ -80,15 +85,28 @@ To test your changes locally, you can run the project from IntelliJ or gradle.
   ```
   ALTERNATIVE_IDE=$(PATH_TO_ALTERNATIVE_IDE) ./gradlew runIde
   ```
-
   (see `alternativeIdePath` in the Gradle IntelliJ Plugin [documentation](https://github.com/JetBrains/gradle-intellij-plugin) for more details)
-
+  - For WebStorm, use the `jetbrains-ultimate:runIde` target:
+    ```
+    ALTERNATIVE_IDE="…" ./gradlew jetbrains-ultimate:runIde
+    ```
+  - For Rider, use the `jetbrains-rider:runIde` target:
+    ```
+    ALTERNATIVE_IDE="…" ./gradlew jetbrains-rider:runIde
+    ```
 - If you wish to run the integration tests, they require valid AWS credentials to run. Take care, as it will respect any credentials currently defined in your environmental variables, and fallback to your default AWS profile otherwise.
 You will also need to have SAM CLI available in your path.
   ```
   ./gradlew integrationTest
   ```
 
+- Run GUI tests:
+  ```
+  ./gradlew guiTest
+  ```
+  - To debug GUI tests, 
+    1. Set `runIde.debugOptions.enabled=true` in the gradle file.
+    2. When prompted, attach your (IntelliJ) debugger to port 5005.
 
 ### Logging
 
