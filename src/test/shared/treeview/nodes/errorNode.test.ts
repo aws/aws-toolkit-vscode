@@ -4,24 +4,17 @@
  */
 
 import * as assert from 'assert'
-import { RegionInfo } from '../../../../shared/regions/regionInfo'
 import { ErrorNode } from '../../../../shared/treeview/nodes/errorNode'
-import { RegionNode } from '../../../../shared/treeview/nodes/regionNode'
+import { TestAWSTreeNode } from './testAWSTreeNode'
 
 describe('ErrorNode', () => {
-    const regionNode: RegionNode = {
-        regionCode: 'us-weast-1',
-        regionName: 'East? I thought you said...weast!',
-        update: (info: RegionInfo) => {},
-        getChildren: async () => Promise.resolve([])
-    }
-
+    const parentNode = new TestAWSTreeNode('test parent node')
     const error = new Error('error message')
     error.name = 'myMockError'
 
     // Validates we tagged the node correctly
     it('initializes label and tooltip', async () => {
-        const testNode = new ErrorNode(regionNode, error, 'Error loading resources')
+        const testNode = new ErrorNode(parentNode, error, 'Error loading resources')
 
         assert.strictEqual(testNode.label, 'Error loading resources')
         assert.strictEqual(testNode.tooltip, `${error.name}:${error.message}`)
@@ -29,7 +22,7 @@ describe('ErrorNode', () => {
 
     // Validates function nodes are leaves
     it('has no children', async () => {
-        const testNode = new ErrorNode(regionNode, error, `Error loading resources (${error.name})`)
+        const testNode = new ErrorNode(parentNode, error, `Error loading resources (${error.name})`)
 
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)

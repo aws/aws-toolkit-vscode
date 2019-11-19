@@ -8,8 +8,7 @@ import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { deleteLambda } from '../lambda/commands/deleteLambda'
 import { invokeLambda } from '../lambda/commands/invokeLambda'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
-import { FunctionNodeBase } from '../lambda/explorer/functionNode'
-import { LambdaFunctionNode } from '../lambda/explorer/lambdaNodes'
+import { LambdaFunctionNode } from '../lambda/explorer/lambdaFunctionNode'
 import { configureLocalLambda } from '../lambda/local/configureLocalLambda'
 import { AwsContext } from '../shared/awsContext'
 import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
@@ -22,11 +21,10 @@ import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
 import { AWSCommandTreeNode } from '../shared/treeview/nodes/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../shared/treeview/nodes/errorNode'
-import { RegionNode } from '../shared/treeview/nodes/regionNode'
 import { showErrorDetails } from '../shared/treeview/webviews/showErrorDetails'
 import { intersection, toMap, updateInPlace } from '../shared/utilities/collectionUtils'
 import { localize } from '../shared/utilities/vsCodeUtils'
-import { DefaultRegionNode } from './defaultRegionNode'
+import { RegionNode } from './regionNode'
 
 export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
     public viewProviderId: string = 'aws.explorer'
@@ -84,7 +82,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
 
         registerCommand({
             command: 'aws.invokeLambda',
-            callback: async (node: FunctionNodeBase) =>
+            callback: async (node: LambdaFunctionNode) =>
                 await invokeLambda({
                     awsContext: this.awsContext,
                     functionNode: node,
@@ -159,7 +157,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
             this.regionNodes,
             intersection(regionMap.keys(), explorerRegionCodes),
             key => this.regionNodes.get(key)!.update(regionMap.get(key)!),
-            key => new DefaultRegionNode(regionMap.get(key)!)
+            key => new RegionNode(regionMap.get(key)!)
         )
 
         if (this.regionNodes.size > 0) {

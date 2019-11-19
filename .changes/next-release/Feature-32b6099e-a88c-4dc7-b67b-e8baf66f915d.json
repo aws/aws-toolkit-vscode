@@ -1,4 +1,0 @@
-{
-    "type": "Feature",
-    "description": "Ansi codes are removed from text shown in the Output tab when Locally Invoking Lambda handlers"
-}

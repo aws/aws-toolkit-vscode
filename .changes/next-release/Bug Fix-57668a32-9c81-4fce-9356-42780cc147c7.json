@@ -1,0 +1,4 @@
+{
+    "type": "Bug Fix",
+    "description": "AWS Explorer now shows a node indicating when CloudFormation Stacks cannot be found in a region"
+}
