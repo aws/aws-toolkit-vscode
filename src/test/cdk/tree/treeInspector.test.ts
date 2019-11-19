@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import * as treeInspector from '../../../cdk/explorer/tree/treeInspector'
-import { CfnResourceKeys, ConstructProps, ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
+import { ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
 import * as treeUtils from '../utilities/treeTestUtils'
 
 describe('TreeInspector', () => {
@@ -77,43 +77,5 @@ describe('TreeInspector', () => {
         const includeConstruct = treeInspector.includeConstructInTree(construct)
 
         assert.strictEqual(includeConstruct, false, 'Tree construct should be excluded from the tree')
-    })
-
-    it('returns properties when a construct has attributes', async () => {
-        const attributes = treeUtils.generateAttributes()
-        // tslint:disable-next-line: no-unsafe-any
-        const expectedProps: ConstructProps = attributes[CfnResourceKeys.PROPS]
-        const construct: ConstructTreeEntity = {
-            id: 'test-label',
-            path: 'a rare path',
-            attributes: treeUtils.generateAttributes()
-        }
-
-        const props = treeInspector.getProperties(construct)
-
-        assert.deepStrictEqual(props, expectedProps)
-    })
-
-    it('returns undefined when construct does not have attributes', async () => {
-        const construct: ConstructTreeEntity = {
-            id: 'no',
-            path: 'attributes'
-        }
-
-        const props = treeInspector.getProperties(construct)
-
-        assert.strictEqual(props, undefined)
-    })
-
-    it('returns undefined when construct does not have CloudFormation properties', async () => {
-        const construct: ConstructTreeEntity = {
-            id: 'no-cloudformation',
-            path: 'attributes',
-            attributes: { random: 'stuff' }
-        }
-
-        const props = treeInspector.getProperties(construct)
-
-        assert.strictEqual(props, undefined)
     })
 })
