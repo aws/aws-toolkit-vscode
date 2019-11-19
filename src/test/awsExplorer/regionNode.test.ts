@@ -4,19 +4,21 @@
  */
 
 import * as assert from 'assert'
-import { DefaultRegionNode } from '../../awsexplorer/defaultRegionNode'
+import { RegionNode } from '../../awsexplorer/regionNode'
 import { RegionInfo } from '../../shared/regions/regionInfo'
 
-// TODO: create test for getChildren() after mocking is introduced
-describe('DefaultRegionNode', () => {
+describe('RegionNode', () => {
     const regionCode = 'us-east-1'
     const regionName = 'US East (N. Virginia)'
+    const testNode = new RegionNode(new RegionInfo(regionCode, regionName))
 
-    // Validates we tagged the node correctly
     it('initializes name and tooltip', async () => {
-        const testNode = new DefaultRegionNode(new RegionInfo(regionCode, regionName))
-
         assert.strictEqual(testNode.label, regionName)
         assert.strictEqual(testNode.tooltip, `${regionName} [${regionCode}]`)
+    })
+
+    it('contains children', async () => {
+        const childNodes = await testNode.getChildren()
+        assert.ok(childNodes.length > 0, 'Expected region node to have child nodes')
     })
 })
