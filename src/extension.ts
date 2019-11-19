@@ -191,6 +191,6 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
     ext.iconPaths.dark.lambda = context.asAbsolutePath('resources/dark/lambda.svg')
     ext.iconPaths.light.lambda = context.asAbsolutePath('resources/light/lambda.svg')
 
-    ext.iconPaths.dark.settings = context.asAbsolutePath('resources/dark/settings.svg')
-    ext.iconPaths.light.settings = context.asAbsolutePath('resources/light/settings.svg')
+    ext.iconPaths.dark.settings = context.asAbsolutePath('third-party/resources/from-vscode-icons/light/refresh.svg')
+    ext.iconPaths.light.settings = context.asAbsolutePath('third-party/resources/from-vscode-icons/light/refresh.svg')
 }

@@ -309,8 +309,8 @@
                 "title": "%AWS.command.refreshAwsExplorer%",
                 "category": "AWS",
                 "icon": {
-                    "dark": "third-party/resources/from-vscode/dark/refresh.svg",
-                    "light": "third-party/resources/from-vscode/light/refresh.svg"
+                    "dark": "third-party/resources/from-vscode-icons/dark/refresh.svg",
+                    "light": "third-party/resources/from-vscode-icons/light/refresh.svg"
                 }
             },
             {
@@ -353,8 +353,8 @@
                 "title": "%AWS.command.refreshCdkExplorer%",
                 "category": "AWS",
                 "icon": {
-                    "dark": "third-party/resources/from-vscode/dark/refresh.svg",
-                    "light": "third-party/resources/from-vscode/light/refresh.svg"
+                    "dark": "third-party/resources/from-vscode-icons/dark/refresh.svg",
+                    "light": "third-party/resources/from-vscode-icons/light/refresh.svg"
                 }
             }
         ],
