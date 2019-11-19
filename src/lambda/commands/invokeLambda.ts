@@ -17,7 +17,7 @@ import { ResourceFetcher } from '../../shared/resourceFetcher'
 import { FileResourceLocation, WebResourceLocation } from '../../shared/resourceLocation'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { sampleRequestManifestPath, sampleRequestPath } from '../constants'
-import { FunctionNodeBase } from '../explorer/functionNode'
+import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { SampleRequest } from '../models/sampleRequest'
 import { LambdaTemplates } from '../templates/lambdaTemplates'
 
@@ -45,7 +45,7 @@ export async function invokeLambda(params: {
     awsContext: AwsContext // TODO: Consider replacing 'awsContext' with something specific and meaningful
     outputChannel: vscode.OutputChannel
     resourceFetcher: ResourceFetcher
-    functionNode: FunctionNodeBase // TODO: Consider replacing 'element'' with something specific and meaningful
+    functionNode: LambdaFunctionNode
 }) {
     const logger: Logger = getLogger()
 
@@ -136,7 +136,7 @@ function createMessageReceivedFunc({
     ...restParams
 }: {
     // TODO: Consider passing lambdaClient: LambdaClient
-    fn: FunctionNodeBase // TODO: Replace w/ invokeParams: {functionArn: string} // or Lambda.Types.InvocationRequest
+    fn: LambdaFunctionNode // TODO: Replace w/ invokeParams: {functionArn: string} // or Lambda.Types.InvocationRequest
     outputChannel: vscode.OutputChannel
     resourceFetcher: ResourceFetcher
     resourcePath: string

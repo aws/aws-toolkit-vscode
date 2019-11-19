@@ -4,20 +4,21 @@
  */
 
 import { TreeItemCollapsibleState } from 'vscode'
-import { CloudFormationNode, DefaultCloudFormationNode } from '../lambda/explorer/cloudFormationNodes'
-import { DefaultLambdaFunctionGroupNode, LambdaFunctionGroupNode } from '../lambda/explorer/lambdaNodes'
+import { CloudFormationNode } from '../lambda/explorer/cloudFormationNodes'
+import { LambdaNode } from '../lambda/explorer/lambdaNodes'
 import { RegionInfo } from '../shared/regions/regionInfo'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
-import { RegionNode } from '../shared/treeview/nodes/regionNode'
 import { toMap, updateInPlace } from '../shared/utilities/collectionUtils'
 
-// Collects the regions the user has declared they want to work with;
-// on expansion each region lists the functions and CloudFormation Stacks
-// the user has available in that region.
-export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
+/**
+ * An AWS Explorer node representing a region.
+ * Contains resource types as child nodes (for example, nodes representing
+ * an account's Lambda Functions and CloudFormation stacks for this region)
+ */
+export class RegionNode extends AWSTreeNodeBase {
     private info: RegionInfo
     private readonly cloudFormationNode: CloudFormationNode
-    private readonly lambdaFunctionGroupNode: LambdaFunctionGroupNode
+    private readonly lambdaNode: LambdaNode
 
     public get regionCode(): string {
         return this.info.regionCode
@@ -33,12 +34,12 @@ export class DefaultRegionNode extends AWSTreeNodeBase implements RegionNode {
         this.info = info
         this.update(info)
 
-        this.cloudFormationNode = new DefaultCloudFormationNode(this)
-        this.lambdaFunctionGroupNode = new DefaultLambdaFunctionGroupNode(this)
+        this.cloudFormationNode = new CloudFormationNode(this.regionCode)
+        this.lambdaNode = new LambdaNode(this.regionCode)
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
-        return [this.cloudFormationNode, this.lambdaFunctionGroupNode]
+        return [this.cloudFormationNode, this.lambdaNode]
     }
 
     public update(info: RegionInfo): void {
@@ -62,7 +63,7 @@ export class RegionNodeCollection {
             this.regionNodes,
             regionMap.keys(),
             key => this.regionNodes.get(key)!.update(regionMap.get(key)!),
-            key => new DefaultRegionNode(regionMap.get(key)!)
+            key => new RegionNode(regionMap.get(key)!)
         )
     }
 }

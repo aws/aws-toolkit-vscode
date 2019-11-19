@@ -5,8 +5,8 @@
 
 import * as assert from 'assert'
 import { AwsExplorer } from '../../awsexplorer/awsExplorer'
+import { RegionNode } from '../../awsexplorer/regionNode'
 import { AwsContextTreeCollection } from '../../shared/awsContextTreeCollection'
-import { RegionNode } from '../../shared/treeview/nodes/regionNode'
 import { MockOutputChannel } from '../mockOutputChannel'
 import {
     DEFAULT_TEST_REGION_CODE,
