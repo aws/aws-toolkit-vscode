@@ -68,9 +68,9 @@ async function setupWebviewPanel(
         {
             enableScripts: true,
             localResourceRoots: [
-                ext.visualizationResourcePaths.localScriptsPath,
-                ext.visualizationResourcePaths.visualizationCache,
-                ext.visualizationResourcePaths.stateMachineThemePath
+                ext.visualizationResourcePaths.localWebviewScriptsPath,
+                ext.visualizationResourcePaths.visualizationLibraryCachePath,
+                ext.visualizationResourcePaths.stateMachineCustomThemePath
             ],
             retainContextWhenHidden: true
         }
@@ -78,10 +78,10 @@ async function setupWebviewPanel(
 
     // Set the initial html for the webpage
     panel.webview.html = getWebviewContent(
-        ext.visualizationResourcePaths.webviewScript.with({ scheme: 'vscode-resource' }),
-        ext.visualizationResourcePaths.visualizationScript.with({ scheme: 'vscode-resource' }),
-        ext.visualizationResourcePaths.visualizationCSS.with({ scheme: 'vscode-resource' }),
-        ext.visualizationResourcePaths.stateMachineThemeCSS.with({ scheme: 'vscode-resource' })
+        ext.visualizationResourcePaths.webviewBodyScript.with({ scheme: 'vscode-resource' }),
+        ext.visualizationResourcePaths.visualizationLibraryScript.with({ scheme: 'vscode-resource' }),
+        ext.visualizationResourcePaths.visualizationLibraryCSS.with({ scheme: 'vscode-resource' }),
+        ext.visualizationResourcePaths.stateMachineCustomThemeCSS.with({ scheme: 'vscode-resource' })
     )
 
     // Add listener function to update the graph on document save
@@ -129,19 +129,19 @@ function makeWebviewTitle(sourceDocumentUri: vscode.Uri): string {
 }
 
 function getWebviewContent(
-    graphStateMachineScriptPath: vscode.Uri,
-    graphStateMachineScriptPath2: vscode.Uri,
-    stateMachineThemeCSS: vscode.Uri,
-    graphStateMachineCSS: vscode.Uri
+    webviewBodyScript: vscode.Uri,
+    graphStateMachineLibrary: vscode.Uri,
+    vsCodeCustomStyling: vscode.Uri,
+    graphStateMachineDefaultStyles: vscode.Uri
 ): string {
     return `
 <!DOCTYPE html>
 <html>
     <head>
         <meta charset="UTF-8">
-        <link rel="stylesheet" href='${graphStateMachineCSS}'>
-        <link rel="stylesheet" href='${stateMachineThemeCSS}'>
-        <script src='${graphStateMachineScriptPath2}'></script>
+        <link rel="stylesheet" href='${graphStateMachineDefaultStyles}'>
+        <link rel="stylesheet" href='${vsCodeCustomStyling}'>
+        <script src='${graphStateMachineLibrary}'></script>
     </head>
 
     <body>
@@ -149,7 +149,7 @@ function getWebviewContent(
             <svg></svg>
         </div>
 
-        <script src='${graphStateMachineScriptPath}'></script>
+        <script src='${webviewBodyScript}'></script>
     </body>
 </html>`
 }
