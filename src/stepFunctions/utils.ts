@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs'
-import * as https from 'https'
+import { get } from 'https'
 import { Memento, window } from 'vscode'
 import { ext } from '../shared/extensionGlobals'
+import { mkdir, writeFile } from '../shared/filesystem'
+import { fileExists } from '../shared/filesystemUtilities'
 import { getLogger, Logger } from '../shared/logger'
 
 const VISUALIZATION_SCRIPT_URL = 'https://d19z89qxwgm7w9.cloudfront.net/sfn-0.0.3.js'
@@ -15,11 +16,6 @@ const VISUALIZATION_CSS_URL = 'https://d19z89qxwgm7w9.cloudfront.net/graph-0.0.1
 const ONE_DAY_MILLISECONDS = 60 * 60 * 24 * 1000
 
 export const SCRIPTS_LAST_DOWNLOAD_DATE = 'SCRIPTS_LAST_DOWNLOAD_DATE'
-
-enum fileOptions {
-    graphScript = 'graph.js',
-    graphStyle = 'graph.css'
-}
 
 export class CachingError extends Error {
     public constructor(message?: string | undefined) {
@@ -47,90 +43,76 @@ export async function updateCache(globalStorage: Memento): Promise<void> {
         !filesExist() ||
         isCacheStale(scriptsDownloadDate)
     ) {
-        return Promise.all([getGraphScript(), getGraphCSS()]).then( () => {
+        try {
+            await Promise.all([getGraphScript(), getGraphCSS()])
             globalStorage.update(SCRIPTS_LAST_DOWNLOAD_DATE, Date.now())
-        }).catch((err: Error)=> {
+        } catch (err) {
             if (err instanceof NetworkError) {
                 if (filesExist()) {
-                    window.showInformationMessage('Encountered a network error trying to update graphing scripts, falling back to local cache. These files may be out of date.')
+                    window.showInformationMessage('Network error. Failed to update graphing scripts. Using local cache instead.')
+
+                    return
                 } else {
-                    window.showErrorMessage('Unable to pull the necessary graphing scripts to render state machine definition due to a network error. No local cache to fall back on.')
+                    window.showErrorMessage('Network error. Failed to get the graphing scripts to render state machine definition. No local cache found.')
                 }
             } else if (err instanceof WritingError) {
                 window.showErrorMessage(err.message)
             }
 
             throw err
-        })
+        }
     }
 }
 
-export function filesExist() {
-    return  fs.existsSync(ext.visualizationResourcePaths.visualizationScript.fsPath) &&
-            fs.existsSync(ext.visualizationResourcePaths.visualizationCSS.fsPath)
+export async function filesExist() {
+    return await fileExists(ext.visualizationResourcePaths.visualizationScript.fsPath) &&
+        await fileExists(ext.visualizationResourcePaths.visualizationCSS.fsPath)
 }
 
 export function isCacheStale(lastUpdateDate: number): boolean {
     return Date.now() - lastUpdateDate > ONE_DAY_MILLISECONDS
 }
 
-function writeToLocalStorage(file: string): (data: string) => void {
+async function writeToLocalStorage(destinationPath: string, data: string): Promise<void> {
     const logger: Logger = getLogger()
-
-    // TODO: Better style?
-    let fileToWrite: string
-
-    if (file === fileOptions.graphScript) {
-        fileToWrite = ext.visualizationResourcePaths.visualizationScript.fsPath
-    } else if(file === fileOptions.graphStyle) {
-        fileToWrite = ext.visualizationResourcePaths.visualizationCSS.fsPath
-    } else {
-        throw new Error('Invalid write file option')
-    }
 
     const storageFolder = ext.visualizationResourcePaths.visualizationCache.fsPath
 
-    if (!fs.existsSync(storageFolder)) {
+    // if (!fs.existsSync(storageFolder)) {
+    if (!fileExists(storageFolder)) {
         logger.debug('Folder for graphing script and styling doesnt exist. Creating it.')
-        fs.mkdirSync(storageFolder)
+        await mkdir(storageFolder)
     }
 
-    return (data: string) => {
-        fs.writeFile(fileToWrite, data, 'utf8', (err) => {
-            /*
-             * Was able to download the required files,
-             * but there was an error trying to write them to this extensions globalStorage location.
-             */
-            logger.error(err)
-            const errorMessage = `Unable to write data at: ${fileToWrite}\nError: ${err.message}`
+    try {
+        await writeFile(destinationPath, data, 'utf8')
+    } catch (err) {
+        /*
+         * Was able to download the required files,
+         * but there was an error trying to write them to this extensions globalStorage location.
+         */
+        logger.error(err as Error)
+        const errorMessage = `Unable to write data at: ${destinationPath}\nError: ${(err as Error).message}`
 
-            throw new WritingError(errorMessage)
-        })
+        throw new WritingError(errorMessage)
     }
 }
 
 export async function getGraphScript(): Promise<void> {
-    await httpGetRequestWrapper(
-        VISUALIZATION_SCRIPT_URL,
-        writeToLocalStorage(fileOptions.graphScript)
-    )
+    const data = await httpsGetRequestWrapper(VISUALIZATION_SCRIPT_URL)
+    await writeToLocalStorage(ext.visualizationResourcePaths.visualizationScript.fsPath, data)
 }
 
 export async function getGraphCSS(): Promise<void> {
-    await httpGetRequestWrapper(
-        VISUALIZATION_CSS_URL,
-        writeToLocalStorage(fileOptions.graphStyle)
-    )
+    const data = await httpsGetRequestWrapper(VISUALIZATION_CSS_URL)
+    await writeToLocalStorage(ext.visualizationResourcePaths.visualizationCSS.fsPath, data)
 }
 
-async function httpGetRequestWrapper(
-    url: string,
-    updatePersistantStorage: (data: string) => void
-): Promise<void> {
+async function httpsGetRequestWrapper(url: string): Promise<string> {
     const logger: Logger = getLogger()
 
-    await new Promise<string>((resolve, reject) => {
-        https.get(url, (response) => {
+    return new Promise<string>((resolve, reject) => {
+        get(url, (response) => {
             const { statusCode } = response
 
             if (statusCode !== 200) {
@@ -138,14 +120,14 @@ async function httpGetRequestWrapper(
                  * Received a response but was unable to pull latest script from CloudFront
                  * Likely an error with the CDN
                  */
-                const errorMessage = `Unable to get the required files from CloudFront.\n Request Failed with status code: ${statusCode}.`
+                const errorMessage = `Unable to get the required file from ${url}.\n Request Failed with status code: ${statusCode}.`
                 logger.error(errorMessage)
                 reject(new NetworkError(errorMessage))
 
                 return
             }
 
-            let cloudFrontData = ''
+            let responseData = ''
 
             /*
              * Code on the repository is encoded as Windows-1252
@@ -156,19 +138,11 @@ async function httpGetRequestWrapper(
             response.setEncoding('binary')
 
             response.on('data', (chunk) => {
-                cloudFrontData += chunk
+                responseData += chunk
             });
 
             response.on('end', () => {
-                // Update cache with latest data
-                try {
-                    updatePersistantStorage(cloudFrontData)
-                } catch (err) {
-                    reject(err)
-
-                    return
-                }
-                resolve()
+                resolve(responseData)
             });
         }).on('error', (err) => {
             // HTTPS get error. A user not having an internet connection would cause it to error here.
