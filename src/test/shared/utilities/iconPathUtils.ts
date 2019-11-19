@@ -20,9 +20,6 @@ export function setupTestIconPaths() {
 
     ext.iconPaths.dark.lambda = '/icons/dark/lambda'
     ext.iconPaths.light.lambda = '/icons/light/lambda'
-
-    ext.iconPaths.dark.settings = '/icons/dark/settings'
-    ext.iconPaths.light.settings = '/icons/light/settings'
 }
 
 export function clearTestIconPaths() {
@@ -34,7 +31,4 @@ export function clearTestIconPaths() {
 
     ext.iconPaths.dark.lambda = ''
     ext.iconPaths.light.lambda = ''
-
-    ext.iconPaths.dark.settings = ''
-    ext.iconPaths.light.settings = ''
 }
