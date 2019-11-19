@@ -32,6 +32,8 @@ export namespace ext {
     export namespace visualizationResourcePaths {
         export let localScriptsPath: Uri
         export let webviewScript: Uri
+        export let stateMachineThemePath: Uri
+        export let stateMachineThemeCSS: Uri
     }
 }
 

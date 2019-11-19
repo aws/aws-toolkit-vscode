@@ -31,19 +31,15 @@ async function registerStepFunctionCommands(extensionContext: vscode.ExtensionCo
 }
 
 function initalizeWebviewPaths(context: vscode.ExtensionContext) {
+    ext.visualizationResourcePaths.stateMachineThemePath =
+        vscode.Uri.file(context.asAbsolutePath(join('media', 'css')))
+
+    ext.visualizationResourcePaths.stateMachineThemeCSS =
+        vscode.Uri.file(context.asAbsolutePath(join('media', 'css', 'stateMachineRender.css')))
+
     ext.visualizationResourcePaths.localScriptsPath =
-        vscode.Uri.file(
-            join(
-                context.extensionPath,
-                vscode.workspace.asRelativePath(join('media', 'js'))
-            )
-        )
+        vscode.Uri.file(context.asAbsolutePath(join('media', 'js')))
 
     ext.visualizationResourcePaths.webviewScript =
-        vscode.Uri.file(
-            join(
-                context.extensionPath,
-                vscode.workspace.asRelativePath(join('media', 'js', 'graphStateMachine.js'))
-            )
-        )
+        vscode.Uri.file(context.asAbsolutePath(join('media', 'js', 'graphStateMachine.js')))
 }
