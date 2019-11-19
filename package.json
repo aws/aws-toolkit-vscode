@@ -46,7 +46,8 @@
         "onCommand:aws.viewLogs",
         "onCommand:aws.quickStart",
         "onCommand:aws.help",
-        "onCommand:aws.github"
+        "onCommand:aws.github",
+        "onView:aws.cdk.explorer"
     ],
     "main": "./out/src/extension",
     "contributes": {
@@ -117,6 +118,11 @@
                     "id": "aws-explorer",
                     "title": "%AWS.title%",
                     "icon": "media/aws-logo.svg"
+                },
+                {
+                    "id": "cdk-explorer",
+                    "title": "%AWS.cdk.title%",
+                    "icon": "resources/aws-cdk-logo.svg"
                 }
             ]
         },
@@ -125,6 +131,12 @@
                 {
                     "id": "aws.explorer",
                     "name": "%AWS.lambda.explorerTitle%"
+                }
+            ],
+            "cdk-explorer": [
+                {
+                    "id": "aws.cdk.explorer",
+                    "name": "%AWS.cdk.explorerTitle%"
                 }
             ]
         },
@@ -200,6 +212,16 @@
                 {
                     "command": "aws.reportIssue",
                     "when": "view == aws.explorer",
+                    "group": "z_externalLinks@3"
+                },
+                {
+                    "command": "aws.refreshCdkExplorer",
+                    "when": "view == aws.cdk.explorer",
+                    "group": "navigation@5"
+                },
+                {
+                    "command": "aws.reportIssue",
+                    "when": "view == aws.cdk.explorer",
                     "group": "z_externalLinks@3"
                 }
             ],
@@ -287,8 +309,8 @@
                 "title": "%AWS.command.refreshAwsExplorer%",
                 "category": "AWS",
                 "icon": {
-                    "dark": "third-party/resources/from-vscode/dark/refresh.svg",
-                    "light": "third-party/resources/from-vscode/light/refresh.svg"
+                    "dark": "third-party/resources/from-vscode-icons/dark/refresh.svg",
+                    "light": "third-party/resources/from-vscode-icons/light/refresh.svg"
                 }
             },
             {
@@ -325,6 +347,15 @@
                 "command": "aws.quickStart",
                 "title": "%AWS.command.quickStart%",
                 "category": "AWS"
+            },
+            {
+                "command": "aws.refreshCdkExplorer",
+                "title": "%AWS.command.refreshCdkExplorer%",
+                "category": "AWS",
+                "icon": {
+                    "dark": "third-party/resources/from-vscode-icons/dark/refresh.svg",
+                    "light": "third-party/resources/from-vscode-icons/light/refresh.svg"
+                }
             }
         ],
         "jsonValidation": [
