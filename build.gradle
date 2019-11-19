@@ -50,7 +50,10 @@ allprojects {
                 if(file(System.env.ALTERNATIVE_IDE).exists()) {
                     alternativeIdePath = System.env.ALTERNATIVE_IDE
                 } else {
-                    throw new GradleException("ALTERNATIVE_IDE path ${System.env.ALTERNATIVE_IDE} not found")
+                    throw new GradleException("ALTERNATIVE_IDE path not found"
+                      + (System.env.ALTERNATIVE_IDE ==~ /.*[\/\\] *$/
+                        ? " (HINT: remove trailing slash '/')"
+                        : ": ${System.env.ALTERNATIVE_IDE}"))
                 }
             }
         }
