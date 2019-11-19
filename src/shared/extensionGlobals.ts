@@ -35,6 +35,8 @@ export namespace ext {
         export let visualizationCache: Uri
         export let visualizationScript: Uri
         export let visualizationCSS: Uri
+        export let stateMachineThemePath: Uri
+        export let stateMachineThemeCSS: Uri
     }
 }
 

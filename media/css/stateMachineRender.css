@@ -1,0 +1,72 @@
+/*!
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+
+/*
+ * Custom theming applied on top of existing styles.
+ * Adds additional styles for when user has dark/light/high-contrast themes.
+ */
+
+
+/*  
+ * General
+ */
+
+ body {
+    background-color: var(--vscode-editor-background);
+}
+
+
+/* 
+ * Dark Theme Styles
+ */
+
+body.vscode-dark .path {
+    stroke: #D3D3D3;
+    background-color: #D3D3D3;
+}
+
+body.vscode-dark path {
+    stroke: #D3D3D3;
+}
+
+body.vscode-dark .node > .shape {
+    fill: var(--vscode-editor-background);
+    stroke: #D3D3D3;
+}
+
+body.vscode-dark .node.anchor > .shape {
+    fill: #808080;
+}
+
+body.vscode-dark .label {
+    fill: #FFFFFF;
+}
+
+body.vscode-dark marker {
+    fill: #D3D3D3;
+}
+
+
+/*
+ * High Contrast Theme Styles
+ */
+
+body.vscode-high-contrast .path {
+    stroke: var(--vscode-contrastActiveBorder);
+    background-color: var(--vscode-contrastActiveBorder);
+}
+
+body.vscode-high-contrast path {
+    stroke: var(--vscode-contrastActiveBorder);
+}
+
+body.vscode-high-contrast .node.anchor > .shape {
+    fill: var(--vscode-contrastActiveBorder);
+}
+
+body.vscode-high-contrast marker {
+    fill: var(--vscode-contrastActiveBorder);
+}

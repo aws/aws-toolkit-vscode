@@ -66,7 +66,8 @@ async function setupWebviewPanel(
             enableScripts: true,
             localResourceRoots: [
                 ext.visualizationResourcePaths.localScriptsPath,
-                ext.visualizationResourcePaths.visualizationCache
+                ext.visualizationResourcePaths.visualizationCache,
+                ext.visualizationResourcePaths.stateMachineThemePath
             ],
             retainContextWhenHidden: true
         }
@@ -76,7 +77,8 @@ async function setupWebviewPanel(
     panel.webview.html = getWebviewContent(
         ext.visualizationResourcePaths.webviewScript.with({ scheme: 'vscode-resource' }),
         ext.visualizationResourcePaths.visualizationScript.with({ scheme: 'vscode-resource' }),
-        ext.visualizationResourcePaths.visualizationCSS.with({ scheme: 'vscode-resource' })
+        ext.visualizationResourcePaths.visualizationCSS.with({ scheme: 'vscode-resource' }),
+        ext.visualizationResourcePaths.stateMachineThemeCSS.with({ scheme: 'vscode-resource' })
     )
 
     // Add listener function to update the graph on document save
@@ -126,22 +128,25 @@ function makeWebviewTitle(sourceDocumentUri: vscode.Uri): string {
 function getWebviewContent(
     graphStateMachineScriptPath: vscode.Uri,
     graphStateMachineScriptPath2: vscode.Uri,
+    stateMachineThemeCSS: vscode.Uri,
     graphStateMachineCSS: vscode.Uri
 ): string {
     return `
-	 <!DOCTYPE html>
-	 <html>
-	     <head>
-	         <meta charset="UTF-8">
-	         <link rel="stylesheet" href='${graphStateMachineCSS}'>
-             <script src='${graphStateMachineScriptPath2}'></script>
-	     </head>
-	     <body>
-	         <div id="svgcontainer" class="workflowgraph" style="background-color: white;">
-	             <svg></svg>
-	         </div>
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" href='${graphStateMachineCSS}'>
+        <link rel="stylesheet" href='${stateMachineThemeCSS}'>
+        <script src='${graphStateMachineScriptPath2}'></script>
+    </head>
 
-	         <script src='${graphStateMachineScriptPath}'></script>
-	     </body>
-	 </html>`
+    <body>
+        <div id="svgcontainer" class="workflowgraph">
+            <svg></svg>
+        </div>
+
+        <script src='${graphStateMachineScriptPath}'></script>
+    </body>
+</html>`
 }
