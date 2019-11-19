@@ -42,13 +42,16 @@ export async function visualizeStateMachine(globalStorage: vscode.Memento): Prom
         throw new Error('Could not grab active text editor for state machine render.')
     }
 
-    return updateCache(globalStorage).then( async () => {
-        return setupWebviewPanel(documentUri, documentText)
-    }).catch( () => {
-        logger.debug('Didnt setup webview panel due to error pulling files from CloudFront')
+    try {
+        await updateCache(globalStorage)
 
-        return
-    })
+        return setupWebviewPanel(documentUri, documentText)
+    } catch(err) {
+        logger.debug('Unable to setup webview panel.')
+        logger.error(err as Error)
+    }
+
+    return
 }
 
 async function setupWebviewPanel(
