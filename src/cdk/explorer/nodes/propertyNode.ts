@@ -20,8 +20,8 @@ export class PropertyNode extends AWSTreeNodeBase {
         super(label, collapsibleState)
         this.contextValue = 'awsCdkPropertyNode'
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.settings),
-            light: vscode.Uri.file(ext.iconPaths.light.settings)
+            light: ext.iconPaths.light.settings,
+            dark: ext.iconPaths.dark.settings
         }
     }
 
