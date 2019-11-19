@@ -32,7 +32,7 @@ export class AppNode extends AWSTreeNodeBase {
     public constructor(public readonly app: CdkAppLocation) {
         super(app.cdkJsonPath, vscode.TreeItemCollapsibleState.Collapsed)
         this.contextValue = 'awsCdkAppNode'
-        this.label = path.join(path.relative(app.workspaceFolder.uri.fsPath, app.cdkJsonPath), '..')
+        this.label = path.relative(path.dirname(app.workspaceFolder.uri.fsPath), path.dirname(app.cdkJsonPath))
 
         this.iconPath = {
             dark: vscode.Uri.file(cdk.iconPaths.dark.cdk),
