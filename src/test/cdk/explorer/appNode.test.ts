@@ -41,7 +41,7 @@ describe('AppNode', () => {
     it('initializes label and tooltip', async () => {
         const testNode = getTestNode()
 
-        assert.strictEqual(testNode.label, path.join(workspaceFolderName))
+        assert.strictEqual(testNode.label, path.join(workspaceFolderName, 'cdk.json'))
         assert.strictEqual(testNode.tooltip, `${cdkJsonPath}`)
     })
 
