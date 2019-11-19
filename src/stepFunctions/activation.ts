@@ -32,44 +32,23 @@ async function registerStepFunctionCommands(extensionContext: vscode.ExtensionCo
 
 function initalizeWebviewPaths(context: vscode.ExtensionContext) {
     ext.visualizationResourcePaths.visualizationCache =
-        vscode.Uri.file(
-            join(
-                context.globalStoragePath,
-                'visualization'
-            )
-        )
+        vscode.Uri.file(context.asAbsolutePath('visualization'))
 
     ext.visualizationResourcePaths.visualizationScript =
-        vscode.Uri.file(
-            join(
-                context.globalStoragePath,
-                'visualization',
-                'graph.js'
-            )
-        )
+        vscode.Uri.file(context.asAbsolutePath(join('visualization', 'graph.js')))
 
     ext.visualizationResourcePaths.visualizationCSS =
-        vscode.Uri.file(
-            join(
-                context.globalStoragePath,
-                'visualization',
-                'graph.css'
-            )
-        )
+        vscode.Uri.file(context.asAbsolutePath(join('visualization','graph.css')))
+
+    ext.visualizationResourcePaths.stateMachineThemePath =
+        vscode.Uri.file(context.asAbsolutePath(join('media', 'css')))
+
+    ext.visualizationResourcePaths.stateMachineThemeCSS =
+        vscode.Uri.file(context.asAbsolutePath(join('media', 'css', 'stateMachineRender.css')))
 
     ext.visualizationResourcePaths.localScriptsPath =
-        vscode.Uri.file(
-            join(
-                context.extensionPath,
-                vscode.workspace.asRelativePath(join('media', 'js'))
-            )
-        )
+        vscode.Uri.file(context.asAbsolutePath(join('media', 'js')))
 
     ext.visualizationResourcePaths.webviewScript =
-        vscode.Uri.file(
-            join(
-                context.extensionPath,
-                vscode.workspace.asRelativePath(join('media', 'js', 'graphStateMachine.js'))
-            )
-        )
+        vscode.Uri.file(context.asAbsolutePath(join('media', 'js', 'graphStateMachine.js')))
 }
