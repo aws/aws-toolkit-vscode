@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { IncomingHttpHeaders } from 'http'
 import { get } from 'https'
 import { Memento, window } from 'vscode'
 import { ext } from '../shared/extensionGlobals'
@@ -13,9 +14,13 @@ import { getLogger, Logger } from '../shared/logger'
 const VISUALIZATION_SCRIPT_URL = 'https://d19z89qxwgm7w9.cloudfront.net/sfn-0.0.3.js'
 const VISUALIZATION_CSS_URL = 'https://d19z89qxwgm7w9.cloudfront.net/graph-0.0.1.css'
 
-const ONE_DAY_MILLISECONDS = 60 * 60 * 24 * 1000
+export const SCRIPTS_LAST_DOWNLOAD_DATE = 'SCRIPT_LAST_DOWNLOAD_DATE'
+export const CSS_LAST_DOWNLOAD_DATE = 'CSS_LAST_DOWNLOAD_DATE'
 
-export const SCRIPTS_LAST_DOWNLOAD_DATE = 'SCRIPTS_LAST_DOWNLOAD_DATE'
+interface httpsGetRequestWrapperResponse {
+    headers: IncomingHttpHeaders
+    data: string
+}
 
 export class CachingError extends Error {
     public constructor(message?: string | undefined) {
@@ -36,50 +41,57 @@ export class WritingError extends CachingError {
 }
 
 export async function updateCache(globalStorage: Memento): Promise<void> {
-    const scriptsDownloadDate = globalStorage.get<number>(SCRIPTS_LAST_DOWNLOAD_DATE)
+    try {
+        await Promise.all([updateGraphScript(globalStorage), updateCSS(globalStorage)])
+    } catch (err) {
+        if (err instanceof NetworkError) {
+            if (await filesExist()) {
+                window.showInformationMessage('Network error. Failed to update graphing scripts. Using local cache instead.')
 
-    if (
-        scriptsDownloadDate === undefined ||
-        !filesExist() ||
-        isCacheStale(scriptsDownloadDate)
-    ) {
-        try {
-            await Promise.all([getGraphScript(), getGraphCSS()])
-            globalStorage.update(SCRIPTS_LAST_DOWNLOAD_DATE, Date.now())
-        } catch (err) {
-            if (err instanceof NetworkError) {
-                if (filesExist()) {
-                    window.showInformationMessage('Network error. Failed to update graphing scripts. Using local cache instead.')
-
-                    return
-                } else {
-                    window.showErrorMessage('Network error. Failed to get the graphing scripts to render state machine definition. No local cache found.')
-                }
-            } else if (err instanceof WritingError) {
-                window.showErrorMessage(err.message)
+                return
+            } else {
+                window.showErrorMessage('Network error. Failed to get the graphing scripts to render state machine definition. No local cache found.')
             }
-
-            throw err
+        } else if (err instanceof WritingError) {
+            window.showErrorMessage(err.message)
         }
+
+        throw err
     }
 }
 
 export async function filesExist() {
-    return await fileExists(ext.visualizationResourcePaths.visualizationScript.fsPath) &&
-        await fileExists(ext.visualizationResourcePaths.visualizationCSS.fsPath)
+    return await fileExists(ext.visualizationResourcePaths.visualizationLibraryScript.fsPath) &&
+        await fileExists(ext.visualizationResourcePaths.visualizationLibraryCSS.fsPath)
 }
 
-export function isCacheStale(lastUpdateDate: number): boolean {
-    return Date.now() - lastUpdateDate > ONE_DAY_MILLISECONDS
+export async function isCacheStale(
+    cacheLastModifiedDate: number | undefined,
+    fileLastModified: string | undefined
+): Promise<boolean> {
+
+    if (cacheLastModifiedDate === undefined || fileLastModified === undefined) {
+        return true
+    }
+
+    if (!(await filesExist())) {
+        return true
+    }
+
+    const fileLastModifiedDateTime = new Date(fileLastModified)
+    if (fileLastModifiedDateTime.getTime() > cacheLastModifiedDate) {
+        return true
+    }
+
+    return false
 }
 
 async function writeToLocalStorage(destinationPath: string, data: string): Promise<void> {
     const logger: Logger = getLogger()
 
-    const storageFolder = ext.visualizationResourcePaths.visualizationCache.fsPath
+    const storageFolder = ext.visualizationResourcePaths.visualizationLibraryCachePath.fsPath
 
-    // if (!fs.existsSync(storageFolder)) {
-    if (!fileExists(storageFolder)) {
+    if (!(await fileExists(storageFolder))) {
         logger.debug('Folder for graphing script and styling doesnt exist. Creating it.')
         await mkdir(storageFolder)
     }
@@ -98,22 +110,34 @@ async function writeToLocalStorage(destinationPath: string, data: string): Promi
     }
 }
 
-export async function getGraphScript(): Promise<void> {
-    const data = await httpsGetRequestWrapper(VISUALIZATION_SCRIPT_URL)
-    await writeToLocalStorage(ext.visualizationResourcePaths.visualizationScript.fsPath, data)
+export async function updateGraphScript(globalStorage: Memento): Promise<void> {
+    const scriptDownloadDate = globalStorage.get<number>(SCRIPTS_LAST_DOWNLOAD_DATE)
+
+    const response = await httpsGetRequestWrapper(VISUALIZATION_SCRIPT_URL)
+
+    if (isCacheStale(scriptDownloadDate, response.headers['last-modified'])) {
+        await writeToLocalStorage(ext.visualizationResourcePaths.visualizationLibraryScript.fsPath, response.data)
+        globalStorage.update(SCRIPTS_LAST_DOWNLOAD_DATE, Date.now())
+    }
 }
 
-export async function getGraphCSS(): Promise<void> {
-    const data = await httpsGetRequestWrapper(VISUALIZATION_CSS_URL)
-    await writeToLocalStorage(ext.visualizationResourcePaths.visualizationCSS.fsPath, data)
+export async function updateCSS(globalStorage: Memento): Promise<void> {
+    const cssDownloadDate = globalStorage.get<number>(CSS_LAST_DOWNLOAD_DATE)
+
+    const response = await httpsGetRequestWrapper(VISUALIZATION_CSS_URL)
+
+    if (isCacheStale(cssDownloadDate, response.headers['last-modified'])) {
+        await writeToLocalStorage(ext.visualizationResourcePaths.visualizationLibraryCSS.fsPath, response.data)
+        globalStorage.update(CSS_LAST_DOWNLOAD_DATE, Date.now())
+    }
 }
 
-async function httpsGetRequestWrapper(url: string): Promise<string> {
+async function httpsGetRequestWrapper(url: string): Promise<httpsGetRequestWrapperResponse> {
     const logger: Logger = getLogger()
 
-    return new Promise<string>((resolve, reject) => {
+    return new Promise<httpsGetRequestWrapperResponse>((resolve, reject) => {
         get(url, (response) => {
-            const { statusCode } = response
+            const { statusCode, headers } = response
 
             if (statusCode !== 200) {
                 /*
@@ -142,7 +166,10 @@ async function httpsGetRequestWrapper(url: string): Promise<string> {
             });
 
             response.on('end', () => {
-                resolve(responseData)
+                resolve({
+                    headers: headers,
+                    data: responseData
+                })
             });
         }).on('error', (err) => {
             // HTTPS get error. A user not having an internet connection would cause it to error here.
