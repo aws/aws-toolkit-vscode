@@ -52,7 +52,6 @@ export function generateAttributes(): { [key: string]: any } {
     return {
         'aws:cdk:cloudformation:type': 'AWS::SNS::Topic',
         'aws:cdk:cloudformation:props': {
-            displayName: 'DisplayName',
             topicName: 'CoolTopic'
         }
     }

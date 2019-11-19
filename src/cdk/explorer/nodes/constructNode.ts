@@ -7,32 +7,35 @@ import * as vscode from 'vscode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { cdk } from '../../globals'
 import * as treeInspector from '../tree/treeInspector'
-import { ConstructTreeEntity } from '../tree/types'
+import { ConstructProps, ConstructTreeEntity } from '../tree/types'
+import { generatePropertyNodes, PropertyNode } from './propertyNode'
 
 /**
  * Represents a CDK construct
  */
 export class ConstructNode extends AWSTreeNodeBase {
     private readonly type: string
+    private readonly properties: ConstructProps | undefined
 
     get tooltip(): string {
         return this.type || this.construct.path
     }
 
-    // TODO add tree path so we can guarantee id values are unique
     get id(): string {
-        return this.construct.path
+        return `${this.treePath}/${this.construct.path}`
     }
 
     public constructor(
         public readonly label: string,
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-        public readonly construct: ConstructTreeEntity
+        public readonly construct: ConstructTreeEntity,
+        public readonly treePath: string
     ) {
         super(construct.id, collapsibleState)
         this.contextValue = 'awsCdkConstructNode'
 
         this.type = treeInspector.getTypeAttributeOrDefault(construct, '')
+        this.properties = treeInspector.getProperties(construct)
         // TODO move icon logic to global utility
         if (this.type) {
             this.iconPath = {
@@ -47,13 +50,22 @@ export class ConstructNode extends AWSTreeNodeBase {
         }
     }
 
-    public async getChildren(): Promise<(ConstructNode)[]> {
-        const entities = []
+    public async getChildren(): Promise<(ConstructNode | PropertyNode)[]> {
+        const entities: (ConstructNode | PropertyNode)[] = []
 
-        if (!this.construct.children) {
-            return []
+        // add all properties
+        if (this.properties) {
+            const propertyNodes: PropertyNode[] = generatePropertyNodes(this.properties)
+            for (const property of propertyNodes) {
+                entities.push(property)
+            }
         }
 
+        if (!this.construct.children) {
+            return entities
+        }
+
+        // add all children
         for (const key of Object.keys(this.construct.children)) {
             const child = this.construct.children[key] as ConstructTreeEntity
 
@@ -64,7 +76,8 @@ export class ConstructNode extends AWSTreeNodeBase {
                         child.children || child.attributes
                             ? vscode.TreeItemCollapsibleState.Collapsed
                             : vscode.TreeItemCollapsibleState.None,
-                        child
+                        child,
+                        this.treePath
                     )
                 )
             }
