@@ -14,10 +14,10 @@ import software.aws.toolkits.jetbrains.services.lambda.Lambda
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.java.BaseLambdaBuilderTest
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
-import softwere.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
-import softwere.aws.toolkits.jetbrains.utils.rules.addLambdaHandler
-import softwere.aws.toolkits.jetbrains.utils.rules.addPackageJsonFile
-import softwere.aws.toolkits.jetbrains.utils.rules.addSamTemplate
+import software.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.addLambdaHandler
+import software.aws.toolkits.jetbrains.utils.rules.addPackageJsonFile
+import software.aws.toolkits.jetbrains.utils.rules.addSamTemplate
 import java.nio.file.Paths
 
 class NodeJsLambdaBuilderTest : BaseLambdaBuilderTest() {

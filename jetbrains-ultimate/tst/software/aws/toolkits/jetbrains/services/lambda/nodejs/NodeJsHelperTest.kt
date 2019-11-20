@@ -8,9 +8,9 @@ import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.testFramework.runInEdtAndWait
 import org.junit.Rule
 import org.junit.Test
-import softwere.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
-import softwere.aws.toolkits.jetbrains.utils.rules.addLambdaHandler
-import softwere.aws.toolkits.jetbrains.utils.rules.addPackageJsonFile
+import software.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.addLambdaHandler
+import software.aws.toolkits.jetbrains.utils.rules.addPackageJsonFile
 import kotlin.test.assertEquals
 
 class NodeJsHelperTest {

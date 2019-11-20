@@ -23,8 +23,8 @@ import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.checkBreakPointHit
 import software.aws.toolkits.jetbrains.services.lambda.sam.executeLambda
 import software.aws.toolkits.jetbrains.settings.SamSettings
-import softwere.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
-import softwere.aws.toolkits.jetbrains.utils.rules.addPackageJsonFile
+import software.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.addPackageJsonFile
 import java.util.concurrent.atomic.AtomicReference
 
 @RunWith(Parameterized::class)

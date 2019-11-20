@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package softwere.aws.toolkits.jetbrains.utils.rules
+package software.aws.toolkits.jetbrains.utils.rules
 
 import com.intellij.javascript.nodejs.interpreter.NodeJsInterpreterManager
 import com.intellij.javascript.nodejs.interpreter.NodeJsInterpreterRef
@@ -27,7 +27,6 @@ import com.intellij.testFramework.fixtures.IdeaTestFixtureFactory
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.util.text.SemVer
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
 import java.io.File
 
 /**

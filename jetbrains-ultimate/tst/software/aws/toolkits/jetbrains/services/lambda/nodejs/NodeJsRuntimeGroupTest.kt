@@ -8,8 +8,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
-import softwere.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
-import softwere.aws.toolkits.jetbrains.utils.rules.setNodeJsInterpreterVersion
+import software.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.setNodeJsInterpreterVersion
 
 class NodeJsRuntimeGroupTest {
 

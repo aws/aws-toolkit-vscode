@@ -12,9 +12,9 @@ import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
-import softwere.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
-import softwere.aws.toolkits.jetbrains.utils.rules.addLambdaHandler
-import softwere.aws.toolkits.jetbrains.utils.rules.addPackageJsonFile
+import software.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.addLambdaHandler
+import software.aws.toolkits.jetbrains.utils.rules.addPackageJsonFile
 
 class NodeJsLambdaHandlerResolverTest {
     @Rule
