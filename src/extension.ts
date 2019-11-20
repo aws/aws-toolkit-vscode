@@ -12,7 +12,14 @@ import { activate as activateCdk } from './cdk/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
-import { documentationUrl, extensionSettingsPrefix, githubUrl, reportIssueUrl } from './shared/constants'
+import {
+    documentationUrl,
+    extensionSettingsPrefix,
+    githubUrl,
+    reportIssueUrl,
+    cdkProvideFeedbackUrl,
+    cdkDocumentationUrl
+} from './shared/constants'
 import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
 import { UserCredentialsUtils } from './shared/credentials/userCredentialsUtils'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
@@ -142,6 +149,18 @@ export async function activate(context: vscode.ExtensionContext) {
             command: 'aws.quickStart',
             callback: async () => {
                 await showQuickStartWebview(context)
+            }
+        })
+        registerCommand({
+            command: 'aws.cdk.provideFeedback',
+            callback: async () => {
+                vscode.env.openExternal(vscode.Uri.parse(reportIssueUrl))
+            }
+        })
+        registerCommand({
+            command: 'aws.cdk.help',
+            callback: async () => {
+                vscode.env.openExternal(vscode.Uri.parse(cdkDocumentationUrl))
             }
         })
 
