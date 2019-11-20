@@ -189,7 +189,7 @@ ${fileContents}
 ;(async () => {
     const serviceClientDefinitions: ServiceClientDefinition[] = [
         {
-            serviceJsonPath: String.raw`src\shared\telemetry\service-2.json`,
+            serviceJsonPath: 'src/shared/telemetry/service-2.json',
             serviceName: 'ClientTelemetry'
         }
     ]
