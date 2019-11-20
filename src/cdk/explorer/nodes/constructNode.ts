@@ -22,14 +22,14 @@ export class ConstructNode extends AWSTreeNodeBase {
     }
 
     get id(): string {
-        return `${this.treePath}/${this.construct.path}`
+        return `${this.parent.id}/${this.label}`
     }
 
     public constructor(
+        public readonly parent: AWSTreeNodeBase,
         public readonly label: string,
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-        public readonly construct: ConstructTreeEntity,
-        public readonly treePath: string
+        public readonly construct: ConstructTreeEntity
     ) {
         super(construct.id, collapsibleState)
         this.contextValue = 'awsCdkConstructNode'
@@ -56,9 +56,7 @@ export class ConstructNode extends AWSTreeNodeBase {
         // add all properties
         if (this.properties) {
             const propertyNodes: PropertyNode[] = generatePropertyNodes(this.properties)
-            for (const property of propertyNodes) {
-                entities.push(property)
-            }
+            entities.push(...propertyNodes)
         }
 
         if (!this.construct.children) {
@@ -72,12 +70,12 @@ export class ConstructNode extends AWSTreeNodeBase {
             if (treeInspector.includeConstructInTree(child)) {
                 entities.push(
                     new ConstructNode(
+                        this,
                         treeInspector.getDisplayLabel(child),
                         child.children || child.attributes
                             ? vscode.TreeItemCollapsibleState.Collapsed
                             : vscode.TreeItemCollapsibleState.None,
-                        child,
-                        this.treePath
+                        child
                     )
                 )
             }

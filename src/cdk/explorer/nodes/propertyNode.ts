@@ -13,8 +13,8 @@ import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
  */
 export class PropertyNode extends AWSTreeNodeBase {
     public constructor(
-        public readonly label: string,
-        public readonly collapsibleState: vscode.TreeItemCollapsibleState,
+        label: string,
+        collapsibleState: vscode.TreeItemCollapsibleState,
         private readonly subProperties?: { [key: string]: any }
     ) {
         super(label, collapsibleState)

@@ -39,7 +39,7 @@ describe('PropertyNode', () => {
 
         const childNodes = await testNode.getChildren()
 
-        assert.strictEqual(childNodes.length, 0)
+        assert.strictEqual(childNodes.length, 0, 'Expected no child nodes for a property with non-nested properties')
     })
 
     it('returns single child when property has a string value', async () => {
@@ -49,7 +49,7 @@ describe('PropertyNode', () => {
 
         const childNodes = await testNode.getChildren()
 
-        assert.strictEqual(childNodes.length, 1)
+        assert.strictEqual(childNodes.length, 1, 'Expected a single property node for a string property')
         assert.strictEqual(childNodes[0].label, `key: ${value}`)
     })
 
@@ -59,7 +59,7 @@ describe('PropertyNode', () => {
 
         const childNodes = await testNode.getChildren()
 
-        assert.strictEqual(childNodes.length, 1)
+        assert.strictEqual(childNodes.length, 1, 'Expected a single property node for a boolean property')
         assert.strictEqual(childNodes[0].label, 'key: true')
     })
 
@@ -70,19 +70,22 @@ describe('PropertyNode', () => {
 
         const childNodes = await testNode.getChildren()
 
-        assert.strictEqual(childNodes.length, 1)
-        assert.strictEqual(childNodes[0].label, `key: ${value}`)
+        assert.strictEqual(childNodes.length, 1, 'Expected a single property node for an int property')
+        assert.strictEqual(childNodes[0].label, `key: ${value}`, 'Unexpected label on PropertyNode')
     })
 
-    it('returns a nested property node with values of an array as child property nodes', async () => {
+    it('returns a nested property node with a property node for each value in the array', async () => {
         const values = ['one', 'two', 'three']
         const children: { [key: string]: any } = { key: values }
 
         const testNode = new PropertyNode(label, vscode.TreeItemCollapsibleState.Collapsed, children)
 
         const childNodes = await testNode.getChildren()
-        assert.strictEqual(childNodes.length, 1)
-        assert.strictEqual(childNodes[0].label, 'key')
+        assert.strictEqual(childNodes.length, 1, 'expected nested property to have a child node for array')
+        assert.strictEqual(childNodes[0].label, 'key', 'Unexpected label on node')
+
+        const childPropertyNodes = await childNodes[0].getChildren()
+        assert.strictEqual(childPropertyNodes.length, 3, 'Expected each value in nested array to have a child node')
     })
 
     it('returns a nested property node with nested object as child property nodes', async () => {
@@ -98,11 +101,11 @@ describe('PropertyNode', () => {
 
         const childNodes = await testNode.getChildren()
 
-        assert.strictEqual(childNodes.length, 1)
+        assert.strictEqual(childNodes.length, 1, 'Expected nested property of object type to have child nodes')
         assert.strictEqual(childNodes[0].label, 'key')
 
         const grandChildren = await childNodes[0].getChildren()
-        assert.strictEqual(grandChildren.length, 1)
+        assert.strictEqual(grandChildren.length, 1, 'Expected nested property of object type to have grandchild nodes')
         assert.strictEqual(grandChildren[0].label, 'nestedKey')
     })
 })

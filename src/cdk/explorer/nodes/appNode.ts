@@ -52,12 +52,12 @@ export class AppNode extends AWSTreeNodeBase {
                     if (includeConstructInTree(entity)) {
                         constructs.push(
                             new ConstructNode(
+                                this,
                                 entity.id,
                                 entity.children
                                     ? vscode.TreeItemCollapsibleState.Collapsed
                                     : vscode.TreeItemCollapsibleState.None,
-                                entity,
-                                this.id
+                                entity
                             )
                         )
                     }
