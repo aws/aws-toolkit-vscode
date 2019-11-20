@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { cdkDocumentationUrl, cdkProvideFeedbackUrl } from '../shared/constants'
 import { registerCommand } from '../shared/telemetry/telemetryUtils'
 import { AwsCdkExplorer } from './explorer/awsCdkExplorer'
 import { cdk } from './globals'
@@ -33,6 +34,18 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 }
 
 async function registerCdkCommands(explorer: AwsCdkExplorer): Promise<void> {
+    registerCommand({
+        command: 'aws.cdk.provideFeedback',
+        callback: async () => {
+            vscode.env.openExternal(vscode.Uri.parse(cdkProvideFeedbackUrl))
+        }
+    })
+    registerCommand({
+        command: 'aws.cdk.help',
+        callback: async () => {
+            vscode.env.openExternal(vscode.Uri.parse(cdkDocumentationUrl))
+        }
+    })
     registerCommand({
         command: 'aws.refreshCdkExplorer',
         callback: async () => explorer.refresh()
