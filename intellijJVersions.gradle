@@ -130,6 +130,17 @@ def resolveIdeProfileName() {
     return project.ideProfileName
 }
 
+
+static def shortenVersion(String ver) {
+    try {
+        def result = ver =~ /^\d\d(\d{2})[\\.](\d)/
+        if (result) {
+            return result.group(1) + result.group(2)
+        }
+    } catch(Exception ignored) { }
+    return ver
+}
+
 ext {
     ideProfiles = this.&ideProfiles
     idePlugins = this.&idePlugins
@@ -139,4 +150,5 @@ ext {
     ideProfile = this.&ideProfile
     guiTestFramework = this.&guiTestFramework
     resolveIdeProfileName = this.&resolveIdeProfileName
+    shortenVersion = this.&shortenVersion
 }
