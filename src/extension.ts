@@ -13,12 +13,12 @@ import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
 import {
+    cdkDocumentationUrl,
+    cdkProvideFeedbackUrl,
     documentationUrl,
     extensionSettingsPrefix,
     githubUrl,
-    reportIssueUrl,
-    cdkProvideFeedbackUrl,
-    cdkDocumentationUrl
+    reportIssueUrl
 } from './shared/constants'
 import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
 import { UserCredentialsUtils } from './shared/credentials/userCredentialsUtils'
@@ -154,7 +154,7 @@ export async function activate(context: vscode.ExtensionContext) {
         registerCommand({
             command: 'aws.cdk.provideFeedback',
             callback: async () => {
-                vscode.env.openExternal(vscode.Uri.parse(reportIssueUrl))
+                vscode.env.openExternal(vscode.Uri.parse(cdkProvideFeedbackUrl))
             }
         })
         registerCommand({
