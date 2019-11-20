@@ -15,7 +15,7 @@ export class PropertyNode extends AWSTreeNodeBase {
     public constructor(
         public readonly label: string,
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-        public readonly children?: { [key: string]: any }
+        private readonly subProperties?: { [key: string]: any }
     ) {
         super(label, collapsibleState)
         this.contextValue = 'awsCdkPropertyNode'
@@ -26,11 +26,11 @@ export class PropertyNode extends AWSTreeNodeBase {
     }
 
     public async getChildren(): Promise<PropertyNode[]> {
-        if (!this.children) {
+        if (!this.subProperties) {
             return []
         }
 
-        return generatePropertyNodes(this.children)
+        return generatePropertyNodes(this.subProperties)
     }
 }
 

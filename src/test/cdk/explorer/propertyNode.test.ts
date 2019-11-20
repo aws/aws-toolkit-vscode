@@ -51,7 +51,6 @@ describe('PropertyNode', () => {
 
         assert.strictEqual(childNodes.length, 1)
         assert.strictEqual(childNodes[0].label, `key: ${value}`)
-        assert.strictEqual(childNodes[0].children, undefined)
     })
 
     it('returns single child when property has a boolean value', async () => {
@@ -62,7 +61,6 @@ describe('PropertyNode', () => {
 
         assert.strictEqual(childNodes.length, 1)
         assert.strictEqual(childNodes[0].label, 'key: true')
-        assert.strictEqual(childNodes[0].children, undefined)
     })
 
     it('returns single child when property has an int value', async () => {
@@ -74,7 +72,6 @@ describe('PropertyNode', () => {
 
         assert.strictEqual(childNodes.length, 1)
         assert.strictEqual(childNodes[0].label, `key: ${value}`)
-        assert.strictEqual(childNodes[0].children, undefined)
     })
 
     it('returns a nested property node with values of an array as child property nodes', async () => {
@@ -86,7 +83,6 @@ describe('PropertyNode', () => {
         const childNodes = await testNode.getChildren()
         assert.strictEqual(childNodes.length, 1)
         assert.strictEqual(childNodes[0].label, 'key')
-        assert.strictEqual(childNodes[0].children, values)
     })
 
     it('returns a nested property node with nested object as child property nodes', async () => {
@@ -104,11 +100,9 @@ describe('PropertyNode', () => {
 
         assert.strictEqual(childNodes.length, 1)
         assert.strictEqual(childNodes[0].label, 'key')
-        assert.strictEqual(childNodes[0].children, value)
 
         const grandChildren = await childNodes[0].getChildren()
         assert.strictEqual(grandChildren.length, 1)
         assert.strictEqual(grandChildren[0].label, 'nestedKey')
-        assert.strictEqual(grandChildren[0].children, nestedObject)
     })
 })
