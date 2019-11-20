@@ -60,5 +60,13 @@ export enum CfnResourceKeys {
  */
 export interface ConstructAttributes {
     readonly type: string
+    readonly props: ConstructProps
+}
+
+/**
+ * Represents a bag of properties
+ * Construct properties can be arrays, objects, strings, or boolean
+ */
+export interface ConstructProps {
     readonly props: { [key: string]: any }
 }

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CfnResourceKeys, ConstructTreeEntity } from './types'
+import { CfnResourceKeys, ConstructProps, ConstructTreeEntity } from './types'
 
 /**
  * Determines the type of the construct if it exists
@@ -18,6 +18,20 @@ export function getTypeAttributeOrDefault(construct: ConstructTreeEntity, defaul
     }
 
     return defaultValue
+}
+
+/**
+ * Determines the props of a construct if they exist
+ *
+ * @param construct CDK construct
+ */
+export function getProperties(construct: ConstructTreeEntity): ConstructProps | undefined {
+    const attributes = construct.attributes
+    if (attributes && attributes[CfnResourceKeys.PROPS]) {
+        return attributes[CfnResourceKeys.PROPS] as ConstructProps
+    }
+
+    return undefined
 }
 
 /**
