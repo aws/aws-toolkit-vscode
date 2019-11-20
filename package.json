@@ -349,7 +349,7 @@
         "compile": "tsc -p ./ && npm run lint && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && tsc -watch -p ./",
-        "postinstall": "node ./node_modules/vscode/bin/install",
+        "postinstall": "node ./node_modules/vscode/bin/install && ts-node ./build-scripts/generateServiceClient.ts",
         "test": "npm run compile && node ./test-scripts/test.js",
         "integrationTest": "npm run compile && ts-node ./test-scripts/integrationTest.ts",
         "lint": "tslint --project .",
