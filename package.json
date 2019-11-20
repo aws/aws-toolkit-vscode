@@ -80,6 +80,11 @@
                     "default": 30000,
                     "markdownDescription": "%AWS.configuration.description.samcli.debug.attach.timeout%"
                 },
+                "aws.cdk.explorer.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "%AWS.configuration.description.cdk.explorer.enabled%"
+                },
                 "aws.logLevel": {
                     "type": "string",
                     "default": "info",
@@ -118,11 +123,6 @@
                     "id": "aws-explorer",
                     "title": "%AWS.title%",
                     "icon": "media/aws-logo.svg"
-                },
-                {
-                    "id": "cdk-explorer",
-                    "title": "%AWS.cdk.title%",
-                    "icon": "resources/aws-cdk-logo.svg"
                 }
             ]
         },
@@ -133,10 +133,11 @@
                     "name": "%AWS.lambda.explorerTitle%"
                 }
             ],
-            "cdk-explorer": [
+            "explorer": [
                 {
                     "id": "aws.cdk.explorer",
-                    "name": "%AWS.cdk.explorerTitle%"
+                    "name": "%AWS.cdk.explorerTitle%",
+                    "when": "config.aws.cdk.explorer.enabled"
                 }
             ]
         },
@@ -220,7 +221,12 @@
                     "group": "navigation@5"
                 },
                 {
-                    "command": "aws.reportIssue",
+                    "command": "aws.cdk.help",
+                    "when": "view == aws.cdk.explorer",
+                    "group": "z_externalLinks@2"
+                },
+                {
+                    "command": "aws.cdk.provideFeedback",
                     "when": "view == aws.cdk.explorer",
                     "group": "z_externalLinks@3"
                 }
@@ -277,6 +283,16 @@
             {
                 "command": "aws.reportIssue",
                 "title": "%AWS.command.reportIssue%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.cdk.provideFeedback",
+                "title": "%AWS.command.cdk.provideFeedback%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.cdk.help",
+                "title": "%AWS.command.cdk.help%",
                 "category": "AWS"
             },
             {
