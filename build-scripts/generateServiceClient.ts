@@ -45,8 +45,9 @@ async function cloneJsSdk(destinationPath: string): Promise<void> {
 
     // Output stderr while it clones so it doesn't look frozen
     return new Promise<void>((resolve, reject) => {
-        const exec = child_process.exec(
-            `git clone --depth 1 https://github.com/aws/aws-sdk-js.git ${destinationPath}`,
+        const exec = child_process.execFile(
+            'git',
+            ['clone', '--depth', '1', 'https://github.com/aws/aws-sdk-js.git', destinationPath],
             {
                 encoding: 'utf8'
             }
@@ -122,7 +123,7 @@ async function patchServicesIntoApiMetadata(apiMetadataPath: string, serviceName
 async function runTypingsGenerator(repoPath: string): Promise<void> {
     console.log('Generating service client typings...')
 
-    const stdout = child_process.execSync('node scripts/typings-generator.js', {
+    const stdout = child_process.execFileSync('node', ['scripts/typings-generator.js'], {
         encoding: 'utf8',
         cwd: repoPath
     })
