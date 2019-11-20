@@ -115,7 +115,7 @@ export async function updateGraphScript(globalStorage: Memento): Promise<void> {
 
     const response = await httpsGetRequestWrapper(VISUALIZATION_SCRIPT_URL)
 
-    if (isCacheStale(scriptDownloadDate, response.headers['last-modified'])) {
+    if (await isCacheStale(scriptDownloadDate, response.headers['last-modified'])) {
         await writeToLocalStorage(ext.visualizationResourcePaths.visualizationLibraryScript.fsPath, response.data)
         globalStorage.update(SCRIPTS_LAST_DOWNLOAD_DATE, Date.now())
     }
@@ -126,7 +126,7 @@ export async function updateCSS(globalStorage: Memento): Promise<void> {
 
     const response = await httpsGetRequestWrapper(VISUALIZATION_CSS_URL)
 
-    if (isCacheStale(cssDownloadDate, response.headers['last-modified'])) {
+    if (await isCacheStale(cssDownloadDate, response.headers['last-modified'])) {
         await writeToLocalStorage(ext.visualizationResourcePaths.visualizationLibraryCSS.fsPath, response.data)
         globalStorage.update(CSS_LAST_DOWNLOAD_DATE, Date.now())
     }
