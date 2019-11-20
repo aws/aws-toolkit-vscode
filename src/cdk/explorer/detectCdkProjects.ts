@@ -33,7 +33,7 @@ async function detectCdkProjectsFromWorkspaceFolder(
     const result = []
 
     for await (const cdkJson of detectLocalCdkProjects({ workspaceUris: [workspaceFolder.uri] })) {
-        const treeJsonPath = path.join(path.dirname(cdkJson.path), 'cdk.out', 'tree.json')
+        const treeJsonPath = path.join(path.dirname(cdkJson.fsPath), 'cdk.out', 'tree.json')
         const project = { workspaceFolder: workspaceFolder, cdkJsonPath: cdkJson.fsPath, treePath: treeJsonPath }
         result.push(project)
     }
