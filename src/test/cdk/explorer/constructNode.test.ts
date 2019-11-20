@@ -4,10 +4,13 @@
  */
 
 import * as assert from 'assert'
+import * as path from 'path'
 import * as vscode from 'vscode'
 import { ConstructNode } from '../../../cdk/explorer/nodes/constructNode'
+import { PropertyNode } from '../../../cdk/explorer/nodes/propertyNode'
 import { ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
 import { cdk } from '../../../cdk/globals'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../utilities/iconPathUtils'
 import * as treeUtils from '../utilities/treeTestUtils'
 
@@ -21,25 +24,35 @@ describe('ConstructNode', () => {
     })
 
     const label = 'MyConstruct'
-    const path = 'Path/To/MyConstruct'
+    const constructTreePath = 'Path/To/MyConstruct'
+    const cdkJsonPath = path.join('the', 'road', 'to', 'cdk.json')
 
     it('initializes label and tooltip', async () => {
-        const testNode = generateTestNode(label, path)
+        const testNode = generateTestNode(label)
         assert.strictEqual(testNode.label, label)
         assert.strictEqual(testNode.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
-        assert.strictEqual(testNode.id, path)
-        assert.strictEqual(testNode.tooltip, path)
+        assert.strictEqual(testNode.tooltip, constructTreePath)
+    })
+
+    it("returns id that includes parent's id and it's own label", async () => {
+        const testNode = generateTestNode(label)
+        assert.strictEqual(testNode.id, `${cdkJsonPath}/${label}`)
     })
 
     it('initializes icon paths for CloudFormation resources', async () => {
         const treeEntity: ConstructTreeEntity = {
             id: label,
-            path: path,
+            path: constructTreePath,
             children: treeUtils.generateTreeChildResource(),
             attributes: treeUtils.generateAttributes()
         }
 
-        const testNode = new ConstructNode(label, vscode.TreeItemCollapsibleState.Collapsed, treeEntity)
+        const testNode = new ConstructNode(
+            new FakeParentNode(cdkJsonPath),
+            label,
+            vscode.TreeItemCollapsibleState.Collapsed,
+            treeEntity
+        )
 
         const iconPath = testNode.iconPath as IconPath
 
@@ -49,9 +62,10 @@ describe('ConstructNode', () => {
 
     it('initializes icon paths for CDK constructs', async () => {
         const testNode = new ConstructNode(
+            new FakeParentNode(cdkJsonPath),
             label,
             vscode.TreeItemCollapsibleState.Collapsed,
-            treeUtils.generateConstructTreeEntity(label, path)
+            treeUtils.generateConstructTreeEntity(label, constructTreePath)
         )
         const iconPath = testNode.iconPath as IconPath
 
@@ -61,9 +75,10 @@ describe('ConstructNode', () => {
 
     it('returns no child nodes if construct does not have any', async () => {
         const testNode = new ConstructNode(
+            new FakeParentNode(cdkJsonPath),
             label,
             vscode.TreeItemCollapsibleState.Collapsed,
-            treeUtils.generateConstructTreeEntity(label, path)
+            treeUtils.generateConstructTreeEntity(label, constructTreePath)
         )
 
         const childNodes = await testNode.getChildren()
@@ -73,10 +88,15 @@ describe('ConstructNode', () => {
     it('child node has no collapsible state if it has no children or attributes', async () => {
         const treeEntity: ConstructTreeEntity = {
             id: label,
-            path: path,
+            path: constructTreePath,
             children: treeUtils.generateTreeChildResource()
         }
-        const testNode = new ConstructNode(label, vscode.TreeItemCollapsibleState.Collapsed, treeEntity)
+        const testNode = new ConstructNode(
+            new FakeParentNode(cdkJsonPath),
+            label,
+            vscode.TreeItemCollapsibleState.Collapsed,
+            treeEntity
+        )
 
         const childNodes = await testNode.getChildren()
         assert.strictEqual(childNodes.length, 1)
@@ -90,34 +110,87 @@ describe('ConstructNode', () => {
 
         const treeEntity: ConstructTreeEntity = {
             id: label,
-            path: path,
+            path: constructTreePath,
             children: childWithAttributes
         }
 
-        const testNode = new ConstructNode(label, vscode.TreeItemCollapsibleState.Collapsed, treeEntity)
+        const testNode = new ConstructNode(
+            new FakeParentNode(cdkJsonPath),
+            label,
+            vscode.TreeItemCollapsibleState.Collapsed,
+            treeEntity
+        )
 
         const childNodes = await testNode.getChildren()
-        assert.strictEqual(childNodes.length, 1)
+        assert.strictEqual(childNodes.length, 1, 'Expected child node with attributes to be collapsed')
         assert.strictEqual(childNodes[0].collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
     })
 
-    it('returns child node if a construct has grandchildren', async () => {
+    it('returns child node of PropertyNode when construct has props', async () => {
+        const treeEntity: ConstructTreeEntity = {
+            id: label,
+            path: constructTreePath,
+            attributes: treeUtils.generateAttributes()
+        }
+
         const testNode = new ConstructNode(
+            new FakeParentNode(cdkJsonPath),
             label,
             vscode.TreeItemCollapsibleState.Collapsed,
-            treeUtils.generateConstructTreeEntity(label, path, true)
+            treeEntity
         )
 
         const childNodes = await testNode.getChildren()
         assert.strictEqual(childNodes.length, 1)
-        assert.strictEqual(childNodes[0] instanceof ConstructNode, true)
+        assert.strictEqual(childNodes[0] instanceof PropertyNode, true, 'Expected child node to be a PropertyNode')
     })
+
+    it('returns child nodes of PropertyNode and ConstructNode when construct has props and children', async () => {
+        const treeWithChildrenAndProps: ConstructTreeEntity = {
+            id: label,
+            path: constructTreePath,
+            children: { child: treeUtils.generateConstructTreeEntity(label, constructTreePath) },
+            attributes: treeUtils.generateAttributes()
+        }
+
+        const testNode = new ConstructNode(
+            new FakeParentNode(cdkJsonPath),
+            label,
+            vscode.TreeItemCollapsibleState.Collapsed,
+            treeWithChildrenAndProps
+        )
+        const childNodes = await testNode.getChildren()
+        assert.strictEqual(childNodes.length, 2)
+        assert.strictEqual(childNodes[0] instanceof PropertyNode, true, 'Expected child node to be a PropertyNode')
+        assert.strictEqual(childNodes[1] instanceof ConstructNode, true, 'Expected child node to be a ConstructNode')
+    })
+
+    it('returns child node if a construct has grandchildren', async () => {
+        const testNode = new ConstructNode(
+            new FakeParentNode(cdkJsonPath),
+            label,
+            vscode.TreeItemCollapsibleState.Collapsed,
+            treeUtils.generateConstructTreeEntity(label, constructTreePath, true)
+        )
+
+        const childNodes = await testNode.getChildren()
+        assert.strictEqual(childNodes.length, 1)
+        assert.strictEqual(childNodes[0] instanceof ConstructNode, true, 'Expected child node to be a ConstructNode')
+    })
+
+    function generateTestNode(displayLabel: string): ConstructNode {
+        return new ConstructNode(
+            new FakeParentNode(cdkJsonPath),
+            displayLabel,
+            vscode.TreeItemCollapsibleState.Collapsed,
+            treeUtils.generateConstructTreeEntity(displayLabel, constructTreePath)
+        )
+    }
 })
 
-function generateTestNode(label: string, path: string): ConstructNode {
-    return new ConstructNode(
-        label,
-        vscode.TreeItemCollapsibleState.Collapsed,
-        treeUtils.generateConstructTreeEntity(label, path)
-    )
+class FakeParentNode extends AWSTreeNodeBase {
+    public constructor(label: string) {
+        super(label)
+        this.id = label
+    }
 }
