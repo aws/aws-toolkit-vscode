@@ -78,6 +78,8 @@ task buildReSharperPlugin {
     })
 }
 
+project.tasks.clean.dependsOn(project.tasks.cleanBuildReSharperPlugin)
+
 private File getReSharperSdkPath() {
     def sdkPath = intellij.ideaDependency.classes
     println("SDK path: $sdkPath")

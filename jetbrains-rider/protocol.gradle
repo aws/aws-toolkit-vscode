@@ -147,5 +147,6 @@ task cleanProtocolModels {
         }
     }
 }
+project.tasks.clean.dependsOn(cleanProtocolModels)
 
 jar.dependsOn generateModel
