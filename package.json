@@ -342,6 +342,17 @@
                 "fileMatch": "*ecs-task-def.json",
                 "url": "https://ecs-intellisense.s3-us-west-2.amazonaws.com/task-definition/schema.json"
             }
+        ],
+        "languages": [{
+            "id": "asl",
+            "extensions": [ ".asl.json", ".asl" ],
+            "aliases": [ "Amazon States Language" ]
+        }],
+        "snippets": [
+            {
+                "language": "asl",
+                "path": "./snippets/stepFunctions.json"
+            }
         ]
     },
     "scripts": {

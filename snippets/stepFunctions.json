@@ -1,0 +1,259 @@
+{
+    "helloWorld": {
+        "prefix": "sfhw",
+        "body": [
+            "{",
+            "\t\"StartAt\": \"${1:HelloWorld}\",",
+            "\t\"States\": {",
+            "\t\t\"${1:HelloWorld}\": {",
+            "\t\t\t\"Type\": \"Pass\",",
+            "\t\t\t\"Result\": \"Hello World!\",",
+            "\t\t\t\"End\": \"True\"",
+            "\t\t}",
+            "\t}",
+            "}"
+        ],
+        "description": "Code snippet for a basic Hello World state machine."
+    },
+    "passState": {
+        "prefix": "sfps",
+        "body": [
+            "\"${1:PassState}\": {",
+            "\t\"Type\": \"Pass\",",
+            "\t\"Result\": {",
+            "\t\t\"data1\": 0.5,",
+            "\t\t\"data2\": 1.5",
+            "\t},",
+            "\t\"ResultPath\": \"\\$.result\",",
+            "\t\"Next\": \"${2:NextState}\"",
+            "}"
+        ],
+        "description": "Code snippet for a Pass state.\n\n A Pass state passes its input to its output, without performing work."
+    },
+    "taskStateLambda": {
+        "prefix": "sftsl",
+        "body": [
+            "\"${1:Invoke Lambda function}\": {",
+            "\t\"Type\": \"Task\",",
+            "\t\"Resource\": \"arn:aws:states:::lambda:invoke\",",
+            "\t\"Parameters\": {",
+            "\t\t\"FunctionName\": \"${3:arn:aws:lambda:REGION:ACCOUNT_ID:function:FUNCTION_NAME}\",",
+            "\t\t\"Payload\": {",
+            "\t\t\t\"Input.\\$\": \"\\$\"",
+            "\t\t}",
+            "\t},",
+            "\t\"Next\": \"${2:NextState}\"",
+            "}"
+        ],
+        "description": "Code snippet for a Lambda Task state.\n\n Calls the AWS Lambda Invoke API to invoke a function."
+    },
+    "taskStateSNS": {
+        "prefix": "sftssns",
+        "body": [
+            "\"${1:Send message to SNS}\": {",
+            "\t\"Type\": \"Task\",",
+            "\t\"Resource\": \"arn:aws:states:::sns:publish\",",
+            "\t\"Parameters\": {",
+            "\t\t\"TopicArn\": \"${3:arn:aws:sns:REGION:ACCOUNT_ID:myTopic}\",",
+            "\t\t\"Message\": {",
+            "\t\t\t\"Input\": \"${4:Hello from Step Functions!}\"",
+            "\t\t}",
+            "\t},",
+            "\t\"Next\": \"${2:NextState}\"",
+            "}"
+        ],
+        "description": "Code snippet for an SNS Publish Task state.\n\n Calls the Amazon SNS Publish API to send a message to a destination."
+    },
+    "taskStateBatch": {
+        "prefix": "sftsb",
+        "body": [
+            "\"${1:Manage Batch task}\": {",
+            "\t\"Type\": \"Task\",",
+            "\t\"Resource\": \"arn:aws:states:::batch:submitJob.sync\",",
+            "\t\"Parameters\": {",
+            "\t\t\"JobDefinition\": \"${3:arn:aws:batch:REGION:ACCOUNT_ID:job-definition/testJobDefinition}\",",
+            "\t\t\"JobName\": \"${4:myJobName}\",",
+            "\t\t\"JobQueue\": \"${5:arn:aws:batch:REGION:ACCOUNT_ID:job-queue/testQueue}\"",
+            "\t},",
+            "\t\"Next\": \"${2:NextState}\"",
+            "}"
+        ],
+        "description": "Code snippet for a Batch job Task state.\n\n Calls the AWS Batch SubmitJob API and resumes the execution once the job is complete."
+    },
+    "taskStateECS": {
+        "prefix": "sftse",
+        "body": [
+            "\"${1:Manage ECS task}\": {",
+            "\t\"Type\": \"Task\",",
+            "\t\"Resource\": \"arn:aws:states:::ecs:runTask.sync\",",
+            "\t\"Parameters\": {",
+            "\t\t\"LaunchType\": \"FARGATE\",",
+            "\t\t\"Cluster\": \"${3:arn:aws:ecs:REGION:ACCOUNT_ID:cluster/MyECSCluster}\",",
+            "\t\t\"TaskDefinition\": \"${4:arn:aws:ecs:REGION:ACCOUNT_ID:task-definition/MyTaskDefinition:1}\"",
+            "\t},",
+            "\t\"Next\": \"${2:NextState}\"",
+            "}"
+        ],
+        "description": "Code snippet for an ECS RunTask Task state.\n\n Calls the Amazon ECS RunTask API and resumes the execution once the ECS task is complete."
+    },
+    "taskStateSQS": {
+        "prefix": "sftssqs",
+        "body": [
+            "\"${1:Send message to SQS}\": {",
+            "\t\"Type\": \"Task\",",
+            "\t\"Resource\": \"arn:aws:states:::sqs:sendMessage\",",
+            "\t\"Parameters\": {",
+            "\t\t\"QueueUrl\": \"${3:https://sqs.REGION.amazonaws.com/ACCOUNT_ID/myQueue}\",",
+            "\t\t\"MessageBody\": {",
+            "\t\t\t\"Input\": \"${4:Hello from Step Functions!}\"",
+            "\t\t}",
+            "\t},",
+            "\t\"Next\": \"${2:NextState}\"",
+            "}"
+        ],
+        "description": "Code snippet for an SQS Publish Task state.\n\n Calls the Amazon SQS SendMessage API to send a message to a queue."
+    },
+    "choiceState": {
+        "prefix": "sfcs",
+        "body": [
+            "\"${1:ChoiceState}\": {",
+            "\t\"Type\": \"Choice\",",
+            "\t\"Choices\": [",
+            "\t\t{",
+            "\t\t\t\"Variable\": \"\\$.${2:variable}\",",
+            "\t\t\t\"BooleanEquals\": true,",
+            "\t\t\t\"Next\": \"TrueState\"",
+            "\t\t},",
+            "\t\t{",
+            "\t\t\t\"Variable\": \"\\$.${2:variable}\",",
+            "\t\t\t\"BooleanEquals\": false,",
+            "\t\t\t\"Next\": \"FalseState\"",
+            "\t\t}",
+            "\t],",
+            "\t\"Default\": \"${3:DefaultState}\"",
+            "}"
+        ],
+        "description": "Code snippet for a Choice state.\n\n A Choice state adds branching logic to a state machine."
+    },
+    "waitState": {
+        "prefix": "sfws",
+        "body": [
+            "\"${1:WaitState}\": {",
+            "\t\"Type\": \"Wait\",",
+            "\t\"Seconds\": 10,",
+            "\t\"Next\": \"${2:NextState}\"",
+            "}"
+        ],
+        "description": "Code snippet for a Wait state.\n\n A Wait state delays the state machine from continuing for a specified time."
+    },
+    "succeedState": {
+        "prefix": "sfss",
+        "body": [
+            "\"${1:SuccessState}\": {",
+            "\t\"Type\": \"Succeed\"",
+            "}"
+        ],
+        "description": "Code snippet for a Succeed state.\n\n A Succeed state stops an execution successfully."
+    },
+    "failState": {
+        "prefix": "sffs",
+        "body": [
+            "\"${1:FailState}\": {",
+            "\t\"Type\": \"Fail\",",
+            "\t\"Cause\": \"${2:Invalid response.}\",",
+            "\t\"Error\": \"${3:ErrorA}\"",
+            "}"
+        ],
+        "description": "Code snippet for a Fail state.\n\n A Fail state stops the execution of the state machine and marks it as a failure."
+    },
+    "parallelState": {
+        "prefix": "sfpls",
+        "body": [
+            "\"${1:ParallelState}\": {",
+            "\t\"Type\": \"Parallel\",",
+            "\t\"Branches\": [",
+            "\t\t{",
+            "\t\t\t\"StartAt\": \"State1\",",
+            "\t\t\t\"States\": {",
+            "\t\t\t\t\"State1\": {",
+            "\t\t\t\t\t\"Type\": \"Pass\",",
+            "\t\t\t\t\t\"End\": \"True\"",
+            "\t\t\t\t}",
+            "\t\t\t}",
+            "\t\t},",
+            "\t\t{",
+            "\t\t\t\"StartAt\": \"State2\",",
+            "\t\t\t\"States\": {",
+            "\t\t\t\t\"State2\": {",
+            "\t\t\t\t\t\"Type\": \"Pass\",",
+            "\t\t\t\t\t\"End\": \"True\"",
+            "\t\t\t\t}",
+            "\t\t\t}",
+            "\t\t}",
+            "\t],",
+            "\t\"Next\": \"${2:NextState}\"",
+            "}"
+        ],
+        "description": "Code snippet for a Parallel state.\n\n A Parallel state can be used to create parallel branches of execution in your state machine."
+    },
+    "mapState": {
+        "prefix": "sfms",
+        "body": [
+            "\"${1:MapState}\": {",
+            "\t\"Type\": \"Map\",",
+            "\t\"ItemsPath\": \"\\$.array\",",
+            "\t\"MaxConcurrency\": 0,",
+            "\t\"Iterator\": {",
+            "\t\t\"StartAt\": \"Pass\",",
+            "\t\t\"States\": {",
+            "\t\t\t\"Pass\": {",
+            "\t\t\t\t\"Type\": \"Pass\",",
+            "\t\t\t\t\"Result\": \"Done!\",",
+            "\t\t\t\t\"End\": \"True\"",
+            "\t\t\t}",
+            "\t\t}",
+            "\t},",
+            "\t\"ResultPath\": \"\\$.output\",",
+            "\t\"Next\": \"${2:NextState}\"",
+            "}"
+        ],
+        "description": "Code snippet for a Map state.\n\n The Map state can be used to run a set of steps for each element of an input array. While the Parallel state executes multiple branches of steps using the same input, a Map state will execute the same steps for multiple entries of an array in the state input."
+    },
+    "retryField": {
+        "prefix": "sfrf",
+        "body": [
+            "\"Retry\": [",
+            "\t{",
+            "\t\t\"ErrorEquals\": [",
+            "\t\t\t\"ErrorA\",",
+            "\t\t\t\"ErrorB\"",
+            "\t\t],",
+            "\t\t\"IntervalSeconds\": 1,",
+            "\t\t\"BackoffRate\": 2,",
+            "\t\t\"MaxAttempts\": 2",
+            "\t},",
+            "\t{",
+            "\t\t\"ErrorEquals\": [",
+            "\t\t\t\"ErrorC\"",
+            "\t\t],",
+            "\t\t\"IntervalSeconds\": 5",
+            "\t}",
+            "]"
+        ],
+        "description": "Code snippet for a Retry field.\n\n Use a Retry field to retry a task state after an error occurs."
+    },
+    "catchField": {
+        "prefix": "sfcf",
+        "body": [
+            "\"Catch\": [",
+            "\t{",
+            "\t\t\"ErrorEquals\": [",
+            "\t\t\t\"${2:States.ALL}\"",
+            "\t\t],",
+            "\t\t\"Next\": \"${1:NextState}\"",
+            "\t}",
+            "]"
+        ],
+        "description": "Code snippet for a Catch field.\n\n Use a Catch field to catch errors and revert to a fallback state."
+    }
+}
