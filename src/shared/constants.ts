@@ -31,5 +31,9 @@ export const samInitDocUrl: string = 'https://docs.aws.amazon.com/toolkit-for-vs
 export const samDeployDocUrl: string =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/deploy-serverless-app.html'
 
+// URLs for CDK
+export const cdkProvideFeedbackUrl: string = `${githubUrl}/issues/new/choose`
+export const cdkDocumentationUrl: string = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/cdk.html'
+
 const npmPackage = () => require('../../../package.json') as NpmPackage
 export const pluginVersion = npmPackage().version
