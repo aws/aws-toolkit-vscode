@@ -6,9 +6,10 @@
 const vscode = acquireVsCodeApi()
 
 let containerId = "#svgcontainer"
+
 let options = {
-    width: 600,
-    height: 5000,
+    width: window.innerWidth,
+    height: window.innerHeight,
     resizeHeight: true
 }
 

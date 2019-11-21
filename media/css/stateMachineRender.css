@@ -7,6 +7,7 @@
 /*
  * Custom theming applied on top of existing styles.
  * Adds additional styles for when user has dark/light/high-contrast themes.
+ * Fixes height issue in vscode webview iframe. 
  */
 
 
@@ -14,10 +15,23 @@
  * General
  */
 
- body {
-    background-color: var(--vscode-editor-background);
+/* Sizing CSS */
+html, body {
+    height: 100%;
+    margin: 0px;
+    padding: 0px;
+    overflow-y: hidden;
 }
 
+#svgcontainer {
+    height: 100%;
+    padding: 0px;
+}
+
+/* Theming CSS Below */
+body {
+    background-color: var(--vscode-editor-background);
+}
 
 /* 
  * Dark Theme Styles
