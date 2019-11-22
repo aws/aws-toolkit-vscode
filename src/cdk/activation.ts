@@ -5,7 +5,10 @@
 
 import * as vscode from 'vscode'
 import { cdkDocumentationUrl, cdkProvideFeedbackUrl } from '../shared/constants'
-import { registerCommand } from '../shared/telemetry/telemetryUtils'
+import { ext } from '../shared/extensionGlobals'
+import { TelemetryEvent } from '../shared/telemetry/telemetryEvent'
+import { TelemetryNamespace } from '../shared/telemetry/telemetryTypes'
+import { defaultMetricDatum, registerCommand } from '../shared/telemetry/telemetryUtils'
 import { AwsCdkExplorer } from './explorer/awsCdkExplorer'
 import { cdk } from './globals'
 
@@ -22,7 +25,30 @@ export async function activate(activateArguments: { extensionContext: vscode.Ext
         treeDataProvider: explorer,
         showCollapseAll: true
     })
+
+    // Indicates workspace includes a CDK app and user has expanded the Node
+    view.onDidExpandElement(e => {
+        if (e.element.contextValue === 'awsCdkAppNode') {
+            ext.telemetry.record(getTelemetryEvent('appNodeExpanded'))
+        }
+    })
+
+    // Indicates configuration setting to enable the CDK explorer was toggled
+    vscode.workspace.onDidChangeConfiguration(e => {
+        if (e.affectsConfiguration('aws.cdk.explorer.enabled')) {
+            ext.telemetry.record(getTelemetryEvent('explorerEnabledToggled'))
+        }
+    })
+
     activateArguments.extensionContext.subscriptions.push(view)
+}
+
+function getTelemetryEvent(eventName: string): TelemetryEvent {
+    return {
+        namespace: TelemetryNamespace.Cdk,
+        createTime: new Date(),
+        data: [defaultMetricDatum(eventName)]
+    }
 }
 
 function initializeIconPaths(context: vscode.ExtensionContext) {
