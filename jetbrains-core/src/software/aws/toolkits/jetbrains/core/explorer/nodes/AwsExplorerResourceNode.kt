@@ -13,11 +13,19 @@ import javax.swing.Icon
  */
 abstract class AwsExplorerResourceNode<T>(
     project: Project,
-    val serviceId: String,
+    private val serviceId: String,
     value: T,
     awsIcon: Icon,
-    val immutable: Boolean = false
-) : AwsExplorerNode<T>(project, value, awsIcon) {
+    private val immutable: Boolean = false
+) : AwsExplorerNode<T>(project, value, awsIcon),
+    ResourceActionNode {
+    override fun actionGroupName() = "aws.toolkit.explorer.$serviceId.${resourceType()}".let {
+        if (immutable) {
+            "$it.immutable"
+        } else {
+            it
+        }
+    }
 
     override fun isAlwaysLeaf(): Boolean = true
 

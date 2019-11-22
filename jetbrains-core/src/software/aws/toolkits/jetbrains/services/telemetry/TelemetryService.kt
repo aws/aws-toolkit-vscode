@@ -30,14 +30,14 @@ interface TelemetryService : Disposable {
         val awsRegion: String = METADATA_NA
     )
 
-    fun record(metricEventMetadata: MetricEventMetadata, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}) = record(null, metricEventMetadata, buildEvent)
+    fun record(project: Project?, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}) = record(project, null, buildEvent)
 
     // TODO consider using DataProvider for the metricEventMetadata.
     @Deprecated("Record should not be called with a namespace")
     fun record(namespace: String?, metricEventMetadata: MetricEventMetadata, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): MetricEvent
 
     @Deprecated("Record should not be called with a namespace")
-    fun record(project: Project?, namespace: String, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): CompletableFuture<MetricEvent> {
+    fun record(project: Project?, namespace: String?, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): CompletableFuture<MetricEvent> {
         val metricEvent = CompletableFuture<MetricEvent>()
         ApplicationManager.getApplication().executeOnPooledThread {
             try {

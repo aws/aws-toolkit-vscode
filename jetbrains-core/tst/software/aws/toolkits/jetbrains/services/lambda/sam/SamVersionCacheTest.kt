@@ -50,7 +50,7 @@ class SamVersionCacheTest {
         val version = "0.0.a"
 
         expectedException.expect(IllegalStateException::class.java)
-        expectedException.expectMessage(message("sam.executable.version_parse_error", version))
+        expectedException.expectMessage(message("executableCommon.version_parse_error", SamCommon.SAM_NAME, version))
 
         val samPath = SamCommonTestUtils.makeATestSam(SamCommonTestUtils.getVersionAsJson(version)).toString()
         SamVersionCache.evaluateBlocking(samPath)
@@ -72,7 +72,7 @@ class SamVersionCacheTest {
         val message = "Error: no such option: --some_option"
 
         expectedException.expect(IllegalStateException::class.java)
-        expectedException.expectMessage(message("sam.executable.unexpected_output", message))
+        expectedException.expectMessage(message("executableCommon.unexpected_output", SamCommon.SAM_NAME, message))
 
         val samPath = SamCommonTestUtils.makeATestSam(message, exitCode = 1).toString()
         SamVersionCache.evaluateBlocking(samPath)
@@ -83,7 +83,7 @@ class SamVersionCacheTest {
         val message = ""
 
         expectedException.expect(IllegalStateException::class.java)
-        expectedException.expectMessage(message("sam.executable.empty_info"))
+        expectedException.expectMessage(message("executableCommon.empty_info", SamCommon.SAM_NAME))
 
         val samPath = SamCommonTestUtils.makeATestSam(message).toString()
         SamVersionCache.evaluateBlocking(samPath)

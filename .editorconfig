@@ -41,3 +41,6 @@ ij_java_while_brace_force = always
 ij_kotlin_code_style_defaults = KOTLIN_OFFICIAL
 ij_kotlin_name_count_to_use_star_import = 2147483647
 ij_kotlin_name_count_to_use_star_import_for_members = 2147483647
+
+[{*.yml,*.yaml}]
+indent_size = 2

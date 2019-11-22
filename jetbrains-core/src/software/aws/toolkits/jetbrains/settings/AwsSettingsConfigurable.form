@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable">
-  <grid id="27dc6" binding="panel" layout-manager="GridLayoutManager" row-count="3" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+  <grid id="27dc6" binding="panel" layout-manager="GridLayoutManager" row-count="4" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
     <margin top="0" left="0" bottom="0" right="0"/>
     <constraints>
       <xy x="20" y="20" width="1292" height="502"/>
@@ -8,7 +8,7 @@
     <properties/>
     <border type="none"/>
     <children>
-      <grid id="59b4e" binding="applicationLevelSettings" layout-manager="GridLayoutManager" row-count="2" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+      <grid id="cb6a8" binding="serverlessSettings" layout-manager="GridLayoutManager" row-count="2" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
         <margin top="0" left="0" bottom="0" right="0"/>
         <constraints>
           <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
@@ -16,48 +16,29 @@
         <properties/>
         <border type="none"/>
         <children>
-          <component id="ec3eb" class="com.intellij.ui.components.JBLabel">
+          <component id="8f80" class="com.intellij.ui.components.JBLabel">
             <constraints>
-              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
               <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws.settings.sam.location"/>
             </properties>
           </component>
-          <component id="c0258" class="com.intellij.openapi.ui.TextFieldWithBrowseButton" binding="samExecutablePath" custom-create="true">
+          <component id="93255" class="com.intellij.openapi.ui.TextFieldWithBrowseButton" binding="samExecutablePath" custom-create="true">
             <constraints>
               <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties/>
           </component>
-          <component id="bd3c7" class="com.intellij.ui.components.labels.LinkLabel" binding="samHelp" custom-create="true">
+          <component id="9d0c9" class="com.intellij.ui.components.labels.LinkLabel" binding="samHelp" custom-create="true">
             <constraints>
               <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties/>
           </component>
-          <component id="9889d" class="com.intellij.ui.components.JBCheckBox" binding="enableTelemetry">
+          <component id="201e8" class="com.intellij.ui.components.JBCheckBox" binding="showAllHandlerGutterIcons">
             <constraints>
               <grid row="1" column="0" row-span="1" col-span="3" vsize-policy="3" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-            </constraints>
-            <properties>
-              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws.settings.telemetry.option"/>
-              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws.settings.telemetry.description"/>
-            </properties>
-          </component>
-        </children>
-      </grid>
-      <grid id="cb6a8" binding="projectLevelSettings" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
-        <margin top="0" left="0" bottom="0" right="0"/>
-        <constraints>
-          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
-        </constraints>
-        <properties/>
-        <border type="none"/>
-        <children>
-          <component id="1cd8d" class="com.intellij.ui.components.JBCheckBox" binding="showAllHandlerGutterIcons">
-            <constraints>
-              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
               <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws.settings.sam.show_all_gutter_icons"/>
@@ -66,9 +47,58 @@
           </component>
         </children>
       </grid>
-      <vspacer id="58b50">
+      <grid id="8c50f" binding="applicationLevelSettings" layout-manager="GridLayoutManager" row-count="1" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+        <margin top="0" left="0" bottom="0" right="0"/>
         <constraints>
-          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
+          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <component id="70c25" class="com.intellij.ui.components.JBCheckBox" binding="enableTelemetry">
+            <constraints>
+              <grid row="0" column="0" row-span="1" col-span="3" vsize-policy="3" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws.settings.telemetry.option"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws.settings.telemetry.description"/>
+            </properties>
+          </component>
+        </children>
+      </grid>
+      <grid id="31eb0" binding="remoteDebugSettings" layout-manager="GridLayoutManager" row-count="1" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+        <margin top="0" left="0" bottom="0" right="0"/>
+        <constraints>
+          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <component id="93605" class="com.intellij.ui.components.JBLabel">
+            <constraints>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws.settings.clouddebug.location"/>
+            </properties>
+          </component>
+          <component id="f49bd" class="com.intellij.openapi.ui.TextFieldWithBrowseButton" binding="cloudDebugExecutablePath" custom-create="true">
+            <constraints>
+              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties/>
+          </component>
+          <component id="1acc8" class="com.intellij.ui.components.labels.LinkLabel" binding="cloudDebugHelp" custom-create="true">
+            <constraints>
+              <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties/>
+          </component>
+        </children>
+      </grid>
+      <vspacer id="4147">
+        <constraints>
+          <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
         </constraints>
       </vspacer>
     </children>

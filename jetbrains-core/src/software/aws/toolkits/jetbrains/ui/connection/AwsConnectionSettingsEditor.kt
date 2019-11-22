@@ -79,7 +79,7 @@ abstract class AwsConnectionsRunConfigurationBase<T : BaseAwsConnectionOptions>(
 
     protected fun resolveRegion() = regionId()?.let {
         AwsRegionProvider.getInstance().regions()[it]
-    } ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
+    } ?: throw RuntimeConfigurationError(message("configure.validate.no_region_specified"))
 
     final override fun readExternal(element: Element) {
         super.readExternal(element)

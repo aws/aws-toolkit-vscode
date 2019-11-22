@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.core
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.components.ServiceManager
-import com.intellij.util.io.HttpRequests
 import com.intellij.util.io.createDirectories
 import software.aws.toolkits.core.utils.DefaultRemoteResourceResolver
 import software.aws.toolkits.core.utils.RemoteResourceResolver
@@ -45,7 +44,7 @@ class DefaultRemoteResourceResolverProvider : RemoteResourceResolverProvider {
 
         object HttpRequestUrlFetcher : UrlFetcher {
             override fun fetch(url: String, file: Path) {
-                HttpRequests.request(url).userAgent(AwsClientManager.userAgent).saveToFile(file.toFile(), null)
+                saveFileFromUrl(url, file)
             }
         }
     }

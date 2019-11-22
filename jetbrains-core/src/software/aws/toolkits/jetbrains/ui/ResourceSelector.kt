@@ -194,16 +194,16 @@ class ResourceSelector<T> private constructor(
         private val LOG = getLogger<ResourceSelector<*>>()
         @JvmStatic
         fun builder(project: Project) = object : ResourceBuilder {
-            override fun <T> resource(resource: () -> Resource<out Collection<T>>): ResourceBuilderOptions<T> = ResourceBuilderOptions(project, resource)
+            override fun <T> resource(resource: (() -> Resource<out Collection<T>>?)): ResourceBuilderOptions<T> = ResourceBuilderOptions(project, resource)
         }
     }
 
     interface ResourceBuilder {
         fun <T> resource(resource: Resource<out Collection<T>>): ResourceBuilderOptions<T> = resource { resource }
-        fun <T> resource(resource: () -> Resource<out Collection<T>>): ResourceBuilderOptions<T>
+        fun <T> resource(resource: (() -> Resource<out Collection<T>>?)): ResourceBuilderOptions<T>
     }
 
-    class ResourceBuilderOptions<T> internal constructor(private val project: Project, private val resource: () -> Resource<out Collection<T>>) {
+    class ResourceBuilderOptions<T> internal constructor(private val project: Project, private val resource: (() -> Resource<out Collection<T>>?)) {
         private var loadOnCreate = true
         private var sortOnLoad = true
         private var comboBoxModel: MutableCollectionComboBoxModel<T> = MutableCollectionComboBoxModel<T>()

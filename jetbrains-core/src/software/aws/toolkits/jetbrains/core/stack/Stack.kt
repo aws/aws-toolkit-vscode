@@ -8,10 +8,16 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.ui.OnePixelSplitter
+import icons.AwsIcons
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
+import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindow
+import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowManager
+import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowTab
+import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowType
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationStackNode
 import software.aws.toolkits.resources.message
 import javax.swing.BoxLayout
@@ -21,22 +27,15 @@ import javax.swing.SwingUtilities
 private const val UPDATE_STACK_STATUS_INTERVAL = 5000
 private const val REDRAW_ANIMATED_ICON_INTERVAL = 70
 private const val TREE_TABLE_INITIAL_PROPORTION = 0.25f
+internal val STACK_TOOL_WINDOW =
+    ToolkitToolWindowType("AWS.CloudFormation", message("cloudformation.toolwindow.label"), icon = AwsIcons.Logos.CLOUD_FORMATION_TOOL)
 
 class StackWindowManager(private val project: Project) {
-
-    private val stackTabs = mutableMapOf<String, ToolWindowTab>()
+    private val toolWindow = ToolkitToolWindowManager.getInstance(project, STACK_TOOL_WINDOW)
 
     fun openStack(stackName: String, stackId: String) {
         assert(SwingUtilities.isEventDispatchThread())
-        val tab = stackTabs[stackId]
-        when {
-            tab?.isDisposed() == false -> tab.show()
-            else -> {
-                val stackUI = StackUI(project, stackName)
-                stackTabs[stackId] = stackUI.toolWindowTab
-                stackUI.start()
-            }
-        }
+        toolWindow.find(stackId)?.run { show() } ?: StackUI(project, stackName, stackId, toolWindow).start()
     }
 
     companion object {
@@ -50,12 +49,9 @@ class OpenStackUiAction : SingleResourceNodeAction<CloudFormationStackNode>(mess
     }
 }
 
-private class StackUI(
-    private val project: Project,
-    private val stackName: String
-) : UpdateListener {
+private class StackUI(private val project: Project, private val stackName: String, stackId: String, toolWindow: ToolkitToolWindow) : UpdateListener {
 
-    internal val toolWindowTab: ToolWindowTab
+    internal val toolWindowTab: ToolkitToolWindowTab
     private val animator: IconAnimator
     private val updater: Updater
     private val notificationGroup: NotificationGroup
@@ -69,8 +65,8 @@ private class StackUI(
         table = TableViewImpl()
         pageButtons = PageButtons(this::onPageButtonClick)
 
-        notificationGroup = NotificationGroup.findRegisteredGroup(STACK_TOOLWINDOW_ID)
-            ?: NotificationGroup.toolWindowGroup(STACK_TOOLWINDOW_ID, STACK_TOOLWINDOW_ID)
+        notificationGroup = NotificationGroup.findRegisteredGroup(STACK_TOOL_WINDOW.id)
+            ?: NotificationGroup.toolWindowGroup(STACK_TOOL_WINDOW.id, STACK_TOOL_WINDOW.id)
 
         val mainPanel = OnePixelSplitter(false, TREE_TABLE_INITIAL_PROPORTION).apply {
             firstComponent = tree.component
@@ -90,12 +86,9 @@ private class StackUI(
             client = AwsClientManager.getInstance(project).getClient(),
             setPagesAvailable = pageButtons::setPagesAvailable
         )
-        toolWindowTab = ToolWindowTab(
-            component = mainPanel,
-            project = project,
-            stackName = stackName,
-            disposables = *arrayOf(tree, updater, animator, table, pageButtons)
-        )
+
+        toolWindowTab = toolWindow.addTab(stackName, mainPanel, id = stackId)
+        listOf(tree, updater, animator, table, pageButtons).forEach { Disposer.register(toolWindowTab, it) }
     }
 
     fun start() {
@@ -106,7 +99,7 @@ private class StackUI(
 
     override fun onError(message: String) {
         notify(message, NotificationType.ERROR)
-        toolWindowTab.destroy()
+        toolWindowTab.dispose()
     }
 
     override fun onStackStatusChanged(stackStatus: StackStatus) {

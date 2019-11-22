@@ -24,7 +24,7 @@ class SamSettings : PersistentStateComponent<SamConfiguration> {
      */
     val executablePath: String?
         get() = if (state.savedExecutablePath.isNullOrEmpty()) {
-            SamExecutableDetector().detect()
+            SamExecutableDetector().find()
         } else {
             state.savedExecutablePath
         }

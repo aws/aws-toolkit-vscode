@@ -3,8 +3,11 @@
 
 package software.aws.toolkits.jetbrains.core.executables
 
+import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.extensions.ExtensionPointName
+import com.intellij.util.io.createDirectories
 import java.nio.file.Path
+import java.nio.file.Paths
 
 interface ExecutableType<VersionScheme> {
     val id: String
@@ -24,6 +27,8 @@ interface ExecutableType<VersionScheme> {
         fun <T : ExecutableType<*>> getExecutable(clazz: Class<T>): T = executables().filterIsInstance(clazz).first()
 
         inline fun <reified T : ExecutableType<*>> getInstance(): ExecutableType<*> = getExecutable(T::class.java)
+
+        val EXECUTABLE_DIRECTORY: Path = Paths.get(PathManager.getSystemPath(), "aws-static-resources", "executables").createDirectories()
     }
 }
 

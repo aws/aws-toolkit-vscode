@@ -1,0 +1,19 @@
+<!-- Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin>
+    <extensions defaultExtensionNs="com.intellij">
+        <codeInsight.lineMarkerProvider language="JavaScript" implementationClass="software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="aws.toolkit.lambda">
+        <runtimeGroup runtimeGroup="NODEJS" implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsRuntimeGroup"/>
+        <builder runtimeGroup="NODEJS" implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsLambdaBuilder"/>
+        <handlerResolver runtimeGroup="NODEJS" implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsLambdaHandlerResolver"/>
+        <sam.debugSupport runtimeGroup="NODEJS" implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsSamDebugSupport"/>
+        <sam.projectWizard runtimeGroup="NODEJS" implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsSamProjectWizard"/>
+    </extensions>
+    <extensions defaultExtensionNs="aws.toolkit.clouddebug">
+        <debuggerSupport implementation="software.aws.toolkits.jetbrains.services.clouddebug.nodejs.NodeJsDebuggerSupport"/>
+    </extensions>
+</idea-plugin>

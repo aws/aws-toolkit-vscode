@@ -16,18 +16,18 @@ object SamVersionCache : FileInfoCache<SemVer>() {
         if (process.exitCode != 0) {
             val output = process.stderr.trimEnd()
             if (output.contains(SamCommon.SAM_INVALID_OPTION_SUBSTRING)) {
-                throw IllegalStateException(message("sam.executable.unexpected_output", output))
+                throw IllegalStateException(message("executableCommon.unexpected_output", SamCommon.SAM_NAME, output))
             }
             throw IllegalStateException(output)
         } else {
             val output = process.stdout.trimEnd()
             if (output.isEmpty()) {
-                throw IllegalStateException(message("sam.executable.empty_info"))
+                throw IllegalStateException(message("executableCommon.empty_info", SamCommon.SAM_NAME))
             }
             val tree = SamCommon.mapper.readTree(output)
             val version = tree.get(SamCommon.SAM_INFO_VERSION_KEY).asText()
             return SemVer.parseFromText(version)
-                ?: throw IllegalStateException(message("sam.executable.version_parse_error", version))
+                ?: throw IllegalStateException(message("executableCommon.version_parse_error", SamCommon.SAM_NAME, version))
         }
     }
 

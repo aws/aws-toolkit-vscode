@@ -3,7 +3,6 @@
 
 def protocolGroup = 'protocol'
 
-// TODO: Remove and fix clean task
 ext.csDaemonGeneratedOutput = new File(resharperPluginPath, "src/AWS.Daemon/Protocol")
 ext.csPsiGeneratedOutput = new File(resharperPluginPath, "src/AWS.Psi/Protocol")
 ext.csAwsSettingGeneratedOutput = new File(resharperPluginPath, "src/AWS.Settings/Protocol")

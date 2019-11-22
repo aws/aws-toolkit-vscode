@@ -94,6 +94,7 @@ interface ExecutableManager {
     fun getExecutable(type: ExecutableType<*>): CompletionStage<ExecutableInstance>
     fun getExecutableIfPresent(type: ExecutableType<*>): ExecutableInstance
     fun setExecutablePath(type: ExecutableType<*>, path: Path): CompletionStage<ExecutableInstance>
+    fun removeExecutable(type: ExecutableType<*>)
 }
 ```
 
@@ -117,6 +118,3 @@ when(val executable = manager.getExecutable<SamExecutable>()) {
   is ExecutableInstance.UnresolvedExecutable -> promptCustomerToConfigure(executable.resolutionError)
 }
 ```
-
-## Open Question
-* How do path's get manually set?

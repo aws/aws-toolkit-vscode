@@ -13,4 +13,7 @@
         <handlerResolver runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.java.JavaLambdaHandlerResolver"/>
         <sam.projectWizard runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.java.JavaSamProjectWizard"/>
     </extensions>
+    <extensions defaultExtensionNs="aws.toolkit.clouddebug">
+        <debuggerSupport implementation="software.aws.toolkits.jetbrains.services.clouddebug.java.JvmDebuggerSupport"/>
+    </extensions>
 </idea-plugin>

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net461</TargetFramework>
+        <Prefer32Bit>False</Prefer32Bit>
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <RootNamespace>AWS.RiderDebuggerTools</RootNamespace>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="JetBrains.Rider.SDK" Version="$(RiderSDKVersion)" />
+        <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net461" Version="1.0.0-preview.2" />
+    </ItemGroup>
+    <ItemGroup>
+      <None Remove="Resources\AWS.DebuggerTools.runtimeconfig.json" />
+    </ItemGroup>
+    <ItemGroup>
+      <None Include="AWS.DebuggerTools.runtimeconfig.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+</Project>

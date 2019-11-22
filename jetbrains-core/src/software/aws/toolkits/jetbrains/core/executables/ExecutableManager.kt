@@ -9,8 +9,9 @@ import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
-import com.intellij.openapi.util.SystemInfo
-import com.intellij.util.EnvironmentUtil
+import com.intellij.openapi.project.DumbAware
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.startup.StartupActivity
 import com.intellij.util.io.exists
 import com.intellij.util.io.lastModified
 import software.aws.toolkits.core.utils.getLogger
@@ -23,13 +24,25 @@ import java.nio.file.attribute.FileTime
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 
-interface ExecutableManager {
+// A startup activity to load the executable manager at startup. This validates the executables if they exist on disk
+// which allows us to use them without explicitly loading loading them.
+// For more background on why this is the way it is: Services are lazily loaded, which means on the first get of the service it will be loaded.
+// Additionally, once it is loaded, the executables are validated in an async way, so they do not finish validating before the first real call happens.
+// This means that the first call to getExecutableIfPresent will fail because it does not explicitly validate (by design).
+class ExecutableLoader : StartupActivity, DumbAware {
+    override fun runActivity(project: Project) {
+        ExecutableManager.getInstance()
+    }
+}
 
+interface ExecutableManager {
     fun getExecutable(type: ExecutableType<*>): CompletionStage<ExecutableInstance>
     fun getExecutableIfPresent(type: ExecutableType<*>): ExecutableInstance
     fun setExecutablePath(type: ExecutableType<*>, path: Path): CompletionStage<ExecutableInstance>
+    fun removeExecutable(type: ExecutableType<*>)
 
     companion object {
+        @JvmStatic
         fun getInstance(): ExecutableManager = ServiceManager.getService(ExecutableManager::class.java)
     }
 }
@@ -94,6 +107,10 @@ class DefaultExecutableManager : PersistentStateComponent<ExecutableStateList>, 
             future.complete(executable)
         }
         return future
+    }
+
+    override fun removeExecutable(type: ExecutableType<*>) {
+        internalState.remove(type.id)
     }
 
     private fun load(type: ExecutableType<*>, persisted: ExecutableState?): ExecutableInstance {
@@ -181,33 +198,9 @@ sealed class ExecutableInstance {
         override val version: String,
         override val autoResolved: Boolean
     ) : ExecutableInstance(), ExecutableWithPath {
-        fun getCommandLine(): GeneralCommandLine {
-            // we have some env-hacks that we want to do, so we're building our own environment using the same util as GeneralCommandLine
-            // GeneralCommandLine will apply some more env patches prior to process launch (see startProcess()) so this should be fine
-            val effectiveEnvironment = EnvironmentUtil.getEnvironmentMap().toMutableMap()
-            // apply hacks
-            effectiveEnvironment.apply {
-                // GitHub issue: https://github.com/aws/aws-toolkit-jetbrains/issues/645
-                // strip out any AWS credentials in the parent environment
-                remove("AWS_ACCESS_KEY_ID")
-                remove("AWS_SECRET_ACCESS_KEY")
-                remove("AWS_SESSION_TOKEN")
-                // GitHub issue: https://github.com/aws/aws-toolkit-jetbrains/issues/577
-                // coerce the locale to UTF-8 as specified in PEP 538
-                // this is needed for Python 3.0 up to Python 3.7.0 (inclusive)
-                // we can remove this once our IDE minimum version has a fix for https://youtrack.jetbrains.com/issue/PY-30780
-                // currently only seeing this on OS X, so only scoping to that
-                if (SystemInfo.isMac) {
-                    // on other platforms this could be C.UTF-8 or C.UTF8
-                    this["LC_CTYPE"] = "UTF-8"
-                    // we're not setting PYTHONIOENCODING because we might break SAM on py2.7
-                }
-            }
-
-            return GeneralCommandLine(executablePath.toAbsolutePath().toString())
-                .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.NONE)
-                .withEnvironment(effectiveEnvironment)
-        }
+        // TODO get executable name as part of this
+        fun getCommandLine(): GeneralCommandLine =
+            ExecutableCommon.getCommandLine(executablePath.toAbsolutePath().toString(), executablePath.fileName.toString())
     }
 
     class InvalidExecutable(

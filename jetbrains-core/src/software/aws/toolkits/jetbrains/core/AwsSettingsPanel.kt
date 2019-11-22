@@ -92,7 +92,7 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
 
 class SettingsSelectorAction(private val showRegions: Boolean = true) : AnActionWrapper(message("configure.toolkit")), DumbAware {
     override fun doActionPerformed(e: AnActionEvent) {
-        val project = e.project ?: return
+        val project = e.getRequiredData(PlatformDataKeys.PROJECT)
         val settingsSelector = SettingsSelector(project)
         settingsSelector.settingsPopup(e.dataContext, showRegions = showRegions).showCenteredInCurrentWindow(project)
     }
@@ -176,18 +176,18 @@ class ChangeAccountSettingsAction(
         message("settings.credentials.profile_sub_menu"),
         popup
     ), DumbAware {
-            override fun createChildrenProvider(actionManager: ActionManager?): CachedValueProvider<Array<AnAction>> = CachedValueProvider {
-                val credentialManager = CredentialManager.getInstance()
+        override fun createChildrenProvider(actionManager: ActionManager?): CachedValueProvider<Array<AnAction>> = CachedValueProvider {
+            val credentialManager = CredentialManager.getInstance()
 
-                val actions = mutableListOf<AnAction>()
-                credentialManager.getCredentialProviders().forEach {
-                    actions.add(ChangeCredentialsAction(it))
-                }
-                actions.add(Separator.create())
-                actions.add(ActionManager.getInstance().getAction("aws.settings.upsertCredentials"))
-
-                CachedValueProvider.Result.create(actions.toTypedArray(), credentialManager)
+            val actions = mutableListOf<AnAction>()
+            credentialManager.getCredentialProviders().forEach {
+                actions.add(ChangeCredentialsAction(it))
             }
+            actions.add(Separator.create())
+            actions.add(ActionManager.getInstance().getAction("aws.settings.upsertCredentials"))
+
+            CachedValueProvider.Result.create(actions.toTypedArray(), credentialManager)
+        }
     }
 
     companion object {
