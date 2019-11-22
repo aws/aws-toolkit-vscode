@@ -35,8 +35,9 @@ export async function activate(activateArguments: { extensionContext: vscode.Ext
 
     // Indicates CDK explorer was disabled
     vscode.workspace.onDidChangeConfiguration(e => {
-        if (e.affectsConfiguration('aws.cdk.explorer.enabled')) {
-            if (!vscode.workspace.getConfiguration().get('aws.cdk.explorer.enabled')) {
+        const explorerEnabled = 'aws.cdk.explorer.enabled'
+        if (e.affectsConfiguration(explorerEnabled)) {
+            if (!vscode.workspace.getConfiguration().get(explorerEnabled)) {
                 ext.telemetry.record(getTelemetryEvent('explorerDisabled'))
             }
         }
