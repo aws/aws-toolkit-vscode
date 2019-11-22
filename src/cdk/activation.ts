@@ -29,14 +29,16 @@ export async function activate(activateArguments: { extensionContext: vscode.Ext
     // Indicates workspace includes a CDK app and user has expanded the Node
     view.onDidExpandElement(e => {
         if (e.element.contextValue === 'awsCdkAppNode') {
-            ext.telemetry.record(getTelemetryEvent('appNodeExpanded'))
+            ext.telemetry.record(getTelemetryEvent('appExpanded'))
         }
     })
 
-    // Indicates configuration setting to enable the CDK explorer was toggled
+    // Indicates CDK explorer was disabled
     vscode.workspace.onDidChangeConfiguration(e => {
         if (e.affectsConfiguration('aws.cdk.explorer.enabled')) {
-            ext.telemetry.record(getTelemetryEvent('explorerEnabledToggled'))
+            if (!vscode.workspace.getConfiguration().get('aws.cdk.explorer.enabled')) {
+                ext.telemetry.record(getTelemetryEvent('explorerDisabled'))
+            }
         }
     })
 
