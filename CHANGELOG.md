@@ -1,3 +1,10 @@
+## 1.3.0 2019-11-22
+
+- **Bug Fix** AWS Explorer now shows a node indicating when CloudFormation Stacks cannot be found in a region
+- **Bug Fix** AWS Explorer now sorts the resources that belong to each CloudFormation Stack
+- **Bug Fix** AWS Explorer now shows a node indicating when Lambda Functions cannot be found in a region
+- **Feature** CDK projects can now be visualized with the CDK Explorer
+
 ## 1.2.0 2019-10-17
 
 - **Bug Fix** Add '--no-interactive' flag to 'sam init' calls when SAM CLI version is greater than or equal to 0.30.0
