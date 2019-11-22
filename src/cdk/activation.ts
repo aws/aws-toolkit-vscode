@@ -12,6 +12,18 @@ import { defaultMetricDatum, registerCommand } from '../shared/telemetry/telemet
 import { AwsCdkExplorer } from './explorer/awsCdkExplorer'
 import { cdk } from './globals'
 
+const EXPLORER_ENABLED_CONFIG_KEY = 'aws.cdk.explorer.enabled'
+const APP_NODE_CONTEXT_KEY = 'awsCdkAppNode'
+
+/**
+ * Telemetry event names for recorded metrics
+ */
+enum TelemetryEventTypes {
+    APP_EXPANDED = 'appExpanded',
+    EXPLORER_RE_ENABLED = 'explorerEnabled',
+    EXPLORER_DISABLED = 'explorerDisabled'
+}
+
 /**
  * Activate AWS CDK related functionality for the extension.
  */
@@ -25,26 +37,39 @@ export async function activate(activateArguments: { extensionContext: vscode.Ext
         treeDataProvider: explorer,
         showCollapseAll: true
     })
+    activateArguments.extensionContext.subscriptions.push(view)
 
     // Indicates workspace includes a CDK app and user has expanded the Node
-    view.onDidExpandElement(e => {
-        if (e.element.contextValue === 'awsCdkAppNode') {
-            ext.telemetry.record(getTelemetryEvent('appExpanded'))
+    const appNodeExpanded = view.onDidExpandElement(e => {
+        if (e.element.contextValue === APP_NODE_CONTEXT_KEY) {
+            ext.telemetry.record(getTelemetryEvent(TelemetryEventTypes.APP_EXPANDED))
         }
     })
+    activateArguments.extensionContext.subscriptions.push(appNodeExpanded)
 
     // Indicates CDK explorer was disabled
-    vscode.workspace.onDidChangeConfiguration(e => {
-        const explorerEnabled = 'aws.cdk.explorer.enabled'
-        if (e.affectsConfiguration(explorerEnabled) && !vscode.workspace.getConfiguration().get(explorerEnabled)) {
-            ext.telemetry.record(getTelemetryEvent('explorerDisabled'))
+    const explorerDisabled = vscode.workspace.onDidChangeConfiguration(e => {
+        if (
+            e.affectsConfiguration(EXPLORER_ENABLED_CONFIG_KEY) &&
+            !vscode.workspace.getConfiguration().get(EXPLORER_ENABLED_CONFIG_KEY)
+        ) {
+            ext.telemetry.record(getTelemetryEvent(TelemetryEventTypes.EXPLORER_DISABLED))
         }
     })
+    activateArguments.extensionContext.subscriptions.push(explorerDisabled)
 
-    activateArguments.extensionContext.subscriptions.push(view)
+    const explorerReEnabled = vscode.workspace.onDidChangeConfiguration(e => {
+        if (
+            e.affectsConfiguration(EXPLORER_ENABLED_CONFIG_KEY) &&
+            vscode.workspace.getConfiguration().get(EXPLORER_ENABLED_CONFIG_KEY)
+        ) {
+            ext.telemetry.record(getTelemetryEvent(TelemetryEventTypes.EXPLORER_RE_ENABLED))
+        }
+    })
+    activateArguments.extensionContext.subscriptions.push(explorerReEnabled)
 }
 
-function getTelemetryEvent(eventName: string): TelemetryEvent {
+function getTelemetryEvent(eventName: TelemetryEventTypes): TelemetryEvent {
     return {
         namespace: TelemetryNamespace.Cdk,
         createTime: new Date(),
