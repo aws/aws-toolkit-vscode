@@ -253,17 +253,22 @@ class EcsCloudDebugRunConfiguration(project: Project, private val configFactory:
         }.filterNotNull().toMutableSet()
 
         val resourceCache = AwsResourceCache.getInstance(project)
-        val service = resourceCache.getResourceNow(
-            EcsResources.describeService(clusterArn, serviceArn),
-            region,
-            credentialProvider
-        )
-        val containers = resourceCache.getResourceNow(
-            EcsResources.listContainers(service.taskDefinition()),
-            region,
-            credentialProvider
-        )
-        val validContainerNames = containers.map { it.name() }.toSet()
+        val validContainerNames = try {
+            val service = resourceCache.getResourceNow(
+                EcsResources.describeService(clusterArn, serviceArn),
+                region,
+                credentialProvider
+            )
+            val containers = resourceCache.getResourceNow(
+                EcsResources.listContainers(service.taskDefinition()),
+                region,
+                credentialProvider
+            )
+
+            containers.map { it.name() }.toSet()
+        } catch (e: Exception) {
+            throw RuntimeConfigurationError(e.message)
+        }
 
         val containerOptionsMap = containerOptions().mapValues { (containerName, containerOptions) ->
             if (!validContainerNames.contains(containerName)) {
@@ -271,7 +276,7 @@ class EcsCloudDebugRunConfiguration(project: Project, private val configFactory:
                     message(
                         "cloud_debug.ecs.run_config.container.doesnt_exist_in_service",
                         containerName,
-                        EcsUtils.serviceArnToName(service.serviceArn())
+                        EcsUtils.serviceArnToName(serviceArn)
                     )
                 )
             }

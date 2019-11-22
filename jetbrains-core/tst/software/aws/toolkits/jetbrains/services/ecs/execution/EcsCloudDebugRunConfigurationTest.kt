@@ -19,6 +19,7 @@ import org.mockito.Mockito
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.services.ecs.model.ContainerDefinition
 import software.amazon.awssdk.services.ecs.model.Service
+import software.amazon.awssdk.services.ecs.model.ServiceNotFoundException
 import software.amazon.awssdk.services.ecs.model.TaskDefinition
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.jetbrains.core.MockResourceCache
@@ -28,6 +29,7 @@ import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebuggingPlatfor
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.CloudDebugRunState
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
 import software.aws.toolkits.resources.message
+import java.util.concurrent.CompletableFuture
 
 class EcsCloudDebugRunConfigurationTest {
     private val containerOptionsKey = "111"
@@ -376,6 +378,29 @@ class EcsCloudDebugRunConfigurationTest {
                     "bcd",
                     "arn"
                 )
+            )
+    }
+
+    @Test
+    fun validateErrorWhenServiceDoesntExist() {
+        val container = makeFakeContainerOptions().apply {
+            artifactMappings = listOf(ArtifactMapping("doesn't matter", "/"))
+        }
+        val config = buildDefaultConfiguration().also { configuration ->
+            configuration.serviceArn("notarealservice")
+        }
+
+        val future = CompletableFuture<Service>()
+        future.completeExceptionally(ServiceNotFoundException.builder().message("Service doesn't exist").build())
+        MockResourceCache.getInstance(projectRule.project)
+            .addEntry(EcsResources.describeService("arn", "notarealservice"), defaultRegion, mockCredentials.id, future)
+
+        assertThatThrownBy {
+            config.checkConfiguration()
+        }.isInstanceOf(RuntimeConfigurationError::class.java)
+            .hasMessageContaining(
+                // doesn't match real string because we're testing against a mock
+                "Service doesn't exist"
             )
     }
 
