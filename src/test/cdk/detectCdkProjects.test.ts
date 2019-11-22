@@ -50,7 +50,7 @@ describe('detectCdkProjects', () => {
         assert.strictEqual(actual.length, 0)
     })
 
-    it('`detects CDK` project when cdk.json exists', async () => {
+    it('detects CDK project when cdk.json exists', async () => {
         const cdkJsonPath = path.join(workspaceFolders[0].uri.fsPath, 'cdk.json')
         await saveCdkJson(cdkJsonPath)
         const actual = await detectCdkProjects(workspaceFolders)
