@@ -50,7 +50,7 @@ describe('detectCdkProjects', () => {
         assert.strictEqual(actual.length, 0)
     })
 
-    it('detects CDK project when cdk.json exists', async () => {
+    it('`detects CDK` project when cdk.json exists', async () => {
         const cdkJsonPath = path.join(workspaceFolders[0].uri.fsPath, 'cdk.json')
         await saveCdkJson(cdkJsonPath)
         const actual = await detectCdkProjects(workspaceFolders)
@@ -60,7 +60,7 @@ describe('detectCdkProjects', () => {
         const project = actual[0]
         assert.ok(project)
         assert.strictEqual(project.cdkJsonPath, cdkJsonPath)
-        assert.strictEqual(project.workspaceFolder.uri.path, workspaceFolders[0].uri.fsPath)
+        assert.strictEqual(project.workspaceFolder.uri.fsPath, workspaceFolders[0].uri.fsPath)
         assert.strictEqual(project.treePath, path.join(cdkJsonPath, '..', 'cdk.out', 'tree.json'))
     })
 
@@ -88,11 +88,11 @@ describe('detectCdkProjects', () => {
 
         assert.ok(project1)
         assert.strictEqual(project1.cdkJsonPath, projectPath1)
-        assert.strictEqual(project1.workspaceFolder.uri.path, workspaceFolders[0].uri.fsPath)
+        assert.strictEqual(project1.workspaceFolder.uri.fsPath, workspaceFolders[0].uri.fsPath)
         assert.strictEqual(project1.treePath, path.join(projectPath1, '..', 'cdk.out', 'tree.json'))
         assert.ok(project2)
         assert.strictEqual(project2.cdkJsonPath, projectPath2)
-        assert.strictEqual(project2.workspaceFolder.uri.path, workspaceFolders[1].uri.fsPath)
+        assert.strictEqual(project2.workspaceFolder.uri.fsPath, workspaceFolders[1].uri.fsPath)
         assert.strictEqual(project2.treePath, path.join(projectPath2, '..', 'cdk.out', 'tree.json'))
     })
 })
