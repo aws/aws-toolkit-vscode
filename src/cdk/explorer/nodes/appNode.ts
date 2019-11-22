@@ -21,6 +21,7 @@ import { ConstructNode } from './constructNode'
  * Existence of apps is determined by the presence of `cdk.json` in a workspace folder
  */
 export class AppNode extends AWSTreeNodeBase {
+    public expandMetricRecorded: boolean = false
     get tooltip(): string {
         return this.app.cdkJsonPath
     }
