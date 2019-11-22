@@ -21,6 +21,10 @@ configurations {
     testArtifacts
 }
 
+test {
+    systemProperty("log.dir", "${org.jetbrains.intellij.Utils.systemDir(intellij.sandboxDirectory, true)}/logs")
+}
+
 task testJar (type: Jar) {
     baseName = "${project.name}-test"
     from sourceSets.test.output
