@@ -22,6 +22,7 @@ export const ACCOUNT_METADATA_KEY = 'awsAccount'
 
 export enum TelemetryNamespace {
     Aws = 'aws',
+    Cdk = 'cdk',
     Cloudformation = 'cloudformation',
     Lambda = 'lambda',
     Project = 'project',

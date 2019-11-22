@@ -8,6 +8,7 @@ import * as nls from 'vscode-nls'
 
 import { AwsExplorer } from './awsexplorer/awsExplorer'
 import { RegionNode } from './awsexplorer/regionNode'
+import { activate as activateCdk } from './cdk/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
@@ -144,6 +145,10 @@ export async function activate(context: vscode.ExtensionContext) {
             }
         })
 
+        await activateCdk({
+            extensionContext: context
+        })
+
         const providers = [new AwsExplorer(awsContext, awsContextTrees, regionProvider, resourceFetcher)]
 
         providers.forEach(p => {
@@ -185,4 +190,7 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 
     ext.iconPaths.dark.lambda = context.asAbsolutePath('resources/dark/lambda.svg')
     ext.iconPaths.light.lambda = context.asAbsolutePath('resources/light/lambda.svg')
+
+    ext.iconPaths.dark.settings = context.asAbsolutePath('third-party/resources/from-vscode-icons/dark/gear.svg')
+    ext.iconPaths.light.settings = context.asAbsolutePath('third-party/resources/from-vscode-icons/light/gear.svg')
 }

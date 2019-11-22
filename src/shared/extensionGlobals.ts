@@ -34,12 +34,14 @@ export interface IconPaths {
     help: string
     cloudFormation: string
     lambda: string
+    settings: string
 }
 
 function makeIconPathsObject(): IconPaths {
     return {
         help: '',
         cloudFormation: '',
-        lambda: ''
+        lambda: '',
+        settings: ''
     }
 }
