@@ -3,10 +3,12 @@
 
 package software.aws.toolkits.jetbrains.utils
 
+import com.intellij.openapi.application.PathManager
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.lambda.validOrNull
+import java.io.File
 import java.io.IOException
 
 object DotNetRuntimeUtils {
@@ -43,4 +45,5 @@ object DotNetRuntimeUtils {
         return Runtime.fromValue("dotnetcore${version.split('.').take(2).joinToString(".")}").validOrNull
             ?: DEFAULT_DOTNET_CORE_RUNTIME
     }
+    val DEBUGGER_BIN_DIR = File("${PathManager.getTempPath()}/ReSharperHost")
 }

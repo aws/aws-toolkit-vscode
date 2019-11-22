@@ -7,7 +7,6 @@ import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.xdebugger.XDebuggerUtil
 import org.assertj.core.api.Assertions.assertThat
-import org.jetbrains.ide.BuiltInServerManager
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -20,9 +19,10 @@ import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
-import software.aws.toolkits.jetbrains.services.lambda.sam.checkBreakPointHit
-import software.aws.toolkits.jetbrains.services.lambda.sam.executeLambda
 import software.aws.toolkits.jetbrains.settings.SamSettings
+import software.aws.toolkits.jetbrains.utils.WebStormTestUtils
+import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
+import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
 import software.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addPackageJsonFile
 import java.util.concurrent.atomic.AtomicReference
@@ -66,7 +66,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         }
 
         MockCredentialsManager.getInstance().addCredentials(mockId, mockCreds)
-        ensureServerStarted()
+        WebStormTestUtils.ensureBuiltInServerStarted()
     }
 
     @After
@@ -88,7 +88,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
 
         assertThat(runConfiguration).isNotNull
 
-        val executeLambda = executeLambda(runConfiguration)
+        val executeLambda = executeRunConfiguration(runConfiguration)
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(executeLambda.stdout).contains("Hello World")
@@ -113,7 +113,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
 
         assertThat(runConfiguration).isNotNull
 
-        val executeLambda = executeLambda(runConfiguration)
+        val executeLambda = executeRunConfiguration(runConfiguration)
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(executeLambda.stdout).contains("Hello World")
@@ -146,7 +146,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
 
         assertThat(runConfiguration).isNotNull
 
-        val executeLambda = executeLambda(runConfiguration)
+        val executeLambda = executeRunConfiguration(runConfiguration)
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(executeLambda.stdout).contains("Hello World")
@@ -169,7 +169,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         addBreakpoint(2)
 
         val debuggerIsHit = checkBreakPointHit(projectRule.project)
-        val executeLambda = executeLambda(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
+        val executeLambda = executeRunConfiguration(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
 
         assertThat(executeLambda.exitCode).isEqualTo(137)
         assertThat(executeLambda.stdout).contains("Hello World")
@@ -207,21 +207,12 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         addBreakpoint(2)
 
         val debuggerIsHit = checkBreakPointHit(projectRule.project)
-        val executeLambda = executeLambda(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
+        val executeLambda = executeRunConfiguration(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
 
         assertThat(executeLambda.exitCode).isEqualTo(137)
         assertThat(executeLambda.stdout).contains("Hello World")
 
         assertThat(debuggerIsHit.get()).isTrue()
-    }
-
-    private fun ensureServerStarted() {
-        serverStarted.getAndUpdate { started ->
-            if (!started) {
-                BuiltInServerManager.getInstance().waitForStart()
-            }
-            true
-        }
     }
 
     private fun addBreakpoint(lineNumber: Int) {

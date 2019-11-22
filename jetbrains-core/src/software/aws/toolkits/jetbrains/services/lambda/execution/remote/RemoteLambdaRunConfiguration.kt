@@ -42,7 +42,7 @@ class RemoteLambdaRunConfiguration(project: Project, factory: ConfigurationFacto
         functionName() ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_function_specified"))
 
         resolveCredentials()
-        regionId() ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
+        regionId() ?: throw RuntimeConfigurationError(message("configure.validate.no_region_specified"))
         checkInput()
     }
 

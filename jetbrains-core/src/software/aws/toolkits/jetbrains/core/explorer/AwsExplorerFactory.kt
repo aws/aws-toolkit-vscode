@@ -22,7 +22,7 @@ import software.aws.toolkits.resources.message
 @Suppress("unused")
 class AwsExplorerFactory : ToolWindowFactory, DumbAware {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        val explorer = ExplorerToolWindow(project)
+        val explorer = ExplorerToolWindow.getInstance(project)
         toolWindow.component.parent.add(explorer)
         toolWindow.helpId = HelpIds.EXPLORER_WINDOW.id
         if (toolWindow is ToolWindowEx) {

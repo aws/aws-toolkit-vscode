@@ -6,6 +6,7 @@ apply plugin: 'org.jetbrains.intellij'
 dependencies {
     compile project(":jetbrains-core")
     testCompile project(path: ":jetbrains-core", configuration: 'testArtifacts')
+    testCompile project(path: ":core", configuration: 'testArtifacts')
     integrationTestCompile project(path: ":jetbrains-core", configuration: 'testArtifacts')
 }
 

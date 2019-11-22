@@ -67,7 +67,7 @@ class RemoteLambdaRunConfigurationTest {
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { runConfiguration.checkConfiguration() }
                 .isInstanceOf(RuntimeConfigurationError::class.java)
-                .hasMessage(message("lambda.run_configuration.no_region_specified"))
+                .hasMessage(message("configure.validate.no_region_specified"))
     }
 
     @Test

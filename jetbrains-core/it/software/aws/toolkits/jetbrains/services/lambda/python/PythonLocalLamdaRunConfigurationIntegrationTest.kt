@@ -8,8 +8,6 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.runInEdtAndWait
-import com.intellij.xdebugger.XDebuggerUtil
-import com.jetbrains.python.psi.PyFile
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -24,10 +22,11 @@ import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
-import software.aws.toolkits.jetbrains.services.lambda.sam.checkBreakPointHit
-import software.aws.toolkits.jetbrains.services.lambda.sam.executeLambda
+import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
+import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.addBreakpoint
 
 @RunWith(Parameterized::class)
 class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runtime) {
@@ -97,7 +96,7 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
         )
         assertThat(runConfiguration).isNotNull
 
-        val executeLambda = executeLambda(runConfiguration)
+        val executeLambda = executeRunConfiguration(runConfiguration)
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(executeLambda.stdout).contains("Hello world")
     }
@@ -120,7 +119,7 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
         )
         assertThat(runConfiguration).isNotNull
 
-        val executeLambda = executeLambda(runConfiguration)
+        val executeLambda = executeRunConfiguration(runConfiguration)
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(executeLambda.stdout).contains("Hello world")
@@ -142,7 +141,7 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
         )
         assertThat(runConfiguration).isNotNull
 
-        val executeLambda = executeLambda(runConfiguration)
+        val executeLambda = executeRunConfiguration(runConfiguration)
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(jsonToMap(executeLambda.stdout))
@@ -163,7 +162,7 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
         )
         assertThat(runConfiguration).isNotNull
 
-        val executeLambda = executeLambda(runConfiguration)
+        val executeLambda = executeRunConfiguration(runConfiguration)
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(jsonToMap(executeLambda.stdout))
@@ -183,7 +182,7 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
         )
         assertThat(runConfiguration).isNotNull
 
-        val executeLambda = executeLambda(runConfiguration)
+        val executeLambda = executeRunConfiguration(runConfiguration)
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(jsonToMap(executeLambda.stdout))
@@ -204,10 +203,10 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
         )
         assertThat(runConfiguration).isNotNull
 
-        addBreakpoint()
+        projectRule.addBreakpoint()
         val debuggerIsHit = checkBreakPointHit(projectRule.project)
 
-        val executeLambda = executeLambda(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
+        val executeLambda = executeRunConfiguration(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
 
         // assertThat(executeLambda.exitCode).isEqualTo(0) TODO: When debugging, always exits with 137
         assertThat(executeLambda.stdout).contains("Hello world")
@@ -231,10 +230,10 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
         )
         assertThat(runConfiguration).isNotNull
 
-        addBreakpoint()
+        projectRule.addBreakpoint()
         val debuggerIsHit = checkBreakPointHit(projectRule.project)
 
-        val executeLambda = executeLambda(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
+        val executeLambda = executeRunConfiguration(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
 
         // assertThat(executeLambda.exitCode).isEqualTo(0) TODO: When debugging, always exits with 137
         assertThat(executeLambda.stdout).contains("Hello world")
@@ -272,10 +271,10 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
         )
         assertThat(runConfiguration).isNotNull
 
-        addBreakpoint()
+        projectRule.addBreakpoint()
         val debuggerIsHit = checkBreakPointHit(projectRule.project)
 
-        val executeLambda = executeLambda(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
+        val executeLambda = executeRunConfiguration(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
 
         // assertThat(executeLambda.exitCode).isEqualTo(0) TODO: When debugging, always exits with 137
         assertThat(executeLambda.stdout).contains("Hello world")
@@ -311,10 +310,10 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
         )
         assertThat(runConfiguration).isNotNull
 
-        addBreakpoint()
+        projectRule.addBreakpoint()
         val debuggerIsHit = checkBreakPointHit(projectRule.project)
 
-        val executeLambda = executeLambda(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
+        val executeLambda = executeRunConfiguration(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
 
         // assertThat(executeLambda.exitCode).isEqualTo(0) TODO: When debugging, always exits with 137
         assertThat(executeLambda.stdout).contains("Hello world")
@@ -323,19 +322,4 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
     }
 
     private fun jsonToMap(data: String) = jacksonObjectMapper().readValue<Map<String, String>>(data)
-
-    private fun addBreakpoint() {
-        runInEdtAndWait {
-            val document = projectRule.fixture.editor.document
-            val lambdaClass = projectRule.fixture.file as PyFile
-            val lambdaBody = lambdaClass.topLevelFunctions[0].statementList.statements[0]
-            val lineNumber = document.getLineNumber(lambdaBody.textOffset)
-
-            XDebuggerUtil.getInstance().toggleLineBreakpoint(
-                projectRule.project,
-                projectRule.fixture.file.virtualFile,
-                lineNumber
-            )
-        }
-    }
 }

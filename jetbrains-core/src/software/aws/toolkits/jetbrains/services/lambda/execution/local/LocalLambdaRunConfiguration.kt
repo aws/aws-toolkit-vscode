@@ -127,7 +127,6 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
                 messageBus.syncPublisher(
                     LambdaHandlerEvaluationListener.TOPIC).handlerValidationFinished(handler, isValid)
             }
-
             logger.info { "Validation will proceed asynchronously for SAM CLI version" }
             throw RuntimeConfigurationError(message("lambda.run_configuration.handler.validation.in_progress"))
         }
@@ -138,7 +137,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
     }
 
     private fun checkRegion() {
-        regionId() ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
+        regionId() ?: throw RuntimeConfigurationError(message("configure.validate.no_region_specified"))
     }
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): SamRunningState {

@@ -18,7 +18,7 @@ import com.intellij.xdebugger.XDebugSession
 import com.jetbrains.debugger.wip.WipLocalVmConnection
 import com.jetbrains.nodeJs.NodeChromeDebugProcess
 import org.jetbrains.io.LocalFileFinder
-import software.aws.toolkits.jetbrains.services.lambda.execution.PathMapping
+import software.aws.toolkits.jetbrains.services.PathMapping
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamRunningState
 import software.aws.toolkits.jetbrains.utils.CompatibilityUtils.createRemoteDebuggingFileFinder

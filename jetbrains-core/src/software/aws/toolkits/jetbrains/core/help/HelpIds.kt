@@ -8,6 +8,15 @@ enum class HelpIds(shortId: String, val url: String) {
         "explorerWindow",
         "https://docs.aws.amazon.com/console/toolkit-for-jetbrains/aws-explorer"
     ),
+    // Cloud Debugging
+    CLOUD_DEBUG_ENABLE(
+        "enableCloudDebugging",
+        "https://docs.aws.amazon.com/console/toolkit-for-jetbrains/cloud-debug"
+    ),
+    CLOUD_DEBUG_RUN_CONFIGURATION(
+        "cloudDebugRunConfiguration",
+        "https://docs.aws.amazon.com/console/toolkit-for-jetbrains/run-debug-config-dialog-cloud-debug"
+    ),
     // Lambda
     CREATE_FUNCTION_DIALOG(
         "createFunctionDialog",
@@ -26,15 +35,15 @@ enum class HelpIds(shortId: String, val url: String) {
         "newServerlessProjectDialog",
         "https://docs.aws.amazon.com/console/toolkit-for-jetbrains/new-project-dialog"
     ),
-    RUN_DEBUG_CONFIGURATIONS_DIALOG(
-        "runDebugConfigurationsDialog",
-        "https://docs.aws.amazon.com/console/toolkit-for-jetbrains/run-debug-configurations-dialog"
-    ),
     DEPLOY_SERVERLESS_APPLICATION_DIALOG(
         "deployServerlessApplicationDialog",
         "https://docs.aws.amazon.com/console/toolkit-for-jetbrains/deploy-serverless-application-dialog"
     ),
     // Others
+    RUN_DEBUG_CONFIGURATIONS_DIALOG(
+        "runDebugConfigurationsDialog",
+        "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/run-debug-configurations-dialog.html"
+    ),
     SETUP_CREDENTIALS(
         "setupCredentials",
         "https://docs.aws.amazon.com/console/toolkit-for-jetbrains/credentials"

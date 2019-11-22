@@ -7,22 +7,25 @@ import com.intellij.ide.projectView.PresentationData
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.util.Ref
 import com.intellij.testFramework.ProjectRule
+import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.tree.TreeUtil
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.atLeastOnce
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
+import software.aws.toolkits.jetbrains.core.fillResourceCache
 import software.aws.toolkits.jetbrains.ui.tree.AsyncTreeModel
 import software.aws.toolkits.jetbrains.ui.tree.StructureTreeModel
 import software.aws.toolkits.jetbrains.utils.CompatibilityUtils.registerExtension
 import software.aws.toolkits.jetbrains.utils.rules.TestDisposableRule
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import javax.swing.JTree
 import javax.swing.tree.TreeModel
 
 class AwsExplorerNodeProcessorTest {
@@ -34,6 +37,11 @@ class AwsExplorerNodeProcessorTest {
     @JvmField
     val testDisposableRule = TestDisposableRule()
 
+    @Before
+    fun setUp() {
+        fillResourceCache(resourceCache())
+    }
+
     @Test
     fun testNodePostProcessorIsInvoked() {
         val mockExtension = mock<AwsExplorerNodeProcessor>()
@@ -42,7 +50,7 @@ class AwsExplorerNodeProcessorTest {
 
         val countDownLatch = CountDownLatch(1)
 
-        TreeUtil.expand(JTree(createTreeModel()), 1) {
+        TreeUtil.expand(Tree(createTreeModel()), 1) {
             countDownLatch.countDown()
         }
 
@@ -69,7 +77,7 @@ class AwsExplorerNodeProcessorTest {
 
         val countDownLatch = CountDownLatch(1)
 
-        TreeUtil.expand(JTree(createTreeModel()), 1) {
+        TreeUtil.expand(Tree(createTreeModel()), 1) {
             countDownLatch.countDown()
         }
 
@@ -80,9 +88,10 @@ class AwsExplorerNodeProcessorTest {
     }
 
     private fun createTreeModel(): TreeModel {
-        val project = projectRule.project
-        val awsTreeModel = AwsExplorerTreeStructure(project)
+        val awsTreeModel = AwsExplorerTreeStructure(projectRule.project)
         val structureTreeModel = StructureTreeModel(awsTreeModel, testDisposableRule.testDisposable)
         return AsyncTreeModel(structureTreeModel, true, testDisposableRule.testDisposable)
     }
+
+    private fun resourceCache() = MockResourceCache.getInstance(projectRule.project)
 }

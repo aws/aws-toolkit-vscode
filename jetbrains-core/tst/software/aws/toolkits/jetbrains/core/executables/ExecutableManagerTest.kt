@@ -3,9 +3,9 @@
 
 package software.aws.toolkits.jetbrains.core.executables
 
-import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.ObjectAssert
 import org.junit.Rule
 import org.junit.Test
@@ -47,27 +47,6 @@ class ExecutableManagerTest {
         }
 
         assertThat(sut.getExecutable(type)).wait().isCompletedWithValueMatching { (it as ExecutableInstance.Executable).executablePath == executable.toPath() }
-    }
-
-    @Test
-    fun gettingCommandLineWhenExecutableIsFoundWorksAndModificationsAreApplied() {
-        val executable = tempFolder.newFile()
-        val type = object : DummyExecutableType("dummy"), AutoResolvable, Validatable {
-            override fun resolve(): Path = executable.toPath()
-
-            override fun validate(path: Path) {}
-        }
-
-        val instance = sut.getExecutable(type).toCompletableFuture().get()
-
-        assertThat(instance).isInstanceOf(ExecutableInstance.Executable::class.java)
-
-        val commandLine = (instance as ExecutableInstance.Executable).getCommandLine()
-        assertThat(commandLine.exePath).isEqualTo(instance.executablePath.toString())
-        assertThat(commandLine.environment.containsKey("AWS_ACCESS_KEY_ID")).isFalse()
-        assertThat(commandLine.environment.containsKey("AWS_SECRET_ACCESS_KEY")).isFalse()
-        assertThat(commandLine.environment.containsKey("AWS_SESSION_TOKEN")).isFalse()
-        assertThat(commandLine.parentEnvironmentType).isEqualTo(GeneralCommandLine.ParentEnvironmentType.NONE)
     }
 
     @Test
@@ -198,6 +177,18 @@ class ExecutableManagerTest {
         sut.setExecutablePath(type, Paths.get(executable)).value
 
         assertThat(sut.getExecutable(type).value).isInstanceOf(ExecutableInstance.UnresolvedExecutable::class.java)
+    }
+
+    @Test
+    fun executableTypeJavaGetExecutableThrowsWhenNotRegistered() {
+        val type = DummyExecutableType("dummy")
+        val executable = tempFolder.newFile()
+
+        sut.setExecutablePath(type, executable.toPath()).value
+
+        assertThatThrownBy {
+            ExecutableType.getExecutable(type.javaClass)
+        }
     }
 
     private fun modifyFile(executable: Path) {

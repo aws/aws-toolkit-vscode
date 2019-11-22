@@ -8,6 +8,9 @@ import com.intellij.openapi.project.Project
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 
+/**
+ * Implemented by explorer resources that have children
+ */
 interface ResourceParentNode {
     val nodeProject: Project
 

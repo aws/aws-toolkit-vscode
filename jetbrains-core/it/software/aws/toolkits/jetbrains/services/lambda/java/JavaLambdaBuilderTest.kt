@@ -12,6 +12,8 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
 import software.aws.toolkits.jetbrains.utils.rules.addModule
+import software.aws.toolkits.jetbrains.utils.setUpGradleProject
+import software.aws.toolkits.jetbrains.utils.setUpMavenProject
 import software.aws.toolkits.resources.message
 import java.nio.file.Paths
 

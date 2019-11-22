@@ -9,8 +9,7 @@ import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerRootNode
 
 class AwsExplorerTreeStructure(project: Project) : AbstractTreeStructureBase(project) {
-
-    override fun getProviders(): List<TreeStructureProvider>? = emptyList()
+    override fun getProviders(): List<TreeStructureProvider>? = defaultTreeStructureProvider + AwsExplorerTreeStructureProvider.EP_NAME.extensionList
 
     override fun getRootElement() = AwsExplorerRootNode(myProject)
 
@@ -19,4 +18,8 @@ class AwsExplorerTreeStructure(project: Project) : AbstractTreeStructureBase(pro
     override fun hasSomethingToCommit() = false
 
     override fun isToBuildChildrenInBackground(element: Any) = true
+
+    companion object {
+        val defaultTreeStructureProvider = listOf(DefaultAwsExplorerTreeStructureProvider())
+    }
 }

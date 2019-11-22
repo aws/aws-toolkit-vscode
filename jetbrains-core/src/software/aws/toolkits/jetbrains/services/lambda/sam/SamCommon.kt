@@ -32,6 +32,7 @@ class SamCommon {
         const val SAM_BUILD_DIR = ".aws-sam"
         const val SAM_INFO_VERSION_KEY = "version"
         const val SAM_INVALID_OPTION_SUBSTRING = "no such option"
+        const val SAM_NAME = "SAM CLI"
 
         // Inclusive
         val expectedSamMinVersion = SemVer("0.16.0", 0, 16, 0)
@@ -74,13 +75,14 @@ class SamCommon {
          * Check SAM CLI version and return an invalid message if version is not valid or <code>null</code> otherwise
          */
         fun getInvalidVersionMessage(semVer: SemVer): String? {
-            val samVersionOutOfRangeMessage = message("sam.executable.version_wrong",
+            val samVersionOutOfRangeMessage = message("executableCommon.version_wrong",
+                SAM_NAME,
                 expectedSamMinVersion,
                 expectedSamMaxVersion, semVer)
             if (semVer >= expectedSamMaxVersion) {
-                return "$samVersionOutOfRangeMessage ${message("sam.executable.version_too_high")}"
+                return "$samVersionOutOfRangeMessage ${message("executableCommon.version_too_high")}"
             } else if (semVer < expectedSamMinVersion) {
-                return "$samVersionOutOfRangeMessage ${message("sam.executable.version_too_low")}"
+                return "$samVersionOutOfRangeMessage ${message("executableCommon.version_too_low", SAM_NAME)}"
             }
             return null
         }

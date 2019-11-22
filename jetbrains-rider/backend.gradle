@@ -74,6 +74,8 @@ task buildReSharperPlugin {
         fileTree(file("${resharperPluginPath.absolutePath}/src")).matching {
             include "**/bin/Debug/**/AWS*.dll"
             include "**/bin/Debug/**/AWS*.pdb"
+            include "**/bin/Debug/**/AWS.DebuggerTools.exe"
+            include "**/bin/Debug/**/AWS.DebuggerTools.runtimeconfig.json"
         }.collect()
     })
 }

@@ -18,7 +18,7 @@ import software.aws.toolkits.jetbrains.fixtures.openSettingsDialog
 class SetSamCli : GuiTestCase() {
     @Test
     fun setSamCli() {
-        val samPath = System.getenv("SAM_CLI_EXEC") ?: SamExecutableDetector().detect() ?: "sam"
+        val samPath = System.getenv("SAM_CLI_EXEC") ?: SamExecutableDetector().find() ?: "sam"
         welcomeFrame {
             step("Open preferences page") {
                 openSettingsDialog()

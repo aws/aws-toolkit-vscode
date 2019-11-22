@@ -12,6 +12,8 @@ import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.CacheBackedAwsExplorerServiceRootNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceLocationNode
+import software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaLocation
 import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
 
 class LambdaServiceNode(project: Project) :
@@ -29,7 +31,8 @@ open class LambdaFunctionNode(
     function,
     AwsIcons.Resources.LAMBDA_FUNCTION,
     immutable
-) {
+), ResourceLocationNode {
+
     override fun resourceType() = "function"
 
     override fun resourceArn() = value.arn
@@ -37,6 +40,8 @@ open class LambdaFunctionNode(
     override fun toString(): String = functionName()
 
     override fun displayName() = functionName()
+
+    override fun location() = RemoteLambdaLocation(nodeProject, value)
 
     fun functionName(): String = value.name
 

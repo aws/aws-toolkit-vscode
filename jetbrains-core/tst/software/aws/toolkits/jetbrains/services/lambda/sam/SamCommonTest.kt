@@ -94,7 +94,7 @@ class SamCommonTest {
         )
         for (version in versions) {
             val message = SamCommon.validate(makeATestSam(getVersionAsJson(version)).toString())
-            assertThat(message).contains("Could not parse SAM executable version from")
+            assertThat(message).contains("Could not parse %s executable version from".format(SamCommon.SAM_NAME))
         }
     }
 
@@ -108,8 +108,8 @@ class SamCommonTest {
         )
         for (version in versions) {
             val message = SamCommon.validate(makeATestSam(getVersionAsJson(version)).toString())
-            assertThat(message).contains("Bad SAM executable version. Expected")
-            assertThat(message).contains("upgrade your SAM CLI")
+            assertThat(message).contains("Bad SAM CLI executable version. Expected")
+            assertThat(message).contains("Upgrade your SAM CLI")
         }
     }
 
@@ -144,8 +144,8 @@ class SamCommonTest {
         )
         for (version in versions) {
             val message = SamCommon.validate(makeATestSam(getVersionAsJson(version)).toString())
-            assertThat(message).contains("Bad SAM executable version. Expected")
-            assertThat(message).contains("upgrade your AWS Toolkit")
+            assertThat(message).contains("Bad SAM CLI executable version. Expected")
+            assertThat(message).contains("Upgrade your AWS Toolkit")
         }
     }
 

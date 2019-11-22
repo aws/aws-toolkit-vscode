@@ -71,9 +71,22 @@ class MockNodeJsInterpreter(private var version: SemVer) : NodeJsLocalInterprete
     override fun getCachedVersion(): Ref<SemVer>? = Ref(version)
 }
 
+class HeavyNodeJsCodeInsightTestFixtureRule : CodeInsightTestFixtureRule() {
+    override fun createTestFixture(): CodeInsightTestFixture {
+        val fixtureFactory = IdeaTestFixtureFactory.getFixtureFactory()
+        val projectFixture = fixtureFactory.createFixtureBuilder(testName)
+        val codeInsightFixture = fixtureFactory.createCodeInsightFixture(projectFixture.fixture)
+        codeInsightFixture.setUp()
+        codeInsightFixture.testDataPath = testDataPath
+
+        return codeInsightFixture
+    }
+}
+
 fun Project.setNodeJsInterpreterVersion(version: SemVer) {
     NodeJsInterpreterManager.getInstance(this).setInterpreterRef(
-        NodeJsInterpreterRef.create(MockNodeJsInterpreter(version)))
+        NodeJsInterpreterRef.create(MockNodeJsInterpreter(version))
+    )
 }
 
 fun Project.setJsLanguageLevel(languageLevel: JSLanguageLevel) {
@@ -114,8 +127,8 @@ fun CodeInsightTestFixture.addSamTemplate(
     handler: String,
     runtime: Runtime
 ): PsiFile = this.addFileToProject(
-        "template.yaml",
-        """
+    "template.yaml",
+    """
         Resources:
           $logicalName:
             Type: AWS::Serverless::Function
@@ -125,4 +138,4 @@ fun CodeInsightTestFixture.addSamTemplate(
               Runtime: $runtime
               Timeout: 900
         """.trimIndent()
-    )
+)
