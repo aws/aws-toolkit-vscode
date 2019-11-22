@@ -37,13 +37,12 @@ class PythonDebugEndToEndTest : CloudDebugTestCase() {
         // setup project workspace
         val testScript = addPythonFile("test.py",
             """
-            import file.hello
+            import hello
             import folderNoTrailingSlash.hello
             import folderTrailingSlash.hello
             """.trimIndent())
-        val file = addPythonFile("file/hello.py")
+        val file = addPythonFile("hello.py")
         projectRule.addBreakpoint()
-        val file_init_py = projectRule.fixture.addFileToProject("file/__init__.py", "").virtualFile.path
 
         val folderNoTrailingSlash = addPythonFile("folderNoTrailingSlash/hello.py")
         projectRule.addBreakpoint()
@@ -80,8 +79,7 @@ class PythonDebugEndToEndTest : CloudDebugTestCase() {
                 startCommand = "python /${testScript.fileName}"
                 artifactMappings = listOf(
                     ArtifactMapping(testScript.toString(), "/test.py"),
-                    ArtifactMapping(file.toString(), "/file/hello.py"),
-                    ArtifactMapping(file_init_py, "/file/"),
+                    ArtifactMapping(file.toString(), "/hello.py"),
                     ArtifactMapping(folderNoTrailingSlash.parent.toString().trimEnd('/'), "/"),
                     ArtifactMapping(folderTrailingSlash.parent.toString().trimEnd('/') + '/', "/folderTrailingSlash")
                 )
