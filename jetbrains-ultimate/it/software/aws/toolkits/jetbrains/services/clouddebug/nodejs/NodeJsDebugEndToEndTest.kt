@@ -4,11 +4,13 @@
 package software.aws.toolkits.jetbrains.services.clouddebug.nodejs
 
 import com.intellij.execution.executors.DefaultDebugExecutor
+import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.xdebugger.XDebuggerUtil
 import org.assertj.core.api.Assertions
 import org.junit.After
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -37,6 +39,7 @@ class NodeJsDebugEndToEndTest : CloudDebugTestCase("node") {
 
     @Before
     override fun setUp() {
+        assumeTrue(ApplicationInfo.getInstance().let { info -> info.majorVersion == "2019" && info.minorVersionMainPart == "2" })
         super.setUp()
         // Disable the web console. This is needed because it breaks the test when the console is created which throws
         // a terrible incomprehensible stack trace from the internals of JavaFX (because there is no screen)
