@@ -6,6 +6,8 @@ package software.aws.toolkits.jetbrains.services.clouddebug.actions
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import software.aws.toolkits.jetbrains.core.help.HelpIds
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.settings.CloudDebugSettings
 import software.aws.toolkits.resources.message
 import java.awt.GridBagLayout
@@ -38,10 +40,11 @@ class InstrumentDialogWrapper(val project: Project, clusterArn: String, private 
     }
 }
 
-class ConfirmNonProductionDialogWrapper(project: Project, serviceName: String) : DialogWrapper(project) {
+class ConfirmNonProductionDialogWrapper(private val project: Project, serviceName: String) : DialogWrapper(project) {
     private val view = ConfirmNonProductionDialog(serviceName)
     private val doNotShowAgain = JCheckBox(message("notice.suppress"))
     private val settings = CloudDebugSettings.getInstance()
+    private val telemetry = TelemetryService.getInstance()
 
     init {
         init()
@@ -56,9 +59,24 @@ class ConfirmNonProductionDialogWrapper(project: Project, serviceName: String) :
     override fun createSouthAdditionalPanel() = JPanel(GridBagLayout()).apply { add(doNotShowAgain) }
 
     override fun doOKAction() {
+        recordTelemetry(TelemetryConstants.TelemetryResult.Succeeded)
         if (doNotShowAgain.isSelected) {
             settings.showEnableDebugWarning = false
         }
         super.doOKAction()
+    }
+
+    override fun doCancelAction() {
+        recordTelemetry(TelemetryConstants.TelemetryResult.Cancelled)
+        super.doCancelAction()
+    }
+
+    private fun recordTelemetry(result: TelemetryConstants.TelemetryResult) {
+        telemetry.record(project) {
+            datum("${TelemetryConstants.CLOUDDEBUG_TELEMETRY_PREFIX}_confirmation") {
+                metadata(TelemetryConstants.RESULT, result.name)
+                count()
+            }
+        }
     }
 }
