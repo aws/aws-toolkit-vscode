@@ -4,10 +4,12 @@
 package software.aws.toolkits.jetbrains.services.lambda.nodejs
 
 import com.intellij.execution.executors.DefaultDebugExecutor
+import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.xdebugger.XDebuggerUtil
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
+import org.junit.Assume
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -154,6 +156,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
 
     @Test
     fun samIsExecutedWithDebugger() {
+        Assume.assumeTrue(ApplicationInfo.getInstance().let { it.majorVersion == "2019" && it.minorVersionMainPart == "2" }) // Remove when fixed 193
         projectRule.fixture.addPackageJsonFile()
 
         val runConfiguration = createHandlerBasedRunConfiguration(
