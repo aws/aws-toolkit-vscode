@@ -8,10 +8,6 @@ phases:
     build:
         commands:
             - |
-                if [ $STAGE != "prod" ]; then
-                  echo "Stage is not production, version does not need bumping"
-                  exit 0
-                fi
                 echo "bumping version, BUMP_TYPE set to \"$BUMP_TYPE\""
                 git config --global user.name "aws-toolkit-automation"
                 git config --global user.email "<>"
