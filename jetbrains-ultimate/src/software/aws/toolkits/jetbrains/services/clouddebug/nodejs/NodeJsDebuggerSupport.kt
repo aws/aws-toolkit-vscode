@@ -23,7 +23,7 @@ class NodeJsDebuggerSupport : DebuggerSupport() {
     override val platform = CloudDebuggingPlatform.NODE
     override val debuggerPath = null
 
-    private val NODE_EXECUTABLE = "node"
+    private val NODE_EXECUTABLES = setOf("node", "nodejs")
     private val NODE_DEBUG = "--inspect-brk"
 
     override fun attachDebugger(
@@ -54,7 +54,8 @@ class NodeJsDebuggerSupport : DebuggerSupport() {
 
     override fun automaticallyAugmentable(input: List<String>): Boolean {
         // If it does not use node to start, we can't know what we need to add
-        if (input.first().trim('"', '\'').substringAfterLast('/') != NODE_EXECUTABLE) {
+        val exename = input.first().trim('"', '\'').substringAfterLast('/')
+        if (!NODE_EXECUTABLES.contains(exename)) {
             return false
         }
         // Check that we are not using inspect already

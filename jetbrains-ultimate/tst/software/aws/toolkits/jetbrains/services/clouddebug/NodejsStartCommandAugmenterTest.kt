@@ -12,13 +12,18 @@ class NodejsStartCommandAugmenterTest {
 
     @Test
     fun augmenterAddsEnvironmentVariable() {
-        Assertions.assertThat(augmenter.augmentStatement("node abc.js", listOf(123), "")).contains("${CloudDebugConstants.REMOTE_DEBUG_PORT_ENV}=123")
+        Assertions.assertThat(augmenter.augmentStatement("node abc.js", listOf(123), ""))
+            .contains("${CloudDebugConstants.REMOTE_DEBUG_PORT_ENV}=123")
+        Assertions.assertThat(augmenter.augmentStatement("nodejs abc.js", listOf(123), ""))
+            .contains("${CloudDebugConstants.REMOTE_DEBUG_PORT_ENV}=123")
     }
 
     @Test
     fun augmenterAddsPort() {
-        val augmentedStatement = augmenter.augmentStatement("node abc.js", listOf(123), "")
-        Assertions.assertThat(augmentedStatement).contains("--inspect-brk=localhost:123")
+        Assertions.assertThat(augmenter.augmentStatement("node abc.js", listOf(123), ""))
+            .contains("--inspect-brk=localhost:123")
+        Assertions.assertThat(augmenter.augmentStatement("nodejs abc.js", listOf(123), ""))
+            .contains("--inspect-brk=localhost:123")
     }
 
     @Test
@@ -30,7 +35,9 @@ class NodejsStartCommandAugmenterTest {
     @Test
     fun augmenterWorksForPaths() {
         Assertions.assertThat(augmenter.automaticallyAugmentable("/abc/node abc.js")).isTrue()
+        Assertions.assertThat(augmenter.automaticallyAugmentable("/abc/nodejs abc.js")).isTrue()
         Assertions.assertThat(augmenter.automaticallyAugmentable("\"/abc space in path/node\" abc.js")).isTrue()
+        Assertions.assertThat(augmenter.automaticallyAugmentable("\"/abc space in path/nodejs\" abc.js")).isTrue()
     }
 
     @Test
@@ -43,7 +50,8 @@ class NodejsStartCommandAugmenterTest {
 
     @Test
     fun augmenterAugmentsPathsCorrectly() {
-        Assertions.assertThat(augmenter.augmentStatement("/abc/node abc.js", listOf(123), "")).contains("/abc/node --inspect-brk=localhost:123 abc.js")
+        Assertions.assertThat(augmenter.augmentStatement("/abc/node abc.js", listOf(123), ""))
+            .contains("/abc/node --inspect-brk=localhost:123 abc.js")
         Assertions.assertThat(augmenter.augmentStatement("\"/abc space in path/node\" abc.js", listOf(123), ""))
             .contains("\"/abc space in path/node\" --inspect-brk=localhost:123 abc.js")
     }
