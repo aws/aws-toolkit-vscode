@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Add an error on empty CloudFormation template or template that lacks a \"Resources\" section"
-}

@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Browsing for files in the Lambda run configuration is now rooted at the project directory"
-}

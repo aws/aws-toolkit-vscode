@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix being able to run \"SAM local run\" configurations without Docker running"
-}

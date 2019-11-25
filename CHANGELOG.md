@@ -1,3 +1,22 @@
+# _1.8-192_ (2019-11-25)
+- **(Breaking Change)** Now requires a minimum version of 2019.2 to run
+- **(Feature)** Enable Cloud Debugging of ECS Services (beta)
+- **(Feature)** Respect the default region in config file on first start of the IDE
+- **(Feature)** Allow credential_process commands (in aws/config) to produce up to 64KB, permitting longer session tokens
+- **(Feature)** Adding support for WebStorm
+- **(Feature)** Enabled pasting of key value pairs into the environment variable table of local AWS Lambda run configurations
+- **(Feature)** Adding support for Rider
+- **(Bug Fix)** Fix an IDE error showing up during "SAM local debug" caused by running "docker ps" on the wrong thread
+- **(Bug Fix)** Browsing for files in the Lambda run configuration is now rooted at the project directory
+- **(Bug Fix)** Add an error on empty CloudFormation template or template that lacks a "Resources" section
+- **(Bug Fix)** Rider: Fix unsupported Node runtime showing up in the "Create Serverless Applications" menu
+- **(Bug Fix)** Fix the IDE showing an error sometimes when the SAM template file is invalid
+- **(Bug Fix)** Resolve initialization errors on 2019.3 EAP
+- **(Bug Fix)** Fix getting SAM version timing out in some circumstances which caused SAM related commands to fail
+- **(Bug Fix)** Fix being able to run "SAM local run" configurations without Docker running
+- **(Bug Fix)** Fix IDE error caused by editor text field being requested at the wrong scope level
+- **(Bug Fix)** Rider: Fix the "Deploy Serverless" menu not appearing when right clicking on the project view
+
 # _1.7_ (2019-10-17)
 - **(Feature)** A notification is shown on startup indicating that JetBrains 2019.2 or greater will be required in an upcoming AWS Toolkit release
 - **(Feature)** Add --no-interactive to SAM init when running a version of SAM >= 0.30.0

@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Enabled pasting of key value pairs into the environment variable table of local AWS Lambda run configurations"
-}

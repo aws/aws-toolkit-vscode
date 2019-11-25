@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Rider: Fix the \"Deploy Serverless\" menu not appearing when right clicking on the project view"
-}

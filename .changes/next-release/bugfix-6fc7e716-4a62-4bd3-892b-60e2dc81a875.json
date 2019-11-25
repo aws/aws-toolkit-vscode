@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix IDE error caused by editor text field being requested at the wrong scope level"
-}

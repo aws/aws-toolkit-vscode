@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Rider: Fix unsupported Node runtime showing up in the \"Create Serverless Applications\" menu"
-}

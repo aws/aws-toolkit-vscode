@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix an IDE error showing up during \"SAM local debug\" caused by running \"docker ps\" on the wrong thread"
-}

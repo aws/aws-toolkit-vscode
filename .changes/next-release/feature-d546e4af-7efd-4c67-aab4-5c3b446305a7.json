@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Respect the default region in config file on first start of the IDE"
-}

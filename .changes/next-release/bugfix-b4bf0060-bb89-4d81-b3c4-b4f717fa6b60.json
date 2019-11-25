@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix the IDE showing an error sometimes when the SAM template file is invalid"
-}

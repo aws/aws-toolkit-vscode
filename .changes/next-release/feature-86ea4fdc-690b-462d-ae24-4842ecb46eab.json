@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Allow credential_process commands (in aws/config) to produce up to 64KB, permitting longer session tokens"
-}
