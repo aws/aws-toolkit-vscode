@@ -386,7 +386,7 @@
         ]
     },
     "scripts": {
-        "vscode:prepublish": "npm run recompile  && webpack --mode production",
+        "vscode:prepublish": "npm run clean && ts-node ./build-scripts/generateServiceClient.ts  && webpack --mode production npm run lint && npm run buildScripts",
         "bundleDeps": "node ./build-scripts/bundleDeps.js",
         "clean": "node ./build-scripts/clean.js out",
         "generateNonCodeFiles": "ts-node ./build-scripts/generateNonCodeFiles.ts",
