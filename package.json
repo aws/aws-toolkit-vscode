@@ -397,7 +397,7 @@
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && webpack --mode development --watch",
         "postinstall": "ts-node ./build-scripts/generateServiceClient.ts && node ./node_modules/vscode/bin/install",
-        "test": "npm run compile && npm run lint && node ./test-scripts/test.js",
+        "test": "tsc -p . && npm run buildScripts && npm run lint && node ./test-scripts/test.js",
         "integrationTest": "npm run compile && ts-node ./test-scripts/integrationTest.ts",
         "lint": "tslint --project .",
         "lintfix": "tslint --project . --fix",
