@@ -1,4 +1,0 @@
-{
-    "type": "Bug Fix",
-    "description": "AWS Explorer now sorts the resources that belong to each CloudFormation Stack"
-}
