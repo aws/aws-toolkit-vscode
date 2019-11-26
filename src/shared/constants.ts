@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as path from 'path'
 import { NpmPackage } from './npmPackage'
 
 export const extensionSettingsPrefix: string = 'aws'
@@ -35,5 +36,5 @@ export const samDeployDocUrl: string =
 export const cdkProvideFeedbackUrl: string = `${githubUrl}/issues/new/choose`
 export const cdkDocumentationUrl: string = 'https://docs.aws.amazon.com/console/toolkit-for-vscode/aws-cdk-apps'
 
-const npmPackage = () => require('../../../package.json') as NpmPackage
+const npmPackage = () => require(path.join(path.dirname(__dirname), 'package.json')) as NpmPackage
 export const pluginVersion = npmPackage().version

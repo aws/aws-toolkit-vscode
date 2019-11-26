@@ -15,6 +15,7 @@ out/**/*.map
 src/**
 third-party/test/**
 test-scripts/**
+webpack.config.js
 .gitignore
 coverconfig.json
 Dockerfile

@@ -10,6 +10,7 @@
         "outDir": "out",
         "lib": ["dom", "es6", "esnext.asynciterable"],
         "sourceMap": true,
+        "moduleResolution": "node",
         "rootDirs": ["src", "third-party"],
         "resolveJsonModule": true,
         /* Strict Type-Checking Option */
