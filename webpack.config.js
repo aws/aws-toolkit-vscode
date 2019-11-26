@@ -3,12 +3,12 @@
 'use strict'
 
 const path = require('path')
-let webpack = require('webpack')
+const webpack = require('webpack')
 const fs = require('fs')
 const { NLSBundlePlugin } = require('vscode-nls-dev/lib/webpack-bundler')
-const packageJson = path.join(__dirname, 'package.json')
-const pkg = JSON.parse(fs.readFileSync(packageJson, 'utf8'))
-const packageId = `${pkg.publisher}.${pkg.name}`
+const packageJsonFile = path.join(__dirname, 'package.json')
+const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, 'utf8'))
+const packageId = `${packageJson.publisher}.${packageJson.name}`
 
 /**@type {import('webpack').Configuration}*/
 const config = {
@@ -62,7 +62,7 @@ const config = {
     plugins: [
         new NLSBundlePlugin(packageId),
         new webpack.DefinePlugin({
-            pluginVersion: JSON.stringify(process.env.npm_package_version)
+            pluginVersion: JSON.stringify(packageJson.version)
         })
     ]
 }

@@ -9,9 +9,10 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { ScriptResource } from '../lambda/models/scriptResource'
 import { ext } from '../shared/extensionGlobals'
-import { mostRecentVersionKey, pluginVersion } from './constants'
+import { mostRecentVersionKey } from './constants'
 import { readFileAsString } from './filesystemUtilities'
 import { Logger } from './logger'
+declare var pluginVersion: string
 
 const localize = nls.loadMessageBundle()
 

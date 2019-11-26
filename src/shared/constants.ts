@@ -32,5 +32,3 @@ export const samDeployDocUrl: string =
 // URLs for CDK
 export const cdkProvideFeedbackUrl: string = `${githubUrl}/issues/new/choose`
 export const cdkDocumentationUrl: string = 'https://docs.aws.amazon.com/console/toolkit-for-vscode/aws-cdk-apps'
-
-export declare var pluginVersion: string

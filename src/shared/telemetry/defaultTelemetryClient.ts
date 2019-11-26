@@ -6,12 +6,12 @@
 import { Credentials, Service } from 'aws-sdk'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import * as constants from '../constants'
 import { ext } from '../extensionGlobals'
 import * as ClientTelemetry from './clienttelemetry'
 import apiConfig = require('./service-2.json')
 import { TelemetryClient } from './telemetryClient'
 import { TelemetryEvent, toMetricData } from './telemetryEvent'
+declare var pluginVersion: string
 
 export class DefaultTelemetryClient implements TelemetryClient {
     public static readonly DEFAULT_IDENTITY_POOL = 'us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842'
@@ -30,7 +30,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
             await this.client
                 .postMetrics({
                     AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
-                    AWSProductVersion: constants.pluginVersion,
+                    AWSProductVersion: pluginVersion,
                     ClientID: this.clientId,
                     OS: os.platform(),
                     OSVersion: os.release(),
