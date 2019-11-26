@@ -12,7 +12,7 @@
             "runtimeExecutable": "${execPath}",
             "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "npm: vscodedev"
+            "preLaunchTask": "npm: watch"
         },
         {
             "name": "Extension Tests",
