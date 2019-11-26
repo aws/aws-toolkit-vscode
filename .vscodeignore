@@ -12,6 +12,13 @@ out/test/**
 out/integrationTest/**
 out/third-party/test/**
 out/**/*.map
+dist/src/test/**
+dist/src/integrationTest/**
+dist/src/integrationTest-samples/**
+dist/test/**
+dist/integrationTest/**
+dist/third-party/test/**
+dist/**/*.map
 src/**
 third-party/test/**
 test-scripts/**

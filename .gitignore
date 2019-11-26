@@ -1,4 +1,5 @@
 out
+dist
 node_modules
 .coverage/
 .vscode-test/
