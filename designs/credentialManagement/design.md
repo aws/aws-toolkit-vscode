@@ -33,7 +33,7 @@ job is to be able to list all `ToolkitCredentialsProvider` and return the provid
  It also has the ability to have listeners registered to it so they can listen for changes when `ToolkitCredentialsProvider` are
 added or removed such as when the shared credentials file is modified.
 
-4. `Active Credentials` - Represents the current credentials that the toolkit uses to perform actions or defaults to when
+4. `Active Connection Settings` - Represents the current credentials and region that the toolkit uses to perform actions or defaults to when
 more than one option is possible. Due to the nature of the IntellJ IDE being multiple windows in one JVM, each project
 window can have a different active credential selected.
 
@@ -85,12 +85,30 @@ reload, add, or remove instances of `ProfileToolkitCredentialsProvider` based on
 If a profile is modified, but its name is not changed, its `ProfileToolkitCredentialsProvider` should be modified internally. 
 This means external references to the object are still valid.
 
-## User Experience Walkthrough
+## Settings Management
+
+### Active Connection Settings Flow
+
+Active connection settings are managed at the project level and does validation upon switching of either the active credential provider or region.
+The credential manager can have an internal state of one of the following:
+1. `Initializing` - The state upon loading of the IDE, this state is the initial state whenever a new project is opened.
+It can be entered from either the UI (EDT) thread of a background thread based on the loading order of the IDE, but the processing of the
+state must happen on a background thread. This state includes loading of previous settings and if settings do not exist, query for defaults according to
+the default profile resolving logic as defined by the SDKs. This state must exit into the `Validating` state.
+2. `Validating` - This state is can be entered into by any thread, but the validation logic as defined by [Credential Validation](#credential-validation) must 
+be on a background thread. The result of the validation should be notified on the UI thread. If they are valid, the manager will enter the `Active` state, 
+else it will enter `Invalid`.
+3. `Active` - This state represents that there are active credentials and they are valid.
+4. `Invalid` - This state represents that the selected credential profile / region pair has failed the validation check. When we enter this state, we report
+that there are no active credentials, but we do not clear the users selection. This is required to allow for switching of credentials and regions that may take two
+operations to succeed.
 
 ### Status Bar
 
 We register a status bar widget in order to provide the user with an indicator of what credential is active in their 
-project. The status bar also acts as an entry point to switching by having a switcher in the context menu.
+project. It will also indicate what state we are in inside of the account settings manager.
+
+The status bar also acts as an entry point to switching by having a switcher in the context menu.
 
 ![NoCredentialsStatusBar]
 
@@ -99,20 +117,6 @@ project. The status bar also acts as an entry point to switching by having a swi
 ![DefaultCredentialsStatusBar]
 
 *Image when a profile named `default is active*
-
-### On Toolkit Start Run
-
-If the user has no active credentials from their last session, we should see if they have a profile named `default` 
-and select it for them if the credentials are valid.
-
-### On Switching Credentials
-
-When the user wishes to switch their active credentials, we first perform a check to see if the call is valid. See 
-[Credential Validation](#Credential-Validation).
-
-* If the check passes, we will mark the selected credentials active for the project window.
-* If the check fails, we will fall back to having no credentials specified and tell the user that the validation 
-failed.
 
 ### Multi-Factor Authentication
 
