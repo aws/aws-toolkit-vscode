@@ -24,8 +24,11 @@ class CloudWatchLogWindow(private val project: Project) {
         runInEdt {
             toolWindow.addTab(displayName, console.component, activate = true, id = id)
         }
-        client.getLogEventsPaginator { it.logGroupName(logGroup).logStreamName(logStream).startFromHead(fromHead) }.events().forEach {
-            console.print("${it.message()}\n", ConsoleViewContentType.NORMAL_OUTPUT)
+        val events = client.getLogEventsPaginator { it.logGroupName(logGroup).logStreamName(logStream).startFromHead(fromHead) }.events()
+        if (events.none()) {
+            console.print(message("ecs.service.logs.empty", "$logGroup/$logStream\n"), ConsoleViewContentType.NORMAL_OUTPUT)
+        } else {
+            events.forEach { console.print("${it.message()}\n", ConsoleViewContentType.NORMAL_OUTPUT) }
         }
     }
 
