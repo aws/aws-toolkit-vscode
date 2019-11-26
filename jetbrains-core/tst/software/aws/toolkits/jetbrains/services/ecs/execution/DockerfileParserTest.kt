@@ -11,6 +11,8 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
@@ -20,6 +22,17 @@ class DockerfileParserTest {
     @JvmField
     @Rule
     val projectRule = CodeInsightTestFixtureRule()
+    private val dockerParserDefinition = DockerParserDefinition()
+
+    @Before
+    fun setup() {
+        LanguageParserDefinitions.INSTANCE.addExplicitExtension(DockerLanguage.INSTANCE, dockerParserDefinition)
+    }
+
+    @After
+    fun teardown() {
+        LanguageParserDefinitions.INSTANCE.removeExplicitExtension(DockerLanguage.INSTANCE, dockerParserDefinition)
+    }
 
     @Test
     fun basicDockerfileParsing() {
@@ -156,13 +169,8 @@ class DockerfileParserTest {
         }
     }
 
-    private fun dockerfile(contents: String): VirtualFile {
-        if (LanguageParserDefinitions.INSTANCE.forLanguage(DockerLanguage.INSTANCE) == null) {
-            LanguageParserDefinitions.INSTANCE.addExplicitExtension(DockerLanguage.INSTANCE, DockerParserDefinition())
-        }
-
-        return runInEdtAndGet {
+    private fun dockerfile(contents: String): VirtualFile =
+        runInEdtAndGet {
             projectRule.fixture.configureByText(DockerFileType.DOCKER_FILE_TYPE, contents)
         }.virtualFile
-    }
 }
