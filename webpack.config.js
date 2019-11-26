@@ -5,6 +5,7 @@
 const path = require('path')
 const webpack = require('webpack')
 const fs = require('fs')
+const TerserPlugin = require('terser-webpack-plugin')
 const { NLSBundlePlugin } = require('vscode-nls-dev/lib/webpack-bundler')
 const packageJsonFile = path.join(__dirname, 'package.json')
 const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, 'utf8'))
@@ -64,6 +65,10 @@ const config = {
         new webpack.DefinePlugin({
             pluginVersion: JSON.stringify(packageJson.version)
         })
-    ]
+    ],
+    optimization: {
+        minimize: true,
+        minimizer: [new TerserPlugin()]
+    }
 }
 module.exports = config
