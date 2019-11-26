@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit for Visual Studio Code",
     "description": "An extension for working with Amazon Web Services in Visual Studio Code",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -47,7 +47,8 @@
         "onCommand:aws.quickStart",
         "onCommand:aws.help",
         "onCommand:aws.github",
-        "onCommand:aws.renderStateMachine"
+        "onCommand:aws.renderStateMachine",
+        "onView:aws.cdk.explorer"
     ],
     "main": "./out/src/extension",
     "contributes": {
@@ -79,6 +80,11 @@
                     "type": "number",
                     "default": 30000,
                     "markdownDescription": "%AWS.configuration.description.samcli.debug.attach.timeout%"
+                },
+                "aws.cdk.explorer.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "%AWS.configuration.description.cdk.explorer.enabled%"
                 },
                 "aws.logLevel": {
                     "type": "string",
@@ -126,6 +132,13 @@
                 {
                     "id": "aws.explorer",
                     "name": "%AWS.lambda.explorerTitle%"
+                }
+            ],
+            "explorer": [
+                {
+                    "id": "aws.cdk.explorer",
+                    "name": "%AWS.cdk.explorerTitle%",
+                    "when": "config.aws.cdk.explorer.enabled"
                 }
             ]
         },
@@ -202,6 +215,21 @@
                     "command": "aws.reportIssue",
                     "when": "view == aws.explorer",
                     "group": "z_externalLinks@3"
+                },
+                {
+                    "command": "aws.refreshCdkExplorer",
+                    "when": "view == aws.cdk.explorer",
+                    "group": "navigation@5"
+                },
+                {
+                    "command": "aws.cdk.help",
+                    "when": "view == aws.cdk.explorer",
+                    "group": "z_externalLinks@2"
+                },
+                {
+                    "command": "aws.cdk.provideFeedback",
+                    "when": "view == aws.cdk.explorer",
+                    "group": "z_externalLinks@3"
                 }
             ],
             "view/item/context": [
@@ -259,6 +287,16 @@
                 "category": "AWS"
             },
             {
+                "command": "aws.cdk.provideFeedback",
+                "title": "%AWS.command.cdk.provideFeedback%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.cdk.help",
+                "title": "%AWS.command.cdk.help%",
+                "category": "AWS"
+            },
+            {
                 "command": "aws.showRegion",
                 "title": "%AWS.command.showRegion%",
                 "category": "AWS"
@@ -288,8 +326,8 @@
                 "title": "%AWS.command.refreshAwsExplorer%",
                 "category": "AWS",
                 "icon": {
-                    "dark": "third-party/resources/from-vscode/dark/refresh.svg",
-                    "light": "third-party/resources/from-vscode/light/refresh.svg"
+                    "dark": "third-party/resources/from-vscode-icons/dark/refresh.svg",
+                    "light": "third-party/resources/from-vscode-icons/light/refresh.svg"
                 }
             },
             {
@@ -328,6 +366,15 @@
                 "category": "AWS"
             },
             {
+                "command": "aws.refreshCdkExplorer",
+                "title": "%AWS.command.refreshCdkExplorer%",
+                "category": "AWS",
+                "icon": {
+                    "dark": "third-party/resources/from-vscode-icons/dark/refresh.svg",
+                    "light": "third-party/resources/from-vscode-icons/light/refresh.svg"
+                }
+            },
+            {
                 "command": "aws.renderStateMachine",
                 "title": "%AWS.command.stepFunctions.renderStateMachine%",
                 "category": "AWS"
@@ -343,11 +390,18 @@
                 "url": "https://ecs-intellisense.s3-us-west-2.amazonaws.com/task-definition/schema.json"
             }
         ],
-        "languages": [{
-            "id": "asl",
-            "extensions": [ ".asl.json", ".asl" ],
-            "aliases": [ "Amazon States Language" ]
-        }],
+        "languages": [
+            {
+                "id": "asl",
+                "extensions": [
+                    ".asl.json",
+                    ".asl"
+                ],
+                "aliases": [
+                    "Amazon States Language"
+                ]
+            }
+        ],
         "snippets": [
             {
                 "language": "asl",

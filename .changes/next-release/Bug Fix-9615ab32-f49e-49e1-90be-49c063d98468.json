@@ -1,4 +1,0 @@
-{
-    "type": "Bug Fix",
-    "description": "AWS Explorer now shows a node indicating when Lambda Functions cannot be found in a region"
-}

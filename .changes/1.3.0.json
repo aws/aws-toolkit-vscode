@@ -1,0 +1,22 @@
+{
+    "date": "2019-11-22",
+    "version": "1.3.0",
+    "entries": [
+        {
+            "type": "Bug Fix",
+            "description": "AWS Explorer now shows a node indicating when CloudFormation Stacks cannot be found in a region"
+        },
+        {
+            "type": "Bug Fix",
+            "description": "AWS Explorer now sorts the resources that belong to each CloudFormation Stack"
+        },
+        {
+            "type": "Bug Fix",
+            "description": "AWS Explorer now shows a node indicating when Lambda Functions cannot be found in a region"
+        },
+        {
+            "type": "Feature",
+            "description": "CDK projects can now be visualized with the CDK Explorer"
+        }
+    ]
+}
