@@ -49,7 +49,7 @@
         "onCommand:aws.github",
         "onView:aws.cdk.explorer"
     ],
-    "main": "./out/src/extension",
+    "main": "./dist/extension",
     "contributes": {
         "configuration": {
             "type": "object",
@@ -388,11 +388,12 @@
     "scripts": {
         "vscode:prepublish": "npm run clean && ts-node ./build-scripts/generateServiceClient.ts  && webpack --mode production npm run lint && npm run buildScripts",
         "bundleDeps": "node ./build-scripts/bundleDeps.js",
-        "clean": "node ./build-scripts/clean.js out",
+        "clean": "node ./build-scripts/clean.js dist",
         "generateNonCodeFiles": "ts-node ./build-scripts/generateNonCodeFiles.ts",
-        "reset": "node ./build-scripts/clean.js out node_modules && npm install",
+        "reset": "node ./build-scripts/clean.js dist node_modules && npm install",
         "copyNonCodeFiles": "node ./build-scripts/copyNonCodeFiles.js",
         "buildScripts": "npm run bundleDeps && npm run copyNonCodeFiles && npm run generateNonCodeFiles",
+        "vscodedev": "webpack --mode none",
         "compile": "ts-node ./build-scripts/generateServiceClient.ts && webpack --mode none && npm run lint && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && webpack --mode none --watch",
@@ -448,7 +449,7 @@
         "vscode": "^1.1.33",
         "vscode-nls-dev": "^3.3.1",
         "webpack": "^4.41.2",
-        "webpack-cli": "^3.3.9"
+        "webpack-cli": "^3.3.10"
     },
     "dependencies": {
         "async-lock": "^1.1.3",
