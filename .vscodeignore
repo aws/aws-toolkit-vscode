@@ -29,3 +29,4 @@ Dockerfile
 tsconfig.json
 tslint.json
 codebuild-image-buildspec.yml
+node_modules
