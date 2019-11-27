@@ -20,7 +20,7 @@ export interface BigIntStats extends fs.BigIntStats {
 }
 
 // functions
-export const access = promisify(fs.access)
+export const access = fs.promises.access
 
 const _mkdir = promisify(fs.mkdir)
 interface ErrorWithCode {
@@ -63,11 +63,11 @@ export const mkdtemp = promisify(fs.mkdtemp)
 
 export const readFile = promisify(fs.readFile)
 
-export const readdir = promisify(fs.readdir)
+export const readdir = fs.promises.readdir
 
 export const rename = promisify(fs.rename)
 
-export const stat = promisify(fs.stat)
+export const stat = fs.promises.stat
 
 export const unlink = promisify(fs.unlink)
 
