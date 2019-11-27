@@ -4,10 +4,10 @@
  */
 
 import * as schema from 'cloudformation-schema-js-yaml'
+import { writeFile } from 'fs-extra'
 import * as yaml from 'js-yaml'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
-import { writeFile } from 'fs-extra'
 
 export namespace CloudFormation {
     export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function'

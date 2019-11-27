@@ -10,7 +10,7 @@ import * as vscode from 'vscode'
 import { detectLocalTemplates } from '../../../lambda/local/detectLocalTemplates'
 import { rmrf } from '../../../shared/filesystem'
 
-const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
+const workspaceFolderPath = normalizePath(__dirname, 'my', 'workspace', 'folder')
 
 function normalizePath(...paths: string[]): string {
     return vscode.Uri.file(path.join(...paths)).fsPath
@@ -24,6 +24,7 @@ describe('detectLocalTemplates', async () => {
     afterEach(async () => {
         await rmrf(workspaceFolderPath)
     })
+
     it('Detects no templates when there are no workspace folders', async () => {
         for await (const template of detectLocalTemplates({ workspaceUris: [] })) {
             assert.fail(`Expected no templates, but found '${template.fsPath}'`)

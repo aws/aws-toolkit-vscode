@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { unlink, writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -35,7 +36,6 @@ import {
     makeBuildDir,
     makeInputTemplate
 } from './localLambdaRunner'
-import { unlink, writeFile } from 'fs-extra'
 
 export const PYTHON_LANGUAGE = 'python'
 export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
