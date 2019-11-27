@@ -28,6 +28,7 @@ phases:
                 else
                   npm --no-git-tag-version version minor
                 fi
+                git add package.json
                 # Call npm install because 'createRelease' uses ts-node
                 npm install
                 npm run createRelease
