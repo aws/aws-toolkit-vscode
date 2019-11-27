@@ -5,30 +5,41 @@
 
 import * as fs from 'fs'
 import * as _path from 'path'
-import { promisify } from 'util'
 
-// interfaces & types
-export type PathLike = fs.PathLike
-export type MakeDirectoryOptions = fs.MakeDirectoryOptions
+const mkdir = fs.promises.mkdir
 
-export interface Stats extends fs.Stats {
-    // fs.Stats is a class, so for easy mocking we code against an interface with the same shape.
+async function mkdirRecursive(path: string, options: fs.MakeDirectoryOptions): Promise<void> {
+    const parent = _path.dirname(path)
+    if (parent !== path) {
+        await mkdir(parent, options)
+    }
+
+    await mkdir(path, options)
 }
 
 // functions
-export const access = promisify(fs.access)
+export const access = fs.promises.access
 
-const _mkdir = promisify(fs.mkdir)
+export const readFile = fs.promises.readFile
+
+export const readdir = fs.promises.readdir
+
+export const stat = fs.promises.stat
+
+export const unlink = fs.promises.unlink
+
+export const writeFile = fs.promises.writeFile
+
 interface ErrorWithCode {
     code?: string
 }
 
-export async function mkdir(
-    path: PathLike,
-    options?: number | string | MakeDirectoryOptions | undefined | null
+async function mkdirSafe(
+    path: fs.PathLike,
+    options?: number | string | fs.MakeDirectoryOptions | undefined | null
 ): Promise<void> {
     try {
-        await _mkdir(path, options)
+        await mkdir(path, options)
     } catch (err) {
         // mkdir calls with recurse do not work as expected when called through electron.
         // See: https://github.com/nodejs/node/issues/24698#issuecomment-486405542 for info.
@@ -46,25 +57,4 @@ export async function mkdir(
     }
 }
 
-async function mkdirRecursive(path: string, options: MakeDirectoryOptions): Promise<void> {
-    const parent = _path.dirname(path)
-    if (parent !== path) {
-        await mkdir(parent, options)
-    }
-
-    await mkdir(path, options)
-}
-
-export const mkdtemp = promisify(fs.mkdtemp)
-
-export const readFile = promisify(fs.readFile)
-
-export const readdir = promisify(fs.readdir)
-
-export const rename = promisify(fs.rename)
-
-export const stat = promisify(fs.stat)
-
-export const unlink = promisify(fs.unlink)
-
-export const writeFile = promisify(fs.writeFile)
+export { mkdirSafe as mkdir }
