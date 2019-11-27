@@ -7,7 +7,14 @@ import * as immutable from 'immutable'
 
 // TODO: Can we dynamically determine the available runtimes? We could theoretically parse the
 // output of `sam init --help`, but that's a hack.
-export type SamLambdaRuntime = 'python3.7' | 'python3.6' | 'python2.7' | 'nodejs8.10' | 'nodejs10.x' | 'dotnetcore2.1'
+export type SamLambdaRuntime =
+    | 'python3.7'
+    | 'python3.6'
+    | 'python2.7'
+    | 'nodejs8.10'
+    | 'nodejs10.x'
+    | 'nodejs12.x'
+    | 'dotnetcore2.1'
 
 export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set([
     'python3.7',
@@ -15,16 +22,18 @@ export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set(
     'python2.7',
     'nodejs8.10',
     'nodejs10.x',
+    'nodejs12.x',
     'dotnetcore2.1'
 ] as SamLambdaRuntime[])
 
 export type DependencyManager = 'cli-package' | 'mod' | 'gradle' | 'pip' | 'npm' | 'maven' | 'bundler'
 
 // TODO: Make this return an array of DependencyManagers when we add runtimes with multiple dependency managers
-export function getDependencyManager (runtime: SamLambdaRuntime): DependencyManager {
+export function getDependencyManager(runtime: SamLambdaRuntime): DependencyManager {
     switch (runtime) {
         case 'nodejs10.x':
         case 'nodejs8.10':
+        case 'nodejs12.x':
             return 'npm'
         case 'python2.7':
         case 'python3.6':
@@ -52,6 +61,7 @@ export function getFamily(runtime: string | undefined): SamLambdaRuntimeFamily {
             return SamLambdaRuntimeFamily.Python
         case 'nodejs8.10':
         case 'nodejs10.x':
+        case 'nodejs12.x':
         case 'nodejs':
             return SamLambdaRuntimeFamily.NodeJS
         case 'dotnetcore2.1':

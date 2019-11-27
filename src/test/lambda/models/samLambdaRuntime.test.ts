@@ -4,11 +4,49 @@
  */
 
 import * as assert from 'assert'
-import { compareSamLambdaRuntime } from '../../../lambda/models/samLambdaRuntime'
+import {
+    compareSamLambdaRuntime,
+    getDependencyManager,
+    getFamily,
+    SamLambdaRuntime,
+    samLambdaRuntimes
+} from '../../../lambda/models/samLambdaRuntime'
 
 describe('compareSamLambdaRuntime', async () => {
-    it('node 8 < node 10', async () => {
-        assert.ok(compareSamLambdaRuntime('nodejs8.10', 'nodejs10.x') < 0, 'expected node 8 < node 10')
-        assert.ok(compareSamLambdaRuntime('nodejs10.x', 'nodejs8.10') > 0, 'expected node 8 < node 10')
+    const scenarios: {
+        lowerRuntime: SamLambdaRuntime
+        higherRuntime: SamLambdaRuntime
+    }[] = [
+        { lowerRuntime: 'nodejs8.10', higherRuntime: 'nodejs10.x' },
+        { lowerRuntime: 'nodejs8.10', higherRuntime: 'nodejs12.x' },
+        { lowerRuntime: 'nodejs10.x', higherRuntime: 'nodejs12.x' }
+    ]
+
+    scenarios.forEach(scenario => {
+        it(`${scenario.lowerRuntime} < ${scenario.higherRuntime}`, () => {
+            assert.ok(compareSamLambdaRuntime(scenario.lowerRuntime, scenario.higherRuntime) < 0)
+        })
+
+        it(`${scenario.higherRuntime} > ${scenario.lowerRuntime}`, () => {
+            assert.ok(compareSamLambdaRuntime(scenario.higherRuntime, scenario.lowerRuntime) > 0)
+        })
+    })
+})
+
+describe('getDependencyManager', async () => {
+    it('all runtimes are handled', async () => {
+        samLambdaRuntimes.forEach(runtime => {
+            // Checking that call does not throw
+            getDependencyManager(runtime)
+        })
+    })
+})
+
+describe('getFamily', async () => {
+    it('all runtimes are handled', async () => {
+        samLambdaRuntimes.forEach(runtime => {
+            // Checking that call does not throw
+            getFamily(runtime)
+        })
     })
 })
