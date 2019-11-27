@@ -63,7 +63,7 @@ const config = {
     plugins: [
         new NLSBundlePlugin(packageId),
         new webpack.DefinePlugin({
-            pluginVersion: JSON.stringify(packageJson.version)
+            PLUGINVERSION: JSON.stringify(packageJson.version)
         })
     ],
     optimization: {

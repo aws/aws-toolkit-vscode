@@ -21,10 +21,10 @@
             "runtimeExecutable": "${execPath}",
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/out/src/test"
+                "--extensionTestsPath=${workspaceFolder}/dist/src/test"
             ],
-            "outFiles": ["${workspaceFolder}/out/src/test/**/*.js"],
-            "preLaunchTask": "npm: compile"
+            "outFiles": ["${workspaceFolder}/dist/src/test/**/*.js"],
+            "preLaunchTask": "npm: testCompile"
         },
         {
             "name": "Integration Tests",
@@ -32,12 +32,12 @@
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "args": [
-                "${workspaceFolder}/out/src/integrationTest-samples/",
+                "${workspaceFolder}/dist/src/integrationTest-samples/",
                 "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/out/src/integrationTest"
+                "--extensionTestsPath=${workspaceFolder}/dist/src/integrationTest"
             ],
-            "outFiles": ["${workspaceFolder}/out/src/integrationTest/**/*.js"],
-            "preLaunchTask": "npm: compile"
+            "outFiles": ["${workspaceFolder}/dist/src/integrationTest/**/*.js"],
+            "preLaunchTask": "npm: testCompile"
         }
     ]
 }

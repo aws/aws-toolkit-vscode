@@ -17,29 +17,12 @@ describe('DefaultAwsClientBuilder', () => {
             }
         }
 
-        // We don't want to test against the versions reported by package.json and vscode.version--this is
-        // what the product code does, so these tests would still pass with bad versions. Instead, we
-        // verify that a valid semver is used. This protects us against things like `null`, `undefined`,
-        // or other unexpected values.
-        const semverRegex = (require('semver-regex') as () => RegExp)()
-        const userAgentRegex = new RegExp(
-            `^AWS-Toolkit-For-VSCode\\/${semverRegex.source} Visual-Studio-Code\\/${semverRegex.source}`
-        )
-
-        it('includes custom user-agent if no options are specified', async () => {
-            const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
-            const service = await builder.createAndConfigureServiceClient(opts => new FakeService(opts))
-
-            assert.strictEqual(!!service.config.customUserAgent, true)
-            assert.strictEqual(userAgentRegex.test(service.config.customUserAgent!), true)
-        })
-
         it('includes custom user-agent if not specified in options', async () => {
             const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
             const service = await builder.createAndConfigureServiceClient(opts => new FakeService(opts), {})
 
             assert.strictEqual(!!service.config.customUserAgent, true)
-            assert.strictEqual(userAgentRegex.test(service.config.customUserAgent!), true)
+            assert.notStrictEqual(service.config.customUserAgent, undefined)
         })
 
         it('does not override custom user-agent if specified in options', async () => {

@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { ScriptResource } from '../lambda/models/scriptResource'
 import { ext } from '../shared/extensionGlobals'
-import { globals, mostRecentVersionKey } from './constants'
+import { mostRecentVersionKey, pluginVersion } from './constants'
 import { readFileAsString } from './filesystemUtilities'
 import { Logger } from './logger'
 
@@ -140,7 +140,7 @@ function convertExtensionRootTokensToPath(text: string, basePath: string): strin
  * @param context VS Code Extension Context
  * @param currVersion Current version to compare stored most recent version against (useful for tests)
  */
-export function isDifferentVersion(context: vscode.ExtensionContext, currVersion: string = globals.version): boolean {
+export function isDifferentVersion(context: vscode.ExtensionContext, currVersion: string = pluginVersion): boolean {
     const mostRecentVersion = context.globalState.get<string>(mostRecentVersionKey)
     if (mostRecentVersion && mostRecentVersion === currVersion) {
         return false
@@ -156,7 +156,7 @@ export function isDifferentVersion(context: vscode.ExtensionContext, currVersion
  * @param context VS Code Extension Context
  */
 export function setMostRecentVersion(context: vscode.ExtensionContext): void {
-    context.globalState.update(mostRecentVersionKey, globals.version)
+    context.globalState.update(mostRecentVersionKey, pluginVersion)
 }
 
 /**
@@ -168,7 +168,7 @@ async function promptQuickStart(): Promise<void> {
         localize(
             'AWS.message.prompt.quickStart.toastMessage',
             'You are now using the AWS Toolkit for Visual Studio Code, version {0}',
-            globals.version
+            pluginVersion
         ),
         view
     )

@@ -6,7 +6,7 @@
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { env, version } from 'vscode'
 import { AwsContext } from './awsContext'
-declare var pluginVersion: string
+import { pluginVersion } from './constants'
 
 export interface AWSClientBuilder {
     createAndConfigureServiceClient<T>(
