@@ -7,7 +7,7 @@ import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 import { promisify } from 'util'
-import { access, mkdir, PathLike, readdir, readFile } from './filesystem'
+import { access, mkdir, readdir, readFile } from './filesystem'
 
 const DEFAULT_ENCODING: BufferEncoding = 'utf8'
 
@@ -28,7 +28,7 @@ export async function fileExists(filePath: string): Promise<boolean> {
 }
 
 export const readDirAsString = async (
-    pathLike: PathLike,
+    pathLike: fs.PathLike,
     options: { encoding: BufferEncoding } = { encoding: DEFAULT_ENCODING }
 ): Promise<string[]> => {
     return readdir(pathLike, options)
