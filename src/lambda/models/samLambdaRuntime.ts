@@ -8,6 +8,7 @@ import * as immutable from 'immutable'
 // TODO: Can we dynamically determine the available runtimes? We could theoretically parse the
 // output of `sam init --help`, but that's a hack.
 export type SamLambdaRuntime =
+    | 'python3.8'
     | 'python3.7'
     | 'python3.6'
     | 'python2.7'
@@ -17,6 +18,7 @@ export type SamLambdaRuntime =
     | 'dotnetcore2.1'
 
 export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set([
+    'python3.8',
     'python3.7',
     'python3.6',
     'python2.7',
@@ -38,6 +40,7 @@ export function getDependencyManager(runtime: SamLambdaRuntime): DependencyManag
         case 'python2.7':
         case 'python3.6':
         case 'python3.7':
+        case 'python3.8':
             return 'pip'
         case 'dotnetcore2.1':
             return 'cli-package'
@@ -54,6 +57,7 @@ export enum SamLambdaRuntimeFamily {
 
 export function getFamily(runtime: string | undefined): SamLambdaRuntimeFamily {
     switch (runtime) {
+        case 'python3.8':
         case 'python3.7':
         case 'python3.6':
         case 'python2.7':
