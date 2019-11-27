@@ -4,10 +4,11 @@
  */
 
 import * as assert from 'assert'
+import { mkdirp } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { detectLocalTemplates } from '../../../lambda/local/detectLocalTemplates'
-import { rmdrf } from '../../../shared/filesystem'
+import { rmrf } from '../../../shared/filesystem'
 
 const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
 
@@ -16,6 +17,9 @@ function normalizePath(...paths: string[]): string {
 }
 
 describe('detectLocalTemplates', async () => {
+    beforeEach(async () => {
+        await mkdirp(workspaceFolderPath)
+    })
     // cleanup generated folders after each
     afterEach(async () => {
         await rmrf(workspaceFolderPath)

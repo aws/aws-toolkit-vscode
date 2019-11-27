@@ -5,9 +5,9 @@
 
 import * as schema from 'cloudformation-schema-js-yaml'
 import * as yaml from 'js-yaml'
-import * as filesystem from '../filesystem'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
+import { writeFile } from 'fs-extra'
 
 export namespace CloudFormation {
     export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function'
@@ -158,7 +158,7 @@ export namespace CloudFormation {
     export async function save(template: Template, filename: string): Promise<void> {
         const templateAsYaml: string = yaml.safeDump(template)
 
-        await filesystem.writeFile(filename, templateAsYaml, 'utf8')
+        await writeFile(filename, templateAsYaml, 'utf8')
     }
 
     export function validateTemplate(template: Template): void {

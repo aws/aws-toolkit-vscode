@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs'
+import { access, mkdtemp, readFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
-import { promisify } from 'util'
-import { access, mkdir, readdir, readFile } from './filesystem'
+import { mkdir } from './filesystem'
 
 const DEFAULT_ENCODING: BufferEncoding = 'utf8'
 
@@ -25,13 +24,6 @@ export async function fileExists(filePath: string): Promise<boolean> {
     }
 
     return true
-}
-
-export const readDirAsString = async (
-    pathLike: fs.PathLike,
-    options: { encoding: BufferEncoding } = { encoding: DEFAULT_ENCODING }
-): Promise<string[]> => {
-    return readdir(pathLike, options)
 }
 
 /**
@@ -69,7 +61,6 @@ export async function findFileInParentPaths(searchFolder: string, fileToFind: st
     return findFileInParentPaths(parentPath, fileToFind)
 }
 
-const mkdtemp = promisify(fs.mkdtemp)
 export const makeTemporaryToolkitFolder = async (...relativePathParts: string[]) => {
     const _relativePathParts = relativePathParts || []
     if (_relativePathParts.length === 0) {
