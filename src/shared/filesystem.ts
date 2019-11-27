@@ -15,6 +15,10 @@ export interface Stats extends fs.Stats {
     // fs.Stats is a class, so for easy mocking we code against an interface with the same shape.
 }
 
+export interface BigIntStats extends fs.BigIntStats {
+    // fs.BigIntStats is a class, so for easy mocking we code against an interface with the same shape.
+}
+
 // functions
 export const access = promisify(fs.access)
 

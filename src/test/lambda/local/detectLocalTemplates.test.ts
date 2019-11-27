@@ -25,7 +25,7 @@ describe('detectLocalTemplates', async () => {
 
         const result = detectLocalTemplates({
             workspaceUris: [vscode.Uri.file(workspaceFolderPath)],
-            context: {
+            context: <DetectLocalTemplatesContext>{
                 async access(_path: filesystem.PathLike): Promise<void> {
                     if (_path !== normalizePath(workspaceFolderPath, 'template.yaml')) {
                         throw new Error(`No file found at path: '${_path}'`)
@@ -46,12 +46,12 @@ describe('detectLocalTemplates', async () => {
                     return ['template.yaml']
                 },
 
-                async stat(_path: filesystem.PathLike): Promise<filesystem.Stats> {
+                async stat(_path: filesystem.PathLike): Promise<filesystem.BigIntStats> {
                     return ({
                         isDirectory() {
                             return true
                         }
-                    } as any) as filesystem.Stats
+                    } as any) as filesystem.BigIntStats
                 }
             }
         })
