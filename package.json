@@ -399,7 +399,7 @@
         "postinstall": "ts-node ./build-scripts/generateServiceClient.ts && node ./node_modules/vscode/bin/install",
         "testCompile": "tsc -p ./ && npm run buildScripts && npm run lint",
         "test": "npm run testCompile && node ./test-scripts/test.js",
-        "integrationTest": "npm run compile && ts-node ./test-scripts/integrationTest.ts",
+        "integrationTest": "npm run testCompile && ts-node ./test-scripts/integrationTest.ts",
         "lint": "tslint --project .",
         "lintfix": "tslint --project . --fix",
         "package": "vsce package",
