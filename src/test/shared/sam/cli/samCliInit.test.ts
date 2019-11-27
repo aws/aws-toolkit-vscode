@@ -10,7 +10,6 @@ import { runSamCliInit, SamCliInitArgs } from '../../../../shared/sam/cli/samCli
 import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import {
     MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
-    SAM_CLI_VERSION_0_30,
     SamCliValidator,
     SamCliValidatorResult,
     SamCliVersionValidation
@@ -152,7 +151,7 @@ describe('runSamCliInit', async () => {
         )
     })
 
-    it('Passes --no-interactive if version >= 0.30.0', async () => {
+    it('Passes --no-interactive', async () => {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
             (spawnOptions: SpawnOptions, args: any[]) => {
                 assertArgIsPresent(args, '--no-interactive')
@@ -160,14 +159,14 @@ describe('runSamCliInit', async () => {
         )
 
         const context: SamCliContext = {
-            validator: new FakeSamCliValidator(SAM_CLI_VERSION_0_30),
+            validator: new FakeSamCliValidator(),
             invoker: processInvoker
         }
 
         await runSamCliInit(sampleSamInitArgs, context)
     })
 
-    it('Passes --app-template if version >= 0.30.0', async () => {
+    it('Passes --app-template', async () => {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
             (spawnOptions: SpawnOptions, args: any[]) => {
                 assertArgsContainArgument(args, '--app-template', 'hello-world')
@@ -175,14 +174,14 @@ describe('runSamCliInit', async () => {
         )
 
         const context: SamCliContext = {
-            validator: new FakeSamCliValidator(SAM_CLI_VERSION_0_30),
+            validator: new FakeSamCliValidator(),
             invoker: processInvoker
         }
 
         await runSamCliInit(sampleSamInitArgs, context)
     })
 
-    it('Passes --dependency-manager if version >= 0.30.0', async () => {
+    it('Passes --dependency-manager', async () => {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
             (spawnOptions: SpawnOptions, args: any[]) => {
                 assertArgsContainArgument(args, '--dependency-manager', sampleDependencyManager)
@@ -190,7 +189,7 @@ describe('runSamCliInit', async () => {
         )
 
         const context: SamCliContext = {
-            validator: new FakeSamCliValidator(SAM_CLI_VERSION_0_30),
+            validator: new FakeSamCliValidator(),
             invoker: processInvoker
         }
 
