@@ -8,7 +8,7 @@ import * as assert from 'assert'
 import * as del from 'del'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { mostRecentVersionKey } from '../../shared/constants'
+import { globals, mostRecentVersionKey } from '../../shared/constants'
 import {
     createQuickStartWebview,
     isDifferentVersion,
@@ -19,9 +19,12 @@ import { writeFile } from '../../shared/filesystem'
 import * as filesystemUtilities from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { assertRejects } from './utilities/assertUtils'
-declare var pluginVersion: string
 
 describe('extensionUtilities', () => {
+    before(() => {
+        globals.version = '1.2.3'
+    })
+
     describe('safeGet', () => {
         class Blah {
             public someProp?: string
@@ -114,7 +117,7 @@ describe('extensionUtilities', () => {
             const extContext = new FakeExtensionContext()
             setMostRecentVersion(extContext)
 
-            assert.strictEqual(extContext.globalState.get<string>(mostRecentVersionKey), pluginVersion)
+            assert.strictEqual(extContext.globalState.get<string>(mostRecentVersionKey), globals.version)
         })
     })
 })
