@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import { Uri, WorkspaceFolder } from 'vscode'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
-import { writeFile } from '../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
 export async function createWorkspaceFolder(

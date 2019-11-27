@@ -8,7 +8,6 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { PythonDebugConfiguration, PythonPathMapping } from '../../lambda/local/debugConfiguration'
 import { CloudFormation } from '../cloudformation/cloudformation'
-import { unlink, writeFile } from '../filesystem'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
@@ -36,6 +35,7 @@ import {
     makeBuildDir,
     makeInputTemplate
 } from './localLambdaRunner'
+import { unlink, writeFile } from 'fs-extra'
 
 export const PYTHON_LANGUAGE = 'python'
 export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [

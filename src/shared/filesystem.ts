@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs'
+import * as fs from 'fs-extra'
 import * as _path from 'path'
 
 const mkdir = fs.promises.mkdir
@@ -11,24 +11,11 @@ const mkdir = fs.promises.mkdir
 async function mkdirRecursive(path: string, options: fs.MakeDirectoryOptions): Promise<void> {
     const parent = _path.dirname(path)
     if (parent !== path) {
-        await mkdir(parent, options)
+        await fs.ensureDir(parent, options)
     }
 
-    await mkdir(path, options)
+    await fs.ensureDir(path, options)
 }
-
-// functions
-export const access = fs.promises.access
-
-export const readFile = fs.promises.readFile
-
-export const readdir = fs.promises.readdir
-
-export const stat = fs.promises.stat
-
-export const unlink = fs.promises.unlink
-
-export const writeFile = fs.promises.writeFile
 
 interface ErrorWithCode {
     code?: string
@@ -58,3 +45,19 @@ async function mkdirSafe(
 }
 
 export { mkdirSafe as mkdir }
+
+// Recursive delete without requiring a third-party library. This allows the script
+// to be run before `npm install`.
+export async function rmrf(path: string) {
+    const stats = await fs.stat(path)
+    if (stats.isFile()) {
+        await fs.unlink(path)
+    } else if (stats.isDirectory()) {
+        const promises = (await fs.readdir(path)).map(async child => rmrf(_path.join(path, child)))
+
+        await Promise.all(promises)
+        await fs.rmdir(path)
+    } else {
+        throw new Error(`Could not delete '${path}' because it is neither a file nor directory`)
+    }
+}

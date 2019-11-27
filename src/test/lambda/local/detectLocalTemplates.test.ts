@@ -7,12 +7,19 @@ import * as assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { detectLocalTemplates } from '../../../lambda/local/detectLocalTemplates'
+import { rmdrf } from '../../../shared/filesystem'
+
+const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
 
 function normalizePath(...paths: string[]): string {
     return vscode.Uri.file(path.join(...paths)).fsPath
 }
 
 describe('detectLocalTemplates', async () => {
+    // cleanup generated folders after each
+    afterEach(async () => {
+        await rmrf(workspaceFolderPath)
+    })
     it('Detects no templates when there are no workspace folders', async () => {
         for await (const template of detectLocalTemplates({ workspaceUris: [] })) {
             assert.fail(`Expected no templates, but found '${template.fsPath}'`)
@@ -20,8 +27,6 @@ describe('detectLocalTemplates', async () => {
     })
 
     it('Detects templates at the root of each workspace folder', async () => {
-        const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
-
         const result = detectLocalTemplates({ workspaceUris: [vscode.Uri.file(workspaceFolderPath)] })
 
         const templates: vscode.Uri[] = []
@@ -34,7 +39,6 @@ describe('detectLocalTemplates', async () => {
     })
 
     it('Detects templates in child folders of each workspace folder', async () => {
-        const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
         const workspaceFolderChildPath = normalizePath(workspaceFolderPath, 'child')
 
         const result = detectLocalTemplates({
@@ -50,9 +54,8 @@ describe('detectLocalTemplates', async () => {
         assert.strictEqual(templates[0].fsPath, normalizePath(workspaceFolderChildPath, 'template.yaml'))
     })
 
+    // TODO delete this test when this check is fixed
     it('Does not recursively descend past the direct children of each workspace folder', async () => {
-        const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
-
         const result = detectLocalTemplates({ workspaceUris: [vscode.Uri.file(workspaceFolderPath)] })
 
         const templates: vscode.Uri[] = []
@@ -64,7 +67,6 @@ describe('detectLocalTemplates', async () => {
     })
 
     it('Detects multiple templates when multiple folders contain templates', async () => {
-        const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
         const workspaceFolderChildPath1 = normalizePath(workspaceFolderPath, 'child1')
         const workspaceFolderChildPath2 = normalizePath(workspaceFolderPath, 'child2')
 
@@ -81,7 +83,6 @@ describe('detectLocalTemplates', async () => {
     })
 
     it('Detects multiple templates when both template.yml and template.yaml exist in a folder', async () => {
-        const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
         const workspaceFolderChildPath = normalizePath(workspaceFolderPath, 'child')
 
         const result = detectLocalTemplates({ workspaceUris: [vscode.Uri.file(workspaceFolderPath)] })
