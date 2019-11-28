@@ -50,7 +50,7 @@ export class SamTemplateGenerator {
         return this
     }
 
-    public withEnvironment(env: CloudFormation.Environment): SamTemplateGenerator {
+    public withEnvironment(env: unknown): SamTemplateGenerator {
         this.properties.Environment = env
 
         return this

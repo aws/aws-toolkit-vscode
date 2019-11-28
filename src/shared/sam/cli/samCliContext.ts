@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Logger } from '../../logger'
 import { SettingsConfiguration } from '../../settingsConfiguration'
 import { DefaultSamCliConfiguration } from './samCliConfiguration'
 import { DefaultSamCliProcessInvoker, SamCliProcessInvokerContext } from './samCliInvoker'
 import { SamCliProcessInvoker } from './samCliInvokerUtils'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
+import { throwAndNotifyIfInvalid } from './samCliValidationUtils'
 import { DefaultSamCliValidator, DefaultSamCliValidatorContext, SamCliValidator } from './samCliValidator'
 
 export interface SamCliContext {
@@ -23,11 +23,9 @@ let samCliContextInitialized: boolean = false
 
 // Components required to load Sam Cli Context
 let settingsConfiguration: SettingsConfiguration
-let logger: Logger
 
-export function initialize(params: { settingsConfiguration: SettingsConfiguration; logger: Logger }) {
+export function initialize(params: { settingsConfiguration: SettingsConfiguration }) {
     settingsConfiguration = params.settingsConfiguration
-    logger = params.logger
 
     samCliContext = undefined
     samCliContextInitialized = true
@@ -48,6 +46,13 @@ export function getSamCliContext() {
     return samCliContext
 }
 
+export async function getSamCliVersion(context: SamCliContext): Promise<string> {
+    const result = await context.validator.detectValidSamCli()
+    throwAndNotifyIfInvalid(result)
+
+    return result.versionValidation!.version!
+}
+
 function makeSamCliContext(): SamCliContext {
     const samCliConfiguration = new DefaultSamCliConfiguration(
         settingsConfiguration,
@@ -55,8 +60,7 @@ function makeSamCliContext(): SamCliContext {
     )
 
     const invokerContext: SamCliProcessInvokerContext = {
-        cliConfig: samCliConfiguration,
-        logger
+        cliConfig: samCliConfiguration
     }
     const invoker = new DefaultSamCliProcessInvoker(invokerContext)
 

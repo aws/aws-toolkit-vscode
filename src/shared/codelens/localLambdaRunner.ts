@@ -25,7 +25,7 @@ import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { getFamily, SamLambdaRuntimeFamily } from '../../lambda/models/samLambdaRuntime'
-import { BasicLogger } from '../logger'
+import { Logger } from '../logger'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { Timeout } from '../utilities/timeoutUtils'
@@ -136,22 +136,12 @@ export class LocalLambdaRunner {
     private async generateInputTemplate(rootCodeFolder: string): Promise<string> {
         const buildFolder: string = await this.getBaseBuildFolder()
 
-        // Make function handler relative to baseDir
-        const handlerFileRelativePath = path.relative(
-            rootCodeFolder,
-            path.dirname(this.localInvokeParams.document.uri.fsPath)
-        )
-
-        const relativeFunctionHandler = path
-            .join(handlerFileRelativePath, this.localInvokeParams.handlerName)
-            .replace('\\', '/')
-
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(this.localInvokeParams.workspaceFolder.uri)
         let properties: CloudFormation.ResourceProperties | undefined
         let globals: CloudFormation.TemplateGlobals | undefined
         if (workspaceFolder) {
             const lambdas = await detectLocalLambdas([workspaceFolder])
-            const existingLambda = lambdas.find(lambda => lambda.handler === relativeFunctionHandler)
+            const existingLambda = lambdas.find(lambda => lambda.handler === this.localInvokeParams.handlerName)
 
             if (existingLambda) {
                 if (existingLambda.resource && existingLambda.resource.Properties) {
@@ -167,7 +157,7 @@ export class LocalLambdaRunner {
         return await makeInputTemplate({
             baseBuildDir: buildFolder,
             codeDir: rootCodeFolder,
-            relativeFunctionHandler,
+            relativeFunctionHandler: this.localInvokeParams.handlerName,
             globals,
             properties,
             runtime: this.runtime
@@ -186,7 +176,11 @@ export class LocalLambdaRunner {
 
         const eventPath: string = path.join(await this.getBaseBuildFolder(), 'event.json')
         const environmentVariablePath = path.join(await this.getBaseBuildFolder(), 'env-vars.json')
-        const config = await this.getConfig()
+        const config = await getConfig({
+            handlerName: this.localInvokeParams.handlerName,
+            documentUri: this.localInvokeParams.document.uri,
+            samTemplate: this.localInvokeParams.samTemplate
+        })
         const maxRetries: number = getAttachDebuggerMaxRetryLimit(this.configuration, MAX_DEBUGGER_RETRIES_DEFAULT)
 
         await writeFile(eventPath, JSON.stringify(config.event || {}))
@@ -198,7 +192,8 @@ export class LocalLambdaRunner {
             eventPath,
             environmentVariablePath,
             debugPort: !!this._debugPort ? this._debugPort.toString() : undefined,
-            invoker: this.localInvokeCommand
+            invoker: this.localInvokeCommand,
+            dockerNetwork: config.dockerNetwork
         })
 
         const timer = createInvokeTimer(this.configuration)
@@ -242,21 +237,6 @@ export class LocalLambdaRunner {
                 })
             }
         }
-    }
-
-    private async getConfig(): Promise<HandlerConfig> {
-        const workspaceFolder = vscode.workspace.getWorkspaceFolder(this.localInvokeParams.document.uri)
-        if (!workspaceFolder) {
-            return generateDefaultHandlerConfig()
-        }
-
-        const config: HandlerConfig = await getLocalLambdaConfiguration(
-            workspaceFolder,
-            this.localInvokeParams.handlerName,
-            this.localInvokeParams.samTemplate
-        )
-
-        return config
     }
 } // end class LocalLambdaRunner
 
@@ -430,7 +410,8 @@ export async function invokeLambdaFunction(
         templatePath: invokeArgs.samTemplatePath,
         eventPath,
         environmentVariablePath,
-        invoker: samLocalInvokeCommand
+        invoker: samLocalInvokeCommand,
+        dockerNetwork: config.dockerNetwork
     }
 
     const debugArgs = invokeArgs.debugArgs
@@ -690,7 +671,7 @@ async function showDebugConsole({
     ...params
 }: {
     executeVsCodeCommand?: typeof vscode.commands.executeCommand
-    logger: BasicLogger
+    logger: Logger
 }): Promise<void> {
     try {
         await executeVsCodeCommand('workbench.debug.action.toggleRepl')

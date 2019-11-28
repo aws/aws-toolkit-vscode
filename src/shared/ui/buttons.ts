@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as path from 'path'
-import { ExtensionContext, QuickInputButton, Uri } from 'vscode'
+import { QuickInputButton, Uri } from 'vscode'
+import { ext } from '../extensionGlobals'
 
 /**
  * Creates a QuickInputButton with a predefined help button (dark and light theme compatible)
@@ -12,17 +12,11 @@ import { ExtensionContext, QuickInputButton, Uri } from 'vscode'
  * button will exist regardless of image loading (UI tests will still see this)
  * @param tooltip Optional tooltip for button
  */
-export function createHelpButton(
-    context: Pick<ExtensionContext, 'asAbsolutePath'>,
-    tooltip?: string
-): QuickInputButton {
-    const light = path.join(context.asAbsolutePath('resources'), 'light', 'help.svg')
-    const dark = path.join(context.asAbsolutePath('resources'), 'dark', 'help.svg')
-
+export function createHelpButton(tooltip?: string): QuickInputButton {
     return {
         iconPath: {
-            light: Uri.file(light),
-            dark: Uri.file(dark)
+            light: Uri.file(ext.iconPaths.light.help),
+            dark: Uri.file(ext.iconPaths.dark.help)
         },
         tooltip
     }

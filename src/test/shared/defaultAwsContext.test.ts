@@ -4,7 +4,8 @@
  */
 
 import * as assert from 'assert'
-import { Credentials } from 'aws-sdk'
+import * as AWS from 'aws-sdk'
+import * as sinon from 'sinon'
 import { ConfigurationTarget } from 'vscode'
 import { profileSettingKey, regionSettingKey } from '../../shared/constants'
 import { CredentialsManager } from '../../shared/credentialsManager'
@@ -35,11 +36,14 @@ describe('DefaultAwsContext', () => {
     }
 
     class TestCredentialsManager extends CredentialsManager {
-        public constructor(private readonly expectedName?: string, private readonly reportedCredentials?: Credentials) {
+        public constructor(
+            private readonly expectedName?: string,
+            private readonly reportedCredentials?: AWS.Credentials
+        ) {
             super()
         }
 
-        public async getCredentials(profileName: string): Promise<Credentials> {
+        public async getCredentials(profileName: string): Promise<AWS.Credentials> {
             if (this.reportedCredentials && this.expectedName === profileName) {
                 return this.reportedCredentials
             }
@@ -47,10 +51,19 @@ describe('DefaultAwsContext', () => {
         }
     }
 
+    let sandbox: sinon.SinonSandbox
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
     it('gets credentials if a profile exists with credentials', async () => {
         const settingsConfig = new TestSettingsConfiguration()
         await settingsConfig.writeSetting<string>(profileSettingKey, testProfileValue)
-        const reportedCredentials = new Credentials(testAccessKey, testSecretKey)
+        const reportedCredentials = new AWS.Credentials(testAccessKey, testSecretKey)
 
         const testContext = new DefaultAwsContext(
             settingsConfig,
@@ -65,7 +78,7 @@ describe('DefaultAwsContext', () => {
         const overrideProfile = 'asdf'
         const settingsConfig = new TestSettingsConfiguration()
         await settingsConfig.writeSetting<string>(profileSettingKey, overrideProfile)
-        const reportedCredentials = new Credentials(testAccessKey, testSecretKey)
+        const reportedCredentials = new AWS.Credentials(testAccessKey, testSecretKey)
 
         const testContext = new DefaultAwsContext(
             settingsConfig,
@@ -97,6 +110,26 @@ describe('DefaultAwsContext', () => {
         const testContext = new DefaultAwsContext(settingsConfig, new FakeExtensionContext())
         const creds = await testContext.getCredentials()
         assert.strictEqual(creds, undefined)
+    })
+
+    it('returns ini crendentials if available', async () => {
+        const settingsConfig = new TestSettingsConfiguration()
+        const credentials = new AWS.Credentials(testAccessKey, testSecretKey)
+        sandbox.stub(AWS, 'SharedIniFileCredentials').returns(credentials)
+
+        const testContext = new DefaultAwsContext(settingsConfig, new FakeExtensionContext())
+        const actual = await testContext.getCredentials('ini-credentials')
+        assert.strictEqual(actual, credentials)
+    })
+
+    it('returns process crendentials if available', async () => {
+        const settingsConfig = new TestSettingsConfiguration()
+        const credentials = new AWS.Credentials(testAccessKey, testSecretKey)
+        sandbox.stub(AWS, 'ProcessCredentials').returns(credentials)
+
+        const testContext = new DefaultAwsContext(settingsConfig, new FakeExtensionContext())
+        const actual = await testContext.getCredentials('proc-credentials')
+        assert.strictEqual(actual, credentials)
     })
 
     it('reads profile from config on startup', async () => {

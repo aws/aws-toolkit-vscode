@@ -5,245 +5,111 @@
 
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
-import * as os from 'os'
-import { TreeItem, Uri } from 'vscode'
-import { DefaultRegionNode } from '../../../awsexplorer/defaultRegionNode'
-import {
-    DefaultLambdaFunctionGroupNode,
-    DefaultLambdaFunctionNode,
-    LambdaFunctionNode
-} from '../../../lambda/explorer/lambdaNodes'
-import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
-import { EcsClient } from '../../../shared/clients/ecsClient'
-import { LambdaClient } from '../../../shared/clients/lambdaClient'
-import { StsClient } from '../../../shared/clients/stsClient'
+import * as sinon from 'sinon'
+import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
+import { CONTEXT_VALUE_LAMBDA_FUNCTION, LambdaNode } from '../../../lambda/explorer/lambdaNodes'
+import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import { ext } from '../../../shared/extensionGlobals'
-import { TestLogger } from '../../../shared/loggerUtils'
-import { RegionInfo } from '../../../shared/regions/regionInfo'
-import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
-import { MockLambdaClient } from '../../shared/clients/mockClients'
+import {
+    assertNodeListOnlyContainsErrorNode,
+    assertNodeListOnlyContainsPlaceholderNode
+} from './explorerNodeAssertions'
 
 // TODO : Consolidate all asyncGenerator calls into a shared utility method
 async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
     yield* items
 }
 
-describe('DefaultLambdaFunctionNode', () => {
-    let fakeFunctionConfig: Lambda.FunctionConfiguration
-    const fakeIconPathPrefix: string = 'DefaultLambdaFunctionNode'
-    let logger: TestLogger
+const FAKE_REGION_CODE = 'someregioncode'
+const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
+const SORTED_TEXT = ['aardvark', 'Antelope', 'elephant', 'zebra']
 
-    before(async () => {
-        logger = await TestLogger.createTestLogger()
-        fakeFunctionConfig = {
-            FunctionName: 'testFunctionName',
-            FunctionArn: 'testFunctionARN'
-        }
+describe('LambdaNode', () => {
+    let sandbox: sinon.SinonSandbox
+    let testNode: LambdaNode
+
+    // Mocked Lambda Client returns Lambda Functions for anything listed in lambdaFunctionNames
+    let lambdaFunctionNames: string[]
+
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+
+        lambdaFunctionNames = ['function1', 'function2']
+
+        initializeClientBuilders()
+
+        testNode = new LambdaNode(FAKE_REGION_CODE)
     })
 
-    after(async () => {
-        await logger.cleanupLogger()
+    afterEach(() => {
+        sandbox.restore()
     })
 
-    // Validates we tagged the node correctly
-    it('initializes name and tooltip', async () => {
-        const testNode = generateTestNode()
-
-        assert.strictEqual(testNode.label, fakeFunctionConfig.FunctionName)
-        assert.strictEqual(
-            testNode.tooltip,
-            `${fakeFunctionConfig.FunctionName}${os.EOL}${fakeFunctionConfig.FunctionArn}`
-        )
-    })
-
-    it('initializes icon', async () => {
-        const testNode = generateTestNode()
-
-        validateIconPath(testNode)
-    })
-
-    // Validates we don't yield some unexpected value that our command triggers
-    // don't recognize
-    it('returns expected context value', async () => {
-        const testNode = generateTestNode()
-
-        assert.strictEqual(testNode.contextValue, 'awsRegionFunctionNode')
-    })
-
-    // Validates function nodes are leaves
-    it('has no children', async () => {
-        const testNode = generateTestNode()
+    it('returns placeholder node if no children are present', async () => {
+        lambdaFunctionNames = []
 
         const childNodes = await testNode.getChildren()
-        assert(childNodes !== undefined)
-        assert.strictEqual(childNodes.length, 0)
+
+        assertNodeListOnlyContainsPlaceholderNode(childNodes)
     })
 
-    function validateIconPath(node: TreeItem) {
-        const fileScheme: string = 'file'
-        const expectedPrefix = `/${fakeIconPathPrefix}/`
+    it('has LambdaFunctionNode child nodes', async () => {
+        const childNodes = await testNode.getChildren()
 
-        assert(node.iconPath !== undefined)
-        const iconPath = node.iconPath! as {
-            light: Uri
-            dark: Uri
-        }
+        assert.strictEqual(childNodes.length, lambdaFunctionNames.length, 'Unexpected child count')
 
-        assert(iconPath.light !== undefined)
-        assert(iconPath.light instanceof Uri)
-        assert.strictEqual(iconPath.light.scheme, fileScheme)
-        const lightResourcePath: string = iconPath.light.path
-        assert(
-            lightResourcePath.indexOf(expectedPrefix) >= 0,
-            `expected light resource path ${lightResourcePath} to contain ${expectedPrefix}`
+        childNodes.forEach(node =>
+            assert.ok(node instanceof LambdaFunctionNode, 'Expected child node to be LambdaFunctionNode')
         )
-        assert(
-            lightResourcePath.indexOf('/light/') >= 0,
-            `expected light resource path ${lightResourcePath} to contain '/light/'`
-        )
-
-        assert(iconPath.dark !== undefined)
-        assert(iconPath.dark instanceof Uri)
-        assert.strictEqual(iconPath.dark.scheme, fileScheme)
-        const darkResourcePath: string = iconPath.dark.path
-        assert(
-            darkResourcePath.indexOf(expectedPrefix) >= 0,
-            `expected dark resource path ${darkResourcePath} to contain ${expectedPrefix}`
-        )
-        assert(
-            darkResourcePath.indexOf('/dark/') >= 0,
-            `expected light resource path ${darkResourcePath} to contain '/dark/'`
-        )
-    }
-
-    function generateTestNode(): DefaultLambdaFunctionNode {
-        return new DefaultLambdaFunctionNode(
-            new DefaultLambdaFunctionGroupNode(
-                new DefaultRegionNode(new RegionInfo('code', 'name'), iconPathMaker),
-                iconPathMaker
-            ),
-            fakeFunctionConfig,
-            iconPathMaker
-        )
-    }
-
-    function iconPathMaker(relativePath: string): string {
-        return `${fakeIconPathPrefix}/${relativePath}`
-    }
-})
-
-describe('DefaultLambdaFunctionGroupNode', () => {
-    let logger: TestLogger
-
-    before(async () => {
-        logger = await TestLogger.createTestLogger()
     })
 
-    after(async () => {
-        await logger.cleanupLogger()
+    it('has child nodes with Lambda Function contextValue', async () => {
+        const childNodes = await testNode.getChildren()
+
+        childNodes.forEach(node =>
+            assert.strictEqual(
+                node.contextValue,
+                CONTEXT_VALUE_LAMBDA_FUNCTION,
+                'expected the node to have a CloudFormation contextValue'
+            )
+        )
     })
 
-    const stubPathResolver = (path: string): string => path
-    const unusedPathResolver = () => {
-        throw new Error('path resolver unused')
-    }
+    it('sorts child nodes', async () => {
+        lambdaFunctionNames = UNSORTED_TEXT
 
-    class FunctionNamesMockLambdaClient extends MockLambdaClient {
-        public constructor(
-            public readonly functionNames: string[] = [],
-            listFunctions: () => AsyncIterableIterator<Lambda.FunctionConfiguration> = () =>
-                asyncGenerator<Lambda.FunctionConfiguration>(
-                    functionNames.map<Lambda.FunctionConfiguration>(name => {
+        const childNodes = await testNode.getChildren()
+
+        const actualChildOrder = childNodes.map(node => node.label)
+        assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
+    })
+
+    it('has an error node for a child if an error happens during loading', async () => {
+        sandbox.stub(testNode, 'updateChildren').callsFake(() => {
+            throw new Error('Update Children error!')
+        })
+
+        const childNodes = await testNode.getChildren()
+        assertNodeListOnlyContainsErrorNode(childNodes)
+    })
+
+    function initializeClientBuilders() {
+        const lambdaClient = {
+            listFunctions: sandbox.stub().callsFake(() => {
+                return asyncGenerator<Lambda.FunctionConfiguration>(
+                    lambdaFunctionNames.map<Lambda.FunctionConfiguration>(name => {
                         return {
                             FunctionName: name
                         }
                     })
                 )
-        ) {
-            super({
-                listFunctions
             })
         }
+
+        const clientBuilder = {
+            createLambdaClient: sandbox.stub().returns(lambdaClient)
+        }
+
+        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
     }
-
-    class ThrowErrorDefaultLambdaFunctionGroupNode extends DefaultLambdaFunctionGroupNode {
-        public constructor(public readonly parent: DefaultRegionNode) {
-            super(parent, unusedPathResolver)
-        }
-
-        public async updateChildren(): Promise<void> {
-            throw new Error('Hello there!')
-        }
-    }
-
-    it('Sorts Lambda Function Nodes', async () => {
-        const inputFunctionNames: string[] = ['zebra', 'Antelope', 'aardvark', 'elephant']
-
-        // TODO: Move to MockToolkitClientBuilder
-        ext.toolkitClientBuilder = {
-            createCloudFormationClient(regionCode: string): CloudFormationClient {
-                throw new Error('cloudformation client unused')
-            },
-
-            createEcsClient(regionCode: string): EcsClient {
-                throw new Error('ecs client unused')
-            },
-
-            createLambdaClient(regionCode: string): LambdaClient {
-                return new FunctionNamesMockLambdaClient(inputFunctionNames)
-            },
-
-            createStsClient(regionCode: string): StsClient {
-                throw new Error('sts client unused')
-            }
-        }
-
-        const functionGroupNode = new DefaultLambdaFunctionGroupNode(
-            new DefaultRegionNode(new RegionInfo('code', 'name'), stubPathResolver),
-            stubPathResolver
-        )
-
-        const children = await functionGroupNode.getChildren()
-
-        assert.ok(children, 'Expected to get Lambda function nodes as children')
-        assert.strictEqual(
-            inputFunctionNames.length,
-            children.length,
-            `Expected ${inputFunctionNames.length} Function children, got ${children.length}`
-        )
-
-        function assertChildNodeFunctionName(
-            actualChildNode: LambdaFunctionNode | ErrorNode,
-            expectedNodeText: string
-        ) {
-            assert.strictEqual(
-                'functionName' in actualChildNode,
-                true,
-                'Child node expected to contain functionName property'
-            )
-
-            const node: DefaultLambdaFunctionNode = actualChildNode as DefaultLambdaFunctionNode
-            assert.strictEqual(
-                node.functionName,
-                expectedNodeText,
-                `Expected child node to have function name ${expectedNodeText} but got ${node.functionName}`
-            )
-        }
-
-        assertChildNodeFunctionName(children[0], 'aardvark')
-        assertChildNodeFunctionName(children[1], 'Antelope')
-        assertChildNodeFunctionName(children[2], 'elephant')
-        assertChildNodeFunctionName(children[3], 'zebra')
-    })
-
-    it('handles error', async () => {
-        const testNode = new ThrowErrorDefaultLambdaFunctionGroupNode(
-            new DefaultRegionNode(new RegionInfo('code', 'name'), unusedPathResolver)
-        )
-
-        const childNodes = await testNode.getChildren()
-        assert(childNodes !== undefined)
-        assert.strictEqual(childNodes.length, 1)
-        assert.strictEqual(childNodes[0] instanceof ErrorNode, true)
-    })
 })

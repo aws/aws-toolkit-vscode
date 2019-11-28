@@ -16,7 +16,6 @@ import {
 import { SamDeployWizardResponse } from '../../../lambda/wizards/samDeployWizard'
 import { AwsContext } from '../../../shared/awsContext'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { TestLogger } from '../../../shared/loggerUtils'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { RegionProvider } from '../../../shared/regions/regionProvider'
 import { SamCliContext } from '../../../shared/sam/cli/samCliContext'
@@ -136,10 +135,8 @@ describe('deploySamApplication', async () => {
 
     const extContext = new FakeExtensionContext()
 
-    let logger: TestLogger
     let tempToolkitFolder: string
     beforeEach(async () => {
-        logger = await TestLogger.createTestLogger()
         channelLogger = new FakeChannelLogger()
 
         tempToolkitFolder = await makeTemporaryToolkitFolder()
@@ -160,7 +157,6 @@ describe('deploySamApplication', async () => {
     })
 
     afterEach(async () => {
-        await logger.cleanupLogger()
         await del([tempToolkitFolder], { force: true })
     })
 
@@ -358,9 +354,9 @@ function assertGeneralErrorLogged(channelLogger: FakeChannelLogger) {
 
 function assertErrorLogsContain(text: string, channelLogger: FakeChannelLogger, exactMatch: boolean) {
     assert.ok(
-        channelLogger.logger.errorEntries.some(
-            e => e instanceof Error && (exactMatch ? e.message === text : e.message.indexOf(text) !== -1)
-        ),
+        channelLogger.logger
+            .getLoggedEntries('error')
+            .some(e => e instanceof Error && (exactMatch ? e.message === text : e.message.indexOf(text) !== -1)),
         `Expected to find ${text} in the error logs`
     )
 }

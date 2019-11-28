@@ -303,7 +303,7 @@ function getDefaultSamDeployWizardResponseProvider(
 ): SamDeployWizardResponseProvider {
     return {
         getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {
-            const wizard = new SamDeployWizard(regionProvider, new DefaultSamDeployWizardContext(context))
+            const wizard = new SamDeployWizard(regionProvider, new DefaultSamDeployWizardContext())
 
             return wizard.run()
         }

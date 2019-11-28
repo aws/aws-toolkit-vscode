@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { BasicLogger, ErrorOrString, getLogger, LogLevel } from '../logger'
+import { getLogger, Loggable, Logger, LogLevel } from '../logger'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
 export const localize: TemplateParser = nls.loadMessageBundle()
@@ -12,15 +12,15 @@ export const localize: TemplateParser = nls.loadMessageBundle()
 export interface TemplateParams {
     nlsKey: string
     nlsTemplate: string
-    templateTokens?: ErrorOrString[]
+    templateTokens?: Loggable[]
 }
 
 export interface TemplateParser {
-    (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]): string
+    (nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]): string
 }
 
 export interface TemplateHandler {
-    (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]): void
+    (nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]): void
 }
 
 export function processTemplate<T extends TemplateParams>({
@@ -28,7 +28,7 @@ export function processTemplate<T extends TemplateParams>({
     nlsTemplate,
     templateTokens = []
 }: T): { errors: Error[]; prettyMessage: string } {
-    const prettyTokens: Exclude<ErrorOrString, Error>[] = []
+    const prettyTokens: Exclude<Loggable, Error>[] = []
     const errors: Error[] = []
     if (templateTokens) {
         templateTokens.forEach(token => {
@@ -50,7 +50,7 @@ export function processTemplate<T extends TemplateParams>({
 
 export interface ChannelLogger {
     readonly channel: vscode.OutputChannel
-    readonly logger: BasicLogger
+    readonly logger: Logger
     verbose: TemplateHandler
     debug: TemplateHandler
     info: TemplateHandler
@@ -62,7 +62,7 @@ export interface ChannelLogger {
  * Wrapper around normal logger that writes to output channel and normal logs.
  * Avoids making two log statements when writing to output channel and improves consistency
  */
-export function getChannelLogger(channel: vscode.OutputChannel, logger: BasicLogger = getLogger()): ChannelLogger {
+export function getChannelLogger(channel: vscode.OutputChannel, logger: Logger = getLogger()): ChannelLogger {
     function log({ nlsKey, nlsTemplate, templateTokens, level }: TemplateParams & { level: LogLevel }): void {
         if (level === 'error') {
             channel.show(true)
@@ -77,35 +77,35 @@ export function getChannelLogger(channel: vscode.OutputChannel, logger: BasicLog
     return Object.freeze({
         channel,
         logger,
-        verbose: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) =>
+        verbose: (nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]) =>
             log({
                 level: 'verbose',
                 nlsKey,
                 nlsTemplate,
                 templateTokens
             }),
-        debug: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) =>
+        debug: (nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]) =>
             log({
                 level: 'debug',
                 nlsKey,
                 nlsTemplate,
                 templateTokens
             }),
-        info: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) =>
+        info: (nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]) =>
             log({
                 level: 'info',
                 nlsKey,
                 nlsTemplate,
                 templateTokens
             }),
-        warn: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) =>
+        warn: (nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]) =>
             log({
                 level: 'warn',
                 nlsKey,
                 nlsTemplate,
                 templateTokens
             }),
-        error: (nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]) =>
+        error: (nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]) =>
             log({
                 level: 'error',
                 nlsKey,

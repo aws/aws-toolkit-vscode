@@ -4,7 +4,6 @@
  */
 
 import * as assert from 'assert'
-import { TestLogger } from '../../../../shared/loggerUtils'
 import { DefaultValidatingSamCliProcessInvoker } from '../../../../shared/sam/cli/defaultValidatingSamCliProcessInvoker'
 import { SamCliConfiguration } from '../../../../shared/sam/cli/samCliConfiguration'
 import {
@@ -24,7 +23,6 @@ import { assertThrowsError } from '../../utilities/assertUtils'
 import { TestSamCliProcessInvoker } from './testSamCliProcessInvoker'
 
 describe('DefaultValidatingSamCliProcessInvoker', async () => {
-    let logger: TestLogger
     let processInvokerContext: SamCliProcessInvokerContext
     const errorInvoker: SamCliProcessInvoker = new TestSamCliProcessInvoker(() => {
         assert.fail('invoke was not expected to be called')
@@ -32,17 +30,11 @@ describe('DefaultValidatingSamCliProcessInvoker', async () => {
     })
 
     before(async () => {
-        logger = await TestLogger.createTestLogger()
-
         processInvokerContext = resolveSamCliProcessInvokerContext({
             cliConfig: ({
                 getSamCliLocation: () => 'filler'
             } as any) as SamCliConfiguration
         })
-    })
-
-    after(async () => {
-        await logger.cleanupLogger()
     })
 
     const versionValidationTestScenarios = [

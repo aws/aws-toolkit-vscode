@@ -1,6 +1,25 @@
-# Change Log
+## 1.3.0 2019-11-22
 
-All notable changes to the "aws-vscode-tools" extension will be documented in this file.
+- **Bug Fix** AWS Explorer now shows a node indicating when CloudFormation Stacks cannot be found in a region
+- **Bug Fix** AWS Explorer now sorts the resources that belong to each CloudFormation Stack
+- **Bug Fix** AWS Explorer now shows a node indicating when Lambda Functions cannot be found in a region
+- **Feature** CDK projects can now be visualized with the CDK Explorer
+
+## 1.2.0 2019-10-17
+
+- **Bug Fix** Add '--no-interactive' flag to 'sam init' calls when SAM CLI version is greater than or equal to 0.30.0
+- **Feature** Added docker network option support for invoking sam applications
+- **Feature** Ansi codes are removed from text shown in the Output tab when Locally Invoking Lambda handlers
+- **Feature** Adding support for SAM CLI 0.30.0 features in `sam init`: --app-template and --dependency-manager
+- **Feature** Bumped maximum (exclusive) supported SAM CLI version from 0.30.0 to 0.40.0.
+
+## 1.1.0 2019-09-20
+
+- **Bug Fix** Creating SAM Applications into a different folder than the current VS Code workspaces will now open an application file after app creation (#678)
+- **Feature** Support credential_process (#317)
+- **Feature** Improved the description of the selection item when picking a location for a new SAM Application (#673, #675)
+- **Feature** Added JSON validation for ECS task definition intellisense
+- **Feature** Bumped maximum (exclusive) supported SAM CLI version from 0.23.0 to 0.30.0.
 
 ## 1.0.0
 

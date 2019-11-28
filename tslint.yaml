@@ -49,6 +49,7 @@ rules:
             - - vscode
               - semver-regex
               - del
+              - sinon
     no-inferred-empty-object-type: true
     no-invalid-template-strings: true
     no-invalid-this:

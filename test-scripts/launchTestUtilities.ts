@@ -11,6 +11,7 @@ import { runTests } from 'vscode-test'
 export interface LaunchTestParameters {
     extensionDevelopmentPath: string
     extensionTestsPath: string
+    workspacePath?: string
 }
 
 /**
@@ -21,12 +22,20 @@ export async function launchVsCodeTest(parameters: LaunchTestParameters) {
         console.log('Running Tests...')
         console.log(`extensionDevelopmentPath: ${parameters.extensionDevelopmentPath}`)
         console.log(`extensionTestsPath: ${parameters.extensionTestsPath}`)
+        console.log(`workspacePath: ${parameters.workspacePath}`)
+
+        let launchArgs: string[] | undefined
+
+        if (parameters.workspacePath) {
+            launchArgs = [parameters.workspacePath]
+        }
 
         // Download VS Code, unzip it and run the integration test
         await runTests({
             extensionDevelopmentPath: parameters.extensionDevelopmentPath,
             extensionTestsPath: parameters.extensionTestsPath,
-            vscodeExecutablePath: await findVsCodeTestExecutable()
+            vscodeExecutablePath: await findVsCodeTestExecutable(),
+            launchArgs: launchArgs
         })
 
         console.log('Finished running tests!')

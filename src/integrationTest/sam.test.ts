@@ -7,13 +7,20 @@ import * as assert from 'assert'
 import { mkdirpSync, readFileSync, removeSync } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { SamLambdaRuntime } from '../../src/lambda/models/samLambdaRuntime'
+import { getDependencyManager, SamLambdaRuntime } from '../../src/lambda/models/samLambdaRuntime'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
-import { activateExtension, sleep, TIMEOUT } from './integrationTestsUtilities'
+import {
+    activateExtension,
+    EXTENSION_NAME_AWS_TOOLKIT,
+    getCodeLenses,
+    getTestWorkspaceFolder,
+    sleep,
+    TIMEOUT
+} from './integrationTestsUtilities'
 
-const projectFolder = `${__dirname}`
+const projectFolder = getTestWorkspaceFolder()
 // Retry tests because CodeLenses do not reliably get produced in the tests
 // TODO : Remove retries in future - https://github.com/aws/aws-toolkit-vscode/issues/737
 const maxCodeLensTestAttempts = 3
@@ -40,15 +47,12 @@ function tryRemoveProjectFolder() {
     } catch (e) {}
 }
 
-async function getCodeLenses(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
+async function getSamCodeLenses(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
     while (true) {
         try {
             // this works without a sleep locally, but not on CodeBuild
             await sleep(200)
-            let codeLenses: vscode.CodeLens[] | undefined = await vscode.commands.executeCommand(
-                'vscode.executeCodeLensProvider',
-                documentUri
-            )
+            let codeLenses = await getCodeLenses(documentUri)
             if (!codeLenses || codeLenses.length === 0) {
                 continue
             }
@@ -63,7 +67,7 @@ async function getCodeLenses(documentUri: vscode.Uri): Promise<vscode.CodeLens[]
 }
 
 async function getCodeLensesOrFail(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
-    const codeLensPromise = getCodeLenses(documentUri)
+    const codeLensPromise = getSamCodeLenses(documentUri)
     const timeout = new Promise(resolve => {
         setTimeout(resolve, 10000, undefined)
     })
@@ -121,18 +125,20 @@ for (const runtime of runtimes) {
             debugDisposable = vscode.debug.onDidChangeActiveDebugSession(async session =>
                 onDebugChanged(session, debuggerType)
             )
-            await activateExtension('amazonwebservices.aws-toolkit-vscode')
+            await activateExtension(EXTENSION_NAME_AWS_TOOLKIT)
             console.log(`Using SDK ${projectSDK} with project in path ${projectPath}`)
             tryRemoveProjectFolder()
             mkdirpSync(projectFolder)
             // this is really test 1, but since it has to run before everything it's in the before section
+            const runtimeArg = projectSDK as SamLambdaRuntime
             const initArguments: SamCliInitArgs = {
                 name: 'testProject',
                 location: projectFolder,
-                runtime: projectSDK as SamLambdaRuntime
+                runtime: runtimeArg,
+                dependencyManager: getDependencyManager(runtimeArg)
             }
             const samCliContext = getSamCliContext()
-            await runSamCliInit(initArguments, samCliContext.invoker)
+            await runSamCliInit(initArguments, samCliContext)
             // Activate the relevent extensions if needed
             if (projectSDK.includes('dotnet')) {
                 await activateExtension('ms-vscode.csharp')
@@ -154,14 +160,16 @@ for (const runtime of runtimes) {
         })
 
         it('Fails to create template when it already exists', async () => {
+            const runtimeArg = projectSDK as SamLambdaRuntime
             const initArguments: SamCliInitArgs = {
                 name: 'testProject',
                 location: projectFolder,
-                runtime: projectSDK as SamLambdaRuntime
+                runtime: runtimeArg,
+                dependencyManager: getDependencyManager(runtimeArg)
             }
             console.log(initArguments.location)
             const samCliContext = getSamCliContext()
-            const err = await assertThrowsError(async () => runSamCliInit(initArguments, samCliContext.invoker))
+            const err = await assertThrowsError(async () => runSamCliInit(initArguments, samCliContext))
             assert(err.message.includes('directory already exists'))
         }).timeout(TIMEOUT)
 

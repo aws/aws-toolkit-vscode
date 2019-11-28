@@ -8,7 +8,6 @@ import * as del from 'del'
 import * as path from 'path'
 import { writeFile } from '../../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
-import { TestLogger } from '../../../../shared/loggerUtils'
 import {
     SamCliLocalInvokeInvocation,
     SamLocalInvokeCommand,
@@ -25,15 +24,10 @@ describe('SamCliLocalInvokeInvocation', async () => {
         }
     }
 
-    let logger: TestLogger
     let tempFolder: string
     let placeholderTemplateFile: string
     let placeholderEventFile: string
     const nonRelevantArg = 'arg is not of interest to this test'
-
-    before(async () => {
-        logger = await TestLogger.createTestLogger()
-    })
 
     beforeEach(async () => {
         tempFolder = await makeTemporaryToolkitFolder()
@@ -41,10 +35,6 @@ describe('SamCliLocalInvokeInvocation', async () => {
         placeholderEventFile = path.join(tempFolder, 'event.json')
         await writeFile(placeholderTemplateFile, '')
         await writeFile(placeholderEventFile, '')
-    })
-
-    after(async () => {
-        await logger.cleanupLogger()
     })
 
     afterEach(async () => {

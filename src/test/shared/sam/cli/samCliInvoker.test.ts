@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TestLogger } from '../../../../shared/loggerUtils'
 import { SamCliConfiguration } from '../../../../shared/sam/cli/samCliConfiguration'
 import {
     DefaultSamCliProcessInvoker,
@@ -12,16 +11,6 @@ import {
 import { assertRejects } from '../../utilities/assertUtils'
 
 describe('DefaultSamCliProcessInvoker', async () => {
-    let logger: TestLogger
-
-    before(async () => {
-        logger = await TestLogger.createTestLogger()
-    })
-
-    after(async () => {
-        await logger.cleanupLogger()
-    })
-
     it('throws if sam cli location is not known', async () => {
         const context = resolveSamCliProcessInvokerContext({
             cliConfig: ({

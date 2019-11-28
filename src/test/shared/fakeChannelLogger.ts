@@ -4,10 +4,10 @@
  */
 
 import * as vscode from 'vscode'
-import { ErrorOrString } from '../../shared/logger'
+import { Loggable } from '../../shared/logger'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { MockOutputChannel } from '../mockOutputChannel'
-import { FakeBasicLogger } from './fakeBasicLogger'
+import { TestLogger } from '../testLogger'
 
 export class FakeChannelLogger implements ChannelLogger {
     public readonly loggedInfoKeys: Set<string> = new Set<string>()
@@ -15,27 +15,27 @@ export class FakeChannelLogger implements ChannelLogger {
     public readonly loggedDebugKeys: Set<string> = new Set<string>()
     public readonly loggedWarnKeys: Set<string> = new Set<string>()
     public readonly loggedVerboseKeys: Set<string> = new Set<string>()
-    public readonly logger: FakeBasicLogger = new FakeBasicLogger()
+    public readonly logger: TestLogger = new TestLogger()
 
     public channel: vscode.OutputChannel = new MockOutputChannel()
 
-    public info(nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]): void {
+    public info(nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]): void {
         this.loggedInfoKeys.add(nlsKey)
     }
 
-    public error(nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]): void {
+    public error(nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]): void {
         this.loggedErrorKeys.add(nlsKey)
     }
 
-    public debug(nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]): void {
+    public debug(nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]): void {
         this.loggedDebugKeys.add(nlsKey)
     }
 
-    public warn(nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]): void {
+    public warn(nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]): void {
         this.loggedWarnKeys.add(nlsKey)
     }
 
-    public verbose(nlsKey: string, nlsTemplate: string, ...templateTokens: ErrorOrString[]): void {
+    public verbose(nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]): void {
         this.loggedVerboseKeys.add(nlsKey)
     }
 }

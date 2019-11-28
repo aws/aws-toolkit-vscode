@@ -7,6 +7,8 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
 import { AwsExplorer } from './awsexplorer/awsExplorer'
+import { RegionNode } from './awsexplorer/regionNode'
+import { activate as activateCdk } from './cdk/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
@@ -20,7 +22,8 @@ import { DefaultAWSStatusBar } from './shared/defaultStatusBar'
 import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
 import { safeGet, showQuickStartWebview, toastNewUser } from './shared/extensionUtilities'
-import * as logFactory from './shared/logger'
+import { getLogger } from './shared/logger'
+import { activate as activateLogger } from './shared/logger/activation'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import { activate as activateServerless } from './shared/sam/activation'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
@@ -28,7 +31,6 @@ import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
 import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryService'
 import { TelemetryNamespace } from './shared/telemetry/telemetryTypes'
 import { registerCommand } from './shared/telemetry/telemetryUtils'
-import { RegionNode } from './shared/treeview/nodes/regionNode'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
 
@@ -43,11 +45,12 @@ export async function activate(context: vscode.ExtensionContext) {
     const localize = nls.loadMessageBundle()
 
     ext.context = context
-    await logFactory.initialize()
+    await activateLogger()
     const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', 'AWS Toolkit'))
 
     try {
         await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
+        initializeIconPaths(context)
 
         const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
         const awsContext = new DefaultAwsContext(toolkitSettings, context)
@@ -142,11 +145,11 @@ export async function activate(context: vscode.ExtensionContext) {
             }
         })
 
-        const providers = [
-            new AwsExplorer(awsContext, awsContextTrees, regionProvider, resourceFetcher, relativeExtensionPath =>
-                getExtensionAbsolutePath(context, relativeExtensionPath)
-            )
-        ]
+        await activateCdk({
+            extensionContext: context
+        })
+
+        const providers = [new AwsExplorer(awsContext, awsContextTrees, regionProvider, resourceFetcher)]
 
         providers.forEach(p => {
             p.initialize(context)
@@ -166,7 +169,7 @@ export async function activate(context: vscode.ExtensionContext) {
             toolkitSettings
         })
 
-        toastNewUser(context, logFactory.getLogger())
+        toastNewUser(context, getLogger())
     } catch (error) {
         const channelLogger = getChannelLogger(toolkitOutputChannel)
         channelLogger.error('AWS.channel.aws.toolkit.activation.error', 'Error Activating AWS Toolkit', error as Error)
@@ -178,6 +181,16 @@ export async function deactivate() {
     await ext.telemetry.shutdown()
 }
 
-function getExtensionAbsolutePath(context: vscode.ExtensionContext, relativeExtensionPath: string): string {
-    return context.asAbsolutePath(relativeExtensionPath)
+function initializeIconPaths(context: vscode.ExtensionContext) {
+    ext.iconPaths.dark.help = context.asAbsolutePath('resources/dark/help.svg')
+    ext.iconPaths.light.help = context.asAbsolutePath('resources/light/help.svg')
+
+    ext.iconPaths.dark.cloudFormation = context.asAbsolutePath('resources/dark/cloudformation.svg')
+    ext.iconPaths.light.cloudFormation = context.asAbsolutePath('resources/light/cloudformation.svg')
+
+    ext.iconPaths.dark.lambda = context.asAbsolutePath('resources/dark/lambda.svg')
+    ext.iconPaths.light.lambda = context.asAbsolutePath('resources/light/lambda.svg')
+
+    ext.iconPaths.dark.settings = context.asAbsolutePath('third-party/resources/from-vscode-icons/dark/gear.svg')
+    ext.iconPaths.light.settings = context.asAbsolutePath('third-party/resources/from-vscode-icons/light/gear.svg')
 }

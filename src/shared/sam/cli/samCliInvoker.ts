@@ -4,7 +4,7 @@
  */
 
 import { extensionSettingsPrefix } from '../../constants'
-import { getLogger, Logger } from '../../logger'
+import { getLogger } from '../../logger'
 import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
 import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
 import { DefaultSamCliConfiguration, SamCliConfiguration } from './samCliConfiguration'
@@ -17,7 +17,6 @@ import { DefaultSamCliLocationProvider } from './samCliLocator'
 
 export interface SamCliProcessInvokerContext {
     cliConfig: SamCliConfiguration
-    logger: Logger
 }
 
 export class DefaultSamCliProcessInvokerContext implements SamCliProcessInvokerContext {
@@ -25,7 +24,6 @@ export class DefaultSamCliProcessInvokerContext implements SamCliProcessInvokerC
         new DefaultSettingsConfiguration(extensionSettingsPrefix),
         new DefaultSamCliLocationProvider()
     )
-    public logger: Logger = getLogger()
 }
 
 export function resolveSamCliProcessInvokerContext(
@@ -34,8 +32,7 @@ export function resolveSamCliProcessInvokerContext(
     const defaults = new DefaultSamCliProcessInvokerContext()
 
     return {
-        cliConfig: params.cliConfig || defaults.cliConfig,
-        logger: params.logger || defaults.logger
+        cliConfig: params.cliConfig || defaults.cliConfig
     }
 }
 
@@ -59,7 +56,7 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
         const samCliLocation: string | undefined = this.context.cliConfig.getSamCliLocation()
         if (!samCliLocation) {
             const err = new Error('SAM CLI location not configured')
-            this.context.logger.error(err)
+            getLogger().error(err)
             throw err
         }
 
