@@ -47,7 +47,8 @@
         "onCommand:aws.quickStart",
         "onCommand:aws.help",
         "onCommand:aws.github",
-        "onView:aws.cdk.explorer"
+        "onView:aws.cdk.explorer",
+        "onCommand:aws.refreshCdkExplorer"
     ],
     "main": "./out/src/extension",
     "contributes": {
@@ -157,6 +158,14 @@
                 },
                 {
                     "command": "aws.refreshAwsExplorer",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.refreshCdkExplorer",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.cdk.provideFeedback",
                     "when": "false"
                 },
                 {
