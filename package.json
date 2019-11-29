@@ -160,6 +160,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.refreshCdkExplorer",
+                    "when": "false"
+                },
+                {
                     "command": "aws.showErrorDetails",
                     "when": "false"
                 }
