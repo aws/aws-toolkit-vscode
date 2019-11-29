@@ -164,6 +164,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.cdk.provideFeedback",
+                    "when": "false"
+                },
+                {
                     "command": "aws.showErrorDetails",
                     "when": "false"
                 }
