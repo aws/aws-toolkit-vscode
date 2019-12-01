@@ -33,7 +33,7 @@
 
 <p><h2><strong>Features</strong></h2></p>
 
-<p><strong>SAM features are currently limited to Java and Python only</strong></p>
+<p><strong>SAM features support Java, Python, Node.js, and .NET Core</strong></p>
 
 <ul>
     <li>
