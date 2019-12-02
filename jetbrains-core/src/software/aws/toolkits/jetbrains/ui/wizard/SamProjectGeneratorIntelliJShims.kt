@@ -60,11 +60,11 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
                 override fun run(indicator: ProgressIndicator) {
                     ModuleRootModificationUtil.updateModel(rootModel.module) { model ->
                         val samTemplate = settings.template
-                        samTemplate.build(project, selectedRuntime, outputDir)
+                        samTemplate.build(project, selectedRuntime, settings.schemaParameters, outputDir)
                         VfsUtil.markDirtyAndRefresh(false, true, true, outputDir)
                         runInEdt {
                             try {
-                                samTemplate.postCreationAction(settings, outputDir, model)
+                                samTemplate.postCreationAction(settings, outputDir, model, generator.defaultSourceCreatingProject, indicator)
                             } catch (t: Throwable) {
                                 LOG.error(t) { "Exception thrown during postCreationAction" }
                                 model.dispose()

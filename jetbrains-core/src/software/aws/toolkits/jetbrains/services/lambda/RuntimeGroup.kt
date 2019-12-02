@@ -60,6 +60,10 @@ enum class RuntimeGroup {
         fun determineRuntime(module: Module?): Runtime? = module?.let { _ ->
             values().asSequence().mapNotNull { it.determineRuntime(module) }.firstOrNull()
         }
+
+        fun determineRuntimeGroup(project: Project?): RuntimeGroup? = project?.let { _ ->
+            values().asSequence().find { it.determineRuntime(project) != null }
+        }
     }
 }
 

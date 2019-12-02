@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.ui.wizard
 
 import com.intellij.openapi.module.ModuleManager
+import com.intellij.openapi.progress.DumbProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.rootManager
 import com.intellij.openapi.util.io.FileUtil
@@ -56,7 +57,8 @@ class DotNetSamProjectGenerator(
     private val samSettings = SamNewProjectSettings(
         runtime = DotNetRuntimeUtils.getCurrentDotNetCoreRuntime(),
         template = DotNetSamProjectTemplate(),
-        sdkSettings = object : SdkSettings {}
+        sdkSettings = object : SdkSettings {},
+        schemaParameters = null
     )
 
     private val generator = SamProjectGenerator()
@@ -161,8 +163,9 @@ class DotNetSamProjectGenerator(
         val outDirVf = fileSystem.refreshAndFindFileByIoFile(solutionDirectory)
             ?: throw Exception(message("sam.init.error.no.virtual.file"))
 
-        ProgressManager.getInstance().runProcessWithProgressSynchronously({
-            samSettings.template.build(context.project, selectedRuntime, outDirVf)
+        val progressManager = ProgressManager.getInstance()
+        progressManager.runProcessWithProgressSynchronously({
+            samSettings.template.build(context.project, selectedRuntime, samSettings.schemaParameters, outDirVf)
         }, message("sam.init.generating.template"), false, null)
 
         // Create solution file
@@ -190,7 +193,11 @@ class DotNetSamProjectGenerator(
 
         project ?: return
         val modifiableModel = ModuleManager.getInstance(project).modules.firstOrNull()?.rootManager?.modifiableModel ?: return
-        samSettings.template.postCreationAction(settings = samSettings, contentRoot = outDirVf, rootModel = modifiableModel)
+        val progressIndicator = if (progressManager.hasProgressIndicator()) progressManager.progressIndicator else DumbProgressIndicator()
+        samSettings.template.postCreationAction(
+            settings = samSettings, contentRoot = outDirVf, rootModel = modifiableModel,
+            sourceCreatingProject = generator.defaultSourceCreatingProject, indicator = progressIndicator
+        )
     }
 
     override fun refreshUI() {

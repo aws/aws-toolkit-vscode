@@ -40,6 +40,8 @@ class SamCommon {
         // Exclusive
         val expectedSamMaxVersion = SemVer("0.40.0", 0, 40, 0)
 
+        val samInitSchemasSupportMinVersion = SemVer("0.35.0", 0, 35, 0)
+
         fun getSamCommandLine(path: String? = SamSettings.getInstance().executablePath): GeneralCommandLine {
             val sanitizedPath = path.nullize(true)
                 ?: throw RuntimeException(message("sam.cli_not_configured"))
@@ -88,6 +90,19 @@ class SamCommon {
         }
 
         /**
+         * Check SAM CLI version for Schemas support and return an invalid message if version does not support schemas or <code>null</code> otherwise
+         */
+        fun getInvalidSchemaSupportVersionMessage(semVer: SemVer): String? {
+            val samVersionOutOfRangeMessage = message("sam.executable.schema_support_version_wrong",
+                samInitSchemasSupportMinVersion,
+                semVer)
+            if (semVer < samInitSchemasSupportMinVersion) {
+                return "$samVersionOutOfRangeMessage ${message("sam.executable.version_too_low")}"
+            }
+            return null
+        }
+
+        /**
          * @return The error message to display, else null if it is valid
          */
         @JvmOverloads
@@ -100,6 +115,25 @@ class SamCommon {
                     SamVersionCache.evaluateBlocking(
                         sanitizedPath,
                         SamVersionCache.DEFAULT_TIMEOUT_MS
+                    ).result
+                )
+            } catch (e: Exception) {
+                return e.message
+            }
+        }
+
+        /**
+         * @return The error message to display, else null if it is valid
+         */
+        @JvmOverloads
+        fun validateSchemasSupport(path: String? = SamSettings.getInstance().executablePath): String? {
+            val sanitizedPath = path.nullize(true)
+                ?: return message("sam.cli_not_configured")
+
+            return try {
+                getInvalidSchemaSupportVersionMessage(
+                    SamVersionCache.evaluateBlocking(
+                        sanitizedPath
                     ).result
                 )
             } catch (e: Exception) {

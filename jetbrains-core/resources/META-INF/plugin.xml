@@ -275,6 +275,24 @@
                     class="software.aws.toolkits.jetbrains.services.cloudformation.DeleteCloudFormationStackAction"/>
         </group>
 
+        <group id="aws.toolkit.explorer.schemas" popup="true" compact="false">
+            <action id="schemas.search"
+                    class="software.aws.toolkits.jetbrains.services.schemas.search.SearchSchemasAction"/>
+        </group>
+
+        <group id="aws.toolkit.explorer.schemas.registry" popup="false" compact="true">
+            <action id="schemas.registry.search"
+                    class="software.aws.toolkits.jetbrains.services.schemas.search.SearchSchemasInRegistryAction"/>
+        </group>
+
+        <group id="aws.toolkit.explorer.schemas.schema" popup="false" compact="true">
+            <action id="schemas.schema.view"
+                    class="software.aws.toolkits.jetbrains.services.schemas.ViewSchemaAction"/>
+            <separator/>
+            <action id="schemas.schema.downloadCode"
+                    class="software.aws.toolkits.jetbrains.services.schemas.code.DownloadCodeForSchemaAction"/>
+        </group>
+
         <action class="software.aws.toolkits.jetbrains.core.SettingsSelectorAction" id="aws.settings.selector" icon="AwsIcons.Logos.AWS"/>
         <action class="software.aws.toolkits.jetbrains.core.credentials.CreateOrUpdateCredentialProfilesAction" id="aws.settings.upsertCredentials" icon="AwsIcons.Logos.AWS"/>
         <action id="serverless.application.deploy" class="software.aws.toolkits.jetbrains.services.lambda.actions.DeployServerlessApplicationAction"/>

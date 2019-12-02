@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.ui.wizard
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VfsUtil
@@ -13,23 +14,28 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.services.lambda.TemplateParameters
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
+import software.aws.toolkits.jetbrains.services.schemas.SchemaTemplateParameters
 import software.aws.toolkits.resources.message
 
 object SamInitRunner {
     private val LOG = getLogger<SamInitRunner>()
+    private val mapper = ObjectMapper()
 
     fun execute(
         name: String,
         outputDir: VirtualFile,
         runtime: Runtime,
-        templateParameters: TemplateParameters
+        templateParameters: TemplateParameters,
+        schemaParameters: SchemaTemplateParameters?
     ) {
-        // TODO: Remove these checks FIX_WHEN_SAM_MIN_IS_0_30
         val isSamGte30 = SemVer.parseFromText(SamCommon.getVersionString())
             ?.isGreaterOrEqualThan(0, 30, 0) ?: false
 
+        val isSamSupportSchemasExtraContext = SamCommon.validateSchemasSupport() == null
+
         // set output to a temp dir
         val tempDir = createTempDir()
+
         val commandLine = SamCommon.getSamCommandLine()
             .withParameters("init")
             .withParameters("--no-input")
@@ -59,13 +65,24 @@ object SamInitRunner {
                 if (isSamGte30) {
                     this.withParameters("--no-interactive")
                 }
+
+                if (isSamSupportSchemasExtraContext) {
+                    schemaParameters?.let { params ->
+                        val extraContextAsJson = mapper.writeValueAsString(params.templateExtraContext)
+
+                        this.withParameters("--extra-context")
+                            .withParameters(extraContextAsJson)
+                    }
+                }
             }
 
         LOG.info { "Running SAM command ${commandLine.commandLineString}" }
 
         val process = CapturingProcessHandler(commandLine).runProcess()
         if (process.exitCode != 0) {
-            throw RuntimeException("${message("sam.init.execution_error")}: ${process.stderrLines.last()}")
+            throw RuntimeException("${message("sam.init.execution_error")}: ${process.stderrLines}")
+        } else {
+            LOG.info { "SAM output: ${process.stdout}" }
         }
 
         val subFolders = tempDir.listFiles()

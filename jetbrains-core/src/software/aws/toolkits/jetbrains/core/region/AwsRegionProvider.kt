@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.core.region
 
 import com.intellij.openapi.components.ServiceManager
+import software.amazon.awssdk.services.schemas.SchemasClient
 import software.amazon.awssdk.regions.providers.AwsProfileRegionProvider
 import software.amazon.awssdk.regions.providers.AwsRegionProviderChain
 import software.amazon.awssdk.regions.providers.SystemSettingsRegionProvider
@@ -49,13 +50,27 @@ class AwsRegionProvider constructor(remoteResourceResolverProvider: RemoteResour
 
     override fun isServiceSupported(region: AwsRegion, serviceName: String): Boolean {
         val currentPartition = partition ?: return false
+        if (isServiceInActiveDevelopment(region, serviceName)) return true
         val service = currentPartition.services[serviceName] ?: return false
         return service.isGlobal || service.endpoints.containsKey(region.id)
+    }
+
+    fun isServiceInActiveDevelopment(region: AwsRegion, serviceName: String): Boolean {
+        if (serviceName.equals(SchemasClient.SERVICE_NAME)) {
+            if (SCHEMAS_REGIONS.contains(region.id)) {
+                return true
+            }
+        }
+        return false
     }
 
     companion object {
         private const val DEFAULT_REGION = "us-east-1"
         private val LOG = getLogger<AwsRegionProvider>()
+
+        // TODO: Schemas not integrated with AWS Region Information Provider at launch, this can be ripped out soon after launch,
+        // as part of the SDK update as well.
+        private val SCHEMAS_REGIONS = listOf("us-east-1", "us-east-2", "us-west-2", "eu-west-1", "ap-northeast-1")
 
         @JvmStatic
         fun getInstance(): ToolkitRegionProvider = ServiceManager.getService(ToolkitRegionProvider::class.java)

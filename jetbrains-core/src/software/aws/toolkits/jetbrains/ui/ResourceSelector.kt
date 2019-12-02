@@ -30,6 +30,9 @@ import javax.swing.JList
 
 private typealias Selector<T> = Either<Any?, (T) -> Boolean>
 
+typealias AwsConnection = Pair<AwsRegion, ToolkitCredentialsProvider>
+typealias LazyAwsConnectionEvaluator = () -> AwsConnection
+
 @Suppress("UNCHECKED_CAST")
 class ResourceSelector<T> private constructor(
     private val project: Project,
@@ -38,7 +41,7 @@ class ResourceSelector<T> private constructor(
     customRenderer: ColoredListCellRenderer<T>?,
     loadOnCreate: Boolean,
     private val sortOnLoad: Boolean,
-    private val awsConnection: () -> Pair<AwsRegion, ToolkitCredentialsProvider>
+    private val awsConnection: LazyAwsConnectionEvaluator
 ) : ComboBox<T>(comboBoxModel) {
 
     private val resourceCache = AwsResourceCache.getInstance(project)
@@ -174,7 +177,10 @@ class ResourceSelector<T> private constructor(
             super.setSelectedItem(message)
             notifyError(message, ExceptionUtil.getThrowableText(error), project)
             val validationInfo = ValidationInfo(error.message ?: message, this)
-            ComponentValidator.createPopupBuilder(validationInfo, null).createPopup().showUnderneathOf(this)
+            ComponentValidator.createPopupBuilder(validationInfo, null)
+                .setCancelOnClickOutside(true)
+                .createPopup()
+                .showUnderneathOf(this)
         }
     }
 
@@ -209,7 +215,7 @@ class ResourceSelector<T> private constructor(
         private var comboBoxModel: MutableCollectionComboBoxModel<T> = MutableCollectionComboBoxModel<T>()
         private var customRendererFunction: ((T, ColoredListCellRenderer<T>) -> ColoredListCellRenderer<T>)? = null
         private var customRenderer: ColoredListCellRenderer<T>? = null
-        private var awsConnection: (() -> Pair<AwsRegion, ToolkitCredentialsProvider>)? = null
+        private var awsConnection: LazyAwsConnectionEvaluator? = null
 
         fun comboBoxModel(comboBoxModel: MutableCollectionComboBoxModel<T>): ResourceBuilderOptions<T> = also {
             it.comboBoxModel = comboBoxModel
@@ -249,9 +255,9 @@ class ResourceSelector<T> private constructor(
 
         fun disableAutomaticSorting(): ResourceBuilderOptions<T> = also { it.sortOnLoad = false }
 
-        fun awsConnection(awsConnection: Pair<AwsRegion, ToolkitCredentialsProvider>): ResourceBuilderOptions<T> = awsConnection { awsConnection }
+        fun awsConnection(awsConnection: AwsConnection): ResourceBuilderOptions<T> = awsConnection { awsConnection }
 
-        fun awsConnection(awsConnection: () -> Pair<AwsRegion, ToolkitCredentialsProvider>): ResourceBuilderOptions<T> = also {
+        fun awsConnection(awsConnection: LazyAwsConnectionEvaluator): ResourceBuilderOptions<T> = also {
             it.awsConnection = awsConnection
         }
 

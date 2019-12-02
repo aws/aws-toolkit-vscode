@@ -39,6 +39,16 @@ enum class HelpIds(shortId: String, val url: String) {
         "deployServerlessApplicationDialog",
         "https://docs.aws.amazon.com/console/toolkit-for-jetbrains/deploy-serverless-application-dialog"
     ),
+    // Schema code download
+    DOWNLOAD_CODE_FOR_SCHEMA_DIALOG(
+        "downloadCodeForSchemaDialog",
+        "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/eventbridge-schemas.html"
+    ),
+    // Schema search
+    SCHEMA_SEARCH_DIALOG(
+        "schemaSearchDialog",
+        "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/eventbridge-schemas.html"
+    ),
     // Others
     RUN_DEBUG_CONFIGURATIONS_DIALOG(
         "runDebugConfigurationsDialog",

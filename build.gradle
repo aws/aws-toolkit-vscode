@@ -62,7 +62,7 @@ allprojects {
 }
 
 // Kotlin plugin seems to be bugging out when there are no kotlin sources
-configure(subprojects - project(":telemetry-client")) {
+configure(subprojects - project(":telemetry-client") - project(":schemas-client")) {
     apply plugin: 'kotlin'
 
     sourceSets {
@@ -109,6 +109,7 @@ subprojects {
         compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
         compile "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
         testCompile "com.nhaarman.mockitokotlin2:mockito-kotlin:2.0.0"
+        testCompile "io.mockk:mockk:1.9.3"
         testCompile "org.assertj:assertj-core:$assertjVersion"
         testCompile "junit:junit:$junitVersion"
     }

@@ -48,8 +48,9 @@ class MockProjectAccountSettingsManager : ProjectAccountSettingsManager {
     }
 
     companion object {
+        val MOCK_CREDENTIALS_NAME = "MockCredentials"
         private val DUMMY_PROVIDER = createDummyProvider(
-            "MockCredentials",
+            MOCK_CREDENTIALS_NAME,
             AwsBasicCredentials.create("Foo", "Bar")
         )
 

@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.ServiceManager
@@ -224,7 +225,7 @@ class DefaultProjectAccountSettingsManager(private val project: Project) : Proje
                         )
                     }
                 }
-                runInEdt {
+                runInEdt(ModalityState.any()) {
                     isLoading = false
                     broadcastChangeEvent()
                 }

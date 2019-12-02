@@ -69,6 +69,15 @@ dependencies {
     compile("software.amazon.awssdk:cloudformation:$awsSdkVersion") {
         exclude group: 'org.slf4j'
     }
+    //TODO: Temporary during Schemas development until Schemas Service API/SDK ready
+//    compile("software.amazon.awssdk:schemas:$awsSdkVersion") {
+//        exclude group: 'org.slf4j'
+//    }
+    // TODO: remove after Schemas service is launched and prod-accessible
+    compile(project(":schemas-client")) {
+      exclude group: 'org.slf4j'
+    }
+
     compile("software.amazon.awssdk:cloudwatchlogs:$awsSdkVersion") {
         exclude group: 'org.slf4j'
     }
