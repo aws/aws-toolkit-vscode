@@ -24,7 +24,7 @@ import {
     SchemaCodeDownloadWizardResponse
 } from '../wizards/schemaCodeDownloadWizard'
 
-import admZip = require('adm-zip')
+import * as admZip from 'adm-zip'
 
 enum CodeGenerationStatus {
     CREATE_COMPLETE = 'CREATE_COMPLETE',

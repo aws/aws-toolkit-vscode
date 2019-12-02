@@ -443,7 +443,7 @@
         ]
     },
     "scripts": {
-        "vscode:prepublish": "npm run clean && npm run compile && npm run lint",
+        "vscode:prepublish": "npm run clean && npm run lint && webpack --mode production && npm run buildScripts",
         "bundleDeps": "node ./build-scripts/bundleDeps.js",
         "clean": "node ./build-scripts/clean.js dist",
         "generateNonCodeFiles": "ts-node ./build-scripts/generateNonCodeFiles.ts",
@@ -454,7 +454,7 @@
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && webpack --mode development --watch",
         "postinstall": "ts-node ./build-scripts/generateServiceClient.ts && node ./node_modules/vscode/bin/install",
-        "testCompile": "tsc -p ./ && npm run buildScripts && npm run lint",
+        "testCompile": "tsc -p ./ && npm run buildScripts",
         "test": "npm run testCompile && node ./test-scripts/test.js",
         "integrationTest": "npm run testCompile && ts-node ./test-scripts/integrationTest.ts",
         "lint": "tslint --project .",
@@ -525,6 +525,7 @@
         "lodash": "^4.17.14",
         "moment": "^2.24.0",
         "opn": "^5.4.0",
+        "original-fs": "^1.1.0",
         "request": "^2.88.0",
         "semver": "^5.6.0",
         "sleep-promise": "^8.0.1",
