@@ -15,10 +15,10 @@ import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { difference, filter, toArrayAsync } from '../../shared/utilities/collectionUtils'
+import { MultiStepWizard, WizardStep } from '../../shared/wizards/multiStepWizard'
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
 import { detectLocalTemplates } from '../local/detectLocalTemplates'
 import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
-import { MultiStepWizard, WizardStep } from './multiStepWizard'
 
 export interface SamDeployWizardResponse {
     parameterOverrides: Map<string, string>

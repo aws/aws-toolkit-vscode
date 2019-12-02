@@ -41,3 +41,6 @@ try {
 } catch (e) {}
 
 export { pluginVersion }
+// TODO : Add valid URL to be accessed from help button in the downloadCodeBindings wizard
+export const schemaCodeDownloadDocUrl: string =
+    'https://docs.aws.amazon.com/eventbridge/latest/userguide/eventbridge-schemas.html'
