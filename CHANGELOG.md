@@ -1,3 +1,6 @@
+# _1.9_ (2019-12-02)
+- **(Feature)** Added support for Amazon EventBridge schema registry, making it easy to discover and write code for events in EventBridge.
+
 # _1.8-192_ (2019-11-25)
 - **(Breaking Change)** Now requires a minimum version of 2019.2 to run
 - **(Feature)** Enable Cloud Debugging of ECS Services (beta)
