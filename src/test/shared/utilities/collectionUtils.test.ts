@@ -21,9 +21,7 @@ import {
     updateInPlace
 } from '../../../shared/utilities/collectionUtils'
 
-async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
-    yield* items
-}
+import { asyncGenerator } from '../../utilities/collectionUtils'
 
 describe('CollectionUtils', async () => {
     describe('union', async () => {

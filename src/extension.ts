@@ -9,6 +9,7 @@ import * as nls from 'vscode-nls'
 import { AwsExplorer } from './awsexplorer/awsExplorer'
 import { RegionNode } from './awsexplorer/regionNode'
 import { activate as activateCdk } from './cdk/activation'
+import { activate as activateSchemas } from './eventSchemas/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
@@ -156,6 +157,8 @@ export async function activate(context: vscode.ExtensionContext) {
             context.subscriptions.push(vscode.window.registerTreeDataProvider(p.viewProviderId, p))
         })
 
+        await activateSchemas()
+
         await ext.statusBar.updateContext(undefined)
 
         await ExtensionDisposableFiles.initialize(context)
@@ -193,4 +196,10 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 
     ext.iconPaths.dark.settings = context.asAbsolutePath('third-party/resources/from-vscode-icons/dark/gear.svg')
     ext.iconPaths.light.settings = context.asAbsolutePath('third-party/resources/from-vscode-icons/light/gear.svg')
+
+    ext.iconPaths.dark.registry = context.asAbsolutePath('resources/dark/registry.svg')
+    ext.iconPaths.light.registry = context.asAbsolutePath('resources/light/registry.svg')
+
+    ext.iconPaths.dark.schema = context.asAbsolutePath('resources/dark/schema.svg')
+    ext.iconPaths.light.schema = context.asAbsolutePath('resources/light/schema.svg')
 }
