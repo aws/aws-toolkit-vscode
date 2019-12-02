@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "Added support for Amazon EventBridge schema registry, making it easy to discover and write code for events in EventBridge"
+}
