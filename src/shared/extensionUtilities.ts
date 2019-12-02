@@ -28,6 +28,12 @@ export class ExtensionUtilities {
         return this.resolveResourceURIs(basePath, names)
     }
 
+    public static getCssForHtml(names: string[]): ScriptResource[] {
+        const basePath = path.join(ext.context.extensionPath, 'media', 'css')
+
+        return this.resolveResourceURIs(basePath, names)
+    }
+
     public static getNonce(): string {
         let text = ''
         const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'

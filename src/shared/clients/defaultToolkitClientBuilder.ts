@@ -8,15 +8,21 @@ import { CloudFormationClient } from './cloudFormationClient'
 import { DefaultCloudFormationClient } from './defaultCloudFormationClient'
 import { DefaultEcsClient } from './defaultEcsClient'
 import { DefaultLambdaClient } from './defaultLambdaClient'
+import { DefaultSchemaClient } from './defaultSchemaClient'
 import { DefaultStsClient } from './defaultStsClient'
 import { EcsClient } from './ecsClient'
 import { LambdaClient } from './lambdaClient'
+import { SchemaClient } from './schemaClient'
 import { StsClient } from './stsClient'
 import { ToolkitClientBuilder } from './toolkitClientBuilder'
 
 export class DefaultToolkitClientBuilder implements ToolkitClientBuilder {
     public createCloudFormationClient(regionCode: string): CloudFormationClient {
         return new DefaultCloudFormationClient(regionCode)
+    }
+
+    public createSchemaClient(regionCode: string): SchemaClient {
+        return new DefaultSchemaClient(regionCode)
     }
 
     public createEcsClient(regionCode: string): EcsClient {
