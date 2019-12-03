@@ -2,14 +2,14 @@
 
 /*
     This script is called from npm run compile. It copies the
-    files and directories listed in `relativePaths` to `out/`.
+    files and directories listed in `relativePaths` to `dist`.
 */
 
 const fs = require('fs-extra')
 const path = require('path')
 
 const repoRoot = path.dirname(__dirname)
-const outRoot = path.join(repoRoot, 'out')
+const outRoot = path.join(repoRoot, 'dist')
 
 // May be individual files or entire directories.
 const relativePaths = [

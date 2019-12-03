@@ -57,11 +57,7 @@ export class WizardContext {
 export class BrowseFolderQuickPickItem implements FolderQuickPickItem {
     public alwaysShow: boolean = true
 
-    public constructor(
-        private readonly context: WizardContext,
-        private readonly detailKey: string,
-        private readonly detailString: string
-    ) {}
+    public constructor(private readonly context: WizardContext, public readonly detail: string) {}
 
     public get label(): string {
         if (this.context.workspaceFolders && this.context.workspaceFolders.length > 0) {
@@ -72,10 +68,6 @@ export class BrowseFolderQuickPickItem implements FolderQuickPickItem {
             'AWS.initWizard.location.select.folder.empty.workspace',
             'There are no workspace folders open. Select a folder...'
         )
-    }
-
-    public get detail(): string {
-        return localize(this.detailKey, this.detailString)
     }
 
     public async getUri(): Promise<vscode.Uri | undefined> {
