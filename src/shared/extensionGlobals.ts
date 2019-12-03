@@ -35,6 +35,8 @@ export interface IconPaths {
     cloudFormation: string
     lambda: string
     settings: string
+    registry: string
+    schema: string
 }
 
 function makeIconPathsObject(): IconPaths {
@@ -42,6 +44,8 @@ function makeIconPathsObject(): IconPaths {
         help: '',
         cloudFormation: '',
         lambda: '',
-        settings: ''
+        settings: '',
+        registry: '',
+        schema: ''
     }
 }

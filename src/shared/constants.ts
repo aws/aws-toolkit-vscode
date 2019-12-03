@@ -35,5 +35,9 @@ export const samDeployDocUrl: string =
 export const cdkProvideFeedbackUrl: string = `${githubUrl}/issues/new/choose`
 export const cdkDocumentationUrl: string = 'https://docs.aws.amazon.com/console/toolkit-for-vscode/aws-cdk-apps'
 
+// TODO : Add valid URL to be accessed from help button in the downloadCodeBindings wizard
+export const schemaCodeDownloadDocUrl: string =
+    'https://docs.aws.amazon.com/eventbridge/latest/userguide/eventbridge-schemas.html'
+
 const npmPackage = () => require('../../../package.json') as NpmPackage
 export const pluginVersion = npmPackage().version
