@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import { Service } from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import { version } from 'vscode'
 import { DefaultAWSClientBuilder } from '../../shared/awsClientBuilder'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
 
@@ -16,6 +17,17 @@ describe('DefaultAwsClientBuilder', () => {
                 super(config)
             }
         }
+
+        it('includes custom user-agent if no options are specified', async () => {
+            const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
+            const service = await builder.createAndConfigureServiceClient(opts => new FakeService(opts))
+
+            assert.strictEqual(!!service.config.customUserAgent, true)
+            assert.strictEqual(
+                service.config.customUserAgent!,
+                `AWS-Toolkit-For-VSCode/testPluginVersion Visual-Studio-Code/${version}`
+            )
+        })
 
         it('includes custom user-agent if not specified in options', async () => {
             const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
