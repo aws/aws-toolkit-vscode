@@ -10,9 +10,9 @@ The following screenshots show important parts of the Toolkit.
 
 ![Overview, AWS Explorer](./resources/marketplace/overview.png)
 
-### <a id="ui-components-cdk-expl"></a>The CDK Explorer
+### <a id="ui-components-cdk-expl"></a>The AWS CDK Explorer
 
-![Overview, CDK Explorer](./resources/marketplace/overview-cdk.png)
+![Overview, AWS CDK Explorer](./resources/marketplace/overview-cdk.png)
 
 ### <a id="open-command-palette"></a>AWS Commands in the Command Palette
 
@@ -127,13 +127,13 @@ The functions that have Codelenses are those that use AWS Lambda-function handle
 
 ## <a id="cdk-apps"></a>AWS CDK Applications
 
-The AWS Toolkit for VS Code enables you to work with [AWS Cloud Development Kit (AWS CDK)](https://aws.amazon.com/cdk/) applications. Using the [CDK Explorer](#ui-components-cdk-expl) on the Toolkit, you can view CDK applications within your Workspace that have been synthesized.
+The AWS Toolkit for VS Code enables you to work with [AWS Cloud Development Kit (AWS CDK)](https://aws.amazon.com/cdk/) applications. Using the [AWS CDK Explorer](#ui-components-cdk-expl) on the Toolkit, you can view CDK applications within your Workspace that have been synthesized.
 
 Example:
 
 ![AWS CDK Tree View](./resources/marketplace/cdk-tree-view.png)
 
-For full details, see the [CDK Explorer](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/cdk-explorer.html) in the Toolkit's user guide.
+For full details, see the [AWS CDK Explorer](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/cdk-explorer.html) in the Toolkit's user guide.
 
 { [Return to Features](#features) } or { [Return to Top](#top) }
 
