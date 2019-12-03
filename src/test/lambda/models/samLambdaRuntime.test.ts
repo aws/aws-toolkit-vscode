@@ -4,18 +4,18 @@
  */
 
 import * as assert from 'assert'
+import { Runtime } from 'aws-sdk/clients/lambda'
 import {
     compareSamLambdaRuntime,
     getDependencyManager,
     getFamily,
-    SamLambdaRuntime,
     samLambdaRuntimes
 } from '../../../lambda/models/samLambdaRuntime'
 
 describe('compareSamLambdaRuntime', async () => {
     const scenarios: {
-        lowerRuntime: SamLambdaRuntime
-        higherRuntime: SamLambdaRuntime
+        lowerRuntime: Runtime
+        higherRuntime: Runtime
     }[] = [
         { lowerRuntime: 'nodejs8.10', higherRuntime: 'nodejs10.x' },
         { lowerRuntime: 'nodejs8.10', higherRuntime: 'nodejs12.x' },

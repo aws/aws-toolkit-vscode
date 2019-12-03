@@ -4,6 +4,7 @@
  */
 
 import { TreeItemCollapsibleState } from 'vscode'
+import { SchemasNode } from '../eventSchemas/explorer/schemasNode'
 import { CloudFormationNode } from '../lambda/explorer/cloudFormationNodes'
 import { LambdaNode } from '../lambda/explorer/lambdaNodes'
 import { RegionInfo } from '../shared/regions/regionInfo'
@@ -19,6 +20,7 @@ export class RegionNode extends AWSTreeNodeBase {
     private info: RegionInfo
     private readonly cloudFormationNode: CloudFormationNode
     private readonly lambdaNode: LambdaNode
+    private readonly schemasNode: SchemasNode
 
     public get regionCode(): string {
         return this.info.regionCode
@@ -36,10 +38,11 @@ export class RegionNode extends AWSTreeNodeBase {
 
         this.cloudFormationNode = new CloudFormationNode(this.regionCode)
         this.lambdaNode = new LambdaNode(this.regionCode)
+        this.schemasNode = new SchemasNode(this.regionCode)
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
-        return [this.cloudFormationNode, this.lambdaNode]
+        return [this.cloudFormationNode, this.lambdaNode, this.schemasNode]
     }
 
     public update(info: RegionInfo): void {

@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { writeFile } from 'fs-extra'
 import * as yaml from 'js-yaml'
 import * as path from 'path'
-import { mkdir, writeFile } from '../../../shared/filesystem'
+import { mkdir } from '../../../shared/filesystem'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 

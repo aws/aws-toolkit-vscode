@@ -5,8 +5,9 @@
 
 import * as assert from 'assert'
 import * as del from 'del'
+import { writeFile } from 'fs-extra'
 import * as path from 'path'
-import { mkdir, writeFile } from '../../shared/filesystem'
+import { mkdir } from '../../shared/filesystem'
 import {
     fileExists,
     findFileInParentPaths,

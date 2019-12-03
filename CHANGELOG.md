@@ -1,3 +1,7 @@
+## 1.4.0 2019-12-02
+
+- **Feature** Added support for Amazon EventBridge schema registry, making it easy to discover and write code for events in EventBridge
+
 ## 1.3.0 2019-11-22
 
 - **Bug Fix** AWS Explorer now shows a node indicating when CloudFormation Stacks cannot be found in a region

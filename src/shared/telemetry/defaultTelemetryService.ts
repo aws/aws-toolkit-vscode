@@ -4,11 +4,11 @@
  */
 
 import * as fs from 'fs'
+import { writeFile } from 'fs-extra'
 import * as path from 'path'
 import uuidv4 = require('uuid/v4')
 import { ExtensionContext } from 'vscode'
 import { AwsContext } from '../awsContext'
-import * as filesystem from '../filesystem'
 import { DefaultTelemetryClient } from './defaultTelemetryClient'
 import { DefaultTelemetryPublisher } from './defaultTelemetryPublisher'
 import { TelemetryEvent } from './telemetryEvent'
@@ -102,7 +102,7 @@ export class DefaultTelemetryService implements TelemetryService {
         // only write events to disk if telemetry is enabled at shutdown time
         if (this.telemetryEnabled) {
             try {
-                await filesystem.writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))
+                await writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))
             } catch {}
         }
     }

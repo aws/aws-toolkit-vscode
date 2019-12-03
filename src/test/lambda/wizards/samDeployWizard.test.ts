@@ -16,10 +16,7 @@ import {
 } from '../../../lambda/wizards/samDeployWizard'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { RegionProvider } from '../../../shared/regions/regionProvider'
-
-async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
-    yield* items
-}
+import { asyncGenerator } from '../../utilities/collectionUtils'
 
 interface QuickPickUriResponseItem extends vscode.QuickPickItem {
     uri: vscode.Uri

@@ -8,7 +8,7 @@
 var path = require('path')
 
 // Set up some environment variables so the VS Code Test script knows where the tests are located
-process.env.CODE_TESTS_PATH = path.join(process.cwd(), 'out', 'src', 'test')
+process.env.CODE_TESTS_PATH = path.join(process.cwd(), 'dist', 'src', 'test')
 process.env.CODE_EXTENSIONS_PATH = process.cwd()
 
 // Launch the VS Code Test Script
