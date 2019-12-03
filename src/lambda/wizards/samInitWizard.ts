@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { Runtime } from 'aws-sdk/clients/lambda'
-import * as immutable from 'immutable'
+import { Set } from 'immutable'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { samInitDocUrl } from '../../shared/constants'
@@ -25,7 +25,7 @@ import {
 import * as lambdaRuntime from '../models/samLambdaRuntime'
 
 export interface CreateNewSamAppWizardContext {
-    readonly lambdaRuntimes: immutable.Set<Runtime>
+    readonly lambdaRuntimes: Set<Runtime>
     readonly workspaceFolders: vscode.WorkspaceFolder[] | undefined
 
     promptUserForRuntime(currRuntime?: Runtime): Promise<Runtime | undefined>
