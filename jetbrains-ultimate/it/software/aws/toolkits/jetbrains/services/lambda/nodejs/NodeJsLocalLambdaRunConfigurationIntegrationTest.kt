@@ -34,7 +34,8 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         @Parameterized.Parameters(name = "{0}")
         fun parameters(): Collection<Array<Runtime>> = listOf(
             arrayOf(Runtime.NODEJS8_10),
-            arrayOf(Runtime.NODEJS10_X)
+            arrayOf(Runtime.NODEJS10_X),
+            arrayOf(Runtime.NODEJS12_X)
         )
     }
 
