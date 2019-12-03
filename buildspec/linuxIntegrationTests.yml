@@ -18,7 +18,7 @@ phases:
             # Install .NET Core 2.1 and VSCode
             - apt-get install -y dotnet-sdk-2.1 code
             # Install other needed dependencies
-            - apt-get install -y python2.7 python3.7 docker
+            - apt-get install -y python2.7 python3.8 docker
             - apt-get install -y libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins
             - pip3 install --user aws-sam-cli
             - pip3 install --upgrade awscli
