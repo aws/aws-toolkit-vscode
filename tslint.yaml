@@ -47,7 +47,6 @@ rules:
     no-implicit-dependencies:
         options:
             - - vscode
-              - semver-regex
               - del
               - sinon
     no-inferred-empty-object-type: true

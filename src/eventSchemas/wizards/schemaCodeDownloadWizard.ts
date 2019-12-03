@@ -127,8 +127,10 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
             .concat([
                 new BrowseFolderQuickPickItem(
                     this,
-                    'AWS.schemas.downloadCodeBindings.initWizard.location.select.folder.detail',
-                    'Code bindings will be downloaded to selected folder.'
+                    localize(
+                        'AWS.schemas.downloadCodeBindings.initWizard.location.select.folder.detail',
+                        'Code bindings will be downloaded to selected folder.'
+                    )
                 )
             ])
 

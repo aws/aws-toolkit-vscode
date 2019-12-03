@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { NpmPackage } from './npmPackage'
-
 export const extensionSettingsPrefix: string = 'aws'
 export const regionSettingKey: string = 'region'
 export const profileSettingKey: string = 'profile'
@@ -35,9 +33,14 @@ export const samDeployDocUrl: string =
 export const cdkProvideFeedbackUrl: string = `${githubUrl}/issues/new/choose`
 export const cdkDocumentationUrl: string = 'https://docs.aws.amazon.com/console/toolkit-for-vscode/aws-cdk-apps'
 
+// This is a hack to get around webpack messing everything up in unit test mode, it's also a very obvious
+// bad version if something goes wrong while building it
+let pluginVersion = 'testPluginVersion'
+try {
+    pluginVersion = PLUGINVERSION
+} catch (e) {}
+
+export { pluginVersion }
 // TODO : Add valid URL to be accessed from help button in the downloadCodeBindings wizard
 export const schemaCodeDownloadDocUrl: string =
     'https://docs.aws.amazon.com/eventbridge/latest/userguide/eventbridge-schemas.html'
-
-const npmPackage = () => require('../../../package.json') as NpmPackage
-export const pluginVersion = npmPackage().version
