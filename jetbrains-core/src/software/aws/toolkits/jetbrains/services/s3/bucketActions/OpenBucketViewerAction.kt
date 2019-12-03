@@ -12,7 +12,7 @@ import com.intellij.openapi.project.Project
 import icons.AwsIcons
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.core.explorer.SingleResourceNodeAction
+import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.services.s3.S3BucketNode
 import software.aws.toolkits.jetbrains.services.s3.S3VirtualBucket
 import software.aws.toolkits.jetbrains.services.s3.S3VirtualFileSystem

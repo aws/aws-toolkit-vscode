@@ -4,12 +4,19 @@
 package software.aws.toolkits.jetbrains.core
 
 import com.nhaarman.mockitokotlin2.mock
+import software.amazon.awssdk.services.s3.model.Bucket
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
+import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
 
 fun fillResourceCache(resourceCache: MockResourceCache) {
     resourceCache.addEntry(
         EcsResources.LIST_CLUSTER_ARNS,
         listOf("arn2", "arn3")
+    )
+
+    resourceCache.addEntry(
+        S3Resources.LIST_BUCKETS,
+        listOf(Bucket.builder().name("abc").build())
     )
 
     resourceCache.addEntry(

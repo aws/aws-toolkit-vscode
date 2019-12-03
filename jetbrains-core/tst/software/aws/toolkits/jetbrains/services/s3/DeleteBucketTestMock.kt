@@ -3,14 +3,15 @@
 package software.aws.toolkits.jetbrains.services.s3
 
 import com.intellij.testFramework.ProjectRule
-import com.nhaarman.mockitokotlin2.stub
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.stub
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.doReturn
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.Bucket
 import software.amazon.awssdk.services.s3.model.DeleteBucketRequest
 import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest
 import software.amazon.awssdk.services.s3.model.ListObjectVersionsRequest
@@ -21,7 +22,6 @@ import software.aws.toolkits.core.s3.deleteBucketAndContents
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.s3.bucketActions.DeleteBucketAction
 import software.aws.toolkits.jetbrains.utils.delegateMock
-import java.time.Instant
 import java.util.function.Consumer
 
 class DeleteBucketTestMock {
@@ -37,16 +37,16 @@ class DeleteBucketTestMock {
     @Test
     fun deleteEmptyBucket() {
         val s3Mock = delegateMock<S3Client>()
-        val mockBucket = S3BucketNode(projectRule.project, S3Bucket("foo", s3Mock, Instant.parse("1995-10-23T10:12:35Z")), s3Mock)
+        val mockBucket = S3BucketNode(projectRule.project, Bucket.builder().name("foo").build())
         val emptyVersionList = mutableListOf<ObjectVersion>()
 
         s3Mock.stub {
             on { listObjectVersionsPaginator(any<ListObjectVersionsRequest>()) } doReturn
-                    ListObjectVersionsIterable(s3Mock, ListObjectVersionsRequest.builder().build())
+                ListObjectVersionsIterable(s3Mock, ListObjectVersionsRequest.builder().build())
         }
         s3Mock.stub {
             on { listObjectVersions(any<ListObjectVersionsRequest>()) } doReturn
-                    ListObjectVersionsResponse.builder().versions(emptyVersionList).isTruncated(false).build()
+                ListObjectVersionsResponse.builder().versions(emptyVersionList).isTruncated(false).build()
         }
         mockClientManagerRule.manager().register(S3Client::class, s3Mock)
 
@@ -58,7 +58,7 @@ class DeleteBucketTestMock {
     @Test
     fun deleteBucketWithVersionedObjects() {
         val s3Mock = delegateMock<S3Client>()
-        val mockBucket = S3BucketNode(projectRule.project, S3Bucket("foo", s3Mock, Instant.parse("1995-10-23T10:12:35Z")), s3Mock)
+        val mockBucket = S3BucketNode(projectRule.project, Bucket.builder().name("foo").build())
 
         val objectVersionList = mutableListOf(
             ObjectVersion.builder().eTag("123").key("1111").build(),
@@ -67,11 +67,11 @@ class DeleteBucketTestMock {
 
         s3Mock.stub {
             on { listObjectVersionsPaginator(any<ListObjectVersionsRequest>()) } doReturn
-                    ListObjectVersionsIterable(s3Mock, ListObjectVersionsRequest.builder().build())
+                ListObjectVersionsIterable(s3Mock, ListObjectVersionsRequest.builder().build())
         }
         s3Mock.stub {
             on { listObjectVersions(any<ListObjectVersionsRequest>()) } doReturn
-                    ListObjectVersionsResponse.builder().versions(objectVersionList).isTruncated(false).build()
+                ListObjectVersionsResponse.builder().versions(objectVersionList).isTruncated(false).build()
         }
         mockClientManagerRule.manager().register(S3Client::class, s3Mock)
 
@@ -86,7 +86,7 @@ class DeleteBucketTestMock {
         val s3Mock = delegateMock<S3Client>()
         s3Mock.stub {
             on { listObjectVersionsPaginator(any<ListObjectVersionsRequest>()) } doReturn
-                    ListObjectVersionsIterable(s3Mock, ListObjectVersionsRequest.builder().build())
+                ListObjectVersionsIterable(s3Mock, ListObjectVersionsRequest.builder().build())
         }
         mockClientManagerRule.manager().register(S3Client::class, s3Mock)
         s3Mock.deleteBucketAndContents("")

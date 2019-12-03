@@ -3,16 +3,17 @@
 package software.aws.toolkits.jetbrains.services.s3
 
 import com.intellij.openapi.vfs.VirtualFile
-import com.nhaarman.mockitokotlin2.stub
-import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.stub
 import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.Bucket
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
@@ -21,7 +22,6 @@ import software.aws.toolkits.jetbrains.services.s3.objectActions.UploadObjectAct
 import software.aws.toolkits.jetbrains.utils.delegateMock
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import java.io.ByteArrayInputStream
-import java.time.Instant
 import javax.swing.JButton
 import javax.swing.JTextField
 
@@ -49,7 +49,7 @@ class UploadObjectTest {
 
         val fileSystemMock = S3VirtualFileSystem(s3Client)
         val virtualBucket =
-            S3VirtualBucket(fileSystemMock, S3Bucket("TestBucket", s3Client, Instant.parse("1995-10-23T10:12:35Z")))
+            S3VirtualBucket(fileSystemMock, Bucket.builder().name("TestBucket").build())
         val treeTableMock = delegateMock<S3TreeTable>()
         val mockButton = delegateMock<JButton>()
         val mockTextField = delegateMock<JTextField>()

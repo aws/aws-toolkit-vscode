@@ -32,7 +32,7 @@ class DeleteObjectAction(
     @Suppress("unused")
     override fun doActionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(LangDataKeys.PROJECT)
-        val client: S3Client = bucket.s3Bucket.client
+        val client: S3Client = bucket.client
         val rows = treeTable.selectedRows
         val objectsToDelete = mutableListOf<ObjectIdentifier>()
 
@@ -71,7 +71,7 @@ class DeleteObjectAction(
     }
 
     override fun isEnabled(): Boolean = (!(treeTable.isEmpty || (treeTable.selectedRow < 0) ||
-            (treeTable.getValueAt(treeTable.selectedRow, 1) == "")))
+        (treeTable.getValueAt(treeTable.selectedRow, 1) == "")))
 
     fun deleteObjectAction(client: S3Client, objectsToDelete: MutableList<ObjectIdentifier>) {
         val bucketName = bucket.getVirtualBucketName()

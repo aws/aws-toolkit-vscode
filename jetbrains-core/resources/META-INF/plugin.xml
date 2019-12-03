@@ -289,6 +289,8 @@
                     class="software.aws.toolkits.jetbrains.services.s3.bucketActions.OpenBucketViewerAction"/>
             <action id="s3.copy.bucketname.check"
                     class="software.aws.toolkits.jetbrains.services.s3.bucketActions.CopyBucketNameAction"/>
+        </group>
+
         <group id="aws.toolkit.explorer.schemas" popup="true" compact="false">
             <action id="schemas.search"
                     class="software.aws.toolkits.jetbrains.services.schemas.search.SearchSchemasAction"/>

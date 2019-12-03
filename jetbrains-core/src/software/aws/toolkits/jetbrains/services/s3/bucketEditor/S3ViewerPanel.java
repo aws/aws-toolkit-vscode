@@ -13,6 +13,29 @@ import com.intellij.ui.PopupHandler;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.treeStructure.SimpleTreeStructure;
 import com.intellij.util.ui.ColumnInfo;
+
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JTextField;
+import javax.swing.KeyStroke;
+import javax.swing.RowFilter;
+import javax.swing.SwingConstants;
+import javax.swing.border.TitledBorder;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
+
 import software.aws.toolkits.jetbrains.services.s3.S3TreeCellRenderer;
 import software.aws.toolkits.jetbrains.services.s3.S3VirtualBucket;
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DeleteObjectAction;
@@ -22,30 +45,9 @@ import software.aws.toolkits.jetbrains.services.s3.objectActions.UploadObjectAct
 import software.aws.toolkits.jetbrains.ui.tree.AsyncTreeModel;
 import software.aws.toolkits.jetbrains.ui.tree.StructureTreeModel;
 
-import javax.swing.JPanel;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JTextField;
-import javax.swing.JPopupMenu;
-import javax.swing.JComponent;
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.KeyStroke;
-import javax.swing.SwingConstants;
-import javax.swing.RowFilter;
-import javax.swing.border.TitledBorder;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableModel;
-import javax.swing.table.TableRowSorter;
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-
 @SuppressWarnings("unchecked")
 public class S3ViewerPanel {
+    private final int SCROLLPANE_SIZE = 11;
     private JPanel content;
     private JPanel bucketName;
     private JLabel name;
@@ -66,7 +68,6 @@ public class S3ViewerPanel {
     private AnActionButton downloadObjectButton;
     private S3KeyNode s3Node;
     private S3TreeTableModel model;
-    private final int SCROLLPANE_SIZE = 11;
 
     public S3ViewerPanel(S3VirtualBucket bucketVirtual) {
         TitledBorder border = new TitledBorder("Bucket Details");
@@ -75,7 +76,7 @@ public class S3ViewerPanel {
         this.content.setBorder(border);
         this.bucketVirtual = bucketVirtual;
         this.name.setText(bucketVirtual.getVirtualBucketName());
-        this.date.setText(bucketVirtual.formatDate(bucketVirtual.getS3Bucket().getCreationDate()));
+        this.date.setText(bucketVirtual.formatDate(bucketVirtual.getS3Bucket().creationDate()));
 
         this.searchButton.setText("Search");
         this.searchTextField.setText("");
@@ -105,13 +106,13 @@ public class S3ViewerPanel {
             ColumnInfo size = new S3ColumnInfo("Size", virtualFile -> virtualFile.formatSize());
 
             ColumnInfo modified = new S3ColumnInfo("Last-Modified",
-                    virtualFile -> virtualFile.formatDate(virtualFile.getFile().getLastModified()));
+                                                   virtualFile -> virtualFile.formatDate(virtualFile.getFile().getLastModified()));
 
             ColumnInfo eTag = new S3ColumnInfo("Etag",
-                    virtualFile -> virtualFile.getFile().getETag().replace("\"", ""));
+                                               virtualFile -> virtualFile.getFile().getETag().replace("\"", ""));
 
 
-            final ColumnInfo[] COLUMNS = new ColumnInfo[]{key, size, modified, eTag};
+            final ColumnInfo[] COLUMNS = new ColumnInfo[] {key, size, modified, eTag};
             createTreeTable(COLUMNS);
 
             DefaultActionGroup actionGroup = new DefaultActionGroup();
@@ -131,11 +132,15 @@ public class S3ViewerPanel {
 
                     if (e.getSource() == next) {
                         s3Node.updateLimitsOnButtonClick(true);
-                        if (s3Node.getNext() == s3Node.getCurrSize()) next.setEnabled(false);
+                        if (s3Node.getNext() == s3Node.getCurrSize()) {
+                            next.setEnabled(false);
+                        }
 
                     } else if (e.getSource() == previous) {
                         s3Node.updateLimitsOnButtonClick(false);
-                        if (s3Node.getPrev() == 0) previous.setEnabled(false);
+                        if (s3Node.getPrev() == 0) {
+                            previous.setEnabled(false);
+                        }
                     }
                     treeTable.refresh();
                 }
@@ -153,7 +158,7 @@ public class S3ViewerPanel {
                 treeTable.setTreeCellRenderer(treeRenderer);
                 treeTable.setCellSelectionEnabled(false);
                 JBScrollPane scrollPane = new JBScrollPane(treeTable, JBScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-                        JBScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+                                                           JBScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
                 treeTable.setRowSelectionAllowed(true);
                 int width = treeTable.getPreferredSize().width;
@@ -198,7 +203,7 @@ public class S3ViewerPanel {
         SimpleTreeStructure treeStructure = new SimpleTreeStructure.Impl(s3Node);
         StructureTreeModel<SimpleTreeStructure> myTreeModel = new StructureTreeModel(treeStructure, myTreeModelDisposable);
         model = new S3TreeTableModel(new AsyncTreeModel(myTreeModel, true
-                , myTreeModelDisposable), columns, myTreeModel);
+            , myTreeModelDisposable), columns, myTreeModel);
     }
 
     /**
@@ -211,8 +216,8 @@ public class S3ViewerPanel {
             public void actionPerformed(ActionEvent e) {
                 String text = searchTextField.getText();
                 if (text.isEmpty()) {
-                    s3Node.setPrev(s3Node.START_SIZE);
-                    s3Node.setNext(Math.min(s3Node.UPDATE_LIMIT, s3Node.getCurrSize()));
+                    s3Node.setPrev(S3KeyNode.START_SIZE);
+                    s3Node.setNext(Math.min(S3KeyNode.UPDATE_LIMIT, s3Node.getCurrSize()));
                     sorter.setRowFilter(null);
                 } else {
                     ApplicationManager.getApplication().executeOnPooledThread(() -> {
@@ -226,11 +231,11 @@ public class S3ViewerPanel {
         });
     }
 
-    private void clearSelectionOnWhiteSpace(){
+    private void clearSelectionOnWhiteSpace() {
         mainPanel.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if(!treeTable.contains(e.getPoint())) {
+                if (!treeTable.contains(e.getPoint())) {
                     treeTable.clearSelection();
                 }
             }

@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.explorer
 
+import com.intellij.openapi.application.runInEdt
 import com.intellij.testFramework.ProjectRule
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.tree.TreeUtil
@@ -45,8 +46,11 @@ class AwsExplorerTreeStructureProviderTest {
         val countDownLatch = CountDownLatch(1)
 
         val model = Tree(createTreeModel())
-        TreeUtil.expand(model, 1) {
-            countDownLatch.countDown()
+
+        runInEdt {
+            TreeUtil.expand(model, 1) {
+                countDownLatch.countDown()
+            }
         }
 
         countDownLatch.await(1, TimeUnit.SECONDS)

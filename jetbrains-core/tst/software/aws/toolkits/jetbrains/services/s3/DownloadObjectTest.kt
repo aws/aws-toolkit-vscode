@@ -13,6 +13,7 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.core.sync.ResponseTransformer
 import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.Bucket
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.s3.model.GetObjectResponse
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
@@ -47,7 +48,7 @@ class DownloadObjectTest {
 
         val fileSystemMock = S3VirtualFileSystem(s3Client)
         val treeTableMock = delegateMock<S3TreeTable>()
-        val virtualBucketMock = S3VirtualBucket(fileSystemMock, S3Bucket("TestBucket", s3Client, Instant.parse("1995-10-23T10:12:35Z")))
+        val virtualBucketMock = S3VirtualBucket(fileSystemMock, Bucket.builder().name("TestBucket").build())
 
         val testFile = FileUtil.createTempFile("myfile", ".txt")
         val testVirtualFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(testFile)

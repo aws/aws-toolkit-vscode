@@ -12,6 +12,7 @@ import org.assertj.core.api.Assertions
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.Bucket
 import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest
 import software.amazon.awssdk.services.s3.model.DeleteObjectsResponse
 import software.amazon.awssdk.services.s3.model.DeletedObject
@@ -20,7 +21,6 @@ import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DeleteObjectAction
 import software.aws.toolkits.jetbrains.utils.delegateMock
-import java.time.Instant
 import javax.swing.JButton
 import javax.swing.JTextField
 
@@ -42,7 +42,7 @@ class DeleteObjectTest {
         val mockTreeTable = delegateMock<S3TreeTable>()
         val mockButton = delegateMock<JButton>()
         val mockTextField = delegateMock<JTextField>()
-        val mockVirtualBucket = S3VirtualBucket(mockFileSystem, S3Bucket("TestBucket", s3Client, Instant.parse("1995-10-23T10:12:35Z")))
+        val mockVirtualBucket = S3VirtualBucket(mockFileSystem, Bucket.builder().name("TestBucket").build())
 
         val mockDeleteObject = DeleteObjectAction(mockTreeTable, mockVirtualBucket, mockButton, mockTextField)
 
@@ -51,9 +51,9 @@ class DeleteObjectTest {
 
         s3Client.stub {
             on { deleteObjects(deleteCaptor.capture()) } doReturn
-                    (DeleteObjectsResponse.builder()
-                        .requestCharged("yes")
-                        .deleted(listOf(DeletedObject.builder().deleteMarker(true).key("testKey").build()))).build()
+                (DeleteObjectsResponse.builder()
+                    .requestCharged("yes")
+                    .deleted(listOf(DeletedObject.builder().deleteMarker(true).key("testKey").build()))).build()
             Messages.setTestDialog(TestDialog.OK)
         }
         mockClientManagerRule.manager().register(S3Client::class, s3Client)

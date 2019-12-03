@@ -3,11 +3,14 @@
 
 package software.aws.toolkits.jetbrains.services.s3;
 
-import org.jetbrains.annotations.NotNull;
-import javax.swing.JTextField;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
+
+import org.jetbrains.annotations.NotNull;
 
 public class CreateBucketPanel {
-    @NotNull JTextField bucketName;
-    @NotNull JPanel component;
+    @NotNull
+    JTextField bucketName;
+    @NotNull
+    JPanel component;
 }
