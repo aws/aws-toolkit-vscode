@@ -18,7 +18,8 @@ class PythonRuntimeGroup : SdkBasedRuntimeGroupInformation() {
     override val runtimes: Set<Runtime> = setOf(
         Runtime.PYTHON2_7,
         Runtime.PYTHON3_6,
-        Runtime.PYTHON3_7
+        Runtime.PYTHON3_7,
+        Runtime.PYTHON3_8
     )
 
     override val languageIds: Set<String> = setOf(PythonLanguage.INSTANCE.id)
@@ -33,6 +34,7 @@ class PythonRuntimeGroup : SdkBasedRuntimeGroupInformation() {
 
     companion object {
         fun determineRuntimeForSdk(sdk: Sdk) = when {
+            sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isAtLeast(LanguageLevel.PYTHON38) -> Runtime.PYTHON3_8
             sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isAtLeast(LanguageLevel.PYTHON37) -> Runtime.PYTHON3_7
             sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isPy3K -> Runtime.PYTHON3_6
             sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isPython2 -> Runtime.PYTHON2_7

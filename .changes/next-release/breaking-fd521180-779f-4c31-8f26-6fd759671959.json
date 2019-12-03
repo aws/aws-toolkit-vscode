@@ -1,0 +1,4 @@
+{
+  "type" : "breaking",
+  "description" : "Minimum SAM CLI version has been increased to 0.32.0"
+}

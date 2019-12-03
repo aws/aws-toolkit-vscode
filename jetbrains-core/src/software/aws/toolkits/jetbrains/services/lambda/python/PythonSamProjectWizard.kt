@@ -49,7 +49,7 @@ class PythonSamProjectWizard : SamProjectWizard {
 }
 
 abstract class PythonSamProjectTemplate : SamProjectTemplate() {
-    override fun supportedRuntimes() = setOf(Runtime.PYTHON2_7, Runtime.PYTHON3_6, Runtime.PYTHON3_7)
+    override fun supportedRuntimes() = setOf(Runtime.PYTHON2_7, Runtime.PYTHON3_6, Runtime.PYTHON3_7, Runtime.PYTHON3_8)
 
     override fun postCreationAction(
         settings: SamNewProjectSettings,

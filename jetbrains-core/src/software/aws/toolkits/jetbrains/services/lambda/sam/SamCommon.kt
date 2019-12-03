@@ -35,7 +35,7 @@ class SamCommon {
         const val SAM_NAME = "SAM CLI"
 
         // Inclusive
-        val expectedSamMinVersion = SemVer("0.16.0", 0, 16, 0)
+        val expectedSamMinVersion = SemVer("0.32.0", 0, 32, 0)
 
         // Exclusive
         val expectedSamMaxVersion = SemVer("0.40.0", 0, 40, 0)

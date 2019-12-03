@@ -36,7 +36,8 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
         fun data(): Collection<Array<Runtime>> = listOf(
             arrayOf(Runtime.PYTHON2_7),
             arrayOf(Runtime.PYTHON3_6),
-            arrayOf(Runtime.PYTHON3_7)
+            arrayOf(Runtime.PYTHON3_7),
+            arrayOf(Runtime.PYTHON3_8)
         )
     }
 
