@@ -4,28 +4,12 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
-import * as fs from 'fs'
+import { writeFile } from 'fs-extra'
 import * as path from 'path'
-import { CustomPromisify, promisify } from 'util'
-
-import * as filesystem from '../../shared/filesystem'
+import { mkdir, rmrf } from '../../shared/filesystem'
 import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { getPropAs } from '../../shared/utilities/tsUtils'
-
-const functionsToTest = ['access', 'readFile', 'readdir', 'rename', 'stat', 'mkdtemp', 'unlink', 'writeFile']
 
 describe('filesystem', () => {
-    functionsToTest.forEach((fxName: string) => {
-        it(`filesystem.${fxName} is same as promisify(fs.${fxName})`, async () => {
-            const filesystemFunction = getPropAs<Function>(filesystem, fxName) // filesystem[fxName]
-            const fsFunction = getPropAs<CustomPromisify<Function>>(fs, fxName) // fs[fxName]
-            const actualType = typeof filesystemFunction
-            assert(actualType === 'function', `filesystem.${fxName} should be a "function" but is "${actualType}"`)
-            assert.strictEqual(String(filesystemFunction), String(promisify(fsFunction)))
-        })
-    })
-
     describe('mkdir', async () => {
         let tempFolder: string
 
@@ -35,28 +19,40 @@ describe('filesystem', () => {
         })
 
         afterEach(async () => {
-            await del([tempFolder], { force: true })
+            await rmrf(tempFolder)
         })
 
         it('makes subfolder to existing folder', async () => {
             const dstFolder = path.join(tempFolder, 'level1')
-            await filesystem.mkdir(dstFolder, { recursive: true })
+            await mkdir(dstFolder, { recursive: true })
 
-            assert.ok(fileExists(dstFolder), 'expected folder to exist')
+            assert.ok(await fileExists(dstFolder), 'expected folder to exist')
         })
 
         it('makes two levels of subfolders', async () => {
             const dstFolder = path.join(tempFolder, 'level1', 'level2')
-            await filesystem.mkdir(dstFolder, { recursive: true })
+            await mkdir(dstFolder, { recursive: true })
 
-            assert.ok(fileExists(dstFolder), 'expected folder to exist')
+            assert.ok(await fileExists(dstFolder), 'expected folder to exist')
         })
 
         it('makes many levels of subfolders', async () => {
             const dstFolder = path.join(tempFolder, 'level1', 'level2', 'level3', 'level4', 'level5')
-            await filesystem.mkdir(dstFolder, { recursive: true })
+            await mkdir(dstFolder, { recursive: true })
 
-            assert.ok(fileExists(dstFolder), 'expected folder to exist')
+            assert.ok(await fileExists(dstFolder), 'expected folder to exist')
+        })
+    })
+
+    describe('rmrf', async () => {
+        it('deletes files and folders recursively', async () => {
+            const tempFolder = await makeTemporaryToolkitFolder()
+            const folder = path.join(tempFolder, 'level1')
+            await mkdir(folder, { recursive: true })
+            await writeFile(path.join(folder, 'template.yaml'), '')
+            await rmrf(tempFolder)
+            assert.ok(!(await fileExists(path.join(folder, 'template.yaml'))), 'expected file to be deleted')
+            assert.ok(!(await fileExists(folder)), 'expected folder to be deleted')
         })
     })
 })
