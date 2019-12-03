@@ -6,8 +6,6 @@
 import * as fs from 'fs-extra'
 import * as _path from 'path'
 
-const mkdir = fs.promises.mkdir
-
 async function mkdirRecursive(path: string, options: fs.MakeDirectoryOptions): Promise<void> {
     const parent = _path.dirname(path)
     if (parent !== path) {
@@ -21,12 +19,12 @@ interface ErrorWithCode {
     code?: string
 }
 
-async function mkdirSafe(
+export async function mkdir(
     path: fs.PathLike,
     options?: number | string | fs.MakeDirectoryOptions | undefined | null
 ): Promise<void> {
     try {
-        await mkdir(path, options)
+        await fs.promises.mkdir(path, options)
     } catch (err) {
         // mkdir calls with recurse do not work as expected when called through electron.
         // See: https://github.com/nodejs/node/issues/24698#issuecomment-486405542 for info.
@@ -43,8 +41,6 @@ async function mkdirSafe(
         throw err
     }
 }
-
-export { mkdirSafe as mkdir }
 
 // Recursive delete without requiring a third-party library. This allows the script
 // to be run before `npm install`.

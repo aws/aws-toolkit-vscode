@@ -10,7 +10,7 @@ import * as vscode from 'vscode'
 import { detectLocalTemplates } from '../../../lambda/local/detectLocalTemplates'
 import { rmrf } from '../../../shared/filesystem'
 
-const workspaceFolderPath = normalizePath(__dirname, 'my', 'workspace', 'folder')
+const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
 
 function normalizePath(...paths: string[]): string {
     return vscode.Uri.file(path.join(...paths)).fsPath
