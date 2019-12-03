@@ -5,11 +5,11 @@
 
 import * as assert from 'assert'
 import * as del from 'del'
+import { readdir } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { DebugConfiguration } from '../../../lambda/local/debugConfiguration'
 import * as localLambdaRunner from '../../../shared/codelens/localLambdaRunner'
-import * as fs from '../../../shared/filesystem'
 import * as fsUtils from '../../../shared/filesystemUtilities'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { ExtensionDisposableFiles } from '../../../shared/utilities/disposableFiles'
@@ -276,7 +276,7 @@ describe('localLambdaRunner', async () => {
             const dir = await localLambdaRunner.makeBuildDir()
             assert.ok(dir)
             assert.strictEqual(await fsUtils.fileExists(dir), true)
-            const fsDir = await fs.readdir(dir)
+            const fsDir = await readdir(dir)
             assert.strictEqual(fsDir.length, 0)
             await del(dir, { force: true })
         })

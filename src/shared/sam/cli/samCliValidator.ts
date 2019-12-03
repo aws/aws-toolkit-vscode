@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { stat } from 'fs-extra'
 import * as semver from 'semver'
-import { stat } from '../../filesystem'
 import { SamCliConfiguration } from './samCliConfiguration'
 import { SamCliInfoInvocation, SamCliInfoResponse } from './samCliInfo'
 import { SamCliProcessInvoker } from './samCliInvokerUtils'
