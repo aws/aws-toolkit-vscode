@@ -20,7 +20,6 @@ import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
 import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
 import { DefaultAWSStatusBar } from './shared/defaultStatusBar'
-import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
 import { safeGet, showQuickStartWebview, toastNewUser } from './shared/extensionUtilities'
 import { getLogger } from './shared/logger'
@@ -36,13 +35,6 @@ import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
 
 export async function activate(context: vscode.ExtensionContext) {
-    const env = process.env as EnvironmentVariables
-    if (!!env.VSCODE_NLS_CONFIG) {
-        nls.config(JSON.parse(env.VSCODE_NLS_CONFIG) as nls.Options)()
-    } else {
-        nls.config()()
-    }
-
     const localize = nls.loadMessageBundle()
 
     ext.context = context

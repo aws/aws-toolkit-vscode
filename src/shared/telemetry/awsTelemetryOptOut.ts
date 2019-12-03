@@ -96,8 +96,8 @@ export class AwsTelemetryOptOut {
     public async showNotification(): Promise<string | undefined> {
         const notificationMessage: string = localize(
             'AWS.telemetry.notificationMessage',
-            'Please help improve the AWS Toolkit by enabling it to send usage data to AWS. ' +
-                'You can always change your mind later by going to the "AWS Configuration" section in your user settings.'
+            // prettier-ignore
+            'Please help improve the AWS Toolkit by enabling it to send usage data to AWS. You can always change your mind later by going to the "AWS Configuration" section in your user settings.'
         )
 
         return vscode.window.showInformationMessage(notificationMessage, this.responseYes, this.responseNo)

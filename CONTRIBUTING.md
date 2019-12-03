@@ -12,12 +12,12 @@ information to effectively respond to your bug report or contribution.
 
 Before you start, install the following dependencies.
 
-* [Visual Studio Code](https://code.visualstudio.com/Download)
-* [NodeJS and NPM](https://nodejs.org/)
-  * NodeJS Version: 10.x
-  * NPM version: 6.4.1 or higher
-* [Typescript](https://www.typescriptlang.org/)
-* [Git](https://git-scm.com/downloads)
+-   [Visual Studio Code](https://code.visualstudio.com/Download)
+-   [NodeJS and NPM](https://nodejs.org/)
+    -   NodeJS Version: 10.x
+    -   NPM version: 6.4.1 or higher
+-   [Typescript](https://www.typescriptlang.org/)
+-   [Git](https://git-scm.com/downloads)
 
 Then clone the repository and install npm dependencies:
 
@@ -32,8 +32,16 @@ When you launch the extension or run tests from Visual Studio Code, it will auto
 
 If you prefer, you can build from the command line:
 
-* To build one time: `npm run compile`
-* To build and watch for file changes: `npm run watch`
+-   To build one time: `npm run compile`
+-   To build and watch for file changes: `npm run watch`
+
+#### If you run out of memory while building
+
+Webpack can exhaust the default heap size of Node on Linux. To fix this, add `--max-old-space-size` to the `NODE_OPTIONS` environment variable. For example,
+
+```
+export NODE_OPTIONS=--max-old-space-size=8192
+```
 
 ### Test
 
@@ -68,16 +76,16 @@ We welcome you to use the GitHub issue tracker to report bugs or suggest feature
 When filing an issue, please check [existing open](https://github.com/aws/aws-vscode-toolkit/issues), or [recently closed](https://github.com/aws/aws-vscode-toolkit/issues?utf8=%E2%9C%93&q=is%3Aissue%20is%3Aclosed%20), issues to make sure somebody else hasn't already.
 reported the issue. Please try to include as much information as you can. Details like these are incredibly useful:
 
-* A reproducible test case or series of steps
-* The version of our code being used
-* Any modifications you've made relevant to the bug
-* Anything unusual about your environment or deployment
+-   A reproducible test case or series of steps
+-   The version of our code being used
+-   Any modifications you've made relevant to the bug
+-   Anything unusual about your environment or deployment
 
 ## Contributing via Pull Requests
 
 Contributions via pull requests are much appreciated. Before sending us a pull request, please ensure that:
 
-1. You are working against the latest source on the *master* branch.
+1. You are working against the latest source on the _master_ branch.
 2. You check existing open, and recently merged, pull requests to make sure someone else hasn't addressed the problem already.
 3. You open an issue to discuss any significant work - we would hate for your time to be wasted.
 
@@ -98,9 +106,10 @@ GitHub provides additional document on [forking a repository](https://help.githu
 
 If you are contribuing visual assets from other open source repos, the source repo must have a compatible license (such as MIT), and we need to document the source of the images. Follow these steps:
 
-* A separate location in this repo is used for every repo where images are sourced from. The location is in the form `third-party/resources/from-<BRIEF_REPO_NAME>`
-* Copy the source repo's licence into this destination location's LICENSE.txt file
-* Create a README.md in the destination location, and type in a copyright attribution:
+-   A separate location in this repo is used for every repo where images are sourced from. The location is in the form `third-party/resources/from-<BRIEF_REPO_NAME>`
+-   Copy the source repo's licence into this destination location's LICENSE.txt file
+-   Create a README.md in the destination location, and type in a copyright attribution:
+
 ```text
 The AWS Toolkit for VS Code includes the following third-party software/licensing:
 
@@ -108,8 +117,9 @@ Icons contained in this folder and subfolders are from <SOURCE_REPO_NAME>: <SOUR
 
 <PASTE_SOURCE_LICENSE_HERE>
 ```
-* Copy the SVG file(s) into a suitable place within the destination location, for example `.../dark/xyz.svg` and `.../light/xyz.svg`
-* Add an entry to `third-party/README.md` summarizing the new destination location, where the asserts were sourced from, and a brief rationale.
+
+-   Copy the SVG file(s) into a suitable place within the destination location, for example `.../dark/xyz.svg` and `.../light/xyz.svg`
+-   Add an entry to `third-party/README.md` summarizing the new destination location, where the asserts were sourced from, and a brief rationale.
 
 [PR 227](https://github.com/aws/aws-toolkit-vscode/pull/227) illustrates what this looks like in practice.
 
