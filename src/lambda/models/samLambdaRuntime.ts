@@ -4,17 +4,13 @@
  */
 
 import { Runtime } from 'aws-sdk/clients/lambda'
-import * as immutable from 'immutable'
+import { Map, Set } from 'immutable'
 
-export const nodeJsRuntimes: Set<Runtime> = new Set<Runtime>(['nodejs8.10', 'nodejs10.x'])
-export const pythonRuntimes: Set<Runtime> = new Set<Runtime>(['python3.7', 'python3.6', 'python2.7'])
-export const dotNetRuntimes: Set<Runtime> = new Set<Runtime>(['dotnetcore2.1'])
+export const nodeJsRuntimes: Set<Runtime> = Set<Runtime>(['nodejs8.10', 'nodejs10.x'])
+export const pythonRuntimes: Set<Runtime> = Set<Runtime>(['python3.7', 'python3.6', 'python2.7'])
+export const dotNetRuntimes: Set<Runtime> = Set<Runtime>(['dotnetcore2.1'])
 
-export const samLambdaRuntimes: immutable.Set<Runtime> = immutable.Set([
-    ...pythonRuntimes,
-    ...nodeJsRuntimes,
-    ...dotNetRuntimes
-] as Runtime[])
+export const samLambdaRuntimes: Set<Runtime> = Set.union([nodeJsRuntimes, pythonRuntimes, dotNetRuntimes])
 
 export type DependencyManager = 'cli-package' | 'mod' | 'gradle' | 'pip' | 'npm' | 'maven' | 'bundler'
 
@@ -52,7 +48,7 @@ export function getFamily(runtime: string | undefined): RuntimeFamily {
 
 // This allows us to do things like "sort" nodejs10.x after nodejs8.10
 // Map Values are used for comparisons, not for display
-const runtimeCompareText: Map<Runtime, string> = new Map<Runtime, string>([['nodejs8.10', 'nodejs08.10']])
+const runtimeCompareText: Map<Runtime, string> = Map<Runtime, string>([['nodejs8.10', 'nodejs08.10']])
 
 function getSortableCompareText(runtime: Runtime): string {
     return runtimeCompareText.get(runtime) || runtime.toString()
