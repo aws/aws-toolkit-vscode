@@ -1,4 +1,5 @@
 out
+dist
 node_modules
 .coverage/
 .vscode-test/
@@ -8,6 +9,9 @@ node_modules
 telemetryCache
 quickStart.html
 .gitcommit
+media/libs/lodash.min.js
 
 # Auto generated Service Clients
+#TODO: remove-when-schema-sdk-launched 
+src/shared/schemas/clientschemas.d.ts*
 src/shared/telemetry/clienttelemetry.d.ts

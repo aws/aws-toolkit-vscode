@@ -3,14 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { Runtime } from 'aws-sdk/clients/lambda'
 import * as semver from 'semver'
-import { DependencyManager, SamLambdaRuntime } from '../../../lambda/models/samLambdaRuntime'
+import { DependencyManager } from '../../../lambda/models/samLambdaRuntime'
 import { getSamCliVersion, SamCliContext } from './samCliContext'
 import { logAndThrowIfUnexpectedExitCode } from './samCliInvokerUtils'
 import { SAM_CLI_VERSION_0_30 } from './samCliValidator'
 
 export interface SamCliInitArgs {
-    runtime: SamLambdaRuntime
+    runtime: Runtime
     location: string
     name: string
     dependencyManager: DependencyManager

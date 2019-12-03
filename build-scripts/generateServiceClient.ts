@@ -193,6 +193,10 @@ ${fileContents}
 ;(async () => {
     const serviceClientDefinitions: ServiceClientDefinition[] = [
         {
+            serviceJsonPath: 'src/shared/schemas/service-2.json',
+            serviceName: 'ClientSchemas'
+        },
+        {
             serviceJsonPath: 'src/shared/telemetry/service-2.json',
             serviceName: 'ClientTelemetry'
         }

@@ -21,9 +21,7 @@ import {
     updateInPlace
 } from '../../../shared/utilities/collectionUtils'
 
-async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
-    yield* items
-}
+import { asyncGenerator } from '../../utilities/collectionUtils'
 
 describe('CollectionUtils', async () => {
     describe('union', async () => {
@@ -219,7 +217,12 @@ describe('CollectionUtils', async () => {
             const map = new Map<string, number>()
             map.set('a', 1)
 
-            updateInPlace(map, [], key => assert.fail(), key => assert.fail())
+            updateInPlace(
+                map,
+                [],
+                key => assert.fail(),
+                key => assert.fail()
+            )
 
             assert.ok(map)
             assert.strictEqual(map.size, 0)
