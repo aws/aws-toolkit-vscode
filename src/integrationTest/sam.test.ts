@@ -4,10 +4,11 @@
  */
 
 import * as assert from 'assert'
+import { Runtime } from 'aws-sdk/clients/lambda'
 import { mkdirpSync, readFileSync, removeSync } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { getDependencyManager, SamLambdaRuntime } from '../../src/lambda/models/samLambdaRuntime'
+import { getDependencyManager } from '../../src/lambda/models/samLambdaRuntime'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
@@ -130,7 +131,7 @@ for (const runtime of runtimes) {
             tryRemoveProjectFolder()
             mkdirpSync(projectFolder)
             // this is really test 1, but since it has to run before everything it's in the before section
-            const runtimeArg = projectSDK as SamLambdaRuntime
+            const runtimeArg = projectSDK as Runtime
             const initArguments: SamCliInitArgs = {
                 name: 'testProject',
                 location: projectFolder,
@@ -160,7 +161,7 @@ for (const runtime of runtimes) {
         })
 
         it('Fails to create template when it already exists', async () => {
-            const runtimeArg = projectSDK as SamLambdaRuntime
+            const runtimeArg = projectSDK as Runtime
             const initArguments: SamCliInitArgs = {
                 name: 'testProject',
                 location: projectFolder,

@@ -3,18 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as immutable from 'immutable'
+import { Set } from 'immutable'
 
 export const JAVA = 'Java 8+'
 export const PYTHON = 'Python 3.6+'
 export const TYPESCRIPT = 'Typescript 3+'
 export type SchemaCodeLangs = 'Java 8+' | 'Python 3.6+' | 'Typescript 3+'
 
-export const schemaCodeLangs: immutable.Set<SchemaCodeLangs> = immutable.Set([
-    JAVA,
-    PYTHON,
-    TYPESCRIPT
-] as SchemaCodeLangs[])
+export const schemaCodeLangs: Set<SchemaCodeLangs> = Set([JAVA, PYTHON, TYPESCRIPT])
 
 const javaDetail = {
     apiValue: 'Java8',

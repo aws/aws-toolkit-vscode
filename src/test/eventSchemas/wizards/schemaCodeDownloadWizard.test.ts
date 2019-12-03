@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import * as immutable from 'immutable'
+import { Set } from 'immutable'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { JAVA, PYTHON, SchemaCodeLangs } from '../../../eventSchemas/models/schemaCodeLangs'
@@ -42,16 +42,16 @@ class MockSchemaCodeDownloadWizardContext implements SchemaCodeDownloadWizardCon
         return [this._schemaVersions] || []
     }
 
-    public get schemaLangs(): immutable.Set<SchemaCodeLangs> {
+    public get schemaLangs(): Set<SchemaCodeLangs> {
         if (Array.isArray(this._schemaLangs)) {
             if (this._schemaLangs!.length <= 0) {
                 throw new Error('schemaLangs was called more times than expected')
             }
 
-            return (this._schemaLangs as immutable.Set<SchemaCodeLangs>[]).pop() || immutable.Set()
+            return (this._schemaLangs as Set<SchemaCodeLangs>[]).pop() || Set()
         }
 
-        return (this._schemaLangs as immutable.Set<SchemaCodeLangs>) || immutable.Set()
+        return (this._schemaLangs as Set<SchemaCodeLangs>) || Set()
     }
 
     public get workspaceFolders(): vscode.WorkspaceFolder[] {
@@ -69,7 +69,7 @@ class MockSchemaCodeDownloadWizardContext implements SchemaCodeDownloadWizardCon
     /**
      * @param  {vscode.WorkspaceFolder[] | vscode.WorkspaceFolder[][]} _workspaceFolders
      *         The value to return from context.workspaceFolders.
-     * @param  {immutable.Set<SchemaCodeLangs> | immutable.Set<SchemaCodeLangs>[]} _schemaLangs
+     * @param  {immutable.Set<SchemaCodeLangs> | Set<immutable.SchemaCodeLangs>[]} _schemaLangs
      *         The value to return from context.schemaLangs.
      * @param  {string | string[]} _schemaVersions
      *         The value to return from context.showInputBox.
@@ -81,9 +81,7 @@ class MockSchemaCodeDownloadWizardContext implements SchemaCodeDownloadWizardCon
      */
     public constructor(
         private readonly _workspaceFolders: vscode.WorkspaceFolder[] | vscode.WorkspaceFolder[][],
-        private readonly _schemaLangs:
-            | (immutable.Set<SchemaCodeLangs> | undefined)
-            | (immutable.Set<SchemaCodeLangs>[] | undefined),
+        private readonly _schemaLangs: (Set<SchemaCodeLangs> | undefined) | (Set<SchemaCodeLangs>[] | undefined),
         private readonly _schemaVersions: string | string[],
         private readonly openDialogResult: (vscode.Uri[] | undefined) | (vscode.Uri[] | undefined)[]
     ) {
@@ -91,7 +89,7 @@ class MockSchemaCodeDownloadWizardContext implements SchemaCodeDownloadWizardCon
             this._workspaceFolders = (_workspaceFolders as vscode.WorkspaceFolder[][]).reverse()
         }
         if (Array.isArray(this._schemaLangs)) {
-            this._schemaLangs = (_schemaLangs as immutable.Set<SchemaCodeLangs>[]).reverse()
+            this._schemaLangs = (_schemaLangs as Set<SchemaCodeLangs>[]).reverse()
         }
         if (Array.isArray(this._schemaVersions)) {
             this._schemaVersions = (_schemaVersions as string[]).reverse()
@@ -139,7 +137,7 @@ describe('SchemaCodeDownloadWizard', async () => {
         it('uses user response as schemaVersion', async () => {
             const context: SchemaCodeDownloadWizardContext = new MockSchemaCodeDownloadWizardContext(
                 [],
-                immutable.Set<SchemaCodeLangs>([JAVA]),
+                Set<SchemaCodeLangs>([JAVA]),
                 'schemaVersion3',
                 [vscode.Uri.file(path.join('my', 'workspace', 'folder'))]
             )
@@ -154,7 +152,7 @@ describe('SchemaCodeDownloadWizard', async () => {
         it('exits when cancelled', async () => {
             const context: SchemaCodeDownloadWizardContext = new MockSchemaCodeDownloadWizardContext(
                 [],
-                immutable.Set<SchemaCodeLangs>([JAVA]),
+                Set<SchemaCodeLangs>([JAVA]),
                 '',
                 [vscode.Uri.file(path.join('my', 'workspace', 'folder'))]
             )
@@ -169,7 +167,7 @@ describe('SchemaCodeDownloadWizard', async () => {
         it('uses user response as language', async () => {
             const context: SchemaCodeDownloadWizardContext = new MockSchemaCodeDownloadWizardContext(
                 [],
-                immutable.Set<SchemaCodeLangs>([JAVA]),
+                Set<SchemaCodeLangs>([JAVA]),
                 'schemaVersion3',
                 [vscode.Uri.file(path.join('my', 'workspace', 'folder'))]
             )
@@ -183,7 +181,7 @@ describe('SchemaCodeDownloadWizard', async () => {
         it('backtracks when cancelled', async () => {
             const context: SchemaCodeDownloadWizardContext = new MockSchemaCodeDownloadWizardContext(
                 [],
-                immutable.Set(),
+                Set(),
                 ['schemaVersion1', 'schemaVersion2', 'schemaVersion3'],
                 [vscode.Uri.file(path.join('my', 'workspace', 'folder'))]
             )
@@ -199,7 +197,7 @@ describe('SchemaCodeDownloadWizard', async () => {
             const locationPath = path.join('my', 'quick', 'pick', 'result')
             const context: SchemaCodeDownloadWizardContext = new MockSchemaCodeDownloadWizardContext(
                 [],
-                immutable.Set<SchemaCodeLangs>([JAVA]),
+                Set<SchemaCodeLangs>([JAVA]),
                 'myVersion',
                 [vscode.Uri.file(locationPath)]
             )
@@ -214,7 +212,7 @@ describe('SchemaCodeDownloadWizard', async () => {
             const locationPath = path.join('my', 'quick', 'pick', 'result')
             const context: SchemaCodeDownloadWizardContext = new MockSchemaCodeDownloadWizardContext(
                 [],
-                [immutable.Set<SchemaCodeLangs>([PYTHON]), immutable.Set<SchemaCodeLangs>([JAVA])],
+                [Set<SchemaCodeLangs>([PYTHON]), Set<SchemaCodeLangs>([JAVA])],
                 'myName',
                 [undefined, [vscode.Uri.file(locationPath)]]
             )
@@ -232,7 +230,7 @@ describe('SchemaCodeDownloadWizard', async () => {
 
             const context: SchemaCodeDownloadWizardContext = new MockSchemaCodeDownloadWizardContext(
                 [],
-                immutable.Set<SchemaCodeLangs>([JAVA]),
+                Set<SchemaCodeLangs>([JAVA]),
                 name,
                 [vscode.Uri.file(locationPath)]
             )
@@ -253,7 +251,7 @@ describe('SchemaCodeDownloadWizard', async () => {
                     name: path.basename(p),
                     index: index++
                 })),
-                immutable.Set<SchemaCodeLangs>([JAVA]),
+                Set<SchemaCodeLangs>([JAVA]),
                 'myName',
                 []
             )
