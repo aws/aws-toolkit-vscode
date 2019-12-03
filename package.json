@@ -417,7 +417,7 @@
         "@types/lolex": "^3.1.1",
         "@types/marked": "^0.6.5",
         "@types/mocha": "^5.2.0",
-        "@types/node": "^12.12.14",
+        "@types/node": "^10.14.22",
         "@types/opn": "^5.1.0",
         "@types/readline-sync": "^1.4.3",
         "@types/request": "^2.47.1",
