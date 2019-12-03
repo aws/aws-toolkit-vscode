@@ -9,8 +9,9 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { detectLocalTemplates } from '../../../lambda/local/detectLocalTemplates'
 import { rmrf } from '../../../shared/filesystem'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
-const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
+let workspaceFolderPath: string
 
 function normalizePath(...paths: string[]): string {
     return vscode.Uri.file(path.join(...paths)).fsPath
@@ -19,7 +20,7 @@ function normalizePath(...paths: string[]): string {
 describe('detectLocalTemplates', async () => {
     // Make folder
     beforeEach(async () => {
-        await mkdirp(workspaceFolderPath)
+        workspaceFolderPath = await makeTemporaryToolkitFolder()
     })
 
     // cleanup generated folders after each
@@ -67,8 +68,10 @@ describe('detectLocalTemplates', async () => {
 
     // TODO delete this test when this check is fixed
     it('Does not recursively descend past the direct children of each workspace folder', async () => {
+        const workspaceFolderChildPath = normalizePath(workspaceFolderPath, 'child', 'child2')
+        await mkdirp(workspaceFolderChildPath)
+        await writeFile(normalizePath(workspaceFolderChildPath, 'template.yaml'), '')
         const result = detectLocalTemplates({ workspaceUris: [vscode.Uri.file(workspaceFolderPath)] })
-
         const templates: vscode.Uri[] = []
         for await (const template of result) {
             templates.push(template)
