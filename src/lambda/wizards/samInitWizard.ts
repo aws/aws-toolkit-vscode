@@ -6,7 +6,8 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import * as immutable from 'immutable'
+import { Runtime } from 'aws-sdk/clients/lambda'
+import { Set } from 'immutable'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { samInitDocUrl } from '../../shared/constants'
@@ -24,12 +25,10 @@ import {
 import * as lambdaRuntime from '../models/samLambdaRuntime'
 
 export interface CreateNewSamAppWizardContext {
-    readonly lambdaRuntimes: immutable.Set<lambdaRuntime.SamLambdaRuntime>
+    readonly lambdaRuntimes: Set<Runtime>
     readonly workspaceFolders: vscode.WorkspaceFolder[] | undefined
 
-    promptUserForRuntime(
-        currRuntime?: lambdaRuntime.SamLambdaRuntime
-    ): Promise<lambdaRuntime.SamLambdaRuntime | undefined>
+    promptUserForRuntime(currRuntime?: Runtime): Promise<Runtime | undefined>
 
     promptUserForLocation(): Promise<vscode.Uri | undefined>
 
@@ -46,9 +45,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         super()
     }
 
-    public async promptUserForRuntime(
-        currRuntime?: lambdaRuntime.SamLambdaRuntime
-    ): Promise<lambdaRuntime.SamLambdaRuntime | undefined> {
+    public async promptUserForRuntime(currRuntime?: Runtime): Promise<Runtime | undefined> {
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
                 ignoreFocusOut: true,
@@ -79,7 +76,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         })
         const val = picker.verifySinglePickerOutput(choices)
 
-        return val ? (val.label as lambdaRuntime.SamLambdaRuntime) : undefined
+        return val ? (val.label as Runtime) : undefined
     }
 
     public async promptUserForLocation(): Promise<vscode.Uri | undefined> {
@@ -171,13 +168,13 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
 }
 
 export interface CreateNewSamAppWizardResponse {
-    runtime: lambdaRuntime.SamLambdaRuntime
+    runtime: Runtime
     location: vscode.Uri
     name: string
 }
 
 export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizardResponse> {
-    private runtime?: lambdaRuntime.SamLambdaRuntime
+    private runtime?: Runtime
     private location?: vscode.Uri
     private name?: string
 
