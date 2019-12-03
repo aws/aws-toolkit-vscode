@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit for Visual Studio Code",
     "description": "An extension for working with Amazon Web Services in Visual Studio Code",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -47,9 +47,10 @@
         "onCommand:aws.quickStart",
         "onCommand:aws.help",
         "onCommand:aws.github",
-        "onView:aws.cdk.explorer"
+        "onView:aws.cdk.explorer",
+        "onCommand:aws.refreshCdkExplorer"
     ],
-    "main": "./out/src/extension",
+    "main": "./dist/extension",
     "contributes": {
         "configuration": {
             "type": "object",
@@ -148,6 +149,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.downloadSchemaItemCode",
+                    "when": "false"
+                },
+                {
                     "command": "aws.deleteLambda",
                     "when": "false"
                 },
@@ -156,7 +161,19 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.viewSchemaItem",
+                    "when": "false"
+                },
+                {
                     "command": "aws.refreshAwsExplorer",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.refreshCdkExplorer",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.cdk.provideFeedback",
                     "when": "false"
                 },
                 {
@@ -246,6 +263,26 @@
                     "command": "aws.deleteCloudFormation",
                     "when": "view == aws.explorer && viewItem == awsCloudFormationNode",
                     "group": "0@5"
+                },
+                {
+                    "command": "aws.viewSchemaItem",
+                    "when": "view == aws.explorer && viewItem == awsSchemaItemNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.searchSchemaPerRegistry",
+                    "when": "view == aws.explorer && viewItem == awsRegistryItemNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.searchSchema",
+                    "when": "view == aws.explorer && viewItem == awsSchemasNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.downloadSchemaItemCode",
+                    "when": "view == aws.explorer && viewItem == awsSchemaItemNode",
+                    "group": "0@1"
                 },
                 {
                     "command": "aws.showErrorDetails",
@@ -340,6 +377,26 @@
                 "category": "AWS"
             },
             {
+                "command": "aws.viewSchemaItem",
+                "title": "%AWS.command.viewSchemaItem%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.searchSchema",
+                "title": "%AWS.command.searchSchema%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.searchSchemaPerRegistry",
+                "title": "%AWS.command.searchSchemaPerRegistry%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.downloadSchemaItemCode",
+                "title": "%AWS.command.downloadSchemaItemCode%",
+                "category": "AWS"
+            },
+            {
                 "command": "aws.showErrorDetails",
                 "title": "%AWS.command.showErrorDetails%",
                 "category": "AWS"
@@ -377,7 +434,7 @@
         "jsonValidation": [
             {
                 "fileMatch": ".aws/templates.json",
-                "url": "./out/src/schemas/templates.json"
+                "url": "./dist/src/schemas/templates.json"
             },
             {
                 "fileMatch": "*ecs-task-def.json",
@@ -386,19 +443,20 @@
         ]
     },
     "scripts": {
-        "vscode:prepublish": "npm run recompile",
+        "vscode:prepublish": "npm run clean && npm run lint && webpack --mode production && npm run buildScripts",
         "bundleDeps": "node ./build-scripts/bundleDeps.js",
-        "clean": "node ./build-scripts/clean.js out",
+        "clean": "node ./build-scripts/clean.js dist",
         "generateNonCodeFiles": "ts-node ./build-scripts/generateNonCodeFiles.ts",
-        "reset": "node ./build-scripts/clean.js out node_modules && npm install",
+        "reset": "node ./build-scripts/clean.js dist node_modules && npm install",
         "copyNonCodeFiles": "node ./build-scripts/copyNonCodeFiles.js",
         "buildScripts": "npm run bundleDeps && npm run copyNonCodeFiles && npm run generateNonCodeFiles",
-        "compile": "tsc -p ./ && npm run lint && npm run buildScripts",
+        "compile": "webpack --mode development && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
-        "watch": "npm run buildScripts && tsc -watch -p ./",
-        "postinstall": "node ./node_modules/vscode/bin/install && ts-node ./build-scripts/generateServiceClient.ts",
-        "test": "npm run compile && node ./test-scripts/test.js",
-        "integrationTest": "npm run compile && ts-node ./test-scripts/integrationTest.ts",
+        "watch": "npm run buildScripts && webpack --mode development --watch",
+        "postinstall": "ts-node ./build-scripts/generateServiceClient.ts && node ./node_modules/vscode/bin/install",
+        "testCompile": "tsc -p ./ && npm run buildScripts",
+        "test": "npm run testCompile && node ./test-scripts/test.js",
+        "integrationTest": "npm run testCompile && ts-node ./test-scripts/integrationTest.ts",
         "lint": "tslint --project .",
         "lintfix": "tslint --project . --fix",
         "package": "vsce package",
@@ -407,6 +465,7 @@
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
+        "@types/adm-zip": "^0.4.32",
         "@types/async-lock": "^1.1.0",
         "@types/cross-spawn": "^6.0.0",
         "@types/del": "^3.0.1",
@@ -437,16 +496,21 @@
         "pretty-quick": "^1.10.0",
         "readline-sync": "^1.4.9",
         "remap-istanbul": "^0.12.0",
-        "semver-regex": "^2.0.0",
         "sinon": "^7.4.2",
+        "terser-webpack-plugin": "^2.2.1",
+        "ts-loader": "^6.2.0",
         "ts-node": "^8.3.0",
         "tslint": "^5.11.0",
         "tslint-eslint-rules": "^5.4.0",
         "tslint-no-circular-imports": "^0.6.1",
         "vsce": "^1.59.0",
-        "vscode": "^1.1.33"
+        "vscode": "^1.1.33",
+        "vscode-nls-dev": "^3.3.1",
+        "webpack": "^4.41.2",
+        "webpack-cli": "^3.3.10"
     },
     "dependencies": {
+        "adm-zip": "^0.4.13",
         "async-lock": "^1.1.3",
         "aws-sdk": "^2.429.0",
         "cloudformation-schema-js-yaml": "^1.0.1",
@@ -460,6 +524,7 @@
         "lodash": "^4.17.14",
         "moment": "^2.24.0",
         "opn": "^5.4.0",
+        "original-fs": "^1.1.0",
         "request": "^2.88.0",
         "semver": "^5.6.0",
         "sleep-promise": "^8.0.1",
@@ -468,7 +533,7 @@
         "triple-beam": "^1.3.0",
         "typescript": "^3.5.3",
         "uuid": "^3.3.2",
-        "vscode-nls": "^3.2.4",
+        "vscode-nls": "^4.1.1",
         "vue": "^2.5.16",
         "winston": "^3.2.1",
         "winston-transport": "^4.3.0",

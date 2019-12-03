@@ -6,24 +6,29 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import * as immutable from 'immutable'
-import * as os from 'os'
+import { Runtime } from 'aws-sdk/clients/lambda'
+import { Set } from 'immutable'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { samInitDocUrl } from '../../shared/constants'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
+import {
+    BrowseFolderQuickPickItem,
+    FolderQuickPickItem,
+    MultiStepWizard,
+    WizardContext,
+    WizardStep,
+    WorkspaceFolderQuickPickItem
+} from '../../shared/wizards/multiStepWizard'
 import * as lambdaRuntime from '../models/samLambdaRuntime'
-import { MultiStepWizard, WizardStep } from '../wizards/multiStepWizard'
 
 export interface CreateNewSamAppWizardContext {
-    readonly lambdaRuntimes: immutable.Set<lambdaRuntime.SamLambdaRuntime>
+    readonly lambdaRuntimes: Set<Runtime>
     readonly workspaceFolders: vscode.WorkspaceFolder[] | undefined
 
-    promptUserForRuntime(
-        currRuntime?: lambdaRuntime.SamLambdaRuntime
-    ): Promise<lambdaRuntime.SamLambdaRuntime | undefined>
+    promptUserForRuntime(currRuntime?: Runtime): Promise<Runtime | undefined>
 
     promptUserForLocation(): Promise<vscode.Uri | undefined>
 
@@ -32,20 +37,15 @@ export interface CreateNewSamAppWizardContext {
     showOpenDialog(options: vscode.OpenDialogOptions): Thenable<vscode.Uri[] | undefined>
 }
 
-export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
+export class DefaultCreateNewSamAppWizardContext extends WizardContext implements CreateNewSamAppWizardContext {
     public readonly lambdaRuntimes = lambdaRuntime.samLambdaRuntimes
-    public readonly showOpenDialog = vscode.window.showOpenDialog
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Documentation'))
 
-    public constructor() {}
-
-    public get workspaceFolders(): vscode.WorkspaceFolder[] | undefined {
-        return vscode.workspace.workspaceFolders
+    public constructor() {
+        super()
     }
 
-    public async promptUserForRuntime(
-        currRuntime?: lambdaRuntime.SamLambdaRuntime
-    ): Promise<lambdaRuntime.SamLambdaRuntime | undefined> {
+    public async promptUserForRuntime(currRuntime?: Runtime): Promise<Runtime | undefined> {
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
                 ignoreFocusOut: true,
@@ -60,9 +60,7 @@ export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizar
                     label: runtime,
                     alwaysShow: runtime === currRuntime,
                     description:
-                        runtime === currRuntime
-                            ? localize('AWS.samcli.wizard.selectedPreviously', 'Selected Previously')
-                            : ''
+                        runtime === currRuntime ? localize('AWS.wizard.selectedPreviously', 'Selected Previously') : ''
                 }))
         })
 
@@ -78,13 +76,21 @@ export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizar
         })
         const val = picker.verifySinglePickerOutput(choices)
 
-        return val ? (val.label as lambdaRuntime.SamLambdaRuntime) : undefined
+        return val ? (val.label as Runtime) : undefined
     }
 
     public async promptUserForLocation(): Promise<vscode.Uri | undefined> {
         const items: FolderQuickPickItem[] = (this.workspaceFolders || [])
             .map<FolderQuickPickItem>(f => new WorkspaceFolderQuickPickItem(f))
-            .concat([new BrowseFolderQuickPickItem(this)])
+            .concat([
+                new BrowseFolderQuickPickItem(
+                    this,
+                    localize(
+                        'AWS.samcli.initWizard.location.prompt',
+                        'The folder you select will be added to your VS Code workspace.'
+                    )
+                )
+            ])
 
         const quickPick = picker.createQuickPick({
             options: {
@@ -162,13 +168,13 @@ export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizar
 }
 
 export interface CreateNewSamAppWizardResponse {
-    runtime: lambdaRuntime.SamLambdaRuntime
+    runtime: Runtime
     location: vscode.Uri
     name: string
 }
 
 export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizardResponse> {
-    private runtime?: lambdaRuntime.SamLambdaRuntime
+    private runtime?: Runtime
     private location?: vscode.Uri
     private name?: string
 
@@ -208,65 +214,5 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
         this.name = await this.context.promptUserForName()
 
         return this.name ? undefined : this.LOCATION
-    }
-}
-
-export interface FolderQuickPickItem extends vscode.QuickPickItem {
-    getUri(): Thenable<vscode.Uri | undefined>
-}
-
-class WorkspaceFolderQuickPickItem implements FolderQuickPickItem {
-    public readonly label: string
-
-    public constructor(private readonly folder: vscode.WorkspaceFolder) {
-        this.label = folder.name
-    }
-
-    public async getUri(): Promise<vscode.Uri | undefined> {
-        return this.folder.uri
-    }
-}
-
-class BrowseFolderQuickPickItem implements FolderQuickPickItem {
-    public alwaysShow: boolean = true
-
-    public constructor(private readonly context: CreateNewSamAppWizardContext) {}
-
-    public get label(): string {
-        if (this.context.workspaceFolders && this.context.workspaceFolders.length > 0) {
-            return localize('AWS.samcli.initWizard.location.select.folder', 'Select a different folder...')
-        }
-
-        return localize(
-            'AWS.samcli.initWizard.location.select.folder.empty.workspace',
-            'There are no workspace folders open. Select a folder...'
-        )
-    }
-
-    public get detail(): string {
-        return localize(
-            'AWS.samcli.initWizard.location.select.folder.detail',
-            'The folder you select will be added to your VS Code workspace.'
-        )
-    }
-
-    public async getUri(): Promise<vscode.Uri | undefined> {
-        const workspaceFolders = this.context.workspaceFolders
-        const defaultUri =
-            !!workspaceFolders && workspaceFolders.length > 0 ? workspaceFolders[0].uri : vscode.Uri.file(os.homedir())
-
-        const result = await this.context.showOpenDialog({
-            defaultUri,
-            openLabel: localize('AWS.samcli.initWizard.name.browse.openLabel', 'Open'),
-            canSelectFiles: false,
-            canSelectFolders: true,
-            canSelectMany: false
-        })
-
-        if (!result || !result.length) {
-            return undefined
-        }
-
-        return result[0]
     }
 }

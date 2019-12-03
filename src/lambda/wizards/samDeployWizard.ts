@@ -15,10 +15,10 @@ import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { difference, filter, toArrayAsync } from '../../shared/utilities/collectionUtils'
+import { MultiStepWizard, WizardStep } from '../../shared/wizards/multiStepWizard'
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
 import { detectLocalTemplates } from '../local/detectLocalTemplates'
 import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
-import { MultiStepWizard, WizardStep } from './multiStepWizard'
 
 export interface SamDeployWizardResponse {
     parameterOverrides: Map<string, string>
@@ -174,8 +174,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         if (missingParameters.size < 1) {
             const prompt = localize(
                 'AWS.samcli.deploy.parameters.optionalPrompt.message',
-                'The template {0} contains parameters. ' +
-                    'Would you like to override the default values for these parameters?',
+                // prettier-ignore
+                'The template {0} contains parameters. Would you like to override the default values for these parameters?',
                 templateUri.fsPath
             )
             const responseYes = localize('AWS.samcli.deploy.parameters.optionalPrompt.responseYes', 'Yes')
@@ -214,9 +214,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         } else {
             const prompt = localize(
                 'AWS.samcli.deploy.parameters.mandatoryPrompt.message',
-                'The template {0} contains parameters without default values. ' +
-                    'In order to deploy, you must provide values for these parameters. ' +
-                    'Configure them now?',
+                // prettier-ignore
+                'The template {0} contains parameters without default values. In order to deploy, you must provide values for these parameters. Configure them now?',
                 templateUri.fsPath
             )
             const responseConfigure = localize(

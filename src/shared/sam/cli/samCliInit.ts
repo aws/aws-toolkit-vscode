@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { DependencyManager, SamLambdaRuntime } from '../../../lambda/models/samLambdaRuntime'
+import { Runtime } from 'aws-sdk/clients/lambda'
+import { DependencyManager } from '../../../lambda/models/samLambdaRuntime'
 import { SamCliContext } from './samCliContext'
 import { logAndThrowIfUnexpectedExitCode } from './samCliInvokerUtils'
 
 export interface SamCliInitArgs {
-    runtime: SamLambdaRuntime
+    runtime: Runtime
     location: string
     name: string
     dependencyManager: DependencyManager

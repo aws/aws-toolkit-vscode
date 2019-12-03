@@ -15,13 +15,12 @@ import { registerCommand } from '../telemetry/telemetryUtils'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { getChannelLogger, getDebugPort, localize } from '../utilities/vsCodeUtils'
 
+import { nodeJsRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLogger } from '../logger'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { CodeLensProviderParams, getInvokeCmdKey, getMetricDatum, makeCodeLenses } from './codeLensUtils'
 import { getHandlerRelativePath, LambdaLocalInvokeParams, LocalLambdaRunner } from './localLambdaRunner'
-
-const supportedNodeJsRuntimes: Set<string> = new Set<string>(['nodejs8.10', 'nodejs10.x', 'nodejs12.x'])
 
 async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
     const packageJsonPath: string | undefined = await findFileInParentPaths(path.dirname(filepath), 'package.json')
@@ -96,7 +95,7 @@ export function initialize({
             })
             const runtime = CloudFormation.getRuntime(resource)
 
-            if (!supportedNodeJsRuntimes.has(runtime)) {
+            if (!nodeJsRuntimes.has(runtime)) {
                 logger.error(
                     `Javascript local invoke on ${params.document.uri.fsPath} encountered` +
                         ` unsupported runtime ${runtime}`

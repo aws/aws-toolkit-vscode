@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 import { getLogger, Loggable, Logger, LogLevel } from '../logger'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
-export const localize: TemplateParser = nls.loadMessageBundle()
+export const localize = nls.loadMessageBundle()
 
 export interface TemplateParams {
     nlsKey: string
