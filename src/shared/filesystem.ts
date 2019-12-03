@@ -42,8 +42,7 @@ export async function mkdir(
     }
 }
 
-// Recursive delete without requiring a third-party library. This allows the script
-// to be run before `npm install`.
+// Recursive delete including files and folders
 export async function rmrf(path: string) {
     const stats = await fs.stat(path)
     if (stats.isFile()) {

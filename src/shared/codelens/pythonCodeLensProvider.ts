@@ -115,7 +115,7 @@ const makePythonDebugManifest = async (params: {
 }): Promise<string | undefined> => {
     let manifestText = ''
     const manfestPath = path.join(params.samProjectCodeRoot, 'requirements.txt')
-    if (fileExists(manfestPath)) {
+    if (await fileExists(manfestPath)) {
         manifestText = await readFileAsString(manfestPath)
     }
     getLogger().debug(`pythonCodeLensProvider.makePythonDebugManifest params: ${JSON.stringify(params, undefined, 2)}`)
