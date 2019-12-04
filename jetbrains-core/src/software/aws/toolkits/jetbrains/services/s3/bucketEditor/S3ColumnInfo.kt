@@ -29,7 +29,7 @@ open class S3ColumnInfo(columnTitle: String, val valueGetter: (S3VirtualFile) ->
 }
 
 class S3KeyColumnInfo(valueGetter: (S3VirtualFile) -> String?) :
-    S3ColumnInfo("Key", valueGetter) {
+    S3ColumnInfo("Name", valueGetter) {
 
     override fun valueOf(obj: Any): String? {
         val file = super.getVirtualFileFromNode(obj)

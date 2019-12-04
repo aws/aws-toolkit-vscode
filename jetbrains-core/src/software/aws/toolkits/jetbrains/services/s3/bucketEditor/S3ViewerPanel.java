@@ -31,7 +31,6 @@ import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.RowFilter;
 import javax.swing.SwingConstants;
-import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
@@ -49,8 +48,7 @@ import software.aws.toolkits.jetbrains.ui.tree.StructureTreeModel;
 public class S3ViewerPanel {
     private final int SCROLLPANE_SIZE = 11;
     private JPanel content;
-    private JPanel bucketName;
-    private JLabel name;
+    private JTextField name;
     private JLabel creationDate;
     private JTextField date;
     private JPanel mainPanel;
@@ -60,6 +58,7 @@ public class S3ViewerPanel {
     private JPanel paginationPanel;
     private JButton searchButton;
     private JTextField searchTextField;
+    private JLabel bucketName;
     private S3VirtualBucket bucketVirtual;
     private S3TreeTable treeTable;
     private AnActionButton uploadObjectButton;
@@ -70,10 +69,6 @@ public class S3ViewerPanel {
     private S3TreeTableModel model;
 
     public S3ViewerPanel(S3VirtualBucket bucketVirtual) {
-        TitledBorder border = new TitledBorder("Bucket Details");
-        border.setTitleJustification(TitledBorder.CENTER);
-        border.setTitlePosition(TitledBorder.TOP);
-        this.content.setBorder(border);
         this.bucketVirtual = bucketVirtual;
         this.name.setText(bucketVirtual.getVirtualBucketName());
         this.date.setText(bucketVirtual.formatDate(bucketVirtual.getS3Bucket().creationDate()));
@@ -82,10 +77,12 @@ public class S3ViewerPanel {
         this.searchTextField.setText("");
 
         this.arnText.setText("arn:aws:s3:::" + bucketVirtual.getVirtualBucketName());
-        this.bucketArn.setText("Bucket Arn:");
+        this.bucketArn.setText("Bucket ARN:");
+        this.bucketName.setText("Bucket Name:");
         this.creationDate.setText("Creation Date:");
         this.date.setEditable(false);
         this.arnText.setEditable(false);
+        this.name.setEditable(false);
         JPopupMenu menu = new JPopupMenu();
         Action copyAction = new AbstractAction("Copy") {
             @Override
@@ -108,11 +105,7 @@ public class S3ViewerPanel {
             ColumnInfo modified = new S3ColumnInfo("Last-Modified",
                                                    virtualFile -> virtualFile.formatDate(virtualFile.getFile().getLastModified()));
 
-            ColumnInfo eTag = new S3ColumnInfo("Etag",
-                                               virtualFile -> virtualFile.getFile().getETag().replace("\"", ""));
-
-
-            final ColumnInfo[] COLUMNS = new ColumnInfo[] {key, size, modified, eTag};
+            final ColumnInfo[] COLUMNS = new ColumnInfo[] {key, size, modified};
             createTreeTable(COLUMNS);
 
             DefaultActionGroup actionGroup = new DefaultActionGroup();
@@ -194,7 +187,7 @@ public class S3ViewerPanel {
         return content;
     }
 
-    public JLabel getName() {
+    public JTextField getName() {
         return name;
     }
 
@@ -212,23 +205,24 @@ public class S3ViewerPanel {
     private void searchAndSortTable() {
         TableRowSorter<TableModel> sorter = new TableRowSorter<TableModel>(treeTable.getModel());
         treeTable.setRowSorter(sorter);
-        searchButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                String text = searchTextField.getText();
-                if (text.isEmpty()) {
-                    s3Node.setPrev(S3KeyNode.START_SIZE);
-                    s3Node.setNext(Math.min(S3KeyNode.UPDATE_LIMIT, s3Node.getCurrSize()));
-                    sorter.setRowFilter(null);
-                } else {
-                    ApplicationManager.getApplication().executeOnPooledThread(() -> {
-                        s3Node.resetLimitsForSearch();
-                    });
-                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
-                }
-                sorter.setSortKeys(null);
-                treeTable.refresh();
-            }
-        });
+        searchButton.addActionListener(e -> search(sorter));
+        searchTextField.addActionListener(e -> search(sorter));
+    }
+
+    private void search(TableRowSorter<TableModel> sorter) {
+        String text = searchTextField.getText();
+        if (text.isEmpty()) {
+            s3Node.setPrev(S3KeyNode.START_SIZE);
+            s3Node.setNext(Math.min(S3KeyNode.UPDATE_LIMIT, s3Node.getCurrSize()));
+            sorter.setRowFilter(null);
+        } else {
+            ApplicationManager.getApplication().executeOnPooledThread(() -> {
+                s3Node.resetLimitsForSearch();
+            });
+            sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
+        }
+        sorter.setSortKeys(null);
+        treeTable.refresh();
     }
 
     private void clearSelectionOnWhiteSpace() {
