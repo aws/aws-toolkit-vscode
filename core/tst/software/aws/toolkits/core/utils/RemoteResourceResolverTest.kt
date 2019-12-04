@@ -9,12 +9,7 @@ import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
-import org.hamcrest.CoreMatchers.equalTo
-import org.hamcrest.Description
-import org.hamcrest.Matcher
-import org.hamcrest.MatcherAssert.assertThat
-import org.hamcrest.Matchers.hasSize
-import org.hamcrest.TypeSafeMatcher
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -48,10 +43,10 @@ class RemoteResourceResolverTest {
         val firstCall = sut.resolve(resource).toCompletableFuture().get()
         val secondCall = sut.resolve(resource).toCompletableFuture().get()
 
-        assertThat(firstCall, equalTo(secondCall))
-        assertThat(firstCall, containsData("data"))
+        assertThat(firstCall).isEqualTo(secondCall)
+        assertThat(firstCall).hasContent("data")
         verify(urlFetcher).fetch(eq(PRIMARY_URL), any())
-        assertThat(Files.list(cachePath).toList(), hasSize(1))
+        assertThat(Files.list(cachePath).use { it.toList() }).hasSize(1)
     }
 
     @Test
@@ -68,8 +63,8 @@ class RemoteResourceResolverTest {
         Thread.sleep(100)
         val secondCall = sut.resolve(resource).toCompletableFuture().get()
 
-        assertThat(firstCall, equalTo(secondCall))
-        assertThat(secondCall, containsData("second"))
+        assertThat(firstCall).isEqualTo(secondCall)
+        assertThat(secondCall).hasContent("second")
         verify(urlFetcher, times(2)).fetch(eq(PRIMARY_URL), any())
     }
 
@@ -86,8 +81,8 @@ class RemoteResourceResolverTest {
         val firstCall = sut.resolve(resource).toCompletableFuture().get()
         val secondCall = sut.resolve(resource).toCompletableFuture().get()
 
-        assertThat(firstCall, equalTo(secondCall))
-        assertThat(firstCall, containsData("data"))
+        assertThat(firstCall).isEqualTo(secondCall)
+        assertThat(firstCall).hasContent("data")
     }
 
     @Test
@@ -103,7 +98,7 @@ class RemoteResourceResolverTest {
         val resource = resource(initialValue = initialValue)
 
         val result = sut.resolve(resource).toCompletableFuture().get()
-        assertThat(result, containsData("initialValue"))
+        assertThat(result).hasContent("initialValue")
     }
 
     @Test(expected = RuntimeException::class)
@@ -127,7 +122,7 @@ class RemoteResourceResolverTest {
 
         val sut = DefaultRemoteResourceResolver(urlFetcher, tempPath.newFolder().toPath(), immediateExecutor)
 
-        assertThat(sut.resolve(resource(urls = listOf(PRIMARY_URL, SECONDARY_URL))).toCompletableFuture().get(), containsData("data"))
+        assertThat(sut.resolve(resource(urls = listOf(PRIMARY_URL, SECONDARY_URL))).toCompletableFuture().get()).hasContent("data")
     }
 
     private companion object {
@@ -141,29 +136,6 @@ class RemoteResourceResolverTest {
             override val name: String = name
             override val ttl: Duration? = ttl
             override val initialValue = initialValue?.let { { it } }
-        }
-
-        fun containsData(data: String): Matcher<Path> = object : TypeSafeMatcher<Path>() {
-            override fun describeTo(description: Description?) {
-                description?.appendText("file containing '$data'")
-            }
-
-            override fun matchesSafely(item: Path?): Boolean {
-                val path = item ?: return false
-                return path.readText() == data
-            }
-
-            override fun describeMismatchSafely(item: Path?, mismatchDescription: Description?) {
-                if (item == null) {
-                    mismatchDescription?.appendText("was null")
-                } else {
-                    if (item.exists()) {
-                        mismatchDescription?.appendText("was file containing '${item.readText()}'")
-                    } else {
-                        mismatchDescription?.appendText("file $item doesn't exist")
-                    }
-                }
-            }
         }
 
         fun writeDataToFile(data: String): (InvocationOnMock) -> Unit = { invocation ->

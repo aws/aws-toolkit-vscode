@@ -1,8 +1,6 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-@file:Suppress("DEPRECATION") // TODO: Remove PsiDependentIndex when we drop < 192 FIX_WHEN_MIN_IS_192
-
 package software.aws.toolkits.jetbrains.services.cloudformation
 
 import com.intellij.openapi.project.Project
@@ -15,9 +13,7 @@ import com.intellij.util.indexing.DefaultFileTypeSpecificInputFilter
 import com.intellij.util.indexing.FileBasedIndex
 import com.intellij.util.indexing.FileBasedIndexExtension
 import com.intellij.util.indexing.FileContent
-import com.intellij.util.indexing.FileContentImpl
 import com.intellij.util.indexing.ID
-import com.intellij.util.indexing.PsiDependentIndex
 import com.intellij.util.io.DataExternalizer
 import com.intellij.util.io.EnumeratorStringDescriptor
 import com.intellij.util.io.KeyDescriptor
@@ -27,7 +23,7 @@ import software.aws.toolkits.jetbrains.services.cloudformation.yaml.YamlCloudFor
 import java.io.DataInput
 import java.io.DataOutput
 
-class CloudFormationTemplateIndex : FileBasedIndexExtension<String, MutableList<IndexedResource>>(), PsiDependentIndex {
+class CloudFormationTemplateIndex : FileBasedIndexExtension<String, MutableList<IndexedResource>>() {
     private val fileFilter by lazy {
         val supportedFiles = arrayOf(YAMLLanguage.INSTANCE.associatedFileType)
 
@@ -57,7 +53,7 @@ class CloudFormationTemplateIndex : FileBasedIndexExtension<String, MutableList<
     override fun getIndexer(): DataIndexer<String, MutableList<IndexedResource>, FileContent> = DataIndexer { fileContent ->
         val indexedResources = mutableMapOf<String, MutableList<IndexedResource>>()
 
-        (fileContent as FileContentImpl).psiFileForPsiDependentIndex.acceptNode(object : PsiElementVisitor() {
+        fileContent.psiFile.acceptNode(object : PsiElementVisitor() {
             override fun visitElement(element: PsiElement?) {
                 super.visitElement(element)
                 element?.run {

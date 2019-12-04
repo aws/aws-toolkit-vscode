@@ -6,9 +6,7 @@ package software.aws.toolkits.core.lambda
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
-import org.hamcrest.MatcherAssert.assertThat
-import org.hamcrest.Matchers.equalTo
-import org.hamcrest.Matchers.hasSize
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -65,15 +63,15 @@ class LambdaSampleEventProviderTest {
 
         val samples = sut.get().toCompletableFuture().get()
 
-        assertThat(samples, hasSize(2))
+        assertThat(samples).hasSize(2)
 
         val first = samples[0]
-        assertThat(first.name, equalTo("First Sample"))
-        assertThat(first.content.toCompletableFuture().get(), equalTo(firstContent))
+        assertThat(first.name).isEqualTo("First Sample")
+        assertThat(first.content.toCompletableFuture().get()).isEqualTo(firstContent)
 
         val second = samples[1]
-        assertThat(second.name, equalTo("Second Sample"))
-        assertThat(second.content.toCompletableFuture().get(), equalTo(secondContent))
+        assertThat(second.name).isEqualTo("Second Sample")
+        assertThat(second.content.toCompletableFuture().get()).isEqualTo(secondContent)
     }
 
     @Test

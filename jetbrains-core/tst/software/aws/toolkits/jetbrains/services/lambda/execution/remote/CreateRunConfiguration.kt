@@ -7,7 +7,7 @@ import com.intellij.execution.RunManager
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
-import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
 
 fun createRunConfiguration(
     project: Project,
@@ -18,7 +18,7 @@ fun createRunConfiguration(
     functionName: String? = "DummyFunction"
 ): RemoteLambdaRunConfiguration {
     val runManager = RunManager.getInstance(project)
-    val factory = LambdaRunConfiguration.getInstance()
+    val factory = LambdaRunConfigurationType.getInstance()
         .configurationFactories
         .first { it is RemoteLambdaRunConfigurationFactory }
     val runConfigurationAndSettings = runManager.createConfiguration("Test", factory)

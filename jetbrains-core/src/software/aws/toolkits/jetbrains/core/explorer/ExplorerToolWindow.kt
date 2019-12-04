@@ -5,6 +5,7 @@
 package software.aws.toolkits.jetbrains.core.explorer
 
 import com.intellij.execution.Location
+import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ide.util.treeView.NodeRenderer
 import com.intellij.openapi.actionSystem.ActionGroup
@@ -13,6 +14,7 @@ import com.intellij.openapi.actionSystem.DataKey
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.ex.ActionManagerEx
 import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.DoubleClickListener
@@ -22,20 +24,20 @@ import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TreeUIHelper
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.treeStructure.Tree
-import com.intellij.util.ui.UIUtil
 import software.aws.toolkits.jetbrains.components.telemetry.ToolkitActionPlaces
 import software.aws.toolkits.jetbrains.core.SettingsSelector
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier.AccountSettingsEvent
+import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_SERVICE_NODE
-import software.aws.toolkits.jetbrains.core.explorer.actions.CopyArn
+import software.aws.toolkits.jetbrains.core.explorer.actions.CopyArnAction
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
-import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
-import software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaLocation
+import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceActionNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceLocationNode
 import software.aws.toolkits.jetbrains.ui.tree.AsyncTreeModel
 import software.aws.toolkits.jetbrains.ui.tree.StructureTreeModel
 import software.aws.toolkits.resources.message
@@ -53,10 +55,7 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
     private val treePanelWrapper: Wrapper = Wrapper()
     private val errorPanel: JPanel
     private val awsTreeModel = AwsExplorerTreeStructure(project)
-    private val structureTreeModel = StructureTreeModel(
-        awsTreeModel,
-        compareBy(String.CASE_INSENSITIVE_ORDER) { it.toString() },
-        project)
+    private val structureTreeModel = StructureTreeModel(awsTreeModel, project)
     private var awsTree = createTree(AsyncTreeModel(structureTreeModel, true, project))
     private val awsTreePanel = ScrollPaneFactory.createScrollPane(awsTree)
     private val settingsSelector by lazy {
@@ -74,31 +73,44 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
 
         project.messageBus.connect().subscribe(ProjectAccountSettingsManager.ACCOUNT_SETTINGS_CHANGED, this)
 
-        treePanelWrapper.setContent(errorPanel)
+        load()
     }
 
     override fun settingsChanged(event: AccountSettingsEvent) {
         if (!event.isLoading) {
-            runInEdt {
-                if (!projectAccountSettingsManager.hasActiveCredentials()) {
-                    treePanelWrapper.setContent(errorPanel)
-                } else {
-                    invalidateTree()
-                    treePanelWrapper.setContent(awsTreePanel)
-                }
+            load()
+        }
+    }
+
+    private fun load() {
+        runInEdt {
+            if (!projectAccountSettingsManager.hasActiveCredentials()) {
+                treePanelWrapper.setContent(errorPanel)
+            } else {
+                invalidateTree()
+                treePanelWrapper.setContent(awsTreePanel)
             }
         }
     }
 
-    internal fun invalidateTree() {
-        structureTreeModel.invalidate()
+    /**
+     * Invalidates tree nodes, causing IntelliJ to redraw the tree
+     * Provide an AbstractTreeNode in order to redraw the tree from that point downwards
+     * Otherwise redraws (and collapses) the entire tree
+     *
+     * @param selectedNode AbstractTreeNode to redraw the tree from
+     */
+    fun invalidateTree(selectedNode: AbstractTreeNode<*>? = null) {
+        if (selectedNode != null) {
+            structureTreeModel.invalidate(selectedNode, true)
+        } else {
+            structureTreeModel.invalidate()
+        }
     }
 
     private fun createTree(model: TreeModel): Tree {
         val awsTree = Tree(model)
         TreeUIHelper.getInstance().installTreeSpeedSearch(awsTree)
-        @Suppress("DEPRECATION") // TODO: Remove when we drop < 192 FIX_WHEN_MIN_IS_192
-        UIUtil.setLineStyleAngled(awsTree)
         awsTree.isRootVisible = false
         awsTree.autoscrolls = true
         awsTree.cellRenderer = AwsTreeCellRenderer()
@@ -106,8 +118,7 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
         object : DoubleClickListener() {
             override fun onDoubleClick(event: MouseEvent): Boolean {
                 val path = awsTree.getClosestPathForLocation(event.x, event.y)
-                val selected = path?.lastPathComponent as? DefaultMutableTreeNode
-                (selected?.userObject as? AwsExplorerNode<*>)?.onDoubleClick()
+                ((path?.lastPathComponent as? DefaultMutableTreeNode)?.userObject as? AwsExplorerNode<*>)?.onDoubleClick()
                 return true
             }
         }.installOn(awsTree)
@@ -118,15 +129,9 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
                 // All nodes must be the same type (e.g. all S3 buckets, or a service node)
                 val explorerNode = getSelectedNodesSameType<AwsExplorerNode<*>>()?.get(0) ?: return
                 val additionalActions = mutableListOf<AnAction>()
-                val actionGroupName = when (explorerNode) {
-                    is AwsExplorerServiceRootNode ->
-                        "aws.toolkit.explorer.${explorerNode.serviceId}"
-                    is AwsExplorerResourceNode<*> -> {
-                        additionalActions.add(CopyArn(explorerNode.resourceArn()))
-                        val suffix = if (explorerNode.immutable) ".immutable" else ""
-                        "aws.toolkit.explorer.${explorerNode.serviceId}.${explorerNode.resourceType()}$suffix"
-                    }
-                    else -> null
+                val actionGroupName = (explorerNode as? ResourceActionNode)?.actionGroupName()
+                if (explorerNode is AwsExplorerResourceNode<*>) {
+                    additionalActions.add(CopyArnAction())
                 }
                 val actionGroup = DefaultActionGroup()
                 (actionGroupName?.let { actionManager.getAction(it) } as? ActionGroup)?.let { actionGroup.addAll(it) }
@@ -142,24 +147,21 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
         return awsTree
     }
 
-    override fun getData(dataId: String): Any? {
-        if (SELECTED_RESOURCE_NODES.`is`(dataId)) {
-            return getSelectedNodesSameType<AwsExplorerResourceNode<*>>()
-        }
-        if (SELECTED_SERVICE_NODE.`is`(dataId)) {
-            return getSelectedServiceNode()
-        }
-        if (Location.DATA_KEY.`is`(dataId)) {
-            val lambdas = getSelectedNodesSameType<LambdaFunctionNode>()
-            if (lambdas?.size != 1) {
-                return null
+    override fun getData(dataId: String) =
+        when {
+            SELECTED_NODES.`is`(dataId) -> getSelectedNodes<AwsExplorerNode<*>>()
+            SELECTED_RESOURCE_NODES.`is`(dataId) -> getSelectedNodesSameType<AwsExplorerResourceNode<*>>()
+            SELECTED_SERVICE_NODE.`is`(dataId) -> getSelectedServiceNode()
+            Location.DATA_KEY.`is`(dataId) -> {
+                val resourceNodes = getSelectedNodesSameType<AwsExplorerNode<*>>()
+                if (resourceNodes?.size != 1) {
+                    null
+                } else {
+                    (resourceNodes.first() as? ResourceLocationNode)?.location()
+                }
             }
-
-            return RemoteLambdaLocation(project, lambdas.first().value)
+            else -> super.getData(dataId)
         }
-
-        return super.getData(dataId)
-    }
 
     private fun getSelectedNode(): AwsExplorerNode<*>? {
         val nodes = getSelectedNodes<AwsExplorerNode<*>>()
@@ -209,6 +211,10 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
             }
         }
     }
+
+    companion object {
+        fun getInstance(project: Project): ExplorerToolWindow = ServiceManager.getService(project, ExplorerToolWindow::class.java)
+    }
 }
 
 object ExplorerDataKeys {
@@ -220,4 +226,8 @@ object ExplorerDataKeys {
      * Returns the selected Service node. getData() will return null if more than one item is selected
      */
     val SELECTED_SERVICE_NODE = DataKey.create<AwsExplorerNode<*>>("aws.explorer.serviceNode")
+    /**
+     * Returns all the explorer nodes. getData() will return null if not all selected items are same type
+     */
+    val SELECTED_NODES = DataKey.create<List<AwsExplorerNode<*>>>("aws.explorer.explorerNodes")
 }

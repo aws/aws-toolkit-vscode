@@ -1,0 +1,27 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "SomeAwesomeSchema"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Some Awesome Schema" : {
+        "type" : "object",
+        "required" : [ "foo", "bar", "baz" ],
+        "properties" : {
+          "foo" : {
+            "type" : "string"
+          },
+          "bar" : {
+            "type" : "string"
+          },
+          "baz" : {
+            "type" : "string"
+          }
+        }
+      }
+    }
+  }
+}

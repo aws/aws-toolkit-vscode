@@ -13,9 +13,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.zipEntries
+import software.aws.toolkits.jetbrains.services.PathMapping
 import software.aws.toolkits.jetbrains.services.lambda.BuiltLambda
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
-import software.aws.toolkits.jetbrains.services.lambda.execution.PathMapping
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.settings.SamSettings
 import java.nio.file.Files

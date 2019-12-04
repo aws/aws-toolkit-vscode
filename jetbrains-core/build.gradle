@@ -5,23 +5,30 @@ apply plugin: 'org.jetbrains.intellij'
 
 intellij {
     def rootIntelliJTask = rootProject.intellij
-    version ideVersion("IC")
+    version ideSdkVersion("IC")
     pluginName rootIntelliJTask.pluginName
     updateSinceUntilBuild rootIntelliJTask.updateSinceUntilBuild
     downloadSources = rootIntelliJTask.downloadSources
     plugins = idePlugins("IC")
 }
 
-publishPlugin.enabled = false
-buildSearchableOptions.enabled = false
+patchPluginXml {
+    sinceBuild ideSinceVersion()
+    untilBuild ideUntilVersion()
+}
 
 configurations {
     testArtifacts
 }
 
+test {
+    systemProperty("log.dir", "${org.jetbrains.intellij.Utils.systemDir(intellij.sandboxDirectory, true)}/logs")
+}
+
 task testJar (type: Jar) {
     baseName = "${project.name}-test"
     from sourceSets.test.output
+    from sourceSets.integrationTest.output
 }
 
 task pluginChangeLog(type: GenerateChangeLog) {
@@ -56,7 +63,22 @@ dependencies {
     compile("software.amazon.awssdk:iam:$awsSdkVersion") {
         exclude group: 'org.slf4j'
     }
+    compile("software.amazon.awssdk:ecs:$awsSdkVersion") {
+        exclude group: 'org.slf4j'
+    }
     compile("software.amazon.awssdk:cloudformation:$awsSdkVersion") {
+        exclude group: 'org.slf4j'
+    }
+    //TODO: Temporary during Schemas development until Schemas Service API/SDK ready
+//    compile("software.amazon.awssdk:schemas:$awsSdkVersion") {
+//        exclude group: 'org.slf4j'
+//    }
+    // TODO: remove after Schemas service is launched and prod-accessible
+    compile(project(":schemas-client")) {
+      exclude group: 'org.slf4j'
+    }
+
+    compile("software.amazon.awssdk:cloudwatchlogs:$awsSdkVersion") {
         exclude group: 'org.slf4j'
     }
     compile("software.amazon.awssdk:apache-client:$awsSdkVersion") {

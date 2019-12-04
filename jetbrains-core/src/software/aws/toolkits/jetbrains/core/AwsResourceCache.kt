@@ -3,10 +3,12 @@
 
 package software.aws.toolkits.jetbrains.core
 
-import com.google.common.cache.CacheBuilder
+import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
+import com.intellij.util.Alarm
+import com.intellij.util.AlarmFactory
 import software.amazon.awssdk.core.SdkClient
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
@@ -15,11 +17,16 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
+import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
+import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
+import software.aws.toolkits.jetbrains.core.executables.ExecutableType
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
@@ -151,6 +158,12 @@ sealed class Resource<T> {
     }
 }
 
+fun <Input, Output> Resource<out Iterable<Input>>.map(transform: (Input) -> Output): Resource<List<Output>> = Resource.View(this) { map(transform) }
+
+fun <T> Resource<out Iterable<T>>.filter(predicate: (T) -> Boolean): Resource<List<T>> = Resource.View(this) { filter(predicate) }
+
+fun <T> Resource<out Iterable<T>>.find(predicate: (T) -> Boolean): Resource<T?> = Resource.View(this) { find(predicate) }
+
 class ClientBackedCachedResource<ReturnType, ClientType : SdkClient>(
     private val sdkClientClass: KClass<ClientType>,
     override val id: String,
@@ -159,26 +172,63 @@ class ClientBackedCachedResource<ReturnType, ClientType : SdkClient>(
 ) : Resource.Cached<ReturnType>() {
 
     constructor(sdkClientClass: KClass<ClientType>, id: String, fetchCall: ClientType.() -> ReturnType) : this(sdkClientClass, id, null, fetchCall)
+
     override fun fetch(project: Project, region: AwsRegion, credentials: ToolkitCredentialsProvider): ReturnType {
         val client = AwsClientManager.getInstance(project).getClient(sdkClientClass, credentials, region)
         return fetchCall(client)
     }
 
     override fun expiry(): Duration = expiry ?: super.expiry()
+    override fun toString(): String = "ClientBackedCachedResource(id='$id')"
 }
 
-class DefaultAwsResourceCache(private val project: Project, private val clock: Clock, maximumCacheEntries: Long) :
-    AwsResourceCache, ToolkitCredentialsChangeListener {
+class ExecutableBackedCacheResource<ReturnType, ExecType : ExecutableType<*>>(
+    private val executableTypeClass: KClass<ExecType>,
+    override val id: String,
+    private val expiry: Duration? = null,
+    private val fetchCall: GeneralCommandLine.() -> ReturnType
+) : Resource.Cached<ReturnType>() {
+
+    override fun fetch(project: Project, region: AwsRegion, credentials: ToolkitCredentialsProvider): ReturnType {
+        val executableType = ExecutableType.getExecutable(executableTypeClass.java)
+
+        val executable = ExecutableManager.getInstance().getExecutableIfPresent(executableType).let {
+            when (it) {
+                is ExecutableInstance.Executable -> it
+                is ExecutableInstance.InvalidExecutable -> throw IllegalStateException(it.validationError)
+                is ExecutableInstance.UnresolvedExecutable -> throw IllegalStateException(it.resolutionError)
+            }
+        }
+
+        return fetchCall(
+            executable.getCommandLine()
+                .withEnvironment(region.toEnvironmentVariables())
+                .withEnvironment(credentials.resolveCredentials().toEnvironmentVariables())
+        )
+    }
+
+    override fun expiry(): Duration = expiry ?: super.expiry()
+    override fun toString(): String = "ExecutableBackedCacheResource(id='$id')"
+}
+
+class DefaultAwsResourceCache(
+    private val project: Project,
+    private val clock: Clock,
+    private val maximumCacheEntries: Int,
+    private val maintenanceInterval: Duration
+) : AwsResourceCache, ToolkitCredentialsChangeListener {
 
     @Suppress("unused")
-    constructor(project: Project) : this(project, Clock.systemDefaultZone(), MAXIMUM_CACHE_ENTRIES)
+    constructor(project: Project) : this(project, Clock.systemDefaultZone(), MAXIMUM_CACHE_ENTRIES, DEFAULT_MAINTENANCE_INTERVAL)
+
+    private val cache = ConcurrentHashMap<CacheKey, Entry<*>>()
+    private val accountSettings by lazy { ProjectAccountSettingsManager.getInstance(project) }
+    private val alarm = AlarmFactory.getInstance().create(Alarm.ThreadToUse.POOLED_THREAD, project)
 
     init {
         ApplicationManager.getApplication().messageBus.connect().subscribe(CredentialManager.CREDENTIALS_CHANGED, this)
+        scheduleCacheMaintenance()
     }
-
-    private val cache = CacheBuilder.newBuilder().maximumSize(maximumCacheEntries).build<CacheKey, Entry<*>>().asMap()
-    private val accountSettings = ProjectAccountSettingsManager.getInstance(project)
 
     override fun <T> getResource(resource: Resource<T>, useStale: Boolean, forceFetch: Boolean) =
         getResource(resource, accountSettings.activeRegion, accountSettings.activeCredentialProvider, useStale, forceFetch)
@@ -190,23 +240,44 @@ class DefaultAwsResourceCache(private val project: Project, private val clock: C
         useStale: Boolean,
         forceFetch: Boolean
     ): CompletionStage<T> = when (resource) {
-        is Resource.View<*, T> ->
-            getResource(resource.underlying, region, credentialProvider, useStale, forceFetch).thenApply { resource.doMap(it as Any) }
-        is Resource.Cached<T> -> {
-            val future = CompletableFuture<T>()
-            val context = Context(resource, region, credentialProvider, useStale, forceFetch)
-            ApplicationManager.getApplication().executeOnPooledThread {
-                try {
-                    @Suppress("UNCHECKED_CAST")
-                    val result = cache.compute(context.cacheKey) { _, value ->
-                        fetchIfNeeded(context, value as Entry<T>?)
-                    } as Entry<T>
-                    future.complete(result.value)
-                } catch (e: Exception) {
-                    future.completeExceptionally(e)
+        is Resource.View<*, T> -> getResource(resource.underlying, region, credentialProvider, useStale, forceFetch).thenApply { resource.doMap(it as Any) }
+        is Resource.Cached<T> -> Context(resource, region, credentialProvider, useStale, forceFetch).also { getCachedResource(it) }.future
+    }
+
+    private fun <T> getCachedResource(context: Context<T>) {
+        ApplicationManager.getApplication().executeOnPooledThread {
+            try {
+                @Suppress("UNCHECKED_CAST")
+                val result = cache.compute(context.cacheKey) { _, value ->
+                    fetchIfNeeded(context, value as Entry<T>?)
+                } as Entry<T>
+                context.future.complete(result.value)
+            } catch (e: Throwable) {
+                context.future.completeExceptionally(e)
+            }
+        }
+    }
+
+    private fun runCacheMaintenance() {
+        try {
+            var totalWeight = 0
+            val entries = cache.entries.asSequence().onEach { totalWeight += it.value.weight }.toList()
+            var exceededWeight = totalWeight - maximumCacheEntries
+            if (exceededWeight <= 0) return
+            entries.sortedBy { it.value.expiry }.forEach { (key, value) ->
+                if (exceededWeight <= 0) return@runCacheMaintenance
+                if (cache.computeRemoveIf(key) { it === value }) {
+                    exceededWeight -= value.weight
                 }
             }
-            future
+        } finally {
+            scheduleCacheMaintenance()
+        }
+    }
+
+    private fun scheduleCacheMaintenance() {
+        if (!alarm.isDisposed) {
+            alarm.addRequest(this::runCacheMaintenance, maintenanceInterval.toMillis())
         }
     }
 
@@ -271,7 +342,8 @@ class DefaultAwsResourceCache(private val project: Project, private val clock: C
 
     companion object {
         private val LOG = getLogger<DefaultAwsResourceCache>()
-        private const val MAXIMUM_CACHE_ENTRIES = 100L
+        private const val MAXIMUM_CACHE_ENTRIES = 1000
+        private val DEFAULT_MAINTENANCE_INTERVAL: Duration = Duration.ofMinutes(5)
 
         private data class CacheKey(val resourceId: String, val regionId: String, val credentialsId: String)
 
@@ -283,13 +355,35 @@ class DefaultAwsResourceCache(private val project: Project, private val clock: C
             val forceFetch: Boolean
         ) {
             val cacheKey = CacheKey(resource.id, region.id, credentials.id)
+            val future = CompletableFuture<T>()
         }
 
-        private class Entry<T>(val expiry: Instant, val value: T)
+        private class Entry<T>(val expiry: Instant, val value: T) {
+            val weight = when (value) {
+                is Collection<*> -> value.size
+                else -> 1
+            }
+        }
 
         private fun <T> ConcurrentMap<CacheKey, Entry<*>>.getTyped(key: CacheKey) = this[key]?.let {
             @Suppress("UNCHECKED_CAST")
             it as Entry<T>
+        }
+
+        /**
+         * Atomically apply a [predicate] to the value at [key] (if it exists) and remove if matched.
+         *
+         * @return - true if removal occurred else false
+         */
+        private fun <K, V> ConcurrentHashMap<K, V>.computeRemoveIf(key: K, predicate: (V) -> Boolean): Boolean {
+            var removed = false
+            computeIfPresent(key) { _, v ->
+                if (predicate(v)) {
+                    removed = true
+                    null
+                } else v
+            }
+            return removed
         }
     }
 }

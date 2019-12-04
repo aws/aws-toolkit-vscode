@@ -4,12 +4,18 @@
 package software.aws.toolkits.jetbrains.services.lambda.execution.local
 
 import com.intellij.execution.RunManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
-import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamVersionCache
+import software.aws.toolkits.jetbrains.services.lambda.validation.LambdaHandlerValidator
+import java.security.InvalidParameterException
+
+private const val TEST_EVALUATE_BLOCKING_TIMEOUT_MS = 2000
 
 fun createTemplateRunConfiguration(
     project: Project,
@@ -91,9 +97,19 @@ private fun createBaseRunConfiguration(
 
 fun samRunConfiguration(project: Project): LocalLambdaRunConfiguration {
     val runManager = RunManager.getInstance(project)
-    val factory = LambdaRunConfiguration.getInstance().configurationFactories.first { it is LocalLambdaRunConfigurationFactory }
+    val factory = LambdaRunConfigurationType.getInstance().configurationFactories.first { it is LocalLambdaRunConfigurationFactory }
     val runConfigurationAndSettings = runManager.createConfiguration("Test", factory)
     val runConfiguration = runConfigurationAndSettings.configuration as LocalLambdaRunConfiguration
     runManager.addConfiguration(runConfigurationAndSettings)
     return runConfiguration
+}
+
+fun preWarmSamVersionCache(path: String?, timeoutMs: Int = TEST_EVALUATE_BLOCKING_TIMEOUT_MS) {
+    path ?: throw InvalidParameterException("Test SAM CLI executable path is not set")
+    SamVersionCache.evaluateBlocking(path, timeoutMs)
+}
+
+fun preWarmLambdaHandlerValidation(project: Project, runtime: Runtime, handler: String, timeoutMs: Int = TEST_EVALUATE_BLOCKING_TIMEOUT_MS) {
+    val handlerValidator = project.service<LambdaHandlerValidator>()
+    handlerValidator.evaluateBlocking(LambdaHandlerValidator.LambdaEntry(project, runtime, handler), timeoutMs)
 }

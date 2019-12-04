@@ -1,0 +1,7 @@
+/NuGet.Config
+
+# Generated files
+*Generated.kt
+
+# Rider tests tmp files
+**/gold/*.tmp

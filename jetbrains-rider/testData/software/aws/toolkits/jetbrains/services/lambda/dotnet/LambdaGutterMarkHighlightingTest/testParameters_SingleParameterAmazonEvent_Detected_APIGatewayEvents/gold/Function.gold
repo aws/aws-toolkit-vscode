@@ -1,0 +1,15 @@
+using Amazon.Lambda.Core;
+using Amazon.Lambda.APIGatewayEvents;
+
+[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
+
+namespace HelloWorld
+{
+    public class Function
+    {
+        public APIGatewayProxyResponse <AWS_LAMBDA_RUN_METHOD_GUTTER_MARK>FunctionHandler</AWS_LAMBDA_RUN_METHOD_GUTTER_MARK>(APIGatewayProxyRequest apigProxyEvent)
+        {
+            return new APIGatewayProxyResponse();
+        }
+    }
+}

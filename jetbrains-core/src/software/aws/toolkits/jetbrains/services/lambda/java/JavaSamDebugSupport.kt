@@ -20,9 +20,9 @@ class JavaSamDebugSupport : SamDebugSupport {
     override fun createDebugProcess(
         environment: ExecutionEnvironment,
         state: SamRunningState,
-        debugPort: Int
+        debugPorts: List<Int>
     ): XDebugProcessStarter? {
-        val connection = RemoteConnection(true, "localhost", debugPort.toString(), false)
+        val connection = RemoteConnection(true, "localhost", debugPorts.first().toString(), false)
         val debugEnvironment = DefaultDebugEnvironment(environment, state, connection, true)
         val debuggerManager = DebuggerManagerEx.getInstanceEx(environment.project)
         val debuggerSession = debuggerManager.attachVirtualMachine(debugEnvironment) ?: return null

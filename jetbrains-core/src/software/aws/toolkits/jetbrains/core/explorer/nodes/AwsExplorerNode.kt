@@ -9,6 +9,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.ui.SimpleTextAttributes
 import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
+import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerNodeProcessor
 import javax.swing.Icon
 
 /**
@@ -17,9 +18,9 @@ import javax.swing.Icon
 abstract class AwsExplorerNode<T>(val nodeProject: Project, value: T, private val awsIcon: Icon?) :
     AbstractTreeNode<T>(nodeProject, value) {
 
-    protected val region = nodeProject.activeRegion()
+    protected val region by lazy { nodeProject.activeRegion() }
 
-    protected val credentialProvider = nodeProject.activeCredentialProvider()
+    protected val credentialProvider by lazy { nodeProject.activeCredentialProvider() }
 
     override fun update(presentation: PresentationData) {
         presentation.let {
@@ -28,6 +29,15 @@ abstract class AwsExplorerNode<T>(val nodeProject: Project, value: T, private va
             statusText()?.let { status ->
                 it.addText(" [$status]", SimpleTextAttributes.GRAY_ATTRIBUTES)
             }
+        }
+    }
+
+    final override fun postprocess(presentation: PresentationData) {
+        AwsExplorerNodeProcessor.EP_NAME.extensionList.forEach {
+            it.postProcessPresentation(
+                this,
+                presentation
+            )
         }
     }
 

@@ -1,0 +1,35 @@
+RiderSdkPackageVersion.props
+
+# Generated files
+*Generated.cs
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+*_i.c
+*_p.c
+*.ilk
+*.meta
+*.obj
+*.pch
+*.pdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.vspscc
+.builds
+*.dotCover
+*.sln.cache
+
+# Others
+[Bb]in
+[Oo]bj
+
+packages/*
+!src/packages/repositories.config
+*.nupkg

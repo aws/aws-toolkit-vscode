@@ -7,6 +7,7 @@ package software.aws.toolkits.jetbrains.utils.ui
 import com.intellij.lang.Language
 import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.command.CommandProcessor
+import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.ClickListener
 import com.intellij.ui.EditorTextField
 import com.intellij.ui.JBColor
@@ -55,13 +56,19 @@ fun JComponent.addQuickSelect(button: AbstractButton, postAction: Runnable? = nu
 }
 
 fun <T> ListModel<T>.find(predicate: (T) -> Boolean): T? {
-    for (i in 0..(size - 1)) {
-        val element = getElementAt(i)
-        if (predicate(element)) {
+    for (i in 0 until size) {
+        val element = getElementAt(i)?.takeIf(predicate)
+        if (element != null) {
             return element
         }
     }
     return null
+}
+
+// Error messages do not work on a disabled component. May be a JetBrains bug?
+fun JComponent.validationInfo(message: String) = when {
+    isEnabled -> ValidationInfo(message, this)
+    else -> ValidationInfo(message)
 }
 
 val BETTER_GREEN = JBColor(Color(104, 197, 116), JBColor.GREEN.darker())

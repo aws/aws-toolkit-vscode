@@ -30,7 +30,9 @@ import software.amazon.awssdk.services.lambda.model.Runtime
  */
 enum class RuntimeGroup {
     JAVA,
-    PYTHON;
+    PYTHON,
+    NODEJS,
+    DOTNET;
 
     private val info by lazy {
         RuntimeGroupInformation.getInstances(this)
@@ -57,6 +59,10 @@ enum class RuntimeGroup {
 
         fun determineRuntime(module: Module?): Runtime? = module?.let { _ ->
             values().asSequence().mapNotNull { it.determineRuntime(module) }.firstOrNull()
+        }
+
+        fun determineRuntimeGroup(project: Project?): RuntimeGroup? = project?.let { _ ->
+            values().asSequence().find { it.determineRuntime(project) != null }
         }
     }
 }
@@ -161,7 +167,9 @@ class RuntimeGroupExtensionPoint<T> : AbstractExtensionPointBean(), KeyedLazyIns
 abstract class RuntimeGroupExtensionPointObject<T>(private val extensionPointName: ExtensionPointName<RuntimeGroupExtensionPoint<T>>) {
     protected val collector = KeyedExtensionCollector<T, RuntimeGroup>(extensionPointName.name)
     fun getInstance(runtimeGroup: RuntimeGroup): T? = collector.findSingle(runtimeGroup)
-    fun getInstanceOrThrow(runtimeGroup: RuntimeGroup): T = getInstance(runtimeGroup) ?: throw IllegalStateException("Attempted to retrieve feature for unsupported runtime group $runtimeGroup")
+    fun getInstanceOrThrow(runtimeGroup: RuntimeGroup): T =
+        getInstance(runtimeGroup) ?: throw IllegalStateException("Attempted to retrieve feature for unsupported runtime group $runtimeGroup")
+
     val supportedRuntimeGroups: Set<RuntimeGroup> by lazy { extensionPointName.extensions.map { it.runtimeGroup }.toSet() }
     val supportedLanguages: Set<Language> by lazy { supportedRuntimeGroups.flatMap { it.languageIds }.mapNotNull { Language.findLanguageByID(it) }.toSet() }
 }

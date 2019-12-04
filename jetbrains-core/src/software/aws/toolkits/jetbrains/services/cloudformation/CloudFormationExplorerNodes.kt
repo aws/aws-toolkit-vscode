@@ -9,15 +9,16 @@ import icons.AwsIcons
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.cloudformation.model.ResourceStatus
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
+import software.amazon.awssdk.services.cloudformation.model.StackSummary
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
-import software.aws.toolkits.jetbrains.core.DeleteResourceAction
+import software.aws.toolkits.jetbrains.core.explorer.actions.DeleteResourceAction
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
-import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.CacheBackedAwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
 import software.aws.toolkits.jetbrains.core.stack.StackWindowManager
 import software.aws.toolkits.jetbrains.services.cloudformation.resources.CloudFormationResources
@@ -29,17 +30,8 @@ import software.aws.toolkits.jetbrains.utils.toHumanReadable
 import software.aws.toolkits.resources.message
 
 class CloudFormationServiceNode(project: Project) :
-    AwsExplorerServiceRootNode(project, AwsExplorerService.CLOUDFORMATION) {
-    override fun getChildrenInternal(): List<AwsExplorerNode<*>> = AwsResourceCache.getInstance(nodeProject)
-        .getResourceNow(CloudFormationResources.LIST_STACKS)
-        .asSequence()
-        .filter { it.stackStatus() !in DELETING_STACK_STATES }
-        .map { CloudFormationStackNode(nodeProject, it.stackName(), it.stackStatus(), it.stackId()) }
-        .toList()
-
-    private companion object {
-        val DELETING_STACK_STATES = setOf(StackStatus.DELETE_COMPLETE)
-    }
+    CacheBackedAwsExplorerServiceRootNode<StackSummary>(project, AwsExplorerService.CLOUDFORMATION, CloudFormationResources.ACTIVE_STACKS) {
+    override fun toNode(child: StackSummary): AwsExplorerNode<*> = CloudFormationStackNode(nodeProject, child.stackName(), child.stackStatus(), child.stackId())
 }
 
 class CloudFormationStackNode(

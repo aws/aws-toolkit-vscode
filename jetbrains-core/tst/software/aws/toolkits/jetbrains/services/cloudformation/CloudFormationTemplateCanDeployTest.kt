@@ -114,4 +114,48 @@ Resources:
             assertThat(projectRule.project.validateSamTemplateLambdaRuntimes(virtualFile2)).isNull()
         }
     }
+
+    @Test
+    fun nonDeployable_emptyFile() {
+        val virtualFile = projectRule.fixture.openFile("template.yaml", "")
+
+        runInEdtAndWait {
+            assertThat(projectRule.project.validateSamTemplateHasResources(virtualFile)).isEqualTo(
+                message(
+                    "serverless.application.deploy.error.no_resources",
+                    virtualFile.path
+                )
+            )
+        }
+    }
+
+    @Test
+    fun nonDeployable_incompleteResources() {
+        val virtualFile = projectRule.fixture.openFile("template.yaml", """
+Resources:
+  ServerlessFunction:
+""")
+
+        runInEdtAndWait {
+            assertThat(projectRule.project.validateSamTemplateHasResources(virtualFile)).isEqualTo(
+                message(
+                    "serverless.application.deploy.error.no_resources",
+                    virtualFile.path
+                )
+            )
+        }
+    }
+
+    @Test
+    fun deployable_validatableEnough() {
+        val virtualFile = projectRule.fixture.openFile("template.yaml", """
+Resources:
+  ServerlessFunction:
+    Type: AWS::Serverless::Function
+""")
+
+        runInEdtAndWait {
+            assertThat(projectRule.project.validateSamTemplateHasResources(virtualFile)).isNull()
+        }
+    }
 }

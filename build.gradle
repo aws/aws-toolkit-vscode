@@ -5,9 +5,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
     repositories {
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
+        maven { url "https://plugins.gradle.org/m2/" }
         mavenCentral()
         jcenter()
     }
@@ -21,7 +19,12 @@ buildscript {
 apply from: 'intellijJVersions.gradle'
 
 group 'software.aws.toolkits'
-version toolkitVersion
+// please check changelog generation logic if this format is changed
+version toolkitVersion + "-" + shortenVersion(resolveIdeProfileName())
+
+repositories {
+    maven { url "https://www.jetbrains.com/intellij-repository/snapshots/" }
+}
 
 allprojects {
     repositories {
@@ -31,20 +34,35 @@ allprojects {
     }
 
     apply plugin: "com.adarshr.test-logger"
+    apply plugin: 'java'
     apply plugin: 'jacoco'
+
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+
+    tasks.withType(JavaExec) {
+        systemProperty("aws.toolkits.enableTelemetry", false)
+    }
 
     tasks.withType(org.jetbrains.intellij.tasks.RunIdeTask) {
         systemProperty("aws.toolkits.enableTelemetry", false)
         intellij {
             if (System.env.ALTERNATIVE_IDE) {
-                alternativeIdePath = System.env.ALTERNATIVE_IDE
+                if(file(System.env.ALTERNATIVE_IDE).exists()) {
+                    alternativeIdePath = System.env.ALTERNATIVE_IDE
+                } else {
+                    throw new GradleException("ALTERNATIVE_IDE path not found"
+                      + (System.env.ALTERNATIVE_IDE ==~ /.*[\/\\] *$/
+                        ? " (HINT: remove trailing slash '/')"
+                        : ": ${System.env.ALTERNATIVE_IDE}"))
+                }
             }
         }
     }
 }
 
 // Kotlin plugin seems to be bugging out when there are no kotlin sources
-configure(subprojects - project(":telemetry-client")) {
+configure(subprojects - project(":telemetry-client") - project(":schemas-client")) {
     apply plugin: 'kotlin'
 
     sourceSets {
@@ -90,11 +108,10 @@ subprojects {
     dependencies {
         compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
         compile "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
-        compile "org.jetbrains.kotlin:kotlin-script-runtime:$kotlinVersion"
         testCompile "com.nhaarman.mockitokotlin2:mockito-kotlin:2.0.0"
+        testCompile "io.mockk:mockk:1.9.3"
         testCompile "org.assertj:assertj-core:$assertjVersion"
         testCompile "junit:junit:$junitVersion"
-        testCompile "org.hamcrest:hamcrest-all:1.3"
     }
 
     testlogger {
@@ -132,9 +149,6 @@ subprojects {
         tasks.withType(JavaCompile).all {
             options.compilerArgs << "-Werror"
         }
-        tasks.withType(KotlinCompile).all {
-            kotlinOptions.allWarningsAsErrors = true
-        }
     }
 
     task integrationTest(type: Test) {
@@ -150,9 +164,6 @@ subprojects {
         mustRunAfter tasks.test
     }
 
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
-
     tasks.withType(KotlinCompile).all {
         kotlinOptions.jvmTarget = "1.8"
     }
@@ -164,6 +175,7 @@ subprojects {
     project.afterEvaluate {
         removeTask(tasks, 'publishPlugin')
         removeTask(tasks, 'verifyPlugin')
+        removeTask(tasks, 'buildSearchableOptions')
         if (!isReleaseVersion) {
             removeTask(tasks, "signArchives")
         }
@@ -182,24 +194,26 @@ def removeTask(tasks, taskName) {
     }
 }
 
-wrapper {
-    distributionType = Wrapper.DistributionType.ALL
-    gradleVersion '5.4.1'
-}
-
 apply plugin: 'org.jetbrains.intellij'
 apply plugin: ChangeLogPlugin
 
 intellij {
-    version ideVersion("IC")
+    version ideSdkVersion("IC")
     pluginName 'aws-jetbrains-toolkit'
     updateSinceUntilBuild false
     downloadSources = System.getenv("CI") == null
 }
 
+prepareSandbox {
+    tasks.findByPath(":jetbrains-rider:buildReSharperPlugin")?.collect {
+        from(it, {
+            into("${intellij.pluginName}/dotnet")
+        })
+    }
+}
+
 publishPlugin {
-    username publishUsername
-    password publishPassword
+    token publishToken
     channels publishChannel
 }
 
@@ -212,29 +226,38 @@ task ktlint(type: JavaExec, group: "verification") {
     description = "Check Kotlin code style."
     classpath = configurations.ktlint
     main = "com.pinterest.ktlint.Main"
-    args "-v", project.rootDir.absolutePath + "/**/*.kt"
 
-    inputs.files(project.fileTree(dir: "src", include: "**/*.kt"))
+    def isWindows = System.properties['os.name'].toLowerCase().contains('windows')
+
+    def toInclude = project.rootDir.relativePath(project.projectDir) + "/**/*.kt"
+    def toExclude = project.rootDir.relativePath(new File(project.projectDir, "jetbrains-rider")) + "/**/*.Generated.kt"
+
+    if (isWindows) {
+        toInclude = toInclude.replace("/", "\\")
+        toExclude = toExclude.replace("/", "\\")
+    }
+
+    args "-v", toInclude, "!${toExclude}"
+
+    inputs.files(project.fileTree(dir: ".", include: "**/*.kt"))
     outputs.dir("${project.buildDir}/reports/ktlint/")
 }
 check.dependsOn ktlint
 check.dependsOn verifyPlugin
 
-def publishedProjects = subprojects.findAll { !it.name.contains("test")}
-
 task coverageReport(type: JacocoReport) {
     executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
 
-    getAdditionalSourceDirs().from(publishedProjects.sourceSets.main.java.srcDirs)
-    getSourceDirectories().from(publishedProjects.sourceSets.main.java.srcDirs)
-    getClassDirectories().from(publishedProjects.sourceSets.main.output.classesDirs)
+    getAdditionalSourceDirs().from(subprojects.sourceSets.main.java.srcDirs)
+    getSourceDirectories().from(subprojects.sourceSets.main.java.srcDirs)
+    getClassDirectories().from(subprojects.sourceSets.main.output.classesDirs)
 
     reports {
         html.enabled true
         xml.enabled true
     }
 }
-publishedProjects.forEach {
+subprojects.forEach {
     coverageReport.mustRunAfter(it.tasks.withType(Test))
 }
 check.dependsOn coverageReport
@@ -242,16 +265,22 @@ check.dependsOn coverageReport
 // Workaround for runIde being defined in multiple projects, if we request the root project runIde, "alias" it to
 // community edition
 if (gradle.startParameter.taskNames.contains("runIde")) {
-    println("Top level runIde selected, excluding sub-projects' runIde")
-    gradle.taskGraph.whenReady { graph ->
-        graph.allTasks.forEach {
-            if (gradle.startParameter.systemPropertiesArgs.getOrDefault("exec.args", "").contains("guitest")) {
-                if (it.name == "runIde" && it.project != project(':jetbrains-core-gui')) {
-                    it.enabled = false
-                }
-            } else {
-                if (it.name == "runIde" && it.project != project(':jetbrains-core')) {
-                    it.enabled = false
+    // Only disable this if running from root project
+    if (gradle.startParameter.projectDir == project.rootProject.rootDir
+        || System.properties.containsKey("idea.gui.tests.gradle.runner")) {
+        println("Top level runIde selected, excluding sub-projects' runIde")
+        gradle.taskGraph.whenReady { graph ->
+            graph.allTasks.forEach {
+                if (gradle.startParameter.systemPropertiesArgs.getOrDefault("exec.args", "").contains("guitest")) {
+                    if (it.name == "runIde" && it.project != project(':jetbrains-core-gui')) {
+                        it.enabled = false
+                    }
+                } else {
+                    if (it.name == "runIde" &&
+                        it.project != project(':jetbrains-core') &&
+                        it.project != project(':jetbrains-rider')) {
+                        it.enabled = false
+                    }
                 }
             }
         }
@@ -263,7 +292,10 @@ task guiTest(type: Test) {
 }
 
 dependencies {
-    compile project(':jetbrains-core')
+    compile project(':jetbrains-ultimate')
+    project.findProject(':jetbrains-rider')?.collect {
+        compile it
+    }
 
     ktlint "com.pinterest:ktlint:$ktlintVersion"
     ktlint project(":ktlint-rules")

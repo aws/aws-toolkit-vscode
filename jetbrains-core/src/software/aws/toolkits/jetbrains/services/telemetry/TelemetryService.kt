@@ -7,10 +7,12 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
+import com.intellij.util.messages.Topic
 import software.amazon.awssdk.services.toolkittelemetry.model.Unit
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NA
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NOT_SET
+import software.aws.toolkits.core.telemetry.DefaultTelemetryBatcher
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
 import software.aws.toolkits.core.utils.getLogger
@@ -28,10 +30,14 @@ interface TelemetryService : Disposable {
         val awsRegion: String = METADATA_NA
     )
 
-    // TODO consider using DataProvider for the metricEventMetadata.
-    fun record(namespace: String, metricEventMetadata: MetricEventMetadata, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): MetricEvent
+    fun record(project: Project?, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}) = record(project, null, buildEvent)
 
-    fun record(project: Project?, namespace: String, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): CompletableFuture<MetricEvent> {
+    // TODO consider using DataProvider for the metricEventMetadata.
+    @Deprecated("Record should not be called with a namespace")
+    fun record(namespace: String?, metricEventMetadata: MetricEventMetadata, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): MetricEvent
+
+    @Deprecated("Record should not be called with a namespace")
+    fun record(project: Project?, namespace: String?, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): CompletableFuture<MetricEvent> {
         val metricEvent = CompletableFuture<MetricEvent>()
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
@@ -50,34 +56,48 @@ interface TelemetryService : Disposable {
     companion object {
         @JvmStatic
         fun getInstance(): TelemetryService = ServiceManager.getService(TelemetryService::class.java)
+
+        @JvmStatic
+        fun syncPublisher() = ApplicationManager.getApplication().messageBus.syncPublisher(TELEMETRY_TOPIC)
+
+        @JvmStatic
+        fun subscribe(notifier: TelemetryEnabledChangedNotifier) {
+            ApplicationManager.getApplication().messageBus.connect().subscribe(TELEMETRY_TOPIC, notifier)
+        }
+
+        private val TELEMETRY_TOPIC: Topic<TelemetryEnabledChangedNotifier> = Topic.create(
+            "TELEMETRY_ENABLED_TOPIC",
+            TelemetryEnabledChangedNotifier::class.java
+        )
     }
 }
 
-class DefaultTelemetryService(
-    messageBusService: MessageBusService,
-    settings: AwsSettings,
-    private val batcher: TelemetryBatcher = DefaultToolkitTelemetryBatcher()
-) : TelemetryService {
+interface TelemetryEnabledChangedNotifier {
+    fun notify(isTelemetryEnabled: Boolean)
+}
+
+class DefaultTelemetryService(settings: AwsSettings) :
+    TelemetryService, TelemetryEnabledChangedNotifier {
+    var batcher: TelemetryBatcher = DefaultTelemetryBatcher(DefaultTelemetryPublisher())
+        set(value) {
+            batcher.setBatcher(value)
+            field = value
+        }
+
     private val isDisposing: AtomicBoolean = AtomicBoolean(false)
     private val startTime: Instant
 
-    constructor(messageBusService: MessageBusService, settings: AwsSettings) : this(messageBusService, settings, DefaultToolkitTelemetryBatcher())
-
     init {
-        messageBusService.messageBus.connect().subscribe(
-            messageBusService.telemetryEnabledTopic,
-            object : TelemetryEnabledChangedNotifier {
-                override fun notify(isTelemetryEnabled: Boolean) {
-                    batcher.onTelemetryEnabledChanged(isTelemetryEnabled)
-                }
-            }
-        )
-        messageBusService.messageBus.syncPublisher(messageBusService.telemetryEnabledTopic)
-            .notify(settings.isTelemetryEnabled)
+        TelemetryService.subscribe(this)
+        TelemetryService.syncPublisher().notify(settings.isTelemetryEnabled)
 
         record("ToolkitStart").also {
             startTime = it.createTime
         }
+    }
+
+    override fun notify(isTelemetryEnabled: Boolean) {
+        batcher.onTelemetryEnabledChanged(isTelemetryEnabled)
     }
 
     override fun dispose() {
@@ -97,7 +117,11 @@ class DefaultTelemetryService(
         batcher.shutdown()
     }
 
-    override fun record(namespace: String, metricEventMetadata: TelemetryService.MetricEventMetadata, buildEvent: MetricEvent.Builder.() -> kotlin.Unit): MetricEvent {
+    override fun record(
+        namespace: String?,
+        metricEventMetadata: TelemetryService.MetricEventMetadata,
+        buildEvent: MetricEvent.Builder.() -> kotlin.Unit
+    ): MetricEvent {
         val builder = DefaultMetricEvent.builder(namespace)
         buildEvent(builder)
         builder.awsAccount(metricEventMetadata.awsAccount)

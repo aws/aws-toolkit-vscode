@@ -16,20 +16,23 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
-import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.functionFromElement
 
-@Suppress("DEPRECATION") // LazyRunConfigurationProducer not added till 2019.1
+@Suppress("DEPRECATION") // LazyRunConfigurationProducer not added till 2019.1 FIX_WHEN_MIN_IS_192
 class LocalLambdaRunConfigurationProducer : RunConfigurationProducer<LocalLambdaRunConfiguration>(getFactory()) {
     // Filter all Lambda run CONFIGURATIONS down to only ones that are Lambda SAM for this run producer
     override fun getConfigurationSettingsList(runManager: RunManager): List<RunnerAndConfigurationSettings> =
         super.getConfigurationSettingsList(runManager).filter { it.configuration is LocalLambdaRunConfiguration }
 
-    override fun setupConfigurationFromContext(configuration: LocalLambdaRunConfiguration, context: ConfigurationContext, sourceElement: Ref<PsiElement>): Boolean {
+    override fun setupConfigurationFromContext(
+        configuration: LocalLambdaRunConfiguration,
+        context: ConfigurationContext,
+        sourceElement: Ref<PsiElement>
+    ): Boolean {
         val element = context.psiLocation ?: return false
-        val parent = element.parent
-        val result = when (parent) {
+        val result = when (val parent = element.parent) {
             is YAMLKeyValue -> setupFromTemplate(parent, configuration)
             else -> setupFromSourceFile(element, context, configuration)
         }
@@ -41,8 +44,7 @@ class LocalLambdaRunConfigurationProducer : RunConfigurationProducer<LocalLambda
 
     override fun isConfigurationFromContext(configuration: LocalLambdaRunConfiguration, context: ConfigurationContext): Boolean {
         val element = context.psiLocation ?: return false
-        val parent = element.parent
-        return when (parent) {
+        return when (val parent = element.parent) {
             is YAMLPsiElement -> isFromTemplateContext(parent, configuration)
             else -> isFromSourceFileContext(element, configuration)
         }
@@ -55,12 +57,10 @@ class LocalLambdaRunConfigurationProducer : RunConfigurationProducer<LocalLambda
         }
         val resolver = LambdaHandlerResolver.getInstanceOrThrow(runtimeGroup)
         val handler = resolver.determineHandler(element) ?: return false
-
         val runtime = RuntimeGroup.determineRuntime(context.module) ?: RuntimeGroup.determineRuntime(context.project)
-        val settings = accountSettings(element.project)
+
+        setAccountOptions(configuration)
         configuration.useHandler(runtime, handler)
-        configuration.credentialProviderId(settings.first)
-        configuration.regionId(settings.second?.id)
 
         return true
     }
@@ -68,10 +68,8 @@ class LocalLambdaRunConfigurationProducer : RunConfigurationProducer<LocalLambda
     private fun setupFromTemplate(element: YAMLPsiElement, configuration: LocalLambdaRunConfiguration): Boolean {
         val file = element.containingFile?.virtualFile?.path ?: return false
         val function = functionFromElement(element) ?: return false
-        val settings = accountSettings(element.project)
+        setAccountOptions(configuration)
         configuration.useTemplate(file, function.logicalName)
-        configuration.credentialProviderId(settings.first)
-        configuration.regionId(settings.second?.id)
 
         return true
     }
@@ -95,7 +93,15 @@ class LocalLambdaRunConfigurationProducer : RunConfigurationProducer<LocalLambda
     }
 
     companion object {
-        fun getFactory() = LambdaRunConfiguration.getInstance().configurationFactories.first { it is LocalLambdaRunConfigurationFactory }
+        fun getFactory() = LambdaRunConfigurationType.getInstance().configurationFactories.first { it is LocalLambdaRunConfigurationFactory }
+
+        fun setAccountOptions(configuration: LocalLambdaRunConfiguration) {
+            val project = configuration.project
+            val settings = accountSettings(project)
+
+            configuration.credentialProviderId(settings.first)
+            configuration.regionId(settings.second?.id)
+        }
 
         private fun accountSettings(project: Project): Pair<String?, AwsRegion?> {
             val settingsManager = ProjectAccountSettingsManager.getInstance(project)

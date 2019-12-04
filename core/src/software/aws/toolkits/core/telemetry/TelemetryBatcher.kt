@@ -18,6 +18,11 @@ interface TelemetryBatcher {
 
     fun flush(retry: Boolean)
 
+    /**
+     * Immediately shutdown the current batcher and delegate remaining events to a new batcher
+     */
+    fun setBatcher(batcher: TelemetryBatcher)
+
     fun onTelemetryEnabledChanged(newValue: Boolean)
 
     fun shutdown()
@@ -74,6 +79,13 @@ open class DefaultTelemetryBatcher(
 
     override fun flush(retry: Boolean) {
         flush(retry, isTelemetryEnabled.get())
+    }
+
+    @Synchronized
+    override fun setBatcher(batcher: TelemetryBatcher) {
+        executor.shutdown()
+        batcher.onTelemetryEnabledChanged(isTelemetryEnabled.get())
+        batcher.enqueue(eventQueue.toList())
     }
 
     // TODO: This should flush to disk instead of network on shutdown. User should not have to wait for network calls to exit. Also consider handling clock drift

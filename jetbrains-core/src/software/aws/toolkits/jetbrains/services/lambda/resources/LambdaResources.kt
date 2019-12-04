@@ -5,12 +5,13 @@ package software.aws.toolkits.jetbrains.services.lambda.resources
 
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
-import software.aws.toolkits.jetbrains.core.Resource
+import software.aws.toolkits.jetbrains.core.find
 
 object LambdaResources {
+    @JvmField
     val LIST_FUNCTIONS = ClientBackedCachedResource(LambdaClient::class, "lambda.list_functions") {
-        listFunctionsPaginator().functions().toList()
+        listFunctionsPaginator().functions().filterNotNull().toList()
     }
 
-    fun function(arn: String) = Resource.View(LIST_FUNCTIONS) { find { it.functionArn() == arn } }
+    fun function(name: String) = LIST_FUNCTIONS.find { it.functionName() == name }
 }

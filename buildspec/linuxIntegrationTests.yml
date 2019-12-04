@@ -1,25 +1,32 @@
 version: 0.2
 
+cache:
+  paths:
+    - '/root/.gradle/caches/**/*'
+    - '/root/.gradle/wrapper/**/*'
+
 env:
   variables:
     CI: true
+    LOCAL_ENV_RUN: true
 
 phases:
   install:
     runtime-versions:
       java: openjdk8
+      dotnet: 2.2
 
     commands:
       - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay&
       - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
       - apt-get update
-      - apt-get install jq python2.7 python3.6 python3.7
+      - apt-get install -y jq python2.7 python-pip python3.6 python3.7 msbuild
       - aws sts assume-role --role-arn $ASSUME_ROLE_ARN --role-session-name integ-test > creds.json
       - export KEY_ID=`jq -r '.Credentials.AccessKeyId' creds.json`
       - export SECRET=`jq -r '.Credentials.SecretAccessKey' creds.json`
       - export TOKEN=`jq -r '.Credentials.SessionToken' creds.json`
-      - pip install --user aws-sam-cli
-      - pip install --upgrade awscli
+      - pip3 install --user aws-sam-cli
+      - pip3 install --upgrade awscli
 
   build:
     commands:
@@ -28,15 +35,15 @@ phases:
       - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
       - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
       - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
-      - curl -s https://codecov.io/bash > codecov.sh
+      - curl -s https://codecov.io/bash > codecov.sh || true # this sometimes times out but we don't want to fail the build
       - if [ "$CODE_COV_TOKEN" ]; then bash ./codecov.sh -t $CODE_COV_TOKEN -F integtest || true; fi
 
   post_build:
     commands:
       - TEST_ARTIFACTS="/tmp/testArtifacts"
       - mkdir $TEST_ARTIFACTS
-      - rsync -rmv --include='*/' --include '**/build/idea-sandbox/system*/log/**' --exclude='*' . $TEST_ARTIFACTS/ || true
-      - rsync -rmv --include='*/' --include '**/build/reports/**' --exclude='*' . $TEST_ARTIFACTS/ || true
+      - rsync -rmq --include='*/' --include '**/build/idea-sandbox/system*/log/**' --exclude='*' . $TEST_ARTIFACTS/ || true
+      - rsync -rmq --include='*/' --include '**/build/reports/**' --exclude='*' . $TEST_ARTIFACTS/ || true
 
 artifacts:
   files:

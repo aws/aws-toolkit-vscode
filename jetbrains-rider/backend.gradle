@@ -1,0 +1,139 @@
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+import java.util.regex.Pattern
+
+def backendGroup = 'backend'
+
+ext.nugetConfigPath = new File(projectDir, "NuGet.Config")
+ext.riderSdkVersionPropsPath = new File(resharperPluginPath, "RiderSdkPackageVersion.props")
+
+task prepareBuildProps {
+    group = backendGroup
+
+    doLast {
+        def riderSdkVersion = getRiderSdkPackageVersion()
+        def configText = """<Project>
+  <PropertyGroup>
+    <RiderSDKVersion>[${riderSdkVersion}]</RiderSDKVersion>
+  </PropertyGroup>
+</Project>
+"""
+        writeTextIfChanged(riderSdkVersionPropsPath, configText)
+    }
+}
+
+task prepareNuGetConfig {
+    group = backendGroup
+
+    doLast {
+        def nugetPath = getNugetPackagesPath()
+        def configText = """<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <packageSources>
+    <add key="resharper-sdk" value="${nugetPath}" />
+  </packageSources>
+</configuration>
+"""
+        writeTextIfChanged(nugetConfigPath, configText)
+    }
+}
+
+task restoreReSharperPluginPackages() {
+    group = backendGroup
+    description = 'Restores packages for backend plugin'
+    dependsOn prepareBuildProps, prepareNuGetConfig
+
+    doLast {
+        exec {
+            executable = "dotnet"
+            args = ["restore", "${resharperPluginPath.canonicalPath}/ReSharper.AWS.sln" ]
+        }
+    }
+}
+
+task buildReSharperPlugin {
+    group = backendGroup
+    description = 'Builds the full ReSharper backend plugin solution'
+    dependsOn restoreReSharperPluginPackages, generateModel
+
+    doLast {
+        // Build using Mono MSBuild on Mac OS and Linux and use dotnet core MSBuild on Windows
+        def isWindows = System.properties['os.name'].toLowerCase().contains('windows')
+        def executableName = (isWindows) ? "dotnet" : "msbuild"
+        def arguments = (isWindows) ? [ "build" ] : []
+        arguments << "${resharperPluginPath.canonicalPath}/ReSharper.AWS.sln"
+
+        exec {
+            executable = executableName
+            args = arguments
+        }
+    }
+
+    outputs.files({
+        fileTree(file("${resharperPluginPath.absolutePath}/src")).matching {
+            include "**/bin/Debug/**/AWS*.dll"
+            include "**/bin/Debug/**/AWS*.pdb"
+            include "**/bin/Debug/**/AWS.DebuggerTools.exe"
+            include "**/bin/Debug/**/AWS.DebuggerTools.runtimeconfig.json"
+        }.collect()
+    })
+}
+
+project.tasks.clean.dependsOn(project.tasks.cleanBuildReSharperPlugin)
+
+private File getReSharperSdkPath() {
+    def sdkPath = intellij.ideaDependency.classes
+    println("SDK path: $sdkPath")
+    return new File(sdkPath, "lib/ReSharperHostSdk")
+}
+
+private File getNugetPackagesPath() {
+    def sdkPath = getReSharperSdkPath()
+    println("NuGet packages: $sdkPath")
+    if (!sdkPath.isDirectory()) throw GradleException("${sdkPath} does not exist or not a directory")
+
+    return sdkPath
+}
+
+private String getRiderSdkPackageVersion() {
+    def sdkPackageName = "JetBrains.Rider.SDK"
+
+    def regex = Pattern.compile("JetBrains\\.Rider\\.SDK\\.([\\d\\.]+.*)\\.nupkg")
+    def versions = getNugetPackagesPath()
+            .listFiles()
+            .collect { file ->
+                def matches = regex.matcher(file.name)
+                if (matches.matches()) {
+                    matches[0][1]
+                } else {
+                    null
+                }
+            }
+
+    versions.removeAll([null])
+
+    if (versions.size() > 1)
+        throw GradleException("Found multiple SDK packages matches name $sdkPackageName in $nugetPackagesPath")
+
+    if (versions.size() == 0)
+        throw GradleException("$sdkPackageName package is not found in $nugetPackagesPath")
+
+    def version = versions.first()
+    println("$sdkPackageName version is $version")
+
+    return version
+}
+
+private static void writeTextIfChanged(File file, String content) {
+    def bytes = content.bytes
+
+    if (!file.isFile() || byteArrayToHexString(file.readBytes()) != byteArrayToHexString(bytes)) {
+        println("Writing ${file.canonicalPath}")
+        file.withOutputStream { it.write(bytes) }
+    }
+}
+
+private static String byteArrayToHexString(byte[] byteArray) {
+    return byteArray.encodeHex().toString()
+}

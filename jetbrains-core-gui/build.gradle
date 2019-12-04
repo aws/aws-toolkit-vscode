@@ -5,22 +5,28 @@ apply plugin: 'org.jetbrains.intellij'
 apply plugin: 'jacoco'
 
 dependencies {
-    compile project(":jetbrains-core")
+    compile project(":")
+    compile project(path: ":core", configuration: 'testArtifacts')
 }
 
 intellij {
-    def rootIntelliJTask = project(':jetbrains-core').intellij
-    version rootIntelliJTask.version
-    pluginName rootIntelliJTask.pluginName
-    updateSinceUntilBuild rootIntelliJTask.updateSinceUntilBuild
-    downloadSources = rootIntelliJTask.downloadSources
-    plugins = rootIntelliJTask.plugins + ['com.intellij.testGuiFramework:0.9.44.1@nightly']
+    version ideSdkVersion("IC")
+    updateSinceUntilBuild false
+    downloadSources false
+    instrumentCode false
+    plugins = idePlugins("IC") + [guiTestFramework(), project(":")]
 }
 
 jacoco.applyTo(runIde)
 runIde {
     systemProperties System.properties.findAll {(it.key as String).startsWith("idea") || (it.key as String).startsWith("jb")}
-    systemProperty("aws.toolkits.enableTelemetry", false)
+    debugOptions {
+        enabled = false
+        port = 5005
+        server = true
+        suspend = true
+    }
+
     /* Need to split the space-delimited value in the exec.args */
     args System.getProperty("exec.args", "").split(",")
     jacoco {
@@ -29,17 +35,12 @@ runIde {
     }
 }
 
-publishPlugin.enabled = false
-buildSearchableOptions.enabled = false
-
 // don't run gui tests as part of check
 test.enabled = false
 
 task guiTest(type: Test) {
-    workingDir = file("..")
-    def sysProps = System.properties.findAll { (it.key as String).startsWith("idea") || (it.key as String).startsWith("jb") }
-    sysProps.put("idea.gui.tests.gradle.runner", true) //Use Gradle Launcher to run GUI tests
-    systemProperties sysProps
+    workingDir = project.rootDir
+    systemProperty("idea.gui.tests.gradle.runner", true)
     include '**/*TestSuite*'
 }
 
@@ -52,6 +53,13 @@ task classesJar(type: Jar, dependsOn: classes) {
     classifier = 'classes'
     from sourceSets.main.output
     from project(':jetbrains-core').sourceSets.main.output
+    from project(':jetbrains-ultimate').sourceSets.main.output
+
+    project.findProject(':jetbrains-rider')?.collect {
+        from it.sourceSets.main.output
+    }
+
+    from project(':core').sourceSets.test.output
     exclude 'META-INF/plugin.xml'
     exclude 'testData/*'
 }
@@ -66,11 +74,11 @@ prepareSandbox {
     from(classesJar) {
         into "testGuiFramework/lib"
     }
-    from (sourceSets.main.resources) {
+    from(sourceSets.main.resources) {
         exclude 'META-INF'
         into "testGuiFramework/lib"
     }
-    from (sourceSets.test.resources) {
+    from(sourceSets.test.resources) {
         exclude 'META-INF'
         into "testGuiFramework/lib"
     }

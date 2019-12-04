@@ -63,7 +63,10 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
                 profile.runtime()
             }
 
-            return SamDebugSupport.supportedRuntimeGroups.contains(runtimeValue?.runtimeGroup)
+            val runtimeGroup = runtimeValue?.runtimeGroup ?: return false
+
+            return SamDebugSupport.supportedRuntimeGroups.contains(runtimeGroup) &&
+                    SamDebugSupport.getInstance(runtimeGroup)?.isSupported() ?: false
         }
 
         return false
@@ -98,9 +101,15 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
 
         LambdaBuilderUtils.buildAndReport(module, runtimeGroup, buildRequest)
             .thenAccept {
+                samState.runner.checkDockerInstalled()
                 runInEdt {
                     samState.builtLambda = it
-                    buildingPromise.setResult(samState.runner.run(environment, samState))
+                    samState.runner.run(environment, samState)
+                        .onSuccess {
+                            buildingPromise.setResult(it)
+                        }.onError {
+                            buildingPromise.setError(it)
+                        }
                 }
             }.exceptionally {
                 LOG.warn(it) { "Failed to create Lambda package" }

@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.upload
 
-import com.intellij.codeHighlighting.Pass
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.codeInsight.daemon.LineMarkerInfo
 import com.intellij.codeInsight.daemon.LineMarkerProviderDescriptor
@@ -21,6 +20,7 @@ import com.intellij.psi.SmartPointerManager
 import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
+import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplateIndex.Companion.listFunctions
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
@@ -37,7 +37,6 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
 
     override fun getIcon(): Icon? = AwsIcons.Resources.LAMBDA_FUNCTION
 
-    @Suppress("DEPRECATION") // Non-deprecated constructor for LineMarkerInfo not introduced till 2019.1 FIX_WHEN_MIN_IS_192
     override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<*>? {
         // Only process leaf elements
         if (element.firstChild != null) {
@@ -66,7 +65,6 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
                 element,
                 element.textRange,
                 icon,
-                Pass.LINE_MARKERS,
                 null,
                 null,
                 GutterIconRenderer.Alignment.CENTER
@@ -97,6 +95,10 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
 
     // Handler defined in remote Lambda with the same runtime group is valid
     private fun handlerInRemote(psiFile: PsiFile, handler: String, runtimeGroup: RuntimeGroup): Boolean {
+        if (!ProjectAccountSettingsManager.getInstance(psiFile.project).hasActiveCredentials()) {
+            return false
+        }
+
         val cache = AwsResourceCache.getInstance(psiFile.project)
 
         return when (val functions = cache.getResourceIfPresent(LambdaResources.LIST_FUNCTIONS)) {

@@ -13,15 +13,13 @@ import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.actionSystem.Separator
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.startup.StartupActivity
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.openapi.ui.popup.ListPopup
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
-import com.intellij.openapi.wm.WindowManager
+import com.intellij.openapi.wm.StatusBarWidgetProvider
 import com.intellij.psi.util.CachedValueProvider
 import com.intellij.util.Consumer
 import software.aws.toolkits.core.credentials.CredentialProviderNotFound
@@ -30,7 +28,7 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
 import software.aws.toolkits.jetbrains.components.telemetry.ComboBoxActionWrapper
-import software.aws.toolkits.jetbrains.components.telemetry.ToogleActionWrapper
+import software.aws.toolkits.jetbrains.components.telemetry.ToggleActionWrapper
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier
@@ -41,10 +39,8 @@ import java.awt.Component
 import java.awt.event.MouseEvent
 import javax.swing.JComponent
 
-class AwsSettingsPanelInstaller : StartupActivity, DumbAware {
-    override fun runActivity(project: Project) {
-        WindowManager.getInstance().getStatusBar(project).addWidget(AwsSettingsPanel(project), project)
-    }
+class AwsSettingsPanelInstaller : StatusBarWidgetProvider {
+    override fun getWidget(project: Project): StatusBarWidget = AwsSettingsPanel(project)
 }
 
 private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
@@ -71,11 +67,6 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
         return "AWS: $statusLine"
     }
 
-    @Suppress("OverridingDeprecatedMember") // No choice, part of interface contract with no default
-    override fun getMaxValue(): String {
-        TODO("not implemented")
-    }
-
     override fun getPopupStep() = settingsSelector.settingsPopup(statusBar.component)
 
     override fun getClickConsumer(): Consumer<MouseEvent>? = null
@@ -96,16 +87,12 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
         statusBar.updateWidget(ID())
     }
 
-    override fun dispose() {
-        if (::statusBar.isInitialized) {
-            ApplicationManager.getApplication().invokeLater({ statusBar.removeWidget(ID()) }, { project.isDisposed })
-        }
-    }
+    override fun dispose() {}
 }
 
 class SettingsSelectorAction(private val showRegions: Boolean = true) : AnActionWrapper(message("configure.toolkit")), DumbAware {
     override fun doActionPerformed(e: AnActionEvent) {
-        val project = e.project ?: return
+        val project = e.getRequiredData(PlatformDataKeys.PROJECT)
         val settingsSelector = SettingsSelector(project)
         settingsSelector.settingsPopup(e.dataContext, showRegions = showRegions).showCenteredInCurrentWindow(project)
     }
@@ -189,18 +176,18 @@ class ChangeAccountSettingsAction(
         message("settings.credentials.profile_sub_menu"),
         popup
     ), DumbAware {
-            override fun createChildrenProvider(actionManager: ActionManager?): CachedValueProvider<Array<AnAction>> = CachedValueProvider {
-                val credentialManager = CredentialManager.getInstance()
+        override fun createChildrenProvider(actionManager: ActionManager?): CachedValueProvider<Array<AnAction>> = CachedValueProvider {
+            val credentialManager = CredentialManager.getInstance()
 
-                val actions = mutableListOf<AnAction>()
-                credentialManager.getCredentialProviders().forEach {
-                    actions.add(ChangeCredentialsAction(it))
-                }
-                actions.add(Separator.create())
-                actions.add(ActionManager.getInstance().getAction("aws.settings.upsertCredentials"))
-
-                CachedValueProvider.Result.create(actions.toTypedArray(), credentialManager)
+            val actions = mutableListOf<AnAction>()
+            credentialManager.getCredentialProviders().forEach {
+                actions.add(ChangeCredentialsAction(it))
             }
+            actions.add(Separator.create())
+            actions.add(ActionManager.getInstance().getAction("aws.settings.upsertCredentials"))
+
+            CachedValueProvider.Result.create(actions.toTypedArray(), credentialManager)
+        }
     }
 
     companion object {
@@ -208,7 +195,7 @@ class ChangeAccountSettingsAction(
     }
 }
 
-private class ChangeRegionAction(val region: AwsRegion) : ToogleActionWrapper(region.displayName), DumbAware {
+private class ChangeRegionAction(val region: AwsRegion) : ToggleActionWrapper(region.displayName), DumbAware {
 
     override fun doIsSelected(e: AnActionEvent): Boolean = getAccountSetting(e).activeRegion == region
 
@@ -219,7 +206,7 @@ private class ChangeRegionAction(val region: AwsRegion) : ToogleActionWrapper(re
     }
 }
 
-private class ChangeCredentialsAction(val credentialsProvider: ToolkitCredentialsProvider) : ToogleActionWrapper(credentialsProvider.displayName), DumbAware {
+private class ChangeCredentialsAction(val credentialsProvider: ToolkitCredentialsProvider) : ToggleActionWrapper(credentialsProvider.displayName), DumbAware {
 
     override fun doIsSelected(e: AnActionEvent): Boolean =
         tryOrNull { getAccountSetting(e).activeCredentialProvider == credentialsProvider } ?: false

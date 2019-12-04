@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.core
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.components.ServiceManager
-import com.intellij.util.io.HttpRequests
 import com.intellij.util.io.createDirectories
 import software.aws.toolkits.core.utils.DefaultRemoteResourceResolver
 import software.aws.toolkits.core.utils.RemoteResourceResolver
@@ -23,12 +22,10 @@ interface RemoteResourceResolverProvider {
     }
 }
 
-class DefaultRemoteResourceResolverProvider @JvmOverloads constructor(private val resolver: RemoteResourceResolver = RESOLVER_INSTANCE) :
-    RemoteResourceResolverProvider {
-    override fun get() = resolver
+class DefaultRemoteResourceResolverProvider : RemoteResourceResolverProvider {
+    override fun get() = RESOLVER_INSTANCE
 
     companion object {
-
         private val RESOLVER_INSTANCE by lazy {
             val cachePath = Paths.get(PathManager.getSystemPath(), "aws-static-resources").createDirectories()
 
@@ -47,7 +44,7 @@ class DefaultRemoteResourceResolverProvider @JvmOverloads constructor(private va
 
         object HttpRequestUrlFetcher : UrlFetcher {
             override fun fetch(url: String, file: Path) {
-                HttpRequests.request(url).userAgent(AwsClientManager.userAgent).saveToFile(file.toFile(), null)
+                saveFileFromUrl(url, file)
             }
         }
     }

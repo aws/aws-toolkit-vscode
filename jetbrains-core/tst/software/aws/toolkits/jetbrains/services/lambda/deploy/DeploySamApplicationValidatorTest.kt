@@ -7,6 +7,7 @@ import com.intellij.testFramework.EdtRule
 import com.intellij.testFramework.RuleChain
 import com.intellij.testFramework.RunsInEdt
 import com.intellij.testFramework.runInEdtAndGet
+import com.intellij.ui.MutableCollectionComboBoxModel
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
@@ -14,7 +15,6 @@ import org.junit.Test
 import software.aws.toolkits.jetbrains.services.cloudformation.Parameter
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.resources.message
-import javax.swing.DefaultComboBoxModel
 
 @RunsInEdt
 class DeploySamApplicationValidatorTest {
@@ -36,17 +36,17 @@ class DeploySamApplicationValidatorTest {
         )
 
         view = runInEdtAndGet {
-            DeployServerlessApplicationPanel()
+            DeployServerlessApplicationPanel(projectRule.project)
         }
 
         view.withTemplateParameters(parameters)
 
         view.updateStack.isSelected = true
-        view.stacks.model = DefaultComboBoxModel(arrayOf(Stack("stack123")))
-        view.stacks.selectedItem = "stack123"
+        view.stacks.model = MutableCollectionComboBoxModel(listOf(Stack("stack123"))).also { it.selectedItem = Stack("stack123") }
+        view.stacks.forceLoaded()
 
-        view.s3Bucket.model = DefaultComboBoxModel(arrayOf("bucket123"))
-        view.s3Bucket.selectedItem = "bucket123"
+        view.s3Bucket.model = MutableCollectionComboBoxModel(listOf("bucket123")).also { it.selectedItem = "bucket123" }
+        view.s3Bucket.forceLoaded()
 
         sut = DeploySamApplicationValidator(view)
     }
@@ -95,7 +95,7 @@ class DeploySamApplicationValidatorTest {
     fun invalidStackName_Duplicate() {
         view.createStack.isSelected = true
         view.newStackName.text = "bar"
-        view.stacks.model = DefaultComboBoxModel(arrayOf(Stack("foo"), Stack("bar"), Stack("baz")))
+        view.stacks.model = MutableCollectionComboBoxModel(listOf(Stack("foo"), Stack("bar"), Stack("baz")))
         assertThat(sut.validateSettings()?.message).contains(message("serverless.application.deploy.validation.new.stack.name.duplicate"))
     }
 
