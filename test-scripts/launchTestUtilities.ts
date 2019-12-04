@@ -3,67 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as glob from 'glob'
-import { runTests } from 'vscode-test'
+import { downloadAndUnzipVSCode } from 'vscode-test'
 
-export interface LaunchTestParameters {
-    extensionDevelopmentPath: string
-    extensionTestsPath: string
-    workspacePath?: string
-}
+const ENVVAR_VSCODE_TEST_VERSION = 'VSCODE_TEST_VERSION'
 
 /**
- * Utility method to launch Extension tests that require the VS Code Extension Development Host in order to run.
+ * Downloads and unzips a copy of VS Code to run tests against.
+ *
+ * Test suites can set up an experimental instance of VS Code however they want.
+ * This method provides the common use-case, pulling down the latest version (aka 'stable').
+ * The VS Code version under test can be altered by setting the environment variable
+ * VSCODE_TEST_VERSION prior to running the tests.
  */
-export async function launchVsCodeTest(parameters: LaunchTestParameters) {
-    try {
-        console.log('Running Tests...')
-        console.log(`extensionDevelopmentPath: ${parameters.extensionDevelopmentPath}`)
-        console.log(`extensionTestsPath: ${parameters.extensionTestsPath}`)
-        console.log(`workspacePath: ${parameters.workspacePath}`)
+export async function setupVSCodeTestInstance(): Promise<string> {
+    const vsCodeVersion = process.env[ENVVAR_VSCODE_TEST_VERSION] || 'stable'
 
-        let launchArgs: string[] | undefined
+    console.log(`About to set up test instance of VS Code, version ${vsCodeVersion}...`)
+    const vsCodeExecutablePath = await downloadAndUnzipVSCode('stable')
+    console.log(`VS Code test instance location: ${vsCodeExecutablePath}`)
 
-        if (parameters.workspacePath) {
-            launchArgs = [parameters.workspacePath]
-        }
-
-        // Download VS Code, unzip it and run the integration test
-        await runTests({
-            extensionDevelopmentPath: parameters.extensionDevelopmentPath,
-            extensionTestsPath: parameters.extensionTestsPath,
-            vscodeExecutablePath: await findVsCodeTestExecutable(),
-            launchArgs: launchArgs
-        })
-
-        console.log('Finished running tests!')
-    } catch (err) {
-        console.error('Failed to run tests')
-        process.exit(1)
-    }
-}
-
-/**
- * Convenience for offline usage when the test exe has already been downloaded
- */
-async function findVsCodeTestExecutable(): Promise<string | undefined> {
-    return new Promise<string | undefined>((resolve, reject) => {
-        const cwd = process.cwd()
-        console.log(`Searching for VS Code Test Exe in: ${cwd}`)
-
-        glob('.vscode-test/**/Code.exe', { cwd }, (err, files: string[]) => {
-            if (err) {
-                console.log(err)
-                resolve(undefined)
-            }
-
-            if (files.length === 0) {
-                console.log('Not found.')
-                resolve(undefined)
-            }
-
-            console.log(`Found ${files[0]}`)
-            resolve(files[0])
-        })
-    })
+    return vsCodeExecutablePath
 }

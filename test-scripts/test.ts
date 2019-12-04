@@ -3,14 +3,29 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as path from 'path'
-import { launchVsCodeTest } from './launchTestUtilities'
+import { resolve } from 'path'
+import { runTests } from 'vscode-test'
+import { setupVSCodeTestInstance } from './launchTestUtilities'
 
 // tslint:disable-next-line: no-floating-promises
 ;(async () => {
-    const cwd = process.cwd()
-    await launchVsCodeTest({
-        extensionDevelopmentPath: cwd,
-        extensionTestsPath: path.resolve(cwd, 'out', 'src', 'test', 'index.js')
-    })
+    try {
+        console.log('Running Main test suite...')
+        const vsCodeExecutablePath = await setupVSCodeTestInstance()
+        const cwd = process.cwd()
+        const testEntrypoint = resolve(cwd, 'out', 'src', 'test', 'index.js')
+        console.log(`Starting tests: ${testEntrypoint}`)
+
+        const result = await runTests({
+            vscodeExecutablePath: vsCodeExecutablePath,
+            extensionDevelopmentPath: cwd,
+            extensionTestsPath: testEntrypoint
+        })
+
+        console.log(`Finished running Main test suite with result code: ${result}`)
+        process.exit(result)
+    } catch (err) {
+        console.error('Failed to run tests')
+        process.exit(1)
+    }
 })()

@@ -4,14 +4,30 @@
  */
 
 import { join, resolve } from 'path'
-import { launchVsCodeTest } from './launchTestUtilities'
+import { runTests } from 'vscode-test'
+import { setupVSCodeTestInstance } from './launchTestUtilities'
 
 // tslint:disable-next-line: no-floating-promises
 ;(async () => {
-    const cwd = process.cwd()
-    await launchVsCodeTest({
-        extensionDevelopmentPath: cwd,
-        extensionTestsPath: resolve(cwd, 'out', 'src', 'integrationTest', 'index.js'),
-        workspacePath: join(cwd, 'out', 'src', 'integrationTest-samples')
-    })
+    try {
+        console.log('Running Integration test suite...')
+        const vsCodeExecutablePath = await setupVSCodeTestInstance()
+        const cwd = process.cwd()
+        const testEntrypoint = resolve(cwd, 'out', 'src', 'integrationTest', 'index.js')
+        const workspacePath = join(cwd, 'out', 'src', 'integrationTest-samples')
+        console.log(`Starting tests: ${testEntrypoint}`)
+
+        const result = await runTests({
+            vscodeExecutablePath: vsCodeExecutablePath,
+            extensionDevelopmentPath: cwd,
+            extensionTestsPath: testEntrypoint,
+            launchArgs: [workspacePath]
+        })
+
+        console.log(`Finished running Integration test suite with result code: ${result}`)
+        process.exit(result)
+    } catch (err) {
+        console.error('Failed to run tests')
+        process.exit(1)
+    }
 })()
