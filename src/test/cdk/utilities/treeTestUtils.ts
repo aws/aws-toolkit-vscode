@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { writeFile } from 'fs-extra'
 import * as path from 'path'
 import { Uri, WorkspaceFolder } from 'vscode'
 import { ConstructTree, ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
-import { writeFile } from '../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
 export async function createWorkspaceFolder(

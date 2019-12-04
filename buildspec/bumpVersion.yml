@@ -29,6 +29,7 @@ phases:
                   npm --no-git-tag-version version minor
                 fi
                 git add package.json
+                git add package-lock.json
                 # Call npm install because 'createRelease' uses ts-node
                 npm install
                 npm run createRelease
