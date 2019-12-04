@@ -6,13 +6,13 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Extension",
+            "name": "Launch Extension",
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
-            "outFiles": ["${workspaceFolder}/out/**/*.js"],
-            "preLaunchTask": "npm: watch"
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "preLaunchTask": "npm: compile"
         },
         {
             "name": "Extension Tests",
@@ -21,10 +21,10 @@
             "runtimeExecutable": "${execPath}",
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/out/src/test/index.js"
+                "--extensionTestsPath=${workspaceFolder}/dist/src/test/index.js"
             ],
-            "outFiles": ["${workspaceFolder}/out/src/test/**/*.js"],
-            "preLaunchTask": "npm: watch"
+            "outFiles": ["${workspaceFolder}/dist/src/test/**/*.js"],
+            "preLaunchTask": "npm: testCompile"
         },
         {
             "name": "Integration Tests",
@@ -32,12 +32,12 @@
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "args": [
-                "${workspaceFolder}/out/src/integrationTest-samples/",
+                "${workspaceFolder}/dist/src/integrationTest-samples/",
                 "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/out/src/integrationTest/index.js"
+                "--extensionTestsPath=${workspaceFolder}/dist/src/integrationTest/index.js"
             ],
-            "outFiles": ["${workspaceFolder}/out/src/integrationTest/**/*.js"],
-            "preLaunchTask": "npm: watch"
+            "outFiles": ["${workspaceFolder}/dist/src/integrationTest/**/*.js"],
+            "preLaunchTask": "npm: testCompile"
         }
     ]
 }

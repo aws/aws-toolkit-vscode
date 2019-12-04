@@ -26,6 +26,7 @@ export enum TelemetryNamespace {
     Cloudformation = 'cloudformation',
     Lambda = 'lambda',
     Project = 'project',
+    Schema = 'schemas',
     Session = 'session'
 }
 

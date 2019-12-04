@@ -7,10 +7,13 @@ import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { CloudFormationClient } from './cloudFormationClient'
 import { EcsClient } from './ecsClient'
 import { LambdaClient } from './lambdaClient'
+import { SchemaClient } from './schemaClient'
 import { StsClient } from './stsClient'
 
 export interface ToolkitClientBuilder {
     createCloudFormationClient(regionCode: string): CloudFormationClient
+
+    createSchemaClient(regionCode: string): SchemaClient
 
     createEcsClient(regionCode: string): EcsClient
 

@@ -48,7 +48,6 @@ rules:
         options:
             - - vscode
               - vscode-test
-              - semver-regex
               - del
               - sinon
               - glob

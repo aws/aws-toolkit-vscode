@@ -6,10 +6,11 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 
+import { access } from 'fs-extra'
 import { makeCoreCLRDebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { DefaultDockerClient, DockerClient } from '../clients/dockerClient'
 import { CloudFormation } from '../cloudformation/cloudformation'
-import { access, mkdir } from '../filesystem'
+import { mkdir } from '../filesystem'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
 import { DefaultSamCliProcessInvoker } from '../sam/cli/samCliInvoker'

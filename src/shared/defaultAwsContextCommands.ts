@@ -373,8 +373,8 @@ export class DefaultAWSContextCommands {
             {
                 placeHolder: localize(
                     'AWS.message.prompt.defaultRegionHidden',
-                    "This profile's default region ({0}) is currently hidden. " +
-                        'Would you like to show it in the Explorer?',
+                    // prettier-ignore
+                    "This profile's default region ({0}) is currently hidden. Would you like to show it in the Explorer?",
                     profileRegion
                 )
             }
@@ -404,8 +404,8 @@ export class DefaultAWSContextCommands {
                 window.showInformationMessage(
                     localize(
                         'AWS.message.prompt.defaultRegionHidden.suppressed',
-                        "You will no longer be asked what to do when the current profile's default region is " +
-                            "hidden from the Explorer. This behavior can be changed by modifying the '{0}' setting.",
+                        // prettier-ignore
+                        "You will no longer be asked what to do when the current profile's default region is hidden from the Explorer. This behavior can be changed by modifying the '{0}' setting.",
                         'aws.onDefaultRegionMissing'
                     )
                 )

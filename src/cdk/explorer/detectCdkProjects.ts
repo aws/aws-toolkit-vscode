@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { access, readdir, stat } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { access, stat } from '../../shared/filesystem'
-import { readDirAsString } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { CdkAppLocation } from './cdkProject'
 
@@ -57,7 +56,7 @@ async function* getFolderCandidates(uri: vscode.Uri): AsyncIterableIterator<stri
     // Search the root and first level of children only.
     yield uri.fsPath
 
-    const entries = await readDirAsString(uri.fsPath)
+    const entries = await readdir(uri.fsPath)
     for (const entry of entries.map(p => path.join(uri.fsPath, p))) {
         const stats = await stat(entry)
         if (stats.isDirectory()) {

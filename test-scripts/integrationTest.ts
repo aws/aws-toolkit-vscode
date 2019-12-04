@@ -13,8 +13,8 @@ import { setupVSCodeTestInstance } from './launchTestUtilities'
         console.log('Running Integration test suite...')
         const vsCodeExecutablePath = await setupVSCodeTestInstance()
         const cwd = process.cwd()
-        const testEntrypoint = resolve(cwd, 'out', 'src', 'integrationTest', 'index.js')
-        const workspacePath = join(cwd, 'out', 'src', 'integrationTest-samples')
+        const testEntrypoint = resolve(cwd, 'dist', 'src', 'integrationTest', 'index.js')
+        const workspacePath = join(cwd, 'dist', 'src', 'integrationTest-samples')
         console.log(`Starting tests: ${testEntrypoint}`)
 
         const result = await runTests({

@@ -9,7 +9,6 @@ import * as vscode from 'vscode'
 import { getLocalLambdaConfiguration } from '../../lambda/local/configureLocalLambda'
 import { detectLocalLambdas, LocalLambda } from '../../lambda/local/detectLocalLambdas'
 import { CloudFormation } from '../cloudformation/cloudformation'
-import { writeFile } from '../filesystem'
 import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from '../sam/cli/samCliBuild'
 import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
@@ -22,9 +21,10 @@ import { SettingsConfiguration } from '../settingsConfiguration'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 
+import { writeFile } from 'fs-extra'
 import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
-import { getFamily, SamLambdaRuntimeFamily } from '../../lambda/models/samLambdaRuntime'
+import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { Logger } from '../logger'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
@@ -641,10 +641,10 @@ function getAttachDebuggerMaxRetryLimit(configuration: SettingsConfiguration, de
 export function shouldAppendRelativePathToFunctionHandler(runtime: string): boolean {
     // getFamily will throw an error if the runtime doesn't exist
     switch (getFamily(runtime)) {
-        case SamLambdaRuntimeFamily.NodeJS:
-        case SamLambdaRuntimeFamily.Python:
+        case RuntimeFamily.NodeJS:
+        case RuntimeFamily.Python:
             return true
-        case SamLambdaRuntimeFamily.DotNetCore:
+        case RuntimeFamily.DotNetCore:
             return false
         // if the runtime exists but for some reason we forgot to cover it here, throw anyway so we remember to cover it
         default:
