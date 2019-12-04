@@ -13,7 +13,7 @@ import { setupVSCodeTestInstance } from './launchTestUtilities'
         console.log('Running Main test suite...')
         const vsCodeExecutablePath = await setupVSCodeTestInstance()
         const cwd = process.cwd()
-        const testEntrypoint = resolve(cwd, 'out', 'src', 'test', 'index.js')
+        const testEntrypoint = resolve(cwd, 'dist', 'src', 'test', 'index.js')
         console.log(`Starting tests: ${testEntrypoint}`)
 
         const result = await runTests({
